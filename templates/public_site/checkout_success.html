@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-10">
+  <div class="rounded-3xl bg-white ring-1 ring-stone-200 p-7 shadow">
+    <h1 class="text-2xl font-extrabold">{% trans "Заказ создан!" %}</h1>
+    <div class="mt-2 text-stone-600">
+      {% trans "Номер заказа:" %} <b>#{{ order.id }}</b><br>
+      {% trans "Сумма:" %} <b>{{ order.total_amount }}</b> {% trans "сом" %}
+    </div>
+
+    <div class="mt-6 flex gap-3 flex-wrap">
+      <a href="{% url 'public_site:branch_menu' branch.id %}"
+         class="px-4 py-3 rounded-2xl bg-stone-900 text-white font-semibold">
+        {% trans "Вернуться в меню" %}
+      </a>
+      <a href="{% url 'public_site:home' %}"
+         class="px-4 py-3 rounded-2xl ring-1 ring-stone-200 hover:bg-stone-50">
+        {% trans "На главную" %}
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

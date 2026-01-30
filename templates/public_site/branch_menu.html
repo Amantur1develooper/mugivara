@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% load static i18n i18n_attrs %}
+
+{% block content %}
+<style>  body{
+    background:url("{{ branch.cover_photo.url }}") center / cover no-repeat fixed; 
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  }</style>
+<div class="min-h-[85vh]">
+
+  <!-- HERO -->
+ <section class="max-w-6xl mx-auto px-4 pt-6 pb-4">
+  <div class="rounded-2xl overflow-hidden shadow-xl ring-1 ring-black/5">
+    <div class="relative p-4 md:p-7 bg-white"
+         {% if branch.cover_photo %}
+         style="background-image:url('{{ branch.cover_photo.url }}'); background-size:cover; background-position:center;"
+         {% endif %}>
+      
+      {% if branch.cover_photo %}
+        <div class="absolute inset-0 bg-black/35"></div>
+      {% endif %}
+
+      <div class="relative flex items-start justify-between gap-4">
+        <div>
+          <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight {% if branch.cover_photo %}text-white{% endif %}">
+            {{ branch.name }}
+          </h1>
+          <div class="mt-2 text-sm {% if branch.cover_photo %}text-white/90{% else %}text-stone-600{% endif %}">
+            {{ branch.address }}
+            {% if branch.delivery_enabled %}
+              · {% trans "Доставка" %}: {% trans "Мин." %} {{ branch.min_order_amount }} · {% trans "Дост." %} {{ branch.delivery_fee }}
+            {% else %}
+              · {% trans "Самовывоз" %}
+            {% endif %}
+          </div>
+        </div>
+
+        <a href="{% url 'public_site:cart_detail' branch.id %}"
+           class="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-stone-900 text-white font-semibold shadow hover:bg-stone-800">
+          {% trans "Корзина" %}
+          <span class="px-2 py-1 rounded-xl bg-white/15 text-xs">{{ cart_qty }}</span>
+          <span class="hidden sm:inline">· {{ cart_total }} {% trans "сом" %}</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+  <!-- Липкая полоса категорий -->
+  <div class="sticky top-[56px] z-40 bg-white/95 backdrop-blur border-y border-stone-200">
+    <div class="max-w-6xl mx-auto px-3 py-2 overflow-x-auto no-scrollbar">
+      <div class="flex gap-2 md:gap-3">
+        <a href="#menu" class="px-3 py-2 rounded-xl bg-stone-900 text-white text-sm">{% trans "Все" %}</a>
+        {% for c in menu %}
+          <a href="#cat-{{ c.branch_category.id }}"
+             class="px-3 py-2 rounded-xl bg-white ring-1 ring-stone-300 text-stone-800 text-sm hover:bg-stone-50">
+            {% t c.branch_category.category "name" %}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Меню -->
+  <section id="menu" class="max-w-6xl mx-auto px-4 py-6">
+    {% for c in menu %}
+      <section id="cat-{{ c.branch_category.id }}" class="mb-10 scroll-mt-24">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="flex-1 h-px bg-stone-300"></div>
+          <h2 class="text-xl md:text-2xl font-semibold tracking-wide text-stone-900">
+            {% t c.branch_category.category "name" %}
+          </h2>
+          <div class="flex-1 h-px bg-stone-300"></div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
+          {% for row in c.items %}
+            {% with bi=row.branch_item dish=row.branch_item.item %}
+            <article class="group relative overflow-hidden rounded-3xl bg-white ring-1 ring-black/5 shadow-lg flex flex-col">
+              <!-- Фото -->
+              {% if dish.photo %}
+                <img src="{{ dish.photo.url }}"
+                     alt="{% t dish 'name' %}"
+                     class="aspect-[4/3] w-full object-cover transition group-hover:scale-[1.03]"
+                     loading="lazy" decoding="async">
+              {% endif %}
+
+              <div class="p-3 md:p-4 flex-1 flex flex-col">
+                <div class="min-h-[48px]">
+                  <h3 class="text-base md:text-lg font-semibold leading-snug">
+  {% t dish "name" %}
+</h3>
+
+{% t dish "description" as desc %}
+{% if desc %}
+  <div class="text-sm text-stone-500 mt-0.5 line-clamp-2">{{ desc }}</div>
+{% endif %}
+
+                 
+                </div>
+
+                <div class="mt-3 md:mt-4 grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-2 items-end">
+                  <div>
+                    <div class="text-xs text-stone-400">{% trans "Цена" %}</div>
+                    <div class="text-lg md:text-xl font-bold">{{ bi.price }} {% trans "сом" %}</div>
+                  </div>
+
+                  <!-- Добавить в корзину -->
+                  <form action="{% url 'public_site:cart_add' branch.id bi.id %}" method="post"
+                        class="flex items-center justify-end gap-2 flex-wrap">
+                    {% csrf_token %}
+                    <input type="number" name="qty" value="1" min="1"
+                           class="w-12 sm:w-16 border border-stone-300 rounded-xl px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-stone-400">
+                    <button type="submit"
+                            class="inline-flex items-center justify-center whitespace-nowrap px-3 md:px-4 py-2 rounded-xl text-white text-sm md:text-[15px] font-medium shadow-md hover:shadow-lg transition"
+                            style="background:#25D366">
+                      {% trans "В корзину" %}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </article>
+            {% endwith %}
+          {% endfor %}
+        </div>
+      </section>
+    {% endfor %}
+  </section>
+
+  <!-- Нижний баннер -->
+  <section class="max-w-6xl mx-auto px-4 pb-10">
+    <div class="rounded-3xl bg-stone-900 text-white p-5 md:p-7 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-xl">
+      <div class="text-lg md:text-xl font-semibold">{% trans "Готовы оформить заказ?" %}</div>
+      <div class="flex-1 text-sm text-stone-200">{% trans "Соберите блюда в корзину — и оформите доставку/самовывоз." %}</div>
+      <a href="{% url 'public_site:cart_detail' branch.id %}" class="px-4 py-3 rounded-2xl bg-white text-stone-900 font-semibold shadow">
+        {% trans "Открыть корзину" %} ({{ cart_qty }})
+      </a>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

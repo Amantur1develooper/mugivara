@@ -1,0 +1,117 @@
+{% load static i18n %}
+<!doctype html>
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <title>{% block title %}Санжи{% endblock %}</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:rgba(15,23,42,.10);
+      --shadow: 0 12px 40px rgba(15,23,42,.10);
+      --radius: 22px;
+    }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--text);
+      background: transparent; /* фон даём через .page-bg */
+    }
+
+    /* Фоновая картинка */
+    .page-bg{
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events:none;
+      transform: translateZ(0);
+      will-change: transform;
+
+      /* Поставь сюда свой фон */
+      background: url("{% static 'санжи_фон.png' %}") center / cover no-repeat;
+    }
+
+    /* Вуаль для читабельности */
+    .page-bg::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      
+    }
+
+    /* Контентная “карта” */
+    .surface{
+      background: rgba(255,255,255,.82);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .wrap{ max-width:1120px; margin:0 auto; padding:22px; }
+    .topbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 2px 16px; }
+    .brand{
+      font-family:"Cormorant Garamond", serif;
+      font-weight: 800;
+      letter-spacing:.3px;
+      font-size: 28px;
+      line-height: 1;
+    }
+    .lang{ display:flex; gap:8px; align-items:center; }
+    .btn{
+      border:1px solid var(--line);
+      background:#fff;
+      border-radius:999px;
+      padding:8px 12px;
+      cursor:pointer;
+      transition: transform .12s ease, box-shadow .12s ease;
+    }
+    .btn:hover{ transform: translateY(-1px); box-shadow: 0 8px 20px rgba(15,23,42,.08); }
+
+    .footer{ border-top:1px solid var(--line); padding:18px 0; color:var(--muted); font-size:13px; }
+  </style>
+
+  {% block head_extra %}{% endblock %}
+</head>
+
+<body>
+  <div class="page-bg" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <div class="topbar">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="brand">Санжи</div>
+        <div style="color:var(--muted); font-size:13px; margin-top:3px;">
+          QR-меню • Заказы • Доставка
+        </div>
+      </div>
+
+      <div class="lang">
+        <form action="{% url 'set_language' %}" method="post">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <button class="btn" type="submit" name="language" value="ru">RU</button>
+          <button class="btn" type="submit" name="language" value="ky">KY</button>
+          <button class="btn" type="submit" name="language" value="en">EN</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="surface" style="padding:18px;">
+      {% block content %}{% endblock %}
+    </div>
+
+    <div class="footer">
+      © Санжи — онлайн меню и заказы
+    </div>
+  </div>
+</body>
+</html>

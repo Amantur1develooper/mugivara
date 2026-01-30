@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ restaurant.name }} — Санжи{% endblock %}
+
+{% block content %}
+  <div class="hero">
+    <h1>{{ restaurant.name }}</h1>
+    <p>{% trans "Выберите филиал — меню откроется сразу (доставка/самовывоз)." %}</p>
+  </div>
+
+  {% for b in branches %}
+    <a class="branch" href="{% url 'public_site:branch_menu' b.id %}" style="display:block; text-decoration:none; color:inherit;">
+      <div class="row">
+        <div>
+          <div style="font-weight:800;">{{ b.name }}</div>
+          <div style="color:#64748b; margin-top:6px;">
+            {{ b.address }}{% if b.phone %} · {{ b.phone }}{% endif %}
+          </div>
+
+          <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+            {% if b.is_open_24h %}
+              <span class="pill">24/7</span>
+            {% elif b.open_time and b.close_time %}
+              <span class="pill">{{ b.open_time|time:"H:i" }}–{{ b.close_time|time:"H:i" }}</span>
+            {% endif %}
+
+            {% if b.delivery_enabled %}
+              <span class="pill">{% trans "Доставка" %}</span>
+              <span class="pill">{% trans "Мин." %} {{ b.min_order_amount }}</span>
+              <span class="pill">{% trans "Дост." %} {{ b.delivery_fee }}</span>
+            {% else %}
+              <span class="pill">{% trans "Самовывоз" %}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="pill">{% trans "Открыть меню" %} →</span>
+        </div>
+      </div>
+    </a>
+  {% empty %}
+    <p>{% trans "У ресторана пока нет активных филиалов." %}</p>
+  {% endfor %}
+{% endblock %}
