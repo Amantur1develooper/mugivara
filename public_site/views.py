@@ -11,8 +11,45 @@ from django.utils.translation import get_language
 from core.models import Branch
 from catalog.models import BranchCategory, BranchCategoryItem, BranchItem
 from orders.models import Order, OrderItem
-from .cart import add_to_cart, set_qty, clear_cart, get_cart, cart_details
+from reservations.models import Booking, Floor, Place
+
+from .cart import add_to_cart as cart_add, set_qty, clear_cart, get_cart, cart_details
+
 from django.utils.translation import gettext as _
+from django.http import JsonResponse
+
+from catalog.models import BranchItem  # или Item, как у тебя в url
+
+from decimal import Decimal
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.views.decorators.http import require_POST
+
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.views.decorators.http import require_POST
+from decimal import Decimal
+
+@require_POST
+def add_to_cart(request, branch_item_id):
+    bi = get_object_or_404(BranchItem, id=branch_item_id, is_available=True)
+
+    qty = int(request.POST.get("qty") or 1)
+    qty = max(1, min(qty, 99))
+
+    # ✅ единая логика корзины
+    cart_add(request, bi.branch_id, bi.id, qty)
+
+    cart = get_cart(request, bi.branch_id)
+    rows, subtotal, qty_total = cart_details(bi.branch, cart)
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"ok": True, "qty": qty_total, "total": str(subtotal)})
+
+    return redirect(request.META.get("HTTP_REFERER", "/"))
+
+
+
 def tr(obj, base: str, lang: str):
     """Если есть name_ru/name_ky/name_en — отдаём по языку, иначе base."""
     field = f"{base}_{lang}"
@@ -67,6 +104,7 @@ def home(request):
             "min_order": min_order,
             "min_fee": min_fee,
             "hours_text": hours_text,
+            "branch":delivery_branches, #?
             "branches_count": len(branches),
         })
 
@@ -108,17 +146,7 @@ def branch_menu(request, branch_id: int):
         "cart_total": total,
     })
 
-@require_POST
-def cart_add(request, branch_id: int, branch_item_id: int):
-    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
-    bi = get_object_or_404(BranchItem, id=branch_item_id, branch=branch, is_available=True)
 
-    qty = int(request.POST.get("qty", 1))
-    if qty < 1:
-        qty = 1
-
-    add_to_cart(request, branch.id, bi.id, qty)
-    return redirect("public_site:branch_menu", branch_id=branch.id)
 
 def cart_detail(request, branch_id: int):
     branch = get_object_or_404(Branch, id=branch_id, is_active=True)
@@ -127,6 +155,7 @@ def cart_detail(request, branch_id: int):
 
     delivery_fee = branch.delivery_fee if branch.delivery_enabled else Decimal("0")
     total = subtotal + delivery_fee
+    print("SESSION CART =", request.session.get("cart"))
 
     return render(request, "public_site/cart_detail.html", {
         "branch": branch,
@@ -162,12 +191,13 @@ def checkout(request, branch_id: int):
 
     order_type = Order.Type.DELIVERY if branch.delivery_enabled else Order.Type.PICKUP
 
-    name = (request.POST.get("name") or "").strip()
+    name = (request.POST.get("name") or "").strip() or _("Гость")
     phone = (request.POST.get("phone") or "").strip()
     address = (request.POST.get("address") or "").strip()
     comment = (request.POST.get("comment") or "").strip()
+    order_type = Order.Type.DELIVERY if (branch.delivery_enabled and address) else Order.Type.PICKUP
 
-    if not name or not phone:
+    if not phone:
         messages.error(request, _("Укажите имя и телефон."))
         return redirect("public_site:cart_detail", branch_id=branch.id)
     payment_method = request.POST.get("payment_method") or Order.PaymentMethod.CASH
@@ -214,33 +244,123 @@ def checkout(request, branch_id: int):
     notify_new_order.delay(order.id)
     clear_cart(request, branch.id)
     return redirect("public_site:checkout_success", branch_id=branch.id, order_id=order.id)
+from urllib.parse import quote
+from django.shortcuts import get_object_or_404, render
+from orders.models import Order, OrderItem
+from core.models import Branch
 
 def checkout_success(request, branch_id: int, order_id: int):
     branch = get_object_or_404(Branch, id=branch_id, is_active=True)
     order = get_object_or_404(Order, id=order_id, branch=branch)
-    return render(request, "public_site/checkout_success.html", {"branch": branch, "order": order})
 
-# def branch_menu(request, branch_id: int):
+    items = (OrderItem.objects
+             .filter(order=order)
+             .select_related("item")
+             .order_by("id"))
+
+    lines = []
+    for i, oi in enumerate(items, start=1):
+        # если у Item есть name_ru/name_ky/name_en — тут можно сделать перевод по языку
+        name = getattr(oi.item, "name_ru", None) or str(oi.item)
+        lines.append(f"{i}) {name} × {oi.qty} = {oi.line_total} сом")
+
+    header = f" Заказ #{order.id}\n"
+    place = f" {branch.name_ru if hasattr(branch,'name_ru') else branch}\n"
+    phone = f" {order.customer_phone}\n" if getattr(order, "customer_phone", "") else ""
+    addr = ""
+    if getattr(order, "delivery_address", ""):
+        addr = f" Адрес: {order.delivery_address}\n"
+    comment = ""
+    if getattr(order, "comment", ""):
+        comment = f" Комментарий: {order.comment}\n"
+
+    total = f"\n💰 Итого: {order.total_amount} сом"
+
+    msg = header + place + phone + addr + comment + "\n" + "\n".join(lines) + total
+
+    # Куда отправлять: на номер филиала (branch.phone) если есть, иначе просто открыть чат (без номера)
+    wa_number = (branch.phone or "").strip()
+    wa_number = wa_number.replace("+", "").replace(" ", "").replace("-", "")
+
+    encoded = quote(msg)
+
+    if wa_number:
+        whatsapp_url = f"https://wa.me/{wa_number}?text={encoded}"
+    else:
+        # откроет WhatsApp с сообщением, но пользователь сам выберет чат
+        whatsapp_url = f"https://wa.me/?text={encoded}"
+
+    return render(request, "public_site/checkout_success.html", {
+        "branch": branch,
+        "order": order,
+        "whatsapp_url": whatsapp_url,
+    })
+
+# def checkout_success(request, branch_id: int, order_id: int):
 #     branch = get_object_or_404(Branch, id=branch_id, is_active=True)
-#     lang = get_language() or "ru"
+#     order = get_object_or_404(Order, id=order_id, branch=branch)
+#     return render(request, "public_site/checkout_success.html", {"branch": branch, "order": order})
 
-#     categories = BranchCategory.objects.filter(branch=branch, is_active=True).order_by("sort_order", "id")
+def about(request):
+    return render(request, "public_site/about.html")
 
-#     menu = []
-#     for bc in categories:
-#         rows = BranchCategoryItem.objects.select_related("branch_item__item").filter(
-#             branch_category=bc,
-#             branch_item__is_available=True,
-#         ).order_by("sort_order", "id")
+def contacts(request):
+    return render(request, "public_site/contacts.html")
 
-#         menu.append({
-#             "category_name": tr(bc.category, "name", lang),
-#             "items": [{
-#                 "branch_item_id": x.branch_item_id,
-#                 "name": tr(x.branch_item.item, "name", lang),
-#                 "description": tr(x.branch_item.item, "description", lang),
-#                 "price": x.branch_item.price,
-#             } for x in rows]
-#         })
+def reservation(request):
+    return render(request, "public_site/reservation.html")
 
-#     return render(request, "public_site/branch_menu.html", {"branch": branch, "menu": menu})
+
+
+
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+
+def hall_plan(request, branch_id: int):
+    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    floors = Floor.objects.filter(branch=branch, is_active=True).prefetch_related("places").order_by("sort_order","id")
+
+    busy_ids = set(
+        Booking.objects.filter(branch=branch, status__in=[Booking.Status.ACTIVE, Booking.Status.ARRIVED])
+        .values_list("place_id", flat=True)
+    )
+
+    floors_data = []
+    for f in floors:
+        places = []
+        for p in f.places.filter(is_active=True):
+            places.append({"obj": p, "busy": p.id in busy_ids})
+        floors_data.append({"floor": f, "places": places})
+
+    return render(request, "public_site/hall_plan.html", {
+        "branch": branch,
+        "floors_data": floors_data,
+    })
+
+@require_POST
+@login_required
+def place_move(request, place_id: int):
+    p = get_object_or_404(Place, id=place_id, is_active=True)
+    try:
+        x = int(request.POST.get("x"))
+        y = int(request.POST.get("y"))
+    except:
+        return JsonResponse({"ok": False}, status=400)
+
+    p.x = max(0, min(x, 2000))
+    p.y = max(0, min(y, 2000))
+    p.save(update_fields=["x","y","updated_at"])
+    return JsonResponse({"ok": True, "x": p.x, "y": p.y})
+
+@require_POST
+@login_required
+def booking_set_status(request, booking_id: int, status: str):
+    booking = get_object_or_404(Booking, id=booking_id)
+    allowed = {Booking.Status.ACTIVE, Booking.Status.ARRIVED, Booking.Status.CLEARED, Booking.Status.CANCELLED}
+    if status not in allowed:
+        return JsonResponse({"ok": False}, status=400)
+    booking.status = status
+    booking.save(update_fields=["status","updated_at"])
+    return redirect(request.META.get("HTTP_REFERER", "/"))

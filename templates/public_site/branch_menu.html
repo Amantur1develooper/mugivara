@@ -7,6 +7,160 @@
     font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   }</style>
 <div class="min-h-[85vh]">
+<style>
+  /* Toast */
+  .toast-wrap{
+    position: fixed;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+    z-index: 9999;
+    pointer-events: none;
+  }
+  .toast{
+    pointer-events: auto;
+    background: rgba(15,23,42,.92);
+    color: #fff;
+    padding: 12px 14px;
+    border-radius: 14px;
+    box-shadow: 0 16px 40px rgba(0,0,0,.25);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: .18s ease;
+    font-size: 14px;
+    max-width: min(92vw, 520px);
+  }
+  .toast.show{
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .toast .dot{
+    width: 10px; height: 10px;
+    border-radius: 999px;
+    background: #22c55e;
+    box-shadow: 0 0 0 6px rgba(34,197,94,.18);
+  }
+
+  /* Button animation */
+  .btn-anim{
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-anim.loading{
+    opacity: .85;
+    pointer-events: none;
+  }
+  .btn-anim.loading::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,.35), transparent);
+    transform: translateX(-100%);
+    animation: shimmer .7s linear infinite;
+  }
+  @keyframes shimmer{
+    to{ transform: translateX(100%); }
+  }
+  .btn-anim.pulse{
+    animation: pulse .28s ease;
+  }
+  @keyframes pulse{
+    0%{ transform: scale(1); }
+    50%{ transform: scale(1.03); }
+    100%{ transform: scale(1); }
+  }
+  
+</style>
+
+<div class="toast-wrap" id="toastWrap" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+  const fab = document.getElementById('cartFab');
+if (fab) fab.classList.remove('hide');
+
+  function getCookie(name) {
+    const v = document.cookie.split('; ').find(row => row.startsWith(name + '='));
+    return v ? decodeURIComponent(v.split('=')[1]) : '';
+  }
+
+  function showToast(message){
+    const wrap = document.getElementById('toastWrap');
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.innerHTML = `<span class="dot"></span><div>${message}</div>`;
+    wrap.appendChild(el);
+    requestAnimationFrame(() => el.classList.add('show'));
+    setTimeout(() => {
+      el.classList.remove('show');
+      setTimeout(() => el.remove(), 220);
+    }, 1400);
+  }
+
+  function updateCartUI(qty, total){
+    const q = document.querySelector('[data-cart-qty]');
+    const t = document.querySelector('[data-cart-total]');
+    if (q) q.textContent = qty;
+
+    if (t){
+      // оставим "· {total} сом" как у тебя
+      const som = t.textContent.includes('сом') ? ' сом' : '';
+      t.textContent = `· ${total}${som}`;
+    }
+  }
+
+  // защита от клика по родителям (если вдруг карточка кликабельная)
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('form[data-add-to-cart]')) e.stopPropagation();
+  }, true);
+
+  document.addEventListener('submit', async (e) => {
+    const form = e.target.closest('form[data-add-to-cart]');
+    if (!form) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const btn = form.querySelector('button[type="submit"]');
+    if (btn){
+      btn.classList.add('btn-anim','loading');
+    }
+
+    try {
+      const resp = await fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': getCookie('csrftoken'),
+        }
+      });
+
+      const data = await resp.json();
+
+      if (data.ok) {
+        updateCartUI(data.qty, data.total);
+        if (btn){
+          btn.classList.remove('loading');
+          btn.classList.add('pulse');
+          setTimeout(()=>btn.classList.remove('pulse'), 300);
+        }
+        showToast('Добавлено в корзину ✅');
+      } else {
+        showToast('Не удалось добавить ❌');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast('Ошибка сети / сервера ❌');
+    } finally {
+      if (btn){
+        btn.classList.remove('loading');
+      }
+    }
+  }, true);
+</script>
 
   <!-- HERO -->
  <section class="max-w-6xl mx-auto px-4 pt-6 pb-4">
@@ -38,8 +192,9 @@
         <a href="{% url 'public_site:cart_detail' branch.id %}"
            class="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-stone-900 text-white font-semibold shadow hover:bg-stone-800">
           {% trans "Корзина" %}
-          <span class="px-2 py-1 rounded-xl bg-white/15 text-xs">{{ cart_qty }}</span>
-          <span class="hidden sm:inline">· {{ cart_total }} {% trans "сом" %}</span>
+          <span class="px-2 py-1 rounded-xl bg-white/15 text-xs" data-cart-qty>{{ cart_qty }}</span>
+<span class="hidden sm:inline" data-cart-total>· {{ cart_total }} {% trans "сом" %}</span>
+
         </a>
       </div>
     </div>
@@ -80,10 +235,17 @@
             <article class="group relative overflow-hidden rounded-3xl bg-white ring-1 ring-black/5 shadow-lg flex flex-col">
               <!-- Фото -->
               {% if dish.photo %}
+             
+     
+     
+
                 <img src="{{ dish.photo.url }}"
                      alt="{% t dish 'name' %}"
+                     loading="lazy"
+     decoding="async"
+     width="480" height="320"
                      class="aspect-[4/3] w-full object-cover transition group-hover:scale-[1.03]"
-                     loading="lazy" decoding="async">
+                     decoding="async">
               {% endif %}
 
               <div class="p-3 md:p-4 flex-1 flex flex-col">
@@ -107,13 +269,13 @@
                   </div>
 
                   <!-- Добавить в корзину -->
-                  <form action="{% url 'public_site:cart_add' branch.id bi.id %}" method="post"
-                        class="flex items-center justify-end gap-2 flex-wrap">
+                  <form action="{% url 'public_site:add_to_cart' bi.id %}" method="post"
+                        class="flex items-center justify-end gap-2 flex-wrap" data-add-to-cart>
                     {% csrf_token %}
                     <input type="number" name="qty" value="1" min="1"
                            class="w-12 sm:w-16 border border-stone-300 rounded-xl px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-stone-400">
                     <button type="submit"
-                            class="inline-flex items-center justify-center whitespace-nowrap px-3 md:px-4 py-2 rounded-xl text-white text-sm md:text-[15px] font-medium shadow-md hover:shadow-lg transition"
+                            class="btn-anim inline-flex items-center justify-center whitespace-nowrap px-3 md:px-4 py-2 rounded-xl text-white text-sm md:text-[15px] font-medium shadow-md hover:shadow-lg transition"
                             style="background:#25D366">
                       {% trans "В корзину" %}
                     </button>
@@ -140,4 +302,60 @@
   </section>
 
 </div>
+<script>
+  function getCookie(name) {
+    const v = document.cookie.split('; ').find(row => row.startsWith(name + '='));
+    return v ? decodeURIComponent(v.split('=')[1]) : '';
+  }
+
+  // ВАЖНО: если кнопка/форма внутри <a> (кликабельной карточки) —
+  // нужно гасить click, иначе браузер перейдет по ссылке.
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('form[data-add-to-cart]')) {
+      e.stopPropagation();
+    }
+  }, true);
+
+  document.addEventListener('submit', async (e) => {
+    const form = e.target.closest('form[data-add-to-cart]');
+    if (!form) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const btn = form.querySelector('button[type="submit"]');
+    if (btn) btn.disabled = true;
+
+    try {
+      const resp = await fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': getCookie('csrftoken'),
+        }
+      });
+
+      const data = await resp.json();
+
+      if (data.ok) {
+        // если есть бейдж корзины — обнови
+        const badge = document.querySelector('[data-cart-badge]');
+        if (badge) badge.textContent = data.qty;
+
+        // мини-фидбек (можно заменить на красивый toast)
+        btn && (btn.textContent = 'Добавлено ✓');
+        setTimeout(() => { if (btn) btn.textContent = 'В корзину'; }, 700);
+      } else {
+        alert('Не удалось добавить в корзину');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Ошибка сети / сервера');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }, true);
+</script>
+
 {% endblock %}

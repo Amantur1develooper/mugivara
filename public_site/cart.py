@@ -1,66 +1,73 @@
 from decimal import Decimal
 from catalog.models import BranchItem
 
-def _cart_key(branch_id: int) -> str:
-    return f"sanzhi_cart_{branch_id}"
+SESSION_KEY = "cart"  # session["cart"] = { "<branch_id>": { "<branch_item_id>": qty } }
 
 def get_cart(request, branch_id: int) -> dict:
-    return request.session.get(_cart_key(branch_id), {})
+    root = request.session.get(SESSION_KEY, {})
+    return root.get(str(branch_id), {})
 
-def save_cart(request, branch_id: int, cart: dict):
-    request.session[_cart_key(branch_id)] = cart
+def _save(request, branch_id: int, branch_cart: dict):
+    root = request.session.get(SESSION_KEY, {})
+    root[str(branch_id)] = branch_cart
+    request.session[SESSION_KEY] = root
     request.session.modified = True
 
 def add_to_cart(request, branch_id: int, branch_item_id: int, qty: int = 1):
+    qty = max(1, min(int(qty or 1), 99))
     cart = get_cart(request, branch_id)
-    key = str(branch_item_id)
-    cart[key] = cart.get(key, 0) + qty
-    if cart[key] <= 0:
-        cart.pop(key, None)
-    save_cart(request, branch_id, cart)
+    k = str(branch_item_id)
+    cart[k] = int(cart.get(k, 0)) + qty
+    _save(request, branch_id, cart)
+    return cart
 
 def set_qty(request, branch_id: int, branch_item_id: int, qty: int):
     cart = get_cart(request, branch_id)
-    key = str(branch_item_id)
+    k = str(branch_item_id)
+    qty = int(qty or 0)
     if qty <= 0:
-        cart.pop(key, None)
+        cart.pop(k, None)
     else:
-        cart[key] = qty
-    save_cart(request, branch_id, cart)
+        cart[k] = min(qty, 99)
+    _save(request, branch_id, cart)
+    return cart
 
 def clear_cart(request, branch_id: int):
-    request.session.pop(_cart_key(branch_id), None)
+    root = request.session.get(SESSION_KEY, {})
+    root.pop(str(branch_id), None)
+    request.session[SESSION_KEY] = root
     request.session.modified = True
 
 def cart_details(branch, cart: dict):
     """
-    Возвращает список позиций, total, qty_total
+    cart = {"12": 2, "15": 1}
+    return rows=[{branch_item, qty, line_total}], subtotal, qty_total
     """
-    ids = [int(k) for k in cart.keys()]
-    items = (BranchItem.objects
-             .select_related("item")
-             .filter(branch=branch, id__in=ids, is_available=True))
+    ids = []
+    for k in cart.keys():
+        try:
+            ids.append(int(k))
+        except Exception:
+            pass
 
-    items_map = {bi.id: bi for bi in items}
+    qs = BranchItem.objects.select_related("item").filter(branch=branch, id__in=ids)
+    mp = {str(x.id): x for x in qs}
 
     rows = []
-    total = Decimal("0")
+    subtotal = Decimal("0")
     qty_total = 0
 
     for k, qty in cart.items():
-        bid = int(k)
-        bi = items_map.get(bid)
+        bi = mp.get(str(k))
         if not bi:
             continue
-        qty = int(qty)
-        line = bi.price * qty
-        total += line
+        qty = int(qty or 0)
+        if qty <= 0:
+            continue
+        line_total = bi.price * qty
+        subtotal += line_total
         qty_total += qty
-        rows.append({
-            "branch_item": bi,
-            "qty": qty,
-            "line_total": line,
-        })
+        rows.append({"branch_item": bi, "qty": qty, "line_total": line_total})
 
-    rows.sort(key=lambda x: x["branch_item"].sort_order)
-    return rows, total, qty_total
+    rows.sort(key=lambda r: (r["branch_item"].sort_order, r["branch_item"].id))
+    return rows, subtotal, qty_total

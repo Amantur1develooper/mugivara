@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6">
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-extrabold">{% trans "План зала" %}</h1>
+      <div class="text-stone-600 text-sm mt-1">{{ branch.name_ru }} · {{ branch.address }}</div>
+    </div>
+    <a href="{% url 'public_site:reservation' branch.id %}"
+       class="px-4 py-2 rounded-xl ring-1 ring-stone-200 hover:bg-stone-50">
+      ← {% trans "Бронирование" %}
+    </a>
+  </div>
+
+  {% for f in floors_data %}
+    <section class="mt-6 rounded-3xl bg-white ring-1 ring-stone-200 p-5">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-extrabold">{{ f.floor.name_ru }}</h2>
+        <div class="text-sm text-stone-500">{% trans "Перетаскивай столы мышкой" %}</div>
+      </div>
+
+      <div class="mt-4 relative rounded-2xl ring-1 ring-stone-200 bg-stone-50"
+           style="height:520px; overflow:hidden;" data-floor>
+        {% for row in f.places %}
+          {% with p=row.obj busy=row.busy %}
+            <div class="place absolute select-none cursor-move"
+                 data-place-id="{{ p.id }}"
+                 style="left:{{ p.x }}px; top:{{ p.y }}px;">
+              <div class="rounded-2xl px-4 py-3 font-extrabold shadow
+                          {% if busy %}bg-stone-900 text-white{% else %}bg-white ring-1 ring-stone-200{% endif %}">
+                {{ p.title }}
+                <div class="text-xs font-semibold opacity-70">
+                  {% if p.type == "cabin" %}{% trans "Кабинка" %}{% else %}{% trans "Стол" %}{% endif %}
+                  · {{ p.seats }}
+                </div>
+              </div>
+            </div>
+          {% endwith %}
+        {% endfor %}
+      </div>
+    </section>
+  {% endfor %}
+</div>
+
+<script>
+  function getCookie(name) {
+    const v = document.cookie.split('; ').find(row => row.startsWith(name + '='));
+    return v ? decodeURIComponent(v.split('=')[1]) : '';
+  }
+
+  let dragEl = null, startX=0, startY=0, elX=0, elY=0;
+
+  document.addEventListener('mousedown', (e) => {
+    const el = e.target.closest('.place');
+    if(!el) return;
+    dragEl = el;
+
+    const rect = el.getBoundingClientRect();
+    startX = e.clientX;
+    startY = e.clientY;
+    elX = rect.left;
+    elY = rect.top;
+
+    el.style.opacity = '0.85';
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if(!dragEl) return;
+    const parent = dragEl.parentElement.getBoundingClientRect();
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    // позиция внутри контейнера
+    const left = (dragEl.offsetLeft + dx);
+    const top  = (dragEl.offsetTop + dy);
+
+    dragEl.style.left = Math.max(0, Math.min(left, parent.width - 80)) + 'px';
+    dragEl.style.top  = Math.max(0, Math.min(top,  parent.height - 60)) + 'px';
+
+    startX = e.clientX;
+    startY = e.clientY;
+  });
+
+  document.addEventListener('mouseup', async (e) => {
+    if(!dragEl) return;
+    dragEl.style.opacity = '1';
+
+    const placeId = dragEl.dataset.placeId;
+    const x = parseInt(dragEl.style.left, 10) || 0;
+    const y = parseInt(dragEl.style.top, 10) || 0;
+
+    dragEl = null;
+
+    try{
+      const resp = await fetch("{% url 'public_site:place_move' 0 %}".replace('/0/', '/' + placeId + '/'), {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCookie('csrftoken')},
+        body: new URLSearchParams({x: x, y: y})
+      });
+      // можно не делать ничего — координаты сохранены
+    }catch(err){
+      console.error(err);
+    }
+  });
+</script>
+{% endblock %}

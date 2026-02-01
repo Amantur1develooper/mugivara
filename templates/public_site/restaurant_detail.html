@@ -1,45 +1,343 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% block title %}{{ restaurant.name }} — Санжи{% endblock %}
+{% block title %}{{ restaurant.name_ru|default:restaurant.name_ru }} — Санжи{% endblock %}
 
 {% block content %}
-  <div class="hero">
-    <h1>{{ restaurant.name }}</h1>
-    <p>{% trans "Выберите филиал — меню откроется сразу (доставка/самовывоз)." %}</p>
-  </div>
+<style>
+  :root{
+    --bg: #f6f7fb;
+    --card: #ffffff;
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: rgba(2,6,23,.08);
+    --shadow: 0 18px 45px rgba(2,6,23,.10);
+    --shadow2: 0 10px 24px rgba(2,6,23,.08);
+    --radius: 22px;
+  }
 
-  {% for b in branches %}
-    <a class="branch" href="{% url 'public_site:branch_menu' b.id %}" style="display:block; text-decoration:none; color:inherit;">
-      <div class="row">
-        <div>
-          <div style="font-weight:800;">{{ b.name }}</div>
-          <div style="color:#64748b; margin-top:6px;">
-            {{ b.address }}{% if b.phone %} · {{ b.phone }}{% endif %}
+  .page-wrap{
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 18px 14px 40px;
+  }
+
+  .hero{
+    position: relative;
+    overflow: hidden;
+    border-radius: 28px;
+    padding: 18px;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfbff 100%);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow2);
+  }
+  .hero-inner{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .hero h1{
+    margin: 0;
+    font-size: 26px;
+    line-height: 1.15;
+    color: var(--ink);
+    letter-spacing: .2px;
+    font-weight: 900;
+  }
+  .hero p{
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.5;
+    font-size: 14px;
+  }
+  .hero-badge{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    padding: 8px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(2,6,23,.03);
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .hero-dot{
+    width: 8px; height: 8px; border-radius: 99px;
+    background: #22c55e;
+    box-shadow: 0 0 0 5px rgba(34,197,94,.15);
+  }
+
+  .tools{
+    margin-top: 14px;
+    display:flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .search{
+    flex: 1;
+    min-width: 220px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 10px 12px;
+    display:flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 6px 16px rgba(2,6,23,.06);
+  }
+  .search input{
+    width: 100%;
+    border: 0;
+    outline: 0;
+    font-size: 14px;
+    color: var(--ink);
+    background: transparent;
+  }
+  .search svg{ width: 18px; height: 18px; color: var(--muted); }
+
+  .grid{
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  @media (min-width: 640px){
+    .hero{ padding: 22px; }
+    .hero h1{ font-size: 32px; }
+    .hero p{ font-size: 15px; }
+    .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  }
+  @media (min-width: 1024px){
+    .grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  }
+
+  .card{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(2,6,23,.06);
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+  }
+  .card:hover{
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+    border-color: rgba(2,6,23,.14);
+  }
+
+  .cover{
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+  }
+  .cover img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    filter: saturate(1.02);
+  }
+  .cover::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(0,0,0,.40) 100%);
+    pointer-events:none;
+  }
+
+  .card-body{
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+  }
+
+  .title-row{
+    display:flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .branch-name{
+    font-weight: 900;
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.25;
+    letter-spacing: .15px;
+  }
+
+  .meta{
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .pills{
+    margin-top: 2px;
+    display:flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .pill{
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(2,6,23,.03);
+    color: #0f172a;
+    font-weight: 700;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .pill.green{ background: rgba(34,197,94,.10); border-color: rgba(34,197,94,.25); }
+  .pill.blue{ background: rgba(59,130,246,.10); border-color: rgba(59,130,246,.25); }
+  .pill.orange{ background: rgba(249,115,22,.10); border-color: rgba(249,115,22,.25); }
+
+  .cta{
+    margin-top: auto;
+    padding-top: 6px;
+    display:flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    font-weight: 900;
+    font-size: 13px;
+    background: #0f172a;
+    color: #fff;
+    text-decoration: none;
+    box-shadow: 0 10px 20px rgba(2,6,23,.15);
+    transition: transform .15s ease, opacity .15s ease;
+  }
+  .btn:hover{ transform: translateY(-1px); opacity: .95; }
+  .btn svg{ width: 16px; height: 16px; }
+
+  .empty{
+    margin-top: 14px;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: #fff;
+    color: var(--muted);
+  }
+</style>
+
+<div class="page-wrap">
+
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge">
+        <span class="hero-dot"></span>
+        <span>{% trans "Онлайн меню • QR заказы • Доставка/самовывоз" %}</span>
+      </div>
+
+      <div>
+        <h1>{{ restaurant.name_ru|default:restaurant.name_ru }}</h1>
+        <p>{% trans "Выберите филиал — меню откроется сразу. Можно заказать в заведении (по QR) или оформить доставку/самовывоз." %}</p>
+      </div>
+
+      <div class="tools">
+        <div class="search">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M10 18a8 8 0 1 1 5.293-14.293A8 8 0 0 1 10 18Zm11.707 2.293-5.11-5.11a10 10 0 1 0-1.414 1.414l5.11 5.11a1 1 0 0 0 1.414-1.414Z"/>
+          </svg>
+          <input id="branchSearch" type="text" placeholder="{% trans 'Поиск филиала (адрес/название)...' %}" autocomplete="off">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid" id="branchesGrid">
+    {% for b in branches %}
+      <a class="card branch-card" data-name="{{ b.name_ru|default:b.name_ru|default:'' }} {{ b.address|default:'' }} {{ b.phone|default:'' }}"
+         href="{% url 'public_site:branch_menu' b.id %}">
+        <div class="cover">
+          {% if b.cover_photo %}
+            <img src="{{ b.cover_photo.url }}" alt="{{ b.name_ru|default:b.name_ru }}">
+          {% else %}
+            {# без фото — просто градиент #}
+          {% endif %}
+        </div>
+
+        <div class="card-body">
+          <div class="title-row">
+            <div class="branch-name">{{ b.name_ru|default:b.name_ru }}</div>
+            {% if b.is_open_24h %}
+              <span class="pill green">24/7</span>
+            {% endif %}
           </div>
 
-          <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
-            {% if b.is_open_24h %}
-              <span class="pill">24/7</span>
-            {% elif b.open_time and b.close_time %}
-              <span class="pill">{{ b.open_time|time:"H:i" }}–{{ b.close_time|time:"H:i" }}</span>
+          <div class="meta">
+            {% if b.address %}{{ b.address }}{% endif %}
+            {% if b.phone %}{% if b.address %} · {% endif %}{{ b.phone }}{% endif %}
+          </div>
+
+          <div class="pills">
+            {% if not b.is_open_24h and b.open_time and b.close_time %}
+              <span class="pill blue">
+                {{ b.open_time|time:"H:i" }}–{{ b.close_time|time:"H:i" }}
+              </span>
             {% endif %}
 
             {% if b.delivery_enabled %}
-              <span class="pill">{% trans "Доставка" %}</span>
+              <span class="pill orange">{% trans "Доставка" %}</span>
               <span class="pill">{% trans "Мин." %} {{ b.min_order_amount }}</span>
               <span class="pill">{% trans "Дост." %} {{ b.delivery_fee }}</span>
             {% else %}
               <span class="pill">{% trans "Самовывоз" %}</span>
             {% endif %}
           </div>
-        </div>
 
-        <div style="display:flex; align-items:center; gap:10px;">
-          <span class="pill">{% trans "Открыть меню" %} →</span>
+          <div class="cta">
+            <span class="meta">{% trans "Открыть меню филиала" %}</span>
+            <span class="btn">
+              {% trans "Меню" %}
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M13.5 5.25a.75.75 0 0 0 0 1.5h3.19L7.72 15.72a.75.75 0 1 0 1.06 1.06l8.97-8.97V11a.75.75 0 0 0 1.5 0V5.25h-5.75Z"/>
+              </svg>
+            </span>
+          </div>
         </div>
-      </div>
-    </a>
-  {% empty %}
-    <p>{% trans "У ресторана пока нет активных филиалов." %}</p>
-  {% endfor %}
+      </a>
+    {% empty %}
+      <div class="empty">{% trans "У ресторана пока нет активных филиалов." %}</div>
+    {% endfor %}
+  </section>
+
+</div>
+
+<script>
+  (function(){
+    const input = document.getElementById("branchSearch");
+    const cards = Array.from(document.querySelectorAll(".branch-card"));
+    if(!input || !cards.length) return;
+
+    input.addEventListener("input", function(){
+      const q = (this.value || "").toLowerCase().trim();
+      cards.forEach(card => {
+        const hay = (card.getAttribute("data-name") || "").toLowerCase();
+        card.style.display = hay.includes(q) ? "" : "none";
+      });
+    });
+  })();
+</script>
 {% endblock %}

@@ -26,3 +26,17 @@ class TelegramRecipient(TimeStampedModel):
 
     def __str__(self):
         return f"{self.branch.name_ru} -> {self.chat_id} ({self.kind})"
+
+
+class BranchTelegramLink(TimeStampedModel):
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="tg_links")
+    recipient = models.ForeignKey(TelegramRecipient, on_delete=models.CASCADE, related_name="branch_links")
+
+    notify_orders = models.BooleanField(default=True)
+    notify_bookings = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ("branch", "recipient")
+
+    def __str__(self):
+        return f"{self.branch} -> {self.recipient}"

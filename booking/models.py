@@ -48,3 +48,9 @@ class Reservation(TimeStampedModel):
         if self.status != self.Status.CANCELLED:
             self.status = self.Status.CANCELLED
         self.save(update_fields=["released_at", "status"])
+        
+class Status(models.TextChoices):
+    ACTIVE = "active", "Забронировано"
+    ARRIVED = "arrived", "Гость пришёл"
+    CLEARED = "cleared", "Освободили"
+    CANCELLED = "cancelled", "Отменено"
