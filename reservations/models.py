@@ -1,11 +1,10 @@
 from django.db import models
-
 # Create your models here.
 from django.db import models, transaction
 from django.utils import timezone
 from django.db.models import Q
 from core.models import Branch, TimeStampedModel
-
+from django.db import models, transaction, IntegrityError
 
 class Floor(TimeStampedModel):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="floors")
@@ -90,7 +89,48 @@ class Booking(TimeStampedModel):
 
     def __str__(self):
         return f"#{self.id} {self.branch} — {self.place} ({self.status})"
+    @classmethod
+    def create_active_booking(
+        cls,
+        *,
+        branch,
+        place,
+        customer_name="",
+        customer_phone="",
+        guests_count=2,
+        comment="",
+        start_at=None,
+        end_at=None,
+    ):
+        """
+        Создаёт бронь и делает место занятым.
+        Если место уже занято (active/arrived) — кидает ValueError("PLACE_BUSY")
+        """
+        try:
+            with transaction.atomic():
+                # блокируем записи на время создания, чтобы не было гонок
+                busy = (cls.objects
+                        .select_for_update()
+                        .filter(place=place, status__in=[cls.Status.ACTIVE, cls.Status.ARRIVED])
+                        .exists())
+                if busy:
+                    raise ValueError("PLACE_BUSY")
 
+                booking = cls.objects.create(
+                    branch=branch,
+                    place=place,
+                    status=cls.Status.ACTIVE,
+                    customer_name=customer_name,
+                    customer_phone=customer_phone,
+                    guests_count=guests_count,
+                    comment=comment,
+                    start_at=start_at,
+                    end_at=end_at,
+                )
+                return booking
+        except IntegrityError:
+            # если у тебя стоит UniqueConstraint на active/arrived — тоже может сюда прилететь
+            raise ValueError("PLACE_BUSY")
     @staticmethod
     def create_active_booking(*, branch: Branch, place: Place, **fields):
         """

@@ -220,7 +220,7 @@
           {% if branch %}
         <a class="nav-link" style="color: white;" href="{% url 'public_site:reservation' branch.id %}">{% trans "Бронирование" %}</a>
 
-        <a class="nav-link" style="color: white;" href="{% url 'public_site:contacts' %}">{% trans "Контакты" %}</a>
+        {% comment %} <a class="nav-link" style="color: white;" href="{% url 'public_site:restaurant_contacts' restaurant.slug %}">{% trans "Контакты" %}</a> {% endcomment %}
         <a class="nav-link" style="color: white;" href="{% url 'public_site:about' %}">{% trans "О нас" %}</a>
         {% endif %}
       </nav>
@@ -254,9 +254,11 @@
         </div>
 
         <div class="links">
-          <a class="link" href="{% url 'public_site:reservation' %}">{% trans "Бронирование" %}</a>
-          <a class="link" href="{% url 'public_site:contacts' %}">{% trans "Контакты" %}</a>
+           {% if branch %}
+          <a class="link" href="{% url 'public_site:reservation' branch.id %}">{% trans "Бронирование" %}</a>
+          {% comment %} <a class="link" href="{% url 'public_site:contacts' %}">{% trans "Контакты" %}</a> {% endcomment %}
           <a class="link" href="{% url 'public_site:about' %}">{% trans "О нас" %}</a>
+          {% endif %}
         </div>
 
         <div class="langbox">
@@ -283,10 +285,10 @@
     </div>
   </div>
 
-  <!-- ===== Floating Cart Button (только если есть branch) ===== -->
+ 
   {% if branch %}
     <a href="{% url 'public_site:cart_detail' branch.id %}"
-       class="sj-cart-fab {% if not cart_qty or cart_qty == 0 %}hide{% endif %}"
+       class="sj-cart-fab "
        id="sjCartFab">
       <span class="sj-cart-fab__icon" aria-hidden="true">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
@@ -300,7 +302,7 @@
       <span style="min-width:0;">
         <div style="font-weight:900; line-height:1.1;">{% trans "Корзина" %}</div>
         <div style="font-size:12px; color:rgba(255,255,255,.82); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-          <span data-cart-total>· {% if cart_total %}{{ cart_total }}{% else %}0{% endif %} {% trans "сом" %}</span>
+          <span data-cart-total>· {% if cart_total %} {% else %}0{% endif %} {% trans "сом" %}</span>
         </div>
       </span>
 
@@ -309,13 +311,7 @@
       </span>
     </a>
 
-    <script>
-      // чтобы твой AJAX мог показать кнопку после первого добавления
-      window.SANJI_CART_FAB_SHOW = function(){
-        const fab = document.getElementById('sjCartFab');
-        if (fab) fab.classList.remove('hide');
-      };
-    </script>
+
   {% endif %}
 
   <script>

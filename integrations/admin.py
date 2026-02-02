@@ -20,3 +20,4 @@ class BranchTelegramLinkInline(admin.TabularInline):
     fields = ("recipient", "notify_orders", "notify_bookings")
 
 
+

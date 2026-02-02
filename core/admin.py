@@ -8,6 +8,9 @@ from .models import Restaurant, Branch, Membership
 from catalog.models import MenuSet, Item, BranchMenuSet, BranchItem
 from catalog.services import sync_branch_menu, ensure_links_for_branch_item
 
+from integrations.admin import BranchTelegramLinkInline
+
+
 
 class BranchMenuSetInline(admin.TabularInline):
     model = BranchMenuSet
@@ -60,14 +63,15 @@ def sync_menu_action(modeladmin, request, queryset):
         )
 
 
+    # остальное как у тебя
 @admin.register(Branch)
 class BranchAdmin(admin.ModelAdmin):
     list_display = ("id", "restaurant", "name_ru", "is_active", "delivery_enabled", "min_order_amount", "delivery_fee")
     list_filter = ("restaurant", "is_active", "delivery_enabled")
     search_fields = ("name_ru", "name_ky", "name_en", "address", "phone")
-    inlines = (BranchMenuSetInline, BranchItemInline)
+    inlines = (BranchMenuSetInline, BranchTelegramLinkInline, BranchItemInline)
     actions = (sync_menu_action,)
-
+  
     change_form_template = "admin/core/branch/change_form.html"
 
     def save_formset(self, request, form, formset, change):

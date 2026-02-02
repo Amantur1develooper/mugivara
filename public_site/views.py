@@ -304,8 +304,22 @@ def checkout_success(request, branch_id: int, order_id: int):
 def about(request):
     return render(request, "public_site/about.html")
 
+from django.db.models import Prefetch
+from core.models import Restaurant, Branch
+
 def contacts(request):
-    return render(request, "public_site/contacts.html")
+    restaurants = (
+        Restaurant.objects.filter(is_active=True)
+        .prefetch_related(
+            Prefetch(
+                "branches",
+                queryset=Branch.objects.filter(is_active=True).order_by("name_ru"),
+            )
+        )
+        .order_by("name_ru")
+    )
+    return render(request, "public_site/contacts.html", {"restaurants": restaurants})
+
 
 def reservation(request):
     return render(request, "public_site/reservation.html")
@@ -364,3 +378,16 @@ def booking_set_status(request, booking_id: int, status: str):
     booking.status = status
     booking.save(update_fields=["status","updated_at"])
     return redirect(request.META.get("HTTP_REFERER", "/"))
+
+
+from django.shortcuts import render, get_object_or_404
+from core.models import Restaurant
+
+def restaurant_contacts(request, slug: str):
+    restaurant = get_object_or_404(Restaurant, slug=slug, is_active=True)
+    branches = restaurant.branches.filter(is_active=True).order_by("name_ru")
+
+    return render(request, "public_site/restaurant_contacts.html", {
+        "restaurant": restaurant,
+        "branches": branches,
+    })

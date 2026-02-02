@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    about, booking_set_status, contacts, hall_plan, home, place_move, reservation, restaurant_detail, branch_menu,
+    about, booking_set_status, contacts, hall_plan, home, place_move, reservation, restaurant_contacts, restaurant_detail, branch_menu,
     add_to_cart, cart_detail, cart_update, cart_remove,
     checkout, checkout_success
 )
@@ -28,7 +28,8 @@ urlpatterns = [
     path("b/<int:branch_id>/checkout/", checkout, name="checkout"),
     path("b/<int:branch_id>/checkout/success/<int:order_id>/", checkout_success, name="checkout_success"),
     path("about/", about, name="about"),
-    path("contacts/", contacts, name="contacts"),
+    # path("contacts/", contacts, name="contacts"),
+    path("r/<slug:slug>/contacts/", restaurant_contacts, name="restaurant_contacts"),
     path("reservation/", reservation, name="reservation"),
     # slug — лучше в конце
     path("<slug:slug>/", restaurant_detail, name="restaurant_detail"),

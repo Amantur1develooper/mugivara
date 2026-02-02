@@ -249,10 +249,13 @@
         <span class="hero-dot"></span>
         <span>{% trans "Онлайн меню • QR заказы • Доставка/самовывоз" %}</span>
       </div>
-
+      
       <div>
         <h1>{{ restaurant.name_ru|default:restaurant.name_ru }}</h1>
         <p>{% trans "Выберите филиал — меню откроется сразу. Можно заказать в заведении (по QR) или оформить доставку/самовывоз." %}</p>
+        <button ><a href="{% url 'public_site:restaurant_contacts' restaurant.slug %}">
+  {% trans "Контакты" %}
+</a></button>
       </div>
 
       <div class="tools">
