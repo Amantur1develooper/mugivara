@@ -14,6 +14,7 @@ class MenuSet(TimeStampedModel):
     class Meta:
         verbose_name = "Меню сет"
         verbose_name_plural = "Меню сеты"
+        
 class Category(TimeStampedModel):
     menu_set = models.ForeignKey(MenuSet, on_delete=models.CASCADE, related_name="categories")
     name_ru = models.CharField(max_length=200)
@@ -42,7 +43,8 @@ class Item(TimeStampedModel):
     base_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def __str__(self):
-        return self.name_ru
+        # чтобы везде (админка, селекты) было видно кому принадлежит
+        return f"{self.restaurant.name_ru} — {self.name_ru}"
     class Meta:
         verbose_name = "Блюдо"
         verbose_name_plural = "Блюда"
@@ -103,7 +105,7 @@ class BranchItem(TimeStampedModel):
         verbose_name_plural = "Филиал"
     def __str__(self):
         # было: return (self.branch.name_ru + '-')  (без item)
-        return f"{self.branch.name_ru} — {self.item.name_ru}"
+        return f"{self.branch.name_ru} — {self.item.name_ru} "
     
 class BranchCategoryItem(TimeStampedModel):
     """Порядок блюд внутри конкретной категории филиала."""

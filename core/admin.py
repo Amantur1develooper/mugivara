@@ -2,13 +2,27 @@ from django.contrib import admin, messages
 from django.shortcuts import redirect
 from django.urls import path
 from django import forms
-
+from django.contrib.admin.widgets import AutocompleteSelect
 from .models import Restaurant, Branch, Membership
-
 from catalog.models import MenuSet, Item, BranchMenuSet, BranchItem
 from catalog.services import sync_branch_menu, ensure_links_for_branch_item
-
 from integrations.admin import BranchTelegramLinkInline
+from django.contrib.admin.widgets import AutocompleteSelect
+from catalog.models import BranchItem as CatalogBranchItem
+
+from django.contrib.admin.widgets import AutocompleteSelect
+from catalog.models import BranchItem as CatalogBranchItem
+
+class BranchItemItemSelect(AutocompleteSelect):
+    def __init__(self, field, admin_site, branch_id, attrs=None):
+        self.branch_id = str(branch_id)
+        super().__init__(field, admin_site, attrs)
+
+    def url_parameters(self):
+        params = super().url_parameters()
+        params["branch_id"] = self.branch_id
+        return params
+
 
 
 
@@ -18,11 +32,7 @@ class BranchMenuSetInline(admin.TabularInline):
     fields = ("menu_set", "is_active")
     autocomplete_fields = ("menu_set",)
 
-    def get_formset(self, request, obj=None, **kwargs):
-        fs = super().get_formset(request, obj, **kwargs)
-        if obj is not None:
-            fs.form.base_fields["menu_set"].queryset = MenuSet.objects.filter(restaurant=obj.restaurant)
-        return fs
+  
 
 
 class BranchItemForm(forms.ModelForm):
@@ -41,14 +51,48 @@ class BranchItemInline(admin.TabularInline):
     model = BranchItem
     form = BranchItemForm
     extra = 1
-    fields = ("item", "price", "is_available", "sort_order")
+
+    fields = ("item", "menusets", "price", "is_available", "sort_order")
+    readonly_fields = ("menusets",)
     autocomplete_fields = ("item",)
+
+    @admin.display(description="Меню-сеты")
+    def menusets(self, obj):
+        if not obj.pk or not obj.item_id:
+            return "—"
+        sets = []
+        seen = set()
+        for ic in obj.item.item_categories.all():
+            ms = ic.category.menu_set.name
+            if ms not in seen:
+                seen.add(ms)
+                sets.append(ms)
+        if not sets:
+            return "—"
+        s = ", ".join(sets[:2])
+        return s + ("…" if len(sets) > 2 else "")
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("item").prefetch_related(
+            "item__item_categories__category__menu_set"
+        )
 
     def get_formset(self, request, obj=None, **kwargs):
         fs = super().get_formset(request, obj, **kwargs)
         if obj is not None:
+            # queryset “на всякий случай”, если отключишь autocomplete
             fs.form.base_fields["item"].queryset = Item.objects.filter(restaurant=obj.restaurant)
+
+            # ВАЖНО: передаём ПОЛЕ BranchItem.item (а не remote_field!)
+            db_field = CatalogBranchItem._meta.get_field("item")
+            fs.form.base_fields["item"].widget = BranchItemItemSelect(db_field, self.admin_site, obj.pk)
+
         return fs
+
+
+
+
 
 
 @admin.action(description="Синхронизировать меню (создать категории/блюда/связи)")
