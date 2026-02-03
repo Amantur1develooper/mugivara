@@ -1,43 +1,42 @@
+import logging
 from celery import shared_task
 from django.conf import settings
-from django.utils import timezone
-
 from reservations.models import Booking
-from integrations.models import BranchTelegramLink  # как у тебя
-from integrations.telegram import send_message      # твоя функция
+from integrations.models import BranchTelegramLink
+from integrations.telegram import send_message  # как у тебя называется
+
+logger = logging.getLogger(__name__)
 
 @shared_task
 def notify_new_booking(booking_id: int):
-    booking = Booking.objects.select_related("branch", "place").get(id=booking_id)
+    b = Booking.objects.select_related("branch", "place").get(id=booking_id)
+
+    links = BranchTelegramLink.objects.filter(
+        branch=b.branch,
+        notify_bookings=True,
+        recipient__is_active=True
+    ).select_related("recipient")
 
     text = (
-        f"📌 Новая бронь\n"
-        f"Филиал: {booking.branch.name_ru}\n"
-        f"Место: {booking.place.title}\n"
-        f"Гостей: {booking.guests_count}\n"
-        f"Имя: {booking.customer_name or '-'}\n"
-        f"Тел: {booking.customer_phone or '-'}\n"
-        f"Комментарий: {booking.comment or '-'}\n"
-        f"Время: {timezone.localtime(booking.created_at).strftime('%d.%m %H:%M')}"
+        f"✅ Новая бронь\n"
+        f"Филиал: {b.branch}\n"
+        f"Место: {b.place.title}\n"
+        f"Гостей: {b.guests_count}\n"
+        f"Имя: {b.customer_name or '-'}\n"
+        f"Тел: {b.customer_phone or '-'}\n"
+        f"Комментарий: {b.comment or '-'}"
     )
 
-    links = (BranchTelegramLink.objects
-        .filter(branch=booking.branch, notify_bookings=True, recipient__is_active=True)
-        .select_related("recipient")
-    )
+    logger.info("BOOKING notify: booking=%s links=%s", b.id, links.count())
 
-    bot_token = settings.TG_BOT_TOKEN
-
-    sent = 0
     for link in links:
         r = link.recipient
-        send_message(
-            bot_token=bot_token,
-            chat_id=str(r.chat_id),
-            text=text,
-            parse_mode=None,
-            message_thread_id=getattr(r, "message_thread_id", None),
-        )
-        sent += 1
-
-    return {"sent": sent}
+        try:
+            send_message(
+                settings.TG_BOT_TOKEN,
+                str(r.chat_id),
+                text,
+                message_thread_id=(r.message_thread_id or None)  # <-- ВАЖНО
+            )
+        except Exception:
+            logger.exception("TG booking send failed: recipient_id=%s chat_id=%s", r.id, r.chat_id)
