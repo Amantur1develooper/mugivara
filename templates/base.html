@@ -219,7 +219,7 @@
         <a class="nav-link" style="color: white;" href="{% url 'public_site:reservation' branch.id %}">{% trans "Бронирование" %}</a>
 
         {% comment %} <a class="nav-link" style="color: white;" href="{% url 'public_site:restaurant_contacts' restaurant.slug %}">{% trans "Контакты" %}</a> {% endcomment %}
-        <a class="nav-link" style="color: white;" href="{% url 'public_site:about' %}">{% trans "О нас" %}</a>
+        {% comment %} <a class="nav-link" style="color: white;" href="{% url 'public_site:about' %}">{% trans "О нас" %}</a> {% endcomment %}
         {% endif %}
       </nav>
 
