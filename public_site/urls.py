@@ -30,7 +30,7 @@ urlpatterns = [
     path("about/", about, name="about"),
     # path("contacts/", contacts, name="contacts"),
     path("r/<slug:slug>/contacts/", restaurant_contacts, name="restaurant_contacts"),
-    path("reservation/", reservation, name="reservation"),
+    # path("reservation/", reservation, name="reservation"),
     # slug — лучше в конце
     path("<slug:slug>/", restaurant_detail, name="restaurant_detail"),
     
@@ -41,8 +41,13 @@ path("r/<slug:slug>/about/", restaurant_about, name="restaurant_about"),
 
 
 ]
-
 urlpatterns += [
     path("<int:branch_id>/reservation/", r.reservation_page, name="reservation"),
     path("<int:branch_id>/reservation/<int:place_id>/create/", r.reserve_create, name="reserve_create"),
+    path("<int:branch_id>/reservation/success/<int:booking_id>/", r.booking_success, name="booking_success"),
 ]
+
+# urlpatterns += [
+#     # path("<int:branch_id>/reservation/", r.reservation_page, name="reservation"),
+#     # path("<int:branch_id>/reservation/<int:place_id>/create/", r.reserve_create, name="reserve_create"),
+# ]
