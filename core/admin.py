@@ -108,9 +108,15 @@ class BranchAdmin(admin.ModelAdmin):
 
 @admin.register(Restaurant)
 class RestaurantAdmin(admin.ModelAdmin):
-    list_display = ("id", "name_ru", "slug", "is_active", "created_at")
-    list_filter = ("is_active",)
+    list_display = ("id", "name_ru", "slug", "is_active")
     search_fields = ("name_ru", "slug")
+    list_filter = ("is_active",)
+
+    fieldsets = (
+        (None, {"fields": ("name_ru","name_ky","name_en","slug","logo","is_active")}),
+        ("О нас", {"fields": ("about_ru","about_ky","about_en")}),
+    )
+
 
 
 @admin.register(Membership)

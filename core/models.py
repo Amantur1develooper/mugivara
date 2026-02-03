@@ -15,7 +15,9 @@ class Restaurant(TimeStampedModel):
     slug = models.SlugField(max_length=220, unique=True)
     logo = models.ImageField(upload_to="restaurants/logos/", blank=True, null=True)
     is_active = models.BooleanField(default=True)
-
+    about_ru = models.TextField(blank=True, default="")
+    about_ky = models.TextField(blank=True, default="")
+    about_en = models.TextField(blank=True, default="")
     def __str__(self):
         return self.name_ru
 

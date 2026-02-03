@@ -391,3 +391,10 @@ def restaurant_contacts(request, slug: str):
         "restaurant": restaurant,
         "branches": branches,
     })
+
+from django.shortcuts import render, get_object_or_404
+from core.models import Restaurant
+
+def restaurant_about(request, slug: str):
+    restaurant = get_object_or_404(Restaurant, slug=slug, is_active=True)
+    return render(request, "public_site/restaurant_about.html", {"restaurant": restaurant})
