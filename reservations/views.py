@@ -272,3 +272,59 @@ def booking_success(request, branch_id: int, booking_id: int):
         "branch": branch,
         "booking": booking,
     })
+
+
+
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.views.decorators.http import require_POST
+from django.contrib import messages
+from django.utils.translation import gettext as _
+from django.utils import timezone
+
+from .models import Booking, BranchStaffToken
+
+def staff_bookings(request, token: str):
+    access = get_object_or_404(BranchStaffToken, token=token, is_active=True)
+    branch = access.branch
+
+    qs = Booking.objects.filter(branch=branch).select_related("place").order_by("-id")
+
+    active = qs.filter(status__in=[Booking.Status.ACTIVE, Booking.Status.ARRIVED])
+    history = qs.exclude(status__in=[Booking.Status.ACTIVE, Booking.Status.ARRIVED])[:50]
+
+    return render(request, "public_site/staff_bookings.html", {
+        "branch": branch,
+        "access": access,
+        "active": active,
+        "history": history,
+    })
+
+
+@require_POST
+def staff_booking_set_status(request, token: str, booking_id: int, status: str):
+    access = get_object_or_404(BranchStaffToken, token=token, is_active=True)
+    branch = access.branch
+
+    booking = get_object_or_404(Booking, id=booking_id, branch=branch)
+
+    allowed = {
+        "arrived": Booking.Status.ARRIVED,
+        "close": Booking.Status.CLOSED,
+        "cancel": Booking.Status.CANCELED,
+    }
+    if status not in allowed:
+        messages.error(request, _("Неверный статус."))
+        return redirect("public_site:staff_bookings", token=token)
+
+    new_status = allowed[status]
+    booking.status = new_status
+
+    if new_status == Booking.Status.CLOSED:
+        if hasattr(booking, "closed_at"):
+            booking.closed_at = timezone.now()
+
+    booking.save(update_fields=["status"] + (["closed_at"] if hasattr(booking, "closed_at") and new_status == Booking.Status.CLOSED else []))
+
+    messages.success(request, _("Статус брони обновлён."))
+    return redirect("public_site:staff_bookings", token=token)

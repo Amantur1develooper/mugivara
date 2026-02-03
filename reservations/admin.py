@@ -1,8 +1,8 @@
-# reservations/admin.py
 from django.contrib import admin
 from django import forms
 from django.utils.html import format_html
-
+from django.contrib import admin
+from .models import BranchStaffToken
 from .models import Floor, Place, Booking
 
 
@@ -24,7 +24,7 @@ class PlaceInline(admin.TabularInline):
                 obj.photo.url,
             )
         return "—"
-
+# /s/<token>/bookings/
 
 # -----------------------------
 # Floor Admin
@@ -194,3 +194,11 @@ class BookingAdmin(admin.ModelAdmin):
     @admin.action(description="Статус → Активна")
     def mark_active(self, request, queryset):
         queryset.update(status=Booking.Status.ACTIVE)
+        
+
+
+@admin.register(BranchStaffToken)
+class BranchStaffTokenAdmin(admin.ModelAdmin):
+    list_display = ("id", "branch", "title", "is_active", "token", "created_at")
+    list_filter = ("branch", "is_active")
+    search_fields = ("title", "token", "branch__name_ru")

@@ -57,7 +57,8 @@ class Booking(TimeStampedModel):
 
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
     started_at = models.DateTimeField(default=timezone.now)
-
+    closed_at = models.DateTimeField(null=True, blank=True)
+    
     class Meta:
         ordering = ("-id",)
 
@@ -92,3 +93,24 @@ class Booking(TimeStampedModel):
 
     def __str__(self):
         return f"#{self.id} {self.branch_id} {self.place_id} {self.status}"
+
+
+import secrets
+from django.db import models
+from core.models import Branch
+
+class BranchStaffToken(models.Model):
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="staff_tokens")
+    title = models.CharField(max_length=120)  # например "Кассир Айгерим"
+    token = models.CharField(max_length=64, unique=True, db_index=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.token:
+            self.token = secrets.token_urlsafe(24)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.branch_id} | {self.title}"
