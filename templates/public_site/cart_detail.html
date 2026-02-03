@@ -1,6 +1,11 @@
 {% extends "base.html" %}
-{% load i18n i18n_attrs %}
-
+{% load i18n i18n_attrs static %}
+{% block img %}
+  <link rel="icon" type="image/jpg" sizes="32x32" href="{% static 'mini_logo.jpg' %}">
+  <link rel="icon" type="image/jpg" sizes="16x16" href="{% static 'mini_logo.jpg' %}">
+  <link rel="apple-touch-icon" href="{{ branch.cover_photo.url }}' %}">
+  <link rel="shortcut icon" href="{{ branch.cover_photo.url }}">
+{% endblock img %}
 {% block content %}
 <div class="max-w-4xl mx-auto px-4 py-6">
   <div class="flex items-start justify-between gap-4">

@@ -2,92 +2,184 @@
 {% load i18n %}
 
 {% block content %}
+<style>
+  details summary { list-style: none; cursor: pointer; }
+  details summary::-webkit-details-marker { display: none; }
+</style>
+
 <div class="max-w-6xl mx-auto px-4 py-6">
-  <div class="flex items-start justify-between gap-4">
-    <div>
-      <h1 class="text-2xl font-extrabold">{% trans "Бронирование" %}</h1>
-      <div class="text-stone-600 text-sm mt-1">{{ branch.name_ru }} · {{ branch.address }}</div>
+
+  <!-- HERO -->
+  <div class="rounded-[28px] overflow-hidden ring-1 ring-black/5 shadow-[0_18px_60px_rgba(15,23,42,.10)] bg-white/90 backdrop-blur">
+    <div class="p-5 sm:p-7 flex items-start justify-between gap-4">
+      <div class="min-w-0">
+        <div class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold bg-stone-900 text-white">
+          🗓️ {% trans "Бронирование" %}
+        </div>
+
+        <h1 class="mt-3 text-2xl sm:text-3xl font-extrabold tracking-tight text-stone-900">
+          {{ branch.name_ru }}
+        </h1>
+        <div class="mt-1 text-stone-600 text-sm">
+          {{ branch.address }}
+        </div>
+
+        <div class="mt-4 flex flex-wrap gap-2 text-xs">
+          <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200">
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span> {% trans "Свободно" %}
+          </span>
+          <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 bg-rose-50 text-rose-800 ring-1 ring-rose-200">
+            <span class="h-2 w-2 rounded-full bg-rose-500"></span> {% trans "Занято" %}
+          </span>
+          <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 bg-white ring-1 ring-stone-200 text-stone-700">
+            ℹ️ {% trans "Место станет свободным, когда кассир/админ снимет бронь" %}
+          </span>
+        </div>
+      </div>
+
+      <a href="{% url 'public_site:branch_menu' branch.id %}"
+         class="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white ring-1 ring-stone-200 hover:bg-stone-50 transition">
+        ← {% trans "Меню" %}
+      </a>
     </div>
-    <a href="{% url 'public_site:branch_menu' branch.id %}"
-       class="px-4 py-2 rounded-xl ring-1 ring-stone-200 hover:bg-stone-50">
-      ← {% trans "Меню" %}
-    </a>
   </div>
 
+  <!-- MESSAGES -->
   {% if messages %}
     <div class="mt-4 space-y-2">
       {% for m in messages %}
-        <div class="rounded-2xl p-3 ring-1 ring-stone-200 bg-white">{{ m }}</div>
+        <div class="rounded-2xl p-3 ring-1 ring-stone-200 bg-white/90 backdrop-blur text-stone-800">
+          {{ m }}
+        </div>
       {% endfor %}
     </div>
   {% endif %}
 
-  <style>
-    .card{transition:.15s}
-    .card-busy{opacity:.6; filter: grayscale(.15);}
-    details summary { list-style: none; cursor:pointer; }
-    details summary::-webkit-details-marker { display:none; }
-  </style>
-
-  <div class="mt-6 space-y-8">
+  <!-- FLOORS -->
+  <div class="mt-6 space-y-10">
     {% for f in floors_data %}
-      <section class="rounded-3xl bg-white ring-1 ring-stone-200 p-5">
-        <div class="flex items-center justify-between gap-3">
-          <h2 class="text-xl font-extrabold">{{ f.floor.name_ru }}</h2>
+      <section class="rounded-[28px] bg-white/90 backdrop-blur ring-1 ring-black/5 shadow-[0_14px_42px_rgba(15,23,42,.08)] overflow-hidden">
+
+        <!-- Floor header -->
+        <div class="px-5 sm:px-7 py-4 border-b border-stone-200 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="h-10 w-10 rounded-2xl bg-stone-900 text-white flex items-center justify-center font-extrabold">
+              {{ forloop.counter }}
+            </div>
+            <div>
+              <h2 class="text-lg sm:text-xl font-extrabold text-stone-900">
+                {{ f.floor.name_ru }}
+              </h2>
+              <div class="text-sm text-stone-500">{% trans "Этаж" %}</div>
+            </div>
+          </div>
         </div>
 
-        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {% for row in f.places %}
-            {% with p=row.place busy=row.busy %}
-              <div class="card rounded-2xl ring-1 ring-stone-200 overflow-hidden {% if busy %}card-busy bg-stone-50{% else %}bg-white{% endif %}">
-                {% if p.photo %}
-                  <img src="{{ p.photo.url }}" alt="" class="w-full h-40 object-cover">
-                {% else %}
-                  <div class="w-full h-40 bg-stone-100"></div>
-                {% endif %}
+        <!-- Cards grid -->
+        <div class="p-5 sm:p-7">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {% for row in f.places %}
+              {% with p=row.obj busy=row.busy %}
 
-                <div class="p-4">
-                  <div class="font-extrabold">
-                    {{ p.title }}
-                    <span class="text-xs font-semibold text-stone-500">
-                      · {% if p.type == "cabin" %}{% trans "Кабинка" %}{% else %}{% trans "Стол" %}{% endif %}
-                    </span>
+              <div class="group rounded-[24px] overflow-hidden ring-1 ring-stone-200 bg-white
+                          shadow-[0_10px_30px_rgba(15,23,42,.08)]
+                          hover:shadow-[0_16px_55px_rgba(15,23,42,.14)]
+                          transition">
+
+                <!-- Photo -->
+                <div class="relative h-44 bg-stone-100 overflow-hidden">
+                  {% if p.photo %}
+                    <img src="{{ p.photo.url }}" alt=""
+                         class="h-full w-full object-cover group-hover:scale-[1.03] transition duration-300"
+                         loading="lazy" decoding="async">
+                  {% else %}
+                    <div class="h-full w-full bg-gradient-to-br from-stone-100 to-stone-200"></div>
+                  {% endif %}
+
+                  <!-- badge -->
+                  <div class="absolute top-3 left-3">
+                    {% if busy %}
+                      <span class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px]
+                                   bg-rose-600 text-white ring-1 ring-white/20">
+                        <span class="h-2 w-2 rounded-full bg-white"></span>
+                        {% trans "Занято" %}
+                      </span>
+                    {% else %}
+                      <span class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px]
+                                   bg-emerald-600 text-white ring-1 ring-white/20">
+                        <span class="h-2 w-2 rounded-full bg-white"></span>
+                        {% trans "Свободно" %}
+                      </span>
+                    {% endif %}
                   </div>
-                  <div class="text-sm text-stone-500 mt-1">{% trans "Мест" %}: {{ p.seats }}</div>
+                </div>
+
+                <!-- Body -->
+                <div class="p-4 sm:p-5">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                      <div class="text-lg font-extrabold text-stone-900 truncate">
+                        {{ p.title }}
+                      </div>
+                      <div class="mt-1 text-sm text-stone-500">
+                        {% if p.type == "cabin" %}🛋️ {% trans "Кабинка" %}{% else %}🍽️ {% trans "Стол" %}{% endif %}
+                        · {% trans "Мест" %}: <b class="text-stone-900">{{ p.seats }}</b>
+                      </div>
+                    </div>
+                  </div>
 
                   {% if busy %}
-                    <div class="mt-3 inline-flex px-3 py-2 rounded-xl bg-rose-600 text-white text-sm font-semibold">
-                      {% trans "Занято" %}
+                    <div class="mt-4 text-sm text-stone-500">
+                      {% trans "Это место уже занято. Выберите другое." %}
                     </div>
                   {% else %}
-                    <details class="mt-3">
-                      <summary class="inline-flex px-3 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold">
-                        {% trans "Забронировать" %}
+                    <!-- раскрывающаяся форма -->
+                    <details class="mt-4">
+                      <summary class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl
+                                      bg-stone-900 text-white font-semibold hover:bg-stone-800 transition">
+                        ✍️ {% trans "Забронировать" %}
                       </summary>
 
-                      <form class="mt-3 grid gap-2" method="post"
-                            action="{% url 'public_site:reserve_create' branch.id p.id %}">
-                        {% csrf_token %}
-                        <input name="name" placeholder="{% trans 'ФИО (необязательно)' %}"
-                               class="w-full border border-stone-300 rounded-xl px-3 py-2">
-                        <input name="phone" placeholder="{% trans 'Телефон (необязательно)' %}"
-                               class="w-full border border-stone-300 rounded-xl px-3 py-2">
-                        <input name="guests" type="number" min="1" value="2"
-                               class="w-full border border-stone-300 rounded-xl px-3 py-2">
-                        <input name="comment" placeholder="{% trans 'Комментарий (необязательно)' %}"
-                               class="w-full border border-stone-300 rounded-xl px-3 py-2">
+                      <div class="mt-3 rounded-2xl bg-stone-50 ring-1 ring-stone-200 p-4">
+                        <form class="grid gap-2" method="post"
+                              action="{% url 'public_site:reserve_create' branch.id p.id %}">
+                          {% csrf_token %}
 
-                        <button class="px-4 py-3 rounded-2xl bg-stone-900 text-white font-semibold">
-                          {% trans "Подтвердить бронь" %}
-                        </button>
-                      </form>
+                          <div class="grid sm:grid-cols-2 gap-2">
+                            <input name="name" placeholder="{% trans 'ФИО (необязательно)' %}"
+                                   class="w-full border border-stone-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-stone-300">
+
+                            <input name="phone" placeholder="{% trans 'Телефон (необязательно)' %}"
+                                   class="w-full border border-stone-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-stone-300">
+                          </div>
+
+                          <div class="grid sm:grid-cols-2 gap-2">
+                            <input name="guests" type="number" min="1" value="2"
+                                   class="w-full border border-stone-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-stone-300">
+                            <input name="comment" placeholder="{% trans 'Комментарий (необязательно)' %}"
+                                   class="w-full border border-stone-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-stone-300">
+                          </div>
+
+                          <button class="mt-1 px-4 py-3 rounded-2xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition">
+                            ✅ {% trans "Подтвердить бронь" %}
+                          </button>
+
+                          <div class="text-xs text-stone-500 mt-1">
+                            {% trans "После брони место будет занято для всех до снятия админом/кассиром." %}
+                          </div>
+                        </form>
+                      </div>
                     </details>
                   {% endif %}
+
                 </div>
               </div>
-            {% endwith %}
-          {% endfor %}
+
+              {% endwith %}
+            {% endfor %}
+          </div>
         </div>
+
       </section>
     {% endfor %}
   </div>

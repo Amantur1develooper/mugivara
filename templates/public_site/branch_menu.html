@@ -1,6 +1,11 @@
 {% extends "base.html" %}
 {% load static i18n i18n_attrs %}
-
+{% block img %}
+  <link rel="icon" type="image/jpg" sizes="32x32" href="{% static 'mini_logo.jpg' %}">
+  <link rel="icon" type="image/jpg" sizes="16x16" href="{% static 'mini_logo.jpg' %}">
+  <link rel="apple-touch-icon" href="{{ branch.cover_photo.url }}' %}">
+  <link rel="shortcut icon" href="{{ branch.cover_photo.url }}">
+{% endblock img %}
 {% block content %}
 <style>  body{
     background:url("{{ branch.cover_photo.url }}") center / cover no-repeat fixed; 

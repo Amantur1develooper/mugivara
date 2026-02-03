@@ -5,6 +5,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdn.tailwindcss.com"></script>
+
+{% block img %}
+  <link rel="icon" type="image/jpg" sizes="32x32" href="{% static 'mini_logo.jpg' %}">
+  <link rel="icon" type="image/jpg" sizes="16x16" href="{% static 'mini_logo.jpg' %}">
+  <link rel="apple-touch-icon" href="{% static 'mini_logo.jpg' %}">
+  <link rel="shortcut icon" href="{% static 'logo.jpg' %}">
+{% endblock img %}
   <title>{% block title %}Онлайн меню Санжи{% endblock %}</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
