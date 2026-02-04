@@ -241,7 +241,7 @@ def checkout(request, branch_id: int):
             line_total=bi.price * qty
         )
 
-    notify_new_order.delay(order.id)
+    # notify_new_order.delay(order.id)
     clear_cart(request, branch.id)
     return redirect("public_site:checkout_success", branch_id=branch.id, order_id=order.id)
 from urllib.parse import quote
