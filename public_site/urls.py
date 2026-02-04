@@ -35,16 +35,19 @@ urlpatterns = [
     path("<slug:slug>/", restaurant_detail, name="restaurant_detail"),
     
     path("<int:branch_id>/hall/", hall_plan, name="hall_plan"),
-path("place/<int:place_id>/move/", place_move, name="place_move"),
-path("booking/<int:booking_id>/status/<str:status>/", booking_set_status, name="booking_set_status"),
-path("r/<slug:slug>/about/", restaurant_about, name="restaurant_about"),
+    path("place/<int:place_id>/move/", place_move, name="place_move"),
+    path("booking/<int:booking_id>/status/<str:status>/", booking_set_status, name="booking_set_status"),
+    
+    path("<int:branch_id>/reservation/", r.reservation_page, name="reservation"),
+    path("<int:branch_id>/reservation/<int:place_id>/create/", r.reserve_create, name="reserve_create"),
+    path("<int:branch_id>/reservation/success/<int:booking_id>/", r.booking_success, name="booking_success"),
+    
+    path("r/<slug:slug>/about/", restaurant_about, name="restaurant_about"),
 
 
 ]
 urlpatterns += [
-    path("<int:branch_id>/reservation/", r.reservation_page, name="reservation"),
-    path("<int:branch_id>/reservation/<int:place_id>/create/", r.reserve_create, name="reserve_create"),
-    path("<int:branch_id>/reservation/success/<int:booking_id>/", r.booking_success, name="booking_success"),
+
     
     
     path("s/<str:token>/bookings/", r.staff_bookings, name="staff_bookings"),
