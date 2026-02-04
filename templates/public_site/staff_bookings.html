@@ -6,8 +6,8 @@
 
   <div class="flex items-start justify-between gap-4">
     <div>
-      <h1 class="text-2xl font-extrabold">{% trans "Управление бронями" %}</h1>
-      <div class="text-stone-600 text-sm mt-1">{{ branch.name }} · {{ access.title }}</div>
+      <h1 class="text-2xl text-white font-extrabold">{% trans "Управление бронями" %}</h1>
+      <div class="text-stone-600 text-white text-sm mt-1">{{ branch.name }} · {{ access.title }}</div>
     </div>
   </div>
 
@@ -20,7 +20,7 @@
   {% endif %}
 
   <div class="mt-6">
-    <h2 class="text-lg font-extrabold">{% trans "Активные брони" %}</h2>
+    <h2 class="text-white font-extrabold">{% trans "Активные брони" %}</h2>
 
     {% if active %}
       <div class="mt-3 space-y-3">
@@ -77,7 +77,7 @@
   </div>
 
   <div class="mt-10">
-    <h2 class="text-lg font-extrabold">{% trans "История" %}</h2>
+    <h2 class="text-lg text-white font-extrabold">{% trans "История" %}</h2>
     <div class="mt-3 rounded-2xl bg-white ring-1 ring-stone-200 overflow-hidden">
       <div class="divide-y divide-stone-200">
         {% for b in history %}
