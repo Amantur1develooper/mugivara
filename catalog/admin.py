@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django import forms
-
+from core.models import Branch
+from catalog.models import BranchMenuSet
 from .models import MenuSet, Category, Item, ItemCategory
 from core.models import Restaurant
 from django.contrib.admin.views.autocomplete import AutocompleteJsonView
@@ -29,13 +30,14 @@ class CategoryInline(admin.TabularInline):
 class ItemCategoryInlineForm(forms.ModelForm):
     class Meta:
         model = ItemCategory
+        
         fields = ("category", "sort_order")
 
 
 class ItemCategoryInline(admin.TabularInline):
     model = ItemCategory
     form = ItemCategoryInlineForm
-    extra = 0
+    extra = 1
     fields = ("category", "sort_order")
 
     def get_formset(self, request, obj=None, **kwargs):
@@ -58,14 +60,11 @@ class MenuSetAdmin(admin.ModelAdmin):
 
 
 
-
-from core.models import Branch
-from catalog.models import BranchMenuSet
-
 @admin.register(Item)
 class ItemAdmin(admin.ModelAdmin):
     search_fields = ("name_ru", "name_ky", "name_en")
-
+    inlines = (ItemCategoryInline,) 
+    
     def get_search_results(self, request, queryset, search_term):
         qs, use_distinct = super().get_search_results(request, queryset, search_term)
 
