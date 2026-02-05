@@ -71,3 +71,50 @@ def cart_details(branch, cart: dict):
 
     rows.sort(key=lambda r: (r["branch_item"].sort_order, r["branch_item"].id))
     return rows, subtotal, qty_total
+
+
+
+from decimal import Decimal
+from catalog.models import BranchItem
+
+def get_table_cart(request, token: str):
+    data = request.session.get("table_cart", {})
+    return data.get(token, {})
+
+def set_table_cart(request, token: str, cart: dict):
+    data = request.session.get("table_cart", {})
+    data[token] = cart
+    request.session["table_cart"] = data
+    request.session.modified = True
+
+def clear_table_cart(request, token: str):
+    data = request.session.get("table_cart", {})
+    data.pop(token, None)
+    request.session["table_cart"] = data
+    request.session.modified = True
+
+def table_cart_totals(branch, cart: dict):
+    """
+    cart: { "branch_item_id": qty }
+    """
+    ids = [int(k) for k in cart.keys()]
+    items = BranchItem.objects.filter(branch=branch, id__in=ids).select_related("item")
+    items_map = {str(x.id): x for x in items}
+
+    rows = []
+    subtotal = Decimal("0")
+    qty_total = 0
+
+    for bi_id, qty in cart.items():
+        bi = items_map.get(str(bi_id))
+        if not bi:
+            continue
+        q = int(qty)
+        if q <= 0:
+            continue
+        line_total = bi.price * q
+        subtotal += line_total
+        qty_total += q
+        rows.append({"branch_item": bi, "qty": q, "line_total": line_total})
+
+    return rows, subtotal, qty_total

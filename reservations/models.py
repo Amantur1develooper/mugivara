@@ -1,6 +1,8 @@
 from django.db import models, transaction
 from django.utils import timezone
 from core.models import Branch, TimeStampedModel
+import secrets
+from core.models import Branch
 
 class Floor(TimeStampedModel):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="floors")
@@ -30,12 +32,15 @@ class Place(TimeStampedModel):
     # для плана зала (если нужно)
     x = models.IntegerField(default=40)
     y = models.IntegerField(default=40)
-
-    # ✅ фото стола/кабинки
     photo = models.ImageField(upload_to="places/photos/", blank=True, null=True)
-
+    token = models.CharField(max_length=32, unique=True, blank=True, db_index=True)
     is_active = models.BooleanField(default=True)
 
+    def save(self, *args, **kwargs):
+        if not self.token:
+            self.token = secrets.token_urlsafe(10)[:20]  # коротко и норм
+        super().save(*args, **kwargs)
+        
     def __str__(self):
         return self.title
 
@@ -94,10 +99,6 @@ class Booking(TimeStampedModel):
     def __str__(self):
         return f"#{self.id} {self.branch_id} {self.place_id} {self.status}"
 
-
-import secrets
-from django.db import models
-from core.models import Branch
 
 class BranchStaffToken(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="staff_tokens")

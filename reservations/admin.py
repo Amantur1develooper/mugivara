@@ -4,7 +4,7 @@ from django.utils.html import format_html
 from django.contrib import admin
 from .models import BranchStaffToken
 from .models import Floor, Place, Booking
-
+from django.utils.safestring import mark_safe
 
 # -----------------------------
 # Inlines
@@ -12,7 +12,7 @@ from .models import Floor, Place, Booking
 class PlaceInline(admin.TabularInline):
     model = Place
     extra = 0
-    fields = ("title", "type", "seats", "x", "y", "photo_preview", "photo", "is_active")
+    fields = ("title", "type", "seats",'token', "x", "y", "photo_preview", "photo", "is_active")
     readonly_fields = ("photo_preview",)
     ordering = ("id",)
 
@@ -61,7 +61,7 @@ class FloorAdmin(admin.ModelAdmin):
 # -----------------------------
 @admin.register(Place)
 class PlaceAdmin(admin.ModelAdmin):
-    list_display = ("id", "title", "type", "seats", "floor", "branch", "is_active", "photo_thumb", "created_at")
+    list_display = ("id", "title",'token',"type", "seats", "floor", "branch", "is_active", "photo_thumb", "created_at")
     list_filter = ("type", "is_active", "floor__branch", "floor")
     search_fields = ("title", "floor__name_ru", "floor__branch__name")
     list_editable = ("is_active",)
@@ -73,12 +73,16 @@ class PlaceAdmin(admin.ModelAdmin):
     readonly_fields = ("photo_thumb_big", "created_at", "updated_at")
 
     fieldsets = (
-        ("Основное", {"fields": ("floor", "title", "type", "seats", "is_active")}),
+        ("Основное", {"fields": ("floor", 'token', "title", "type", "seats", "is_active")}),
         ("План зала", {"fields": ("x", "y")}),
         ("Фото", {"fields": ("photo_thumb_big", "photo")}),
         ("Служебное", {"fields": ("created_at", "updated_at")}),
     )
-
+    def open_menu_link(self, obj):
+        if not obj.token:
+            return "-"
+        return mark_safe(f'<a href="/t/{obj.token}/menu/" target="_blank">Открыть меню</a>')
+    open_menu_link.short_description = "Меню стола"
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.select_related("floor", "floor__branch")

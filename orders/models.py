@@ -1,6 +1,6 @@
 from django.db import models
-
-# Create your models here.
+# orders/models.py
+from reservations.models import Place
 from django.db import models
 from core.models import Branch, TimeStampedModel
 from tables.models import TableSession
@@ -19,9 +19,19 @@ class Order(TimeStampedModel):
         READY = "ready", "Готов"
         CLOSED = "closed", "Закрыт"
         CANCELLED = "cancelled", "Отменён"
+        # class Type(models.TextChoices):
+        # DELIVERY = "delivery", "Доставка"
+        # PICKUP = "pickup", "Самовывоз"
+        # TABLE = "table", "В зале"   # ✅
 
+    type = models.CharField(max_length=20, choices=Type.choices, default=Type.PICKUP)
+
+    # ✅ на какой стол
+    table_place = models.ForeignKey(
+        Place, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="orders"
+    )
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="orders")
-    type = models.CharField(max_length=20, choices=Type.choices)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW)
 
     table_session = models.ForeignKey(TableSession, on_delete=models.SET_NULL, null=True, blank=True)
@@ -46,6 +56,8 @@ class Order(TimeStampedModel):
     payment_status = models.CharField(
         max_length=10, choices=PaymentStatus.choices, default=PaymentStatus.UNPAID
     )
+    
+    
 class OrderItem(TimeStampedModel):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
     item = models.ForeignKey(Item, on_delete=models.PROTECT)
@@ -53,3 +65,5 @@ class OrderItem(TimeStampedModel):
     price_snapshot = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     line_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+

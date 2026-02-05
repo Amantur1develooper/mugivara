@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-10">
+  <div class="rounded-3xl bg-white ring-1 ring-stone-200 p-7 shadow">
+    <h1 class="text-2xl font-extrabold">{% trans "Заказ отправлен!" %}</h1>
+    <div class="mt-2 text-stone-600">
+      {% trans "Стол:" %} <b>{{ place.title }}</b><br>
+      {% trans "Номер заказа:" %} <b>#{{ order.id }}</b><br>
+      {% trans "Сумма:" %} <b>{{ order.total_amount }}</b> {% trans "сом" %}
+    </div>
+
+    <div class="mt-6 flex gap-3 flex-wrap">
+      <a href="{% url 'table_menu' token %}"
+         class="px-4 py-3 rounded-2xl bg-stone-900 text-white font-semibold">
+        {% trans "Вернуться в меню" %}
+      </a>
+
+      {% if branch.phone %}
+        <a href="https://wa.me/{{ branch.phone|cut:'+' }}?text=Здравствуйте!%20У%20нас%20вопрос%20по%20заказу%20#{{ order.id }}%20(%20{{ place.title }}%20)"
+           class="px-4 py-3 rounded-2xl ring-1 ring-stone-200 hover:bg-stone-50">
+          WhatsApp
+        </a>
+      {% endif %}
+
+      {% if branch.telegram_username %}
+        <a href="https://t.me/{{ branch.telegram_username }}"
+           class="px-4 py-3 rounded-2xl ring-1 ring-stone-200 hover:bg-stone-50">
+          Telegram
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

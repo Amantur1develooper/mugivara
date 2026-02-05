@@ -97,15 +97,15 @@ class BranchItem(TimeStampedModel):
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     is_available = models.BooleanField(default=True)
     sort_order = models.PositiveIntegerField(default=0)  # нумерация блюда в филиале
-
+    delivery_available = models.BooleanField(default=True)
     class Meta:
         unique_together = ("branch", "item")
         ordering = ("sort_order", "id")
         verbose_name = "Филиал"
         verbose_name_plural = "Филиал"
     def __str__(self):
-        # было: return (self.branch.name_ru + '-')  (без item)
         return f"{self.branch.name_ru} — {self.item.name_ru} "
+    
     
 class BranchCategoryItem(TimeStampedModel):
     """Порядок блюд внутри конкретной категории филиала."""
