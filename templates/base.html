@@ -259,11 +259,13 @@
         </div>
 
         <div class="links">
+         
            {% if branch %}
           <a class="link" href="{% url 'public_site:reservation' branch.id %}">{% trans "Бронирование" %}</a>
           {% comment %} <a class="link" href="{% url 'public_site:contacts' %}">{% trans "Контакты" %}</a> {% endcomment %}
           <a class="link" href="{% url 'public_site:about' %}">{% trans "О нас" %}</a>
           {% endif %}
+          
         </div>
 
         <div class="langbox">
@@ -290,7 +292,9 @@
     </div>
   </div>
 
- 
+  {% if table %}
+          d
+          {% else %}
   {% if branch %}
     <a href="{% url 'public_site:cart_detail' branch.id %}"
        class="sj-cart-fab "
@@ -315,7 +319,7 @@
         {% if cart_qty %}{{ cart_qty }}{% else %}0{% endif %}
       </span>
     </a>
-
+ {% endif %}
 
   {% endif %}
 

@@ -106,6 +106,7 @@ def home(request):
             "hours_text": hours_text,
             "branch":delivery_branches, #?
             "branches_count": len(branches),
+            "table":True,
         })
 
     return render(request, "public_site/home.html", {"cards": cards, "q": q, "open_now": open_now})

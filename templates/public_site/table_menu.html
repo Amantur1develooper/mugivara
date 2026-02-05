@@ -20,7 +20,7 @@
   <section class="mt-6">
     {% for c in menu %}
       <div class="mb-8">
-        <h2 class="text-xl font-extrabold mb-3">{% t c.branch_category.category "name" %}</h2>
+        <h2 class="text-xl text-white font-extrabold mb-3">{% t c.branch_category.category "name" %}</h2>
 
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {% for row in c.items %}
@@ -55,9 +55,10 @@
 <!-- ✅ плавающая корзина -->
 <a href="{% url 'table_cart' token %}"
    class="fixed bottom-5 right-5 z-50 rounded-full bg-stone-900 text-white shadow-lg px-4 py-3 flex items-center gap-2">
-  🧺 <span data-cart-badge>{{ cart_qty }}</span>
-  <span class="hidden sm:inline">· <span data-cart-total>{{ cart_total }}</span> {% trans "сом" %}</span>
+  🍽️ <span data-cart-badge>{{ cart_qty }}</span>
+  <span class="hidden sm:inline">· {{ cart_total }} сом</span>
 </a>
+
 
 <script>
   function getCookie(name) {

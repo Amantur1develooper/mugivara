@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-6">
+  <div class="rounded-3xl bg-white ring-1 ring-stone-200 p-5 shadow">
+    <div class="text-sm text-stone-500">Подтверждение · {{ branch.name_ru }} · {{ place.title }}</div>
+    <h1 class="text-2xl font-extrabold mt-1">Подтвердите заказ</h1>
+  </div>
+
+  <div class="mt-5 space-y-3">
+    {% for r in rows %}
+      <div class="rounded-3xl bg-white ring-1 ring-stone-200 p-4 flex justify-between">
+        <div>
+          <div class="font-semibold">{{ r.branch_item.item.name_ru }}</div>
+          <div class="text-sm text-stone-500">{{ r.branch_item.price }} сом · x{{ r.qty }}</div>
+        </div>
+        <div class="font-extrabold">{{ r.line_total }} сом</div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="mt-6 rounded-3xl bg-white ring-1 ring-stone-200 p-5 shadow flex items-center justify-between">
+    <div class="text-stone-600">Итого</div>
+    <div class="text-xl font-extrabold">{{ cart_total }} сом</div>
+  </div>
+
+  <form method="post" class="mt-6 rounded-3xl bg-white ring-1 ring-stone-200 p-5 shadow space-y-3">
+    {% csrf_token %}
+    <div>
+      <label class="text-sm text-stone-600">Имя</label>
+      <input name="customer_name" class="mt-1 w-full rounded-2xl border border-stone-300 px-3 py-3" placeholder="Например: Айбек">
+    </div>
+    <div>
+      <label class="text-sm text-stone-600">Телефон</label>
+      <input name="customer_phone" class="mt-1 w-full rounded-2xl border border-stone-300 px-3 py-3" placeholder="+996...">
+    </div>
+    <div>
+      <label class="text-sm text-stone-600">Комментарий</label>
+      <textarea name="comment" class="mt-1 w-full rounded-2xl border border-stone-300 px-3 py-3" rows="3" placeholder="Например: без лука"></textarea>
+    </div>
+
+    <button class="w-full px-5 py-4 rounded-3xl bg-stone-900 text-white font-extrabold shadow">
+      🚀 Отправить на кухню
+    </button>
+  </form>
+</div>
+{% endblock %}

@@ -15,6 +15,7 @@ urlpatterns += i18n_patterns(
     path("admin/", admin.site.urls),
     path("", include("public_site.urls")),
     
+    
      path("t/<str:token>/menu/", table_menu, name="table_menu"),
     path("t/<str:token>/add/<int:branch_item_id>/", table_add_to_cart, name="table_add_to_cart"),
     path("t/<str:token>/cart/", table_cart, name="table_cart"),
