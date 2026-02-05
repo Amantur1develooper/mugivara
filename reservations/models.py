@@ -33,13 +33,18 @@ class Place(TimeStampedModel):
     x = models.IntegerField(default=40)
     y = models.IntegerField(default=40)
     photo = models.ImageField(upload_to="places/photos/", blank=True, null=True)
-    token = models.CharField(max_length=32, unique=True, blank=True, )
+    token = models.CharField(max_length=32, default="", blank=True, )
     is_active = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):
         if not self.token:
-            self.token = secrets.token_urlsafe(10)[:20]  # коротко и норм
+            self.token = secrets.token_urlsafe(10)[:20]
         super().save(*args, **kwargs)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["token"], name="uniq_place_token"),
+        ]
         
     def __str__(self):
         return self.title
