@@ -1,7 +1,7 @@
 from celery import shared_task
 from django.conf import settings
 from django.utils import timezone
-from django.utils.html import escape
+from decimal import Decimal
 
 from integrations.models import TelegramRecipient
 from integrations.telegram import send_message
@@ -9,144 +9,109 @@ from orders.models import Order
 
 
 def _tg_token() -> str:
-    # чтобы работало и с TG_BOT_TOKEN, и с TELEGRAM_BOT_TOKEN
     return (getattr(settings, "TG_BOT_TOKEN", "") or getattr(settings, "TELEGRAM_BOT_TOKEN", "") or "").strip()
 
 
-def _kind_header(order: Order) -> str:
-    """
-    🛵🚚 Доставка (онлайн)
-    🪑🍽️ Стол (в заведении)
-    🥡 Самовывоз
-    """
-    # если заказ привязан к столу — считаем "стол" (даже если вдруг тип не тот)
-    if getattr(order, "table_place_id", None):
-        return "🪑🍽️ <b>НОВЫЙ ЗАКАЗ СО СТОЛА</b>"
-
-    if order.type == Order.Type.DELIVERY:
-        return "🛵🚚 <b>НОВЫЙ ЗАКАЗ: ДОСТАВКА (онлайн)</b>"
-
-    if order.type == Order.Type.PICKUP:
-        return "🥡 <b>НОВЫЙ ЗАКАЗ: САМОВЫВОЗ</b>"
-
-    # DINE_IN без конкретного стола (на всякий)
-    return "🍽️ <b>НОВЫЙ ЗАКАЗ: В ЗАВЕДЕНИИ</b>"
-
-
-def _status_icon(order: Order) -> str:
-    m = {
-        Order.Status.NEW: "🆕",
-        Order.Status.ACCEPTED: "✅",
-        Order.Status.COOKING: "👨‍🍳",
-        Order.Status.READY: "🍽️",
-        Order.Status.CLOSED: "🏁",
-        Order.Status.CANCELLED: "❌",
-    }
-    return m.get(order.status, "🔔")
-
-
 def _money(v) -> str:
+    if v is None:
+        return ""
+    # красиво: 980 вместо 980.00
     try:
-        return f"{v:.0f} сом"
+        v = Decimal(str(v))
+        if v == v.to_integral():
+            return f"{int(v)} сом"
+        return f"{v.normalize()} сом"
     except Exception:
         return f"{v} сом"
 
 
-def _order_text(order: Order, title_override: str | None = None) -> str:
-    # безопасно для HTML
-    branch_name = escape(getattr(order.branch, "name_ru", str(order.branch)))
-    branch_addr = escape(getattr(order.branch, "address", "") or "")
-    created = timezone.localtime(order.created_at).strftime("%d.%m.%Y %H:%M")
+def _thread_id_for(r: TelegramRecipient):
+    # thread_id только для супергрупп с темами (-100...)
+    chat_id = str(getattr(r, "chat_id", "") or "")
+    if not chat_id.startswith("-100"):
+        return None
+    return getattr(r, "message_thread_id", None) or None
 
-    header = title_override or _kind_header(order)
-    status_line = f"{_status_icon(order)} <b>Статус:</b> {escape(order.get_status_display())}"
 
+def _order_header(order: Order) -> str:
+    # если есть стол — это заказ в зале
+    if getattr(order, "table_place_id", None):
+        return "🪑 НОВЫЙ ЗАКАЗ В ЗАВЕДЕНИИ"
+
+    if order.type == Order.Type.DELIVERY:
+        return "🛵 ДОСТАВКА — НОВЫЙ ЗАКАЗ"
+    if order.type == Order.Type.PICKUP:
+        return "🥡 САМОВЫВОЗ — НОВЫЙ ЗАКАЗ"
+    if order.type == Order.Type.DINE_IN:
+        return "🪑 НОВЫЙ ЗАКАЗ В ЗАВЕДЕНИИ"
+
+    return "🔔 НОВЫЙ ЗАКАЗ"
+
+
+def _order_text(order: Order) -> str:
     lines = []
-    lines.append(header)
-    lines.append(f"🧾 <b>Заказ №</b> <code>{order.id}</code>")
-    lines.append(f"🏪 <b>Филиал:</b> {branch_name}" + (f"\n📍 <b>Адрес:</b> {branch_addr}" if branch_addr else ""))
-    lines.append(status_line)
+    lines.append(_order_header(order))
+    lines.append(f"🧾 Заказ №{order.id}")
+    lines.append(f"🏪 Филиал: {getattr(order.branch, 'name_ru', str(order.branch))}")
 
-    # Стол
+    # тип/статус по-русски
+    if hasattr(order, "get_type_display"):
+        lines.append(f"📌 Тип: {order.get_type_display()}")
+    if hasattr(order, "get_status_display"):
+        lines.append(f"🆕 Статус: {order.get_status_display()}")
+
+    # стол
     if getattr(order, "table_place_id", None) and getattr(order, "table_place", None):
-        table_title = escape(getattr(order.table_place, "title", "Стол"))
-        lines.append(f"🪑 <b>Стол:</b> {table_title}")
+        lines.append(f"🪑 Стол: {order.table_place.title}")
 
-    # Клиент
-    cn = escape(getattr(order, "customer_name", "") or "")
-    cp = escape(getattr(order, "customer_phone", "") or "")
-    if cn:
-        lines.append(f"👤 <b>Имя:</b> {cn}")
-    if cp:
-        lines.append(f"📞 <b>Телефон:</b> {cp}")
-
-    # Доставка
-    addr = escape(getattr(order, "delivery_address", "") or "")
-    if order.type == Order.Type.DELIVERY and addr:
-        lines.append(f"📦 <b>Доставка куда:</b> {addr}")
-
-    # Оплата
-    pm = escape(getattr(order, "get_payment_method_display", lambda: "")() or "")
-    ps = escape(getattr(order, "get_payment_status_display", lambda: "")() or "")
+    # оплата
+    pm = order.get_payment_method_display() if hasattr(order, "get_payment_method_display") else ""
+    ps = order.get_payment_status_display() if hasattr(order, "get_payment_status_display") else ""
     if pm or ps:
         if pm and ps:
-            lines.append(f"💳 <b>Оплата:</b> {pm} · {ps}")
+            lines.append(f"💳 Оплата: {pm} / {ps}")
         elif pm:
-            lines.append(f"💳 <b>Оплата:</b> {pm}")
+            lines.append(f"💳 Оплата: {pm}")
         else:
-            lines.append(f"💳 <b>Статус оплаты:</b> {ps}")
+            lines.append(f"💳 Статус оплаты: {ps}")
 
-    # Коммент
-    comment = escape(getattr(order, "comment", "") or "")
-    if comment:
-        lines.append(f"📝 <b>Комментарий:</b> {comment}")
+    # контакт/адрес
+    if getattr(order, "customer_phone", ""):
+        lines.append(f"📞 Телефон: {order.customer_phone}")
+
+    if order.type == Order.Type.DELIVERY and getattr(order, "delivery_address", ""):
+        lines.append(f"📍 Адрес: {order.delivery_address}")
+
+    if getattr(order, "comment", ""):
+        lines.append(f"📝 Комментарий: {order.comment}")
 
     # позиции
     lines.append("")
-    lines.append("🧾 <b>Состав заказа:</b>")
-
-    # items__item уже prefetch в query
+    lines.append("🧾 Состав заказа:")
     for it in order.items.select_related("item").all():
-        name = escape(getattr(it.item, "name_ru", str(it.item)))
+        name = getattr(it.item, "name_ru", str(it.item))
         qty = getattr(it, "qty", 1)
         lt = getattr(it, "line_total", None)
         if lt is None:
             lines.append(f"• {name} × {qty}")
         else:
-            lines.append(f"• {name} × {qty} — <b>{_money(lt)}</b>")
+            lines.append(f"• {name} × {qty} — {_money(lt)}")
 
-    total = getattr(order, "total_amount", None)
-    if total is not None:
+    if getattr(order, "total_amount", None) is not None:
         lines.append("")
-        lines.append(f"💰 <b>ИТОГО:</b> <b>{_money(total)}</b>")
+        lines.append(f"💰 Итого: {_money(order.total_amount)}")
 
-    lines.append("")
-    lines.append(f"⏰ <i>{created}</i>")
+    created = timezone.localtime(order.created_at).strftime("%d.%m.%Y %H:%M")
+    lines.append(f"⏰ {created}")
 
     return "\n".join(lines)
-
-
-def _thread_id_for(recipient: TelegramRecipient):
-    """
-    message_thread_id нужно ТОЛЬКО для тем (topics) в супергруппах.
-    Для лички/обычных групп — ставим None.
-    """
-    kind = (getattr(recipient, "kind", "") or "").lower()
-    chat_id = str(getattr(recipient, "chat_id", "") or "")
-
-    # если chat_id не супергруппа (-100...), то thread не нужен
-    if not chat_id.startswith("-100"):
-        return None
-
-    # для супергруппы может быть тема
-    return getattr(recipient, "message_thread_id", None) or None
 
 
 @shared_task
 def notify_new_order(order_id: int):
     token = _tg_token()
     if not token:
-        return "No TG_BOT_TOKEN/TELEGRAM_BOT_TOKEN"
+        return "No TG token"
 
     order = (
         Order.objects
@@ -170,7 +135,7 @@ def notify_new_order(order_id: int):
                 bot_token=token,
                 chat_id=str(r.chat_id),
                 text=text,
-                parse_mode="HTML",
+                parse_mode=None,  # ✅ теги не нужны
                 message_thread_id=_thread_id_for(r),
             )
             sent += 1
