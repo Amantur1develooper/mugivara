@@ -33,7 +33,7 @@ class Place(TimeStampedModel):
     x = models.IntegerField(default=40)
     y = models.IntegerField(default=40)
     photo = models.ImageField(upload_to="places/photos/", blank=True, null=True)
-    token = models.CharField(max_length=32, unique=True, blank=True, db_index=True)
+    token = models.CharField(max_length=32, unique=True, blank=True, )
     is_active = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):
