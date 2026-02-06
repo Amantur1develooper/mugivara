@@ -89,6 +89,12 @@
                       WhatsApp
                     </a>
                   {% endif %}
+                    {% if b.map_url %}
+  <a href="{{ branch.map_url }}" target="_blank" rel="noopener"
+     class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-stone-900 text-white font-semibold">
+    📍 Как добраться
+  </a>
+{% endif %}
 
                   <a href="{% url 'public_site:branch_menu' b.id %}"
                      class="px-3 py-2 rounded-xl ring-1 ring-stone-200 hover:bg-stone-50 text-sm font-semibold">

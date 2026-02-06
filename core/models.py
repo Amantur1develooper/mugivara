@@ -27,11 +27,11 @@ class Branch(TimeStampedModel):
     name_ru = models.CharField(max_length=200)
     name_ky = models.CharField(max_length=200, blank=True, default="")
     name_en = models.CharField(max_length=200, blank=True, default="")
-    
+    map_url = models.URLField("Ссылка на карту", blank=True, default="")
     address = models.CharField(max_length=300, blank=True)
     phone = models.CharField(max_length=50, blank=True)
     is_active = models.BooleanField(default=True)
-
+    
     delivery_enabled = models.BooleanField(default=False)
     min_order_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)

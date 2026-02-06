@@ -58,14 +58,6 @@ urlpatterns = [
 
 ]
 urlpatterns += [
-
-    
-    
     path("s/<str:token>/bookings/", r.staff_bookings, name="staff_bookings"),
     path("s/<str:token>/booking/<int:booking_id>/status/<str:status>/", r.staff_booking_set_status, name="staff_booking_set_status"),
 ]
-
-# urlpatterns += [
-#     # path("<int:branch_id>/reservation/", r.reservation_page, name="reservation"),
-#     # path("<int:branch_id>/reservation/<int:place_id>/create/", r.reserve_create, name="reserve_create"),
-# ]

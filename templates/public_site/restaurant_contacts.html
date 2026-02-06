@@ -93,6 +93,12 @@
         </div>
 
         <div class="mt-3 flex flex-wrap gap-2">
+                  {% if b.map_url %}
+  <a href="{{ b.map_url }}" target="_blank" 
+     class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-stone-900 text-white font-semibold">
+    📍 Как добраться
+  </a>
+{% endif %}
           {% if b.phone %}
             <a href="tel:{{ b.phone }}"
                class="px-3 py-2 rounded-xl bg-stone-900 text-white text-sm font-semibold">
