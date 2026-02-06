@@ -183,3 +183,47 @@ def notify_order_status(self, order_id: int, old_status: str, new_status: str):
             print("TG ERROR:", r.chat_id, e)
 
     return f"sent={sent}"
+# $mPx32u5
+
+from celery import shared_task
+from django.utils import timezone
+from django.conf import settings
+import requests
+
+from reservations.models import Place
+from integrations.models import TelegramRecipient
+
+def _tg_send(chat_id: str, text: str, message_thread_id=None):
+    if not getattr(settings, "TG_BOT_TOKEN", None):
+        return
+    url = f"https://api.telegram.org/bot{settings.TG_BOT_TOKEN}/sendMessage"
+    payload = {"chat_id": chat_id, "text": text}
+    if message_thread_id:
+        payload["message_thread_id"] = int(message_thread_id)
+    requests.post(url, json=payload, timeout=10)
+
+@shared_task
+def notify_call_waiter(place_id: int, note: str = ""):
+    place = Place.objects.select_related("floor__branch").get(id=place_id)
+    branch = place.floor.branch
+
+    # Кому отправлять: берем активных получателей филиала
+    # (лучше тем, у кого включено notify_new_orders=True)
+    recs = TelegramRecipient.objects.filter(
+        branch=branch,
+        is_active=True,
+        notify_new_orders=True,
+    )
+
+    t = timezone.localtime().strftime("%d.%m.%Y %H:%M")
+    text = (
+        f"🔔 <b>Позвали официанта</b>\n"
+        f"🏢 Филиал: <b>{branch.name_ru}</b>\n"
+        f"🍽️ Место: <b>{place.title}</b>\n"
+    )
+    if note:
+        text += f"💬 Комментарий: {note}\n"
+    text += f"🕒 {t}"
+
+    for r in recs:
+        _tg_send(r.chat_id, text, r.message_thread_id)

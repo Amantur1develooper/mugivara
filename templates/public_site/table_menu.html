@@ -16,11 +16,25 @@
       {% endif %}
     </div>
   </div>
+<!-- ✅ липкие категории -->
+<div class="sticky top-2 z-40 -mx-4 px-4">
+  <div class="rounded-3xl bg-white/90 backdrop-blur ring-1 ring-stone-200 shadow px-3 py-2">
+    <div class="flex gap-2 overflow-x-auto no-scrollbar">
+      {% for c in menu %}
+        <a href="#cat-{{ c.branch_category.id }}"
+           data-cat-link="{{ c.branch_category.id }}"
+           class="px-3 py-2 rounded-2xl text-sm font-semibold bg-stone-100 text-stone-800 whitespace-nowrap">
+          {% t c.branch_category.category "name" %}
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
 
   <section class="mt-6">
     {% for c in menu %}
       <div class="mb-8">
-        <h2 class="text-xl text-white font-extrabold mb-3">{% t c.branch_category.category "name" %}</h2>
+        <div class="mb-8" id="cat-{{ c.branch_category.id }}" data-cat-section="{{ c.branch_category.id }}">
 
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {% for row in c.items %}
@@ -56,7 +70,8 @@
 <a href="{% url 'table_cart' token %}"
    class="fixed bottom-5 right-5 z-50 rounded-full bg-stone-900 text-white shadow-lg px-4 py-3 flex items-center gap-2">
   🍽️ <span data-cart-badge>{{ cart_qty }}</span>
-  <span class="hidden sm:inline">· {{ cart_total }} сом</span>
+  <span class="hidden sm:inline"> сом</span>
+  {% comment %} <span class="hidden sm:inline">· {{ cart_total }} сом</span> {% endcomment %}
 </a>
 
 

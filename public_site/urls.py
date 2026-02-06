@@ -6,6 +6,7 @@ from .views import (
 )
 from reservations import views as r
 
+from public_site.views_table import table_cart, table_create_order, table_cart_update, table_call_waiter, table_menu
 
 
 app_name = "public_site"
@@ -13,6 +14,16 @@ app_name = "public_site"
 urlpatterns = [
     path("", home, name="home"),
 
+
+    path("t/<str:token>/menu/", table_menu, name="table_menu"),
+    path("t/<str:token>/cart/", table_cart, name="table_cart"),
+
+ 
+    # ✅ обновление корзины (+/-/удалить)
+    path("t/<str:token>/cart/update/", table_cart_update, name="table_cart_update"),
+
+    # ✅ позвать официанта
+    path("t/<str:token>/call-waiter/", table_call_waiter, name="table_call_waiter"),
     # ВАЖНО: без ведущего "/"
     path("<int:branch_id>/menu/", branch_menu, name="branch_menu"),
 
