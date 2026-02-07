@@ -65,7 +65,7 @@
 <section class="mt-6">
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
     {% for c in cards %}
-      <a href="{% url 'public_site:restaurant_detail' c.obj.slug %}"
+      <a href="{% url 'public_site:restaurant_contacts' c.obj.slug %}"
          class="group relative rounded-[28px] bg-white/95 backdrop-blur
                 ring-1 ring-black/5 shadow-[0_14px_42px_rgba(15,23,42,.10)]
                 hover:shadow-[0_20px_65px_rgba(15,23,42,.16)]

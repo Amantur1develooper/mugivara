@@ -12,7 +12,53 @@
     font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   }</style>
 <div class="min-h-[85vh]">
+
+  <style>
+  /* ... твои стили ... */
+
+  /* Floating Cart */
+  .cart-fab{
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 9998;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 999px;
+    background: rgba(15,23,42,.95);
+    color: #fff;
+    box-shadow: 0 16px 40px rgba(0,0,0,.25);
+    border: 1px solid rgba(255,255,255,.12);
+    backdrop-filter: blur(10px);
+  }
+  .cart-fab:hover{ opacity:.95; }
+  .cart-fab.hide{ display:none; }
+
+  .cart-badge{
+    min-width: 26px;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    background: rgba(255,255,255,.16);
+  }
+  .cart-pop{ animation: cartpop .22s ease; }
+  @keyframes cartpop{
+    0%{ transform: scale(1); }
+    60%{ transform: scale(1.12); }
+    100%{ transform: scale(1); }
+  }
+</style>
+
+
 <style>
+  
   /* Toast */
   .toast-wrap{
     position: fixed;
@@ -103,18 +149,28 @@ if (fab) fab.classList.remove('hide');
       setTimeout(() => el.remove(), 220);
     }, 1400);
   }
+function updateCartUI(qty, total){
+  // qty / total могут прийти строкой — приведём
+  const qNum = Number(qty) || 0;
 
-  function updateCartUI(qty, total){
-    const q = document.querySelector('[data-cart-qty]');
-    const t = document.querySelector('[data-cart-total]');
-    if (q) q.textContent = qty;
+  document.querySelectorAll('[data-cart-qty]').forEach(el => {
+    el.textContent = qNum;
+    el.classList.remove('cart-pop');
+    void el.offsetWidth; // перезапуск анимации
+    el.classList.add('cart-pop');
+  });
 
-    if (t){
-      // оставим "· {total} сом" как у тебя
-      const som = t.textContent.includes('сом') ? ' сом' : '';
-      t.textContent = `· ${total}${som}`;
-    }
+  document.querySelectorAll('[data-cart-total]').forEach(el => {
+    // показываем единообразно
+    el.textContent = `· ${total} сом`;
+  });
+
+  const fab = document.getElementById('cartFab');
+  if (fab){
+    fab.classList.toggle('hide', qNum <= 0);
   }
+}
+
 
   // защита от клика по родителям (если вдруг карточка кликабельная)
   document.addEventListener('click', (e) => {
@@ -294,6 +350,13 @@ if (fab) fab.classList.remove('hide');
       </section>
     {% endfor %}
   </section>
+<a id="cartFab"
+   href="{% url 'public_site:cart_detail' branch.id %}"
+   class="cart-fab {% if cart_qty|default:0 == 0 %}hide{% endif %}">
+  🧺
+  <span class="cart-badge" data-cart-qty>{{ cart_qty }}</span>
+  <span class="hidden sm:inline" data-cart-total>· {{ cart_total }} {% trans "сом" %}</span>
+</a>
 
   <!-- Нижний баннер -->
   <section class="max-w-6xl mx-auto px-4 pb-10">

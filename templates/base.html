@@ -296,29 +296,7 @@
           d
           {% else %}
   {% if branch %}
-    <a href="{% url 'public_site:cart_detail' branch.id %}"
-       class="sj-cart-fab "
-       id="sjCartFab">
-      <span class="sj-cart-fab__icon" aria-hidden="true">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10
-          0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2zM7.16 14h9.45c.75
-          0 1.4-.41 1.74-1.03l3.24-6.16A1 1 0 0 0 21.7 5H6.21L5.27 3H2v2h2l3.6
-          7.59-1.35 2.44A2 2 0 0 0 6 16c0 1.1.9 2 2 2h12v-2H8l1.16-2z"/>
-        </svg>
-      </span>
-
-      <span style="min-width:0;">
-        <div style="font-weight:900; line-height:1.1;">{% trans "Корзина" %}</div>
-        <div style="font-size:12px; color:rgba(255,255,255,.82); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-          <span data-cart-total>· {% if cart_total %} {% else %}0{% endif %} {% trans "сом" %}</span>
-        </div>
-      </span>
-
-      <span class="sj-cart-fab__badge" data-cart-qty>
-        {% if cart_qty %}{{ cart_qty }}{% else %}0{% endif %}
-      </span>
-    </a>
+   
  {% endif %}
 
   {% endif %}
