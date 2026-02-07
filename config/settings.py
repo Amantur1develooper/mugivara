@@ -33,7 +33,7 @@ SECRET_KEY = 'django-insecure-(n20sb6gvpyx^q5#)!6b4v_mi11qkas(=j+l41nn_gzrtpx@6w
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['online-menu-sanji.com','www.online-menu-sanji.com','69.10.50.176']
+ALLOWED_HOSTS = ['online-menu-sanji.com', 'www.online-menu-sanji.com', '69.10.50.176', 'sanji.kg', 'www.sanji.kg']
 
 
 # Application definition
@@ -44,8 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-     "rest_framework",
-    
+    "rest_framework",
     "public_site",
     "core",
     "catalog",
