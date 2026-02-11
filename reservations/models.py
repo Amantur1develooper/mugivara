@@ -4,6 +4,7 @@ from core.models import Branch, TimeStampedModel
 import secrets
 from core.models import Branch
 
+
 class Floor(TimeStampedModel):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="floors")
     name_ru = models.CharField(max_length=200)
@@ -11,9 +12,11 @@ class Floor(TimeStampedModel):
     name_en = models.CharField(max_length=200, blank=True, default="")
     sort_order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
-
+        
     class Meta:
         ordering = ("sort_order", "id")
+        verbose_name = "Этаж"
+        verbose_name_plural = "Этажы"
 
     def __str__(self):
         return f"{self.branch} — {self.name_ru}"
@@ -42,6 +45,8 @@ class Place(TimeStampedModel):
         super().save(*args, **kwargs)
 
     class Meta:
+        verbose_name = "Место"
+        verbose_name_plural = "Место"
         constraints = [
             models.UniqueConstraint(fields=["token"], name="uniq_place_token"),
         ]
@@ -71,6 +76,8 @@ class Booking(TimeStampedModel):
     
     class Meta:
         ordering = ("-id",)
+        verbose_name = "Бронь"
+        verbose_name_plural = "Брони"
 
     @classmethod
     def create_active_booking(cls, *, branch, place, customer_name="", customer_phone="", guests_count=2, comment=""):
@@ -106,11 +113,11 @@ class Booking(TimeStampedModel):
 
 
 class BranchStaffToken(models.Model):
+    
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="staff_tokens")
     title = models.CharField(max_length=120)  # например "Кассир Айгерим"
     token = models.CharField(max_length=64, unique=True, db_index=True, blank=True)
     is_active = models.BooleanField(default=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):

@@ -18,8 +18,14 @@ class Restaurant(TimeStampedModel):
     about_ru = models.TextField(blank=True, default="")
     about_ky = models.TextField(blank=True, default="")
     about_en = models.TextField(blank=True, default="")
+    
+    class Meta:
+        verbose_name = "Ресторан"
+        verbose_name_plural = "Рестораны"
+        
     def __str__(self):
         return self.name_ru
+    
 
 class Branch(TimeStampedModel):
     restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name="branches")
@@ -41,8 +47,13 @@ class Branch(TimeStampedModel):
     close_time = models.TimeField(null=True, blank=True)  # например 22:00
     cover_photo = models.ImageField(upload_to="branches/covers/", blank=True, null=True)
 
+    class Meta:
+        verbose_name = "Филиал"
+        verbose_name_plural = "Филиалы"
+        
     def __str__(self):
         return f"{self.restaurant.name_ru} — {self.name_ru}"
+    
     def is_open_now(self) -> bool:
         if not self.is_active:
             return False
@@ -71,8 +82,10 @@ class Membership(TimeStampedModel):
     restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE)
     branch = models.ForeignKey(Branch, on_delete=models.SET_NULL, null=True, blank=True)
     role = models.CharField(max_length=20, choices=Role.choices)
-
+        
     class Meta:
+        verbose_name = "членство"
+        verbose_name_plural = "членствы"
         unique_together = ("user", "restaurant", "role")
 
     def __str__(self):

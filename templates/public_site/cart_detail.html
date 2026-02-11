@@ -1,20 +1,25 @@
 {% extends "base.html" %}
 {% load i18n i18n_attrs static %}
+
 {% block img %}
   <link rel="icon" type="image/jpg" sizes="32x32" href="{% static 'mini_logo.jpg' %}">
   <link rel="icon" type="image/jpg" sizes="16x16" href="{% static 'mini_logo.jpg' %}">
-  <link rel="apple-touch-icon" href="{{ branch.cover_photo.url }}' %}">
+  <link rel="apple-touch-icon" href="{{ branch.cover_photo.url }}">
   <link rel="shortcut icon" href="{{ branch.cover_photo.url }}">
 {% endblock img %}
+
 {% block content %}
 <div class="max-w-4xl mx-auto px-4 py-6">
+
+  <!-- Header -->
   <div class="flex items-start justify-between gap-4">
     <div>
       <h1 class="text-2xl text-white font-extrabold">{% trans "Корзина" %}</h1>
-      <div class="text-stone-600 text-white text-sm mt-1">{{ branch.name }} · {{ branch.address }}</div>
+      <div class="text-white/80 text-sm mt-1">{{ branch.name }} · {{ branch.address }}</div>
     </div>
+
     <a href="{% url 'public_site:branch_menu' branch.id %}"
-       class="px-4 py-2 rounded-xl ring-1 text-white ring-stone-200 hover:bg-stone-50">
+       class="px-4 py-2 rounded-xl ring-1 text-white ring-white/25 hover:bg-white/10">
       ← {% trans "Назад в меню" %}
     </a>
   </div>
@@ -28,94 +33,271 @@
   {% endif %}
 
   {% if qty_total == 0 %}
-    <div class="mt-6 rounded-2xl  ring-1 text-white ring-stone-200 p-6">
+    <div class="mt-6 rounded-2xl ring-1 text-white ring-white/25 p-6 bg-white/5 backdrop-blur">
       {% trans "Корзина пуста." %}
     </div>
   {% else %}
+
+    <!-- Rows -->
     <div class="mt-6 space-y-3">
       {% for r in rows %}
         {% with bi=r.branch_item dish=r.branch_item.item %}
-        <div class="rounded-2xl bg-white ring-1 ring-stone-200 p-4 flex items-center gap-4">
-          <div class="flex-1">
-            <div class="font-semibold">{% t dish "name" %}</div>
-            <div class="text-sm text-stone-500">{{ bi.price }} {% trans "сом" %}</div>
+        <div class="rounded-2xl bg-white ring-1 ring-stone-200 p-4
+                    flex flex-col sm:flex-row sm:items-center gap-3"
+             data-row="{{ bi.id }}"
+             data-update-url="{% url 'public_site:cart_update' branch.id bi.id %}">
+
+          <!-- left -->
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold truncate">{% t dish "name" %}</div>
+            <div class="text-sm text-stone-500">
+              {{ bi.price }} {% trans "сом" %}
+              <span class="mx-2 text-stone-300">•</span>
+              <span class="text-stone-600 font-semibold">
+                <span data-line-total>{{ r.line_total }}</span> {% trans "сом" %}
+              </span>
+            </div>
           </div>
 
-          <form action="{% url 'public_site:cart_update' branch.id bi.id %}" method="post" class="flex items-center gap-2">
-            {% csrf_token %}
-            <input type="number" name="qty" min="0" value="{{ r.qty }}"
-                   class="w-20 border border-stone-300 rounded-xl px-2 py-1 text-center">
-            <button class="px-3 py-2 rounded-xl bg-stone-900 text-white">{% trans "Обновить" %}</button>
-          </form>
+          <!-- controls -->
+          <div class="flex items-center justify-between sm:justify-end gap-3">
+            <div class="flex items-center gap-2">
+              <button type="button"
+                      class="w-10 h-10 rounded-xl bg-stone-100 ring-1 ring-stone-200 font-extrabold active:scale-95 transition"
+                      data-dec>−</button>
 
-          <form action="{% url 'public_site:cart_remove' branch.id bi.id %}" method="post">
-            {% csrf_token %}
-            <button class="px-3 py-2 rounded-xl ring-1 ring-stone-200 hover:bg-stone-50">
+              <input type="number" min="0" value="{{ r.qty }}"
+                     class="w-16 border border-stone-300 rounded-xl px-2 py-2 text-center text-base"
+                     data-qty-input>
+
+              <button type="button"
+                      class="w-10 h-10 rounded-xl bg-stone-100 ring-1 ring-stone-200 font-extrabold active:scale-95 transition"
+                      data-inc>+</button>
+            </div>
+
+            <button type="button"
+                    class="px-3 py-2 rounded-xl ring-1 ring-stone-200 hover:bg-stone-50 active:scale-95 transition"
+                    data-remove>
               {% trans "Удалить" %}
             </button>
-          </form>
-
-          <div class="w-28 text-right font-bold">
-            {{ r.line_total }} {% trans "сом" %}
           </div>
+
         </div>
         {% endwith %}
       {% endfor %}
     </div>
 
+    <!-- Totals (AJAX) -->
     <div class="mt-6 rounded-2xl bg-white ring-1 ring-stone-200 p-5">
       <div class="flex justify-between text-sm text-stone-600">
-        <span>{% trans "Подытог" %}</span><span>{{ subtotal }} {% trans "сом" %}</span>
+        <span>{% trans "Подытог" %}</span>
+        <span><span data-subtotal>{{ subtotal }}</span> {% trans "сом" %}</span>
       </div>
+
       {% if branch.delivery_enabled %}
       <div class="flex justify-between text-sm text-stone-600 mt-2">
-        <span>{% trans "Доставка" %}</span><span>{{ delivery_fee }} {% trans "сом" %}</span>
+        <span>{% trans "Доставка" %}</span>
+        <span><span data-delivery-fee>{{ delivery_fee }}</span> {% trans "сом" %}</span>
       </div>
       {% endif %}
+
       <div class="flex justify-between text-lg font-extrabold mt-3">
-        <span>{% trans "Итого" %}</span><span>{{ total }} {% trans "сом" %}</span>
+        <span>{% trans "Итого" %}</span>
+        <span><span data-total>{{ total }}</span> {% trans "сом" %}</span>
       </div>
     </div>
 
-    <!-- Оформление -->
+    <!-- Checkout -->
     <div class="mt-6 rounded-2xl bg-white ring-1 ring-stone-200 p-5">
       <h2 class="text-xl font-extrabold">{% trans "Оформление" %}</h2>
 
       <form action="{% url 'public_site:checkout' branch.id %}" method="post" class="mt-4 grid gap-3">
         {% csrf_token %}
 
-        <input name="name" placeholder="{% trans 'Имя' %}"
-               class="w-full border border-stone-300 rounded-xl px-3 py-2">
+        <!-- optional -->
+        <input name="name" placeholder="{% trans 'Имя (не обязательно)' %}"
+               class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base">
 
-        <input name="phone" placeholder="{% trans 'Телефон / WhatsApp' %}"
-               class="w-full border border-stone-300 rounded-xl px-3 py-2">
+        <!-- REQUIRED +996 -->
+        <input name="phone"
+               type="tel"
+               inputmode="tel"
+               autocomplete="tel"
+               value="+996"
+               required
+               placeholder="+996 XXX XXX XXX"
+               class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base">
+
+        <!-- REQUIRED address always -->
+        <input name="address"
+               required
+               placeholder="{% trans 'Адрес / стол / кабинка (обязательно)' %}"
+               class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base">
 
         {% if branch.delivery_enabled %}
-          <input name="address" placeholder="{% trans 'Адрес доставки' %}"
-                 class="w-full border border-stone-300 rounded-xl px-3 py-2">
           <div class="text-xs text-stone-500">
             {% trans "Минимальная сумма доставки:" %} {{ branch.min_order_amount }} {% trans "сом" %}
           </div>
         {% endif %}
 
-        <textarea name="comment" rows="3" placeholder="{% trans 'Комментарий к заказу' %}"
-                  class="w-full border border-stone-300 rounded-xl px-3 py-2"></textarea>
-          <div class="grid gap-2">
-  <div class="text-sm font-semibold">{% trans "Способ оплаты" %}</div>
-  <label class="flex items-center gap-2">
-    <input type="radio" name="payment_method" value="cash" checked>
-    <span>{% trans "Наличные" %}</span>
-  </label>
-  <label class="flex items-center gap-2">
-    <input type="radio" name="payment_method" value="online">
-    <span>{% trans "Онлайн" %}</span>
-  </label>
-</div>
-        <button class="mt-2 px-4 py-3 rounded-2xl bg-stone-900 text-white font-semibold shadow hover:bg-stone-800">
-          {% if branch.delivery_enabled %}{% trans "Оформить доставку" %}{% else %}{% trans "Оформить самовывоз" %}{% endif %}
+        <!-- optional -->
+        <textarea name="comment" rows="3" placeholder="{% trans 'Комментарий (не обязательно)' %}"
+                  class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base"></textarea>
+
+        <div class="grid gap-2">
+          <div class="text-sm font-semibold">{% trans "Способ оплаты" %}</div>
+          <label class="flex items-center gap-2">
+            <input type="radio" name="payment_method" value="cash" checked>
+            <span>{% trans "Наличные" %}</span>
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="radio" name="payment_method" value="online">
+            <span>{% trans "Онлайн" %}</span>
+          </label>
+        </div>
+
+        <button class="mt-2 px-4 py-3 rounded-2xl bg-stone-900 text-white font-semibold shadow hover:bg-stone-800 active:scale-[0.99] transition">
+          {% if branch.delivery_enabled %}{% trans "Подтвердить заказ" %}{% else %}{% trans "Подтвердить заказ" %}{% endif %}
         </button>
       </form>
     </div>
+
   {% endif %}
 </div>
+
+<script>
+  function getCookie(name) {
+    const v = document.cookie.split('; ').find(row => row.startsWith(name + '='));
+    return v ? decodeURIComponent(v.split('=')[1]) : '';
+  }
+
+  function setTextAll(selector, value){
+    document.querySelectorAll(selector).forEach(el => el.textContent = value);
+  }
+
+  async function postQty(url, qty){
+    const fd = new FormData();
+    fd.append('qty', qty);
+
+    const resp = await fetch(url, {
+      method: 'POST',
+      body: fd,
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': getCookie('csrftoken'),
+      }
+    });
+    return await resp.json();
+  }
+
+  function updateTotalsUI(data){
+    if (data.subtotal !== undefined) setTextAll('[data-subtotal]', data.subtotal);
+    if (data.delivery_fee !== undefined) setTextAll('[data-delivery-fee]', data.delivery_fee);
+    if (data.total !== undefined) setTextAll('[data-total]', data.total);
+
+    if (data.qty_total !== undefined) {
+      document.querySelectorAll('[data-cart-qty]').forEach(el => el.textContent = data.qty_total);
+    }
+    if (data.total !== undefined) {
+      document.querySelectorAll('[data-cart-total]').forEach(el => el.textContent = `· ${data.total} сом`);
+    }
+  }
+
+  async function updateRow(rowEl, qty){
+    const input = rowEl.querySelector('[data-qty-input]');
+    const lineTotalEl = rowEl.querySelector('[data-line-total]');
+    const url = rowEl.dataset.updateUrl;
+
+    rowEl.querySelectorAll('button').forEach(b => b.disabled = true);
+    input.disabled = true;
+
+    try{
+      const data = await postQty(url, qty);
+      if (!data.ok) return;
+
+      if ((data.row_qty ?? qty) <= 0){
+        rowEl.remove();
+      } else {
+        input.value = data.row_qty ?? qty;
+        if (lineTotalEl && data.line_total !== undefined) lineTotalEl.textContent = data.line_total;
+      }
+
+      updateTotalsUI(data);
+
+      if (data.qty_total === 0){
+        location.reload();
+      }
+    } finally {
+      rowEl.querySelectorAll('button').forEach(b => b.disabled = false);
+      input.disabled = false;
+    }
+  }
+
+  document.addEventListener('click', async (e) => {
+    const rowEl = e.target.closest('[data-row]');
+    if (!rowEl) return;
+
+    const input = rowEl.querySelector('[data-qty-input]');
+    let qty = parseInt(input.value || '0', 10);
+    if (Number.isNaN(qty)) qty = 0;
+
+    if (e.target.closest('[data-inc]')){
+      qty += 1;
+      await updateRow(rowEl, qty);
+    }
+
+    if (e.target.closest('[data-dec]')){
+      qty = Math.max(0, qty - 1);
+      await updateRow(rowEl, qty);
+    }
+
+    if (e.target.closest('[data-remove]')){
+      await updateRow(rowEl, 0);
+    }
+  });
+
+  document.addEventListener('change', async (e) => {
+    const input = e.target.closest('[data-qty-input]');
+    if (!input) return;
+    const rowEl = input.closest('[data-row]');
+    if (!rowEl) return;
+
+    let qty = parseInt(input.value || '0', 10);
+    if (Number.isNaN(qty)) qty = 0;
+    qty = Math.max(0, qty);
+
+    await updateRow(rowEl, qty);
+  });
+
+  // phone: keep +996 prefix
+  (function(){
+    const phone = document.querySelector('input[name="phone"]');
+    if (!phone) return;
+    const prefix = '+996';
+
+    function normalize(){
+      let v = (phone.value || '').trim();
+      v = v.replace(/[^\d+]/g, '');          // only digits and +
+      if (!v.startsWith(prefix)){
+        v = v.replace(/^\+?996?/, '');       // remove wrong prefix if user pasted
+        v = prefix + v.replace(/^\+/, '');
+      }
+      phone.value = v;
+    }
+
+    phone.addEventListener('focus', () => {
+      if (!phone.value) phone.value = prefix;
+      normalize();
+    });
+
+    phone.addEventListener('input', normalize);
+
+    phone.addEventListener('keydown', (e) => {
+      const pos = phone.selectionStart || 0;
+      if (pos <= prefix.length && (e.key === 'Backspace' || e.key === 'Delete')) {
+        e.preventDefault();
+      }
+    });
+  })();
+</script>
 {% endblock %}

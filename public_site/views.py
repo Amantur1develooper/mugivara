@@ -12,11 +12,17 @@ from core.models import Branch
 from catalog.models import BranchCategory, BranchCategoryItem, BranchItem
 from orders.models import Order, OrderItem
 from reservations.models import Booking, Floor, Place
-
+from django.views.decorators.http import require_POST
+from decimal import Decimal
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.views.decorators.http import require_POST
+from core.models import Branch
+from catalog.models import BranchItem
+from .cart import set_qty, get_cart, cart_details
 from .cart import add_to_cart as cart_add, set_qty, clear_cart, get_cart, cart_details
 
 from django.utils.translation import gettext as _
-from django.http import JsonResponse
 
 from catalog.models import BranchItem  # или Item, как у тебя в url
 
@@ -167,18 +173,117 @@ def cart_detail(request, branch_id: int):
         "total": total,
     })
 
+from decimal import Decimal
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.views.decorators.http import require_POST
+from core.models import Branch
+from catalog.models import BranchItem
+from .cart import set_qty, get_cart, cart_details
+
 @require_POST
 def cart_update(request, branch_id: int, branch_item_id: int):
     branch = get_object_or_404(Branch, id=branch_id, is_active=True)
-    qty = int(request.POST.get("qty", 1))
+
+    qty = int(request.POST.get("qty") or 0)
+    qty = max(0, min(qty, 99))
+
+    # применяем
     set_qty(request, branch.id, branch_item_id, qty)
+
+    # считаем заново
+    cart = get_cart(request, branch.id)
+    rows, subtotal, qty_total = cart_details(branch, cart)
+
+    delivery_fee = branch.delivery_fee if branch.delivery_enabled else Decimal("0")
+    total = subtotal + delivery_fee
+
+    # строка конкретного товара
+    row_qty = 0
+    line_total = Decimal("0")
+    for r in rows:
+        if r["branch_item"].id == branch_item_id:
+            row_qty = int(r["qty"])
+            line_total = r["line_total"]
+            break
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({
+            "ok": True,
+            "row_qty": row_qty,
+            "line_total": str(line_total),
+            "subtotal": str(subtotal),
+            "delivery_fee": str(delivery_fee),
+            "total": str(total),
+            "qty_total": qty_total,
+        })
+
     return redirect("public_site:cart_detail", branch_id=branch.id)
+
+# @require_POST
+# def cart_update(request, branch_id: int, branch_item_id: int):
+#     branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+#     bi = get_object_or_404(BranchItem, id=branch_item_id, branch=branch)
+
+#     qty = int(request.POST.get("qty", "0") or 0)
+#     qty = max(0, min(qty, 99))
+
+#     # ✅ сначала реально меняем корзину
+#     set_qty(request, branch.id, bi.id, qty)
+
+#     # ✅ пересчитываем всё заново
+#     cart = get_cart(request, branch.id)
+#     rows, subtotal, qty_total = cart_details(branch, cart)
+
+#     delivery_fee = branch.delivery_fee if branch.delivery_enabled else Decimal("0")
+#     total = subtotal + delivery_fee
+
+#     # ✅ найдём строку этого товара (может быть удалён)
+#     row = next((r for r in rows if r["branch_item"].id == bi.id), None)
+#     row_qty = int(row["qty"]) if row else 0
+#     line_total = row["line_total"] if row else Decimal("0")
+
+#     is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+#     if is_ajax:
+#         return JsonResponse({
+#             "ok": True,
+#             "row_qty": row_qty,
+#             "line_total": str(line_total),
+#             "subtotal": str(subtotal),
+#             "delivery_fee": str(delivery_fee),
+#             "total": str(total),
+#             "qty_total": qty_total,
+#         })
+
+#     return redirect("public_site:cart_detail", branch_id=branch.id)
 
 @require_POST
 def cart_remove(request, branch_id: int, branch_item_id: int):
     branch = get_object_or_404(Branch, id=branch_id, is_active=True)
-    set_qty(request, branch.id, branch_item_id, 0)
+    bi = get_object_or_404(BranchItem, id=branch_item_id, branch=branch)
+
+    set_qty(request, branch.id, bi.id, 0)
+
+    cart = get_cart(request, branch.id)
+    rows, subtotal, qty_total = cart_details(branch, cart)
+
+    delivery_fee = branch.delivery_fee if branch.delivery_enabled else Decimal("0")
+    total = subtotal + delivery_fee
+
+    is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
+    if is_ajax:
+        return JsonResponse({
+            "ok": True,
+            "row_qty": 0,
+            "line_total": "0",
+            "subtotal": str(subtotal),
+            "delivery_fee": str(delivery_fee),
+            "total": str(total),
+            "qty_total": qty_total,
+        })
+
     return redirect("public_site:cart_detail", branch_id=branch.id)
+
 
 @require_POST
 def checkout(request, branch_id: int):

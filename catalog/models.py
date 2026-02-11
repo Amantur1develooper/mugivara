@@ -98,11 +98,11 @@ class BranchItem(TimeStampedModel):
     is_available = models.BooleanField(default=True)
     sort_order = models.PositiveIntegerField(default=0)  # нумерация блюда в филиале
     delivery_available = models.BooleanField(default=True)
+    
     class Meta:
-        unique_together = ("branch", "item")
-        ordering = ("sort_order", "id")
-        verbose_name = "Филиал"
-        verbose_name_plural = "Филиал"
+        verbose_name = "Блюдо Филиал"
+        verbose_name_plural = "Блюды Филиал"
+        
     def __str__(self):
         return f"{self.branch.name_ru} — {self.item.name_ru} "
     

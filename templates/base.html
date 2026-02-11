@@ -287,9 +287,108 @@
       {% block content %}{% endblock %}
    
 
-    <div style="color:white;" class="footer">
-      © Санжи — онлайн меню и заказы
+  <footer class="mt-10">
+  <div class="surface"
+       style="background: rgba(227, 220, 220, 0.93); border-color: rgba(255,255,255,.18);">
+    <div class="p-6 md:p-8">
+      <div class="grid gap-6 md:grid-cols-3 md:gap-8">
+
+        <!-- CTA -->
+        <div class="md:col-span-1">
+          <div style="color:black; font-weight:900; font-size:20px; line-height:1.15;">
+            Стань партнёром<br>Онлайн меню <span style="opacity:.9;">Санжи</span>
+          </div>
+          <div style="color: rgba(219, 211, 211, 0.94); margin-top:10px; font-size:14px;">
+            QR-меню, заказы со стола, бронирование и уведомления в Telegram.
+            Подключим ресторан быстро.
+          </div>
+
+          <div class="mt-4 flex flex-wrap gap-2">
+            <a href="https://wa.me/996558212040"
+               class="btn"
+               style="background:#25D366; border-color: rgba(255,255,255,.15); color:white;">
+              WhatsApp
+            </a>
+            <a href="https://instagram.com/amantur555"
+               class="btn"
+               style="background: rgba(168, 4, 183, 0.8); border-color: rgba(255,255,255,.18); color:white;">
+              Instagram
+            </a>
+          </div>
+
+          <div style="color: rgba(6, 5, 5, 0.7); font-size:12px; margin-top:10px;">
+            Напиши “ПАРТНЁР” — отправлю условия и демо.
+          </div>
+        </div>
+
+        <!-- Links -->
+        <div class="md:col-span-1">
+          <div style="color:black; font-weight:900; margin-bottom:10px;">Разделы</div>
+          <div class="flex flex-col gap-2" style="font-weight:800;">
+            <a href="{% url 'public_site:home' %}" style="color: black; text-decoration:none;">Главная</a>
+            {% if branch %}
+              <a href="{% url 'public_site:reservation' branch.id %}" style="color: black; text-decoration:none;">Бронирование</a>
+            {% endif %}
+            <a href="{% url 'public_site:about' %}" style="color: black; text-decoration:none;">О нас</a>
+          </div>
+        </div>
+
+        <!-- Contacts -->
+        <div class="md:col-span-1">
+          <div style="color:black; font-weight:900; margin-bottom:10px;">Контакты</div>
+
+          <div class="grid gap-2 text-sm" style="color: rgba(255,255,255,.82);">
+            <div class="flex items-center gap-2">
+              <span style="opacity:.9;">📍</span>
+              <span>Кыргызстан</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span style="opacity:.9;">📞</span>
+              <a href="https://wa.me/996558212040"
+                 style="color: rgba(225, 29, 29, 0.92); text-decoration:none; font-weight:900;">
+                +996 558 212 040
+              </a>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span style="opacity:.9;">📷</span>
+              <a href="https://instagram.com/amantur555"
+                 style="color: rgba(255,255,255,.92); text-decoration:none; font-weight:900;">
+                @amantur555
+              </a>
+            </div>
+          </div>
+
+          <div class="mt-4 rounded-2xl p-4"
+               style="background: rgba(0,0,0,.22); border: 1px solid rgba(255,255,255,.14);">
+            <div style="color:white; font-weight:900;">Подключение</div>
+            <div style="color: rgba(255,255,255,.78); font-size:13px; margin-top:6px;">
+              1) Получаем меню и цены<br>
+              2) Делаем QR-столы<br>
+              3) Подключаем Бронирование<br>
+              4) Запускаем за 1 день
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- bottom line -->
+      <div class="mt-6 pt-4"
+           style="border-top:1px solid rgba(255,255,255,.14); display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;">
+        <div style="color: rgb(18, 17, 17); font-size:12px;">
+          © {{ now|date:"Y" }} Санжи — онлайн меню и заказы
+        </div>
+        <div style="color: rgba(56, 42, 42, 0.65); font-size:12px;">
+          Сделано для ресторанов Кыргызстана 🇰🇬
+        </div>
+      </div>
+
     </div>
+  </div>
+</footer>
+
   </div>
 
   {% if table %}

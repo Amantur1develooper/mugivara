@@ -23,7 +23,11 @@ class Table(TimeStampedModel):
 
     def __str__(self):
         return f"{self.branch} / стол {self.number}"
-
+    
+    class Meta:
+        verbose_name = "Стол"
+        verbose_name_plural = "Столы"
+        
 class TableSession(TimeStampedModel):
     class Status(models.TextChoices):
         OPEN = "open", "Open"
