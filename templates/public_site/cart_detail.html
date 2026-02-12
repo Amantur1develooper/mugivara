@@ -120,13 +120,19 @@
 
         <!-- REQUIRED +996 -->
         <input name="phone"
-               type="tel"
-               inputmode="tel"
-               autocomplete="tel"
-               value="+996"
-               required
-               placeholder="+996 XXX XXX XXX"
-               class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base">
+       id="phone"
+       type="tel"
+       inputmode="numeric"
+       autocomplete="tel"
+       required
+       value="+996"
+       minlength="13"
+       maxlength="13"
+       pattern="^\+996\d{9}$"
+       title="Введите номер в формате +996XXXXXXXXX (9 цифр после +996)"
+       placeholder="+996700123456"
+       class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base">
+
 
         <!-- REQUIRED address always -->
         <input name="address"
