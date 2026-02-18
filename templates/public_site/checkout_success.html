@@ -1,40 +1,160 @@
 {% extends "base.html" %}
 {% load i18n static %}
 
-{% block img %}
-  <link rel="icon" type="image/jpg" sizes="32x32" href="{% static 'mini_logo.jpg' %}">
-  <link rel="icon" type="image/jpg" sizes="16x16" href="{% static 'mini_logo.jpg' %}">
-  <link rel="apple-touch-icon" href="{{ branch.cover_photo.url }}' %}">
-  <link rel="shortcut icon" href="{{ branch.cover_photo.url }}">
-{% endblock img %}
+{% block title %}{% trans "Заказ создан" %}{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto px-4 py-10">
-  <div class="rounded-3xl bg-white ring-1 ring-stone-200 p-7 shadow">
-    <h1 class="text-2xl font-extrabold">{% trans "Заказ создан!" %}</h1>
-    <div class="mt-2 text-stone-600">
-      {% trans "Номер заказа:" %} <b>#{{ order.id }}</b><br>
-      {% trans "Сумма:" %} <b>{{ order.total_amount }}</b> {% trans "сом" %}
+<div class="max-w-3xl mx-auto px-4 py-8">
+
+  <div class="rounded-3xl bg-white ring-1 ring-black/10 shadow-xl p-6 md:p-8">
+    <div class="flex items-start gap-4">
+      <div class="w-12 h-12 rounded-2xl bg-green-100 flex items-center justify-center text-2xl">
+        ✅
+      </div>
+      <div class="flex-1">
+        <h1 class="text-2xl md:text-3xl font-extrabold">{% trans "Заказ создан!" %}</h1>
+        <div class="mt-1 text-stone-600">
+          {% trans "Сейчас откроем WhatsApp филиала с готовым сообщением." %}
+        </div>
+        <div class="mt-3 text-sm text-stone-500">
+          {% trans "Заказ" %} #{{ order.id }} · {{ branch.name }}
+          {% if is_delivery %} · {% trans "Доставка" %}{% else %} · {% trans "Самовывоз" %}{% endif %}
+        </div>
+
+        {% if items_count %}
+          <div class="mt-3 text-sm">
+            <div class="font-extrabold text-stone-900">{% trans "Состав" %}:</div>
+            <div class="text-stone-700">
+              {% for x in items_preview %}
+                <div>• {{ x }}</div>
+              {% endfor %}
+              {% if items_count > 2 %}
+                <div class="text-stone-500 mt-1">
+                  {% trans "и ещё" %} {{ items_count|add:"-2" }}…
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      </div>
     </div>
 
-    <div class="mt-6 flex gap-3 flex-wrap">
-      <a href="{% url 'public_site:branch_menu' branch.id %}"
-         class="px-4 py-3 rounded-2xl bg-stone-900 text-white font-semibold">
-        {% trans "Вернуться в меню" %}
-      </a>
-
+    <div class="mt-6 grid gap-3 sm:grid-cols-2">
       <a href="{{ whatsapp_url }}"
          target="_blank" rel="noopener"
-         class="px-4 py-3 rounded-2xl text-white font-semibold"
-         style="background:#25D366">
-        {% trans "Заказать через WhatsApp" %}
+         class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-white font-semibold shadow hover:opacity-95"
+         style="background:#25D366;">
+        💬 {% trans "Открыть WhatsApp" %}
       </a>
 
-      {% comment %} <a href="{% url 'public_site:home' %}"
-         class="px-4 py-3 rounded-2xl ring-1 ring-stone-200 hover:bg-stone-50">
-        {% trans "На главную" %}
-      </a> {% endcomment %}
+      {% if call_url %}
+      <a href="{{ call_url }}"
+         class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-stone-900 text-white font-semibold shadow hover:bg-stone-800">
+        📞 {% trans "Позвонить" %}
+      </a>
+      {% else %}
+      <a href="{% url 'public_site:branch_menu' branch.id %}"
+         class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-stone-900 text-white font-semibold shadow hover:bg-stone-800">
+        ← {% trans "Вернуться в меню" %}
+      </a>
+      {% endif %}
+    </div>
+
+    <!-- Copy -->
+    <div class="mt-3">
+      <button type="button"
+              id="copyBtn"
+              class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl ring-1 ring-stone-300 hover:bg-stone-50 font-extrabold">
+        📋 {% trans "Скопировать текст заказа" %}
+      </button>
+
+      <textarea id="msgText" class="sr-only" aria-hidden="true">{% autoescape off %}{{ msg_text }}{% endautoescape %}</textarea>
+
+      <div id="copyOk" class="hidden mt-2 text-sm rounded-xl bg-green-50 ring-1 ring-green-200 p-3 text-green-900">
+        ✅ {% trans "Скопировано! Вставьте в WhatsApp, если он не открылся." %}
+      </div>
+      <div id="copyErr" class="hidden mt-2 text-sm rounded-xl bg-amber-50 ring-1 ring-amber-200 p-3 text-amber-900">
+        ⚠️ {% trans "Не получилось скопировать. Выделите текст и скопируйте вручную." %}
+      </div>
+    </div>
+
+    <div id="waFallback" class="hidden mt-5 rounded-2xl bg-amber-50 ring-1 ring-amber-200 p-4 text-amber-900">
+      <div class="font-extrabold">{% trans "WhatsApp не открылся?" %}</div>
+      <div class="text-sm mt-1">
+        {% trans "Нажмите кнопку “Открыть WhatsApp”. Если приложения нет — откроется WhatsApp Web. Или нажмите “Скопировать текст заказа”." %}
+      </div>
+    </div>
+
+    <div class="mt-6 rounded-2xl bg-stone-50 ring-1 ring-stone-200 p-4">
+      <div class="flex justify-between text-sm text-stone-600">
+        <span>{% trans "Подытог" %}</span><span>{{ subtotal }} {% trans "сом" %}</span>
+      </div>
+      {% if is_delivery %}
+      <div class="flex justify-between text-sm text-stone-600 mt-2">
+        <span>{% trans "Доставка" %}</span><span>{{ delivery_fee }} {% trans "сом" %}</span>
+      </div>
+      {% endif %}
+      <div class="flex justify-between text-lg font-extrabold mt-3">
+        <span>{% trans "Итого" %}</span><span>{{ total }} {% trans "сом" %}</span>
+      </div>
+    </div>
+
+    <div class="mt-6 flex flex-wrap gap-2">
+      <a href="{% url 'public_site:branch_menu' branch.id %}"
+         class="px-4 py-3 rounded-2xl ring-1 ring-stone-300 hover:bg-stone-50 font-semibold">
+        🍽️ {% trans "Вернуться в меню" %}
+      </a>
     </div>
   </div>
 </div>
+
+<script>
+  // авто-открытие WhatsApp
+  (function(){
+    const deeplink = "{{ whatsapp_deeplink|escapejs }}";
+    if (!deeplink) return;
+
+    window.location.href = deeplink;
+
+    setTimeout(() => {
+      const fb = document.getElementById('waFallback');
+      if (fb) fb.classList.remove('hidden');
+    }, 1200);
+  })();
+
+  // copy button
+  (function(){
+    const btn = document.getElementById('copyBtn');
+    const ta = document.getElementById('msgText');
+    const ok = document.getElementById('copyOk');
+    const err = document.getElementById('copyErr');
+    if (!btn || !ta) return;
+
+    function show(el){
+      if (!el) return;
+      el.classList.remove('hidden');
+      setTimeout(()=>el.classList.add('hidden'), 1800);
+    }
+
+    btn.addEventListener('click', async () => {
+      try{
+        const text = ta.value || ta.textContent || '';
+        if (navigator.clipboard && window.isSecureContext){
+          await navigator.clipboard.writeText(text);
+        } else {
+          ta.classList.remove('sr-only');
+          ta.style.position = 'fixed';
+          ta.style.left = '-9999px';
+          ta.select();
+          document.execCommand('copy');
+          ta.classList.add('sr-only');
+        }
+        show(ok);
+      } catch(e){
+        console.error(e);
+        show(err);
+      }
+    });
+  })();
+</script>
 {% endblock %}

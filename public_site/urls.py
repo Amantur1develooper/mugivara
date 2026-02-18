@@ -37,7 +37,7 @@ urlpatterns = [
 
     # checkout
     path("b/<int:branch_id>/checkout/", checkout, name="checkout"),
-    path("b/<int:branch_id>/checkout/success/<int:order_id>/", checkout_success, name="checkout_success"),
+    # path("b/<int:branch_id>/checkout/success/<int:order_id>/", checkout_success, name="checkout_success"),
     path("about/", about, name="about"),
     # path("contacts/", contacts, name="contacts"),
     path("r/<slug:slug>/contacts/", restaurant_contacts, name="restaurant_contacts"),
@@ -54,6 +54,7 @@ urlpatterns = [
     path("<int:branch_id>/reservation/success/<int:booking_id>/", r.booking_success, name="booking_success"),
     
     path("r/<slug:slug>/about/", restaurant_about, name="restaurant_about"),
+path("b/<int:branch_id>/checkout/success/<int:order_id>/", checkout_success, name="checkout_success"),
 
 
 ]

@@ -6,12 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdn.tailwindcss.com"></script>
 
-{% block img %}
-  <link rel="icon" type="image/jpg" sizes="32x32" href="{% static 'mini_logo.jpg' %}">
-  <link rel="icon" type="image/jpg" sizes="16x16" href="{% static 'mini_logo.jpg' %}">
-  <link rel="apple-touch-icon" href="{% static 'mini_logo.jpg' %}">
-  <link rel="shortcut icon" href="{% static 'logo.jpg' %}">
-{% endblock img %}
+  {% block img %}
+    <link rel="icon" type="image/jpg" sizes="32x32" href="{% static 'mini_logo.jpg' %}">
+    <link rel="icon" type="image/jpg" sizes="16x16" href="{% static 'mini_logo.jpg' %}">
+    <link rel="apple-touch-icon" href="{% static 'mini_logo.jpg' %}">
+    <link rel="shortcut icon" href="{% static 'logo.jpg' %}">
+  {% endblock img %}
+
   <title>{% block title %}Онлайн меню Санжи{% endblock %}</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -20,94 +21,98 @@
     :root{
       --text:#0f172a;
       --muted:#64748b;
-      --line:rgba(15,23,42,.10);
-      --shadow: 0 12px 40px rgba(15,23,42,.10);
+      --line:rgba(255,255,255,.18);
+      --shadow: 0 16px 50px rgba(0,0,0,.18);
       --radius: 22px;
     }
+
     html,body{ height:100%; }
     body{
       margin:0;
       font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       color:var(--text);
-      background: url("{% static 'санжи_фон2.png' %}") center / cover no-repeat fixed; 
+      background:
+        radial-gradient(1200px 600px at 20% 0%, rgba(255,255,255,.18), transparent 60%),
+        radial-gradient(900px 500px at 90% 10%, rgba(255,255,255,.12), transparent 55%),
+        linear-gradient(180deg, #FF7A00 0%, #FF6A00 55%, #FF5A00 100%) !important;
+      background-attachment: fixed !important;
     }
 
-    .page-bg{
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-      pointer-events:none;
-      transform: translateZ(0);
-      will-change: transform;
-    }
-    .page-bg::after{
-      content:"";
-      position:absolute;
-      inset:0;
-    }
+    .wrap{ max-width:1120px; margin:0 auto; padding:14px; }
 
-    .surface{
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
+    .glass{
+      background: rgba(255,255,255,.14);
+      border: 1px solid rgba(255,255,255,.22);
       box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: var(--radius);
     }
 
-    .wrap{ max-width:1120px; margin:0 auto; padding:15px; }
-
-    /* ===== TOPBAR (navbar) ===== */
-    .topbar{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:12px; padding:10px 2px 16px;
-    }
     .brand{
       font-family:"Cormorant Garamond", serif;
       font-weight: 800;
       letter-spacing:.3px;
-      font-size: 28px;
+      font-size: 30px;
       line-height: 1;
       text-decoration:none;
-      color: inherit;
+      color: #fff;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      white-space:nowrap;
     }
-    .nav-links{ display:flex; gap:10px; align-items:center; }
-    .nav-link{
-      text-decoration:none;
-      color: var(--text);
-      font-weight: 800;
-      padding: 10px 12px;
-      border-radius: 999px;
-      border: 1px solid transparent;
-      transition: .12s ease;
-    }
-    .nav-link:hover{ background: rgba(15,23,42,.06); border-color: var(--line); }
 
-    .lang{ display:flex; gap:8px; align-items:center; }
-    .btn{
-      border:1px solid var(--line);
-      background:#fff;
-      border-radius:999px;
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 12px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.22);
+      background: rgba(255,255,255,.10);
+      color:#fff;
+      text-decoration:none;
+      font-weight: 800;
+      transition: transform .12s ease, background .12s ease, box-shadow .12s ease;
+    }
+    .chip:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.14);
+      box-shadow: 0 12px 26px rgba(0,0,0,.14);
+    }
+
+    .btn-lang{
+      border:1px solid rgba(255,255,255,.22);
+      background: rgba(255,255,255,.10);
+      border-radius: 999px;
       padding:8px 12px;
       cursor:pointer;
-      transition: transform .12s ease, box-shadow .12s ease;
-      font-weight: 700;
+      font-weight: 900;
+      color:#fff;
+      transition:.12s ease;
     }
-    .btn:hover{ transform: translateY(-1px); box-shadow: 0 8px 20px rgba(15,23,42,.08); }
+    .btn-lang:hover{ background: rgba(255,255,255,.16); transform: translateY(-1px); }
 
-    /* ===== Burger ===== */
+    /* burger */
     .burger{
-      display:none;
       width:44px; height:44px;
       border-radius: 16px;
-      border:1px solid var(--line);
-      background:#fff;
-      align-items:center;
-      justify-content:center;
+      border:1px solid rgba(255,255,255,.22);
+      background: rgba(255,255,255,.10);
+      display:inline-flex;
+      align-items:center; justify-content:center;
       gap:5px;
       cursor:pointer;
     }
-    .burger span{ display:block; width:18px; height:2px; background:#0f172a; border-radius:2px; }
+    .burger span{ display:block; width:18px; height:2px; background:#fff; border-radius:2px; }
 
-    /* Fullscreen menu */
+    .nav-links{ display:flex; gap:10px; align-items:center; }
+    @media (max-width: 820px){
+      .nav-links{ display:none; }
+    }
+
+    /* Drawer */
     .drawer{ position:fixed; inset:0; display:none; z-index:9999; }
     .drawer.open{ display:block; }
     .drawer .backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.35); }
@@ -119,19 +124,13 @@
       flex-direction:column;
     }
     .drawer .top{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
     }
-    .drawer .title{
-      font-weight: 900;
-      font-size: 22px;
-    }
+    .drawer .title{ font-weight: 900; font-size: 22px; }
     .drawer .close{
       width:44px;height:44px;
       border-radius:16px;
-      border:1px solid var(--line);
+      border:1px solid rgba(15,23,42,.12);
       background:#fff;
       cursor:pointer;
       font-size:18px;
@@ -146,110 +145,118 @@
       text-decoration:none;
       color:#0f172a;
       font-weight: 900;
-      font-size: 22px;
+      font-size: 20px;
       padding: 14px 14px;
       border-radius: 18px;
       border: 1px solid rgba(15,23,42,.10);
       background:#fff;
     }
-    .drawer .link:hover{ background: rgba(15,23,42,.04); }
 
-    .drawer .langbox{
-      margin-top:auto;
-      padding-top:14px;
-      border-top:1px solid var(--line);
+    /* Footer */
+    .footer-wrap{
+      margin-top: 18px;
+      padding: 18px;
     }
-
-    @media (max-width: 820px){
-      .nav-links{ display:none; }
-      .burger{ display:inline-flex; }
+    .footer-title{
+      font-weight: 1000;
+      font-size: 18px;
+      color:#fff;
+      letter-spacing:.2px;
     }
+    .footer-text{ color: rgba(255,255,255,.86); font-size: 13px; }
+    .footer-link{ color:#fff; text-decoration:none; font-weight:900; }
+    .footer-link:hover{ text-decoration: underline; }
 
-    .footer{ border-top:1px solid var(--line); padding:18px 0; color:var(--muted); font-size:13px; }
-
-    /* ===== Floating Cart ===== */
-    .sj-cart-fab{
-      position: fixed;
-      right: 16px;
-      bottom: 16px;
-      z-index: 9998;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
+    .cta-btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
       padding: 12px 14px;
-      border-radius: 18px;
-      background: rgba(15,23,42,.92);
-      color: #fff;
-      text-decoration: none;
-      box-shadow: 0 18px 50px rgba(0,0,0,.25);
-      border: 1px solid rgba(255,255,255,.12);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      transition: transform .12s ease, opacity .12s ease, box-shadow .12s ease;
-      max-width: min(92vw, 420px);
-    }
-    .sj-cart-fab:hover{ transform: translateY(-2px); box-shadow: 0 22px 60px rgba(0,0,0,.28); }
-    .sj-cart-fab.hide{ opacity: 0; pointer-events: none; transform: translateY(10px); }
-    .sj-cart-fab__icon{
-      width: 40px; height: 40px; border-radius: 14px;
-      background: rgba(255,255,255,.12);
-      display:flex; align-items:center; justify-content:center;
-      flex:0 0 auto;
-    }
-    .sj-cart-fab__badge{
-      margin-left: 2px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.14);
+      border-radius: 16px;
       font-weight: 900;
-      font-size: 12px;
-      min-width: 28px;
-      text-align:center;
-      flex:0 0 auto;
+      text-decoration:none;
+      border:1px solid rgba(255,255,255,.22);
+      background: rgba(255,255,255,.10);
+      color:#fff;
+      transition:.12s ease;
     }
+    .cta-btn:hover{ background: rgba(255,255,255,.16); transform: translateY(-1px); }
+
+    .cta-wa{ background:#25D366; border-color: rgba(255,255,255,.15); }
+    .cta-wa:hover{ background:#20BE5B; }
+
+    .cta-ig{ background: rgba(168, 4, 183, 0.82); border-color: rgba(255,255,255,.15); }
+    .cta-ig:hover{ background: rgba(168, 4, 183, 0.92); }
   </style>
 
   {% block head_extra %}{% endblock %}
 </head>
 
 <body>
-  <div class="page-bg" aria-hidden="true"></div>
 
   <div class="wrap">
 
-    <!-- ===== NAVBAR ===== -->
-    <div class="topbar">
-      <a class="brand" style="color: white;" href="{% url 'public_site:home' %}">Санжи</a>
+    <!-- ===== красивый HEADER ===== -->
+    <header class="glass px-4 py-4 md:px-5 md:py-5">
+      <div class="flex items-center justify-between gap-3">
 
-      <nav class="nav-links">
+        <!-- left: brand + branch avatar -->
+        <a class="brand" href="{% url 'public_site:home' %}">
+          {% if branch and branch.cover_photo %}
+            <img src="{{ branch.cover_photo.url }}"
+                 alt="{{ branch.name }}"
+                 class="w-10 h-10 rounded-full object-cover ring-2 ring-white/35 shadow-md">
+          {% else %}
+            <img src="{% static 'mini_logo.jpg' %}"
+                 alt="Sanji"
+                 class="w-10 h-10 rounded-full object-cover ring-2 ring-white/35 shadow-md">
+          {% endif %}
+          <span>Санжи</span>
+        </a>
+
+        <!-- desktop nav -->
+        <nav class="nav-links">
           {% if branch %}
-        <a class="nav-link" style="color: white;" href="{% url 'public_site:reservation' branch.id %}">{% trans "Бронирование" %}</a>
+            <a class="chip" href="{% url 'public_site:reservation' branch.id %}">📅 {% trans "Бронирование" %}</a>
+          {% endif %}
+          <a class="chip" href="{% url 'public_site:about' %}"> {% trans "О нас" %}</a>
 
-        {% comment %} <a class="nav-link" style="color: white;" href="{% url 'public_site:restaurant_contacts' restaurant.slug %}">{% trans "Контакты" %}</a> {% endcomment %}
-        {% comment %} <a class="nav-link" style="color: white;" href="{% url 'public_site:about' %}">{% trans "О нас" %}</a> {% endcomment %}
-        {% endif %}
-      </nav>
+          {% if branch and branch.phone %}
+            <a class="chip" href="tel:{{ branch.phone }}">📞 {% trans "Позвонить" %}</a>
+            <a class="chip" href="https://wa.me/{{ branch.phone|cut:'+'|cut:' ' }}"
+               target="_blank" rel="noopener">💬 WhatsApp</a>
+          {% endif %}
+        </nav>
 
-      <div style="display:flex; gap:10px; align-items:center;">
-        <!-- Languages desktop -->
-        <div class="lang" style="display:flex; gap:8px;">
-          <form action="{% url 'set_language' %}" method="post">
+        <!-- right: langs + burger -->
+        <div class="flex items-center gap-2">
+          <form action="{% url 'set_language' %}" method="post" class="hidden md:flex items-center gap-2">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.path }}">
-            <button class="btn" type="submit" name="language" value="ru">RU</button>
-            <button class="btn" type="submit" name="language" value="ky">KY</button>
-            <button class="btn" type="submit" name="language" value="en">EN</button>
+            <button class="btn-lang" type="submit" name="language" value="ru">RU</button>
+            <button class="btn-lang" type="submit" name="language" value="ky">KY</button>
+            <button class="btn-lang" type="submit" name="language" value="en">EN</button>
           </form>
+
+          <button class="burger md:hidden" type="button" id="burgerBtn"
+                  aria-label="Menu" aria-controls="drawer" aria-expanded="false">
+            <span></span><span></span><span></span>
+          </button>
         </div>
 
-        <!-- Burger -->
-        <button class="burger" type="button" id="burgerBtn" aria-label="Menu" aria-controls="drawer" aria-expanded="false">
-          <span></span><span></span><span></span>
-        </button>
       </div>
-    </div>
 
-    <!-- Drawer -->
+      {% if branch %}
+        <div class="mt-3 text-white/85 text-sm">
+          <span class="font-extrabold">{{ branch.name }}</span>
+          <span class="mx-2 opacity-50">•</span>
+          <span>{{ branch.address }}</span>
+        </div>
+      {% endif %}
+    </header>
+
+    <!-- Drawer mobile -->
     <div class="drawer" id="drawer" aria-hidden="true">
       <div class="backdrop" data-close></div>
       <div class="panel" role="dialog" aria-modal="true">
@@ -259,146 +266,113 @@
         </div>
 
         <div class="links">
-         
-           {% if branch %}
-          <a class="link" href="{% url 'public_site:reservation' branch.id %}">{% trans "Бронирование" %}</a>
-          {% comment %} <a class="link" href="{% url 'public_site:contacts' %}">{% trans "Контакты" %}</a> {% endcomment %}
-          <a class="link" href="{% url 'public_site:about' %}">{% trans "О нас" %}</a>
+          {% if branch %}
+            <a class="link" href="{% url 'public_site:reservation' branch.id %}">📅 {% trans "Бронирование" %}</a>
           {% endif %}
-          
+          <a class="link" href="{% url 'public_site:about' %}">ℹ️ {% trans "О нас" %}</a>
+
+          {% if branch and branch.phone %}
+            <a class="link" href="tel:{{ branch.phone }}">📞 {% trans "Позвонить" %}</a>
+            <a class="link" target="_blank" rel="noopener"
+               href="https://wa.me/{{ branch.phone|cut:'+'|cut:' ' }}">💬 WhatsApp</a>
+          {% endif %}
         </div>
 
-        <div class="langbox">
-          <form action="{% url 'set_language' %}" method="post">
+        <div class="mt-auto pt-4 border-t border-black/10">
+          <div class="font-extrabold mb-2">Язык</div>
+          <form action="{% url 'set_language' %}" method="post" class="flex gap-2 flex-wrap">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.path }}">
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
-              <button class="btn" type="submit" name="language" value="ru">RU</button>
-              <button class="btn" type="submit" name="language" value="ky">KY</button>
-              <button class="btn" type="submit" name="language" value="en">EN</button>
-            </div>
+            <button class="btn-lang" type="submit" name="language" value="ru" style="color:#0f172a;border-color:rgba(15,23,42,.12);background:#fff;">RU</button>
+            <button class="btn-lang" type="submit" name="language" value="ky" style="color:#0f172a;border-color:rgba(15,23,42,.12);background:#fff;">KY</button>
+            <button class="btn-lang" type="submit" name="language" value="en" style="color:#0f172a;border-color:rgba(15,23,42,.12);background:#fff;">EN</button>
           </form>
         </div>
       </div>
     </div>
 
     <!-- ===== CONTENT ===== -->
-   
+    <main class="mt-4">
       {% block content %}{% endblock %}
-   
+    </main>
 
-  <footer class="mt-10">
-  <div class="surface"
-       style="background: rgba(227, 220, 220, 0.93); border-color: rgba(255,255,255,.18);">
-    <div class="p-6 md:p-8">
-      <div class="grid gap-6 md:grid-cols-3 md:gap-8">
+    <!-- ===== красивый FOOTER ===== -->
+    {% block footer %}
+    <footer class="footer-wrap glass">
+      <div class="grid gap-6 md:grid-cols-3 md:gap-10">
 
         <!-- CTA -->
-        <div class="md:col-span-1">
-          <div style="color:black; font-weight:900; font-size:20px; line-height:1.15;">
-            Стань партнёром<br>Онлайн меню <span style="opacity:.9;">Санжи</span>
-          </div>
-          <div style="color: rgba(219, 211, 211, 0.94); margin-top:10px; font-size:14px;">
-            QR-меню, заказы со стола, бронирование и уведомления в Telegram.
+        <div>
+          <div class="footer-title">Стань партнёром Санжи</div>
+          <div class="footer-text mt-2">
+            QR-меню, заказы со стола, бронирование, уведомления в Telegram.
             Подключим ресторан быстро.
           </div>
 
           <div class="mt-4 flex flex-wrap gap-2">
-            {% comment %} <a href="https://wa.me/996558212040"
-               class="btn"
-               style="background:#25D366; border-color: rgba(255,255,255,.15); color:white;">
-              WhatsApp
-            </a>
-            <a href="https://instagram.com/amantur555"
-               class="btn"
-               style="background: rgba(168, 4, 183, 0.8); border-color: rgba(255,255,255,.18); color:white;">
-              Instagram
-            </a> {% endcomment %}
+            <a class="cta-btn cta-wa" href="https://wa.me/996558212040" target="_blank" rel="noopener">💬 WhatsApp</a>
+            <a class="cta-btn cta-ig" href="https://instagram.com/amantur555" target="_blank" rel="noopener">📷 Instagram</a>
           </div>
 
-          <div style="color: rgba(6, 5, 5, 0.7); font-size:12px; margin-top:10px;">
-            Напиши “ПАРТНЁР” — отправлю условия и демо.
+          <div class="footer-text mt-3">
+            Напиши <b>“ПАРТНЁР”</b> — отправлю условия и демо.
           </div>
         </div>
 
         <!-- Links -->
-        <div class="md:col-span-1">
-          <div style="color:black; font-weight:900; margin-bottom:10px;">Разделы</div>
-          <div class="flex flex-col gap-2" style="font-weight:800;">
-            <a href="{% url 'public_site:home' %}" style="color: black; text-decoration:none;">Главная</a>
+        <div>
+          <div class="footer-title">Разделы</div>
+          <div class="mt-3 flex flex-col gap-2">
+            <a class="footer-link" href="{% url 'public_site:home' %}">Главная</a>
             {% if branch %}
-              <a href="{% url 'public_site:reservation' branch.id %}" style="color: black; text-decoration:none;">Бронирование</a>
+              <a class="footer-link" href="{% url 'public_site:reservation' branch.id %}">Бронирование</a>
             {% endif %}
-            <a href="{% url 'public_site:about' %}" style="color: black; text-decoration:none;">О нас</a>
+            <a class="footer-link" href="{% url 'public_site:about' %}">О нас</a>
           </div>
         </div>
 
         <!-- Contacts -->
-        <div class="md:col-span-1">
-          <div style="color:black; font-weight:900; margin-bottom:10px;">Контакты</div>
-
-          <div class="grid gap-2 text-sm" style="color: rgba(255,255,255,.82);">
-            <div class="flex items-center gap-2">
-              <span style="opacity:.9;">📍</span>
-              <span>Кыргызстан</span>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <span style="opacity:.9;">📞</span>
-              <a href="https://wa.me/996558212040"
-                 style="color: rgba(225, 29, 29, 0.92); text-decoration:none; font-weight:900;">
+        <div>
+          <div class="footer-title">Контакты</div>
+          <div class="mt-3 footer-text">
+            <div class="flex items-center gap-2"><span>📍</span><span>Кыргызстан</span></div>
+            <div class="flex items-center gap-2 mt-2">
+              <span>📞</span>
+              <a class="footer-link" href="https://wa.me/996558212040" target="_blank" rel="noopener">
                 +996 558 212 040
               </a>
             </div>
-
-            <div class="flex items-center gap-2">
-              <span style="opacity:.9;">📷</span>
-              <a href="https://instagram.com/amantur555"
-                 style="color: rgba(255,255,255,.92); text-decoration:none; font-weight:900;">
+            <div class="flex items-center gap-2 mt-2">
+              <span>📷</span>
+              <a class="footer-link" href="https://instagram.com/amantur555" target="_blank" rel="noopener">
                 @amantur555
               </a>
             </div>
           </div>
 
-          <div class="mt-4 rounded-2xl p-4"
-               style="background: rgba(0,0,0,.22); border: 1px solid rgba(255,255,255,.14);">
-            <div style="color:white; font-weight:900;">Подключение</div>
-            <div style="color: rgba(255,255,255,.78); font-size:13px; margin-top:6px;">
+          <div class="mt-4 p-4 rounded-2xl"
+               style="background: rgba(0,0,0,.16); border:1px solid rgba(255,255,255,.18);">
+            <div class="text-white font-extrabold">Подключение за 1 день</div>
+            <div class="footer-text mt-1">
               1) Получаем меню и цены<br>
               2) Делаем QR-столы<br>
-              3) Подключаем Бронирование<br>
-              4) Запускаем за 1 день
+              3) Подключаем бронирование<br>
+              4) Запускаем
             </div>
           </div>
         </div>
 
       </div>
 
-      <!-- bottom line -->
-      <div class="mt-6 pt-4"
-           style="border-top:1px solid rgba(255,255,255,.14); display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;">
-        <div style="color: rgb(18, 17, 17); font-size:12px;">
-          © {{ now|date:"Y" }} Санжи — онлайн меню и заказы
-        </div>
-        <div style="color: rgba(56, 42, 42, 0.65); font-size:12px;">
-          Сделано для ресторанов Кыргызстана 🇰🇬
-        </div>
+      <div class="mt-6 pt-4 flex flex-wrap items-center justify-between gap-2"
+           style="border-top:1px solid rgba(255,255,255,.18);">
+        <div class="footer-text">© {% now "Y" %} Санжи — онлайн меню и заказы</div>
+        <div class="footer-text">Сделано для ресторанов Кыргызстана 🇰🇬 · Разработка Amantur Agency</div>
       </div>
-
-    </div>
-  </div>
-</footer>
+    </footer>
+    {% endblock footer %}
 
   </div>
-
-  {% if table %}
-          d
-          {% else %}
-  {% if branch %}
-   
- {% endif %}
-
-  {% endif %}
 
   <script>
     (function(){
@@ -421,16 +395,9 @@
       };
 
       btn.addEventListener('click', open);
-
-      drawer.addEventListener('click', (e) => {
-        if (e.target && e.target.closest('[data-close]')) close();
-      });
-
+      drawer.addEventListener('click', (e) => { if (e.target && e.target.closest('[data-close]')) close(); });
       drawer.querySelectorAll('a').forEach(a => a.addEventListener('click', close));
-
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && drawer.classList.contains('open')) close();
-      });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && drawer.classList.contains('open')) close(); });
     })();
   </script>
 

@@ -1,126 +1,274 @@
 {% extends "base.html" %}
-{% load i18n i18n_attrs static%}
+{% load i18n i18n_attrs static %}
+
 {% block img %}
   <link rel="icon" type="image/jpg" sizes="32x32" href="{% static 'mini_logo.jpg' %}">
   <link rel="icon" type="image/jpg" sizes="16x16" href="{% static 'mini_logo.jpg' %}">
-  <link rel="apple-touch-icon" href="{{ branch.cover_photo.url }}' %}">
+  <link rel="apple-touch-icon" href="{{ branch.cover_photo.url }}">
   <link rel="shortcut icon" href="{{ branch.cover_photo.url }}">
 {% endblock img %}
+
 {% block title %}{% trans "Контакты" %} — {% t restaurant "name" %}{% endblock %}
 
 {% block content %}
+<style>
+  /* --- Buttons --- */
+  .sj-btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    gap:10px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    font-weight: 900;
+    font-size: 14px;
+    line-height: 1;
+    border: 1px solid rgba(15,23,42,.12);
+    background: rgba(255,255,255,.92);
+    color: #0f172a;
+    transition: transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
+    box-shadow: 0 12px 35px rgba(15,23,42,.08);
+    text-decoration:none;
+    white-space:nowrap;
+  }
+  .sj-btn:hover{ transform: translateY(-1px); box-shadow: 0 18px 55px rgba(15,23,42,.14); }
+  .sj-btn:active{ transform: translateY(0px) scale(.99); }
+
+  /* primary MENU button */
+  .sj-btn-menu{
+    background: linear-gradient(180deg, rgba(15,23,42,.95), rgba(15,23,42,.88));
+    color: #fff;
+    border-color: rgba(255,255,255,.22);
+    box-shadow: 0 18px 60px rgba(0,0,0,.22);
+    position: relative;
+    overflow: hidden;
+  }
+  .sj-btn-menu::after{
+    content:"";
+    position:absolute; inset:-2px;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,.35), transparent);
+    transform: translateX(-120%);
+    animation: sjShimmer 2.2s linear infinite;
+    pointer-events:none;
+  }
+  @keyframes sjShimmer{
+    0%{ transform: translateX(-120%); }
+    55%{ transform: translateX(120%); }
+    100%{ transform: translateX(120%); }
+  }
+  .sj-btn-menu:hover{ opacity:.98; }
+  .sj-btn-menu .sj-badge{
+    margin-left: 2px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.14);
+    border: 1px solid rgba(255,255,255,.18);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  /* whatsapp */
+  .sj-btn-wa{
+    background:#25D366;
+    color:#fff;
+    border-color: rgba(255,255,255,.18);
+    box-shadow: 0 18px 55px rgba(37,211,102,.28);
+  }
+
+  /* call */
+  .sj-btn-call{
+    background: rgba(255,255,255,.92);
+  }
+
+  /* map */
+  .sj-btn-map{
+    background: rgba(255,255,255,.92);
+  }
+
+  /* secondary */
+  .sj-btn-secondary{
+    background: rgba(255,255,255,.92);
+  }
+
+  /* --- Cards --- */
+  .sj-card{
+    border-radius: 26px;
+    border: 1px solid rgba(15,23,42,.10);
+    background: rgba(255,255,255,.94);
+    box-shadow: 0 16px 55px rgba(15,23,42,.12);
+    overflow:hidden;
+  }
+  .sj-card-head{
+    padding: 16px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap: 14px;
+  }
+  .sj-branch-title{ font-weight: 950; font-size: 18px; color:#0f172a; }
+  .sj-branch-sub{ margin-top:6px; font-size: 13px; color: rgba(15,23,42,.62); }
+
+  .sj-status{
+    display:inline-flex; align-items:center; gap:8px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-weight: 900;
+    font-size: 12px;
+    border: 1px solid rgba(15,23,42,.10);
+    background: rgba(255,255,255,.9);
+  }
+  .sj-dot{ width:8px; height:8px; border-radius:999px; }
+
+  .sj-media{
+    width: 86px; height: 86px;
+    border-radius: 20px;
+    object-fit: cover;
+    border: 1px solid rgba(15,23,42,.12);
+  }
+
+  /* actions area */
+  .sj-actions{
+    padding: 0 16px 16px 16px;
+    display:flex;
+    flex-wrap:wrap;
+    gap: 10px;
+  }
+
+  /* header hero */
+  .sj-hero{
+    border-radius: 28px;
+    overflow:hidden;
+    border: 1px solid rgba(255,255,255,.14);
+    background: rgba(255,255,255,.08);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 18px 70px rgba(0,0,0,.18);
+  }
+
+  @media (max-width: 520px){
+    .sj-btn{ width: 100%; justify-content:center; padding: 13px 14px; }
+    .sj-media{ width: 76px; height: 76px; }
+    .sj-card-head{ padding: 14px; }
+    .sj-actions{ padding: 0 14px 14px 14px; }
+  }
+</style>
 
 <div class="max-w-6xl mx-auto px-4 py-6">
 
-  <div class="flex items-start justify-between gap-4">
-    <div class="flex items-center gap-3">
-      <div class="w-12 h-12 rounded-2xl bg-stone-100 ring-1 ring-stone-200 overflow-hidden flex items-center justify-center">
-        {% if restaurant.logo %}
-          <img src="{{ restaurant.logo.url }}" alt="" class="w-full h-full object-cover" loading="lazy" decoding="async">
-        {% else %}
-          <span class="font-extrabold text-stone-600">{{ restaurant.name_ru|slice:":1" }}</span>
-        {% endif %}
-      </div>
-      <div>
-        <h1  class=" text-white text-2xl md:text-3xl font-extrabold">{% t restaurant "name" %}</h1>
-        <div class="text-white text-stone-600 text-sm mt-1">{% trans "Контакты филиалов" %}: {{ branches|length }}</div>
-      </div>
-    </div>
-
-    <a href="{% url 'public_site:home' %}"
-       class="px-4 py-2 rounded-xl ring-1 ring-stone-200 hover:bg-stone-50">
-      ← {% trans "Назад" %}
-    </a>
-  </div>
-
-  <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-      <div class="rounded-3xl bg-white ring-1 ring-stone-200 p-7 shadow-sm">
+  <!-- HEADER -->
+  <div class="sj-hero p-5 sm:p-7">
     <div class="flex items-start justify-between gap-4">
-      <div>
-        <h1 class="text-2xl md:text-3xl font-extrabold">{% trans "О нас" %}</h1>
-        <div class="mt-1 text-stone-600">{% t restaurant "name" %}</div>
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-12 h-12 rounded-2xl bg-white/90 ring-1 ring-white/20 overflow-hidden flex items-center justify-center shrink-0">
+          {% if restaurant.logo %}
+            <img src="{{ restaurant.logo.url }}" alt="" class="w-full h-full object-cover" loading="lazy" decoding="async">
+          {% else %}
+            <span class="font-extrabold text-stone-800">{{ restaurant.name_ru|slice:":1" }}</span>
+          {% endif %}
+        </div>
+
+        <div class="min-w-0">
+          <h1 class="text-white text-2xl md:text-3xl font-extrabold truncate">{% t restaurant "name" %}</h1>
+          <div class="text-white/80 text-sm mt-1">
+            {% trans "Контакты филиалов" %}: <span class="font-extrabold">{{ branches|length }}</span>
+          </div>
+        </div>
       </div>
-    
-    </div>
 
-    <div class="mt-6 prose max-w-none">
-      {% t restaurant "about" as about_text %}
-      {% if about_text %}
-        <p style="white-space:pre-line">{{ about_text }}</p>
-      {% else %}
-        <p class="text-stone-500">{% trans "Описание пока не добавлено." %}</p>
-      {% endif %}
-    </div>
-
-    <div class="mt-6 flex flex-wrap gap-2">
-      <a href="{% url 'public_site:restaurant_contacts' restaurant.slug %}"
-         class="px-4 py-2 rounded-xl ring-1 ring-stone-200 hover:bg-stone-50">
-        {% trans "Контакты" %}
+      <a href="{% url 'public_site:home' %}"
+         class="sj-btn"
+         style="background: rgba(255,255,255,.12); color: white; border-color: rgba(255,255,255,.22); box-shadow:none;">
+        ← {% trans "Назад" %}
       </a>
     </div>
-  </div>
-    {% for b in branches %}
-      <div class="rounded-2xl ring-1 ring-stone-200 p-4 bg-white">
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <div class="font-extrabold">{% t b "name" %}</div>
-            <div class="text-sm text-stone-600 mt-1">{{ b.address|default:"" }}</div>
 
-            <div class="text-sm mt-2">
+    <div class="mt-4 text-white/80 text-sm leading-relaxed">
+      {% trans "Выберите филиал и нажмите" %} <b class="text-white">“{% trans "Меню" %}”</b> — {% trans "чтобы открыть QR-меню и оформить заказ." %}
+    </div>
+  </div>
+
+  <!-- BRANCHES -->
+  <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-5">
+    {% for b in branches %}
+      <div class="sj-card">
+        <div class="sj-card-head">
+          <div class="min-w-0">
+            <div class="sj-branch-title truncate">{% t b "name" %}</div>
+            <div class="sj-branch-sub">
+              {{ b.address|default:"" }}
+              {% if b.phone %}
+                <span class="mx-2 opacity-40">•</span>
+                <span class="font-semibold text-stone-700">{% trans "Тел." %}</span> {{ b.phone }}
+              {% endif %}
+            </div>
+
+            <div class="mt-3">
               {% if b.is_open_now %}
-                <span class="inline-flex px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+                <span class="sj-status">
+                  <span class="sj-dot" style="background:#22c55e"></span>
                   {% trans "Открыто сейчас" %}
                 </span>
               {% else %}
-                <span class="inline-flex px-2 py-1 rounded-lg bg-stone-50 text-stone-600 ring-1 ring-stone-200">
+                <span class="sj-status">
+                  <span class="sj-dot" style="background:#64748b"></span>
                   {% trans "Закрыто сейчас" %}
                 </span>
               {% endif %}
             </div>
-
-            {% if b.phone %}
-              <div class="text-sm text-stone-700 mt-2">
-                <span class="text-stone-500">{% trans "Тел." %}</span> {{ b.phone }}
-              </div>
-            {% endif %}
           </div>
 
           {% if b.cover_photo %}
             <img src="{{ b.cover_photo.url }}" alt=""
-                 class="w-20 h-20 rounded-2xl object-cover ring-1 ring-stone-200"
+                 class="sj-media"
                  loading="lazy" decoding="async">
           {% endif %}
         </div>
 
-        <div class="mt-3 flex flex-wrap gap-2">
-                  {% if b.map_url %}
-  <a href="{{ b.map_url }}" target="_blank" 
-     class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-stone-900 text-white font-semibold">
-    📍 Как добраться
-  </a>
-{% endif %}
+        <div class="sj-actions">
+          <!-- MENU (главная кнопка) -->
+          <a href="{% url 'public_site:branch_menu' b.id %}" class="sj-btn sj-btn-menu">
+            🍽️ {% trans "Меню" %}
+            <span class="sj-badge">{% trans "Открыть" %}</span>
+          </a>
+
           {% if b.phone %}
-            <a href="tel:{{ b.phone }}"
-               class="px-3 py-2 rounded-xl bg-stone-900 text-white text-sm font-semibold">
-              {% trans "Позвонить" %}
+            <a href="tel:{{ b.phone }}" class="sj-btn sj-btn-call">
+              📞 {% trans "Позвонить" %}
             </a>
 
             <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}"
-               target="_blank" style="background-color: #25D366;"
-               class="px-3 py-2 rounded-xl  b ring-1 ring-stone-200 hover:bg-stone-50 text-sm font-semibold">
-              WhatsApp
+               target="_blank"
+               class="sj-btn sj-btn-wa">
+              💬 WhatsApp
             </a>
           {% endif %}
 
-          <a href="{% url 'public_site:branch_menu' b.id %}"
-             class="px-3 py-2 rounded-xl ring-1 ring-stone-200 hover:bg-stone-50 text-sm font-semibold">
-            {% trans "Меню" %}
-          </a>
+          {% if b.map_url %}
+            <a href="{{ b.map_url }}" target="_blank" class="sj-btn sj-btn-map">
+              📍 {% trans "Как добраться" %}
+            </a>
+          {% endif %}
 
-          <a href="{% url 'public_site:reservation' b.id %}"
-             class="px-3 py-2 rounded-xl ring-1 ring-stone-200 hover:bg-stone-50 text-sm font-semibold">
-            {% trans "Бронирование" %}
-          </a>
+          {% if b.phone %}
+  {% with wa=b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' %}
+    <a
+      target="_blank"
+      href="https://wa.me/{{ wa }}?text={% filter urlencode %}Здравствуйте! Хочу забронировать стол.
+
+Филиал: {% t b "name" %}
+Дата: __.__.____
+Время: __:__
+Гостей: __
+Имя: __
+Комментарий: __{% endfilter %}"
+      class="sj-btn sj-btn-secondary">
+      🗓️ {% trans "Бронирование" %}
+    </a>
+  {% endwith %}
+{% else %}
+  <a href="{% url 'public_site:reservation' b.id %}" class="sj-btn sj-btn-secondary">
+    🗓️ {% trans "Бронирование" %}
+  </a>
+{% endif %}
+
         </div>
       </div>
     {% empty %}
@@ -130,5 +278,32 @@
     {% endfor %}
   </div>
 
+  <!-- ABOUT -->
+  <div class="mt-6">
+    <div class="rounded-3xl bg-white/95 ring-1 ring-black/5 p-7 shadow-[0_16px_55px_rgba(15,23,42,.12)]">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-2xl md:text-3xl font-extrabold">{% trans "О нас" %}</h2>
+          <div class="mt-1 text-stone-600">{% t restaurant "name" %}</div>
+        </div>
+      </div>
+
+      <div class="mt-6 prose max-w-none">
+        {% t restaurant "about" as about_text %}
+        {% if about_text %}
+          <p style="white-space:pre-line">{{ about_text }}</p>
+        {% else %}
+          <p class="text-stone-500">{% trans "Описание пока не добавлено." %}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
 </div>
 {% endblock %}
+
+{% block footer %}
+<a href="{% url 'public_site:home' %}" class="inline-flex items-center gap-2 text-white/90 hover:text-white font-semibold">
+  ⚡ Разработка Amantur agency
+</a>
+{% endblock footer %}

@@ -1,65 +1,66 @@
 {% extends "base.html" %}
 {% load static i18n i18n_attrs %}
+
 {% block img %}
   <link rel="icon" type="image/jpg" sizes="32x32" href="{% static 'mini_logo.jpg' %}">
   <link rel="icon" type="image/jpg" sizes="16x16" href="{% static 'mini_logo.jpg' %}">
-  <link rel="apple-touch-icon" href="{{ branch.cover_photo.url }}' %}">
-  <link rel="shortcut icon" href="{{ branch.cover_photo.url }}">
+  <link rel="apple-touch-icon" href="{% static 'mini_logo.jpg' %}">
+  <link rel="shortcut icon" href="{% static 'mini_logo.jpg' %}">
 {% endblock img %}
+       
+
+{% block title %}{{ branch.name_ru }} — Санжи{% endblock %}
+
 {% block content %}
-<style>  body{
-    background:url("{{ branch.cover_photo.url }}") center / cover no-repeat fixed; 
-    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  }</style>
-<div class="min-h-[85vh]">
-
-  <style>
-  /* ... твои стили ... */
-
-  /* Floating Cart */
-  .cart-fab{
-    position: fixed;
-    right: 18px;
-    bottom: 18px;
-    z-index: 9998;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    border-radius: 999px;
-    background: rgba(15,23,42,.95);
-    color: #fff;
-    box-shadow: 0 16px 40px rgba(0,0,0,.25);
-    border: 1px solid rgba(255,255,255,.12);
-    backdrop-filter: blur(10px);
-  }
-  .cart-fab:hover{ opacity:.95; }
-  .cart-fab.hide{ display:none; }
-
-  .cart-badge{
-    min-width: 26px;
-    height: 22px;
-    padding: 0 8px;
-    border-radius: 999px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 800;
-    background: rgba(255,255,255,.16);
-  }
-  .cart-pop{ animation: cartpop .22s ease; }
-  @keyframes cartpop{
-    0%{ transform: scale(1); }
-    60%{ transform: scale(1.12); }
-    100%{ transform: scale(1); }
-  }
-</style>
-
 
 <style>
-  
-  /* Toast */
+  /* ===== Page BG (orange) ===== */
+  body{
+    background: radial-gradient(1200px 600px at 20% 0%, rgba(255,255,255,.18), transparent 60%),
+                radial-gradient(900px 500px at 90% 10%, rgba(255,255,255,.12), transparent 55%),
+                linear-gradient(180deg, #FF7A00 0%, #FF6A00 55%, #FF5A00 100%) !important;
+    background-attachment: fixed !important;
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  }
+
+  /* hide base background layer if any */
+  .page-bg{ display:none !important; }
+
+  /* ===== Helpers ===== */
+  .no-scrollbar::-webkit-scrollbar{ display:none; }
+  .no-scrollbar{ -ms-overflow-style:none; scrollbar-width:none; }
+
+  /* ===== Sticky categories (scrollspy) ===== */
+  .cats-wrap{
+    position: sticky;
+    top: 74px; /* под твой topbar, если надо — подними/опусти */
+    z-index: 40;
+    background: rgba(255,255,255,.90);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(15,23,42,.08);
+    border-left: 0;
+    border-right: 0;
+  }
+  .cat-link{
+    white-space: nowrap;
+    border-radius: 999px;
+    padding: 10px 14px;
+    font-weight: 900;
+    font-size: 13px;
+    background: rgba(255,255,255,.85);
+    border: 1px solid rgba(15,23,42,.14);
+    color: #0f172a;
+    transition: .12s ease;
+  }
+  .cat-link:hover{ transform: translateY(-1px); }
+  .cat-link.active{
+    background: #0f172a;
+    border-color: #0f172a;
+    color:#fff;
+  }
+
+  /* ===== Toast ===== */
   .toast-wrap{
     position: fixed;
     left: 50%;
@@ -84,10 +85,7 @@
     font-size: 14px;
     max-width: min(92vw, 520px);
   }
-  .toast.show{
-    opacity: 1;
-    transform: translateY(0);
-  }
+  .toast.show{ opacity:1; transform: translateY(0); }
   .toast .dot{
     width: 10px; height: 10px;
     border-radius: 999px;
@@ -95,43 +93,266 @@
     box-shadow: 0 0 0 6px rgba(34,197,94,.18);
   }
 
-  /* Button animation */
-  .btn-anim{
-    position: relative;
-    overflow: hidden;
-  }
-  .btn-anim.loading{
-    opacity: .85;
-    pointer-events: none;
-  }
+  /* ===== Add button animation ===== */
+  .btn-anim{ position:relative; overflow:hidden; }
+  .btn-anim.loading{ opacity:.85; pointer-events:none; }
   .btn-anim.loading::after{
     content:"";
-    position:absolute;
-    inset:0;
+    position:absolute; inset:0;
     background: linear-gradient(120deg, transparent, rgba(255,255,255,.35), transparent);
     transform: translateX(-100%);
     animation: shimmer .7s linear infinite;
   }
-  @keyframes shimmer{
-    to{ transform: translateX(100%); }
-  }
-  .btn-anim.pulse{
-    animation: pulse .28s ease;
-  }
+  @keyframes shimmer{ to{ transform: translateX(100%); } }
+  .btn-anim.pulse{ animation: pulse .28s ease; }
   @keyframes pulse{
+    0%{ transform:scale(1); }
+    50%{ transform:scale(1.03); }
+    100%{ transform:scale(1); }
+  }
+
+  /* ===== BIG Floating Cart ===== */
+  .cart-fab{
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 9998;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 20px;
+    background: rgba(15,23,42,.95);
+    color: #fff;
+    text-decoration:none;
+    box-shadow: 0 18px 50px rgba(0,0,0,.25);
+    border: 1px solid rgba(255,255,255,.14);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: transform .12s ease, opacity .12s ease;
+    max-width: min(92vw, 520px);
+  }
+  .cart-fab:hover{ transform: translateY(-2px); }
+  .cart-fab.hide{ opacity:0; pointer-events:none; transform: translateY(10px); }
+  .cart-icon{
+    width: 44px; height: 44px;
+    border-radius: 16px;
+    background: rgba(255,255,255,.14);
+    display:flex; align-items:center; justify-content:center;
+    font-size: 20px;
+    flex:0 0 auto;
+  }
+  .cart-badge{
+    min-width: 34px;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 999px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    font-size: 13px;
+    font-weight: 900;
+    background: rgba(255,255,255,.16);
+    flex:0 0 auto;
+  }
+  .cart-pop{ animation: cartpop .22s ease; }
+  @keyframes cartpop{
     0%{ transform: scale(1); }
-    50%{ transform: scale(1.03); }
+    60%{ transform: scale(1.12); }
     100%{ transform: scale(1); }
   }
-  
+
+  /* ===== Scroll to top ===== */
+  .top-fab{
+    position: fixed;
+    right: 16px;
+    bottom: 86px; /* выше корзины */
+    z-index: 9998;
+    width: 52px;
+    height: 52px;
+    border-radius: 18px;
+    background: rgba(255,255,255,.92);
+    border: 1px solid rgba(15,23,42,.14);
+    box-shadow: 0 16px 40px rgba(0,0,0,.18);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size: 18px;
+    font-weight: 900;
+    color:#0f172a;
+    cursor:pointer;
+    transition: transform .12s ease, opacity .12s ease;
+  }
+  .top-fab:hover{ transform: translateY(-2px); }
+  .top-fab.hide{ opacity:0; pointer-events:none; transform: translateY(10px); }
+
+  /* headings scroll offset */
+  .cat-section{ scroll-margin-top: 140px; }
 </style>
 
 <div class="toast-wrap" id="toastWrap" aria-live="polite" aria-atomic="true"></div>
 
-<script>
-  const fab = document.getElementById('cartFab');
-if (fab) fab.classList.remove('hide');
+<!-- HERO (без фото) -->
+<!-- HERO (с картинкой филиала, фон страницы остаётся оранжевым) -->
+<section class="max-w-6xl mx-auto px-4 pt-5 pb-4">
+  <div class="rounded-3xl overflow-hidden shadow-xl ring-1 ring-black/5 bg-white">
+    <div class="flex flex-col md:flex-row">
 
+      {% if branch.cover_photo %}
+      <!-- Cover photo -->
+      <div class="relative md:order-2 md:w-[360px] lg:w-[420px]">
+        <img
+          src="{{ branch.cover_photo.url }}"
+          alt="{{ branch.name }}"
+          loading="lazy"
+          decoding="async"
+          class="w-full object-cover aspect-[16/9] md:aspect-auto md:h-full md:min-h-[240px]"
+        >
+        <!-- лёгкая тонировка чтобы выглядело премиально -->
+        <div class="absolute inset-0 bg-gradient-to-t from-black/25 via-black/0 to-black/0"></div>
+
+        <!-- подпись на фото (по желанию) -->
+        <div class="absolute left-4 bottom-4 right-4">
+          <div class="text-white font-extrabold text-lg drop-shadow">
+            {{ branch.name }}
+          </div>
+          <div class="text-white/90 text-xs mt-1 line-clamp-2 drop-shadow">
+            {{ branch.address }}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Text -->
+      <div class="p-4 md:p-7 flex-1">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-stone-900">
+              {{ branch.name_ru }}
+            </h1>
+            <div class="mt-2 text-sm text-stone-600">
+              {{ branch.address }}
+              {% if branch.delivery_enabled %}
+                · {% trans "Доставка" %}: {% trans "Мин." %} {{ branch.min_order_amount }} · {% trans "Дост." %} {{ branch.delivery_fee }}
+              {% else %}
+                · {% trans "Самовывоз" %}
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- верхняя корзина (можно оставить) -->
+          <a href="{% url 'public_site:cart_detail' branch.id %}"
+             class="hidden sm:inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-stone-900 text-white font-semibold shadow hover:bg-stone-800">
+            {% trans "Корзина" %}
+            <span class="px-2 py-1 rounded-xl bg-white/15 text-xs" data-cart-qty>{{ cart_qty }}</span>
+            <span class="hidden md:inline" data-cart-total>· {{ cart_total }} {% trans "сом" %}</span>
+          </a>
+        </div>
+
+        {% if branch.cover_photo %}
+          <div class="mt-4 text-xs text-stone-500">
+            {% trans "Фото филиала" %}: {{ branch.name_ru }}
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- Sticky categories (with active highlight) -->
+<div class="cats-wrap">
+  <div class="max-w-6xl mx-auto px-3 py-2 overflow-x-auto no-scrollbar" id="catsBar">
+    <div class="flex gap-2 md:gap-3" id="catsLinks">
+      <a href="#menu" class="cat-link active" data-cat-link="menu">{% trans "Все" %}</a>
+      {% for c in menu %}
+        <a href="#cat-{{ c.branch_category.id }}"
+           class="cat-link"
+           data-cat-link="cat-{{ c.branch_category.id }}">
+          {% t c.branch_category.category "name" %}
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Menu -->
+<section id="menu" class="max-w-6xl mx-auto px-4 py-6">
+  {% for c in menu %}
+    <section id="cat-{{ c.branch_category.id }}" class="mb-10 cat-section" data-cat-section="cat-{{ c.branch_category.id }}">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="flex-1 h-px bg-white/55"></div>
+        <h2 class="text-xl md:text-2xl text-white font-extrabold tracking-wide">
+          {% t c.branch_category.category "name" %}
+        </h2>
+        <div class="flex-1 h-px bg-white/55"></div>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
+        {% for row in c.items %}
+          {% with bi=row.branch_item dish=row.branch_item.item %}
+          <article class="group relative overflow-hidden rounded-3xl bg-white ring-1 ring-black/5 shadow-lg flex flex-col">
+            {% if dish.photo %}
+              <img src="{{ dish.photo.url }}"
+                   alt="{% t dish 'name' %}"
+                   loading="lazy"
+                   decoding="async"
+                   width="480" height="320"
+                   class="aspect-[4/3] w-full object-cover transition group-hover:scale-[1.03]">
+            {% endif %}
+
+            <div class="p-3 md:p-4 flex-1 flex flex-col">
+              <div class="min-h-[48px]">
+                <h3 class="text-base md:text-lg font-semibold leading-snug">{% t dish "name" %}</h3>
+
+                {% t dish "description" as desc %}
+                {% if desc %}
+                  <div class="text-sm text-stone-500 mt-0.5 line-clamp-2">{{ desc }}</div>
+                {% endif %}
+              </div>
+
+              <div class="mt-3 md:mt-4 flex items-end justify-between gap-3">
+                <div>
+                  <div class="text-xs text-stone-400">{% trans "Цена" %}</div>
+                  <div class="text-lg md:text-xl font-extrabold">{{ bi.price }} {% trans "сом" %}</div>
+                </div>
+
+                <!-- add to cart (без qty=1 инпута) -->
+                <form action="{% url 'public_site:add_to_cart' bi.id %}"
+                      method="post"
+                      class="flex items-center justify-end"
+                      data-add-to-cart>
+                  {% csrf_token %}
+                  <button type="submit"
+                          class="btn-anim inline-flex items-center justify-center whitespace-nowrap px-4 py-2 rounded-2xl text-white text-sm md:text-[15px] font-extrabold shadow-md hover:shadow-lg transition"
+                          style="background:#0f172a">
+                    +{% trans "" %}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </article>
+          {% endwith %}
+        {% endfor %}
+      </div>
+    </section>
+  {% endfor %}
+</section>
+
+<!-- BIG floating cart -->
+<a id="cartFab"
+   href="{% url 'public_site:cart_detail' branch.id %}"
+   class="cart-fab {% if cart_qty|default:0 == 0 %}hide{% endif %}">
+  <span class="cart-icon">🧺</span>
+  <span class="cart-badge" data-cart-qty>{{ cart_qty }}</span>
+  <span class="hidden sm:inline" data-cart-total>· {{ cart_total }} {% trans "сом" %}</span>
+</a>
+
+<!-- Scroll to top -->
+<button id="toTopFab" class="top-fab hide" type="button" aria-label="Наверх">↑</button>
+
+<script>
   function getCookie(name) {
     const v = document.cookie.split('; ').find(row => row.startsWith(name + '='));
     return v ? decodeURIComponent(v.split('=')[1]) : '';
@@ -149,34 +370,31 @@ if (fab) fab.classList.remove('hide');
       setTimeout(() => el.remove(), 220);
     }, 1400);
   }
-function updateCartUI(qty, total){
-  // qty / total могут прийти строкой — приведём
-  const qNum = Number(qty) || 0;
 
-  document.querySelectorAll('[data-cart-qty]').forEach(el => {
-    el.textContent = qNum;
-    el.classList.remove('cart-pop');
-    void el.offsetWidth; // перезапуск анимации
-    el.classList.add('cart-pop');
-  });
+  function updateCartUI(qty, total){
+    const qNum = Number(qty) || 0;
 
-  document.querySelectorAll('[data-cart-total]').forEach(el => {
-    // показываем единообразно
-    el.textContent = `· ${total} сом`;
-  });
+    document.querySelectorAll('[data-cart-qty]').forEach(el => {
+      el.textContent = qNum;
+      el.classList.remove('cart-pop');
+      void el.offsetWidth;
+      el.classList.add('cart-pop');
+    });
 
-  const fab = document.getElementById('cartFab');
-  if (fab){
-    fab.classList.toggle('hide', qNum <= 0);
+    document.querySelectorAll('[data-cart-total]').forEach(el => {
+      el.textContent = `· ${total} сом`;
+    });
+
+    const fab = document.getElementById('cartFab');
+    if (fab) fab.classList.toggle('hide', qNum <= 0);
   }
-}
 
-
-  // защита от клика по родителям (если вдруг карточка кликабельная)
+  // stop card click bubbling if any
   document.addEventListener('click', (e) => {
     if (e.target.closest('form[data-add-to-cart]')) e.stopPropagation();
   }, true);
 
+  // add-to-cart AJAX
   document.addEventListener('submit', async (e) => {
     const form = e.target.closest('form[data-add-to-cart]');
     if (!form) return;
@@ -185,9 +403,7 @@ function updateCartUI(qty, total){
     e.stopPropagation();
 
     const btn = form.querySelector('button[type="submit"]');
-    if (btn){
-      btn.classList.add('btn-anim','loading');
-    }
+    if (btn) btn.classList.add('btn-anim','loading');
 
     try {
       const resp = await fetch(form.action, {
@@ -216,214 +432,91 @@ function updateCartUI(qty, total){
       console.error(err);
       showToast('Ошибка сети / сервера ❌');
     } finally {
-      if (btn){
-        btn.classList.remove('loading');
-      }
-    }
-  }, true);
-</script>
-
-  <!-- HERO -->
- <section class="max-w-6xl mx-auto px-4 pt-6 pb-4">
-  <div class="rounded-2xl overflow-hidden shadow-xl ring-1 ring-black/5">
-    <div class="relative p-4 md:p-7 bg-white"
-         {% if branch.cover_photo %}
-         style="background-image:url('{{ branch.cover_photo.url }}'); background-size:cover; background-position:center;"
-         {% endif %}>
-      
-      {% if branch.cover_photo %}
-        <div class="absolute inset-0 bg-black/35"></div>
-      {% endif %}
-
-      <div class="relative flex items-start justify-between gap-4">
-        <div>
-          <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight {% if branch.cover_photo %}text-white{% endif %}">
-            {{ branch.name }}
-          </h1>
-          <div class="mt-2 text-sm {% if branch.cover_photo %}text-white/90{% else %}text-stone-600{% endif %}">
-            {{ branch.address }}
-            {% if branch.delivery_enabled %}
-              · {% trans "Доставка" %}: {% trans "Мин." %} {{ branch.min_order_amount }} · {% trans "Дост." %} {{ branch.delivery_fee }}
-            {% else %}
-              · {% trans "Самовывоз" %}
-            {% endif %}
-          </div>
-        </div>
-
-        <a href="{% url 'public_site:cart_detail' branch.id %}"
-           class="inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-stone-900 text-white font-semibold shadow hover:bg-stone-800">
-          {% trans "Корзина" %}
-          <span class="px-2 py-1 rounded-xl bg-white/15 text-xs" data-cart-qty>{{ cart_qty }}</span>
-<span class="hidden sm:inline" data-cart-total>· {{ cart_total }} {% trans "сом" %}</span>
-
-        </a>
-      </div>
-    </div>
-  </div>
-</section>
-
-
-  <!-- Липкая полоса категорий -->
-  <div class="sticky top-[56px] z-40 bg-white/95 backdrop-blur border-y border-stone-200">
-    <div class="max-w-6xl mx-auto px-3 py-2 overflow-x-auto no-scrollbar">
-      <div class="flex gap-2 md:gap-3">
-        <a href="#menu" class="px-3 py-2 rounded-xl bg-stone-900 text-white text-sm">{% trans "Все" %}</a>
-        {% for c in menu %}
-          <a href="#cat-{{ c.branch_category.id }}"
-             class="px-3 py-2 rounded-xl bg-white ring-1 ring-stone-300 text-stone-800 text-sm hover:bg-stone-50">
-            {% t c.branch_category.category "name" %}
-          </a>
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-
-  <!-- Меню -->
-  <section id="menu" class="max-w-6xl mx-auto  py-6">
-    {% for c in menu %}
-      <section id="cat-{{ c.branch_category.id }}" class="mb-10 scroll-mt-24">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="flex-1 h-px bg-stone-300"></div>
-          <h2 class="text-xl md:text-2xl text-white font-semibold tracking-wide text-white">
-            {% t c.branch_category.category "name" %}
-          </h2>
-          <div class="flex-1 h-px bg-stone-300"></div>
-        </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
-          {% for row in c.items %}
-            {% with bi=row.branch_item dish=row.branch_item.item %}
-            <article class="group relative overflow-hidden rounded-3xl bg-white ring-1 ring-black/5 shadow-lg flex flex-col">
-              <!-- Фото -->
-              {% if dish.photo %}
-             
-     
-     
-
-                <img src="{{ dish.photo.url }}"
-                     alt="{% t dish 'name' %}"
-                     loading="lazy"
-     decoding="async"
-     width="480" height="320"
-                     class="aspect-[4/3] w-full object-cover transition group-hover:scale-[1.03]"
-                     decoding="async">
-              {% endif %}
-
-              <div class="p-3 md:p-4 flex-1 flex flex-col">
-                <div class="min-h-[48px]">
-                  <h3 class="text-base md:text-lg font-semibold leading-snug">
-  {% t dish "name" %}
-</h3>
-
-{% t dish "description" as desc %}
-{% if desc %}
-  <div class="text-sm text-stone-500 mt-0.5 line-clamp-2">{{ desc }}</div>
-{% endif %}
-
-                 
-                </div>
-
-                <div class="mt-3 md:mt-4 grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-2 items-end">
-                  <div>
-                    <div class="text-xs text-stone-400">{% trans "Цена" %}</div>
-                    <div class="text-lg md:text-xl font-bold">{{ bi.price }} {% trans "сом" %}</div>
-                  </div>
-
-                  <!-- Добавить в корзину -->
-                  <form action="{% url 'public_site:add_to_cart' bi.id %}" method="post"
-                        class="flex items-center justify-end gap-2 flex-wrap" data-add-to-cart>
-                    {% csrf_token %}
-                    <input type="number" name="qty" value="1" min="1"
-                           class="w-12 sm:w-16 border border-stone-300 rounded-xl px-2 py-1 text-center focus:outline-none focus:ring-2 focus:ring-stone-400">
-                    <button type="submit"
-                            class="btn-anim inline-flex items-center justify-center whitespace-nowrap px-3 md:px-4 py-2 rounded-xl text-white text-sm md:text-[15px] font-medium shadow-md hover:shadow-lg transition"
-                            style="background:#25D366">
-                      {% trans "В корзину" %}
-                    </button>
-                  </form>
-                </div>
-              </div>
-            </article>
-            {% endwith %}
-          {% endfor %}
-        </div>
-      </section>
-    {% endfor %}
-  </section>
-<a id="cartFab"
-   href="{% url 'public_site:cart_detail' branch.id %}"
-   class="cart-fab {% if cart_qty|default:0 == 0 %}hide{% endif %}">
-  🧺
-  <span class="cart-badge" data-cart-qty>{{ cart_qty }}</span>
-  <span class="hidden sm:inline" data-cart-total>· {{ cart_total }} {% trans "сом" %}</span>
-</a>
-
-  <!-- Нижний баннер -->
-  <section class="max-w-6xl mx-auto px-4 pb-10">
-    <div class="rounded-3xl bg-stone-900 text-white p-5 md:p-7 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-xl">
-      <div class="text-lg md:text-xl font-semibold">{% trans "Готовы оформить заказ?" %}</div>
-      <div class="flex-1 text-sm text-stone-200">{% trans "Соберите блюда в корзину — и оформите доставку/самовывоз." %}</div>
-      <a href="{% url 'public_site:cart_detail' branch.id %}" class="px-4 py-3 rounded-2xl bg-white text-stone-900 font-semibold shadow">
-        {% trans "Открыть корзину" %} ({{ cart_qty }})
-      </a>
-    </div>
-  </section>
-
-</div>
-<script>
-  function getCookie(name) {
-    const v = document.cookie.split('; ').find(row => row.startsWith(name + '='));
-    return v ? decodeURIComponent(v.split('=')[1]) : '';
-  }
-
-  // ВАЖНО: если кнопка/форма внутри <a> (кликабельной карточки) —
-  // нужно гасить click, иначе браузер перейдет по ссылке.
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('form[data-add-to-cart]')) {
-      e.stopPropagation();
+      if (btn) btn.classList.remove('loading');
     }
   }, true);
 
-  document.addEventListener('submit', async (e) => {
-    const form = e.target.closest('form[data-add-to-cart]');
-    if (!form) return;
+  // ===== Scroll to top button =====
+  (function(){
+    const topBtn = document.getElementById('toTopFab');
+    if (!topBtn) return;
 
-    e.preventDefault();
-    e.stopPropagation();
+    const onScroll = () => {
+      const show = window.scrollY > 500;
+      topBtn.classList.toggle('hide', !show);
+    };
+    window.addEventListener('scroll', onScroll, { passive:true });
+    onScroll();
 
-    const btn = form.querySelector('button[type="submit"]');
-    if (btn) btn.disabled = true;
+    topBtn.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  })();
 
-    try {
-      const resp = await fetch(form.action, {
-        method: 'POST',
-        body: new FormData(form),
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-CSRFToken': getCookie('csrftoken'),
+  // ===== Categories scrollspy (highlight current section) =====
+  (function(){
+    const bar = document.getElementById('catsBar');
+    const links = Array.from(document.querySelectorAll('[data-cat-link]'));
+    const sections = Array.from(document.querySelectorAll('[data-cat-section]'));
+
+    if (!links.length || !sections.length) return;
+
+    const setActive = (id) => {
+      links.forEach(a => {
+        const isActive = a.dataset.catLink === id;
+        a.classList.toggle('active', isActive);
+        if (isActive) {
+          a.setAttribute('aria-current', 'true');
+          // чтобы полоса "двигалась" и активный пункт был виден
+          a.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        } else {
+          a.removeAttribute('aria-current');
         }
       });
+    };
 
-      const data = await resp.json();
+    // click -> set active instantly
+    links.forEach(a => {
+      a.addEventListener('click', () => setActive(a.dataset.catLink));
+    });
 
-      if (data.ok) {
-        // если есть бейдж корзины — обнови
-        const badge = document.querySelector('[data-cart-badge]');
-        if (badge) badge.textContent = data.qty;
+    // если в самом верху — подсвечиваем "Все"
+    const menuEl = document.getElementById('menu');
+    const first = sections[0];
 
-        // мини-фидбек (можно заменить на красивый toast)
-        btn && (btn.textContent = 'Добавлено ✓');
-        setTimeout(() => { if (btn) btn.textContent = 'В корзину'; }, 700);
-      } else {
-        alert('Не удалось добавить в корзину');
+    const observer = new IntersectionObserver((entries) => {
+      // выберем самую "видимую" секцию
+      const visible = entries
+        .filter(e => e.isIntersecting)
+        .sort((a,b) => (b.intersectionRatio - a.intersectionRatio));
+
+      if (visible.length) {
+        const id = visible[0].target.getAttribute('data-cat-section');
+        setActive(id);
       }
-    } catch (err) {
-      console.error(err);
-      alert('Ошибка сети / сервера');
-    } finally {
-      if (btn) btn.disabled = false;
-    }
-  }, true);
+    }, {
+      root: null,
+      // чтобы актив менялся, когда заголовок подходит к верхней части экрана
+      rootMargin: '-25% 0px -65% 0px',
+      threshold: [0.05, 0.15, 0.25, 0.35, 0.5]
+    });
+
+    sections.forEach(s => observer.observe(s));
+
+    // доп. логика: если выше первой категории — актив "Все"
+    const onScroll = () => {
+      if (!first || !menuEl) return;
+      const y = window.scrollY || 0;
+      const firstTop = first.getBoundingClientRect().top + y;
+      if (y < firstTop - 180) setActive('menu');
+    };
+    window.addEventListener('scroll', onScroll, { passive:true });
+    onScroll();
+  })();
 </script>
 
 {% endblock %}
+{% block footer %}
+     <a href="{% url 'public_site:home' %}">Разработка Amantur agency
+</a>
+{% endblock footer %}
