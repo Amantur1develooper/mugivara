@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "booking",
   "integrations.apps.IntegrationsConfig",
    "reservations",
+   'shops'
 
 
 ]

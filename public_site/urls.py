@@ -1,4 +1,5 @@
-from django.urls import path
+
+from django.urls import path, include
 from .views import (
     about, booking_set_status, contacts, hall_plan, home, place_move, reservation, restaurant_about, restaurant_contacts, restaurant_detail, branch_menu,
     add_to_cart, cart_detail, cart_update, cart_remove,
@@ -14,7 +15,7 @@ app_name = "public_site"
 urlpatterns = [
     path("", home, name="home"),
 
-
+    # path("shops/", include("shops.urls")),
     path("t/<str:token>/menu/", table_menu, name="table_menu"),
     path("t/<str:token>/cart/", table_cart, name="table_cart"),
 

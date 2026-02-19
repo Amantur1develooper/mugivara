@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% load i18n static i18n_attrs %}
+
+{% block title %}{% t store "name" %} — {% trans "филиалы" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6">
+
+  <!-- HERO -->
+  <section class="rounded-3xl overflow-hidden ring-1 ring-white/20 shadow-[0_18px_60px_rgba(0,0,0,.18)]">
+    <div class="relative bg-white/10 backdrop-blur p-5 sm:p-7">
+      <div class="absolute inset-0 pointer-events-none"
+           style="background:
+             radial-gradient(circle at 12% 18%, rgba(255,255,255,.18), transparent 58%),
+             radial-gradient(circle at 90% 22%, rgba(255,255,255,.12), transparent 55%),
+             linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.06));"></div>
+
+      <div class="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center gap-3 min-w-0">
+          <!-- store avatar -->
+          <div class="w-14 h-14 rounded-2xl overflow-hidden ring-2 ring-white/50 bg-white/85 flex items-center justify-center flex-shrink-0">
+            {% if store.logo %}
+              <img src="{{ store.logo.url }}" alt="" class="w-full h-full object-cover" loading="lazy" decoding="async">
+            {% else %}
+              {% t store "name" as sn %}
+              <span class="font-extrabold text-stone-700">{{ sn|slice:":1" }}</span>
+            {% endif %}
+          </div>
+
+          <div class="min-w-0">
+            <div class="text-white/80 text-xs font-semibold">
+              🛍️ {% trans "Магазин" %} · {% trans "заказ без процентов" %}
+            </div>
+            <h1 class="text-white text-2xl sm:text-3xl font-extrabold truncate">
+              {% t store "name" %}
+            </h1>
+            <div class="text-white/85 text-sm mt-1">
+              {% trans "Выберите точку и способ заказа:" %} <b>{% trans "Доставка" %}</b> / <b>{% trans "В магазине" %}</b>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <a href="{% url 'shops:store_list' %}"
+             class="px-4 py-3 rounded-2xl bg-white/90 text-stone-900 font-extrabold ring-1 ring-white/25">
+            ← {% trans "Назад к магазинам" %}
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BRANCHES -->
+  <section class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+    {% for b in branches %}
+      <div class="rounded-3xl overflow-hidden bg-white/95 backdrop-blur ring-1 ring-black/5 shadow-[0_14px_42px_rgba(15,23,42,.10)]">
+
+        <!-- top media -->
+        <div class="relative">
+          <div class="h-[160px] bg-stone-100 overflow-hidden">
+            {% if b.cover_photo %}
+              <img src="{{ b.cover_photo.url }}" alt=""
+                   class="h-full w-full object-cover" loading="lazy" decoding="async">
+            {% else %}
+              <div class="h-full w-full bg-gradient-to-br from-stone-200 to-stone-100"></div>
+            {% endif %}
+          </div>
+
+          <div class="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent"></div>
+
+          <div class="absolute left-4 right-4 bottom-4">
+            <div class="flex items-end justify-between gap-3">
+              <div class="min-w-0">
+                <div class="text-white text-xl font-extrabold truncate">{% t b "name" %}</div>
+                <div class="text-white/85 text-sm truncate">{{ b.address }}</div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                {% if b.is_open_now %}
+                  <span class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px]
+                               bg-emerald-500/90 text-white backdrop-blur ring-1 ring-white/20">
+                    <span class="h-2 w-2 rounded-full bg-white"></span>
+                    {% trans "Открыто" %}
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px]
+                               bg-stone-900/70 text-white backdrop-blur ring-1 ring-white/20">
+                    <span class="h-2 w-2 rounded-full bg-white/80"></span>
+                    {% trans "Закрыто" %}
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- body -->
+        <div class="p-4 sm:p-5">
+          <div class="flex flex-wrap items-center gap-2 text-[12px] text-stone-700">
+            {% if b.phone %}
+              <span class="inline-flex items-center rounded-full px-3 py-1 bg-white ring-1 ring-stone-200">
+                📞 {{ b.phone }}
+              </span>
+            {% endif %}
+            {% if b.map_url %}
+              <a href="{{ b.map_url }}" target="_blank"
+                 class="inline-flex items-center rounded-full px-3 py-1 bg-white ring-1 ring-stone-200 font-extrabold">
+                📍 {% trans "Карта" %}
+              </a>
+            {% endif %}
+          </div>
+
+          <!-- MAIN ACTION: Delivery / In-store -->
+          <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <a href="{% url 'shops:branch_catalog_delivery' b.id %}"
+               class="group relative overflow-hidden rounded-2xl px-4 py-4 text-white font-extrabold
+                      shadow-[0_16px_40px_rgba(37,99,235,.18)] ring-1 ring-white/10
+                      active:scale-[.99] transition"
+               style="background: linear-gradient(135deg, rgba(15,23,42,.95), rgba(2,6,23,.95));">
+              <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition"
+                   style="background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.18), transparent 60%);"></div>
+              <div class="relative flex items-center justify-between">
+                <div>
+                  <div class="text-xs text-white/80">{% trans "Заказ" %}</div>
+                  <div class="text-lg leading-none">🚚 {% trans "Доставка" %}</div>
+                  <div class="mt-1 text-xs text-white/80">
+                    {% trans "Доставляет магазин" %}
+                  </div>
+                </div>
+                <div class="text-white/90 text-xl">→</div>
+              </div>
+            </a>
+
+            <a href="{% url 'shops:branch_catalog_pickup' b.id %}"
+               class="group relative overflow-hidden rounded-2xl px-4 py-4 text-stone-900 font-extrabold
+                      shadow-[0_16px_40px_rgba(0,0,0,.10)] ring-1 ring-stone-200
+                      bg-white hover:bg-stone-50 active:scale-[.99] transition">
+              <div class="relative flex items-center justify-between">
+                <div>
+                  <div class="text-xs text-stone-500">{% trans "Заказ" %}</div>
+                  <div class="text-lg leading-none">🏬 {% trans "В магазине" %}</div>
+                  <div class="mt-1 text-xs text-stone-500">
+                    {% trans "Самовывоз / выдача" %}
+                  </div>
+                </div>
+                <div class="text-stone-900 text-xl">→</div>
+              </div>
+            </a>
+          </div>
+
+          <!-- secondary actions -->
+          <div class="mt-4 flex flex-wrap gap-2">
+            {% if b.phone %}
+              <a href="tel:{{ b.phone }}"
+                 class="px-4 py-2.5 rounded-2xl bg-stone-900 text-white font-extrabold">
+                📞 {% trans "Позвонить" %}
+              </a>
+
+              <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}"
+                 target="_blank"
+                 class="px-4 py-2.5 rounded-2xl text-white font-extrabold"
+                 style="background:#25D366;">
+                WhatsApp
+              </a>
+            {% endif %}
+          </div>
+
+          <div class="mt-4 text-xs text-stone-500">
+            {% trans "Санжи — платформа по подписке. Без комиссии с заказов." %}
+          </div>
+        </div>
+      </div>
+
+    {% empty %}
+      <div class="rounded-3xl bg-white ring-1 ring-stone-200 p-6 text-stone-600">
+        {% trans "Филиалы не добавлены." %}
+      </div>
+    {% endfor %}
+
+  </section>
+
+</div>
+{% endblock %}

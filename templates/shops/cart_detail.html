@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Корзина" %} — {{ branch.name_ru }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-6">
+
+  <!-- Header -->
+  <div class="flex items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl text-white font-extrabold">{% trans "Корзина" %}</h1>
+      <div class="text-white/80 text-sm mt-1">
+        {{ branch.name_ru }} · {{ branch.address }}
+        {% if mode == "delivery" %} · 🚚 {% trans "Доставка" %}{% else %} · 🏬 {% trans "В магазине" %}{% endif %}
+      </div>
+    </div>
+
+    <a href="{% if mode == 'delivery' %}{% url 'shops:branch_catalog_delivery' branch.id %}{% else %}{% url 'shops:branch_catalog_pickup' branch.id %}{% endif %}"
+       class="px-4 py-2 rounded-xl ring-1 text-white ring-white/25 hover:bg-white/10">
+      ← {% trans "Назад" %}
+    </a>
+  </div>
+
+  {% if qty_total == 0 %}
+    <div class="mt-6 rounded-2xl ring-1 text-white ring-white/25 p-6 bg-white/5 backdrop-blur">
+      {% trans "Корзина пуста." %}
+    </div>
+  {% else %}
+
+    <!-- Rows -->
+    <div class="mt-6 space-y-3">
+      {% for r in rows %}
+        <div class="rounded-2xl bg-white ring-1 ring-stone-200 p-4
+                    flex flex-col sm:flex-row sm:items-center gap-3"
+             data-row="{{ r.product.id }}"
+             data-update-url="{% url 'shops:cart_update' branch.id r.product.id %}">
+
+          <div class="flex-1 min-w-0">
+            <div class="font-extrabold truncate">{{ r.product.name_ru }}</div>
+            <div class="text-sm text-stone-500">
+              {{ r.product.price }} {% trans "сом" %}
+              <span class="mx-2 text-stone-300">•</span>
+              <span class="text-stone-700 font-extrabold">
+                <span data-line-total>{{ r.line_total }}</span> {% trans "сом" %}
+              </span>
+            </div>
+            <div class="text-xs text-stone-500 mt-1">
+              {% trans "В наличии" %}: <b>{{ r.stock.qty }}</b> {{ r.product.unit }}
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between sm:justify-end gap-3">
+            <div class="flex items-center gap-2">
+              <button type="button"
+                      class="w-10 h-10 rounded-xl bg-stone-100 ring-1 ring-stone-200 font-extrabold active:scale-95 transition"
+                      data-dec>−</button>
+
+              <input type="number" min="0" value="{{ r.qty }}"
+                     class="w-20 border border-stone-300 rounded-xl px-2 py-2 text-center text-base"
+                     step="1"
+                     data-qty-input>
+
+              <button type="button"
+                      class="w-10 h-10 rounded-xl bg-stone-100 ring-1 ring-stone-200 font-extrabold active:scale-95 transition"
+                      data-inc>+</button>
+            </div>
+
+            <button type="button"
+                    class="px-3 py-2 rounded-xl ring-1 ring-stone-200 hover:bg-stone-50 active:scale-95 transition"
+                    data-remove>
+              {% trans "Удалить" %}
+            </button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Totals -->
+    <div class="mt-6 rounded-2xl bg-white ring-1 ring-stone-200 p-5">
+      <div class="flex justify-between text-sm text-stone-600">
+        <span>{% trans "Подытог" %}</span>
+        <span><span data-subtotal>{{ subtotal }}</span> {% trans "сом" %}</span>
+      </div>
+
+      {% if mode == "delivery" and branch.delivery_enabled %}
+      <div class="flex justify-between text-sm text-stone-600 mt-2">
+        <span>{% trans "Доставка" %}</span>
+        <span><span data-delivery-fee>{{ delivery_fee }}</span> {% trans "сом" %}</span>
+      </div>
+      {% endif %}
+
+      <div class="flex justify-between text-lg font-extrabold mt-3">
+        <span>{% trans "Итого" %}</span>
+        <span><span data-total>{{ total }}</span> {% trans "сом" %}</span>
+      </div>
+
+      {% if mode == "delivery" and branch.delivery_enabled and branch.min_order_amount %}
+        <div class="mt-2 text-xs text-stone-500">
+          {% trans "Мин. сумма доставки:" %} <b>{{ branch.min_order_amount }}</b> {% trans "сом" %}
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Checkout -->
+    <div class="mt-6 rounded-2xl bg-white ring-1 ring-stone-200 p-5">
+      <h2 class="text-xl font-extrabold">{% trans "Оформление" %}</h2>
+
+      <form action="{% url 'shops:checkout' branch.id %}" method="post" class="mt-4 grid gap-3">
+        {% csrf_token %}
+
+        <input name="name" placeholder="{% trans 'Имя (не обязательно)' %}"
+               class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base">
+
+        <!-- REQUIRED phone: +996 + 9 digits -->
+        <input name="phone"
+               id="phone"
+               type="tel"
+               inputmode="numeric"
+               autocomplete="tel"
+               required
+               value="+996"
+               minlength="13"
+               maxlength="13"
+               pattern="^\+996\d{9}$"
+               title="Введите номер в формате +996XXXXXXXXX (9 цифр после +996)"
+               placeholder="+996700123456"
+               class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base">
+
+        {% if mode == "delivery" and branch.delivery_enabled %}
+          <!-- address REQUIRED only for delivery -->
+          <input name="address"
+                 required
+                 placeholder="{% trans 'Адрес доставки (обязательно)' %}"
+                 class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base">
+        {% else %}
+          <!-- pickup: not required, can be hidden if you want -->
+          <input name="address"
+                 placeholder="{% trans 'Комментарий (например: приду через 10 минут)' %}"
+                 class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base">
+        {% endif %}
+
+        <textarea name="comment" rows="3" placeholder="{% trans 'Комментарий (не обязательно)' %}"
+                  class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base"></textarea>
+
+        <div class="grid gap-2">
+          <div class="text-sm font-semibold">{% trans "Способ оплаты" %}</div>
+          <label class="flex items-center gap-2">
+            <input type="radio" name="payment_method" value="cash" checked>
+            <span>{% trans "Наличные" %}</span>
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="radio" name="payment_method" value="online">
+            <span>{% trans "Онлайн" %}</span>
+          </label>
+        </div>
+
+        <button class="mt-2 px-4 py-3 rounded-2xl bg-stone-900 text-white font-extrabold shadow hover:bg-stone-800 active:scale-[0.99] transition">
+          {% trans "Подтвердить заказ" %}
+        </button>
+      </form>
+    </div>
+
+  {% endif %}
+</div>
+
+<script>
+  function getCookie(name) {
+    const v = document.cookie.split('; ').find(row => row.startsWith(name + '='));
+    return v ? decodeURIComponent(v.split('=')[1]) : '';
+  }
+
+  function setTextAll(selector, value){
+    document.querySelectorAll(selector).forEach(el => el.textContent = value);
+  }
+
+  async function postQty(url, qty){
+    const fd = new FormData();
+    fd.append('qty', qty);
+    const resp = await fetch(url, {
+      method: 'POST',
+      body: fd,
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': getCookie('csrftoken'),
+      }
+    });
+    return await resp.json();
+  }
+
+  function updateTotalsUI(data){
+    if (data.subtotal !== undefined) setTextAll('[data-subtotal]', data.subtotal);
+    if (data.delivery_fee !== undefined) setTextAll('[data-delivery-fee]', data.delivery_fee);
+    if (data.total !== undefined) setTextAll('[data-total]', data.total);
+  }
+
+  async function updateRow(rowEl, qty){
+    const input = rowEl.querySelector('[data-qty-input]');
+    const lineTotalEl = rowEl.querySelector('[data-line-total]');
+    const url = rowEl.dataset.updateUrl;
+
+    rowEl.querySelectorAll('button').forEach(b => b.disabled = true);
+    input.disabled = true;
+
+    try{
+      const data = await postQty(url, qty);
+      if (!data.ok){
+        if (data.error === "not_enough"){
+          alert("Недостаточно товара. Доступно: " + (data.available || ""));
+        }
+        return;
+      }
+
+      if ((data.row_qty ?? qty) <= 0){
+        rowEl.remove();
+      } else {
+        input.value = data.row_qty ?? qty;
+        if (lineTotalEl && data.line_total !== undefined) lineTotalEl.textContent = data.line_total;
+      }
+
+      updateTotalsUI(data);
+
+      if (data.qty_total !== undefined && Number(data.qty_total) === 0){
+        location.reload();
+      }
+    } finally {
+      rowEl.querySelectorAll('button').forEach(b => b.disabled = false);
+      input.disabled = false;
+    }
+  }
+
+  document.addEventListener('click', async (e) => {
+    const rowEl = e.target.closest('[data-row]');
+    if (!rowEl) return;
+
+    const input = rowEl.querySelector('[data-qty-input]');
+    let qty = parseInt(input.value || '0', 10);
+    if (Number.isNaN(qty)) qty = 0;
+
+    if (e.target.closest('[data-inc]')){
+      qty += 1;
+      await updateRow(rowEl, qty);
+    }
+    if (e.target.closest('[data-dec]')){
+      qty = Math.max(0, qty - 1);
+      await updateRow(rowEl, qty);
+    }
+    if (e.target.closest('[data-remove]')){
+      await updateRow(rowEl, 0);
+    }
+  });
+
+  document.addEventListener('change', async (e) => {
+    const input = e.target.closest('[data-qty-input]');
+    if (!input) return;
+    const rowEl = input.closest('[data-row]');
+    if (!rowEl) return;
+
+    let qty = parseInt(input.value || '0', 10);
+    if (Number.isNaN(qty)) qty = 0;
+    qty = Math.max(0, qty);
+
+    await updateRow(rowEl, qty);
+  });
+
+  // phone: keep +996 prefix + enforce digits only + length 13
+  (function(){
+    const phone = document.getElementById('phone');
+    if (!phone) return;
+    const prefix = '+996';
+
+    function normalize(){
+      let v = (phone.value || '').trim();
+      v = v.replace(/[^\d+]/g, '');
+      if (!v.startsWith(prefix)){
+        v = v.replace(/^\+?996?/, '');
+        v = prefix + v.replace(/^\+/, '');
+      }
+      // ограничим до 13 символов
+      if (v.length > 13) v = v.slice(0, 13);
+      phone.value = v;
+    }
+
+    phone.addEventListener('focus', () => {
+      if (!phone.value) phone.value = prefix;
+      normalize();
+    });
+    phone.addEventListener('input', normalize);
+
+    phone.addEventListener('keydown', (e) => {
+      const pos = phone.selectionStart || 0;
+      if (pos <= prefix.length && (e.key === 'Backspace' || e.key === 'Delete')) e.preventDefault();
+    });
+  })();
+</script>
+{% endblock %}

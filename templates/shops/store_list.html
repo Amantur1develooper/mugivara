@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% load i18n static i18n_attrs %}
+
+{% block title %}{% trans "Санжи — магазины" %}{% endblock %}
+
+{% block content %}
+<div class="relative">
+
+  <!-- HERO -->
+  <section class="relative overflow-hidden rounded-3xl ring-1 ring-white/20 shadow-[0_18px_60px_rgba(0,0,0,.18)]">
+    <div class="absolute inset-0 bg-gradient-to-br from-stone-950 via-stone-900 to-stone-800"></div>
+    <div class="absolute inset-0 opacity-35"
+         style="background-image:
+           radial-gradient(circle at 20% 20%, rgba(255,255,255,.18) 0, rgba(255,255,255,0) 45%),
+           radial-gradient(circle at 80% 10%, rgba(255,255,255,.12) 0, rgba(255,255,255,0) 40%),
+           radial-gradient(circle at 60% 90%, rgba(255,255,255,.10) 0, rgba(255,255,255,0) 45%);"></div>
+
+    <div class="relative px-5 sm:px-8 py-10 sm:py-12">
+      <div class="max-w-3xl">
+        <div class="inline-flex items-center gap-2 rounded-full bg-white/10 ring-1 ring-white/20 px-3 py-1.5 text-white/90 text-xs font-semibold">
+          🛍️ {% trans "Магазины в экосистеме Санжи" %}
+        </div>
+
+        <h1 class="mt-3 text-white text-3xl sm:text-4xl font-extrabold tracking-tight">
+          {% trans "Выберите магазин" %}
+        </h1>
+
+        <p class="mt-3 text-white/85 text-sm sm:text-base leading-relaxed">
+          {% trans "Откройте каталог, добавьте товары в корзину и оформите заказ. Доставка выполняется самим магазином — мы работаем по подписке, без процентов." %}
+        </p>
+
+        <!-- SEARCH -->
+        <form method="get" class="mt-6 flex flex-col sm:flex-row gap-3 sm:items-center">
+          <div class="flex-1">
+            <div class="relative">
+              <input
+                name="q"
+                value="{{ q }}"
+                placeholder="{% trans 'Поиск магазина...' %}"
+                class="w-full rounded-2xl bg-white/95 px-4 py-3 pr-12 text-stone-900 placeholder:text-stone-400
+                       ring-1 ring-white/20 focus:outline-none focus:ring-2 focus:ring-white/50"
+              >
+              <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-stone-400">🔎</span>
+            </div>
+          </div>
+
+          <button type="submit"
+                  class="rounded-2xl px-5 py-3 font-extrabold text-white bg-stone-900/70 ring-1 ring-white/20
+                         hover:bg-stone-900/85 active:scale-[.99] transition">
+            {% trans "Найти" %}
+          </button>
+        </form>
+
+        <div class="mt-4 text-white/70 text-xs">
+          {% trans "Найдено:" %} <span class="font-semibold text-white/90">{{ cards|length }}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- GRID -->
+  <section class="mt-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
+      {% for c in stores %}
+        <a href="{% url 'shops:store_detail' c.slug %}"
+           class="group relative rounded-[28px] bg-white/95 backdrop-blur
+                  ring-1 ring-black/5 shadow-[0_14px_42px_rgba(15,23,42,.10)]
+                  hover:shadow-[0_20px_65px_rgba(15,23,42,.16)]
+                  transition overflow-hidden">
+
+          <!-- TOP IMAGE -->
+          <div class="relative h-[190px] sm:h-[210px] lg:h-[240px] bg-stone-100 overflow-hidden">
+            {% if c.obj.logo %}
+              <img src="{{ c.obj.logo.url }}"
+                   alt="{% t c.obj 'name' %}"
+                   class="h-full w-full object-cover group-hover:scale-[1.03] transition duration-300"
+                   loading="lazy" decoding="async">
+            {% else %}
+              {% t c.obj "name" as sn %}
+              <div class="h-full w-full flex items-center justify-center bg-gradient-to-br from-stone-200 to-stone-100">
+                <div class="text-7xl font-extrabold text-stone-500">{{ sn|slice:":1" }}</div>
+              </div>
+            {% endif %}
+
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
+
+            <!-- TITLE -->
+            <div class="absolute left-0 right-0 bottom-0 p-4">
+              <h3 class="text-white text-xl sm:text-2xl font-extrabold leading-tight drop-shadow">
+                {% t c.obj "name" %}
+              </h3>
+
+              <div class="mt-1 text-white/80 text-sm">
+                {% trans "Точек" %}: <b class="text-white">{{ c.branches_count }}</b>
+                {% if c.tags %}
+                  · <span class="font-semibold">{{ c.tags }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- BOTTOM -->
+          <div class="p-4">
+            <div class="flex flex-wrap gap-2 text-[12px] text-stone-800">
+              <span class="inline-flex items-center rounded-full px-3 py-1 bg-white ring-1 ring-stone-200">
+                🧺 {% trans "Корзина и заказ" %}
+              </span>
+              <span class="inline-flex items-center rounded-full px-3 py-1 bg-white ring-1 ring-stone-200">
+                🚚 {% trans "Доставка (сам магазин)" %}
+              </span>
+              <span class="inline-flex items-center rounded-full px-3 py-1 bg-white ring-1 ring-stone-200">
+                🏬 {% trans "В магазине" %}
+              </span>
+            </div>
+
+            <div class="mt-4 flex items-center justify-between">
+              <span class="text-sm font-extrabold text-stone-900 group-hover:translate-x-0.5 transition">
+                {% trans "Открыть" %} →
+              </span>
+              <span class="text-xs text-stone-500">{% trans "Каталог и заказ" %}</span>
+            </div>
+          </div>
+
+        </a>
+      {% empty %}
+        <div class="rounded-3xl bg-white ring-1 ring-stone-200 p-6 text-stone-600">
+          {% trans "Ничего не найдено." %}
+        </div>
+      {% endfor %}
+
+    </div>
+  </section>
+
+</div>
+{% endblock %}

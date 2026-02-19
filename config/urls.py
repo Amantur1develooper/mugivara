@@ -12,7 +12,9 @@ urlpatterns = [
 
 urlpatterns += i18n_patterns(
     path("admin/", admin.site.urls),
+    path("shops/", include(("shops.urls", "shops"), namespace="shops")),
     path("", include("public_site.urls")), 
+    
     path("t/<str:token>/cart/update/", table_cart_update, name="table_cart_update"),
     path("t/<str:token>/call-waiter/", table_call_waiter, name="table_call_waiter"),
     path("t/<str:token>/menu/", table_menu, name="table_menu"),
