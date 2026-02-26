@@ -71,13 +71,13 @@
 
           <!-- TOP IMAGE -->
           <div class="relative h-[190px] sm:h-[210px] lg:h-[240px] bg-stone-100 overflow-hidden">
-            {% if c.obj.logo %}
-              <img src="{{ c.obj.logo.url }}"
-                   alt="{% t c.obj 'name' %}"
+            {% if c.logo %}
+              <img src="{{ c.logo.url }}"
+                   alt="{% t c.name_ru 'name_ru' %}"
                    class="h-full w-full object-cover group-hover:scale-[1.03] transition duration-300"
                    loading="lazy" decoding="async">
             {% else %}
-              {% t c.obj "name" as sn %}
+              {% t c.name_ru "name_ru" as sn %}
               <div class="h-full w-full flex items-center justify-center bg-gradient-to-br from-stone-200 to-stone-100">
                 <div class="text-7xl font-extrabold text-stone-500">{{ sn|slice:":1" }}</div>
               </div>
@@ -88,11 +88,11 @@
             <!-- TITLE -->
             <div class="absolute left-0 right-0 bottom-0 p-4">
               <h3 class="text-white text-xl sm:text-2xl font-extrabold leading-tight drop-shadow">
-                {% t c.obj "name" %}
+                {% t c.name_ru "name_ru" %}
               </h3>
 
               <div class="mt-1 text-white/80 text-sm">
-                {% trans "Точек" %}: <b class="text-white">{{ c.branches_count }}</b>
+                {% trans "Точек" %}: <b class="text-white">{{ c.all.branches__count }}</b>
                 {% if c.tags %}
                   · <span class="font-semibold">{{ c.tags }}</span>
                 {% endif %}

@@ -4,13 +4,10 @@ from django.db import transaction
 from django.db.models import F
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
-from urllib.parse import quote
 from django.db import transaction
 from .cart import dec, get_cart, get_mode, get_shop_cart, clear_shop_cart, save_cart, set_mode  # ✅ добавь это
-from django.shortcuts import render, get_object_or_404
 from django.db.models import Prefetch
 from .models import Store, StoreBranch, StoreCategory, StoreProduct, StoreStock
-from django.shortcuts import render, get_object_or_404
 from urllib.parse import quote
 import re
 import urllib.parse
@@ -442,60 +439,6 @@ def checkout(request, branch_id):
 
 
     return redirect("shops:checkout_success", branch_id=branch.id, order_id=order.id)
-
-
-    # with transaction.atomic():
-    #     product_ids = [r.product_id for r in rows]  # <-- подстрой под структуру rows
-
-    #     stocks = (BranchStock.objects
-    #               .select_for_update()
-    #               .filter(branch=branch, product_id__in=product_ids))
-
-    #     stock_map = {s.product_id: s for s in stocks}
-
-    #     # проверка наличия
-    #     for r in rows:
-    #         st = stock_map.get(r.product_id)
-    #         if not st or st.qty < r.qty:
-    #             # messages.error(...) если надо
-    #             # ничего не записали — просто выходим
-    #             return redirect("shops:cart_detail", branch_id=branch.id)
-
-    #     # создаём заказ
-    #     order = ShopOrder.objects.create(
-    #         branch=branch,
-    #         name=name,
-    #         phone=phone,
-    #         address=address if is_delivery else "",
-    #         comment=comment,
-    #         is_delivery=is_delivery,
-    #         total=cart["total"],
-    #     )
-
-    #     # создаём позиции + списываем остатки
-    #     items_payload = []
-    #     for r in rows:
-    #         product = r.product  # или get_object... (как у тебя)
-    #         line_total = r.line_total
-
-    #         ShopOrderItem.objects.create(
-    #             order=order,
-    #             product=product,
-    #             qty=r.qty,
-    #             price=r.price,
-    #             line_total=line_total,
-    #         )
-
-    #         # списание
-    #         BranchStock.objects.filter(pk=stock_map[r.product_id].pk).update(qty=F("qty") - r.qty)
-
-    #         items_payload.append({
-    #             "name": str(product.name),
-    #             "qty": r.qty,
-    #             "line_total": line_total,
-    #         })
-
-    # 4) чистим корзину после коммита
 
 
 
