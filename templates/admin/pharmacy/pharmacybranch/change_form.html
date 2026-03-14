@@ -1,0 +1,11 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+  <li>
+    <a href="{% url 'admin:pharmacybranch_sync' original.id %}" class="button">
+      {% trans "Синхронизировать ассортимент" %}
+    </a>
+  </li>
+  {{ block.super }}
+{% endblock %}

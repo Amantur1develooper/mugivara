@@ -367,6 +367,7 @@
         <div class="cat-count">
           {% if cat.key == 'restaurants' %}{{ stats.restaurant_count }} заведений{% endif %}
           {% if cat.key == 'stores' %}{{ stats.store_count }} магазинов{% endif %}
+          {% if cat.key == 'pharmacy' %}{{ stats.store_count }} Аптеки{% endif %}
           {% if cat.coming_soon %}Скоро{% endif %}
         </div>
         {% if cat.is_active %}<div class="cat-arrow">→</div>{% endif %}

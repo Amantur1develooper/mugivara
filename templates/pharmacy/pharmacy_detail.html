@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% load i18n i18n_attrs %}
+
+{% block title %}{% t pharmacy "name" %} — {% trans "филиалы" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6">
+
+  <!-- HERO -->
+  <div class="rounded-[28px] overflow-hidden ring-1 ring-black/5 shadow-[0_18px_60px_rgba(15,23,42,.10)] bg-white/90 backdrop-blur">
+    <div class="p-5 sm:p-7 flex items-start justify-between gap-4">
+      <div class="min-w-0 flex items-center gap-4">
+        <div class="h-16 w-16 rounded-3xl overflow-hidden ring-1 ring-black/10 bg-stone-100 shrink-0">
+          {% if pharmacy.logo %}
+            <img src="{{ pharmacy.logo.url }}" alt="{% t pharmacy 'name' %}" class="h-full w-full object-cover">
+          {% else %}
+            {% t pharmacy "name" as pn %}
+            <div class="h-full w-full flex items-center justify-center font-extrabold text-stone-600 text-3xl">
+              {{ pn|slice:":1" }}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="min-w-0">
+          <div class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold bg-stone-900 text-white">
+            💊 {% trans "Аптека" %}
+          </div>
+          <h1 class="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight text-stone-900 truncate">
+            {% t pharmacy "name" %}
+          </h1>
+          <div class="mt-1 text-stone-600 text-sm">
+            {% trans "Выберите филиал, чтобы открыть каталог лекарств." %}
+          </div>
+        </div>
+      </div>
+
+      <a href="{% url 'pharmacy:pharmacy_list' %}"
+         class="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white ring-1 ring-stone-200 hover:bg-stone-50 transition">
+        ← {% trans "Все аптеки" %}
+      </a>
+    </div>
+  </div>
+
+  <!-- BRANCHES -->
+  <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+    {% for b in branches %}
+      <div class="group rounded-[28px] bg-white/95 ring-1 ring-black/5 shadow-[0_14px_42px_rgba(15,23,42,.10)]
+                  hover:shadow-[0_20px_65px_rgba(15,23,42,.16)] transition overflow-hidden">
+
+        <!-- кликабельный верх (каталог) -->
+        <a href="{% url 'pharmacy:branch_catalog' b.id %}" class="block">
+          <div class="relative h-[170px] bg-stone-100 overflow-hidden">
+            {% if b.cover_photo %}
+              <img src="{{ b.cover_photo.url }}" alt="" class="h-full w-full object-cover group-hover:scale-[1.03] transition duration-300">
+            {% else %}
+              <div class="h-full w-full bg-gradient-to-br from-stone-200 to-stone-100"></div>
+            {% endif %}
+            <div class="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent"></div>
+
+            <div class="absolute left-0 right-0 bottom-0 p-4">
+              <div class="text-white text-lg font-extrabold truncate">{% t b "name" %}</div>
+              <div class="text-white/85 text-sm truncate">{{ b.address }}</div>
+            </div>
+          </div>
+
+          <div class="p-4 flex items-center justify-between">
+            <span class="text-sm font-semibold text-stone-900 group-hover:translate-x-0.5 transition">
+              {% trans "Открыть каталог" %} →
+            </span>
+            {% if b.phone %}
+              <span class="text-xs text-stone-500">{{ b.phone }}</span>
+            {% endif %}
+          </div>
+        </a>
+
+        <!-- действия: карта / звонок / whatsapp -->
+        <div class="px-4 pb-4 pt-0">
+          <div class="grid grid-cols-3 gap-2">
+
+            {% if b.address %}
+              <a href="https://www.google.com/maps/search/?api=1&query={{ b.address|urlencode }}"
+                 target="_blank" rel="noopener"
+                 class="inline-flex items-center justify-center gap-2 rounded-2xl px-3 py-2.5
+                        bg-white ring-1 ring-stone-200 hover:bg-stone-50 text-sm font-semibold">
+                🗺️ {% trans "Карта" %}
+              </a>
+            {% else %}
+              <span class="inline-flex items-center justify-center rounded-2xl px-3 py-2.5 bg-stone-100 text-stone-400 text-sm font-semibold">
+                🗺️ {% trans "Карта" %}
+              </span>
+            {% endif %}
+
+            {% if b.phone %}
+              <a href="tel:{{ b.phone }}"
+                 class="inline-flex items-center justify-center gap-2 rounded-2xl px-3 py-2.5
+                        bg-white ring-1 ring-stone-200 hover:bg-stone-50 text-sm font-semibold">
+                📞 {% trans "Позвонить" %}
+              </a>
+            {% else %}
+              <span class="inline-flex items-center justify-center rounded-2xl px-3 py-2.5 bg-stone-100 text-stone-400 text-sm font-semibold">
+                📞 {% trans "Позвонить" %}
+              </span>
+            {% endif %}
+
+            {% if b.phone %}
+              <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}"
+                 target="_blank" rel="noopener"
+                 class="inline-flex items-center justify-center gap-2 rounded-2xl px-3 py-2.5
+                        text-white text-sm font-semibold hover:opacity-95 transition"
+                 style="background:#25D366">
+                💬 WhatsApp
+              </a>
+            {% else %}
+              <span class="inline-flex items-center justify-center rounded-2xl px-3 py-2.5 bg-stone-100 text-stone-400 text-sm font-semibold">
+                💬 WhatsApp
+              </span>
+            {% endif %}
+
+          </div>
+        </div>
+
+      </div>
+    {% empty %}
+      <div class="rounded-3xl bg-white ring-1 ring-stone-200 p-6 text-stone-600">
+        {% trans "Филиалы не найдены." %}
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

@@ -12,6 +12,8 @@ urlpatterns = [
 
 urlpatterns += i18n_patterns(
     path("admin/", admin.site.urls),
+    
+    path("pharmacy/", include(("pharmacy.urls", "pharmacy"), namespace="pharmacy")),
     path("shops/", include(("shops.urls", "shops"), namespace="shops")),
     path("", include("public_site.urls")), 
     
@@ -32,11 +34,8 @@ urlpatterns += i18n_patterns(
 if settings.DEBUG:
     # ВАЖНО: статика в DEV лучше так (из STATICFILES_DIRS и static/ внутри приложений)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-
-
-    # медиа (upload)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     
-admin.site.site_header = "Администрирование Санжи"
-admin.site.site_title = "Санжи"
+admin.site.site_header = "Администрирование Webordo"
+admin.site.site_title = "Webordo"
 admin.site.index_title = "Панель управления"

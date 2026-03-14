@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% load i18n i18n_attrs %}
+
+{% block title %}{% t pharmacy "name" %} — {% t branch "name" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6">
+
+  <!-- HERO -->
+  <div class="rounded-[28px] overflow-hidden ring-1 ring-black/5 shadow-[0_18px_60px_rgba(15,23,42,.10)] bg-white/90 backdrop-blur">
+    <div class="p-5 sm:p-7 flex items-start justify-between gap-4">
+      <div class="min-w-0">
+        <div class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold bg-stone-900 text-white">
+          💊 {% trans "Каталог лекарств" %}
+        </div>
+        <h1 class="mt-3 text-2xl sm:text-3xl font-extrabold tracking-tight text-stone-900">
+          {% t pharmacy "name" %}
+        </h1>
+        <div class="mt-1 text-stone-600 text-sm">
+          <b>{% t branch "name" %}</b> · {{ branch.address }}
+        </div>
+      </div>
+
+      <a href="{% url 'pharmacy:pharmacy_detail' pharmacy.slug %}"
+         class="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white ring-1 ring-stone-200 hover:bg-stone-50 transition">
+        ← {% trans "Филиалы" %}
+      </a>
+    </div>
+  </div>
+
+  <!-- Sticky categories -->
+  <div class="mt-5 sticky top-[56px] z-40 bg-white/85 backdrop-blur rounded-2xl ring-1 ring-stone-200">
+    <div class="px-3 py-2 overflow-x-auto no-scrollbar">
+      <div class="flex gap-2">
+        <a href="#top" class="px-3 py-2 rounded-xl bg-stone-900 text-white text-sm font-semibold">
+          {% trans "Все" %}
+        </a>
+        {% for block in menu %}
+          <a href="#cat-{{ block.category.id }}"
+             class="px-3 py-2 rounded-xl bg-white ring-1 ring-stone-200 text-stone-800 text-sm hover:bg-stone-50">
+            {% t block.category "name" %}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Categories -->
+  <div id="top" class="mt-6 space-y-10">
+    {% for block in menu %}
+      <section id="cat-{{ block.category.id }}" class="scroll-mt-28">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="flex-1 h-px bg-stone-300"></div>
+          <h2 class="text-lg sm:text-xl font-extrabold text-stone-900">
+            {% t block.category "name" %}
+          </h2>
+          <div class="flex-1 h-px bg-stone-300"></div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {% for it in block.items %}
+            {% with d=it.drug bd=it.bd %}
+
+            <div class="group rounded-[28px] bg-white/95 ring-1 ring-black/5 shadow-[0_14px_42px_rgba(15,23,42,.10)]
+                        hover:shadow-[0_20px_65px_rgba(15,23,42,.16)] transition overflow-hidden">
+
+              <!-- DETAIL (только фото/название кликабельны) -->
+              <a href="{% url 'pharmacy:drug_detail' branch.id d.id %}" class="block">
+                <div class="relative h-[190px] sm:h-[210px] bg-stone-100 overflow-hidden">
+                  {% if d.photo %}
+                    <img src="{{ d.photo.url }}" alt="{% t d 'name' %}"
+                         class="h-full w-full object-cover group-hover:scale-[1.03] transition duration-300"
+                         loading="lazy" decoding="async">
+                  {% else %}
+                    <div class="h-full w-full bg-gradient-to-br from-stone-200 to-stone-100"></div>
+                  {% endif %}
+
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
+
+                  <div class="absolute top-3 left-3">
+                    {% if bd.is_available %}
+                      <span class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px]
+                                   bg-emerald-600 text-white ring-1 ring-white/20">
+                        <span class="h-2 w-2 rounded-full bg-white"></span>{% trans "В наличии" %}
+                      </span>
+                    {% else %}
+                      <span class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px]
+                                   bg-stone-900/70 text-white ring-1 ring-white/20">
+                        <span class="h-2 w-2 rounded-full bg-white/80"></span>{% trans "Нет" %}
+                      </span>
+                    {% endif %}
+                  </div>
+
+                  <div class="absolute left-0 right-0 bottom-0 p-4">
+                    <div class="text-white text-lg font-extrabold leading-tight">
+                      {% t d "name" %}
+                    </div>
+                  </div>
+                </div>
+              </a>
+
+              <!-- низ -->
+              <div class="p-4">
+                <div class="flex items-center justify-between">
+                  <div class="text-sm text-stone-600">
+                    {% trans "Цена" %}: <b class="text-stone-900">{{ bd.price }}</b>
+                  </div>
+
+                  <a href="{% url 'pharmacy:drug_detail' branch.id d.id %}"
+                     class="text-sm font-semibold text-stone-900 hover:underline">
+                    {% trans "Подробнее" %} →
+                  </a>
+                </div>
+
+                <!-- В корзину (ВАЖНО: форма НЕ внутри <a>) -->
+                <form action="{% url 'pharmacy:cart_add' branch.id bd.id %}"
+                      method="post"
+                      data-add-to-cart
+                      class="mt-3 flex items-center justify-between gap-2">
+                  {% csrf_token %}
+                  <input type="number" name="qty" value="1" min="1"
+                         class="w-20 border border-stone-300 rounded-xl px-2 py-2 text-center">
+                  <button type="submit"
+                          class="px-4 py-2.5 rounded-2xl text-white font-semibold hover:opacity-95 transition"
+                          style="background:#25D366">
+                    {% trans "В корзину" %}
+                  </button>
+                </form>
+              </div>
+
+            </div>
+
+            {% endwith %}
+          {% endfor %}
+        </div>
+      </section>
+    {% empty %}
+      <div class="rounded-3xl bg-white ring-1 ring-stone-200 p-6 text-stone-600">
+        {% trans "Категории пустые или в филиале нет товаров." %}
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+<script>
+  function getCookie(name) {
+    const v = document.cookie.split('; ').find(row => row.startsWith(name + '='));
+    return v ? decodeURIComponent(v.split('=')[1]) : '';
+  }
+
+  document.addEventListener('submit', async (e) => {
+    const form = e.target.closest('form[data-add-to-cart]');
+    if (!form) return;
+
+    e.preventDefault();
+
+    const btn = form.querySelector('button[type="submit"]');
+    if (btn) btn.disabled = true;
+
+    try {
+      const resp = await fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': getCookie('csrftoken'),
+        }
+      });
+
+      const data = await resp.json();
+
+      if (data.ok) {
+        // обновим бейджи (если они есть в base)
+        document.querySelectorAll('[data-cart-qty]').forEach(el => el.textContent = data.qty);
+        document.querySelectorAll('[data-cart-total]').forEach(el => el.textContent = '· ' + data.total + ' сом');
+
+        // показать FAB, если он реализован
+        if (window.SANJI_CART_FAB_UPDATE) window.SANJI_CART_FAB_UPDATE(data.qty, data.total);
+        else if (window.SANJI_CART_FAB_SHOW) window.SANJI_CART_FAB_SHOW();
+      } else {
+        alert('Не удалось добавить в корзину');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Ошибка сети / сервера');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }, true);
+</script>
+{% endblock %}

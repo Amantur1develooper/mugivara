@@ -83,52 +83,7 @@ from core.models import Restaurant, Branch
 
 
 # Категории платформы — добавляй новые строки когда запускаешь новое направление
-PLATFORM_CATEGORIES = [
-    {
-        "key":         "restaurants",
-        "icon":        "🍽️",
-        "name_ru":     "Рестораны",
-        "name_ky":     "Ресторандар",
-        "name_en":     "Restaurants",
-        "url":         "public_site:home",   # временно сам на себя; замени на список ресторанов
-        "color":       "#FF5C00",
-        "is_active":   True,
-        "coming_soon": False,
-    },
-    {
-        "key":         "stores",
-        "icon":        "🛍️",
-        "name_ru":     "Магазины",
-        "name_ky":     "Дүкөндөр",
-        "name_en":     "Shops",
-        "url":         "shops:store_list",
-        "color":       "#FF8A00",
-        "is_active":   True,
-        "coming_soon": False,
-    },
-    {
-        "key":         "hotels",
-        "icon":        "🏨",
-        "name_ru":     "Отели",
-        "name_ky":     "Мейманканалар",
-        "name_en":     "Hotels",
-        "url":         None,
-        "color":       "#2563EB",
-        "is_active":   False,
-        "coming_soon": True,
-    },
-    {
-        "key":         "eco",
-        "icon":        "♻️",
-        "name_ru":     "Эко-проекты",
-        "name_ky":     "Эко-долборлор",
-        "name_en":     "Eco projects",
-        "url":         None,
-        "color":       "#059669",
-        "is_active":   False,
-        "coming_soon": True,
-    },
-]
+
 # ─────────────────────────────────────────────────────────────────────────────
 # ЗАМЕНИ существующую функцию home() в public_site/views.py на эту.
 # Все остальные функции оставь без изменений.
@@ -146,7 +101,17 @@ from core.models import Restaurant, Branch
 
 
 # Категории платформы — добавляй новые строки когда запускаешь новое направление
-PLATFORM_CATEGORIES = [
+PLATFORM_CATEGORIES = [  {
+        "key":         "Pharmacy",
+        "icon":        "🏥",
+        "name_ru":     "Аптеки",
+        "name_ky":     "Дарыканалар",
+        "name_en":     "Pharmacy",
+        "url":         "pharmacy:pharmacy_list",
+        "color":       "#FF00FB",
+        "is_active":   True,
+        "coming_soon": False,
+    },
     {
         "key":         "restaurants",
         "icon":        "🍽️",
@@ -165,10 +130,11 @@ PLATFORM_CATEGORIES = [
         "name_ky":     "Дүкөндөр",
         "name_en":     "Shops",
         "url":         "shops:store_list",
-        "color":       "#FF8A00",
+        "color":       "#C83217",
         "is_active":   True,
         "coming_soon": False,
     },
+  
     {
         "key":         "hotels",
         "icon":        "🏨",

@@ -386,6 +386,48 @@
   document.querySelectorAll('.reveal').forEach(r => revObs.observe(r));
   </script>
   {% block page_scripts %}{% endblock %}
+{% if branch %}
+  <a id="sjCartFab"
+     href="{% if is_pharmacy %}{% url 'pharmacy:cart_detail' branch.id %}{% else %}{% url 'public_site:cart_detail' branch.id %}{% endif %}"
+     class="fixed right-5 bottom-5 z-[250] rounded-2xl px-4 py-3 bg-stone-900 text-white shadow-xl ring-1 ring-white/10
+            flex items-center gap-3"
+     style="opacity:0; transform: translateY(18px) scale(.96); pointer-events:none; transition: .22s ease;">
+    <span class="text-lg">🛒</span>
+    <span class="text-sm font-semibold" data-cart-qty>{{ cart_qty|default:0 }}</span>
+    <span class="text-sm text-white/80" data-cart-total>
+      · {{ cart_total|default:0 }} {% trans "сом" %}
+    </span>
+  </a>
 
+  <script>
+    (function(){
+      const fab = document.getElementById('sjCartFab');
+      if(!fab) return;
+
+      function show(){
+        fab.style.opacity = '1';
+        fab.style.transform = 'translateY(0) scale(1)';
+        fab.style.pointerEvents = 'auto';
+      }
+      function hide(){
+        fab.style.opacity = '0';
+        fab.style.transform = 'translateY(18px) scale(.96)';
+        fab.style.pointerEvents = 'none';
+      }
+
+      window.SANJI_CART_FAB_SHOW = show;
+      window.SANJI_CART_FAB_HIDE = hide;
+      window.SANJI_CART_FAB_UPDATE = function(qty, total){
+        document.querySelectorAll('[data-cart-qty]').forEach(el => el.textContent = qty);
+        document.querySelectorAll('[data-cart-total]').forEach(el => el.textContent = '· ' + total + ' сом');
+        if (parseInt(qty || 0) > 0) show(); else hide();
+      };
+
+      // авто-показ если уже что-то есть в корзине
+      const initQty = parseInt((fab.querySelector('[data-cart-qty]')||{}).textContent || '0');
+      if(initQty > 0) show();
+    })();
+  </script>
+{% endif %}
 </body>
 </html>

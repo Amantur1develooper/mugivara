@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load i18n i18n_attrs %}
+
+{% block title %}{% t drug "name" %} — {% t branch "name" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6">
+
+  <!-- Top bar -->
+  <div class="flex items-start justify-between gap-4">
+    <div class="min-w-0">
+      <div class="text-sm text-stone-600">
+        <a class="underline hover:no-underline" href="{% url 'pharmacy:branch_catalog' branch.id %}">
+          {% t branch "name" %}
+        </a>
+        <span class="text-stone-400">·</span>
+        {% t drug "name" %}
+      </div>
+      <h1 class="mt-2 text-2xl sm:text-3xl font-extrabold tracking-tight text-stone-900">
+        {% t drug "name" %}
+      </h1>
+      <div class="mt-1 text-stone-600 text-sm">
+        {{ branch.address }}
+      </div>
+    </div>
+
+    <a href="{% url 'pharmacy:branch_catalog' branch.id %}"
+       class="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white ring-1 ring-stone-200 hover:bg-stone-50 transition">
+      ← {% trans "Назад" %}
+    </a>
+  </div>
+
+  <div class="mt-6 grid lg:grid-cols-2 gap-6">
+
+    <!-- Left: image + badges -->
+    <div class="rounded-[28px] overflow-hidden bg-white ring-1 ring-black/5 shadow-[0_18px_60px_rgba(15,23,42,.10)]">
+      <div class="relative h-[320px] sm:h-[380px] bg-stone-100 overflow-hidden">
+        {% if drug.photo %}
+          <img src="{{ drug.photo.url }}" alt="{% t drug 'name' %}"
+               class="h-full w-full object-cover"
+               loading="lazy" decoding="async">
+        {% else %}
+          <div class="h-full w-full bg-gradient-to-br from-stone-200 to-stone-100"></div>
+        {% endif %}
+
+        <div class="absolute top-4 left-4 flex gap-2">
+          {% if bd and bd.is_available %}
+            <span class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px]
+                         bg-emerald-600 text-white ring-1 ring-white/20">
+              <span class="h-2 w-2 rounded-full bg-white"></span>
+              {% trans "В наличии" %}
+            </span>
+          {% else %}
+            <span class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px]
+                         bg-stone-900/70 text-white ring-1 ring-white/20">
+              <span class="h-2 w-2 rounded-full bg-white/80"></span>
+              {% trans "Нет" %}
+            </span>
+          {% endif %}
+
+          {% if bd %}
+            <span class="inline-flex items-center rounded-full px-3 py-1.5 text-[12px]
+                         bg-white/90 text-stone-900 ring-1 ring-black/10">
+              {% trans "Цена" %}: <b class="ml-1">{{ bd.price }}</b>
+            </span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="p-5 sm:p-6">
+        {% t drug "description" as desc %}
+        {% if desc %}
+          <div class="text-stone-700 leading-relaxed whitespace-pre-line">
+            {{ desc }}
+          </div>
+        {% else %}
+          <div class="text-stone-500">
+            {% trans "Описание скоро будет добавлено." %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right: video + info card -->
+    <div class="space-y-6">
+
+      <div class="rounded-[28px] bg-white ring-1 ring-black/5 shadow-[0_18px_60px_rgba(15,23,42,.10)] p-5 sm:p-6">
+        <div class="font-extrabold text-stone-900 text-lg">
+          🎥 {% trans "Видео-обзор" %}
+        </div>
+
+        {% if drug.youtube_url %}
+          <div class="mt-4 aspect-video rounded-3xl overflow-hidden ring-1 ring-stone-200 bg-black">
+            <iframe class="w-full h-full"
+                    src="{{ drug.youtube_url }}"
+                    title="YouTube video"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen></iframe>
+          </div>
+          <div class="mt-2 text-xs text-stone-500">
+            {% trans "Если видео не отображается — проверь, что ссылка в формате /embed/..." %}
+          </div>
+        {% else %}
+          <div class="mt-4 rounded-2xl bg-stone-50 ring-1 ring-stone-200 p-4 text-stone-600">
+            {% trans "Видео пока не добавлено." %}
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="rounded-[28px] bg-white ring-1 ring-black/5 shadow-[0_18px_60px_rgba(15,23,42,.10)] p-5 sm:p-6">
+        <div class="font-extrabold text-stone-900 text-lg">
+          📍 {% trans "Филиал" %}
+        </div>
+        <div class="mt-2 text-stone-700">
+          <div class="font-semibold">{% t branch "name" %}</div>
+          <div class="text-sm text-stone-500 mt-1">{{ branch.address }}</div>
+          {% if branch.phone %}
+            <div class="text-sm text-stone-600 mt-2">
+              {% trans "Телефон" %}: <a class="underline" href="tel:{{ branch.phone }}">{{ branch.phone }}</a>
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="mt-4 flex gap-2 flex-wrap">
+          <a href="{% url 'pharmacy:branch_catalog' branch.id %}"
+             class="px-4 py-3 rounded-2xl bg-stone-900 text-white font-semibold hover:bg-stone-800 transition">
+            {% trans "Вернуться в каталог" %}
+          </a>
+
+          {% if branch.phone %}
+            <a href="https://wa.me/{{ branch.phone|cut:'+'|cut:' '|cut:'-' }}"
+               target="_blank" rel="noopener"
+               class="px-4 py-3 rounded-2xl text-white font-semibold hover:opacity-90 transition"
+               style="background:#25D366">
+              {% trans "Написать в WhatsApp" %}
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}
