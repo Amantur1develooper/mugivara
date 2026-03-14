@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+{% load i18n static i18n_attrs %}
+
+{% block title %}{% trans "Санжи — магазины" %}{% endblock %}
+
+{% block content %}
+<style>
+  .store-page-bg{
+    background:
+      radial-gradient(900px 420px at 12% 0%, rgba(255,255,255,.20), transparent 60%),
+      radial-gradient(680px 320px at 88% 8%, rgba(255,255,255,.14), transparent 58%),
+      linear-gradient(180deg, #fff7ed 0%, #fffaf5 36%, #ffffff 100%);
+  }
+  .hero-grid{
+    display:grid;
+    grid-template-columns:minmax(0,1.1fr) minmax(280px,.9fr);
+    gap:24px;
+  }
+  .store-card{
+    position:relative;
+    overflow:hidden;
+    border-radius:30px;
+    background:rgba(255,255,255,.94);
+    border:1px solid rgba(15,23,42,.06);
+    box-shadow:0 18px 55px rgba(15,23,42,.08);
+    transition:transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+  }
+  .store-card:hover{
+    transform:translateY(-4px);
+    box-shadow:0 28px 78px rgba(15,23,42,.14);
+    border-color:rgba(251,146,60,.22);
+  }
+  .store-card__media{
+    position:relative;
+    height:290px;
+    background:linear-gradient(135deg,#e7e5e4,#f5f5f4);
+    overflow:hidden;
+    isolation:isolate;
+  }
+  .store-card__media::after{
+    content:"";
+    position:absolute;
+    inset:auto 0 0 0;
+    height:42%;
+    background:linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(15,23,42,.08) 36%, rgba(15,23,42,.56) 100%);
+    z-index:1;
+  }
+  .store-card__media::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:linear-gradient(135deg, rgba(255,255,255,.24), transparent 42%, transparent 58%, rgba(255,255,255,.08));
+    z-index:1;
+    pointer-events:none;
+  }
+  .store-card__img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:center;
+    transition:transform .45s ease;
+  }
+  .store-card:hover .store-card__img{
+    transform:scale(1.045);
+  }
+  .store-card__badges{
+    position:absolute;
+    top:16px;
+    left:16px;
+    right:16px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    z-index:2;
+  }
+  .store-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    border-radius:999px;
+    padding:9px 12px;
+    font-size:12px;
+    font-weight:800;
+    line-height:1;
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+  }
+  .store-chip--glass{
+    background:rgba(255,255,255,.88);
+    color:#111827;
+    border:1px solid rgba(255,255,255,.72);
+    box-shadow:0 8px 22px rgba(15,23,42,.10);
+  }
+  .store-chip--dark{
+    background:rgba(15,23,42,.68);
+    color:#fff;
+    border:1px solid rgba(255,255,255,.12);
+  }
+  .store-card__titlewrap{
+    position:absolute;
+    left:18px;
+    right:18px;
+    bottom:18px;
+    z-index:2;
+  }
+  .store-card__title{
+    color:#fff;
+    font-size:clamp(22px,2vw,28px);
+    line-height:1.05;
+    font-weight:900;
+    text-shadow:0 10px 30px rgba(0,0,0,.28);
+    margin:0;
+  }
+  .store-card__meta{
+    margin-top:8px;
+    color:rgba(255,255,255,.92);
+    font-size:13px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .store-card__body{
+    padding:18px 18px 18px;
+  }
+  .store-card__pills{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .store-card__pill{
+    display:inline-flex;
+    align-items:center;
+    border-radius:999px;
+    padding:8px 11px;
+    background:#fff;
+    border:1px solid rgba(231,229,228,.95);
+    color:#44403c;
+    font-size:12px;
+    font-weight:700;
+  }
+  .store-card__footer{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-top:16px;
+  }
+  .store-card__cta{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    padding:12px 16px;
+    border-radius:18px;
+    background:#111827;
+    color:#fff;
+    font-size:14px;
+    font-weight:900;
+    line-height:1;
+    box-shadow:0 12px 28px rgba(17,24,39,.18);
+    transition:transform .18s ease, box-shadow .18s ease;
+  }
+  .store-card:hover .store-card__cta{
+    transform:translateX(2px);
+    box-shadow:0 16px 34px rgba(17,24,39,.24);
+  }
+  .store-card__cta-arrow{
+    display:inline-flex;
+    width:30px;
+    height:30px;
+    border-radius:999px;
+    align-items:center;
+    justify-content:center;
+    background:rgba(255,255,255,.12);
+  }
+  .mini-stat{
+    border-radius:24px;
+    padding:18px;
+    background:rgba(255,255,255,.72);
+    border:1px solid rgba(255,255,255,.62);
+    box-shadow:0 14px 42px rgba(15,23,42,.07);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+  }
+  .search-shell{
+    position:relative;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:14px;
+    border-radius:26px;
+    background:rgba(255,255,255,.14);
+    border:1px solid rgba(255,255,255,.18);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.1);
+  }
+  .search-shell input{
+    width:100%;
+    border:none;
+    outline:none;
+    background:#fff;
+    border-radius:18px;
+    padding:14px 16px;
+    color:#111827;
+    font-size:15px;
+    box-shadow:0 12px 34px rgba(15,23,42,.10);
+  }
+  .ghost-glow{
+    position:absolute;
+    inset:auto auto -40px -40px;
+    width:180px;
+    height:180px;
+    border-radius:999px;
+    background:radial-gradient(circle, rgba(251,146,60,.16), rgba(251,146,60,0));
+    pointer-events:none;
+  }
+  @media (max-width: 1024px){
+    .hero-grid{ grid-template-columns:1fr; }
+  }
+  @media (max-width: 640px){
+    .store-card__media{ height:250px; }
+    .store-card__footer{ align-items:flex-start; flex-direction:column; }
+    .search-shell{ padding:12px; }
+  }
+</style>
+
+<div class="relative store-page-bg -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 rounded-[28px] sm:rounded-[34px] overflow-hidden">
+  <div class="ghost-glow"></div>
+
+  <section class="relative overflow-hidden rounded-[32px] sm:rounded-[36px] ring-1 ring-white/30 shadow-[0_24px_80px_rgba(15,23,42,.16)] bg-gradient-to-br from-stone-950 via-stone-900 to-stone-800">
+    <div class="absolute inset-0 opacity-40"
+         style="background-image:
+           radial-gradient(circle at 15% 16%, rgba(255,255,255,.20) 0, rgba(255,255,255,0) 36%),
+           radial-gradient(circle at 82% 10%, rgba(251,146,60,.20) 0, rgba(251,146,60,0) 34%),
+           radial-gradient(circle at 70% 88%, rgba(255,255,255,.10) 0, rgba(255,255,255,0) 44%);"></div>
+
+    <div class="relative px-5 sm:px-8 lg:px-10 py-8 sm:py-10 lg:py-12">
+      <div class="hero-grid items-start">
+        <div class="max-w-3xl">
+          <div class="inline-flex items-center gap-2 rounded-full bg-white/10 ring-1 ring-white/15 px-3.5 py-1.5 text-white/90 text-xs font-semibold backdrop-blur">
+            🛍️ {% trans "Магазины в экосистеме Санжи" %}
+          </div>
+
+          <h1 class="mt-4 text-white text-[30px] sm:text-[42px] lg:text-[52px] font-black tracking-tight leading-[0.98]">
+            {% trans "Выберите магазин" %}
+          </h1>
+
+          <p class="mt-4 text-white/80 text-sm sm:text-base lg:text-lg leading-relaxed max-w-2xl">
+            {% trans "Каталог, заказ и доставка в одном месте. Мы сделали витрину магазинов чище и удобнее — с большим акцентом на фото и более понятными карточками." %}
+          </p>
+
+          <form method="get" class="mt-7 max-w-2xl">
+            <div class="search-shell">
+              <div class="hidden sm:flex items-center justify-center w-11 h-11 rounded-2xl bg-white/10 text-white/85 text-lg ring-1 ring-white/10">🔎</div>
+              <input
+                name="q"
+                value="{{ q }}"
+                placeholder="{% trans 'Поиск магазина...' %}"
+                aria-label="{% trans 'Поиск магазина' %}"
+              >
+              <button type="submit"
+                      class="shrink-0 rounded-[18px] px-5 py-3 font-black text-stone-950 bg-gradient-to-r from-amber-300 via-orange-300 to-amber-200 shadow-[0_10px_24px_rgba(251,146,60,.25)] hover:brightness-[1.02] active:scale-[.99] transition">
+                {% trans "Найти" %}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-3 lg:max-w-[360px]">
+          <div class="mini-stat">
+            <div class="text-[11px] uppercase tracking-[0.18em] text-stone-500 font-bold">{% trans "Магазинов" %}</div>
+            <div class="mt-2 text-3xl font-black text-stone-950">{{ stores|length }}</div>
+            <div class="mt-1 text-sm text-stone-600">{% trans "В одной подборке" %}</div>
+          </div>
+          <div class="mini-stat">
+            <div class="text-[11px] uppercase tracking-[0.18em] text-stone-500 font-bold">{% trans "Формат" %}</div>
+            <div class="mt-2 text-base font-extrabold text-stone-950">{% trans "Каталог + заказ" %}</div>
+            <div class="mt-1 text-sm text-stone-600">{% trans "Без лишнего шума" %}</div>
+          </div>
+          <div class="mini-stat">
+            <div class="text-[11px] uppercase tracking-[0.18em] text-stone-500 font-bold">{% trans "Доставка" %}</div>
+            <div class="mt-2 text-base font-extrabold text-stone-950">{% trans "Сам магазин" %}</div>
+            <div class="mt-1 text-sm text-stone-600">{% trans "Подписка без процентов" %}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mt-6 sm:mt-7">
+    <div class="flex items-center justify-between gap-3 px-1 mb-4">
+      <div>
+        <div class="text-[11px] uppercase tracking-[0.18em] text-stone-500 font-bold">{% trans "Витрина" %}</div>
+        <h2 class="mt-1 text-stone-950 text-2xl sm:text-3xl font-black tracking-tight">{% trans "Магазины рядом" %}</h2>
+      </div>
+      <div class="text-xs sm:text-sm text-stone-500">
+        {% trans "Найдено:" %} <span class="font-black text-stone-950">{{ stores|length }}</span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 sm:gap-6">
+      {% for c in stores %}
+        <a href="{% url 'shops:store_detail' c.slug %}" class="store-card group block">
+          <div class="store-card__media">
+            {% if c.logo %}
+              <img src="{{ c.logo.url }}"
+                   alt="{% t c.name_ru 'name_ru' %}"
+                   class="store-card__img"
+                   loading="lazy"
+                   decoding="async">
+            {% else %}
+              {% t c.name_ru "name_ru" as sn %}
+              <div class="h-full w-full flex items-center justify-center bg-gradient-to-br from-stone-200 via-stone-100 to-orange-50">
+                <div class="text-8xl font-black text-stone-500">{{ sn|slice:":1" }}</div>
+              </div>
+            {% endif %}
+
+            <div class="store-card__badges">
+              <span class="store-chip store-chip--glass">🛍️ {% trans "Магазин" %}</span>
+              <span class="store-chip store-chip--dark">🏬 {{ c.all.branches__count }} {% trans "точек" %}</span>
+            </div>
+
+            <div class="store-card__titlewrap">
+              <h3 class="store-card__title">{% t c.name_ru "name_ru" %}</h3>
+              <div class="store-card__meta">
+                <span>{% trans "Каталог и заказ" %}</span>
+                {% if c.tags %}
+                  <span>• {{ c.tags }}</span>
+                {% else %}
+                  <span>• {% trans "Удобный интерфейс" %}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="store-card__body">
+            <div class="store-card__pills">
+              <span class="store-card__pill">🧺 {% trans "Корзина" %}</span>
+              <span class="store-card__pill">🚚 {% trans "Доставка" %}</span>
+              <span class="store-card__pill">✨ {% trans "Минимализм" %}</span>
+            </div>
+
+            <div class="store-card__footer">
+              <div class="text-sm text-stone-500 leading-relaxed max-w-[19rem]">
+                {% trans "Откройте магазин, посмотрите каталог и оформите заказ за пару касаний." %}
+              </div>
+              <span class="store-card__cta">
+                {% trans "Открыть магазин" %}
+                <span class="store-card__cta-arrow">→</span>
+              </span>
+            </div>
+          </div>
+        </a>
+      {% empty %}
+        <div class="md:col-span-2 xl:col-span-3 rounded-[28px] bg-white/92 ring-1 ring-stone-200 p-8 text-center shadow-[0_14px_42px_rgba(15,23,42,.08)]">
+          <div class="text-5xl">🔎</div>
+          <div class="mt-4 text-xl font-black text-stone-950">{% trans "Ничего не найдено" %}</div>
+          <div class="mt-2 text-stone-500">{% trans "Попробуйте изменить поисковый запрос или откройте список ещё раз." %}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

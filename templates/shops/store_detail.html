@@ -3,181 +3,698 @@
 
 {% block title %}{% t store "name" %} — {% trans "филиалы" %}{% endblock %}
 
+{% block head_extra %}
+<style>
+  .sb-wrap {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 48px 40px 84px;
+  }
+
+  .sb-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 34px;
+    background:
+      radial-gradient(circle at 14% 18%, rgba(255,255,255,.14), transparent 36%),
+      radial-gradient(circle at 84% 12%, rgba(255,166,0,.14), transparent 30%),
+      linear-gradient(135deg, #171717 0%, #292524 52%, #1c1917 100%);
+    box-shadow: 0 26px 80px rgba(28,25,23,.22);
+    border: 1px solid rgba(255,255,255,.08);
+    padding: 34px;
+    margin-bottom: 34px;
+    isolation: isolate;
+  }
+  .sb-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)),
+      radial-gradient(circle at 75% 78%, rgba(255,255,255,.06), transparent 28%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .sb-hero-inner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 28px;
+    flex-wrap: wrap;
+  }
+  .sb-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.10);
+    color: rgba(255,255,255,.86);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    backdrop-filter: blur(10px);
+  }
+  .sb-title-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+  }
+  .sb-logo {
+    width: 72px;
+    height: 72px;
+    border-radius: 24px;
+    overflow: hidden;
+    background: rgba(255,255,255,.92);
+    border: 1px solid rgba(255,255,255,.24);
+    box-shadow: 0 12px 24px rgba(0,0,0,.16);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sb-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .sb-logo-letter {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 30px;
+    font-weight: 900;
+    color: #292524;
+  }
+  .sb-title {
+    margin: 0;
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(28px, 4vw, 52px);
+    line-height: .98;
+    letter-spacing: -2px;
+    color: #fff;
+    font-weight: 900;
+  }
+  .sb-sub {
+    margin-top: 10px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: rgba(255,255,255,.76);
+    max-width: 760px;
+  }
+  .sb-counts {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .sb-count,
+  .sb-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 46px;
+    padding: 0 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .sb-count {
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.12);
+    color: rgba(255,255,255,.92);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .sb-count-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fb923c, #f59e0b);
+    box-shadow: 0 0 0 5px rgba(251,146,60,.18);
+    flex-shrink: 0;
+  }
+  .sb-back {
+    background: #fff;
+    color: #1c1917;
+    border: 1px solid rgba(255,255,255,.9);
+    box-shadow: 0 10px 24px rgba(0,0,0,.12);
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .sb-back:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 16px 30px rgba(0,0,0,.18);
+  }
+
+  .sb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 24px;
+  }
+
+  .bc {
+    background: var(--card, #fff);
+    border-radius: 28px;
+    overflow: hidden;
+    border: 1.5px solid var(--border, rgba(15,23,42,.08));
+    box-shadow: 0 8px 28px rgba(15,23,42,.08);
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+    animation: branchIn .5s ease both;
+  }
+  .bc:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 30px 70px rgba(15,23,42,.15);
+    border-color: rgba(251,146,60,.22);
+  }
+  .bc:nth-child(1) { animation-delay: 0s; }
+  .bc:nth-child(2) { animation-delay: .06s; }
+  .bc:nth-child(3) { animation-delay: .12s; }
+  .bc:nth-child(4) { animation-delay: .18s; }
+  .bc:nth-child(5) { animation-delay: .24s; }
+  .bc:nth-child(6) { animation-delay: .30s; }
+  .bc:nth-child(n+7) { animation-delay: .36s; }
+
+  .bc-media {
+    position: relative;
+    height: 250px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #e7e5e4 0%, #f5f5f4 100%);
+    flex-shrink: 0;
+  }
+  .bc-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform .55s ease;
+  }
+  .bc:hover .bc-media img {
+    transform: scale(1.06);
+  }
+  .bc-empty {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      radial-gradient(circle at 25% 25%, rgba(255,255,255,.6), transparent 35%),
+      linear-gradient(135deg, #e7e5e4 0%, #f5f5f4 100%);
+  }
+  .bc-empty span {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 70px;
+    line-height: 1;
+    font-weight: 900;
+    color: rgba(41,37,36,.42);
+  }
+  .bc-media::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,.78) 0%, rgba(0,0,0,.36) 32%, rgba(0,0,0,.06) 58%, transparent 100%);
+  }
+  .bc-topline {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    z-index: 2;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .bc-status,
+  .bc-map-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .2px;
+    backdrop-filter: blur(12px);
+    border: 1px solid transparent;
+  }
+  .bc-status.open {
+    color: #fff;
+    background: rgba(16,185,129,.88);
+    border-color: rgba(255,255,255,.14);
+  }
+  .bc-status.closed {
+    color: rgba(255,255,255,.88);
+    background: rgba(28,25,23,.56);
+    border-color: rgba(255,255,255,.14);
+  }
+  .bc-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: .95;
+    flex-shrink: 0;
+  }
+  .bc-map-chip {
+    color: #fff;
+    background: rgba(255,255,255,.12);
+    border-color: rgba(255,255,255,.12);
+    text-decoration: none;
+  }
+  .bc-map-chip:hover {
+    background: rgba(255,255,255,.18);
+  }
+  .bc-photo-info {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    padding: 22px 20px 18px;
+  }
+  .bc-name {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 20px;
+    line-height: 1.16;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -.7px;
+    text-shadow: 0 2px 10px rgba(0,0,0,.28);
+  }
+  .bc-address {
+    margin-top: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255,255,255,.78);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .bc-body {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1;
+  }
+  .bc-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .bc-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1.5px solid var(--border, rgba(15,23,42,.08));
+    background: var(--bg, #fafaf9);
+    color: var(--text2, #44403c);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .bc-pill.phone {
+    color: #1f2937;
+    background: rgba(255,255,255,1);
+  }
+  .bc-pill.mode {
+    color: #b45309;
+    background: rgba(251,191,36,.12);
+    border-color: rgba(251,191,36,.24);
+  }
+
+  .bc-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .bc-main {
+    min-height: 86px;
+    border-radius: 22px;
+    padding: 16px 16px 15px;
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+  }
+  .bc-main:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.02);
+  }
+  .bc-main.delivery {
+    color: #fff;
+    background: linear-gradient(135deg, #1c1917 0%, #292524 100%);
+    box-shadow: 0 14px 28px rgba(28,25,23,.18);
+  }
+  .bc-main.pickup {
+    color: #1c1917;
+    background: #fff;
+    border: 1.5px solid rgba(15,23,42,.08);
+    box-shadow: 0 12px 24px rgba(15,23,42,.08);
+  }
+  .bc-main-kicker {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    opacity: .68;
+    margin-bottom: 6px;
+  }
+  .bc-main-title {
+    display: block;
+    font-size: 18px;
+    line-height: 1.1;
+    font-weight: 900;
+    letter-spacing: -.4px;
+  }
+  .bc-main-sub {
+    display: block;
+    font-size: 11px;
+    line-height: 1.4;
+    opacity: .72;
+    margin-top: 7px;
+  }
+  .bc-main-arrow {
+    font-size: 20px;
+    font-weight: 900;
+    flex-shrink: 0;
+    opacity: .94;
+  }
+
+  .bc-footer {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border, rgba(15,23,42,.08));
+    flex-wrap: wrap;
+  }
+  .bc-note {
+    font-size: 12px;
+    color: var(--muted, #78716c);
+    line-height: 1.5;
+    flex: 1 1 240px;
+  }
+  .bc-mini-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .bc-mini-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 15px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    text-decoration: none;
+    border: 1.5px solid var(--border, rgba(15,23,42,.08));
+    background: var(--bg, #fafaf9);
+    color: var(--text, #1c1917);
+    transition: transform .2s ease, border-color .2s ease;
+  }
+  .bc-mini-link:hover {
+    transform: translateY(-1px);
+    border-color: rgba(251,146,60,.25);
+  }
+  .bc-mini-link.wa {
+    background: #25D366;
+    color: #fff;
+    border-color: rgba(37,211,102,.7);
+  }
+
+  .sb-empty {
+    border-radius: 28px;
+    background: var(--card, #fff);
+    border: 1.5px solid var(--border, rgba(15,23,42,.08));
+    padding: 72px 28px;
+    text-align: center;
+    box-shadow: 0 8px 28px rgba(15,23,42,.06);
+    grid-column: 1 / -1;
+  }
+  .sb-empty-icon {
+    font-size: 58px;
+    margin-bottom: 14px;
+  }
+  .sb-empty h3 {
+    margin: 0 0 8px;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 19px;
+    letter-spacing: -.5px;
+    color: var(--text, #1c1917);
+  }
+  .sb-empty p {
+    margin: 0;
+    color: var(--muted, #78716c);
+    font-size: 14px;
+  }
+
+  @keyframes branchIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 980px) {
+    .sb-wrap {
+      padding: 28px 20px 68px;
+    }
+    .sb-hero {
+      padding: 26px;
+      border-radius: 30px;
+    }
+    .sb-grid {
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+  }
+
+  @media (max-width: 700px) {
+    .sb-wrap {
+      padding: 20px 16px 60px;
+    }
+    .sb-hero {
+      padding: 22px 18px;
+      border-radius: 26px;
+      margin-bottom: 22px;
+    }
+    .sb-title-row {
+      align-items: flex-start;
+    }
+    .sb-logo {
+      width: 62px;
+      height: 62px;
+      border-radius: 20px;
+    }
+    .sb-title {
+      letter-spacing: -1.4px;
+    }
+    .sb-sub {
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    .sb-counts {
+      margin-top: 16px;
+    }
+    .sb-count,
+    .sb-back {
+      width: 100%;
+      justify-content: center;
+    }
+    .sb-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .bc {
+      border-radius: 24px;
+    }
+    .bc-media {
+      height: 220px;
+    }
+    .bc-photo-info {
+      padding: 18px 16px 15px;
+    }
+    .bc-name {
+      font-size: 18px;
+    }
+    .bc-address {
+      font-size: 12px;
+    }
+    .bc-body {
+      padding: 16px;
+      gap: 14px;
+    }
+    .bc-actions {
+      grid-template-columns: 1fr;
+    }
+    .bc-main {
+      min-height: 78px;
+      border-radius: 18px;
+      padding: 14px 14px 13px;
+    }
+    .bc-footer {
+      padding-top: 14px;
+      align-items: stretch;
+    }
+    .bc-mini-actions {
+      width: 100%;
+    }
+    .bc-mini-link {
+      flex: 1 1 auto;
+      justify-content: center;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block cta %}{% endblock %}
+
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 py-6">
+<div class="sb-wrap">
 
-  <!-- HERO -->
-  <section class="rounded-3xl overflow-hidden ring-1 ring-white/20 shadow-[0_18px_60px_rgba(0,0,0,.18)]">
-    <div class="relative bg-white/10 backdrop-blur p-5 sm:p-7">
-      <div class="absolute inset-0 pointer-events-none"
-           style="background:
-             radial-gradient(circle at 12% 18%, rgba(255,255,255,.18), transparent 58%),
-             radial-gradient(circle at 90% 22%, rgba(255,255,255,.12), transparent 55%),
-             linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.06));"></div>
+  <section class="sb-hero">
+    <div class="sb-hero-inner">
+      <div>
+        <div class="sb-eyebrow">🛍️ {% trans "Магазин в Санжи" %}</div>
 
-      <div class="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div class="flex items-center gap-3 min-w-0">
-          <!-- store avatar -->
-          <div class="w-14 h-14 rounded-2xl overflow-hidden ring-2 ring-white/50 bg-white/85 flex items-center justify-center flex-shrink-0">
+        <div class="sb-title-row">
+          <div class="sb-logo">
             {% if store.logo %}
-              <img src="{{ store.logo.url }}" alt="" class="w-full h-full object-cover" loading="lazy" decoding="async">
+              <img src="{{ store.logo.url }}" alt="{% t store 'name' %}" loading="lazy" decoding="async">
             {% else %}
               {% t store "name" as sn %}
-              <span class="font-extrabold text-stone-700">{{ sn|slice:":1" }}</span>
+              <span class="sb-logo-letter">{{ sn|slice:":1" }}</span>
             {% endif %}
           </div>
 
           <div class="min-w-0">
-            <div class="text-white/80 text-xs font-semibold">
-              🛍️ {% trans "Магазин" %} · {% trans "заказ без процентов" %}
-            </div>
-            <h1 class="text-white text-2xl sm:text-3xl font-extrabold truncate">
-              {% t store "name" %}
-            </h1>
-            <div class="text-white/85 text-sm mt-1">
-              {% trans "Выберите точку и способ заказа:" %} <b>{% trans "Доставка" %}</b> / <b>{% trans "В магазине" %}</b>
+            <h1 class="sb-title">{% t store "name" %}</h1>
+            <div class="sb-sub">
+              {% trans "Выберите филиал и формат заказа. Страница собрана в более чистом и понятном стиле — с крупными фото, статусом точки и быстрыми действиями." %}
             </div>
           </div>
         </div>
 
-        <div class="flex flex-wrap gap-2">
-          <a href="{% url 'shops:store_list' %}"
-             class="px-4 py-3 rounded-2xl bg-white/90 text-stone-900 font-extrabold ring-1 ring-white/25">
-            ← {% trans "Назад к магазинам" %}
-          </a>
+        <div class="sb-counts">
+          <div class="sb-count">
+            <span class="sb-count-dot"></span>
+            {{ branches|length }} {% trans "филиал(ов)" %}
+          </div>
+          <div class="sb-count">🚚 {% trans "Доставка от магазина" %}</div>
+          <div class="sb-count">🏬 {% trans "Самовывоз / выдача" %}</div>
         </div>
       </div>
+
+      <a href="{% url 'shops:store_list' %}" class="sb-back">← {% trans "Назад к магазинам" %}</a>
     </div>
   </section>
 
-  <!-- BRANCHES -->
-  <section class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
-
+  <section class="sb-grid">
     {% for b in branches %}
-      <div class="rounded-3xl overflow-hidden bg-white/95 backdrop-blur ring-1 ring-black/5 shadow-[0_14px_42px_rgba(15,23,42,.10)]">
+      <article class="bc">
+        <div class="bc-media">
+          {% if b.cover_photo %}
+            <img src="{{ b.cover_photo.url }}" alt="{% t b 'name' %}" loading="lazy" decoding="async">
+          {% else %}
+            {% t b "name" as bn %}
+            <div class="bc-empty"><span>{{ bn|slice:":1" }}</span></div>
+          {% endif %}
 
-        <!-- top media -->
-        <div class="relative">
-          <div class="h-[160px] bg-stone-100 overflow-hidden">
-            {% if b.cover_photo %}
-              <img src="{{ b.cover_photo.url }}" alt=""
-                   class="h-full w-full object-cover" loading="lazy" decoding="async">
+          <div class="bc-topline">
+            {% if b.is_open_now %}
+              <div class="bc-status open">
+                <span class="bc-status-dot"></span>
+                {% trans "Открыто" %}
+              </div>
             {% else %}
-              <div class="h-full w-full bg-gradient-to-br from-stone-200 to-stone-100"></div>
+              <div class="bc-status closed">
+                <span class="bc-status-dot"></span>
+                {% trans "Закрыто" %}
+              </div>
+            {% endif %}
+
+            {% if b.map_url %}
+              <a href="{{ b.map_url }}" target="_blank" class="bc-map-chip">📍 {% trans "Карта" %}</a>
             {% endif %}
           </div>
 
-          <div class="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent"></div>
+          <div class="bc-photo-info">
+            <div class="bc-name">{% t b "name" %}</div>
+            <div class="bc-address">📍 <span>{{ b.address }}</span></div>
+          </div>
+        </div>
 
-          <div class="absolute left-4 right-4 bottom-4">
-            <div class="flex items-end justify-between gap-3">
-              <div class="min-w-0">
-                <div class="text-white text-xl font-extrabold truncate">{% t b "name" %}</div>
-                <div class="text-white/85 text-sm truncate">{{ b.address }}</div>
-              </div>
+        <div class="bc-body">
+          <div class="bc-pills">
+            <span class="bc-pill mode">🚚 {% trans "Доставка" %}</span>
+            <span class="bc-pill mode">🏬 {% trans "В магазине" %}</span>
+            {% if b.phone %}
+              <span class="bc-pill phone">📞 {{ b.phone }}</span>
+            {% endif %}
+          </div>
 
-              <div class="flex items-center gap-2">
-                {% if b.is_open_now %}
-                  <span class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px]
-                               bg-emerald-500/90 text-white backdrop-blur ring-1 ring-white/20">
-                    <span class="h-2 w-2 rounded-full bg-white"></span>
-                    {% trans "Открыто" %}
-                  </span>
-                {% else %}
-                  <span class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px]
-                               bg-stone-900/70 text-white backdrop-blur ring-1 ring-white/20">
-                    <span class="h-2 w-2 rounded-full bg-white/80"></span>
-                    {% trans "Закрыто" %}
-                  </span>
-                {% endif %}
-              </div>
+          <div class="bc-actions">
+            <a href="{% url 'shops:branch_catalog_delivery' b.id %}" class="bc-main delivery">
+              <span>
+                <span class="bc-main-kicker">{% trans "Заказ" %}</span>
+                <span class="bc-main-title">{% trans "Доставка" %}</span>
+                <span class="bc-main-sub">{% trans "Доставляет сам магазин" %}</span>
+              </span>
+              <span class="bc-main-arrow">→</span>
+            </a>
+
+            <a href="{% url 'shops:branch_catalog_pickup' b.id %}" class="bc-main pickup">
+              <span>
+                <span class="bc-main-kicker">{% trans "Заказ" %}</span>
+                <span class="bc-main-title">{% trans "В магазине" %}</span>
+                <span class="bc-main-sub">{% trans "Самовывоз / выдача" %}</span>
+              </span>
+              <span class="bc-main-arrow">→</span>
+            </a>
+          </div>
+
+          <div class="bc-footer">
+            <div class="bc-note">{% trans "Санжи — платформа по подписке. Без комиссии с заказов." %}</div>
+
+            <div class="bc-mini-actions">
+              {% if b.phone %}
+                <a href="tel:{{ b.phone }}" class="bc-mini-link">📞 {% trans "Позвонить" %}</a>
+                <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="bc-mini-link wa">WhatsApp</a>
+              {% endif %}
             </div>
           </div>
         </div>
-
-        <!-- body -->
-        <div class="p-4 sm:p-5">
-          <div class="flex flex-wrap items-center gap-2 text-[12px] text-stone-700">
-            {% if b.phone %}
-              <span class="inline-flex items-center rounded-full px-3 py-1 bg-white ring-1 ring-stone-200">
-                📞 {{ b.phone }}
-              </span>
-            {% endif %}
-            {% if b.map_url %}
-              <a href="{{ b.map_url }}" target="_blank"
-                 class="inline-flex items-center rounded-full px-3 py-1 bg-white ring-1 ring-stone-200 font-extrabold">
-                📍 {% trans "Карта" %}
-              </a>
-            {% endif %}
-          </div>
-
-          <!-- MAIN ACTION: Delivery / In-store -->
-          <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <a href="{% url 'shops:branch_catalog_delivery' b.id %}"
-               class="group relative overflow-hidden rounded-2xl px-4 py-4 text-white font-extrabold
-                      shadow-[0_16px_40px_rgba(37,99,235,.18)] ring-1 ring-white/10
-                      active:scale-[.99] transition"
-               style="background: linear-gradient(135deg, rgba(15,23,42,.95), rgba(2,6,23,.95));">
-              <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition"
-                   style="background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.18), transparent 60%);"></div>
-              <div class="relative flex items-center justify-between">
-                <div>
-                  <div class="text-xs text-white/80">{% trans "Заказ" %}</div>
-                  <div class="text-lg leading-none">🚚 {% trans "Доставка" %}</div>
-                  <div class="mt-1 text-xs text-white/80">
-                    {% trans "Доставляет магазин" %}
-                  </div>
-                </div>
-                <div class="text-white/90 text-xl">→</div>
-              </div>
-            </a>
-
-            <a href="{% url 'shops:branch_catalog_pickup' b.id %}"
-               class="group relative overflow-hidden rounded-2xl px-4 py-4 text-stone-900 font-extrabold
-                      shadow-[0_16px_40px_rgba(0,0,0,.10)] ring-1 ring-stone-200
-                      bg-white hover:bg-stone-50 active:scale-[.99] transition">
-              <div class="relative flex items-center justify-between">
-                <div>
-                  <div class="text-xs text-stone-500">{% trans "Заказ" %}</div>
-                  <div class="text-lg leading-none">🏬 {% trans "В магазине" %}</div>
-                  <div class="mt-1 text-xs text-stone-500">
-                    {% trans "Самовывоз / выдача" %}
-                  </div>
-                </div>
-                <div class="text-stone-900 text-xl">→</div>
-              </div>
-            </a>
-          </div>
-
-          <!-- secondary actions -->
-          <div class="mt-4 flex flex-wrap gap-2">
-            {% if b.phone %}
-              <a href="tel:{{ b.phone }}"
-                 class="px-4 py-2.5 rounded-2xl bg-stone-900 text-white font-extrabold">
-                📞 {% trans "Позвонить" %}
-              </a>
-
-              <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}"
-                 target="_blank"
-                 class="px-4 py-2.5 rounded-2xl text-white font-extrabold"
-                 style="background:#25D366;">
-                WhatsApp
-              </a>
-            {% endif %}
-          </div>
-
-          <div class="mt-4 text-xs text-stone-500">
-            {% trans "Санжи — платформа по подписке. Без комиссии с заказов." %}
-          </div>
-        </div>
-      </div>
-
+      </article>
     {% empty %}
-      <div class="rounded-3xl bg-white ring-1 ring-stone-200 p-6 text-stone-600">
-        {% trans "Филиалы не добавлены." %}
+      <div class="sb-empty">
+        <div class="sb-empty-icon">🛍️</div>
+        <h3>{% trans "Филиалы пока не добавлены" %}</h3>
+        <p>{% trans "Когда точки появятся, здесь будет адаптивная витрина с фото, адресом и быстрым переходом к заказу." %}</p>
       </div>
     {% endfor %}
-
   </section>
 
 </div>

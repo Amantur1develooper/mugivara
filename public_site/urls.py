@@ -3,10 +3,9 @@ from django.urls import path, include
 from .views import (
     about, booking_set_status, contacts, hall_plan, home, place_move, reservation, restaurant_about, restaurant_contacts, restaurant_detail, branch_menu,
     add_to_cart, cart_detail, cart_update, cart_remove,
-    checkout, checkout_success
+    checkout, checkout_success, restaurants_list
 )
 from reservations import views as r
-
 from public_site.views_table import table_cart, table_create_order, table_cart_update, table_call_waiter, table_menu
 
 
@@ -14,7 +13,7 @@ app_name = "public_site"
 
 urlpatterns = [
     path("", home, name="home"),
-
+    path("restaurants/", restaurants_list, name="restaurants_list"),
     # path("shops/", include("shops.urls")),
     path("t/<str:token>/menu/", table_menu, name="table_menu"),
     path("t/<str:token>/cart/", table_cart, name="table_cart"),

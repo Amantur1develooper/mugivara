@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+{% load static i18n i18n_attrs %}
+
+{% block title %}Webordo — Рестораны, магазины, сервисы Кыргызстана{% endblock %}
+
+{% block head_extra %}
+<style>
+  body {
+    background: #F5F6FA !important;
+    background-attachment: initial !important;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse-dot {
+    0%,100% { opacity:1;transform:scale(1); }
+    50%      { opacity:.4;transform:scale(1.6); }
+  }
+  @keyframes shimmer {
+    0%   { background-position:-400px 0; }
+    100% { background-position:400px 0; }
+  }
+  .fade-up { animation:fadeUp .65s ease both; }
+  .delay-1 { animation-delay:.08s; }
+  .delay-2 { animation-delay:.16s; }
+  .delay-3 { animation-delay:.24s; }
+  .delay-4 { animation-delay:.32s; }
+
+  .biz-card {
+    background:#fff; border-radius:22px;
+    box-shadow:0 2px 12px rgba(0,0,0,.07);
+    border:1.5px solid rgba(0,0,0,.07);
+    overflow:hidden;
+    transition:transform .22s ease,box-shadow .22s ease;
+    text-decoration:none; display:block; color:inherit;
+  }
+  .biz-card:hover { transform:translateY(-5px); box-shadow:0 16px 40px rgba(0,0,0,.13); }
+  .biz-img-wrap { position:relative; height:170px; background:#F0F2F8; overflow:hidden; }
+  .biz-img-wrap img { width:100%;height:100%;object-fit:cover;transition:transform .3s ease; }
+  .biz-card:hover .biz-img-wrap img { transform:scale(1.05); }
+  .biz-img-placeholder {
+    width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+    font-size:56px;font-weight:900;color:#CBD5E1;
+    background:linear-gradient(135deg,#F1F5F9,#E2E8F0);
+  }
+
+  .cat-card {
+    background:#fff; border:1.5px solid rgba(0,0,0,.07); border-radius:20px;
+    padding:22px 18px; transition:all .25s ease; cursor:pointer;
+    text-decoration:none; display:flex; flex-direction:column; gap:8px;
+    box-shadow:0 2px 10px rgba(0,0,0,.05); color:inherit;
+  }
+  .cat-card:hover {
+    transform:translateY(-4px); box-shadow:0 14px 32px rgba(0,0,0,.1);
+    border-color:var(--cat-color,#FF5C00);
+  }
+  .cat-card.soon { opacity:.6; cursor:default; }
+  .cat-card.soon:hover { transform:none; box-shadow:0 2px 10px rgba(0,0,0,.05); border-color:rgba(0,0,0,.07); }
+
+  .stats-row {
+    background:#fff; border:1.5px solid rgba(0,0,0,.07); border-radius:18px;
+    box-shadow:0 4px 20px rgba(0,0,0,.06); display:flex; overflow:hidden;
+  }
+  .stat-cell { flex:1; padding:20px 16px; text-align:center; border-right:1.5px solid rgba(0,0,0,.07); }
+  .stat-cell:last-child { border-right:none; }
+
+  .section-tag { font-size:11px; letter-spacing:3px; text-transform:uppercase; color:#FF5C00; font-weight:700; margin-bottom:6px; }
+  .badge-open   { background:rgba(5,150,105,.1);  color:#059669; }
+  .badge-closed { background:rgba(100,116,139,.1); color:#64748B; }
+  .badge-soon   { background:rgba(37,99,235,.1);   color:#2563EB; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div>
+
+  {# HERO #}
+  <section class="relative overflow-hidden rounded-3xl mb-6"
+           style="background:linear-gradient(135deg,#0D1117 0%,#1A2030 100%);padding:40px 32px 44px;">
+    <div class="absolute inset-0 pointer-events-none"
+         style="background:radial-gradient(ellipse 60% 50% at 50% -10%,rgba(255,92,0,.18) 0%,transparent 60%),
+                radial-gradient(ellipse 40% 40% at 85% 80%,rgba(0,184,150,.1) 0%,transparent 50%);"></div>
+    <div class="absolute inset-0 pointer-events-none"
+         style="background-image:radial-gradient(circle,rgba(255,255,255,.06) 1px,transparent 1px);
+                background-size:28px 28px;
+                mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 30%,transparent 100%);"></div>
+
+    <div class="relative fade-up">
+      <div class="inline-flex items-center gap-2 rounded-full px-4 py-2 mb-5"
+           style="background:rgba(255,92,0,.12);border:1px solid rgba(255,92,0,.25);
+                  font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#FF8A00;font-weight:700;">
+        <span style="width:6px;height:6px;border-radius:50%;background:#FF5C00;animation:pulse-dot 2s infinite;"></span>
+        🇰🇬 Цифрова 2323 экосистема Кыргызстана
+      </div>
+
+      <h1 class="text-white font-black leading-none mb-4"
+          style="font-size:clamp(36px,6vw,72px);letter-spacing:-2px;">
+        Всё в одном —<br>
+        <span style="background:linear-gradient(135deg,#FF5C00,#FF8A00,#FFB800);
+                     -webkit-background-clip:text;-webkit-text-fill-color:transparent;">Webordo</span>
+      </h1>
+
+      <p class="mb-8" style="color:rgba(255,255,255,.7);font-size:16px;line-height:1.7;max-width:520px;">
+        Рестораны, магазины, отели — в единой платформе Кыргызстана.
+        QR-заказы без официанта, онлайн-бронирование и аналитика.
+      </p>
+
+      <div class="flex flex-wrap gap-3">
+        <a href="#restaurants" class="inline-flex items-center gap-2 rounded-2xl px-6 py-3 font-bold text-white"
+           style="background:linear-gradient(135deg,#FF5C00,#FF8A00);box-shadow:0 8px 24px rgba(255,92,0,.35);font-size:15px;text-decoration:none;">
+          🍽️ Рестораны
+        </a>
+        <a href="{% url 'shops:store_list' %}" class="inline-flex items-center gap-2 rounded-2xl px-6 py-3 font-bold"
+           style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:15px;text-decoration:none;">
+          🛍️ Магазины →
+        </a>
+      </div>
+    </div>
+
+    <div class="stats-row mt-8 fade-up delay-2" style="max-width:640px;">
+      <div class="stat-cell">
+        <div class="font-black" style="font-size:28px;color:#FF5C00;">{{ stats.total }}+</div>
+        <div style="font-size:11px;color:#8B96A8;margin-top:3px;">Бизнесов</div>
+      </div>
+      <div class="stat-cell">
+        <div class="font-black" style="font-size:28px;color:#FF5C00;">{{ stats.branch_count }}+</div>
+        <div style="font-size:11px;color:#8B96A8;margin-top:3px;">Филиалов</div>
+      </div>
+      <div class="stat-cell">
+        <div class="font-black" style="font-size:28px;color:#FF5C00;">{{ categories|length }}</div>
+        <div style="font-size:11px;color:#8B96A8;margin-top:3px;">Категорий</div>
+      </div>
+      <div class="stat-cell">
+        <div class="font-black" style="font-size:28px;color:#FF5C00;">3</div>
+        <div style="font-size:11px;color:#8B96A8;margin-top:3px;">Города КР</div>
+      </div>
+    </div>
+  </section>
+
+  {# КАТЕГОРИИ #}
+  <section class="mb-8 fade-up delay-1">
+    <div class="section-tag">Платформа</div>
+    <h2 class="font-black mb-5" style="font-size:24px;letter-spacing:-1px;color:#0D1117;">Выберите категорию</h2>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {% for cat in categories %}
+        {% if cat.is_active %}
+          <a href="{% url cat.url %}" class="cat-card" style="--cat-color:{{ cat.color }}">
+        {% else %}
+          <div class="cat-card soon">
+        {% endif %}
+          <span style="font-size:32px;">{{ cat.icon }}</span>
+          <span class="font-bold" style="font-size:13px;color:#0D1117;">{{ cat.name_ru }}</span>
+          {% if cat.coming_soon %}
+            <span class="badge-soon inline-flex items-center rounded-full px-2 py-0.5"
+                  style="font-size:10px;font-weight:700;width:fit-content;">Скоро</span>
+          {% else %}
+            <span style="font-size:11px;color:#8B96A8;">
+              {% if cat.key == 'restaurants' %}{{ stats.restaurant_count }} заведений{% endif %}
+              {% if cat.key == 'stores' %}{{ stats.store_count }} магазинов{% endif %}
+            </span>
+          {% endif %}
+        {% if cat.is_active %}</a>{% else %}</div>{% endif %}
+      {% endfor %}
+    </div>
+  </section>
+
+  {# ТОП РЕСТОРАНЫ #}
+  {% if restaurant_cards %}
+  <section class="mb-10 fade-up delay-2" id="restaurants">
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <div class="section-tag">Рестораны</div>
+        <h2 class="font-black" style="font-size:22px;letter-spacing:-.8px;color:#0D1117;">Популярные заведения</h2>
+      </div>
+      <a href="{% url 'public_site:home' %}" style="font-size:13px;font-weight:700;color:#FF5C00;text-decoration:none;">Все →</a>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {% for card in restaurant_cards %}
+      <a href="{% url 'public_site:restaurant_contacts' card.obj.slug %}" class="biz-card">
+        <div class="biz-img-wrap">
+          {% if card.obj.logo %}
+            <img src="{{ card.obj.logo.url }}" alt="{% t card.obj 'name' %}" loading="lazy" width="320" height="170" style="background:#F0F2F8;">
+          {% else %}
+            <div class="biz-img-placeholder">{% t card.obj "name" as rn %}{{ rn|slice:":1" }}</div>
+          {% endif %}
+          <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.55) 0%,transparent 60%);"></div>
+          <div class="absolute top-3 right-3">
+            {% if card.is_open %}
+              <span class="badge-open inline-flex items-center gap-1.5 rounded-full px-3 py-1.5" style="font-size:11px;font-weight:700;">
+                <span style="width:6px;height:6px;border-radius:50%;background:#059669;"></span>Открыто
+              </span>
+            {% else %}
+              <span class="badge-closed inline-flex items-center gap-1.5 rounded-full px-3 py-1.5" style="font-size:11px;font-weight:700;">
+                <span style="width:6px;height:6px;border-radius:50%;background:#94A3B8;"></span>Закрыто
+              </span>
+            {% endif %}
+          </div>
+          <div class="absolute bottom-0 left-0 right-0 p-3">
+            <div class="font-black text-white leading-tight" style="font-size:17px;text-shadow:0 1px 4px rgba(0,0,0,.4);">{% t card.obj "name" %}</div>
+          </div>
+        </div>
+        <div class="p-3">
+          <div class="flex flex-wrap gap-1.5" style="font-size:11px;">
+            {% if card.has_delivery %}
+              <span class="inline-flex items-center rounded-full px-2.5 py-1" style="background:#F5F6FA;border:1px solid rgba(0,0,0,.07);color:#374151;font-weight:600;">🚚 Доставка</span>
+            {% else %}
+              <span class="inline-flex items-center rounded-full px-2.5 py-1" style="background:#F5F6FA;border:1px solid rgba(0,0,0,.07);color:#374151;font-weight:600;">🥡 Самовывоз</span>
+            {% endif %}
+          </div>
+          <div class="flex items-center justify-between mt-3">
+            <span class="font-bold" style="font-size:13px;color:#0D1117;">Открыть →</span>
+            <span style="font-size:11px;color:#8B96A8;">Меню и заказы</span>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {# ТОП МАГАЗИНЫ #}
+  {% if store_cards %}
+  <section class="mb-10 fade-up delay-3" id="stores">
+    <div class="flex items-center justify-between mb-5">
+      <div>
+        <div class="section-tag">Магазины</div>
+        <h2 class="font-black" style="font-size:22px;letter-spacing:-.8px;color:#0D1117;">Популярные магазины</h2>
+      </div>
+      <a href="{% url 'shops:store_list' %}" style="font-size:13px;font-weight:700;color:#FF8A00;text-decoration:none;">Все →</a>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {% for card in store_cards %}
+      <a href="{% url 'shops:store_detail' card.obj.slug %}" class="biz-card">
+        <div class="biz-img-wrap">
+          {% if card.obj.logo %}
+            <img src="{{ card.obj.logo.url }}" alt="{% t card.obj 'name' %}" loading="lazy" width="320" height="170" style="background:#F0F2F8;">
+          {% else %}
+            <div class="biz-img-placeholder" style="background:linear-gradient(135deg,#FFF7ED,#FEF3C7);">
+              {% t card.obj "name" as sn %}{{ sn|slice:":1" }}
+            </div>
+          {% endif %}
+          <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(0,0,0,.5) 0%,transparent 60%);"></div>
+          <div class="absolute bottom-0 left-0 right-0 p-3">
+            <div class="font-black text-white leading-tight" style="font-size:17px;text-shadow:0 1px 4px rgba(0,0,0,.4);">{% t card.obj "name" %}</div>
+          </div>
+        </div>
+        <div class="p-3">
+          <div class="flex flex-wrap gap-1.5" style="font-size:11px;">
+            {% if card.has_delivery %}
+              <span class="inline-flex items-center rounded-full px-2.5 py-1" style="background:#FFF7ED;border:1px solid rgba(255,138,0,.2);color:#92400E;font-weight:600;">🚚 Доставка</span>
+            {% else %}
+              <span class="inline-flex items-center rounded-full px-2.5 py-1" style="background:#F5F6FA;border:1px solid rgba(0,0,0,.07);color:#374151;font-weight:600;">🛒 В магазине</span>
+            {% endif %}
+          </div>
+          <div class="flex items-center justify-between mt-3">
+            <span class="font-bold" style="font-size:13px;color:#0D1117;">Открыть →</span>
+            <span style="font-size:11px;color:#8B96A8;">Каталог и цены</span>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {# QR-СТОЛЫ #}
+  <section class="mb-8 fade-up delay-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="rounded-3xl p-8" style="background:linear-gradient(135deg,#F0F4FF,#EEF2FF);border:1.5px solid rgba(99,102,241,.15);">
+        <div style="font-size:60px;margin-bottom:16px;">📲</div>
+        <h3 class="font-black mb-3" style="font-size:20px;letter-spacing:-.6px;color:#0D1117;">QR-столы для ресторанов</h3>
+        <p style="font-size:14px;color:#64748B;line-height:1.7;margin-bottom:20px;">
+          Каждый стол — уникальная ссылка. Гость сканирует QR, видит меню и делает заказ без официанта.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          {% for item in "1234"|make_list %}
+          <div style="display:flex;align-items:center;gap:12px;font-size:13px;color:#374151;">
+            <div style="width:24px;height:24px;border-radius:50%;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#6366F1;flex-shrink:0;">{{ item }}</div>
+            {% if item == "1" %}Гость сканирует QR на столе{% endif %}
+            {% if item == "2" %}Открывается меню с фото и ценами{% endif %}
+            {% if item == "3" %}Заказывает и платит онлайн{% endif %}
+            {% if item == "4" %}Заказ мгновенно уходит на кухню{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        {% for feat in "123"|make_list %}
+        <div class="rounded-2xl p-5" style="background:#fff;border:1.5px solid rgba(0,0,0,.07);box-shadow:0 2px 10px rgba(0,0,0,.05);">
+          {% if feat == "1" %}
+            <div style="font-size:24px;margin-bottom:8px;">⚡</div>
+            <div class="font-bold mb-1" style="font-size:14px;color:#0D1117;">Скорость обслуживания</div>
+            <div style="font-size:12px;color:#64748B;line-height:1.6;">С 7 минут до 40 секунд от заказа до кухни</div>
+            <div class="inline-flex rounded-full px-3 py-1 mt-2" style="background:rgba(5,150,105,.08);color:#059669;font-size:11px;font-weight:700;">↑ В 10 раз быстрее</div>
+          {% elif feat == "2" %}
+            <div style="font-size:24px;margin-bottom:8px;">💰</div>
+            <div class="font-bold mb-1" style="font-size:14px;color:#0D1117;">Рост среднего чека</div>
+            <div style="font-size:12px;color:#64748B;line-height:1.6;">Визуальное меню с фото увеличивает чек на 23%</div>
+            <div class="inline-flex rounded-full px-3 py-1 mt-2" style="background:rgba(37,99,235,.08);color:#2563EB;font-size:11px;font-weight:700;">+23% к обороту</div>
+          {% else %}
+            <div style="font-size:24px;margin-bottom:8px;">📊</div>
+            <div class="font-bold mb-1" style="font-size:14px;color:#0D1117;">Аналитика</div>
+            <div style="font-size:12px;color:#64748B;line-height:1.6;">Выручка, популярные блюда, часы пик — в одном экране</div>
+            <div class="inline-flex rounded-full px-3 py-1 mt-2" style="background:rgba(255,138,0,.08);color:#FF8A00;font-size:11px;font-weight:700;">Живая статистика</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  {% if not restaurant_cards and not store_cards %}
+  <div class="rounded-3xl p-8 text-center" style="background:#fff;border:1.5px solid rgba(0,0,0,.07);">
+    <div style="font-size:48px;margin-bottom:12px;">🏗️</div>
+    <div class="font-bold" style="font-size:16px;color:#0D1117;">Платформа запускается</div>
+    <div style="font-size:14px;color:#64748B;margin-top:6px;">Скоро здесь появятся рестораны и магазины Кыргызстана</div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

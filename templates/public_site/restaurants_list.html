@@ -1,0 +1,598 @@
+{% extends "base.html" %}
+{% load static i18n i18n_attrs %}
+
+{% block title %}Рестораны Кыргызстана — Webordo{% endblock %}
+
+{% block head_extra %}
+<style>
+  /* ── PAGE ── */
+  .rl-wrap {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 48px 40px 80px;
+  }
+
+  /* ── HERO ── */
+  .rl-hero {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+  .rl-eyebrow {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .rl-title {
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 900;
+    font-size: clamp(28px, 4vw, 52px);
+    letter-spacing: -2.5px;
+    color: var(--text);
+    line-height: 0.97;
+  }
+  .rl-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    padding: 6px 16px;
+    border-radius: 100px;
+    background: rgba(255,77,28,0.08);
+    border: 1px solid rgba(255,77,28,0.15);
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ── FILTERS ── */
+  .rl-filters {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .rl-search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 220px;
+    max-width: 380px;
+  }
+  .rl-search-wrap svg {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 17px;
+    height: 17px;
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .rl-search {
+    width: 100%;
+    padding: 12px 16px 12px 44px;
+    border-radius: 100px;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    font-family: 'Geologica', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    box-shadow: 0 2px 10px var(--shadow);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .rl-search:focus {
+    border-color: rgba(255,77,28,0.4);
+    box-shadow: 0 0 0 4px rgba(255,77,28,0.08);
+  }
+  .rl-search::placeholder { color: var(--muted); }
+
+  .rl-open-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    border-radius: 100px;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+    cursor: pointer;
+    box-shadow: 0 2px 10px var(--shadow);
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .rl-open-label:hover { border-color: var(--accent); }
+  .rl-open-label input { display: none; }
+  .rl-toggle {
+    width: 36px; height: 20px;
+    border-radius: 10px;
+    background: var(--card2);
+    border: 1.5px solid var(--border);
+    position: relative;
+    transition: background 0.2s, border-color 0.2s;
+    flex-shrink: 0;
+  }
+  .rl-toggle::after {
+    content: '';
+    position: absolute;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: white;
+    top: 1px; left: 1px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+  }
+  .rl-open-label:has(input:checked) .rl-toggle {
+    background: var(--teal);
+    border-color: var(--teal);
+  }
+  .rl-open-label:has(input:checked) .rl-toggle::after { transform: translateX(16px); }
+
+  .rl-submit {
+    padding: 12px 24px;
+    border-radius: 100px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    border: none;
+    font-family: 'Geologica', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 16px var(--glow);
+    transition: transform 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
+  }
+  .rl-submit:hover { transform: translateY(-1px); box-shadow: 0 8px 24px var(--glow); }
+
+  /* ── GRID ── */
+  .rl-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+  }
+
+  /* ── CARD ── */
+  .rc {
+    background: var(--card);
+    border-radius: 26px;
+    overflow: hidden;
+    border: 1.5px solid var(--border);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s;
+    position: relative;
+  }
+  .rc:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 28px 64px rgba(0,0,0,0.14);
+    border-color: rgba(0,0,0,0.12);
+  }
+
+  /* ── PHOTO ── */
+  .rc-photo {
+    position: relative;
+    height: 240px;
+    background: var(--card2);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .rc-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.5s ease;
+  }
+  .rc:hover .rc-photo img { transform: scale(1.07); }
+
+  /* Заглушка без фото */
+  .rc-photo-empty {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #FFF1EB 0%, #FFE4D6 50%, #FFDDD0 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .rc-photo-empty::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 30% 30%, rgba(255,77,28,0.12), transparent),
+      radial-gradient(ellipse 50% 50% at 80% 80%, rgba(255,138,0,0.08), transparent);
+  }
+  .rc-photo-empty-letter {
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 900;
+    font-size: 72px;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    position: relative;
+    z-index: 1;
+    opacity: 0.4;
+  }
+
+  /* Нижний градиент поверх фото */
+  .rc-photo-overlay {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to top,
+        rgba(0,0,0,0.72) 0%,
+        rgba(0,0,0,0.3)  35%,
+        rgba(0,0,0,0.05) 60%,
+        transparent      100%
+      );
+  }
+
+  /* Статус бейдж */
+  .rc-status {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 14px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    backdrop-filter: blur(12px);
+    border: 1px solid transparent;
+  }
+  .rc-status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .rc-status.open {
+    background: rgba(0,184,150,0.15);
+    border-color: rgba(0,184,150,0.3);
+    color: #00C9A0;
+  }
+  .rc-status.open .rc-status-dot {
+    background: var(--teal);
+    box-shadow: 0 0 0 3px rgba(0,184,150,0.25);
+    animation: status-pulse 2.5s infinite;
+  }
+  .rc-status.closed {
+    background: rgba(0,0,0,0.35);
+    border-color: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.75);
+  }
+  .rc-status.closed .rc-status-dot { background: rgba(255,255,255,0.5); }
+
+  @keyframes status-pulse {
+    0%,100% { box-shadow: 0 0 0 3px rgba(0,184,150,0.25); }
+    50%      { box-shadow: 0 0 0 6px rgba(0,184,150,0.08); }
+  }
+
+  /* Кол-во филиалов */
+  .rc-branches-badge {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    padding: 5px 12px;
+    border-radius: 100px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    color: rgba(255,255,255,0.9);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+
+  /* Название поверх фото */
+  .rc-photo-info {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 20px 20px 16px;
+  }
+  .rc-photo-name {
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    color: white;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    margin-bottom: 6px;
+  }
+  .rc-photo-sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.72);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .rc-photo-sub-dot { width: 3px; height: 3px; border-radius: 50%; background: rgba(255,255,255,0.4); }
+
+  /* ── BODY ── */
+  .rc-body {
+    padding: 18px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    flex: 1;
+  }
+
+  /* Пилюли */
+  .rc-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .rc-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    color: var(--text2);
+    white-space: nowrap;
+  }
+  .rc-pill.delivery {
+    background: rgba(255,138,0,0.08);
+    border-color: rgba(255,138,0,0.25);
+    color: #C27D00;
+  }
+  .rc-pill.hours {
+    background: rgba(37,99,235,0.07);
+    border-color: rgba(37,99,235,0.2);
+    color: #1D4ED8;
+  }
+  .rc-pill.allday {
+    background: rgba(0,184,150,0.08);
+    border-color: rgba(0,184,150,0.25);
+    color: var(--teal);
+  }
+
+  /* Нижняя строка — кнопка */
+  .rc-footer {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 4px;
+    border-top: 1px solid var(--border);
+  }
+  .rc-footer-hint {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .rc-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 20px;
+    border-radius: 100px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'Unbounded', sans-serif;
+    letter-spacing: -0.2px;
+    box-shadow: 0 4px 16px var(--glow);
+    white-space: nowrap;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .rc:hover .rc-btn {
+    transform: translateX(2px);
+    box-shadow: 0 8px 24px var(--glow);
+  }
+
+  /* ── EMPTY ── */
+  .rl-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 80px 40px;
+    background: var(--card);
+    border-radius: 26px;
+    border: 1.5px solid var(--border);
+  }
+  .rl-empty-icon { font-size: 56px; margin-bottom: 16px; }
+  .rl-empty h3 {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 18px; font-weight: 800;
+    color: var(--text); margin-bottom: 8px; letter-spacing: -0.5px;
+  }
+  .rl-empty p { font-size: 14px; color: var(--muted); }
+
+  /* ── ANIMATION ── */
+  .rc {
+    animation: cardIn 0.5s ease both;
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .rc:nth-child(1) { animation-delay: 0.00s; }
+  .rc:nth-child(2) { animation-delay: 0.06s; }
+  .rc:nth-child(3) { animation-delay: 0.12s; }
+  .rc:nth-child(4) { animation-delay: 0.18s; }
+  .rc:nth-child(5) { animation-delay: 0.24s; }
+  .rc:nth-child(6) { animation-delay: 0.30s; }
+  .rc:nth-child(7) { animation-delay: 0.36s; }
+  .rc:nth-child(8) { animation-delay: 0.42s; }
+  .rc:nth-child(n+9) { animation-delay: 0.48s; }
+
+  @media (max-width: 700px) {
+    .rl-wrap { padding: 24px 16px 60px; }
+    .rl-grid { grid-template-columns: 1fr; gap: 16px; }
+    .rc-photo { height: 200px; }
+  }
+</style>
+{% endblock %}
+
+
+{% block cta %}{% endblock %}
+
+{% block content %}
+<div class="rl-wrap">
+
+  {# ── HERO ── #}
+  <div class="rl-hero">
+    <div>
+      <div class="rl-eyebrow">Платформа Webordo</div>
+      <h1 class="rl-title">Рестораны<br>Кыргызстана</h1>
+      <div class="rl-count">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);"></span>
+        {{ total }} заведени{% if total == 1 %}е{% elif total|divisibleby:10 or total == 0 %}й{% else %}я{% endif %}
+      </div>
+    </div>
+
+    {# ── ФИЛЬТРЫ ── #}
+    <form method="get" class="rl-filters">
+      <div class="rl-search-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/>
+        </svg>
+        <input class="rl-search" name="q" value="{{ q }}"
+               placeholder="Поиск ресторана..." autocomplete="off">
+      </div>
+
+      <label class="rl-open-label">
+        <input type="checkbox" name="open_now" value="1" {% if open_now %}checked{% endif %}
+               onchange="this.form.submit()">
+        <span class="rl-toggle"></span>
+        Открыто сейчас
+      </label>
+
+      <button class="rl-submit" type="submit">Найти</button>
+    </form>
+  </div>
+
+
+  {# ── GRID ── #}
+  <div class="rl-grid">
+
+    {% for c in cards %}
+    <a class="rc" href="{% url 'public_site:restaurant_contacts' c.obj.slug %}">
+
+      {# ── ФОТО ── #}
+      <div class="rc-photo">
+
+        {% if c.obj.logo or c.cover %}
+          {% if c.obj.logo %}
+            <img src="{{ c.obj.logo.url }}"
+                 alt="{% t c.obj 'name' %}"
+                 loading="lazy"
+                 width="400" height="240">
+          {% else %}
+            <img src="{{ c.cover.url }}"
+                 alt="{% t c.obj 'name' %}"
+                 loading="lazy"
+                 width="400" height="240">
+          {% endif %}
+        {% else %}
+          <div class="rc-photo-empty">
+            <div class="rc-photo-empty-letter">
+              {% t c.obj "name" as rn %}{{ rn|slice:":1" }}
+            </div>
+          </div>
+        {% endif %}
+
+        {# градиент поверх фото #}
+        <div class="rc-photo-overlay"></div>
+
+        {# статус: открыто / закрыто #}
+        <div class="rc-status {% if c.is_open %}open{% else %}closed{% endif %}">
+          <span class="rc-status-dot"></span>
+          {% if c.is_open %}Открыто{% else %}Закрыто{% endif %}
+        </div>
+
+        {# количество филиалов #}
+        {% if c.branches_count > 1 %}
+        <div class="rc-branches-badge">
+          {{ c.branches_count }} филиала
+        </div>
+        {% endif %}
+
+        {# название + подзаголовок поверх фото #}
+        <div class="rc-photo-info">
+          <div class="rc-photo-name">{% t c.obj "name" %}</div>
+          <div class="rc-photo-sub">
+            {% if c.hours_text %}
+              <span>⏰ {{ c.hours_text }}</span>
+              <span class="rc-photo-sub-dot"></span>
+            {% endif %}
+            <span>{{ c.branches_count }} филиал{% if c.branches_count > 1 %}а{% endif %}</span>
+          </div>
+        </div>
+      </div>
+
+      {# ── BODY ── #}
+      <div class="rc-body">
+
+        {# пилюли #}
+        <div class="rc-pills">
+          {% if c.has_delivery %}
+            <span class="rc-pill delivery">🚚 Доставка</span>
+            {% if c.min_order %}
+              <span class="rc-pill">Мин. {{ c.min_order|floatformat:"0" }} сом</span>
+            {% endif %}
+            {% if c.min_fee %}
+              <span class="rc-pill">Дост. {{ c.min_fee|floatformat:"0" }} сом</span>
+            {% endif %}
+          {% else %}
+            <span class="rc-pill">🥡 Самовывоз</span>
+          {% endif %}
+
+          {% if c.hours_text == "24/7" %}
+            <span class="rc-pill allday">🌙 Круглосуточно</span>
+          {% elif c.hours_text %}
+            <span class="rc-pill hours">⏰ {{ c.hours_text }}</span>
+          {% endif %}
+        </div>
+
+        {# кнопка #}
+        <div class="rc-footer">
+          <span class="rc-footer-hint">Меню, контакты, бронь</span>
+          <span class="rc-btn">
+            Открыть
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <path d="M2 11L11 2M11 2H5M11 2V8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </div>
+
+      </div>
+    </a>
+    {% empty %}
+
+    <div class="rl-empty">
+      <div class="rl-empty-icon">🔍</div>
+      <h3>Ничего не найдено</h3>
+      <p>Попробуй другой запрос или сними фильтр «Открыто сейчас»</p>
+    </div>
+
+    {% endfor %}
+
+  </div>
+</div>
+{% endblock %}

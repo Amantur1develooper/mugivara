@@ -66,35 +66,296 @@ def tr(obj, base: str, lang: str):
         # fallback на RU
         return getattr(obj, f"{base}_ru", "") or ""
     return getattr(obj, base, "")
+# ─────────────────────────────────────────────────────────────────────────────
+# ЗАМЕНИ существующую функцию home() в public_site/views.py на эту.
+# Все остальные функции оставь без изменений.
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# Добавь импорты в начало файла (если их ещё нет):
+#   from django.views.decorators.cache import cache_page
+#   from shops.models import Store, StoreBranch
+#
+# ─────────────────────────────────────────────────────────────────────────────
 
+from django.views.decorators.cache import cache_page
+from shops.models import Store, StoreBranch
+from core.models import Restaurant, Branch
+
+
+# Категории платформы — добавляй новые строки когда запускаешь новое направление
+PLATFORM_CATEGORIES = [
+    {
+        "key":         "restaurants",
+        "icon":        "🍽️",
+        "name_ru":     "Рестораны",
+        "name_ky":     "Ресторандар",
+        "name_en":     "Restaurants",
+        "url":         "public_site:home",   # временно сам на себя; замени на список ресторанов
+        "color":       "#FF5C00",
+        "is_active":   True,
+        "coming_soon": False,
+    },
+    {
+        "key":         "stores",
+        "icon":        "🛍️",
+        "name_ru":     "Магазины",
+        "name_ky":     "Дүкөндөр",
+        "name_en":     "Shops",
+        "url":         "shops:store_list",
+        "color":       "#FF8A00",
+        "is_active":   True,
+        "coming_soon": False,
+    },
+    {
+        "key":         "hotels",
+        "icon":        "🏨",
+        "name_ru":     "Отели",
+        "name_ky":     "Мейманканалар",
+        "name_en":     "Hotels",
+        "url":         None,
+        "color":       "#2563EB",
+        "is_active":   False,
+        "coming_soon": True,
+    },
+    {
+        "key":         "eco",
+        "icon":        "♻️",
+        "name_ru":     "Эко-проекты",
+        "name_ky":     "Эко-долборлор",
+        "name_en":     "Eco projects",
+        "url":         None,
+        "color":       "#059669",
+        "is_active":   False,
+        "coming_soon": True,
+    },
+]
+# ─────────────────────────────────────────────────────────────────────────────
+# ЗАМЕНИ существующую функцию home() в public_site/views.py на эту.
+# Все остальные функции оставь без изменений.
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# Добавь импорты в начало файла (если их ещё нет):
+#   from django.views.decorators.cache import cache_page
+#   from shops.models import Store, StoreBranch
+#
+# ─────────────────────────────────────────────────────────────────────────────
+
+from django.views.decorators.cache import cache_page
+from shops.models import Store, StoreBranch
+from core.models import Restaurant, Branch
+
+
+# Категории платформы — добавляй новые строки когда запускаешь новое направление
+PLATFORM_CATEGORIES = [
+    {
+        "key":         "restaurants",
+        "icon":        "🍽️",
+        "name_ru":     "Рестораны",
+        "name_ky":     "Ресторандар",
+        "name_en":     "Restaurants",
+        "url":         "public_site:restaurants_list",   # временно сам на себя; замени на список ресторанов
+        "color":       "#FF5C00",
+        "is_active":   True,
+        "coming_soon": False,
+    },
+    {
+        "key":         "stores",
+        "icon":        "🛍️",
+        "name_ru":     "Магазины",
+        "name_ky":     "Дүкөндөр",
+        "name_en":     "Shops",
+        "url":         "shops:store_list",
+        "color":       "#FF8A00",
+        "is_active":   True,
+        "coming_soon": False,
+    },
+    {
+        "key":         "hotels",
+        "icon":        "🏨",
+        "name_ru":     "Отели",
+        "name_ky":     "Мейманканалар",
+        "name_en":     "Hotels",
+        "url":         None,
+        "color":       "#2563EB",
+        "is_active":   False,
+        "coming_soon": True,
+    },
+    {
+        "key":         "eco",
+        "icon":        "♻️",
+        "name_ru":     "Эко-проекты",
+        "name_ky":     "Эко-долборлор",
+        "name_en":     "Eco projects",
+        "url":         None,
+        "color":       "#059669",
+        "is_active":   False,
+        "coming_soon": True,
+    },
+]
+
+
+@cache_page(60 * 5)   # кэш 5 минут (Redis уже настроен в settings)
 def home(request):
-    q = (request.GET.get("q") or "").strip()
+    """
+    Главная страница Webordo.
+    Публичная — без авторизации.
+    Отдаёт: категории, топ-рестораны, топ-магазины, статистику платформы.
+    """
+
+    # ── ТОП РЕСТОРАНЫ ────────────────────────────────────────────────────────
+    # Берём активные, у которых есть хотя бы один активный филиал.
+    # only() — не тянем тяжёлые поля about_ru/ky/en.
+    top_restaurants = list(
+        Restaurant.objects
+        .filter(is_active=True, branches__is_active=True)
+        .distinct()
+        .only("id", "name_ru", "name_ky", "name_en", "slug", "logo")
+        .order_by("name_ru")[:8]
+    )
+
+    # Добавляем is_open для каждого ресторана (показываем бейдж на карточке)
+    restaurant_cards = []
+    for r in top_restaurants:
+        branches = list(r.branches.filter(is_active=True))
+        is_open = any(b.is_open_now() for b in branches)
+        has_delivery = any(b.delivery_enabled for b in branches)
+        restaurant_cards.append({
+            "obj":          r,
+            "is_open":      is_open,
+            "has_delivery": has_delivery,
+            "url_name":     "public_site:restaurant_contacts",  # детальная страница
+        })
+
+    # ── ТОП МАГАЗИНЫ ─────────────────────────────────────────────────────────
+    top_stores = list(
+        Store.objects
+        .filter(is_active=True, branches__is_active=True)
+        .distinct()
+        .only("id", "name_ru", "name_ky", "name_en", "slug", "logo")
+        .order_by("name_ru")[:8]
+    )
+
+    store_cards = []
+    for s in top_stores:
+        branches = list(s.branches.filter(is_active=True))
+        has_delivery = any(b.delivery_enabled for b in branches)
+        store_cards.append({
+            "obj":          s,
+            "has_delivery": has_delivery,
+            "url_name":     "shops:store_detail",
+        })
+
+    # ── СТАТИСТИКА ПЛАТФОРМЫ ──────────────────────────────────────────────────
+    stats = {
+        "restaurant_count": Restaurant.objects.filter(is_active=True).count(),
+        "store_count":      Store.objects.filter(is_active=True).count(),
+        "branch_count": (
+            Branch.objects.filter(is_active=True).count()
+            + StoreBranch.objects.filter(is_active=True).count()
+        ),
+    }
+    stats["total"] = stats["restaurant_count"] + stats["store_count"]
+
+    return render(request, "public_site/home.html", {
+        "categories":        PLATFORM_CATEGORIES,
+        "restaurant_cards":  restaurant_cards,
+        "store_cards":       store_cards,
+        "stats":             stats,
+    })
+
+
+# def home(request):
+#     q = (request.GET.get("q") or "").strip()
+#     open_now = request.GET.get("open_now") == "1"
+
+#     restaurants = Restaurant.objects.filter(is_active=True).prefetch_related("branches").order_by("name_ru")
+
+#     if q:
+#         # если у Restaurant позже появятся name_ru/name_ky/name_en — расширишь тут
+#         restaurants = restaurants.filter(Q(name_ru__icontains=q))
+
+#     cards = []
+#     for r in restaurants:
+#         branches = [b for b in r.branches.all() if b.is_active]
+
+#         is_open = any(b.is_open_now() for b in branches)
+#         if open_now and not is_open:
+#             continue
+
+#         delivery_branches = [b for b in branches if b.delivery_enabled]
+#         has_delivery = bool(delivery_branches)
+
+#         min_order = min((b.min_order_amount for b in delivery_branches), default=None)
+#         min_fee = min((b.delivery_fee for b in delivery_branches), default=None)
+
+#         # “время работы” для карточки ресторана — показываем если у всех филиалов одинаково,
+#         # иначе не рискуем врать
+#         hours_text = None
+#         hours_set = set()
+#         for b in branches:
+#             if b.is_open_24h:
+#                 hours_set.add("24/7")
+#             elif b.open_time and b.close_time:
+#                 hours_set.add(f"{b.open_time.strftime('%H:%M')}–{b.close_time.strftime('%H:%M')}")
+#         if len(hours_set) == 1:
+#             hours_text = list(hours_set)[0]
+
+#         cards.append({
+#             "obj": r,
+#             "is_open": is_open,
+#             "has_delivery": has_delivery,
+#             "min_order": min_order,
+#             "min_fee": min_fee,
+#             "hours_text": hours_text,
+#             "branch":delivery_branches, #?
+#             "branches_count": len(branches),
+#             "table":True,
+#         })
+
+#     return render(request, "public_site/home.html", {"cards": cards, "q": q, "open_now": open_now})
+# ─────────────────────────────────────────────────────────────────────────────
+# Добавь эту функцию в public_site/views.py
+# Импорт Q уже есть в файле.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def restaurants_list(request):
+    """
+    GET /restaurants/
+    Страница со списком всех ресторанов платформы.
+    Публичная — без авторизации.
+    Поиск (?q=...) и фильтр ?open_now=1.
+    """
+    q        = (request.GET.get("q") or "").strip()
     open_now = request.GET.get("open_now") == "1"
 
-    restaurants = Restaurant.objects.filter(is_active=True).prefetch_related("branches").order_by("name_ru")
+    qs = (
+        Restaurant.objects
+        .filter(is_active=True)
+        .prefetch_related("branches")
+        .order_by("name_ru")
+    )
 
     if q:
-        # если у Restaurant позже появятся name_ru/name_ky/name_en — расширишь тут
-        restaurants = restaurants.filter(Q(name_ru__icontains=q))
+        qs = qs.filter(Q(name_ru__icontains=q) | Q(name_ky__icontains=q) | Q(name_en__icontains=q))
 
     cards = []
-    for r in restaurants:
+    for r in qs:
         branches = [b for b in r.branches.all() if b.is_active]
+        if not branches:
+            continue
 
         is_open = any(b.is_open_now() for b in branches)
         if open_now and not is_open:
             continue
 
-        delivery_branches = [b for b in branches if b.delivery_enabled]
-        has_delivery = bool(delivery_branches)
+        delivery_branches  = [b for b in branches if b.delivery_enabled]
+        has_delivery       = bool(delivery_branches)
+        min_order          = min((b.min_order_amount for b in delivery_branches), default=None)
+        min_fee            = min((b.delivery_fee    for b in delivery_branches), default=None)
 
-        min_order = min((b.min_order_amount for b in delivery_branches), default=None)
-        min_fee = min((b.delivery_fee for b in delivery_branches), default=None)
-
-        # “время работы” для карточки ресторана — показываем если у всех филиалов одинаково,
-        # иначе не рискуем врать
+        # Время работы — показываем только если у всех филиалов одинаково
         hours_text = None
-        hours_set = set()
+        hours_set  = set()
         for b in branches:
             if b.is_open_24h:
                 hours_set.add("24/7")
@@ -103,20 +364,30 @@ def home(request):
         if len(hours_set) == 1:
             hours_text = list(hours_set)[0]
 
+        # Cover photo: берём первый филиал с cover_photo
+        cover = None
+        for b in branches:
+            if b.cover_photo:
+                cover = b.cover_photo
+                break
+
         cards.append({
-            "obj": r,
-            "is_open": is_open,
-            "has_delivery": has_delivery,
-            "min_order": min_order,
-            "min_fee": min_fee,
-            "hours_text": hours_text,
-            "branch":delivery_branches, #?
+            "obj":            r,
+            "is_open":        is_open,
+            "has_delivery":   has_delivery,
+            "min_order":      min_order,
+            "min_fee":        min_fee,
+            "hours_text":     hours_text,
             "branches_count": len(branches),
-            "table":True,
+            "cover":          cover,   # cover_photo первого подходящего филиала
         })
 
-    return render(request, "public_site/home.html", {"cards": cards, "q": q, "open_now": open_now})
-
+    return render(request, "public_site/restaurants_list.html", {
+        "cards":    cards,
+        "q":        q,
+        "open_now": open_now,
+        "total":    len(cards),
+    })
 def restaurant_detail(request, slug):
     restaurant = get_object_or_404(Restaurant, slug=slug, is_active=True)
     branches = restaurant.branches.filter(is_active=True).order_by("name_ru")

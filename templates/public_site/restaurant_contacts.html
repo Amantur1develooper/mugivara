@@ -1,309 +1,440 @@
 {% extends "base.html" %}
 {% load i18n i18n_attrs static %}
 
-{% block img %}
-  <link rel="icon" type="image/jpg" sizes="32x32" href="{% static 'mini_logo.jpg' %}">
-  <link rel="icon" type="image/jpg" sizes="16x16" href="{% static 'mini_logo.jpg' %}">
-  <link rel="apple-touch-icon" href="{{ branch.cover_photo.url }}">
-  <link rel="shortcut icon" href="{{ branch.cover_photo.url }}">
-{% endblock img %}
+{% block title %}{% t restaurant "name" %} — Webordo{% endblock %}
 
-{% block title %}{% trans "Контакты" %} — {% t restaurant "name" %}{% endblock %}
+{% block cta %}{% endblock %}
 
-{% block content %}
+{% block head_extra %}
 <style>
-  /* --- Buttons --- */
-  .sj-btn{
-    display:inline-flex; align-items:center; justify-content:center;
-    gap:10px;
-    padding: 12px 14px;
-    border-radius: 16px;
-    font-weight: 900;
-    font-size: 14px;
-    line-height: 1;
-    border: 1px solid rgba(15,23,42,.12);
-    background: rgba(255,255,255,.92);
-    color: #0f172a;
-    transition: transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
-    box-shadow: 0 12px 35px rgba(15,23,42,.08);
-    text-decoration:none;
-    white-space:nowrap;
-  }
-  .sj-btn:hover{ transform: translateY(-1px); box-shadow: 0 18px 55px rgba(15,23,42,.14); }
-  .sj-btn:active{ transform: translateY(0px) scale(.99); }
+  /* ═══ PAGE ═══ */
+  .rc-page { max-width: 1100px; margin: 0 auto; padding: 40px 32px 80px; }
 
-  /* primary MENU button */
-  .sj-btn-menu{
-    background: linear-gradient(180deg, rgba(15,23,42,.95), rgba(15,23,42,.88));
-    color: #fff;
-    border-color: rgba(255,255,255,.22);
-    box-shadow: 0 18px 60px rgba(0,0,0,.22);
-    position: relative;
-    overflow: hidden;
+  /* ═══ HERO ═══ */
+  .rch-hero {
+    position: relative; border-radius: 28px; overflow: hidden;
+    min-height: 260px; display: flex; flex-direction: column;
+    justify-content: flex-end; padding: 32px; margin-bottom: 44px;
   }
-  .sj-btn-menu::after{
-    content:"";
-    position:absolute; inset:-2px;
-    background: linear-gradient(120deg, transparent, rgba(255,255,255,.35), transparent);
-    transform: translateX(-120%);
-    animation: sjShimmer 2.2s linear infinite;
-    pointer-events:none;
+  .rch-hero-bg {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, #0D1117 0%, #1c2535 100%);
   }
-  @keyframes sjShimmer{
-    0%{ transform: translateX(-120%); }
-    55%{ transform: translateX(120%); }
-    100%{ transform: translateX(120%); }
+  .rch-hero-bg-img {
+    position: absolute; inset: 0; background-size: cover; background-position: center;
+    filter: blur(24px) saturate(0.6) brightness(0.3); transform: scale(1.08);
   }
-  .sj-btn-menu:hover{ opacity:.98; }
-  .sj-btn-menu .sj-badge{
-    margin-left: 2px;
-    padding: 7px 10px;
-    border-radius: 999px;
-    background: rgba(255,255,255,.14);
-    border: 1px solid rgba(255,255,255,.18);
-    font-size: 12px;
-    font-weight: 900;
+  .rch-hero-bg-overlay {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 0% 100%, rgba(255,77,28,0.2), transparent 60%),
+      linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.05) 100%);
   }
+  .rch-hero-dots {
+    position: absolute; inset: 0;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 24px 24px;
+    mask-image: radial-gradient(ellipse 100% 100% at 100% 0%, black 20%, transparent 70%);
+  }
+  .rch-hero-content {
+    position: relative; z-index: 1;
+    display: flex; align-items: flex-end; gap: 24px; margin-top: 44px;
+  }
+  .rch-logo {
+    width: 88px; height: 88px; border-radius: 22px; flex-shrink: 0;
+    background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.18);
+    overflow: hidden; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+  .rch-logo img { width: 100%; height: 100%; object-fit: cover; }
+  .rch-logo-letter {
+    font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .rch-hero-info { flex: 1; min-width: 0; }
+  .rch-hero-eyebrow {
+    font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+    color: rgba(255,255,255,0.45); font-weight: 600; margin-bottom: 8px;
+  }
+  .rch-hero-title {
+    font-family: 'Unbounded', sans-serif; font-weight: 900;
+    font-size: clamp(22px, 4vw, 42px); letter-spacing: -1.5px;
+    color: white; line-height: 1; margin-bottom: 12px;
+  }
+  .rch-hero-pills { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .rch-hero-pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 14px; border-radius: 100px; font-size: 12px; font-weight: 600;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.14);
+    color: rgba(255,255,255,0.8);
+  }
+  .rch-hero-pill.green {
+    background: rgba(0,184,150,0.18); border-color: rgba(0,184,150,0.3); color: #00CBA8;
+  }
+  .rch-back {
+    position: absolute; top: 20px; left: 24px; z-index: 2;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 100px;
+    font-size: 13px; font-weight: 600;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.16);
+    color: rgba(255,255,255,0.75); text-decoration: none;
+    backdrop-filter: blur(8px); transition: all 0.2s;
+  }
+  .rch-back:hover { background: rgba(255,255,255,0.16); color: white; }
 
-  /* whatsapp */
-  .sj-btn-wa{
-    background:#25D366;
-    color:#fff;
-    border-color: rgba(255,255,255,.18);
-    box-shadow: 0 18px 55px rgba(37,211,102,.28);
+  /* ═══ SECTION HEAD ═══ */
+  .rch-sec-tag {
+    font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--accent); font-weight: 600; margin-bottom: 8px;
   }
-
-  /* call */
-  .sj-btn-call{
-    background: rgba(255,255,255,.92);
-  }
-
-  /* map */
-  .sj-btn-map{
-    background: rgba(255,255,255,.92);
-  }
-
-  /* secondary */
-  .sj-btn-secondary{
-    background: rgba(255,255,255,.92);
-  }
-
-  /* --- Cards --- */
-  .sj-card{
-    border-radius: 26px;
-    border: 1px solid rgba(15,23,42,.10);
-    background: rgba(255,255,255,.94);
-    box-shadow: 0 16px 55px rgba(15,23,42,.12);
-    overflow:hidden;
-  }
-  .sj-card-head{
-    padding: 16px;
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap: 14px;
-  }
-  .sj-branch-title{ font-weight: 950; font-size: 18px; color:#0f172a; }
-  .sj-branch-sub{ margin-top:6px; font-size: 13px; color: rgba(15,23,42,.62); }
-
-  .sj-status{
-    display:inline-flex; align-items:center; gap:8px;
-    padding: 7px 10px;
-    border-radius: 999px;
-    font-weight: 900;
-    font-size: 12px;
-    border: 1px solid rgba(15,23,42,.10);
-    background: rgba(255,255,255,.9);
-  }
-  .sj-dot{ width:8px; height:8px; border-radius:999px; }
-
-  .sj-media{
-    width: 86px; height: 86px;
-    border-radius: 20px;
-    object-fit: cover;
-    border: 1px solid rgba(15,23,42,.12);
+  .rch-sec-title {
+    font-family: 'Unbounded', sans-serif; font-weight: 800;
+    font-size: clamp(20px, 3vw, 30px); letter-spacing: -1.5px;
+    color: var(--text); margin-bottom: 28px;
   }
 
-  /* actions area */
-  .sj-actions{
-    padding: 0 16px 16px 16px;
-    display:flex;
-    flex-wrap:wrap;
-    gap: 10px;
+  /* ═══ BRANCH CARD ═══ */
+  .bc {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 26px; overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    display: flex; flex-direction: column;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: cardIn 0.5s ease both;
+  }
+  .bc:hover { transform: translateY(-6px); box-shadow: 0 24px 60px rgba(0,0,0,0.13); }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .bc:nth-child(1) { animation-delay: 0s; }
+  .bc:nth-child(2) { animation-delay: 0.08s; }
+  .bc:nth-child(3) { animation-delay: 0.16s; }
+  .bc:nth-child(n+4) { animation-delay: 0.24s; }
+
+  /* ── PHOTO ── */
+  .bc-photo {
+    position: relative; height: 220px;
+    background: var(--card2); overflow: hidden; flex-shrink: 0;
+  }
+  .bc-photo img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    transition: transform 0.5s ease;
+  }
+  .bc:hover .bc-photo img { transform: scale(1.05); }
+  .bc-photo-empty {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #FFF1EB, #FFE4D6, #FFD6C8);
+    position: relative; overflow: hidden;
+  }
+  .bc-photo-empty::before {
+    content: '';  position: absolute; inset: 0;
+    background: radial-gradient(ellipse 70% 60% at 30% 40%, rgba(255,77,28,0.15), transparent);
+  }
+  .bc-photo-empty span { font-size: 64px; opacity: 0.28; position: relative; z-index: 1; }
+  .bc-photo-grad {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, transparent 35%, rgba(0,0,0,0.6) 100%);
+  }
+  .bc-status {
+    position: absolute; top: 14px; left: 14px;
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 14px; border-radius: 100px; font-size: 11px; font-weight: 700;
+    backdrop-filter: blur(12px); border: 1px solid transparent;
+  }
+  .bc-status.open { background: rgba(0,184,150,0.18); border-color: rgba(0,184,150,0.3); color: #00CBA8; }
+  .bc-status.closed { background: rgba(0,0,0,0.38); border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
+  .bc-status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .bc-status.open .bc-status-dot {
+    background: var(--teal); box-shadow: 0 0 0 3px rgba(0,184,150,0.3);
+    animation: blink 2.5s infinite;
+  }
+  .bc-status.closed .bc-status-dot { background: rgba(255,255,255,0.4); }
+  @keyframes blink {
+    0%,100% { box-shadow: 0 0 0 3px rgba(0,184,150,0.3); }
+    50%      { box-shadow: 0 0 0 6px rgba(0,184,150,0.08); }
+  }
+  .bc-hours {
+    position: absolute; top: 14px; right: 14px;
+    padding: 5px 12px; border-radius: 100px;
+    font-size: 10px; font-weight: 700;
+    background: rgba(0,0,0,0.42); border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(10px); color: rgba(255,255,255,0.82);
+  }
+  .bc-photo-info { position: absolute; bottom: 0; left: 0; right: 0; padding: 16px 18px 14px; }
+  .bc-photo-name {
+    font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 15px;
+    color: white; letter-spacing: -0.4px; text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+  .bc-photo-addr { margin-top: 5px; font-size: 12px; color: rgba(255,255,255,0.65); }
+
+  /* ── BODY ── */
+  .bc-body { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 16px; flex: 1; }
+
+  .bc-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .bc-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 100px;
+    font-size: 12px; font-weight: 600;
+    border: 1.5px solid var(--border); background: var(--bg);
+    color: var(--text2); text-decoration: none; transition: all 0.2s;
+  }
+  .bc-chip:is(a):hover { border-color: rgba(0,0,0,0.15); background: var(--card2); }
+  .bc-chip.delivery { background: rgba(255,138,0,0.08); border-color: rgba(255,138,0,0.25); color: #B86C00; }
+  .bc-chip.allday   { background: rgba(0,184,150,0.08);  border-color: rgba(0,184,150,0.25); color: var(--teal); }
+
+  /* ── КНОПКИ ── */
+  .bc-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  .bc-btn-main {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 14px 20px; border-radius: 16px;
+    font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 800;
+    letter-spacing: -0.3px; color: white; text-decoration: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    box-shadow: 0 6px 24px var(--glow);
+    position: relative; overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .bc-btn-main::after {
+    content: ''; position: absolute; inset: -2px;
+    background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.28) 50%, transparent 70%);
+    transform: translateX(-130%); animation: shimmer 2.8s linear infinite;
+  }
+  @keyframes shimmer { 0%{transform:translateX(-130%);} 60%{transform:translateX(130%);} 100%{transform:translateX(130%);} }
+  .bc-btn-main:hover { transform: translateY(-2px); box-shadow: 0 12px 36px var(--glow); }
+  .bc-btn-main-badge {
+    padding: 4px 10px; border-radius: 100px; font-size: 11px;
+    background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.25);
   }
 
-  /* header hero */
-  .sj-hero{
-    border-radius: 28px;
-    overflow:hidden;
-    border: 1px solid rgba(255,255,255,.14);
-    background: rgba(255,255,255,.08);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 18px 70px rgba(0,0,0,.18);
+  .bc-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px 14px; border-radius: 14px; font-size: 13px; font-weight: 600;
+    border: 1.5px solid var(--border); background: var(--card); color: var(--text2);
+    text-decoration: none; transition: all 0.2s; white-space: nowrap;
+  }
+  .bc-btn:hover { border-color: rgba(0,0,0,0.14); background: var(--card2); transform: translateY(-1px); }
+  .bc-btn.wa { background:#25D366; border-color:#25D366; color:white; box-shadow:0 4px 16px rgba(37,211,102,.28); }
+  .bc-btn.wa:hover { background:#22C05E; border-color:#22C05E; }
+  .bc-btn.book { background:rgba(37,99,235,.06); border-color:rgba(37,99,235,.2); color:#2563EB; }
+  .bc-btn.book:hover { background:rgba(37,99,235,.1); border-color:rgba(37,99,235,.3); }
+
+  /* ═══ ABOUT ═══ */
+  .rch-about {
+    margin-top: 52px;
+    display: grid; grid-template-columns: 1fr 2fr;
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 28px; overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  }
+  .rch-about-left {
+    padding: 40px 32px;
+    background: linear-gradient(160deg, #0D1117, #1c2535);
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .rch-about-left::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 0% 100%, rgba(255,77,28,0.22), transparent 60%);
+  }
+  .rch-about-label {
+    font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+    color: rgba(255,255,255,0.38); font-weight: 600; margin-bottom: 12px; position: relative;
+  }
+  .rch-about-heading {
+    font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 28px;
+    letter-spacing: -1.5px; color: white; line-height: 1.1; position: relative;
+  }
+  .rch-about-name { margin-top: 12px; font-size: 13px; color: rgba(255,255,255,0.4); position: relative; }
+  .rch-about-right { padding: 40px 36px; }
+  .rch-about-text { font-size: 15px; line-height: 1.85; color: var(--text2); white-space: pre-line; }
+  .rch-about-empty { display:flex; flex-direction:column; gap:12px; }
+  .rch-about-empty-icon { font-size: 40px; }
+  .rch-about-empty-title {
+    font-family: 'Unbounded', sans-serif; font-size: 16px; font-weight: 800;
+    color: var(--text); letter-spacing: -0.5px;
   }
 
-  @media (max-width: 520px){
-    .sj-btn{ width: 100%; justify-content:center; padding: 13px 14px; }
-    .sj-media{ width: 76px; height: 76px; }
-    .sj-card-head{ padding: 14px; }
-    .sj-actions{ padding: 0 14px 14px 14px; }
+  /* ═══ RESPONSIVE ═══ */
+  @media (max-width: 860px) {
+    .rch-about { grid-template-columns: 1fr; }
+    .rch-about-left { padding: 28px 24px; min-height: 150px; }
+    .rch-about-right { padding: 28px 24px; }
+  }
+  @media (max-width: 640px) {
+    .rc-page { padding: 16px 14px 60px; }
+    .rch-hero { padding: 20px; }
+    .rch-logo { width: 68px; height: 68px; border-radius: 16px; }
+    .rch-logo-letter { font-size: 28px; }
+    .bc-photo { height: 190px; }
+    .bc-actions { grid-template-columns: 1fr; }
+    .bc-btn-main { grid-column: auto; }
   }
 </style>
+{% endblock %}
 
-<div class="max-w-6xl mx-auto px-4 py-6">
 
-  <!-- HEADER -->
-  <div class="sj-hero p-5 sm:p-7">
-    <div class="flex items-start justify-between gap-4">
-      <div class="flex items-center gap-3 min-w-0">
-        <div class="w-12 h-12 rounded-2xl bg-white/90 ring-1 ring-white/20 overflow-hidden flex items-center justify-center shrink-0">
-          {% if restaurant.logo %}
-            <img src="{{ restaurant.logo.url }}" alt="" class="w-full h-full object-cover" loading="lazy" decoding="async">
-          {% else %}
-            <span class="font-extrabold text-stone-800">{{ restaurant.name_ru|slice:":1" }}</span>
-          {% endif %}
-        </div>
+{% block content %}
+<div class="rc-page">
 
-        <div class="min-w-0">
-          <h1 class="text-white text-2xl md:text-3xl font-extrabold truncate">{% t restaurant "name" %}</h1>
-          <div class="text-white/80 text-sm mt-1">
-            {% trans "Контакты филиалов" %}: <span class="font-extrabold">{{ branches|length }}</span>
-          </div>
+  {# ══ HERO ══ #}
+  <div class="rch-hero">
+    <div class="rch-hero-bg"></div>
+    {% if restaurant.logo %}
+      <div class="rch-hero-bg-img" style="background-image:url('{{ restaurant.logo.url }}');"></div>
+    {% endif %}
+    <div class="rch-hero-bg-overlay"></div>
+    <div class="rch-hero-dots"></div>
+
+    <a href="{% url 'public_site:restaurants_list' %}" class="rch-back">← Рестораны</a>
+
+    <div class="rch-hero-content">
+      <div class="rch-logo">
+        {% if restaurant.logo %}
+          <img src="{{ restaurant.logo.url }}" alt="{% t restaurant 'name' %}" loading="lazy">
+        {% else %}
+          <span class="rch-logo-letter">{% t restaurant "name" as rn %}{{ rn|slice:":1" }}</span>
+        {% endif %}
+      </div>
+      <div class="rch-hero-info">
+        <div class="rch-hero-eyebrow">Ресторан · Webordo</div>
+        <h1 class="rch-hero-title">{% t restaurant "name" %}</h1>
+        <div class="rch-hero-pills">
+          <span class="rch-hero-pill">🏢 {{ branches|length }} {% if branches|length == 1 %}филиал{% else %}филиала{% endif %}</span>
+          {% for b in branches %}{% if b.is_open_now %}
+            <span class="rch-hero-pill green">
+              <span style="width:6px;height:6px;border-radius:50%;background:currentColor;animation:blink 2.5s infinite;"></span>
+              Открыто сейчас
+            </span>{% endif %}{% endfor %}
         </div>
       </div>
-
-      <a href="{% url 'public_site:home' %}"
-         class="sj-btn"
-         style="background: rgba(255,255,255,.12); color: white; border-color: rgba(255,255,255,.22); box-shadow:none;">
-        ← {% trans "Назад" %}
-      </a>
-    </div>
-
-    <div class="mt-4 text-white/80 text-sm leading-relaxed">
-      {% trans "Выберите филиал и нажмите" %} <b class="text-white">“{% trans "Меню" %}”</b> — {% trans "чтобы открыть QR-меню и оформить заказ." %}
     </div>
   </div>
 
-  <!-- BRANCHES -->
-  <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+  {# ══ ФИЛИАЛЫ ══ #}
+  <div class="rch-sec-tag">Филиалы</div>
+  <div class="rch-sec-title">Выберите филиал</div>
+
+  <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:22px;">
     {% for b in branches %}
-      <div class="sj-card">
-        <div class="sj-card-head">
-          <div class="min-w-0">
-            <div class="sj-branch-title truncate">{% t b "name" %}</div>
-            <div class="sj-branch-sub">
-              {{ b.address|default:"" }}
-              {% if b.phone %}
-                <span class="mx-2 opacity-40">•</span>
-                <span class="font-semibold text-stone-700">{% trans "Тел." %}</span> {{ b.phone }}
-              {% endif %}
-            </div>
+    <div class="bc">
 
-            <div class="mt-3">
-              {% if b.is_open_now %}
-                <span class="sj-status">
-                  <span class="sj-dot" style="background:#22c55e"></span>
-                  {% trans "Открыто сейчас" %}
-                </span>
-              {% else %}
-                <span class="sj-status">
-                  <span class="sj-dot" style="background:#64748b"></span>
-                  {% trans "Закрыто сейчас" %}
-                </span>
-              {% endif %}
-            </div>
-          </div>
+      {# ФОТО #}
+      <div class="bc-photo">
+        {% if b.cover_photo %}
+          <img src="{{ b.cover_photo.url }}" alt="{% t b 'name' %}" loading="lazy" width="400" height="220">
+        {% else %}
+          <div class="bc-photo-empty"><span>🍽️</span></div>
+        {% endif %}
+        <div class="bc-photo-grad"></div>
 
-          {% if b.cover_photo %}
-            <img src="{{ b.cover_photo.url }}" alt=""
-                 class="sj-media"
-                 loading="lazy" decoding="async">
-          {% endif %}
+        <div class="bc-status {% if b.is_open_now %}open{% else %}closed{% endif %}">
+          <span class="bc-status-dot"></span>
+          {% if b.is_open_now %}Открыто{% else %}Закрыто{% endif %}
         </div>
 
-        <div class="sj-actions">
-          <!-- MENU (главная кнопка) -->
-          <a href="{% url 'public_site:branch_menu' b.id %}" class="sj-btn sj-btn-menu">
-            🍽️ {% trans "Меню" %}
-            <span class="sj-badge">{% trans "Открыть" %}</span>
+        {% if b.is_open_24h %}
+          <span class="bc-hours">🌙 Круглосуточно</span>
+        {% elif b.open_time and b.close_time %}
+          <span class="bc-hours">{{ b.open_time|time:"H:i" }} – {{ b.close_time|time:"H:i" }}</span>
+        {% endif %}
+
+        <div class="bc-photo-info">
+          <div class="bc-photo-name">{% t b "name" %}</div>
+          {% if b.address %}<div class="bc-photo-addr">📍 {{ b.address }}</div>{% endif %}
+        </div>
+      </div>
+
+      {# BODY #}
+      <div class="bc-body">
+
+        <div class="bc-chips">
+          {% if b.delivery_enabled %}
+            <span class="bc-chip delivery">🚚 Доставка · {{ b.delivery_fee|floatformat:"0" }} сом</span>
+            {% if b.min_order_amount %}<span class="bc-chip">Мин. {{ b.min_order_amount|floatformat:"0" }} сом</span>{% endif %}
+          {% else %}
+            <span class="bc-chip">🥡 Самовывоз</span>
+          {% endif %}
+          {% if b.phone %}<a href="tel:{{ b.phone }}" class="bc-chip">📞 {{ b.phone }}</a>{% endif %}
+        </div>
+
+        <div class="bc-actions">
+
+          <a href="{% url 'public_site:branch_menu' b.id %}" class="bc-btn-main">
+            🍽️ Открыть меню
+            <span class="bc-btn-main-badge">Заказать</span>
           </a>
 
           {% if b.phone %}
-            <a href="tel:{{ b.phone }}" class="sj-btn sj-btn-call">
-              📞 {% trans "Позвонить" %}
-            </a>
-
+            <a href="tel:{{ b.phone }}" class="bc-btn">📞 Позвонить</a>
             <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}"
-               target="_blank"
-               class="sj-btn sj-btn-wa">
-              💬 WhatsApp
-            </a>
+               target="_blank" rel="noopener" class="bc-btn wa">💬 WhatsApp</a>
           {% endif %}
 
           {% if b.map_url %}
-            <a href="{{ b.map_url }}" target="_blank" class="sj-btn sj-btn-map">
-              📍 {% trans "Как добраться" %}
-            </a>
+            <a href="{{ b.map_url }}" target="_blank" rel="noopener" class="bc-btn">📍 Как доехать</a>
           {% endif %}
 
           {% if b.phone %}
-  {% with wa=b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' %}
-    <a
-      target="_blank"
-      href="https://wa.me/{{ wa }}?text={% filter urlencode %}Здравствуйте! Хочу забронировать стол.
+            {% with wa=b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' %}
+              <a target="_blank" rel="noopener" class="bc-btn book"
+                 href="https://wa.me/{{ wa }}?text={% filter urlencode %}Здравствуйте! Хочу забронировать стол.
 
 Филиал: {% t b "name" %}
 Дата: __.__.____
 Время: __:__
 Гостей: __
 Имя: __
-Комментарий: __{% endfilter %}"
-      class="sj-btn sj-btn-secondary">
-      🗓️ {% trans "Бронирование" %}
-    </a>
-  {% endwith %}
-{% else %}
-  <a href="{% url 'public_site:reservation' b.id %}" class="sj-btn sj-btn-secondary">
-    🗓️ {% trans "Бронирование" %}
-  </a>
-{% endif %}
+Комментарий: __{% endfilter %}">
+                🗓️ Бронирование
+              </a>
+            {% endwith %}
+          {% else %}
+            <a href="{% url 'public_site:reservation' b.id %}" class="bc-btn book">🗓️ Бронирование</a>
+          {% endif %}
 
         </div>
       </div>
+    </div>
+
     {% empty %}
-      <div class="rounded-2xl bg-white ring-1 ring-stone-200 p-6 text-stone-600">
-        {% trans "Филиалы не добавлены." %}
+    <div style="grid-column:1/-1;text-align:center;padding:60px 24px;
+                background:var(--card);border:1.5px solid var(--border);border-radius:24px;">
+      <div style="font-size:48px;margin-bottom:12px;">🏗️</div>
+      <div style="font-family:'Unbounded',sans-serif;font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.5px;">
+        Филиалы пока не добавлены
       </div>
+    </div>
     {% endfor %}
   </div>
 
-  <!-- ABOUT -->
-  <div class="mt-6">
-    <div class="rounded-3xl bg-white/95 ring-1 ring-black/5 p-7 shadow-[0_16px_55px_rgba(15,23,42,.12)]">
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <h2 class="text-2xl md:text-3xl font-extrabold">{% trans "О нас" %}</h2>
-          <div class="mt-1 text-stone-600">{% t restaurant "name" %}</div>
-        </div>
-      </div>
 
-      <div class="mt-6 prose max-w-none">
-        {% t restaurant "about" as about_text %}
-        {% if about_text %}
-          <p style="white-space:pre-line">{{ about_text }}</p>
-        {% else %}
-          <p class="text-stone-500">{% trans "Описание пока не добавлено." %}</p>
-        {% endif %}
-      </div>
+  {# ══ О РЕСТОРАНЕ ══ #}
+  {% t restaurant "about" as about_text %}
+  <div class="rch-about reveal">
+    <div class="rch-about-left">
+      <div class="rch-about-label">О заведении</div>
+      <div class="rch-about-heading">О нас</div>
+      <div class="rch-about-name">{% t restaurant "name" %}</div>
+    </div>
+    <div class="rch-about-right">
+      {% if about_text %}
+        <p class="rch-about-text">{{ about_text }}</p>
+      {% else %}
+        <div class="rch-about-empty">
+          <div class="rch-about-empty-icon">✍️</div>
+          <div class="rch-about-empty-title">Описание не добавлено</div>
+          <div style="font-size:14px;color:var(--muted);line-height:1.6;">
+            Владелец может добавить информацию через панель управления
+          </div>
+        </div>
+      {% endif %}
     </div>
   </div>
 
 </div>
 {% endblock %}
-
-{% block footer %}
-<a href="{% url 'public_site:home' %}" class="inline-flex items-center gap-2 text-white/90 hover:text-white font-semibold">
-  ⚡ Разработка Amantur agency
-</a>
-{% endblock footer %}

@@ -1,522 +1,758 @@
 {% extends "base.html" %}
 {% load static i18n i18n_attrs %}
 
-{% block img %}
-  <link rel="icon" type="image/jpg" sizes="32x32" href="{% static 'mini_logo.jpg' %}">
-  <link rel="icon" type="image/jpg" sizes="16x16" href="{% static 'mini_logo.jpg' %}">
-  <link rel="apple-touch-icon" href="{% static 'mini_logo.jpg' %}">
-  <link rel="shortcut icon" href="{% static 'mini_logo.jpg' %}">
-{% endblock img %}
-       
+{% block title %}{% t branch "name" %} — Меню · Webordo{% endblock %}
 
-{% block title %}{{ branch.name_ru }} — Санжи{% endblock %}
+{% block cta %}{% endblock %}
+
+{% block head_extra %}
+<style>
+
+  .bm-page { max-width: 1200px; margin: 0 auto; }
+
+ 
+  .bm-hero {
+    position: relative; overflow: hidden;
+    min-height: 320px;
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .bm-hero-bg {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, #0D1117, #1c2535);
+  }
+  .bm-hero-photo {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center;
+    transition: transform 6s ease;
+  }
+  .bm-hero:hover .bm-hero-photo { transform: scale(1.03); }
+  .bm-hero-overlay {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(to top, rgba(0,0,0,0.80) 0%, rgba(0,0,0,0.35) 50%, rgba(0,0,0,0.1) 100%),
+      radial-gradient(ellipse 80% 60% at 5% 100%, rgba(255,77,28,0.2), transparent 55%);
+  }
+  .bm-hero-dots {
+    position: absolute; inset: 0;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 24px 24px;
+    mask-image: radial-gradient(ellipse 100% 100% at 100% 0%, black 10%, transparent 65%);
+  }
+  .bm-hero-content {
+    position: relative; z-index: 1;
+    padding: 32px 40px 28px;
+  }
+  .bm-hero-back {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 16px; border-radius: 100px;
+    font-size: 12px; font-weight: 600;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.75); text-decoration: none;
+    backdrop-filter: blur(8px); transition: all 0.2s;
+    margin-bottom: 24px; display: inline-flex;
+  }
+  .bm-hero-back:hover { background: rgba(255,255,255,0.16); color: white; }
+
+  .bm-hero-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+
+  .bm-hero-title {
+    font-family: 'Unbounded', sans-serif; font-weight: 900;
+    font-size: clamp(24px, 4vw, 48px); letter-spacing: -2px;
+    color: white; line-height: 1; margin-bottom: 12px;
+  }
+  .bm-hero-meta {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .bm-hero-pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 14px; border-radius: 100px;
+    font-size: 12px; font-weight: 600;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.14);
+    color: rgba(255,255,255,0.82);
+  }
+  .bm-hero-pill.open {
+    background: rgba(0,184,150,0.18); border-color: rgba(0,184,150,0.3); color: #00CBA8;
+  }
+  .bm-hero-pill.delivery {
+    background: rgba(255,138,0,0.18); border-color: rgba(255,138,0,0.3); color: #FFB347;
+  }
+  .bm-hero-pill-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor; animation: blink-dot 2.5s infinite;
+  }
+  @keyframes blink-dot {
+    0%,100%{ opacity:1; } 50%{ opacity:0.3; }
+  }
+
+  /* корзина в hero */
+  .bm-hero-cart {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 20px; border-radius: 16px;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.16);
+    color: white; text-decoration: none;
+    backdrop-filter: blur(12px); transition: all 0.2s;
+    font-size: 14px; font-weight: 600;
+    white-space: nowrap;
+  }
+  .bm-hero-cart:hover { background: rgba(255,255,255,0.18); }
+  .bm-hero-cart-badge {
+    padding: 3px 10px; border-radius: 100px; font-size: 13px; font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    box-shadow: 0 3px 12px var(--glow);
+  }
+  .bm-hero-cart.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-color: transparent; box-shadow: 0 6px 24px var(--glow);
+  }
+  .bm-hero-cart.active .bm-hero-cart-badge {
+    background: rgba(255,255,255,0.25); box-shadow: none;
+  }
+
+  /* ════════════════════════════════════════
+     STICKY CATEGORY NAV
+  ════════════════════════════════════════ */
+  .bm-cats-sticky {
+    position: sticky; top: 64px; z-index: 100;
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  }
+  .bm-cats-inner {
+    max-width: 1200px; margin: 0 auto;
+    padding: 10px 32px;
+    overflow-x: auto; scrollbar-width: none;
+    display: flex; gap: 6px; align-items: center;
+  }
+  .bm-cats-inner::-webkit-scrollbar { display: none; }
+
+  .bm-cat-btn {
+    white-space: nowrap; padding: 8px 18px; border-radius: 100px;
+    font-size: 13px; font-weight: 600; font-family: 'Geologica', sans-serif;
+    border: 1.5px solid var(--border); background: var(--bg);
+    color: var(--muted); cursor: pointer; text-decoration: none;
+    transition: all 0.2s; flex-shrink: 0;
+  }
+  .bm-cat-btn:hover { border-color: rgba(0,0,0,0.15); color: var(--text); background: var(--card2); }
+  .bm-cat-btn.active {
+    background: var(--text); border-color: var(--text); color: white;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  }
+
+  /* ════════════════════════════════════════
+     MENU CONTENT
+  ════════════════════════════════════════ */
+  .bm-content {
+    max-width: 1200px; margin: 0 auto;
+    padding: 32px 32px 120px;
+  }
+
+  /* категория */
+  .bm-cat-section { scroll-margin-top: 130px; margin-bottom: 48px; }
+
+  .bm-cat-header {
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 20px;
+  }
+  .bm-cat-line { flex: 1; height: 1px; background: var(--border); }
+  .bm-cat-title {
+    font-family: 'Unbounded', sans-serif; font-weight: 800;
+    font-size: clamp(15px, 2.5vw, 22px); letter-spacing: -0.8px;
+    color: var(--text); white-space: nowrap;
+  }
+  .bm-cat-count {
+    padding: 3px 10px; border-radius: 100px;
+    font-size: 11px; font-weight: 700;
+    background: rgba(255,77,28,0.08); border: 1px solid rgba(255,77,28,0.15);
+    color: var(--accent);
+  }
+
+  /* ════════════════════════════════════════
+     DISH CARD
+  ════════════════════════════════════════ */
+  .bm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 18px;
+  }
+
+  .dish-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 22px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    box-shadow: 0 3px 16px rgba(0,0,0,0.06);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.2s;
+    position: relative;
+  }
+  .dish-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 18px 48px rgba(0,0,0,0.12);
+    border-color: rgba(0,0,0,0.1);
+  }
+
+  /* ── ФОТО БЛЮДА ── */
+  .dish-photo {
+    position: relative; height: 170px;
+    background: var(--card2); overflow: hidden; flex-shrink: 0;
+  }
+  .dish-photo img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    transition: transform 0.4s ease;
+  }
+  .dish-card:hover .dish-photo img { transform: scale(1.06); }
+
+  /* красивая заглушка без фото */
+  .dish-photo-empty {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(145deg, #FFF8F5 0%, #FFF0E8 50%, #FFEADF 100%);
+    position: relative; overflow: hidden;
+  }
+  .dish-photo-empty::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse 60% 50% at 30% 40%, rgba(255,77,28,0.1), transparent);
+  }
+  .dish-photo-empty-icon {
+    font-size: 52px; opacity: 0.22; position: relative; z-index: 1;
+  }
+
+  /* градиент внизу фото */
+  .dish-photo-grad {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.25) 100%);
+  }
+
+  /* бейдж цены поверх фото */
+  .dish-price-badge {
+    position: absolute; bottom: 10px; right: 10px;
+    padding: 5px 12px; border-radius: 100px;
+    font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 800;
+    background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.15);
+    backdrop-filter: blur(8px); color: white; letter-spacing: -0.3px;
+  }
+
+  /* ── ТЕЛО КАРТОЧКИ ── */
+  .dish-body {
+    padding: 14px 16px 16px;
+    display: flex; flex-direction: column; gap: 10px; flex: 1;
+  }
+
+  .dish-name {
+    font-family: 'Unbounded', sans-serif; font-weight: 700;
+    font-size: 13px; letter-spacing: -0.3px; color: var(--text);
+    line-height: 1.3;
+  }
+  .dish-desc {
+    font-size: 12px; color: var(--muted); line-height: 1.6;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* нижняя строка: цена + кнопка */
+  .dish-footer {
+    margin-top: auto;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .dish-price {
+    font-family: 'Unbounded', sans-serif; font-weight: 800;
+    font-size: 16px; letter-spacing: -0.5px; color: var(--text);
+    line-height: 1;
+  }
+  .dish-price-sub { font-size: 10px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+
+  /* ── КНОПКА «ДОБАВИТЬ» ── */
+  .dish-add-btn {
+    width: 40px; height: 40px; border-radius: 14px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white; font-size: 20px; font-weight: 300; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 14px var(--glow);
+    transition: transform 0.2s, box-shadow 0.2s;
+    flex-shrink: 0; position: relative; overflow: hidden;
+    font-family: 'Geologica', sans-serif;
+  }
+  .dish-card:hover .dish-add-btn { transform: scale(1.08); box-shadow: 0 6px 20px var(--glow); }
+  .dish-add-btn:active { transform: scale(0.95); }
+
+  /* shimmer на кнопке */
+  .dish-add-btn::after {
+    content: ''; position: absolute; inset: -2px;
+    background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+    transform: translateX(-130%); transition: none;
+  }
+  .dish-add-btn.loading { opacity: 0.7; pointer-events: none; }
+  .dish-add-btn.loading::after { animation: btn-shimmer 0.7s linear infinite; }
+  @keyframes btn-shimmer { to { transform: translateX(130%); } }
+  .dish-add-btn.pulse { animation: btn-pulse 0.28s ease; }
+  @keyframes btn-pulse { 0%{transform:scale(1)} 50%{transform:scale(1.18)} 100%{transform:scale(1)} }
+
+  /* добавленный в корзину — счётчик */
+  .dish-qty-row {
+    display: none;
+    align-items: center; gap: 0;
+    border: 1.5px solid var(--border); border-radius: 14px; overflow: hidden;
+    background: var(--bg);
+  }
+  .dish-qty-row.visible { display: flex; }
+  .dish-qty-btn {
+    width: 36px; height: 36px; border: none; cursor: pointer;
+    background: transparent; color: var(--text); font-size: 16px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .dish-qty-btn:hover { background: var(--card2); }
+  .dish-qty-num {
+    min-width: 28px; text-align: center;
+    font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 800;
+    color: var(--text);
+  }
+
+  /* ════════════════════════════════════════
+     FLOATING CART FAB
+  ════════════════════════════════════════ */
+  .cart-fab {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    z-index: 9000;
+    display: inline-flex; align-items: center; gap: 14px;
+    padding: 14px 24px; border-radius: 20px;
+    background: linear-gradient(135deg, #0D1117, #1c2535);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: white; text-decoration: none;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.06);
+    backdrop-filter: blur(16px);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    min-width: 280px; max-width: min(92vw, 480px);
+  }
+  .cart-fab:hover { transform: translateX(-50%) translateY(-3px); box-shadow: 0 24px 60px rgba(0,0,0,0.4); }
+  .cart-fab.hide { opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(12px); }
+
+  .cart-fab-icon {
+    width: 42px; height: 42px; border-radius: 14px; flex-shrink: 0;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.12);
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .cart-fab-info { flex: 1; min-width: 0; }
+  .cart-fab-title {
+    font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 0.5px;
+    text-transform: uppercase; font-weight: 600; margin-bottom: 1px;
+  }
+  .cart-fab-total {
+    font-family: 'Unbounded', sans-serif; font-size: 14px; font-weight: 800;
+    color: white; letter-spacing: -0.3px;
+  }
+  .cart-fab-badge {
+    padding: 6px 14px; border-radius: 100px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    font-size: 12px; font-weight: 800; color: white;
+    box-shadow: 0 4px 14px var(--glow);
+    font-family: 'Unbounded', sans-serif; letter-spacing: -0.2px;
+  }
+  .cart-fab-badge-pop { animation: fab-pop 0.25s ease; }
+  @keyframes fab-pop { 0%{transform:scale(1)} 50%{transform:scale(1.15)} 100%{transform:scale(1)} }
+
+  /* ════════════════════════════════════════
+     TOAST
+  ════════════════════════════════════════ */
+  .bm-toast-wrap {
+    position: fixed; top: 80px; right: 20px; z-index: 9999;
+    display: flex; flex-direction: column; gap: 8px;
+    pointer-events: none;
+  }
+  .bm-toast {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 18px; border-radius: 14px;
+    background: rgba(13,17,23,0.95); color: white;
+    font-size: 13px; font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    opacity: 0; transform: translateX(16px);
+    transition: all 0.22s ease;
+    max-width: 280px;
+  }
+  .bm-toast.show { opacity: 1; transform: translateX(0); }
+  .bm-toast-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); flex-shrink: 0; }
+
+  /* ════════════════════════════════════════
+     SCROLL TOP
+  ════════════════════════════════════════ */
+  .bm-top-btn {
+    position: fixed; bottom: 104px; right: 24px; z-index: 9000;
+    width: 48px; height: 48px; border-radius: 16px; cursor: pointer;
+    background: var(--card); border: 1.5px solid var(--border);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: var(--text);
+    transition: all 0.2s;
+  }
+  .bm-top-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,0,0,0.15); }
+  .bm-top-btn.hide { opacity: 0; pointer-events: none; transform: translateY(8px); }
+
+  /* ════════════════════════════════════════
+     EMPTY STATE
+  ════════════════════════════════════════ */
+  .bm-empty {
+    text-align: center; padding: 60px 24px;
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 24px; margin-top: 24px;
+  }
+
+  /* ════════════════════════════════════════
+     RESPONSIVE
+  ════════════════════════════════════════ */
+  @media (max-width: 768px) {
+    .bm-hero-content { padding: 20px 16px 20px; }
+    .bm-content { padding: 20px 16px 120px; }
+    .bm-cats-inner { padding: 8px 14px; }
+    .bm-grid { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 12px; }
+    .dish-photo { height: 150px; }
+    .dish-body { padding: 12px 12px 14px; }
+    .dish-name { font-size: 12px; }
+    .dish-price { font-size: 14px; }
+    .cart-fab { min-width: 260px; padding: 12px 18px; }
+  }
+  @media (max-width: 420px) {
+    .bm-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .dish-photo { height: 130px; }
+    .bm-hero-title { font-size: 22px; }
+  }
+</style>
+{% endblock %}
+
 
 {% block content %}
 
-<style>
-  /* ===== Page BG (orange) ===== */
-  body{
-    background: radial-gradient(1200px 600px at 20% 0%, rgba(255,255,255,.18), transparent 60%),
-                radial-gradient(900px 500px at 90% 10%, rgba(255,255,255,.12), transparent 55%),
-                linear-gradient(180deg, #FF7A00 0%, #FF6A00 55%, #FF5A00 100%) !important;
-    background-attachment: fixed !important;
-    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  }
 
-  /* hide base background layer if any */
-  .page-bg{ display:none !important; }
+<div class="bm-toast-wrap" id="toastWrap" aria-live="polite"></div>
 
-  /* ===== Helpers ===== */
-  .no-scrollbar::-webkit-scrollbar{ display:none; }
-  .no-scrollbar{ -ms-overflow-style:none; scrollbar-width:none; }
+<div class="bm-page">
 
-  /* ===== Sticky categories (scrollspy) ===== */
-  .cats-wrap{
-    position: sticky;
-    top: 74px; /* под твой topbar, если надо — подними/опусти */
-    z-index: 40;
-    background: rgba(255,255,255,.90);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(15,23,42,.08);
-    border-left: 0;
-    border-right: 0;
-  }
-  .cat-link{
-    white-space: nowrap;
-    border-radius: 999px;
-    padding: 10px 14px;
-    font-weight: 900;
-    font-size: 13px;
-    background: rgba(255,255,255,.85);
-    border: 1px solid rgba(15,23,42,.14);
-    color: #0f172a;
-    transition: .12s ease;
-  }
-  .cat-link:hover{ transform: translateY(-1px); }
-  .cat-link.active{
-    background: #0f172a;
-    border-color: #0f172a;
-    color:#fff;
-  }
 
-  /* ===== Toast ===== */
-  .toast-wrap{
-    position: fixed;
-    left: 50%;
-    bottom: 18px;
-    transform: translateX(-50%);
-    z-index: 9999;
-    pointer-events: none;
-  }
-  .toast{
-    pointer-events: auto;
-    background: rgba(15,23,42,.92);
-    color: #fff;
-    padding: 12px 14px;
-    border-radius: 14px;
-    box-shadow: 0 16px 40px rgba(0,0,0,.25);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: .18s ease;
-    font-size: 14px;
-    max-width: min(92vw, 520px);
-  }
-  .toast.show{ opacity:1; transform: translateY(0); }
-  .toast .dot{
-    width: 10px; height: 10px;
-    border-radius: 999px;
-    background: #22c55e;
-    box-shadow: 0 0 0 6px rgba(34,197,94,.18);
-  }
+  <div class="bm-hero">
+    <div class="bm-hero-bg"></div>
+    {% if branch.cover_photo %}
+      <div class="bm-hero-photo" style="background-image:url('{{ branch.cover_photo.url }}');"></div>
+    {% else %}
+     
+      <div style="position:absolute;inset:0;
+        background:radial-gradient(ellipse 70% 60% at 20% 80%, rgba(255,77,28,0.18),transparent 55%),
+                   radial-gradient(ellipse 50% 40% at 90% 10%, rgba(0,184,150,0.1),transparent 50%);"></div>
+    {% endif %}
+    <div class="bm-hero-overlay"></div>
+    <div class="bm-hero-dots"></div>
 
-  /* ===== Add button animation ===== */
-  .btn-anim{ position:relative; overflow:hidden; }
-  .btn-anim.loading{ opacity:.85; pointer-events:none; }
-  .btn-anim.loading::after{
-    content:"";
-    position:absolute; inset:0;
-    background: linear-gradient(120deg, transparent, rgba(255,255,255,.35), transparent);
-    transform: translateX(-100%);
-    animation: shimmer .7s linear infinite;
-  }
-  @keyframes shimmer{ to{ transform: translateX(100%); } }
-  .btn-anim.pulse{ animation: pulse .28s ease; }
-  @keyframes pulse{
-    0%{ transform:scale(1); }
-    50%{ transform:scale(1.03); }
-    100%{ transform:scale(1); }
-  }
+    <div class="bm-hero-content">
+      {# назад #}
+      <a href="{% url 'public_site:restaurant_contacts' branch.restaurant.slug %}" class="bm-hero-back">
+        ← {% t branch.restaurant "name" %}
+      </a>
 
-  /* ===== BIG Floating Cart ===== */
-  .cart-fab{
-    position: fixed;
-    right: 16px;
-    bottom: 16px;
-    z-index: 9998;
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
-    border-radius: 20px;
-    background: rgba(15,23,42,.95);
-    color: #fff;
-    text-decoration:none;
-    box-shadow: 0 18px 50px rgba(0,0,0,.25);
-    border: 1px solid rgba(255,255,255,.14);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    transition: transform .12s ease, opacity .12s ease;
-    max-width: min(92vw, 520px);
-  }
-  .cart-fab:hover{ transform: translateY(-2px); }
-  .cart-fab.hide{ opacity:0; pointer-events:none; transform: translateY(10px); }
-  .cart-icon{
-    width: 44px; height: 44px;
-    border-radius: 16px;
-    background: rgba(255,255,255,.14);
-    display:flex; align-items:center; justify-content:center;
-    font-size: 20px;
-    flex:0 0 auto;
-  }
-  .cart-badge{
-    min-width: 34px;
-    height: 26px;
-    padding: 0 10px;
-    border-radius: 999px;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    font-size: 13px;
-    font-weight: 900;
-    background: rgba(255,255,255,.16);
-    flex:0 0 auto;
-  }
-  .cart-pop{ animation: cartpop .22s ease; }
-  @keyframes cartpop{
-    0%{ transform: scale(1); }
-    60%{ transform: scale(1.12); }
-    100%{ transform: scale(1); }
-  }
+      <div class="bm-hero-row">
+        <div>
+          <h1 class="bm-hero-title">{% t branch "name" %}</h1>
+          <div class="bm-hero-meta">
+            {% if branch.is_open_now %}
+              <span class="bm-hero-pill open">
+                <span class="bm-hero-pill-dot"></span>
+                Открыто
+              </span>
+            {% else %}
+              <span class="bm-hero-pill">● Закрыто</span>
+            {% endif %}
 
-  /* ===== Scroll to top ===== */
-  .top-fab{
-    position: fixed;
-    right: 16px;
-    bottom: 86px; /* выше корзины */
-    z-index: 9998;
-    width: 52px;
-    height: 52px;
-    border-radius: 18px;
-    background: rgba(255,255,255,.92);
-    border: 1px solid rgba(15,23,42,.14);
-    box-shadow: 0 16px 40px rgba(0,0,0,.18);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size: 18px;
-    font-weight: 900;
-    color:#0f172a;
-    cursor:pointer;
-    transition: transform .12s ease, opacity .12s ease;
-  }
-  .top-fab:hover{ transform: translateY(-2px); }
-  .top-fab.hide{ opacity:0; pointer-events:none; transform: translateY(10px); }
+            {% if branch.address %}
+              <span class="bm-hero-pill">📍 {{ branch.address }}</span>
+            {% endif %}
 
-  /* headings scroll offset */
-  .cat-section{ scroll-margin-top: 140px; }
-</style>
+            {% if branch.delivery_enabled %}
+              <span class="bm-hero-pill delivery">
+                🚚 Доставка · {{ branch.delivery_fee|floatformat:"0" }} сом
+              </span>
+            {% else %}
+              <span class="bm-hero-pill">🥡 Самовывоз</span>
+            {% endif %}
 
-<div class="toast-wrap" id="toastWrap" aria-live="polite" aria-atomic="true"></div>
-
-<!-- HERO (без фото) -->
-<!-- HERO (с картинкой филиала, фон страницы остаётся оранжевым) -->
-<section class="max-w-6xl mx-auto px-4 pt-5 pb-4">
-  <div class="rounded-3xl overflow-hidden shadow-xl ring-1 ring-black/5 bg-white">
-    <div class="flex flex-col md:flex-row">
-
-      {% if branch.cover_photo %}
-      <!-- Cover photo -->
-      <div class="relative md:order-2 md:w-[360px] lg:w-[420px]">
-        <img
-          src="{{ branch.cover_photo.url }}"
-          alt="{{ branch.name }}"
-          loading="lazy"
-          decoding="async"
-          class="w-full object-cover aspect-[16/9] md:aspect-auto md:h-full md:min-h-[240px]"
-        >
-        <!-- лёгкая тонировка чтобы выглядело премиально -->
-        <div class="absolute inset-0 bg-gradient-to-t from-black/25 via-black/0 to-black/0"></div>
-
-        <!-- подпись на фото (по желанию) -->
-        <div class="absolute left-4 bottom-4 right-4">
-          <div class="text-white font-extrabold text-lg drop-shadow">
-            {{ branch.name }}
-          </div>
-          <div class="text-white/90 text-xs mt-1 line-clamp-2 drop-shadow">
-            {{ branch.address }}
+            {% if branch.is_open_24h %}
+              <span class="bm-hero-pill">🌙 Круглосуточно</span>
+            {% elif branch.open_time and branch.close_time %}
+              <span class="bm-hero-pill">⏰ {{ branch.open_time|time:"H:i" }}–{{ branch.close_time|time:"H:i" }}</span>
+            {% endif %}
           </div>
         </div>
+
+        {# корзина в hero #}
+        <a href="{% url 'public_site:cart_detail' branch.id %}"
+           class="bm-hero-cart {% if cart_qty > 0 %}active{% endif %}"
+           id="heroCart">
+          🧺 Корзина
+          <span class="bm-hero-cart-badge" data-cart-qty>{{ cart_qty }}</span>
+          <span data-cart-total style="font-size:12px;opacity:.8;">· {{ cart_total }} сом</span>
+        </a>
       </div>
-      {% endif %}
-
-      <!-- Text -->
-      <div class="p-4 md:p-7 flex-1">
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-stone-900">
-              {{ branch.name_ru }}
-            </h1>
-            <div class="mt-2 text-sm text-stone-600">
-              {{ branch.address }}
-              {% if branch.delivery_enabled %}
-                · {% trans "Доставка" %}: {% trans "Мин." %} {{ branch.min_order_amount }} · {% trans "Дост." %} {{ branch.delivery_fee }}
-              {% else %}
-                · {% trans "Самовывоз" %}
-              {% endif %}
-            </div>
-          </div>
-
-          <!-- верхняя корзина (можно оставить) -->
-          <a href="{% url 'public_site:cart_detail' branch.id %}"
-             class="hidden sm:inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-stone-900 text-white font-semibold shadow hover:bg-stone-800">
-            {% trans "Корзина" %}
-            <span class="px-2 py-1 rounded-xl bg-white/15 text-xs" data-cart-qty>{{ cart_qty }}</span>
-            <span class="hidden md:inline" data-cart-total>· {{ cart_total }} {% trans "сом" %}</span>
-          </a>
-        </div>
-
-        {% if branch.cover_photo %}
-          <div class="mt-4 text-xs text-stone-500">
-            {% trans "Фото филиала" %}: {{ branch.name_ru }}
-          </div>
-        {% endif %}
-      </div>
-
     </div>
   </div>
-</section>
 
 
-<!-- Sticky categories (with active highlight) -->
-<div class="cats-wrap">
-  <div class="max-w-6xl mx-auto px-3 py-2 overflow-x-auto no-scrollbar" id="catsBar">
-    <div class="flex gap-2 md:gap-3" id="catsLinks">
-      <a href="#menu" class="cat-link active" data-cat-link="menu">{% trans "Все" %}</a>
+
+  <div class="bm-cats-sticky">
+    <div class="bm-cats-inner" id="catsBar">
+      <a href="#bm-top" class="bm-cat-btn active" data-cat-link="bm-top">Все</a>
       {% for c in menu %}
         <a href="#cat-{{ c.branch_category.id }}"
-           class="cat-link"
+           class="bm-cat-btn"
            data-cat-link="cat-{{ c.branch_category.id }}">
           {% t c.branch_category.category "name" %}
         </a>
       {% endfor %}
     </div>
   </div>
-</div>
 
-<!-- Menu -->
-<section id="menu" class="max-w-6xl mx-auto px-4 py-6">
-  {% for c in menu %}
-    <section id="cat-{{ c.branch_category.id }}" class="mb-10 cat-section" data-cat-section="cat-{{ c.branch_category.id }}">
-      <div class="flex items-center gap-3 mb-4">
-        <div class="flex-1 h-px bg-white/55"></div>
-        <h2 class="text-xl md:text-2xl text-white font-extrabold tracking-wide">
-          {% t c.branch_category.category "name" %}
-        </h2>
-        <div class="flex-1 h-px bg-white/55"></div>
-      </div>
 
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
-        {% for row in c.items %}
-          {% with bi=row.branch_item dish=row.branch_item.item %}
-          <article class="group relative overflow-hidden rounded-3xl bg-white ring-1 ring-black/5 shadow-lg flex flex-col">
-            {% if dish.photo %}
-              <img src="{{ dish.photo.url }}"
-                   alt="{% t dish 'name' %}"
-                   loading="lazy"
-                   decoding="async"
-                   width="480" height="320"
-                   class="aspect-[4/3] w-full object-cover transition group-hover:scale-[1.03]">
-            {% endif %}
+  <div class="bm-content" id="bm-top">
 
-            <div class="p-3 md:p-4 flex-1 flex flex-col">
-              <div class="min-h-[48px]">
-                <h3 class="text-base md:text-lg font-semibold leading-snug">{% t dish "name" %}</h3>
+    {% if menu %}
+      {% for c in menu %}
+      <section class="bm-cat-section" id="cat-{{ c.branch_category.id }}" data-cat-section="cat-{{ c.branch_category.id }}">
+
+        {# заголовок категории #}
+        <div class="bm-cat-header">
+          <div class="bm-cat-line"></div>
+          <h2 class="bm-cat-title">{% t c.branch_category.category "name" %}</h2>
+          <span class="bm-cat-count">{{ c.items|length }}</span>
+          <div class="bm-cat-line"></div>
+        </div>
+
+        {# сетка блюд #}
+        <div class="bm-grid">
+          {% for row in c.items %}
+            {% with bi=row.branch_item dish=row.branch_item.item %}
+            <article class="dish-card" data-bi-id="{{ bi.id }}">
+
+              {# ФОТО #}
+              <div class="dish-photo">
+                {% if dish.photo %}
+                  <img src="{{ dish.photo.url }}" alt="{% t dish 'name' %}"
+                       loading="lazy" width="320" height="170">
+                {% else %}
+                  <div class="dish-photo-empty">
+                    <div class="dish-photo-empty-icon">🍽️</div>
+                  </div>
+                {% endif %}
+                <div class="dish-photo-grad"></div>
+                <div class="dish-price-badge">{{ bi.price|floatformat:"0" }} сом</div>
+              </div>
+
+              {# BODY #}
+              <div class="dish-body">
+                <div class="dish-name">{% t dish "name" %}</div>
 
                 {% t dish "description" as desc %}
                 {% if desc %}
-                  <div class="text-sm text-stone-500 mt-0.5 line-clamp-2">{{ desc }}</div>
+                  <div class="dish-desc">{{ desc }}</div>
                 {% endif %}
-              </div>
 
-              <div class="mt-3 md:mt-4 flex items-end justify-between gap-3">
-                <div>
-                  <div class="text-xs text-stone-400">{% trans "Цена" %}</div>
-                  <div class="text-lg md:text-xl font-extrabold">{{ bi.price }} {% trans "сом" %}</div>
+                <div class="dish-footer">
+                  <div>
+                    <div class="dish-price">{{ bi.price|floatformat:"0" }} <span style="font-size:11px;font-weight:500;color:var(--muted);">сом</span></div>
+                  </div>
+
+                  {# форма добавления + кнопка #}
+                  <form action="{% url 'public_site:add_to_cart' bi.id %}" method="post" data-add-to-cart>
+                    {% csrf_token %}
+                    <button type="submit" class="dish-add-btn" aria-label="Добавить в корзину">
+                      +
+                    </button>
+                  </form>
                 </div>
-
-                <!-- add to cart (без qty=1 инпута) -->
-                <form action="{% url 'public_site:add_to_cart' bi.id %}"
-                      method="post"
-                      class="flex items-center justify-end"
-                      data-add-to-cart>
-                  {% csrf_token %}
-                  <button type="submit"
-                          class="btn-anim inline-flex items-center justify-center whitespace-nowrap px-4 py-2 rounded-2xl text-white text-sm md:text-[15px] font-extrabold shadow-md hover:shadow-lg transition"
-                          style="background:#0f172a">
-                    +{% trans "" %}
-                  </button>
-                </form>
               </div>
-            </div>
-          </article>
-          {% endwith %}
-        {% endfor %}
-      </div>
-    </section>
-  {% endfor %}
-</section>
 
-<!-- BIG floating cart -->
+            </article>
+            {% endwith %}
+          {% endfor %}
+        </div>
+
+      </section>
+      {% endfor %}
+
+    {% else %}
+      <div class="bm-empty">
+        <div style="font-size:52px;margin-bottom:16px;">🍽️</div>
+        <div style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:800;color:var(--text);letter-spacing:-0.5px;margin-bottom:8px;">
+          Меню пока пустое
+        </div>
+        <div style="font-size:14px;color:var(--muted);">Ресторан ещё не добавил блюда</div>
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+
+
+
 <a id="cartFab"
    href="{% url 'public_site:cart_detail' branch.id %}"
-   class="cart-fab {% if cart_qty|default:0 == 0 %}hide{% endif %}">
-  <span class="cart-icon">🧺</span>
-  <span class="cart-badge" data-cart-qty>{{ cart_qty }}</span>
-  <span class="hidden sm:inline" data-cart-total>· {{ cart_total }} {% trans "сом" %}</span>
+   class="cart-fab {% if not cart_qty or cart_qty == 0 %}hide{% endif %}">
+  <div class="cart-fab-icon">🧺</div>
+  <div class="cart-fab-info">
+    <div class="cart-fab-title">Ваша корзина</div>
+    <div class="cart-fab-total" data-cart-total>{{ cart_total }} сом</div>
+  </div>
+  <div class="cart-fab-badge" data-cart-qty>{{ cart_qty }} шт</div>
 </a>
 
-<!-- Scroll to top -->
-<button id="toTopFab" class="top-fab hide" type="button" aria-label="Наверх">↑</button>
-
-<script>
-  function getCookie(name) {
-    const v = document.cookie.split('; ').find(row => row.startsWith(name + '='));
-    return v ? decodeURIComponent(v.split('=')[1]) : '';
-  }
-
-  function showToast(message){
-    const wrap = document.getElementById('toastWrap');
-    const el = document.createElement('div');
-    el.className = 'toast';
-    el.innerHTML = `<span class="dot"></span><div>${message}</div>`;
-    wrap.appendChild(el);
-    requestAnimationFrame(() => el.classList.add('show'));
-    setTimeout(() => {
-      el.classList.remove('show');
-      setTimeout(() => el.remove(), 220);
-    }, 1400);
-  }
-
-  function updateCartUI(qty, total){
-    const qNum = Number(qty) || 0;
-
-    document.querySelectorAll('[data-cart-qty]').forEach(el => {
-      el.textContent = qNum;
-      el.classList.remove('cart-pop');
-      void el.offsetWidth;
-      el.classList.add('cart-pop');
-    });
-
-    document.querySelectorAll('[data-cart-total]').forEach(el => {
-      el.textContent = `· ${total} сом`;
-    });
-
-    const fab = document.getElementById('cartFab');
-    if (fab) fab.classList.toggle('hide', qNum <= 0);
-  }
-
-  // stop card click bubbling if any
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('form[data-add-to-cart]')) e.stopPropagation();
-  }, true);
-
-  // add-to-cart AJAX
-  document.addEventListener('submit', async (e) => {
-    const form = e.target.closest('form[data-add-to-cart]');
-    if (!form) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    const btn = form.querySelector('button[type="submit"]');
-    if (btn) btn.classList.add('btn-anim','loading');
-
-    try {
-      const resp = await fetch(form.action, {
-        method: 'POST',
-        body: new FormData(form),
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-CSRFToken': getCookie('csrftoken'),
-        }
-      });
-
-      const data = await resp.json();
-
-      if (data.ok) {
-        updateCartUI(data.qty, data.total);
-        if (btn){
-          btn.classList.remove('loading');
-          btn.classList.add('pulse');
-          setTimeout(()=>btn.classList.remove('pulse'), 300);
-        }
-        showToast('Добавлено в корзину ✅');
-      } else {
-        showToast('Не удалось добавить ❌');
-      }
-    } catch (err) {
-      console.error(err);
-      showToast('Ошибка сети / сервера ❌');
-    } finally {
-      if (btn) btn.classList.remove('loading');
-    }
-  }, true);
-
-  // ===== Scroll to top button =====
-  (function(){
-    const topBtn = document.getElementById('toTopFab');
-    if (!topBtn) return;
-
-    const onScroll = () => {
-      const show = window.scrollY > 500;
-      topBtn.classList.toggle('hide', !show);
-    };
-    window.addEventListener('scroll', onScroll, { passive:true });
-    onScroll();
-
-    topBtn.addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-  })();
-
-  // ===== Categories scrollspy (highlight current section) =====
-  (function(){
-    const bar = document.getElementById('catsBar');
-    const links = Array.from(document.querySelectorAll('[data-cat-link]'));
-    const sections = Array.from(document.querySelectorAll('[data-cat-section]'));
-
-    if (!links.length || !sections.length) return;
-
-    const setActive = (id) => {
-      links.forEach(a => {
-        const isActive = a.dataset.catLink === id;
-        a.classList.toggle('active', isActive);
-        if (isActive) {
-          a.setAttribute('aria-current', 'true');
-          // чтобы полоса "двигалась" и активный пункт был виден
-          a.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-        } else {
-          a.removeAttribute('aria-current');
-        }
-      });
-    };
-
-    // click -> set active instantly
-    links.forEach(a => {
-      a.addEventListener('click', () => setActive(a.dataset.catLink));
-    });
-
-    // если в самом верху — подсвечиваем "Все"
-    const menuEl = document.getElementById('menu');
-    const first = sections[0];
-
-    const observer = new IntersectionObserver((entries) => {
-      // выберем самую "видимую" секцию
-      const visible = entries
-        .filter(e => e.isIntersecting)
-        .sort((a,b) => (b.intersectionRatio - a.intersectionRatio));
-
-      if (visible.length) {
-        const id = visible[0].target.getAttribute('data-cat-section');
-        setActive(id);
-      }
-    }, {
-      root: null,
-      // чтобы актив менялся, когда заголовок подходит к верхней части экрана
-      rootMargin: '-25% 0px -65% 0px',
-      threshold: [0.05, 0.15, 0.25, 0.35, 0.5]
-    });
-
-    sections.forEach(s => observer.observe(s));
-
-    // доп. логика: если выше первой категории — актив "Все"
-    const onScroll = () => {
-      if (!first || !menuEl) return;
-      const y = window.scrollY || 0;
-      const firstTop = first.getBoundingClientRect().top + y;
-      if (y < firstTop - 180) setActive('menu');
-    };
-    window.addEventListener('scroll', onScroll, { passive:true });
-    onScroll();
-  })();
-</script>
+{# ══ КНОПКА НАВЕРХ ══ #}
+<button id="bm-top-btn" class="bm-top-btn hide" type="button" aria-label="Наверх">↑</button>
 
 {% endblock %}
-{% block footer %}
-     <a href="{% url 'public_site:home' %}">Разработка Amantur agency
-</a>
-{% endblock footer %}
+
+
+{% block page_scripts %}
+<script>
+// ─────────────────────────────────────────────
+// CSRF helper
+// ─────────────────────────────────────────────
+function getCookie(name) {
+  const v = document.cookie.split('; ').find(r => r.startsWith(name + '='));
+  return v ? decodeURIComponent(v.split('=')[1]) : '';
+}
+
+// ─────────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────────
+function showToast(msg, ok = true) {
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = 'bm-toast';
+  el.innerHTML = `<span class="bm-toast-dot" style="${ok ? '' : 'background:#EF4444'}"></span><span>${msg}</span>`;
+  wrap.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 250); }, 1800);
+}
+
+// ─────────────────────────────────────────────
+// CART UI UPDATE
+// ─────────────────────────────────────────────
+function updateCartUI(qty, total) {
+  const n = Number(qty) || 0;
+
+  // badge везде
+  document.querySelectorAll('[data-cart-qty]').forEach(el => {
+    el.textContent = n > 0 ? n + ' шт' : n;
+    el.classList.remove('cart-fab-badge-pop');
+    void el.offsetWidth;
+    el.classList.add('cart-fab-badge-pop');
+  });
+
+  // total везде
+  document.querySelectorAll('[data-cart-total]').forEach(el => {
+    el.textContent = total + ' сом';
+  });
+
+  // показать/скрыть FAB
+  const fab = document.getElementById('cartFab');
+  if (fab) fab.classList.toggle('hide', n <= 0);
+
+  // hero cart кнопка
+  const heroCart = document.getElementById('heroCart');
+  if (heroCart) heroCart.classList.toggle('active', n > 0);
+}
+
+// ─────────────────────────────────────────────
+// ADD TO CART (AJAX)
+// ─────────────────────────────────────────────
+document.addEventListener('submit', async (e) => {
+  const form = e.target.closest('form[data-add-to-cart]');
+  if (!form) return;
+  e.preventDefault();
+  e.stopPropagation();
+
+  const btn = form.querySelector('button[type="submit"]');
+  if (btn) { btn.classList.add('loading'); btn.textContent = ''; }
+
+  try {
+    const resp = await fetch(form.action, {
+      method: 'POST',
+      body: new FormData(form),
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRFToken': getCookie('csrftoken'),
+      }
+    });
+
+    const data = await resp.json();
+
+    if (data.ok) {
+      updateCartUI(data.qty, data.total);
+      if (btn) {
+        btn.classList.remove('loading');
+        btn.textContent = '✓';
+        btn.style.background = 'linear-gradient(135deg,#059669,#00B896)';
+        btn.classList.add('pulse');
+        setTimeout(() => {
+          btn.textContent = '+';
+          btn.style.background = '';
+          btn.classList.remove('pulse');
+        }, 900);
+      }
+      showToast('Добавлено в корзину', true);
+    } else {
+      showToast('Не удалось добавить', false);
+      if (btn) { btn.classList.remove('loading'); btn.textContent = '+'; }
+    }
+  } catch {
+    showToast('Ошибка сети', false);
+    if (btn) { btn.classList.remove('loading'); btn.textContent = '+'; }
+  }
+}, true);
+
+// ─────────────────────────────────────────────
+// SCROLL TO TOP
+// ─────────────────────────────────────────────
+(function() {
+  const btn = document.getElementById('bm-top-btn');
+  if (!btn) return;
+  window.addEventListener('scroll', () => {
+    btn.classList.toggle('hide', window.scrollY < 600);
+  }, { passive: true });
+  btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+})();
+
+// ─────────────────────────────────────────────
+// CATEGORY SCROLLSPY
+// ─────────────────────────────────────────────
+(function() {
+  const links = Array.from(document.querySelectorAll('[data-cat-link]'));
+  const sections = Array.from(document.querySelectorAll('[data-cat-section]'));
+  if (!links.length || !sections.length) return;
+
+  function setActive(id) {
+    links.forEach(a => {
+      const isActive = a.dataset.catLink === id;
+      a.classList.toggle('active', isActive);
+      if (isActive) a.scrollIntoView({ inline: 'center', block: 'nearest' });
+    });
+  }
+
+  links.forEach(a => a.addEventListener('click', () => setActive(a.dataset.catLink)));
+
+  const obs = new IntersectionObserver(entries => {
+    const vis = entries
+      .filter(e => e.isIntersecting)
+      .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+    if (vis.length) setActive(vis[0].target.dataset.catSection);
+  }, {
+    rootMargin: '-20% 0px -65% 0px',
+    threshold: [0.05, 0.1, 0.25, 0.5],
+  });
+
+  sections.forEach(s => obs.observe(s));
+
+  // если выше первой секции — "Все"
+  window.addEventListener('scroll', () => {
+    if (!sections[0]) return;
+    const top = sections[0].getBoundingClientRect().top;
+    if (top > 200) setActive('bm-top');
+  }, { passive: true });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load i18n static %}
+{% block title %}{% trans "О Санжи" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-6">
+
+  <section class="rounded-3xl bg-white/95 ring-1 ring-black/5 shadow-xl p-6 md:p-10">
+    <h1 class="text-2xl md:text-4xl font-extrabold tracking-tight">
+      {% trans "Санжи — экосистема заказов для бизнеса" %}
+    </h1>
+
+    <p class="mt-4 text-stone-700 text-base md:text-lg leading-relaxed">
+      {% trans "Санжи — это не просто онлайн-меню для кафе. Мы строим единую экосистему для бизнеса Кыргызстана: рестораны и кафе, магазины, салоны красоты, услуги и другие точки — в одном удобном формате. Клиент сканирует QR или открывает ссылку, выбирает, оформляет заказ/заявку за минуту и сразу связывается с филиалом." %}
+    </p>
+
+    <div class="mt-6 grid md:grid-cols-2 gap-4">
+      <div class="rounded-2xl bg-stone-50 ring-1 ring-stone-200 p-5">
+        <div class="font-extrabold text-stone-900">{% trans "Как это работает для клиента" %}</div>
+        <ul class="mt-3 space-y-2 text-stone-700">
+          <li>• {% trans "Открыл QR / ссылку" %}</li>
+          <li>• {% trans "Выбрал товары/блюда" %}</li>
+          <li>• {% trans "Оформил заказ или бронь" %}</li>
+          <li>• {% trans "Доставка/самовывоз — как у филиала" %}</li>
+        </ul>
+      </div>
+
+      <div class="rounded-2xl bg-stone-50 ring-1 ring-stone-200 p-5">
+        <div class="font-extrabold text-stone-900">{% trans "Как это работает для бизнеса" %}</div>
+        <ul class="mt-3 space-y-2 text-stone-700">
+          <li>• {% trans "Меньше вопросов и ожиданий" %}</li>
+          <li>• {% trans "Заказы приходят сразу и понятным списком" %}</li>
+          <li>• {% trans "Меню/каталог и цены — обновляются быстро" %}</li>
+          <li>• {% trans "Бронирование и QR-столы (если нужно)" %}</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="mt-6 rounded-2xl bg-white ring-1 ring-stone-200 p-5">
+      <div class="font-extrabold text-stone-900">{% trans "Важно" %}</div>
+      <p class="mt-2 text-stone-700 leading-relaxed">
+        {% trans "Мы НЕ берём процент с заказов. Доставку (если она есть) выполняет сам ресторан/магазин — своими курьерами или своим способом. Санжи работает по подписке: фиксированная оплата за подключение и использование платформы." %}
+      </p>
+    </div>
+
+    <div class="mt-6 rounded-2xl bg-stone-900 text-white p-6">
+      <div class="text-lg md:text-xl font-extrabold">
+        {% trans "Подключим быстро — и запустим за 1 день" %}
+      </div>
+      <p class="mt-2 text-white/80">
+        {% trans "Напишите нам — покажем демо, поможем загрузить меню/каталог и настроим QR." %}
+      </p>
+
+      <div class="mt-4 flex flex-wrap gap-2">
+        <a href="https://wa.me/996558212040"
+           class="px-4 py-3 rounded-2xl font-semibold"
+           style="background:#25D366; color:white;">
+          WhatsApp
+        </a>
+        <a href="https://instagram.com/amantur555"
+           class="px-4 py-3 rounded-2xl font-semibold"
+           style="background: rgba(168, 4, 183, 0.9); color:white;">
+          Instagram
+        </a>
+      </div>
+
+      <div class="mt-3 text-white/70 text-sm">
+        {% trans "Сообщение: “ПАРТНЁР” — отправлю условия и варианты подписки." %}
+      </div>
+    </div>
+
+  </section>
+
+</div>
+{% endblock %}

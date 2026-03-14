@@ -1,204 +1,688 @@
 {% extends "base.html" %}
-{% load i18n i18n_attrs %}
+{% load static i18n i18n_attrs %}
 
-{% block title %}{% trans "Санжи — рестораны" %}{% endblock %}
+{% block title %}Webordo — Цифровая экосистема Кыргызстана{% endblock %}
+
+{% block head_extra %}
+<style>
+  /* ═══ BIZ CARDS ═══ */
+  .biz-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 22px;
+    overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    text-decoration: none;
+    display: block;
+    color: inherit;
+    box-shadow: 0 2px 12px var(--shadow);
+  }
+  .biz-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 48px rgba(0,0,0,0.11);
+  }
+  .biz-img-wrap {
+    position: relative; height: 185px;
+    background: var(--card2); overflow: hidden;
+  }
+  .biz-img-wrap img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform 0.35s ease;
+  }
+  .biz-card:hover .biz-img-wrap img { transform: scale(1.06); }
+  .biz-img-placeholder {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Unbounded', sans-serif; font-size: 52px; font-weight: 900;
+    color: #C8D0DC;
+  }
+  .biz-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%);
+  }
+  .biz-name {
+    position: absolute; bottom: 0; left: 0; right: 0; padding: 14px 16px;
+    font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 700;
+    color: white; letter-spacing: -0.3px;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.4);
+  }
+  .biz-badge {
+    position: absolute; top: 12px; right: 12px;
+    padding: 5px 12px; border-radius: 100px;
+    font-size: 10px; font-weight: 700;
+    backdrop-filter: blur(8px);
+  }
+  .badge-open   { background: rgba(0,184,150,0.15); color: var(--teal); }
+  .badge-closed { background: rgba(0,0,0,0.3); color: rgba(255,255,255,0.85); }
+  .biz-footer {
+    padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .biz-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 12px; border-radius: 100px;
+    font-size: 11px; font-weight: 600;
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text2);
+  }
+  .biz-open-text { font-size: 12px; font-weight: 600; color: var(--teal); }
+
+  /* ═══ CAT CARDS ═══ */
+  .wb-cat-card {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 22px; padding: 28px 22px;
+    cursor: pointer; transition: all 0.3s;
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column; gap: 10px;
+    box-shadow: 0 2px 12px var(--shadow);
+    text-decoration: none; color: inherit;
+  }
+  .wb-cat-card::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, var(--cat-color, #FF4D1C), transparent);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .wb-cat-card:hover {
+    border-color: var(--cat-color, var(--accent));
+    transform: translateY(-5px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.1);
+  }
+  .wb-cat-card:hover::before { opacity: 0.05; }
+  .wb-cat-card.soon { opacity: 0.55; cursor: default; }
+  .wb-cat-card.soon:hover { transform: none; box-shadow: 0 2px 12px var(--shadow); border-color: var(--border); }
+  .wb-cat-card.soon:hover::before { opacity: 0; }
+
+  .cat-icon { font-size: 36px; position: relative; z-index: 1; }
+  .cat-name {
+    font-family: 'Unbounded', sans-serif; font-size: 12px;
+    font-weight: 700; letter-spacing: -0.3px;
+    position: relative; z-index: 1;
+  }
+  .cat-count { font-size: 11px; color: var(--muted); position: relative; z-index: 1; }
+  .cat-arrow {
+    margin-top: auto; align-self: flex-end;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--bg); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; transition: all 0.2s; position: relative; z-index: 1;
+  }
+  .wb-cat-card:hover .cat-arrow {
+    background: var(--cat-color, var(--accent)); color: white; border-color: transparent;
+    transform: translate(2px, -2px);
+  }
+
+  /* ═══ STATS BAR ═══ */
+  .wb-stats {
+    display: flex; margin-top: 64px; max-width: 760px; width: 100%;
+    border: 1px solid var(--border); border-radius: 22px;
+    background: var(--card); overflow: hidden;
+    box-shadow: 0 8px 40px var(--shadow);
+    animation: fadeUp 0.8s ease 0.4s both;
+  }
+  .wb-stat {
+    flex: 1; padding: 24px 20px; text-align: center;
+    border-right: 1px solid var(--border);
+  }
+  .wb-stat:last-child { border-right: none; }
+  .wb-stat-num {
+    font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 28px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    display: block; margin-bottom: 4px;
+  }
+  .wb-stat-label { font-size: 11px; color: var(--muted); letter-spacing: 0.3px; }
+
+  /* ═══ PHONE MOCKUP ═══ */
+  .phone-wrap { display: flex; justify-content: center; perspective: 1200px; }
+  .phone {
+    width: 290px; background: white; border-radius: 40px;
+    border: 2px solid rgba(0,0,0,0.1); overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.04);
+    transform: rotateY(-6deg) rotateX(3deg); transition: transform 0.5s;
+  }
+  .phone:hover { transform: rotateY(0) rotateX(0); }
+  .phone-notch {
+    height: 24px; background: #111;
+    border-radius: 0 0 14px 14px; margin: 0 auto; width: 100px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .phone-notch::after {
+    content: ''; width: 32px; height: 4px;
+    background: rgba(255,255,255,0.2); border-radius: 3px;
+  }
+  .phone-screen { background: var(--bg); min-height: 540px; }
+  .app-header {
+    padding: 12px 16px; background: white;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .app-logo {
+    font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 13px;
+    background: linear-gradient(135deg, #FF4D1C, #FF8A00);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .app-search {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 100px; padding: 8px 14px; font-size: 11px;
+    color: var(--muted); margin: 10px 14px;
+  }
+  .app-cats {
+    display: flex; gap: 5px; padding: 0 14px;
+    overflow-x: auto; scrollbar-width: none; margin-bottom: 12px;
+  }
+  .app-cat {
+    background: white; border: 1px solid var(--border);
+    padding: 5px 11px; border-radius: 100px;
+    font-size: 10px; white-space: nowrap; color: var(--text2);
+  }
+  .app-cat.sel { background: var(--accent); color: white; border-color: var(--accent); }
+  .app-sec { padding: 0 14px; font-family: 'Unbounded', sans-serif;
+    font-size: 9px; font-weight: 700; color: var(--muted);
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .app-cards { padding: 0 14px; display: flex; flex-direction: column; gap: 7px; }
+  .app-card {
+    background: white; border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px; display: flex; gap: 9px; align-items: center;
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+  .app-card-img {
+    width: 42px; height: 42px; border-radius: 9px; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;
+  }
+  .app-card-name { font-size: 11px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+  .app-card-meta { font-size: 9px; color: var(--muted); display: flex; gap: 5px; }
+  .app-card-badge {
+    margin-left: auto; background: rgba(0,184,150,0.1); color: var(--teal);
+    font-size: 9px; padding: 3px 8px; border-radius: 100px; font-weight: 600; flex-shrink: 0;
+  }
+
+  /* ═══ DEMO TABS ═══ */
+  .demo-tabs { display: flex; gap: 6px; margin-bottom: 28px; }
+  .demo-tab {
+    padding: 9px 20px; border-radius: 100px; font-size: 13px; cursor: pointer;
+    border: 1.5px solid var(--border); background: var(--bg); color: var(--muted);
+    font-family: 'Geologica', sans-serif; transition: all 0.2s;
+  }
+  .demo-tab.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 16px var(--glow); }
+  .feature-list { display: flex; flex-direction: column; gap: 6px; transition: opacity 0.2s; }
+  .feature-item {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 16px; border-radius: 14px;
+    border: 1.5px solid transparent; transition: all 0.25s; cursor: pointer;
+  }
+  .feature-item.active, .feature-item:hover {
+    background: var(--bg); border-color: var(--border); box-shadow: 0 4px 16px var(--shadow);
+  }
+  .feature-icon {
+    width: 42px; height: 42px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 19px; flex-shrink: 0;
+  }
+  .feature-text h3 {
+    font-family: 'Unbounded', sans-serif; font-size: 12px;
+    font-weight: 700; margin-bottom: 3px; letter-spacing: -0.3px; color: var(--text);
+  }
+  .feature-text p { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+  /* ═══ QR SECTION ═══ */
+  .qr-big-card {
+    background: linear-gradient(135deg, #F0F4FF, #EEF2FF);
+    border: 1.5px solid rgba(99,102,241,0.15); border-radius: 28px;
+    padding: 40px; position: relative; overflow: hidden;
+  }
+  .qr-big-card::before {
+    content: ''; position: absolute; top: -60px; right: -60px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(99,102,241,0.15), transparent);
+    border-radius: 50%;
+  }
+  .qr-big-card h3 {
+    font-family: 'Unbounded', sans-serif; font-size: 22px;
+    font-weight: 800; letter-spacing: -1px; margin-bottom: 10px; color: var(--text);
+  }
+  .qr-big-card p { color: var(--muted); font-size: 14px; line-height: 1.7; margin-bottom: 24px; }
+  .qr-step { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--text2); margin-bottom: 10px; }
+  .qr-step-num {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0; color: #6366F1;
+  }
+  .mini-card {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 20px; padding: 24px;
+    transition: all 0.3s; box-shadow: 0 2px 12px var(--shadow);
+  }
+  .mini-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px var(--shadow); }
+  .mini-card h4 {
+    font-family: 'Unbounded', sans-serif; font-size: 14px;
+    font-weight: 700; margin-bottom: 6px; letter-spacing: -0.4px; color: var(--text);
+    margin-top: 10px;
+  }
+  .mini-card p { font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .tag-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; margin-top: 12px;
+  }
+
+  @media (max-width: 900px) {
+    .demo-grid { grid-template-columns: 1fr !important; }
+    .qr-grid   { grid-template-columns: 1fr !important; }
+    .phone-wrap { display: none; }
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="relative">
 
-  <style>
-    /* маленькие улучшения UX */
-    .sj-no-scrollbar::-webkit-scrollbar{ display:none; }
-    .sj-no-scrollbar{ -ms-overflow-style:none; scrollbar-width:none; }
 
-    @media (prefers-reduced-motion: reduce){
-      *{ scroll-behavior:auto !important; transition:none !important; animation:none !important; }
-    }
-  </style>
+<section style="min-height:100vh;display:flex;flex-direction:column;align-items:center;
+                justify-content:center;text-align:center;padding:100px 40px 80px;
+                position:relative;overflow:hidden;">
 
-  <!-- HERO -->
-  <section class="relative overflow-hidden rounded-3xl ring-1 ring-white/15 shadow-[0_18px_65px_rgba(0,0,0,.18)]">
-    <!-- фон -->
-    <div class="absolute inset-0 bg-gradient-to-br from-stone-950 via-stone-900 to-stone-800"></div>
+  {# фоновые пятна #}
+  <div style="position:absolute;inset:0;
+    background: radial-gradient(ellipse 70% 50% at 50% -10%, rgba(255,77,28,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse 50% 40% at 85% 80%, rgba(0,184,150,0.07) 0%, transparent 50%),
+                radial-gradient(ellipse 40% 40% at 15% 70%, rgba(37,99,235,0.05) 0%, transparent 50%);"></div>
 
-    <!-- световые пятна -->
-    <div class="absolute inset-0 opacity-40"
-         style="background-image:
-           radial-gradient(circle at 20% 20%, rgba(255,255,255,.22) 0, rgba(255,255,255,0) 50%),
-           radial-gradient(circle at 85% 10%, rgba(255,255,255,.16) 0, rgba(255,255,255,0) 45%),
-           radial-gradient(circle at 60% 90%, rgba(255,255,255,.12) 0, rgba(255,255,255,0) 50%);">
+  {# точечный узор #}
+  <div style="position:absolute;inset:0;
+    background-image: radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px);
+    background-size:28px 28px;
+    mask-image:radial-gradient(ellipse 90% 90% at 50% 50%, black 30%, transparent 100%);"></div>
+
+  <div style="position:relative;display:flex;flex-direction:column;align-items:center;">
+    {# badge #}
+    <div style="display:inline-flex;align-items:center;gap:8px;
+                background:rgba(255,77,28,0.08);border:1px solid rgba(255,77,28,0.2);
+                padding:8px 20px;border-radius:100px;font-size:12px;color:var(--accent);
+                letter-spacing:1px;text-transform:uppercase;margin-bottom:28px;
+                font-weight:500;animation:fadeUp 0.8s ease both;">
+      <span style="width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pulse 2s infinite;"></span>
+      🇰🇬 Цифровая экосистема Кыргызстана
     </div>
 
-    <!-- стекло -->
-    <div class="absolute inset-0 bg-white/5 backdrop-blur-[2px]"></div>
+    <h1 style="font-family:'Unbounded',sans-serif;font-weight:900;
+               font-size:clamp(40px,7vw,88px);line-height:0.95;letter-spacing:-3px;
+               margin-bottom:22px;color:var(--text);animation:fadeUp 0.8s ease 0.1s both;">
+      Всё в одном —<br>
+      <span style="background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 45%,#F59E0B 100%);
+                   -webkit-background-clip:text;-webkit-text-fill-color:transparent;">Webordo</span>
+    </h1>
 
-    <div class="relative px-5 sm:px-8 py-10 sm:py-12">
-      <div class="max-w-3xl">
-        <div class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-extrabold
-                    bg-white/10 text-white ring-1 ring-white/15">
-          ⚡ {% trans "Открой QR — выбери — закажи" %}
+    <p style="max-width:520px;font-size:17px;line-height:1.75;color:var(--muted);
+              margin-bottom:40px;animation:fadeUp 0.8s ease 0.2s both;">
+      Рестораны, магазины, отели — в единой платформе Кыргызстана.
+      QR-заказы без официанта, онлайн-бронирование и аналитика для бизнеса.
+    </p>
+
+    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:center;
+                animation:fadeUp 0.8s ease 0.3s both;">
+      <a class="btn-primary" href="#categories">🚀 Открыть платформу</a>
+      <a class="btn-ghost" href="#platform">Как работает ↓</a>
+    </div>
+
+    {# STATS BAR #}
+    <div class="wb-stats">
+      <div class="wb-stat">
+        <span class="wb-stat-num" data-target="{{ stats.total }}">0</span>
+        <span class="wb-stat-label">Бизнесов</span>
+      </div>
+      <div class="wb-stat">
+        <span class="wb-stat-num" data-target="{{ stats.branch_count }}">0</span>
+        <span class="wb-stat-label">Филиалов</span>
+      </div>
+      <div class="wb-stat">
+        <span class="wb-stat-num" data-target="{{ categories|length }}">0</span>
+        <span class="wb-stat-label">Категорий</span>
+      </div>
+      <div class="wb-stat">
+        <span class="wb-stat-num" data-target="3">0</span>
+        <span class="wb-stat-label">Города КР</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<section style="padding:80px 48px;max-width:1280px;margin:0 auto;" id="categories">
+  <div class="section-tag">Категории</div>
+  <h2 class="section-title reveal">Выберите категорию</h2>
+  <p class="section-sub reveal reveal-delay-1">
+    Найдите любой бизнес Кыргызстана в одном месте
+  </p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-top:40px;">
+    {% for cat in categories %}
+      {% if cat.is_active %}
+        <a href="{% url cat.url %}" class="wb-cat-card" style="--cat-color:{{ cat.color }}">
+      {% else %}
+        <div class="wb-cat-card soon reveal {% if not forloop.first %}reveal-delay-{{ forloop.counter0 }}{% endif %}" style="--cat-color:{{ cat.color }}">
+      {% endif %}
+
+        <div class="cat-icon">{{ cat.icon }}</div>
+        <div class="cat-name">{{ cat.name_ru }}</div>
+        <div class="cat-count">
+          {% if cat.key == 'restaurants' %}{{ stats.restaurant_count }} заведений{% endif %}
+          {% if cat.key == 'stores' %}{{ stats.store_count }} магазинов{% endif %}
+          {% if cat.coming_soon %}Скоро{% endif %}
         </div>
+        {% if cat.is_active %}<div class="cat-arrow">→</div>{% endif %}
 
-        <h1 class="mt-4 text-white text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
-          {% trans "Выберите ресторан" %}
-        </h1>
+      {% if cat.is_active %}</a>{% else %}</div>{% endif %}
+    {% endfor %}
+  </div>
+</section>
 
-        <p class="mt-3 text-white/85 text-sm sm:text-base leading-relaxed">
-          {% trans "Найдите заведение, откройте меню и оформите доставку/самовывоз. В заведении — заказы по QR со стола." %}
-        </p>
 
-        <!-- SEARCH -->
-        <form method="get" class="mt-6">
-          <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-3 sm:items-center">
 
-            <!-- input -->
-            <div class="relative">
-              <input
-                name="q"
-                value="{{ q }}"
-                placeholder="{% trans 'Поиск ресторана...' %}"
-                class="w-full rounded-2xl bg-white/95 px-4 py-3 pr-12 text-stone-900 placeholder:text-stone-400
-                       ring-1 ring-white/25 focus:outline-none focus:ring-2 focus:ring-white/60
-                       shadow-[0_10px_30px_rgba(0,0,0,.18)]"
-              >
-              <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-stone-400">
-                🔎
-              </span>
-            </div>
+{% if restaurant_cards %}
+<section style="padding:0 48px 80px;max-width:1280px;margin:0 auto;" id="restaurants">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:12px;">
+    <div>
+      <div class="section-tag">Рестораны</div>
+      <h2 class="section-title reveal" style="font-size:clamp(22px,3vw,36px);">Популярные заведения</h2>
+    </div>
+    <a href="{% url 'public_site:restaurants_list' %}"
+       style="font-family:'Unbounded',sans-serif;font-size:12px;font-weight:700;
+              color:var(--accent);text-decoration:none;padding-bottom:2px;
+              border-bottom:1.5px solid rgba(255,77,28,0.3);">
+      Все рестораны →
+    </a>
+  </div>
 
-            <!-- open now -->
-            <label class="inline-flex items-center gap-2 rounded-2xl bg-white/95 px-4 py-3 ring-1 ring-white/25
-                          cursor-pointer select-none shadow-[0_10px_30px_rgba(0,0,0,.12)]">
-              <input type="checkbox" name="open_now" value="1" {% if open_now %}checked{% endif %}
-                     class="h-4 w-4 rounded border-stone-300">
-              <span class="text-sm font-extrabold text-stone-800">{% trans "Открыто сейчас" %}</span>
-            </label>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;">
+    {% for card in restaurant_cards %}
+    <a href="{% url 'public_site:restaurant_contacts' card.obj.slug %}" class="biz-card reveal" style="animation-delay:{{ forloop.counter0|add:1 }}00ms;">
 
-            <!-- button -->
-            <button type="submit"
-                    class="rounded-2xl px-5 py-3 font-extrabold text-white
-                           bg-white/10 ring-1 ring-white/25 hover:bg-white/15
-                           active:scale-[.99] transition
-                           shadow-[0_12px_35px_rgba(0,0,0,.18)]">
-              {% trans "Найти" %}
-            </button>
-
+      <div class="biz-img-wrap">
+        {% if card.obj.logo %}
+          <img src="{{ card.obj.logo.url }}" alt="{% t card.obj 'name' %}" loading="lazy" width="300" height="185">
+        {% else %}
+          <div class="biz-img-placeholder" style="background:linear-gradient(135deg,#FFF1EB,#FFE4D6);">
+            {% t card.obj "name" as rn %}{{ rn|slice:":1" }}
           </div>
-        </form>
+        {% endif %}
+        <div class="biz-overlay"></div>
 
-        <div class="mt-4 text-white/70 text-xs">
-          {% trans "Найдено:" %} <span class="font-semibold text-white/95">{{ cards|length }}</span>
+        <div class="biz-badge {% if card.is_open %}badge-open{% else %}badge-closed{% endif %}">
+          {% if card.is_open %}● Открыто{% else %}● Закрыто{% endif %}
+        </div>
+        <div class="biz-name">{% t card.obj "name" %}</div>
+      </div>
+
+      <div class="biz-footer">
+        {% if card.has_delivery %}
+          <span class="biz-pill">🚚 Доставка</span>
+        {% else %}
+          <span class="biz-pill">🥡 Самовывоз</span>
+        {% endif %}
+        <span style="font-family:'Unbounded',sans-serif;font-size:11px;font-weight:700;color:var(--accent);">
+          Открыть →
+        </span>
+      </div>
+
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+
+
+<div style="background:var(--card);border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+            padding:80px 0;" id="platform">
+  <div class="demo-grid" style="max-width:1280px;margin:0 auto;padding:0 48px;
+              display:grid;grid-template-columns:1fr 1.2fr;gap:80px;align-items:center;">
+
+    {# LEFT: tabs + features #}
+    <div>
+      <div class="section-tag">Как это работает</div>
+      <h2 class="section-title reveal" style="margin-bottom:14px;font-size:clamp(24px,3.5vw,40px);">
+        Для клиента<br>и для бизнеса
+      </h2>
+      <p class="reveal reveal-delay-1" style="color:var(--muted);font-size:14px;line-height:1.7;margin-bottom:28px;max-width:400px;">
+        Webordo — единая точка входа для клиентов и мощный инструмент управления для бизнеса.
+      </p>
+
+      <div class="demo-tabs">
+        <button class="demo-tab active" onclick="switchTab(this,'client')">Для клиента</button>
+        <button class="demo-tab" onclick="switchTab(this,'business')">Для бизнеса</button>
+      </div>
+
+      <div class="feature-list" id="feature-list">
+        <div class="feature-item active">
+          <div class="feature-icon" style="background:rgba(255,77,28,0.1)">🔍</div>
+          <div class="feature-text">
+            <h3>Быстрый поиск</h3>
+            <p>Найди любой бизнес за секунды — по категории, названию или геолокации</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon" style="background:rgba(0,184,150,0.1)">📱</div>
+          <div class="feature-text">
+            <h3>QR-заказ за столом</h3>
+            <p>Сканируй QR и заказывай без ожидания официанта</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon" style="background:rgba(37,99,235,0.1)">📅</div>
+          <div class="feature-text">
+            <h3>Онлайн-бронирование</h3>
+            <p>Столик, запись в салон или тур-пакет прямо из платформы</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon" style="background:rgba(124,58,237,0.1)">💳</div>
+          <div class="feature-text">
+            <h3>Онлайн-оплата</h3>
+            <p>Mbank, O!Pay, Optima Pay или картой — без наличных</p>
+          </div>
         </div>
       </div>
     </div>
-  </section>
 
-  <!-- GRID -->
-  <section class="mt-6">
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-
-      {% for c in cards %}
-        <a href="{% url 'public_site:restaurant_contacts' c.obj.slug %}"
-           class="group relative rounded-[28px] bg-white/95 backdrop-blur
-                  ring-1 ring-black/5
-                  shadow-[0_14px_42px_rgba(15,23,42,.10)]
-                  hover:shadow-[0_24px_80px_rgba(15,23,42,.18)]
-                  transition overflow-hidden">
-
-          <!-- top image -->
-          <div class="relative h-[190px] sm:h-[210px] lg:h-[240px] bg-stone-100 overflow-hidden">
-            {% if c.obj.logo %}
-              <img src="{{ c.obj.logo.url }}"
-                   alt="{% t c.obj 'name' %}"
-                   class="h-full w-full object-cover group-hover:scale-[1.05] transition duration-300"
-                   loading="lazy" decoding="async">
-            {% else %}
-              <div class="h-full w-full flex items-center justify-center bg-gradient-to-br from-stone-200 to-stone-100">
-                {% t c.obj "name" as rn %}
-                <div class="text-7xl font-extrabold text-stone-500">
-                  {{ rn|slice:":1" }}
+    {# RIGHT: phone #}
+    <div class="phone-wrap reveal reveal-delay-2">
+      <div class="phone">
+        <div style="background:#111;height:8px;"></div>
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="app-header">
+            <div class="app-logo">Webordo</div>
+            <div style="font-size:17px;">🔔</div>
+          </div>
+          <div class="app-search">🔍 Рестораны, магазины...</div>
+          <div class="app-cats">
+            <div class="app-cat sel">🍽️ Еда</div>
+            <div class="app-cat">🛍️ Магазины</div>
+            <div class="app-cat">🏨 Отели</div>
+            <div class="app-cat">♻️ Эко</div>
+          </div>
+          <div class="app-sec">Рядом с вами</div>
+          <div class="app-cards">
+            {% for card in restaurant_cards|slice:":3" %}
+            <div class="app-card">
+              <div class="app-card-img">
+                {% if card.obj.logo %}
+                  <img src="{{ card.obj.logo.url }}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:9px;">
+                {% else %}🍽️{% endif %}
+              </div>
+              <div>
+                <div class="app-card-name">{% t card.obj "name" %}</div>
+                <div class="app-card-meta">
+                  <span>{% if card.is_open %}✅ Открыт{% else %}🔴 Закрыт{% endif %}</span>
                 </div>
               </div>
-            {% endif %}
-
-            <!-- readable overlay -->
-            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
-
-            <!-- open badge -->
-            <div class="absolute top-4 right-4">
-              {% if c.is_open %}
-                <span class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px]
-                             bg-emerald-500/90 text-white backdrop-blur ring-1 ring-white/20">
-                  <span class="h-2 w-2 rounded-full bg-white"></span>
-                  {% trans "Открыто" %}
-                </span>
-              {% else %}
-                <span class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px]
-                             bg-stone-900/70 text-white backdrop-blur ring-1 ring-white/20">
-                  <span class="h-2 w-2 rounded-full bg-white/80"></span>
-                  {% trans "Закрыто" %}
-                </span>
-              {% endif %}
+              <div class="app-card-badge">{% if card.has_delivery %}Доставка{% else %}Самовывоз{% endif %}</div>
             </div>
-
-            <!-- title -->
-            <div class="absolute left-0 right-0 bottom-0 p-4">
-              <h3 class="text-white text-xl sm:text-2xl font-extrabold leading-tight drop-shadow">
-                {% t c.obj "name" %}
-              </h3>
-              <div class="mt-1 text-white/85 text-sm">
-                {% trans "Филиалов" %}: <b class="text-white">{{ c.branches_count }}</b>
-                {% if c.hours_text %} · <span class="font-semibold">⏰ {{ c.hours_text }}</span>{% endif %}
-              </div>
+            {% empty %}
+            <div class="app-card">
+              <div class="app-card-img">🍕</div>
+              <div><div class="app-card-name">Pizza House</div><div class="app-card-meta"><span>⭐ 4.8</span></div></div>
+              <div class="app-card-badge">Открыт</div>
             </div>
+            <div class="app-card">
+              <div class="app-card-img">🍜</div>
+              <div><div class="app-card-name">Арашан</div><div class="app-card-meta"><span>⭐ 4.6</span></div></div>
+              <div class="app-card-badge">Открыт</div>
+            </div>
+            {% endfor %}
           </div>
-
-          <!-- body -->
-          <div class="p-4">
-            <div class="flex flex-wrap gap-2 text-[12px] text-stone-700">
-              {% if c.has_delivery %}
-                <span class="inline-flex items-center rounded-full px-3 py-1 bg-white ring-1 ring-stone-200">
-                  🚚 {% trans "Доставка" %}
-                </span>
-                {% if c.min_order != None %}
-                  <span class="inline-flex items-center rounded-full px-3 py-1 bg-white ring-1 ring-stone-200">
-                    {% trans "Мин." %} <b class="ml-1 text-stone-900">{{ c.min_order }}</b>
-                  </span>
-                {% endif %}
-                {% if c.min_fee != None %}
-                  <span class="inline-flex items-center rounded-full px-3 py-1 bg-white ring-1 ring-stone-200">
-                    {% trans "Дост." %} <b class="ml-1 text-stone-900">{{ c.min_fee }}</b>
-                  </span>
-                {% endif %}
-              {% else %}
-                <span class="inline-flex items-center rounded-full px-3 py-1 bg-white ring-1 ring-stone-200">
-                  🥡 {% trans "Самовывоз" %}
-                </span>
-              {% endif %}
-            </div>
-
-            <div class="mt-4 flex items-center justify-between">
-              <span class="text-sm font-extrabold text-stone-900 group-hover:translate-x-0.5 transition">
-                {% trans "Открыть" %} →
-              </span>
-              <span class="text-xs text-stone-500">{% trans "Меню и заказы" %}</span>
-            </div>
-          </div>
-
-          <!-- subtle hover shine -->
-          <div class="pointer-events-none absolute inset-0 opacity-0 group-hover:opacity-100 transition">
-            <div class="absolute -inset-10 rotate-12"
-                 style="background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);"></div>
-          </div>
-
-        </a>
-      {% empty %}
-        <div class="rounded-3xl bg-white ring-1 ring-stone-200 p-6 text-stone-600">
-          {% trans "Ничего не найдено." %}
         </div>
-      {% endfor %}
+      </div>
     </div>
-  </section>
-
+  </div>
 </div>
+
+
+
+{% if store_cards %}
+<section style="padding:80px 48px;max-width:1280px;margin:0 auto;" id="stores">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:12px;">
+    <div>
+      <div class="section-tag">Магазины</div>
+      <h2 class="section-title reveal" style="font-size:clamp(22px,3vw,36px);">Популярные магазины</h2>
+    </div>
+    <a href="{% url 'shops:store_list' %}"
+       style="font-family:'Unbounded',sans-serif;font-size:12px;font-weight:700;
+              color:var(--accent2);text-decoration:none;padding-bottom:2px;
+              border-bottom:1.5px solid rgba(255,138,0,0.3);">
+      Все магазины →
+    </a>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;">
+    {% for card in store_cards %}
+    <a href="{% url 'shops:store_detail' card.obj.slug %}" class="biz-card reveal">
+      <div class="biz-img-wrap">
+        {% if card.obj.logo %}
+          <img src="{{ card.obj.logo.url }}" alt="{% t card.obj 'name' %}" loading="lazy" width="300" height="185">
+        {% else %}
+          <div class="biz-img-placeholder" style="background:linear-gradient(135deg,#FFF7ED,#FEF3C7);">
+            {% t card.obj "name" as sn %}{{ sn|slice:":1" }}
+          </div>
+        {% endif %}
+        <div class="biz-overlay"></div>
+        <div class="biz-name">{% t card.obj "name" %}</div>
+      </div>
+      <div class="biz-footer">
+        {% if card.has_delivery %}
+          <span class="biz-pill">🚚 Доставка</span>
+        {% else %}
+          <span class="biz-pill">🛒 В магазине</span>
+        {% endif %}
+        <span style="font-family:'Unbounded',sans-serif;font-size:11px;font-weight:700;color:var(--accent2);">
+          Каталог →
+        </span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+
+<section style="padding:80px 48px;max-width:1280px;margin:0 auto;" id="qr">
+  <div class="section-tag">Уникальная функция</div>
+  <h2 class="section-title reveal">QR-столы для ресторанов</h2>
+  <p class="section-sub reveal reveal-delay-1">
+    Каждый стол — уникальная QR-ссылка. Гость сканирует и делает заказ без ожидания
+  </p>
+
+  <div class="qr-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:48px;">
+
+    <div class="qr-big-card reveal">
+      <span style="font-size:64px;margin-bottom:18px;display:block;">📲</span>
+      <h3>Заказ за 30 секунд</h3>
+      <p>Гость садится, сканирует QR на столе, открывает меню и делает заказ. Никакого ожидания — заказ мгновенно летит на кухню.</p>
+      <div class="qr-step"><div class="qr-step-num">1</div><span>Гость сканирует QR на столе</span></div>
+      <div class="qr-step"><div class="qr-step-num">2</div><span>Открывается меню с фото и ценами</span></div>
+      <div class="qr-step"><div class="qr-step-num">3</div><span>Заказывает и платит онлайн</span></div>
+      <div class="qr-step"><div class="qr-step-num">4</div><span>Кухня получает заказ мгновенно</span></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="mini-card reveal reveal-delay-1">
+        <span style="font-size:26px;">⚡</span>
+        <h4>Скорость обслуживания</h4>
+        <p>Время от заказа до кухни — с 7 минут до 40 секунд</p>
+        <div class="tag-pill" style="background:rgba(0,184,150,0.1);color:var(--teal)">↑ В 10 раз быстрее</div>
+      </div>
+      <div class="mini-card reveal reveal-delay-2">
+        <span style="font-size:26px;">💰</span>
+        <h4>Рост среднего чека</h4>
+        <p>Визуальное меню с фото увеличивает средний чек на 23%</p>
+        <div class="tag-pill" style="background:rgba(37,99,235,0.1);color:var(--blue)">+23% к обороту</div>
+      </div>
+      <div class="mini-card reveal reveal-delay-3">
+        <span style="font-size:26px;">📊</span>
+        <h4>Аналитика в реальном времени</h4>
+        <p>Популярные блюда, часы пик, выручка — всё в одном экране</p>
+        <div class="tag-pill" style="background:rgba(255,138,0,0.1);color:var(--accent2)">Живая статистика</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+{% endblock %}
+
+
+{% block page_scripts %}
+<script>
+// ── COUNTER ANIMATION ──
+function animCounter(el, target) {
+  let n = 0;
+  const step = target / (1600 / 16);
+  const t = setInterval(() => {
+    n += step;
+    if(n >= target) { n = target; clearInterval(t); }
+    el.textContent = target > 99 ? Math.floor(n) + '+' : Math.floor(n) + '+';
+  }, 16);
+}
+
+const sObs = new IntersectionObserver(entries => {
+  if(entries[0].isIntersecting) {
+    document.querySelectorAll('[data-target]').forEach(el => animCounter(el, +el.dataset.target));
+    sObs.disconnect();
+  }
+});
+const statsBar = document.querySelector('.wb-stats');
+if(statsBar) sObs.observe(statsBar);
+
+// ── DEMO TABS ──
+const tabContent = {
+  client: [
+    { icon:'🔍', bg:'rgba(255,77,28,0.1)',    t:'Быстрый поиск',         d:'Найди любой бизнес за секунды — по категории, названию или геолокации' },
+    { icon:'📱', bg:'rgba(0,184,150,0.1)',     t:'QR-заказ за столом',    d:'Сканируй QR и заказывай без ожидания официанта' },
+    { icon:'📅', bg:'rgba(37,99,235,0.1)',     t:'Онлайн-бронирование',   d:'Столик, запись в салон или тур-пакет прямо из платформы' },
+    { icon:'💳', bg:'rgba(124,58,237,0.1)',    t:'Онлайн-оплата',         d:'Mbank, O!Pay, Optima Pay или картой — без наличных' },
+  ],
+  business: [
+    { icon:'📊', bg:'rgba(0,184,150,0.1)',     t:'Аналитика продаж',      d:'Выручка, популярные позиции, часы пик в реальном времени' },
+    { icon:'🗂️', bg:'rgba(37,99,235,0.1)',     t:'Управление каталогом',  d:'Обновляй цены, фото и наличие без программистов' },
+    { icon:'🔔', bg:'rgba(255,138,0,0.1)',     t:'Заказы в реальном времени', d:'Все заказы мгновенно в панели с уведомлением в Telegram' },
+    { icon:'🎯', bg:'rgba(219,39,119,0.1)',    t:'Акции и продвижение',   d:'Запускай скидки и push-уведомления для клиентов' },
+  ],
+};
+
+function switchTab(btn, tab) {
+  document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const list = document.getElementById('feature-list');
+  list.style.opacity = '0';
+  setTimeout(() => {
+    list.innerHTML = tabContent[tab].map((f, i) => `
+      <div class="feature-item ${i===0?'active':''}">
+        <div class="feature-icon" style="background:${f.bg}">${f.icon}</div>
+        <div class="feature-text"><h3>${f.t}</h3><p>${f.d}</p></div>
+      </div>
+    `).join('');
+    list.style.opacity = '1';
+  }, 180);
+}
+</script>
 {% endblock %}

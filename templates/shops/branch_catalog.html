@@ -3,359 +3,894 @@
 
 {% block title %}{{ branch.name_ru }} — {{ store.name_ru }}{% endblock %}
 
-{% block content %}
+{% block head_extra %}
 <style>
-  /* оранжевый фон под наш шаблон (base уже оранжевый, но на всякий) */
-  body{
-    background: radial-gradient(1200px 600px at 20% 0%, rgba(255,255,255,.18), transparent 60%),
-                radial-gradient(900px 500px at 90% 10%, rgba(255,255,255,.12), transparent 55%),
-                linear-gradient(180deg, #FF7A00 0%, #FF6A00 55%, #FF5A00 100%) !important;
-    background-attachment: fixed !important;
+  :root{
+    --sc-bg:#f6f7fb;
+    --sc-card:#ffffff;
+    --sc-card-2:#fbfbfd;
+    --sc-text:#101828;
+    --sc-muted:#667085;
+    --sc-border:rgba(16,24,40,.08);
+    --sc-border-strong:rgba(16,24,40,.14);
+    --sc-shadow:0 12px 34px rgba(16,24,40,.08);
+    --sc-shadow-lg:0 24px 60px rgba(16,24,40,.14);
+    --sc-dark:#0d1117;
+    --sc-dark-2:#1c2535;
+    --sc-accent:#ff6a1a;
+    --sc-accent-2:#ff8a00;
+    --sc-glow:rgba(255,106,26,.28);
+    --sc-green:#07b488;
+    --sc-green-bg:rgba(7,180,136,.12);
+    --sc-green-br:rgba(7,180,136,.2);
   }
 
-  /* hide scrollbars in categories */
-  .no-scrollbar::-webkit-scrollbar{ display:none; }
-  .no-scrollbar{ -ms-overflow-style:none; scrollbar-width:none; }
+  html{ scroll-behavior:smooth; }
+  body{ background:var(--sc-bg) !important; }
 
-  /* cart fab bigger */
-  .shop-cart-fab{
-    position: fixed;
-    right: 16px;
-    bottom: 16px;
-    z-index: 9998;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 16px;
-    border-radius: 20px;
-    background: rgba(15,23,42,.95);
-    color: #fff;
-    text-decoration:none;
-    box-shadow: 0 18px 55px rgba(0,0,0,.28);
-    border: 1px solid rgba(255,255,255,.12);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    max-width: min(92vw, 420px);
-    transition: transform .12s ease, opacity .12s ease, box-shadow .12s ease;
-  }
-  .shop-cart-fab:hover{ transform: translateY(-2px); box-shadow: 0 22px 60px rgba(0,0,0,.30); }
-  .shop-cart-fab.hide{ opacity:0; pointer-events:none; transform: translateY(10px); }
+  .sc-page{ max-width:1200px; margin:0 auto; }
 
-  .shop-cart-fab__icon{
-    width: 44px; height: 44px;
-    border-radius: 16px;
-    background: rgba(255,255,255,.12);
-    display:flex; align-items:center; justify-content:center;
-    flex: 0 0 auto;
-    font-size: 20px;
+  .sc-hero{
+    position:relative;
+    overflow:hidden;
+    min-height:330px;
+    border-radius:0 0 30px 30px;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+    background:linear-gradient(135deg,var(--sc-dark),var(--sc-dark-2));
   }
-  .shop-cart-fab__badge{
-    padding: 7px 10px;
-    border-radius: 999px;
-    background: rgba(255,255,255,.14);
-    font-weight: 900;
-    font-size: 12px;
-    min-width: 30px;
-    text-align:center;
-    flex:0 0 auto;
+  .sc-hero-bg,
+  .sc-hero-photo,
+  .sc-hero-overlay,
+  .sc-hero-dots{ position:absolute; inset:0; }
+  .sc-hero-photo{
+    background-size:cover;
+    background-position:center;
+    transform:scale(1.02);
+    transition:transform 6s ease;
   }
-  .cart-pop{ animation: cartpop .22s ease; }
-  @keyframes cartpop{ 0%{transform:scale(1)} 60%{transform:scale(1.12)} 100%{transform:scale(1)} }
-
-  /* scroll to top btn */
-  .to-top{
-    position: fixed;
-    right: 16px;
-    bottom: 86px;
-    z-index: 9997;
-    width: 52px; height: 52px;
-    border-radius: 18px;
-    background: rgba(255,255,255,.92);
-    border: 1px solid rgba(15,23,42,.10);
-    box-shadow: 0 14px 40px rgba(0,0,0,.18);
-    display: inline-flex;
-    align-items:center;
-    justify-content:center;
-    text-decoration:none;
-    font-size: 18px;
-    transition: transform .12s ease, opacity .12s ease;
-    opacity: 0;
-    pointer-events: none;
+  .sc-hero:hover .sc-hero-photo{ transform:scale(1.06); }
+  .sc-hero-overlay{
+    background:
+      linear-gradient(to top, rgba(0,0,0,.84) 0%, rgba(0,0,0,.48) 48%, rgba(0,0,0,.18) 100%),
+      radial-gradient(ellipse 72% 54% at 0% 100%, rgba(255,106,26,.2), transparent 58%),
+      radial-gradient(ellipse 46% 40% at 100% 0%, rgba(7,180,136,.14), transparent 58%);
   }
-  .to-top.show{ opacity: 1; pointer-events: auto; }
-  .to-top:hover{ transform: translateY(-2px); }
-
-  /* active category pill */
-  .cat-pill{
+  .sc-hero-dots{
+    background-image: radial-gradient(circle, rgba(255,255,255,.05) 1px, transparent 1px);
+    background-size: 24px 24px;
+    mask-image: radial-gradient(ellipse 100% 100% at 100% 0%, black 8%, transparent 68%);
+  }
+  .sc-hero-content{
+    position:relative;
+    z-index:2;
+    padding:26px 32px 28px;
+  }
+  .sc-back-btn{
     display:inline-flex;
     align-items:center;
     gap:8px;
-    padding: 10px 14px;
-    border-radius: 999px;
-    background: rgba(255,255,255,.92);
-    color:#0f172a;
-    font-weight: 900;
-    font-size: 13px;
-    border: 1px solid rgba(15,23,42,.10);
-    white-space: nowrap;
-    transition: .12s ease;
+    padding:8px 16px;
+    border-radius:999px;
+    border:1px solid rgba(255,255,255,.16);
+    background:rgba(255,255,255,.1);
+    color:rgba(255,255,255,.82);
+    text-decoration:none;
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    font-size:12px;
+    font-weight:700;
+    margin-bottom:20px;
+    cursor:pointer;
   }
-  .cat-pill:hover{ transform: translateY(-1px); }
-  .cat-pill.active{
-    background: rgba(15,23,42,.95);
-    color: #fff;
-    border-color: rgba(255,255,255,.12);
-  }
+  .sc-back-btn:hover{ color:#fff; background:rgba(255,255,255,.16); }
 
-  /* toast */
-  .toast-wrap{
-    position: fixed;
-    left: 50%;
-    bottom: 18px;
-    transform: translateX(-50%);
-    z-index: 9999;
-    pointer-events:none;
+  .sc-hero-row{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:20px;
+    flex-wrap:wrap;
   }
-  .toast{
-    pointer-events:auto;
-    background: rgba(15,23,42,.92);
+  .sc-hero-main{ max-width:760px; }
+  .sc-kicker{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:7px 12px;
+    border-radius:999px;
+    background:rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.14);
+    color:rgba(255,255,255,.82);
+    font-size:12px;
+    font-weight:700;
+    margin-bottom:14px;
+  }
+  .sc-title{
+    font-family:'Unbounded',sans-serif;
+    font-size:clamp(26px, 4vw, 46px);
+    line-height:1;
+    letter-spacing:-1.8px;
+    font-weight:900;
     color:#fff;
-    padding: 12px 14px;
-    border-radius: 14px;
-    box-shadow: 0 16px 40px rgba(0,0,0,.25);
+    margin:0 0 12px;
+  }
+  .sc-address{
+    color:rgba(255,255,255,.86);
+    font-size:14px;
+    line-height:1.6;
+    max-width:62ch;
+  }
+  .sc-hero-meta{
     display:flex;
     align-items:center;
     gap:10px;
-    opacity:0;
-    transform: translateY(10px);
-    transition: .18s ease;
-    font-size: 14px;
-    max-width: min(92vw, 520px);
+    flex-wrap:wrap;
+    margin-top:16px;
   }
-  .toast.show{ opacity:1; transform: translateY(0); }
-  .toast .dot{
-    width:10px;height:10px;border-radius:999px;
-    background:#22c55e;
-    box-shadow: 0 0 0 6px rgba(34,197,94,.18);
+  .sc-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:7px 14px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:700;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.1);
+    color:rgba(255,255,255,.82);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+  }
+  .sc-pill.open{ background:var(--sc-green-bg); color:#9dffe7; border-color:var(--sc-green-br); }
+  .sc-pill.mode{ background:rgba(255,138,0,.16); color:#ffd29f; border-color:rgba(255,138,0,.24); }
+  .sc-pill-dot{ width:7px; height:7px; border-radius:50%; background:currentColor; }
+
+  .sc-hero-actions{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    justify-content:flex-end;
+  }
+  .sc-cart-btn,
+  .sc-call-btn,
+  .sc-wa-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-height:50px;
+    padding:0 18px;
+    border-radius:18px;
+    text-decoration:none;
+    font-size:13px;
+    font-weight:800;
+    transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
+    white-space:nowrap;
+  }
+  .sc-cart-btn:hover,
+  .sc-call-btn:hover,
+  .sc-wa-btn:hover{ transform:translateY(-2px); }
+  .sc-call-btn{
+    background:rgba(255,255,255,.12);
+    color:#fff;
+    border:1px solid rgba(255,255,255,.16);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+  }
+  .sc-wa-btn{
+    background:#25D366;
+    color:#fff;
+    box-shadow:0 10px 28px rgba(37,211,102,.22);
+  }
+  .sc-cart-btn{
+    background:linear-gradient(135deg,var(--sc-accent),var(--sc-accent-2));
+    color:#fff;
+    box-shadow:0 12px 28px var(--sc-glow);
+  }
+  .sc-cart-btn-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:28px;
+    height:28px;
+    padding:0 9px;
+    border-radius:999px;
+    background:rgba(255,255,255,.18);
+    font-size:12px;
+    font-weight:900;
+  }
+
+  .sc-info-strip{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0,1fr));
+    gap:14px;
+    margin:18px 20px 0;
+  }
+  .sc-info-card{
+    background:rgba(255,255,255,.92);
+    border:1px solid var(--sc-border);
+    border-radius:24px;
+    padding:16px 18px;
+    box-shadow:var(--sc-shadow);
+  }
+  .sc-info-label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:#98a2b3;
+    font-weight:800;
+  }
+  .sc-info-value{
+    margin-top:7px;
+    font-size:15px;
+    font-weight:900;
+    color:var(--sc-text);
+    line-height:1.45;
+  }
+
+  .sc-cats-sticky{
+    position:sticky;
+    top:64px;
+    z-index:100;
+    background:rgba(246,247,251,.88);
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+    border-bottom:1px solid rgba(16,24,40,.06);
+    margin-top:18px;
+  }
+  .sc-cats-inner{
+    max-width:1200px;
+    margin:0 auto;
+    padding:10px 20px;
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    scrollbar-width:none;
+  }
+  .sc-cats-inner::-webkit-scrollbar{ display:none; }
+  .sc-cat-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    white-space:nowrap;
+    padding:9px 16px;
+    border-radius:999px;
+    background:#fff;
+    border:1.5px solid var(--sc-border);
+    color:var(--sc-muted);
+    text-decoration:none;
+    font-size:13px;
+    font-weight:800;
+    transition:all .18s ease;
+    flex-shrink:0;
+  }
+  .sc-cat-btn:hover{ color:var(--sc-text); border-color:var(--sc-border-strong); transform:translateY(-1px); }
+  .sc-cat-btn.active{
+    background:var(--sc-text);
+    color:#fff;
+    border-color:var(--sc-text);
+    box-shadow:0 10px 28px rgba(16,24,40,.14);
+  }
+
+  .sc-content{
+    max-width:1200px;
+    margin:0 auto;
+    padding:28px 20px 120px;
+  }
+  .sc-cat-section{ scroll-margin-top:128px; margin-bottom:42px; }
+  .sc-cat-header{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-bottom:18px;
+  }
+  .sc-cat-line{ flex:1; height:1px; background:rgba(16,24,40,.08); }
+  .sc-cat-title{
+    font-family:'Unbounded',sans-serif;
+    font-size:clamp(15px, 2.3vw, 22px);
+    font-weight:800;
+    letter-spacing:-.8px;
+    color:var(--sc-text);
+    white-space:nowrap;
+  }
+  .sc-cat-count{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:28px;
+    height:28px;
+    padding:0 10px;
+    border-radius:999px;
+    background:rgba(255,106,26,.1);
+    color:var(--sc-accent);
+    border:1px solid rgba(255,106,26,.16);
+    font-size:11px;
+    font-weight:900;
+  }
+
+  .sc-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));
+    gap:18px;
+  }
+  .sc-card{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    background:var(--sc-card);
+    border:1.5px solid var(--sc-border);
+    border-radius:24px;
+    overflow:hidden;
+    box-shadow:var(--sc-shadow);
+    transition:transform .24s ease, box-shadow .24s ease, border-color .18s ease;
+  }
+  .sc-card:hover{
+    transform:translateY(-5px);
+    box-shadow:var(--sc-shadow-lg);
+    border-color:rgba(16,24,40,.12);
+  }
+  .sc-card-media{
+    position:relative;
+    height:178px;
+    background:#eef2f6;
+    overflow:hidden;
+  }
+  .sc-card-media img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+    transition:transform .35s ease;
+  }
+  .sc-card:hover .sc-card-media img{ transform:scale(1.06); }
+  .sc-card-placeholder{
+    width:100%;
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:52px;
+    background:linear-gradient(145deg,#fff8f2,#ffe8d6);
+    color:#f08b44;
+  }
+  .sc-media-grad{
+    position:absolute;
+    inset:0;
+    background:linear-gradient(to bottom, transparent 46%, rgba(0,0,0,.28) 100%);
+  }
+  .sc-price-badge,
+  .sc-stock-badge{
+    position:absolute;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 11px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:900;
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+  }
+  .sc-price-badge{
+    right:10px;
+    bottom:10px;
+    background:rgba(0,0,0,.58);
+    color:#fff;
+    border:1px solid rgba(255,255,255,.14);
+  }
+  .sc-stock-badge{
+    left:10px;
+    top:10px;
+    background:rgba(255,255,255,.92);
+    color:var(--sc-text);
+    border:1px solid rgba(16,24,40,.08);
+  }
+  .sc-stock-badge.out{
+    background:rgba(13,17,23,.72);
+    color:#fff;
+    border-color:rgba(255,255,255,.12);
+  }
+
+  .sc-card-body{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    padding:14px 15px 16px;
+    flex:1;
+  }
+  .sc-card-top{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+  .sc-card-title{
+    font-family:'Unbounded',sans-serif;
+    font-size:13px;
+    line-height:1.32;
+    font-weight:700;
+    color:var(--sc-text);
+    letter-spacing:-.28px;
+  }
+  .sc-card-cat{
+    flex-shrink:0;
+    padding:5px 9px;
+    border-radius:999px;
+    background:#f2f4f7;
+    color:#475467;
+    font-size:10px;
+    font-weight:800;
+    border:1px solid rgba(16,24,40,.06);
+  }
+  .sc-card-desc{
+    font-size:11.5px;
+    line-height:1.45;
+    color:var(--sc-muted);
+    display:-webkit-box;
+    -webkit-line-clamp:3;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+    min-height:50px;
+  }
+  .sc-card-footer{
+    margin-top:auto;
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:10px;
+  }
+  .sc-price-wrap{ min-width:0; }
+  .sc-price-label{
+    font-size:10px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:#98a2b3;
+  }
+  .sc-price-value{
+    margin-top:4px;
+    font-family:'Unbounded',sans-serif;
+    font-size:18px;
+    line-height:1;
+    font-weight:800;
+    color:var(--sc-text);
+    letter-spacing:-.5px;
+  }
+  .sc-stock-note{
+    margin-top:5px;
+    font-size:11px;
+    color:var(--sc-muted);
+    line-height:1.35;
+  }
+  .sc-add-btn,
+  .sc-sold-out{
+    min-width:116px;
+    min-height:42px;
+    padding:0 14px;
+    border-radius:15px;
+    font-size:12px;
+    font-weight:900;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .sc-add-btn{
+    border:none;
+    cursor:pointer;
+    color:#fff;
+    background:linear-gradient(135deg,var(--sc-accent),var(--sc-accent-2));
+    box-shadow:0 10px 24px var(--sc-glow);
+    transition:transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+  }
+  .sc-add-btn:hover{ transform:translateY(-1px); box-shadow:0 14px 30px var(--sc-glow); }
+  .sc-add-btn.loading{ opacity:.75; pointer-events:none; }
+  .sc-add-btn.pulse{ animation:scPulse .3s ease; }
+  @keyframes scPulse{ 0%{transform:scale(1)} 50%{transform:scale(1.09)} 100%{transform:scale(1)} }
+
+  .sc-sold-out{
+    background:#f3f4f6;
+    color:#6b7280;
+    border:1px solid #e5e7eb;
+  }
+
+  .sc-empty{
+    text-align:center;
+    background:#fff;
+    border:1.5px solid var(--sc-border);
+    border-radius:24px;
+    padding:56px 24px;
+    box-shadow:var(--sc-shadow);
+  }
+  .sc-empty-ico{ font-size:56px; margin-bottom:14px; }
+  .sc-empty-title{
+    font-family:'Unbounded',sans-serif;
+    font-size:18px;
+    font-weight:800;
+    color:var(--sc-text);
+    letter-spacing:-.5px;
+    margin-bottom:8px;
+  }
+  .sc-empty-sub{ font-size:14px; color:var(--sc-muted); }
+
+  .sc-cart-fab{
+    position:fixed;
+    left:50%;
+    bottom:24px;
+    transform:translateX(-50%);
+    z-index:9000;
+    display:inline-flex;
+    align-items:center;
+    gap:14px;
+    min-width:290px;
+    max-width:min(92vw, 480px);
+    padding:14px 22px;
+    border-radius:22px;
+    background:linear-gradient(135deg,var(--sc-dark),var(--sc-dark-2));
+    color:#fff;
+    text-decoration:none;
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 18px 50px rgba(0,0,0,.32);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    transition:transform .2s ease, opacity .2s ease, box-shadow .2s ease;
+  }
+  .sc-cart-fab:hover{ transform:translateX(-50%) translateY(-3px); box-shadow:0 24px 60px rgba(0,0,0,.38); }
+  .sc-cart-fab.hide{ opacity:0; pointer-events:none; transform:translateX(-50%) translateY(12px); }
+  .sc-cart-icon{
+    width:44px;
+    height:44px;
+    border-radius:15px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.12);
+    flex-shrink:0;
+    font-size:20px;
+  }
+  .sc-cart-info{ flex:1; min-width:0; }
+  .sc-cart-title{
+    font-size:11px;
+    font-weight:700;
+    color:rgba(255,255,255,.54);
+    letter-spacing:.08em;
+    text-transform:uppercase;
+  }
+  .sc-cart-total{
+    margin-top:2px;
+    font-family:'Unbounded',sans-serif;
+    font-size:14px;
+    font-weight:800;
+    color:#fff;
+  }
+  .sc-cart-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:6px 14px;
+    border-radius:999px;
+    background:linear-gradient(135deg,var(--sc-accent),var(--sc-accent-2));
+    color:#fff;
+    font-size:12px;
+    font-weight:900;
+    font-family:'Unbounded',sans-serif;
+    box-shadow:0 10px 22px var(--sc-glow);
+    flex-shrink:0;
+  }
+  .sc-badge-pop{ animation:scBadgePop .24s ease; }
+  @keyframes scBadgePop{ 0%{transform:scale(1)} 50%{transform:scale(1.14)} 100%{transform:scale(1)} }
+
+  .sc-top-btn{
+    position:fixed;
+    right:24px;
+    bottom:104px;
+    z-index:8999;
+    width:50px;
+    height:50px;
+    border:none;
+    cursor:pointer;
+    border-radius:16px;
+    background:#fff;
+    color:var(--sc-text);
+    box-shadow:0 12px 34px rgba(16,24,40,.16);
+    border:1px solid rgba(16,24,40,.08);
+    transition:all .18s ease;
+  }
+  .sc-top-btn:hover{ transform:translateY(-2px); }
+  .sc-top-btn.hide{ opacity:0; pointer-events:none; transform:translateY(8px); }
+
+  .sc-toast-wrap{
+    position:fixed;
+    top:82px;
+    right:20px;
+    z-index:9999;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    pointer-events:none;
+  }
+  .sc-toast{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    max-width:280px;
+    padding:12px 16px;
+    border-radius:14px;
+    background:rgba(13,17,23,.94);
+    color:#fff;
+    font-size:13px;
+    font-weight:700;
+    box-shadow:0 14px 36px rgba(0,0,0,.24);
+    border:1px solid rgba(255,255,255,.1);
+    opacity:0;
+    transform:translateX(14px);
+    transition:all .22s ease;
+  }
+  .sc-toast.show{ opacity:1; transform:translateX(0); }
+  .sc-toast-dot{ width:8px; height:8px; border-radius:50%; background:var(--sc-green); flex-shrink:0; }
+
+  @media (max-width: 960px){
+    .sc-info-strip{ grid-template-columns:1fr; margin-left:16px; margin-right:16px; }
+    .sc-hero-content{ padding:22px 18px 22px; }
+    .sc-hero-actions{ justify-content:flex-start; }
+  }
+
+  @media (max-width: 768px){
+    .sc-hero{ min-height:360px; border-radius:0 0 24px 24px; }
+    .sc-title{ font-size:28px; }
+    .sc-cats-sticky{ top:56px; }
+    .sc-cats-inner{ padding:9px 14px; }
+    .sc-content{ padding:22px 14px 120px; }
+    .sc-grid{ grid-template-columns:repeat(auto-fill, minmax(168px,1fr)); gap:12px; }
+    .sc-card-media{ height:148px; }
+    .sc-card-body{ padding:12px 12px 14px; }
+    .sc-card-desc{ min-height:44px; -webkit-line-clamp:2; }
+    .sc-add-btn,.sc-sold-out{ min-width:94px; padding:0 12px; }
+    .sc-cart-fab{ min-width:260px; padding:12px 18px; }
+  }
+
+  @media (max-width: 480px){
+    .sc-hero-content{ padding:18px 14px 18px; }
+    .sc-hero-row{ gap:16px; }
+    .sc-hero-actions{ width:100%; display:grid; grid-template-columns:1fr 1fr; }
+    .sc-cart-btn{ grid-column:1 / -1; }
+    .sc-grid{ grid-template-columns:repeat(2,1fr); gap:10px; }
+    .sc-card-media{ height:132px; }
+    .sc-card-footer{ flex-direction:column; align-items:stretch; }
+    .sc-add-btn,.sc-sold-out{ width:100%; }
+    .sc-top-btn{ right:14px; bottom:96px; }
+    .sc-toast-wrap{ right:12px; top:76px; }
   }
 </style>
+{% endblock %}
 
-<div class="max-w-6xl mx-auto px-4 py-6">
+{% block content %}
+<div class="sc-toast-wrap" id="scToastWrap" aria-live="polite"></div>
 
-  <!-- HERO -->
-  <section class="rounded-3xl overflow-hidden ring-1 ring-white/20 shadow-[0_18px_55px_rgba(0,0,0,.18)]">
-    <div class="relative bg-white/10 backdrop-blur p-5 sm:p-7">
-      <div class="absolute inset-0 pointer-events-none"
-           style="background: radial-gradient(circle at 15% 10%, rgba(255,255,255,.18), transparent 55%),
-                               radial-gradient(circle at 90% 20%, rgba(255,255,255,.12), transparent 50%);"></div>
+<div class="sc-page">
+  <section class="sc-hero">
+    {% if branch.cover_photo %}
+      <div class="sc-hero-photo" style="background-image:url('{{ branch.cover_photo.url }}');"></div>
+    {% else %}
+      <div class="sc-hero-bg"></div>
+    {% endif %}
+    <div class="sc-hero-overlay"></div>
+    <div class="sc-hero-dots"></div>
 
-      <div class="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div class="flex items-center gap-3 min-w-0">
-          <!-- avatar -->
-          <div class="w-14 h-14 rounded-full overflow-hidden ring-2 ring-white/50 bg-white/80 flex items-center justify-center flex-shrink-0">
-            {% if branch.cover_photo %}
-              <img src="{{ branch.cover_photo.url }}" alt="" class="w-full h-full object-cover" loading="lazy" decoding="async">
-            {% else %}
-              <span class="font-extrabold text-stone-700">{{ branch.name_ru|slice:":1" }}</span>
-            {% endif %}
-          </div>
+    <div class="sc-hero-content">
+      <a class="sc-back-btn" href="#" onclick="history.back(); return false;">← {% trans "Назад" %}</a>
 
-          <div class="min-w-0">
-            <div class="text-white/80 text-xs font-semibold">
-              {{ store.name_ru }} ·
-              {% if mode == "delivery" %}🚚 {% trans "Доставка" %}{% else %}🏬 {% trans "В магазине" %}{% endif %}
-            </div>
+      <div class="sc-hero-row">
+        <div class="sc-hero-main">
+          <div class="sc-kicker">{{ store.name_ru }} · {% trans "Каталог филиала" %}</div>
+          <h1 class="sc-title">{{ branch.name_ru }}</h1>
 
-            <h1 class="text-white text-2xl sm:text-3xl font-extrabold truncate">
-              {{ branch.name_ru }}
-            </h1>
-            <div class="text-white/85 text-sm mt-1 truncate">{{ branch.address }}</div>
+          {% if branch.address %}
+            <div class="sc-address">{{ branch.address }}</div>
+          {% endif %}
+
+          <div class="sc-hero-meta">
+            <span class="sc-pill mode">
+              {% if mode == "delivery" %}🚚 {% trans "Доставка" %}{% else %}🏬 {% trans "Покупка в магазине" %}{% endif %}
+            </span>
 
             {% if mode == "delivery" and branch.delivery_enabled %}
-              <div class="text-white/70 text-xs mt-1">
-                {% trans "Мин." %} {{ branch.min_order_amount }} · {% trans "Доставка" %} {{ branch.delivery_fee }} {% trans "сом" %}
-              </div>
+              {% if branch.min_order_amount %}
+                <span class="sc-pill">🛵 {% trans "Мин. заказ" %} · {{ branch.min_order_amount|floatformat:"0" }} {% trans "сом" %}</span>
+              {% endif %}
+              <span class="sc-pill">💸 {% trans "Доставка" %} · {{ branch.delivery_fee|floatformat:"0" }} {% trans "сом" %}</span>
             {% endif %}
+
+            {% if branch.phone %}
+              <span class="sc-pill">📞 {{ branch.phone }}</span>
+            {% endif %}
+
+            <span class="sc-pill open"><span class="sc-pill-dot"></span>{% trans "Каталог открыт" %}</span>
           </div>
         </div>
 
-        <div class="flex flex-wrap gap-2">
+        <div class="sc-hero-actions">
           {% if branch.phone %}
-            <a href="tel:{{ branch.phone }}"
-               class="px-4 py-3 rounded-2xl bg-white/90 text-stone-900 font-extrabold ring-1 ring-white/25">
-              📞 {% trans "Позвонить" %}
-            </a>
-            <a href="https://wa.me/{{ branch.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}"
-               target="_blank"
-               class="px-4 py-3 rounded-2xl text-white font-extrabold"
-               style="background:#25D366;">
-              WhatsApp
-            </a>
+            <a href="tel:{{ branch.phone }}" class="sc-call-btn">📞 {% trans "Позвонить" %}</a>
+            <a href="https://wa.me/{{ branch.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" rel="noopener" class="sc-wa-btn">WhatsApp</a>
           {% endif %}
-
-          <a href="{% url 'shops:cart_detail' branch.id %}"
-             class="px-4 py-3 rounded-2xl bg-stone-950/80 text-white font-extrabold ring-1 ring-white/20">
+          <a href="{% url 'shops:cart_detail' branch.id %}" class="sc-cart-btn" id="heroCartBtn">
             🧺 {% trans "Корзина" %}
-            <span class="ml-2 inline-flex items-center justify-center px-2 py-1 rounded-xl bg-white/15 text-xs" data-cart-qty>{{ cart_qty }}</span>
-            <span class="hidden sm:inline text-white/80 ml-1" data-cart-total>· {{ cart_total }} {% trans "сом" %}</span>
+            <span class="sc-cart-btn-badge" data-cart-qty>{{ cart_qty|default:0 }}</span>
+            <span data-cart-total>{{ cart_total|default:0 }} {% trans "сом" %}</span>
           </a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- sticky categories -->
-  <div class="sticky top-[56px] z-40 mt-4 rounded-2xl bg-white/92 backdrop-blur ring-1 ring-black/10 shadow-sm">
-    <div class="px-3 py-2 overflow-x-auto no-scrollbar">
-      <div class="flex gap-2" id="catBar">
-        <a class="cat-pill active" href="#cat-all" data-cat-link="cat-all">{% trans "Все" %}</a>
-        {% for c in categories %}
-          <a class="cat-pill"
-             href="#cat-{{ c.id }}"
-             data-cat-link="cat-{{ c.id }}">
-            {{ c.name_ru }}
-          </a>
-        {% endfor %}
-      </div>
+  <section class="sc-info-strip">
+    <div class="sc-info-card">
+      <div class="sc-info-label">{% trans "Формат" %}</div>
+      <div class="sc-info-value">{% if mode == "delivery" %}{% trans "Заказ с доставкой" %}{% else %}{% trans "Покупка в магазине" %}{% endif %}</div>
+    </div>
+    <div class="sc-info-card">
+      <div class="sc-info-label">{% trans "Адрес" %}</div>
+      <div class="sc-info-value">{% if branch.address %}{{ branch.address }}{% else %}{% trans "Адрес скоро добавим" %}{% endif %}</div>
+    </div>
+    <div class="sc-info-card">
+      <div class="sc-info-label">{% trans "Контакт" %}</div>
+      <div class="sc-info-value">{% if branch.phone %}{{ branch.phone }}{% else %}{% trans "Уточняется" %}{% endif %}</div>
+    </div>
+  </section>
+
+  <div class="sc-cats-sticky">
+    <div class="sc-cats-inner" id="scCatsBar">
+      <a href="#sc-top" class="sc-cat-btn active" data-cat-link="sc-top">{% trans "Все" %}</a>
+      {% for c in categories %}
+        <a href="#cat-{{ c.id }}" class="sc-cat-btn" data-cat-link="cat-{{ c.id }}">{{ c.name_ru }}</a>
+      {% endfor %}
     </div>
   </div>
 
-  <!-- PRODUCTS -->
-  <section id="cat-all" class="mt-5 scroll-mt-28">
-    {% for c in categories %}
-      <section id="cat-{{ c.id }}" class="mb-10 scroll-mt-28 cat-section">
-        <div class="flex items-center gap-3 mb-4">
-          <div class="flex-1 h-px bg-white/35"></div>
-          <h2 class="text-white text-lg sm:text-xl font-extrabold tracking-wide">
-            {{ c.name_ru }}
-          </h2>
-          <div class="flex-1 h-px bg-white/35"></div>
-        </div>
+  <div class="sc-content" id="sc-top">
+    {% if categories and stocks %}
+      {% for c in categories %}
+        <section class="sc-cat-section" id="cat-{{ c.id }}" data-cat-section="cat-{{ c.id }}">
+          <div class="sc-cat-header">
+            <div class="sc-cat-line"></div>
+            <h2 class="sc-cat-title">{{ c.name_ru }}</h2>
+            <span class="sc-cat-count">{{ c.products.count|default:0 }}</span>
+            <div class="sc-cat-line"></div>
+          </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-          {% for s in stocks %}
-            {% if s.product.category_id == c.id %}
-              <article class="rounded-3xl overflow-hidden bg-white ring-1 ring-black/5 shadow-[0_12px_35px_rgba(0,0,0,.10)] flex flex-col">
-                {% if s.product.photo %}
-                  <img src="{{ s.product.photo.url }}"
-                       alt="{{ s.product.name_ru }}"
-                       class="aspect-[4/3] w-full object-cover"
-                       loading="lazy" decoding="async">
-                {% endif %}
-
-                <div class="p-3 sm:p-4 flex-1 flex flex-col">
-                  <div class="min-h-[46px]">
-                    <div class="font-extrabold text-stone-900 leading-snug">
-                      {{ s.product.name_ru }}
-                    </div>
-                    {% if s.product.description_ru %}
-                      <div class="text-xs text-stone-500 mt-1 line-clamp-2">{{ s.product.description_ru }}</div>
+          <div class="sc-grid">
+            {% for s in stocks %}
+              {% if s.product.category_id == c.id %}
+                <article class="sc-card">
+                  <div class="sc-card-media">
+                    {% if s.product.photo %}
+                      <img src="{{ s.product.photo.url }}" alt="{{ s.product.name_ru }}" loading="lazy" decoding="async">
+                    {% else %}
+                      <div class="sc-card-placeholder">🛍️</div>
                     {% endif %}
+                    <div class="sc-media-grad"></div>
+                    <span class="sc-stock-badge {% if s.qty <= 0 %}out{% endif %}">
+                      {% if s.qty > 0 %}{% trans "Есть" %}: {{ s.qty }}{% else %}{% trans "Нет в наличии" %}{% endif %}
+                    </span>
+                    <span class="sc-price-badge">{{ s.product.price|floatformat:"0" }} {% trans "сом" %}</span>
                   </div>
 
-                  <div class="mt-3 flex items-end justify-between gap-2">
-                    <div>
-                      <div class="text-[11px] text-stone-400">{% trans "Цена" %}</div>
-                      <div class="text-lg font-extrabold text-stone-900">
-                        {{ s.product.price }} {% trans "сом" %}
-                      </div>
-
-                      <div class="text-[11px] text-stone-500 mt-1">
-                        {% trans "В наличии" %}: <b>{{ s.qty }}</b> {{ s.product.unit }}
-                      </div>
+                  <div class="sc-card-body">
+                    <div class="sc-card-top">
+                      <div class="sc-card-title">{{ s.product.name_ru }}</div>
+                      <div class="sc-card-cat">{{ c.name_ru }}</div>
                     </div>
 
-                    <!-- Add to cart (qty=1 no input) -->
-                    <form action="{% url 'shops:cart_add' branch.id s.product.id %}" method="post" data-add-to-cart class="flex">
-                      {% csrf_token %}
-                      <input type="hidden" name="qty" value="1">
-                      <button type="submit"
-                              class="inline-flex items-center justify-center px-3 sm:px-4 py-2.5 rounded-2xl text-white font-extrabold shadow
-                                     active:scale-[.99] transition"
-                              style="background:#0f172a;">
-                        + {% trans "В корзину" %}
-                      </button>
-                    </form>
-                  </div>
-                </div>
-              </article>
-            {% endif %}
-          {% endfor %}
-        </div>
-      </section>
-    {% endfor %}
-  </section>
+                    {% if s.product.description_ru %}
+                      <div class="sc-card-desc" title="{{ s.product.description_ru }}">{{ s.product.description_ru }}</div>
+                    {% else %}
+                      <div class="sc-card-desc">{% trans "Товар из каталога магазина с актуальной ценой и доступностью." %}</div>
+                    {% endif %}
 
+                    <div class="sc-card-footer">
+                      <div class="sc-price-wrap">
+                        <div class="sc-price-label">{% trans "Цена" %}</div>
+                        <div class="sc-price-value">{{ s.product.price|floatformat:"0" }} {% trans "сом" %}</div>
+                        <div class="sc-stock-note">{% trans "В наличии" %}: <b>{{ s.qty }}</b>{% if s.product.unit %} {{ s.product.unit }}{% endif %}</div>
+                      </div>
+
+                      {% if s.qty > 0 %}
+                        <form action="{% url 'shops:cart_add' branch.id s.product.id %}" method="post" data-add-to-cart>
+                          {% csrf_token %}
+                          <input type="hidden" name="qty" value="1">
+                          <button type="submit" class="sc-add-btn">+ {% trans "В корзину" %}</button>
+                        </form>
+                      {% else %}
+                        <span class="sc-sold-out">{% trans "Нет в наличии" %}</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </article>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </section>
+      {% endfor %}
+    {% else %}
+      <div class="sc-empty">
+        <div class="sc-empty-ico">🛒</div>
+        <div class="sc-empty-title">{% trans "Каталог пока пуст" %}</div>
+        <div class="sc-empty-sub">{% trans "Товары для этого филиала ещё не добавлены." %}</div>
+      </div>
+    {% endif %}
+  </div>
 </div>
 
-<!-- toast -->
-<div class="toast-wrap" id="toastWrap" aria-live="polite" aria-atomic="true"></div>
-
-<!-- scroll-to-top -->
-<a href="#"
-   class="to-top"
-   id="toTopBtn"
-   aria-label="Up">⬆️</a>
-
-<!-- floating cart -->
 <a id="cartFab"
    href="{% url 'shops:cart_detail' branch.id %}"
-   class="shop-cart-fab {% if cart_qty|default:0 == 0 %}hide{% endif %}">
-  <span class="shop-cart-fab__icon">🧺</span>
-  <span class="shop-cart-fab__badge" data-cart-qty>{{ cart_qty }}</span>
-  <span class="hidden sm:inline text-white/85" data-cart-total>· {{ cart_total }} {% trans "сом" %}</span>
+   class="sc-cart-fab {% if cart_qty|default:0 == 0 %}hide{% endif %}">
+  <div class="sc-cart-icon">🧺</div>
+  <div class="sc-cart-info">
+    <div class="sc-cart-title">{% trans "Ваша корзина" %}</div>
+    <div class="sc-cart-total" data-cart-total>{{ cart_total|default:0 }} {% trans "сом" %}</div>
+  </div>
+  <div class="sc-cart-badge" data-cart-qty>{{ cart_qty|default:0 }} {% trans "шт" %}</div>
 </a>
 
+<button id="scTopBtn" class="sc-top-btn hide" type="button" aria-label="Наверх">↑</button>
+{% endblock %}
+
+{% block page_scripts %}
 <script>
   function getCookie(name) {
     const v = document.cookie.split('; ').find(row => row.startsWith(name + '='));
     return v ? decodeURIComponent(v.split('=')[1]) : '';
   }
 
-  function showToast(message){
-    const wrap = document.getElementById('toastWrap');
+  function showToast(msg, ok = true) {
+    const wrap = document.getElementById('scToastWrap');
+    if (!wrap) return;
     const el = document.createElement('div');
-    el.className = 'toast';
-    el.innerHTML = `<span class="dot"></span><div>${message}</div>`;
+    el.className = 'sc-toast';
+    el.innerHTML = `<span class="sc-toast-dot" style="${ok ? '' : 'background:#EF4444'}"></span><span>${msg}</span>`;
     wrap.appendChild(el);
     requestAnimationFrame(() => el.classList.add('show'));
     setTimeout(() => {
       el.classList.remove('show');
-      setTimeout(() => el.remove(), 220);
-    }, 1400);
+      setTimeout(() => el.remove(), 240);
+    }, 1700);
   }
 
-  function updateCartUI(qty_total, total){
-    const qNum = Number(qty_total) || 0;
+  function updateCartUI(qty, total) {
+    const n = Number(qty) || 0;
 
     document.querySelectorAll('[data-cart-qty]').forEach(el => {
-      el.textContent = qNum;
-      el.classList.remove('cart-pop');
+      el.textContent = n;
+      if (el.classList.contains('sc-cart-badge')) {
+        el.textContent = n + ' шт';
+      }
+      el.classList.remove('sc-badge-pop');
       void el.offsetWidth;
-      el.classList.add('cart-pop');
+      el.classList.add('sc-badge-pop');
     });
 
     document.querySelectorAll('[data-cart-total]').forEach(el => {
-      el.textContent = `· ${total} сом`;
+      el.textContent = total + ' сом';
     });
 
     const fab = document.getElementById('cartFab');
-    if (fab){
-      fab.classList.toggle('hide', qNum <= 0);
-    }
+    if (fab) fab.classList.toggle('hide', n <= 0);
   }
 
-  // AJAX add to cart
   document.addEventListener('submit', async (e) => {
     const form = e.target.closest('form[data-add-to-cart]');
     if (!form) return;
 
     e.preventDefault();
+    e.stopPropagation();
 
     const btn = form.querySelector('button[type="submit"]');
-    if (btn) btn.disabled = true;
+    if (btn) {
+      btn.disabled = true;
+      btn.classList.add('loading');
+      btn.textContent = '...';
+    }
 
-    try{
+    try {
       const resp = await fetch(form.action, {
         method: 'POST',
         body: new FormData(form),
@@ -366,71 +901,87 @@
       });
 
       const data = await resp.json();
-      if (data.ok){
+
+      if (data.ok) {
         updateCartUI(data.qty_total, data.total);
-        showToast('Добавлено в корзину ✅');
-      } else if (data.error === 'not_enough'){
-        showToast('Недостаточно товара ❌');
+        if (btn) {
+          btn.classList.remove('loading');
+          btn.textContent = '✓';
+          btn.classList.add('pulse');
+          setTimeout(() => {
+            btn.textContent = '+ В корзину';
+            btn.classList.remove('pulse');
+            btn.disabled = false;
+          }, 850);
+        }
+        showToast('Добавлено в корзину', true);
+      } else if (data.error === 'not_enough') {
+        showToast('Недостаточно товара', false);
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove('loading');
+          btn.textContent = '+ В корзину';
+        }
       } else {
-        showToast('Не удалось добавить ❌');
+        showToast('Не удалось добавить', false);
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove('loading');
+          btn.textContent = '+ В корзину';
+        }
       }
-    }catch(err){
+    } catch (err) {
       console.error(err);
-      showToast('Ошибка сети ❌');
-    }finally{
-      if (btn) btn.disabled = false;
+      showToast('Ошибка сети', false);
+      if (btn) {
+        btn.disabled = false;
+        btn.classList.remove('loading');
+        btn.textContent = '+ В корзину';
+      }
     }
   }, true);
 
-  // Scroll-to-top show/hide
-  (function(){
-    const btn = document.getElementById('toTopBtn');
-    const onScroll = () => {
-      if (window.scrollY > 500) btn.classList.add('show');
-      else btn.classList.remove('show');
-    };
-    window.addEventListener('scroll', onScroll, {passive:true});
+  (function () {
+    const btn = document.getElementById('scTopBtn');
+    if (!btn) return;
+    const onScroll = () => btn.classList.toggle('hide', window.scrollY < 580);
+    window.addEventListener('scroll', onScroll, { passive: true });
     onScroll();
-    btn.addEventListener('click', (e)=>{ e.preventDefault(); window.scrollTo({top:0, behavior:'smooth'}); });
+    btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
   })();
 
-  // Sticky category highlight (IntersectionObserver)
-  (function(){
-    const links = document.querySelectorAll('[data-cat-link]');
-    const map = new Map();
-    links.forEach(a => map.set(a.getAttribute('data-cat-link'), a));
+  (function () {
+    const links = Array.from(document.querySelectorAll('[data-cat-link]'));
+    const sections = Array.from(document.querySelectorAll('[data-cat-section]'));
+    if (!links.length || !sections.length) return;
 
-    const setActive = (id) => {
-      links.forEach(a => a.classList.remove('active'));
-      const a = map.get(id);
-      if (a) a.classList.add('active');
-    };
+    function setActive(id) {
+      links.forEach(a => {
+        const active = a.dataset.catLink === id;
+        a.classList.toggle('active', active);
+        if (active) a.scrollIntoView({ inline: 'center', block: 'nearest' });
+      });
+    }
 
-    // sections to observe
-    const sections = document.querySelectorAll('.cat-section');
-    if (!sections.length) return;
+    links.forEach(link => link.addEventListener('click', () => setActive(link.dataset.catLink)));
 
     const obs = new IntersectionObserver((entries) => {
-      // берём самый “видимый” entry
-      let best = null;
-      for (const e of entries){
-        if (e.isIntersecting){
-          if (!best || e.intersectionRatio > best.intersectionRatio) best = e;
-        }
-      }
-      if (best){
-        setActive(best.target.id);
-        // аккуратно прокручиваем полоску категорий, чтобы активная была в видимости
-        const activeLink = map.get(best.target.id);
-        activeLink?.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
-      }
-    }, { root: null, threshold: [0.2, 0.35, 0.5, 0.65] });
+      const visible = entries
+        .filter(e => e.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+      if (visible.length) setActive(visible[0].target.dataset.catSection);
+    }, {
+      rootMargin: '-18% 0px -68% 0px',
+      threshold: [0.05, 0.12, 0.25, 0.45]
+    });
 
     sections.forEach(s => obs.observe(s));
 
-    // "Все"
-    const all = map.get('cat-all');
-    all?.addEventListener('click', ()=>setActive('cat-all'));
+    window.addEventListener('scroll', () => {
+      if (!sections[0]) return;
+      const top = sections[0].getBoundingClientRect().top;
+      if (top > 200) setActive('sc-top');
+    }, { passive: true });
   })();
 </script>
 {% endblock %}
