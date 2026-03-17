@@ -245,7 +245,7 @@ def checkout(request, branch_id: int):
     #     # whatsapp_url = build_whatsapp_url(branch.phone, text)
     return HttpResponseRedirect(whatsapp_url)
 
-# иначе обычный success
+    # иначе обычный success
     return redirect("pharmacy:checkout_success", branch_id=branch.id, order_id=order.id)
     # 6) сразу уводим в WhatsApp
     # return HttpResponseRedirect(whatsapp_url)
