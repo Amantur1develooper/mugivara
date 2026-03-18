@@ -254,6 +254,7 @@ def checkout(request, branch_id: int):
 def checkout_success(request, branch_id: int, order_id: int):
     branch = get_object_or_404(PharmacyBranch, id=branch_id, is_active=True)
     order = get_object_or_404(PharmacyOrder, id=order_id, branch=branch)
+    
     return render(request, "pharmacy/checkout_success.html", {
         "branch": branch,
         "order": order,

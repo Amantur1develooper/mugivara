@@ -19,6 +19,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 from core.models import Branch
 from catalog.models import BranchItem
+from pharmacy.models import Pharmacy
 from .cart import set_qty, get_cart, cart_details
 from .cart import add_to_cart as cart_add, set_qty, clear_cart, get_cart, cart_details
 
@@ -102,7 +103,7 @@ from core.models import Restaurant, Branch
 
 # Категории платформы — добавляй новые строки когда запускаешь новое направление
 PLATFORM_CATEGORIES = [  {
-        "key":         "Pharmacy",
+        "key":         "pharmacy",
         "icon":        "🏥",
         "name_ru":     "Аптеки",
         "name_ky":     "Дарыканалар",
@@ -215,12 +216,14 @@ def home(request):
     stats = {
         "restaurant_count": Restaurant.objects.filter(is_active=True).count(),
         "store_count":      Store.objects.filter(is_active=True).count(),
+        "pharmacy_count": Pharmacy.objects.filter(is_active=True).count(),
         "branch_count": (
             Branch.objects.filter(is_active=True).count()
             + StoreBranch.objects.filter(is_active=True).count()
+            + Pharmacy.objects.filter(is_active=True).count()
         ),
     }
-    stats["total"] = stats["restaurant_count"] + stats["store_count"]
+    stats["total"] = stats["restaurant_count"] + stats["store_count"] + stats["pharmacy_count"]
 
     return render(request, "public_site/home.html", {
         "categories":        PLATFORM_CATEGORIES,
