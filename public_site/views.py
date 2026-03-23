@@ -102,7 +102,8 @@ from core.models import Restaurant, Branch
 
 
 # Категории платформы — добавляй новые строки когда запускаешь новое направление
-PLATFORM_CATEGORIES = [  {
+PLATFORM_CATEGORIES = [
+    {
         "key":         "pharmacy",
         "icon":        "🏥",
         "name_ru":     "Аптеки",
@@ -119,7 +120,7 @@ PLATFORM_CATEGORIES = [  {
         "name_ru":     "Рестораны",
         "name_ky":     "Ресторандар",
         "name_en":     "Restaurants",
-        "url":         "public_site:restaurants_list",   # временно сам на себя; замени на список ресторанов
+        "url":         "public_site:restaurants_list",
         "color":       "#FF5C00",
         "is_active":   True,
         "coming_soon": False,
@@ -135,7 +136,18 @@ PLATFORM_CATEGORIES = [  {
         "is_active":   True,
         "coming_soon": False,
     },
-  
+    {
+        "key":         "rinok",
+        "icon":        "🛒",
+        "name_ru":     "Рынки",
+        "name_ky":     "Базарлар",
+        "name_en":     "Markets",
+        "url":         None,                          # не Django-url
+        "external_url": "https://teshiktash.kg/", # <-- вставьте свой адрес
+        "color":       "#7C3AED",
+        "is_active":   True,
+        "coming_soon": False,
+    },
     {
         "key":         "hotels",
         "icon":        "🏨",
@@ -233,59 +245,6 @@ def home(request):
     })
 
 
-# def home(request):
-#     q = (request.GET.get("q") or "").strip()
-#     open_now = request.GET.get("open_now") == "1"
-
-#     restaurants = Restaurant.objects.filter(is_active=True).prefetch_related("branches").order_by("name_ru")
-
-#     if q:
-#         # если у Restaurant позже появятся name_ru/name_ky/name_en — расширишь тут
-#         restaurants = restaurants.filter(Q(name_ru__icontains=q))
-
-#     cards = []
-#     for r in restaurants:
-#         branches = [b for b in r.branches.all() if b.is_active]
-
-#         is_open = any(b.is_open_now() for b in branches)
-#         if open_now and not is_open:
-#             continue
-
-#         delivery_branches = [b for b in branches if b.delivery_enabled]
-#         has_delivery = bool(delivery_branches)
-
-#         min_order = min((b.min_order_amount for b in delivery_branches), default=None)
-#         min_fee = min((b.delivery_fee for b in delivery_branches), default=None)
-
-#         # “время работы” для карточки ресторана — показываем если у всех филиалов одинаково,
-#         # иначе не рискуем врать
-#         hours_text = None
-#         hours_set = set()
-#         for b in branches:
-#             if b.is_open_24h:
-#                 hours_set.add("24/7")
-#             elif b.open_time and b.close_time:
-#                 hours_set.add(f"{b.open_time.strftime('%H:%M')}–{b.close_time.strftime('%H:%M')}")
-#         if len(hours_set) == 1:
-#             hours_text = list(hours_set)[0]
-
-#         cards.append({
-#             "obj": r,
-#             "is_open": is_open,
-#             "has_delivery": has_delivery,
-#             "min_order": min_order,
-#             "min_fee": min_fee,
-#             "hours_text": hours_text,
-#             "branch":delivery_branches, #?
-#             "branches_count": len(branches),
-#             "table":True,
-#         })
-
-#     return render(request, "public_site/home.html", {"cards": cards, "q": q, "open_now": open_now})
-# ─────────────────────────────────────────────────────────────────────────────
-# Добавь эту функцию в public_site/views.py
-# Импорт Q уже есть в файле.
-# ─────────────────────────────────────────────────────────────────────────────
 
 def restaurants_list(request):
     """

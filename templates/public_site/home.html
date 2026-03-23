@@ -357,8 +357,12 @@
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-top:40px;">
     {% for cat in categories %}
       {% if cat.is_active %}
+        {% if cat.external_url %}
+        <a href="{{ cat.external_url }}" target="_blank"  style="--cat-color:{{ cat.color }}" rel="noopener noreferrer" class="wb-cat-card ">
+          {% else %}
         <a href="{% url cat.url %}" class="wb-cat-card" style="--cat-color:{{ cat.color }}">
-      {% else %}
+        {% endif %}
+          {% else %}
         <div class="wb-cat-card soon reveal {% if not forloop.first %}reveal-delay-{{ forloop.counter0 }}{% endif %}" style="--cat-color:{{ cat.color }}">
       {% endif %}
 
@@ -368,13 +372,20 @@
           {% if cat.key == 'restaurants' %}{{ stats.restaurant_count }} заведений{% endif %}
           {% if cat.key == 'stores' %}{{ stats.store_count }} магазинов{% endif %}
           {% if cat.key == 'pharmacy' %}{{ stats.store_count }} Аптеки{% endif %}
+           {% if cat.key == 'rinok' %}{{ stats.store_count }} Рынки{% endif %}
+          
           {% if cat.coming_soon %}Скоро{% endif %}
         </div>
         {% if cat.is_active %}<div class="cat-arrow">→</div>{% endif %}
 
       {% if cat.is_active %}</a>{% else %}</div>{% endif %}
     {% endfor %}
+    
+
+     
+</a>
   </div>
+  
 </section>
 
 
