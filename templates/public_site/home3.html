@@ -265,6 +265,63 @@
     padding: 4px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; margin-top: 12px;
   }
 
+  /* ═══ SERVICES SECTION ═══ */
+  .srv-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 22px;
+    padding: 32px 28px;
+    transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+    box-shadow: 0 2px 12px var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+  .srv-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, var(--srv-color, var(--accent)), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    border-radius: inherit;
+  }
+  .srv-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 48px rgba(0,0,0,0.10);
+    border-color: var(--srv-color, var(--accent));
+  }
+  .srv-card:hover::after { opacity: 0.05; }
+  .srv-icon-wrap {
+    width: 52px; height: 52px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; margin-bottom: 18px;
+    position: relative; z-index: 1;
+  }
+  .srv-card h3 {
+    font-family: 'Unbounded', sans-serif; font-size: 13px;
+    font-weight: 800; letter-spacing: -0.4px;
+    color: var(--text); margin-bottom: 8px;
+    position: relative; z-index: 1;
+  }
+  .srv-card p {
+    font-size: 13px; color: var(--muted);
+    line-height: 1.7; margin-bottom: 18px;
+    position: relative; z-index: 1;
+  }
+  .srv-tag {
+    display: inline-flex; align-items: center;
+    padding: 4px 12px; border-radius: 100px;
+    font-size: 11px; font-weight: 700;
+    position: relative; z-index: 1;
+  }
+  .srv-popular-badge {
+    position: absolute; top: 18px; right: 18px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white; font-size: 10px; font-weight: 700;
+    padding: 4px 12px; border-radius: 100px;
+    letter-spacing: 0.3px; z-index: 2;
+  }
+
   @media (max-width: 900px) {
     .demo-grid { grid-template-columns: 1fr !important; }
     .qr-grid   { grid-template-columns: 1fr !important; }
@@ -597,111 +654,90 @@
 {% endif %}
 
 
-
-{# ═══════════════════ РАЗДЕЛ УСЛУГИ ═══════════════════ #}
+<!-- ═══════════════════════ УСЛУГИ ═══════════════════════ -->
 <section style="padding:80px 48px;max-width:1280px;margin:0 auto;" id="services">
-
-  <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:0;flex-wrap:wrap;gap:12px;">
-    <div>
-      <div class="section-tag">Услуги</div>
-      <h2 class="section-title reveal" style="font-size:clamp(22px,3vw,36px);">Сервисы и услуги</h2>
-    </div>
-    {# Раскомментируй когда появится страница со всеми услугами:
-    <a href="{% url 'services:service_list' %}"
-       style="font-family:'Unbounded',sans-serif;font-size:12px;font-weight:700;
-              color:var(--teal);text-decoration:none;padding-bottom:2px;
-              border-bottom:1.5px solid rgba(0,184,150,0.3);">
-      Все услуги →
-    </a>
-    #}
-  </div>
-  <p class="section-sub reveal reveal-delay-1" style="margin-bottom:0;">
-    Запись к специалистам, бытовые услуги и профессиональная помощь
-  </p>
-
-  {# ── Категории услуг ── #}
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-top:40px;">
-
-    {% for svc in services %}
-    {# Динамический вариант — когда появится модель Service / ServiceCategory #}
-    <a href="{{ svc.url }}" class="wb-cat-card reveal" style="--cat-color:{{ svc.color }};">
-      <div class="cat-icon">{{ svc.icon }}</div>
-      <div class="cat-name">{{ svc.name_ru }}</div>
-      <div class="cat-count">{{ svc.count }} специалистов</div>
-      <div class="cat-arrow">→</div>
-    </a>
-    {% empty %}
-    {# ── Статические карточки (заглушка до появления моделей) ── #}
-
-    <div class="wb-cat-card soon reveal" style="--cat-color:#DB2777;">
-      <div class="cat-icon">💇</div>
-      <div class="cat-name">Красота и уход</div>
-      <div class="cat-count">Скоро</div>
-    </div>
-
-    <div class="wb-cat-card soon reveal reveal-delay-1" style="--cat-color:#D97706;">
-      <div class="cat-icon">🔧</div>
-      <div class="cat-name">Ремонт</div>
-      <div class="cat-count">Скоро</div>
-    </div>
-
-    <div class="wb-cat-card soon reveal reveal-delay-2" style="--cat-color:#2563EB;">
-      <div class="cat-icon">🚗</div>
-      <div class="cat-name">Авто</div>
-      <div class="cat-count">Скоро</div>
-    </div>
-
-    <div class="wb-cat-card soon reveal reveal-delay-3" style="--cat-color:#059669;">
-      <div class="cat-icon">🏠</div>
-      <div class="cat-name">Дом и быт</div>
-      <div class="cat-count">Скоро</div>
-    </div>
-
-    <div class="wb-cat-card soon reveal reveal-delay-1" style="--cat-color:#7C3AED;">
-      <div class="cat-icon">🎓</div>
-      <div class="cat-name">Обучение</div>
-      <div class="cat-count">Скоро</div>
-    </div>
-
-    <div class="wb-cat-card soon reveal reveal-delay-2" style="--cat-color:#0891B2;">
-      <div class="cat-icon">🏋️</div>
-      <div class="cat-name">Спорт</div>
-      <div class="cat-count">Скоро</div>
-    </div>
-
-    {% endfor %}
+  <div style="text-align:center;max-width:600px;margin:0 auto 56px;">
+    <div class="section-tag">Услуги</div>
+    <h2 class="section-title reveal">Всё что нужно вашему бизнесу</h2>
+    <p class="section-sub reveal reveal-delay-1">
+      Размещайте бизнес, управляйте меню, принимайте заказы и анализируйте продажи — в одном месте
+    </p>
   </div>
 
-  {# ── Промо-баннер "Добавь свой бизнес" ── #}
-  <div class="reveal" style="margin-top:32px;
-       background:linear-gradient(135deg,rgba(255,77,28,0.06) 0%,rgba(0,184,150,0.06) 100%);
-       border:1.5px solid var(--border);border-radius:24px;
-       padding:36px 40px;display:flex;align-items:center;justify-content:space-between;
-       flex-wrap:wrap;gap:20px;">
-    <div>
-      <div style="font-family:'Unbounded',sans-serif;font-size:16px;font-weight:800;
-                  letter-spacing:-0.5px;color:var(--text);margin-bottom:6px;">
-        💼 Оказываете услуги?
-      </div>
-      <p style="font-size:13px;color:var(--muted);line-height:1.6;max-width:480px;margin:0;">
-        Разместите своё объявление на Webordo — получайте новых клиентов из
-        единой цифровой экосистемы Кыргызстана.
-      </p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;">
+
+    <!-- Размещение бизнеса -->
+    <div class="srv-card reveal" style="--srv-color:#FF4D1C;">
+      <div class="srv-popular-badge">🔥 Популярное</div>
+      <div class="srv-icon-wrap" style="background:rgba(255,77,28,0.10);">🏢</div>
+      <h3>Размещение бизнеса</h3>
+      <p>Добавьте ваш ресторан, магазин или заведение на платформу — тысячи клиентов найдут вас за секунды.</p>
+      <span class="srv-tag" style="background:rgba(255,77,28,0.08);color:var(--accent);">Бесплатно →</span>
     </div>
-    <a href="mailto:hello@webordo.kg"
-       style="display:inline-flex;align-items:center;gap:8px;
-              padding:12px 28px;border-radius:100px;
-              background:var(--accent);color:white;font-weight:700;
-              font-family:'Unbounded',sans-serif;font-size:12px;
-              text-decoration:none;white-space:nowrap;
-              box-shadow:0 4px 16px var(--glow);transition:all 0.2s;">
-      Подключиться →
-    </a>
+
+    <!-- QR-меню -->
+    <div class="srv-card reveal reveal-delay-1" style="--srv-color:#6366F1;">
+      <div class="srv-icon-wrap" style="background:rgba(99,102,241,0.10);">📲</div>
+      <h3>QR-меню для стола</h3>
+      <p>Уникальный QR на каждый стол. Гость сканирует, открывает меню и делает заказ без ожидания официанта.</p>
+      <span class="srv-tag" style="background:rgba(99,102,241,0.08);color:#6366F1;">Подключить →</span>
+    </div>
+
+    <!-- Онлайн-бронирование -->
+    <div class="srv-card reveal reveal-delay-2" style="--srv-color:#2563EB;">
+      <div class="srv-icon-wrap" style="background:rgba(37,99,235,0.10);">📅</div>
+      <h3>Онлайн-бронирование</h3>
+      <p>Клиенты бронируют столик, записываются в салон или заказывают тур прямо через платформу — 24/7.</p>
+      <span class="srv-tag" style="background:rgba(37,99,235,0.08);color:var(--blue);">Скоро</span>
+    </div>
+
+    <!-- Управление каталогом -->
+    <div class="srv-card reveal" style="--srv-color:#00B896;">
+      <div class="srv-icon-wrap" style="background:rgba(0,184,150,0.10);">🗂️</div>
+      <h3>Управление каталогом</h3>
+      <p>Обновляйте цены, фото и наличие товаров в пару кликов. Никаких программистов — всё через удобную панель.</p>
+      <span class="srv-tag" style="background:rgba(0,184,150,0.08);color:var(--teal);">В панели →</span>
+    </div>
+
+    <!-- Аналитика -->
+    <div class="srv-card reveal reveal-delay-1" style="--srv-color:#FF8A00;">
+      <div class="srv-icon-wrap" style="background:rgba(255,138,0,0.10);">📊</div>
+      <h3>Аналитика и отчёты</h3>
+      <p>Выручка, популярные позиции, часы пик — живая статистика в реальном времени. Принимайте решения на основе данных.</p>
+      <span class="srv-tag" style="background:rgba(255,138,0,0.08);color:var(--accent2);">Живая статистика</span>
+    </div>
+
+    <!-- Продвижение -->
+    <div class="srv-card reveal reveal-delay-2" style="--srv-color:#DB2777;">
+      <div class="srv-icon-wrap" style="background:rgba(219,39,119,0.10);">🎯</div>
+      <h3>Акции и продвижение</h3>
+      <p>Запускайте скидки, push-уведомления и специальные предложения — привлекайте новых клиентов и возвращайте старых.</p>
+      <span class="srv-tag" style="background:rgba(219,39,119,0.08);color:#DB2777;">Скоро</span>
+    </div>
+
   </div>
 
+  {# CTA блок #}
+  <div style="margin-top:56px;text-align:center;
+              background:linear-gradient(135deg,rgba(255,77,28,0.06),rgba(255,138,0,0.06));
+              border:1.5px solid rgba(255,77,28,0.12);border-radius:28px;
+              padding:52px 40px;">
+    <div style="font-size:40px;margin-bottom:16px;">🚀</div>
+    <h3 style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:clamp(18px,3vw,28px);
+               letter-spacing:-0.8px;color:var(--text);margin-bottom:10px;">
+      Готовы разместить бизнес?
+    </h3>
+    <p style="color:var(--muted);font-size:14px;line-height:1.7;
+              max-width:420px;margin:0 auto 28px;">
+      Регистрация занимает 5 минут. Начните бесплатно — без скрытых платежей.
+    </p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <a class="btn-primary" href="#">Добавить бизнес →</a>
+      <a class="btn-ghost" href="#">Узнать подробнее</a>
+    </div>
+  </div>
 </section>
-{# ═════════════════════════════════════════════════════ #}
-
+<!-- ════════════════════════════════════════════════════════ -->
 
 
 <section style="padding:80px 48px;max-width:1280px;margin:0 auto;" id="qr">

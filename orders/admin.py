@@ -69,7 +69,7 @@ def mark_closed(modeladmin, request, queryset):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ("id","branch","type","status","payment_method","payment_status","total_amount","created_at")
+    list_display = ("id","branch","type","status",'customer_name',"payment_method","comment","total_amount","created_at")
     list_filter = ("status","type","payment_method","payment_status","branch__restaurant","branch")
     search_fields = ("id","customer_phone","customer_name","delivery_address")
     inlines = (OrderItemInline,)

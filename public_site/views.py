@@ -170,6 +170,7 @@ PLATFORM_CATEGORIES = [
         "is_active":   False,
         "coming_soon": True,
     },
+
 ]
 
 
@@ -242,6 +243,11 @@ def home(request):
         "restaurant_cards":  restaurant_cards,
         "store_cards":       store_cards,
         "stats":             stats,
+            "services": [
+    {"icon": "💇", "name_ru": "Красота и уход", "color": "#DB2777", "url": "#", "count": 0},
+    {"icon": "🔧", "name_ru": "Ремонт",          "color": "#D97706", "url": "#", "count": 0},
+    # ...
+],
     })
 
 
