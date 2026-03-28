@@ -597,6 +597,113 @@
 {% endif %}
 
 
+
+{# ═══════════════════ РАЗДЕЛ УСЛУГИ ═══════════════════ #}
+<section style="padding:80px 48px;max-width:1280px;margin:0 auto;" id="services">
+
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:0;flex-wrap:wrap;gap:12px;">
+    <div>
+      <div class="section-tag">Услуги</div>
+      <h2 class="section-title reveal" style="font-size:clamp(22px,3vw,36px);">Сервисы и услуги</h2>
+    </div>
+    {# Раскомментируй когда появится страница со всеми услугами:
+    <a href="{% url 'services:service_list' %}"
+       style="font-family:'Unbounded',sans-serif;font-size:12px;font-weight:700;
+              color:var(--teal);text-decoration:none;padding-bottom:2px;
+              border-bottom:1.5px solid rgba(0,184,150,0.3);">
+      Все услуги →
+    </a>
+    #}
+  </div>
+  <p class="section-sub reveal reveal-delay-1" style="margin-bottom:0;">
+    Запись к специалистам, бытовые услуги и профессиональная помощь
+  </p>
+
+  {# ── Категории услуг ── #}
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-top:40px;">
+
+    {% for svc in services %}
+    {# Динамический вариант — когда появится модель Service / ServiceCategory #}
+    <a href="{{ svc.url }}" class="wb-cat-card reveal" style="--cat-color:{{ svc.color }};">
+      <div class="cat-icon">{{ svc.icon }}</div>
+      <div class="cat-name">{{ svc.name_ru }}</div>
+      <div class="cat-count">{{ svc.count }} специалистов</div>
+      <div class="cat-arrow">→</div>
+    </a>
+    {% empty %}
+    {# ── Статические карточки (заглушка до появления моделей) ── #}
+
+    <div class="wb-cat-card soon reveal" style="--cat-color:#DB2777;">
+      <div class="cat-icon">💇</div>
+      <div class="cat-name">Красота и уход</div>
+      <div class="cat-count">Скоро</div>
+    </div>
+
+    <div class="wb-cat-card soon reveal reveal-delay-1" style="--cat-color:#D97706;">
+      <div class="cat-icon">🔧</div>
+      <div class="cat-name">Ремонт</div>
+      <div class="cat-count">Скоро</div>
+    </div>
+
+    <div class="wb-cat-card soon reveal reveal-delay-2" style="--cat-color:#2563EB;">
+      <div class="cat-icon">🚗</div>
+      <div class="cat-name">Авто</div>
+      <div class="cat-count">Скоро</div>
+    </div>
+
+    <div class="wb-cat-card soon reveal reveal-delay-3" style="--cat-color:#059669;">
+      <div class="cat-icon">🏠</div>
+      <div class="cat-name">Дом и быт</div>
+      <div class="cat-count">Скоро</div>
+    </div>
+
+    <div class="wb-cat-card soon reveal reveal-delay-1" style="--cat-color:#7C3AED;">
+      <div class="cat-icon">🎓</div>
+      <div class="cat-name">Обучение</div>
+      <div class="cat-count">Скоро</div>
+    </div>
+
+    <div class="wb-cat-card soon reveal reveal-delay-2" style="--cat-color:#0891B2;">
+      <div class="cat-icon">🏋️</div>
+      <div class="cat-name">Спорт</div>
+      <div class="cat-count">Скоро</div>
+    </div>
+
+    {% endfor %}
+  </div>
+
+  {# ── Промо-баннер "Добавь свой бизнес" ── #}
+  <div class="reveal" style="margin-top:32px;
+       background:linear-gradient(135deg,rgba(255,77,28,0.06) 0%,rgba(0,184,150,0.06) 100%);
+       border:1.5px solid var(--border);border-radius:24px;
+       padding:36px 40px;display:flex;align-items:center;justify-content:space-between;
+       flex-wrap:wrap;gap:20px;">
+    <div>
+      <div style="font-family:'Unbounded',sans-serif;font-size:16px;font-weight:800;
+                  letter-spacing:-0.5px;color:var(--text);margin-bottom:6px;">
+        💼 Оказываете услуги?
+      </div>
+      <p style="font-size:13px;color:var(--muted);line-height:1.6;max-width:480px;margin:0;">
+        Разместите своё объявление на Webordo — получайте новых клиентов из
+        единой цифровой экосистемы Кыргызстана.
+      </p>
+    </div>
+    <a href="mailto:hello@webordo.kg"
+       style="display:inline-flex;align-items:center;gap:8px;
+              padding:12px 28px;border-radius:100px;
+              background:var(--accent);color:white;font-weight:700;
+              font-family:'Unbounded',sans-serif;font-size:12px;
+              text-decoration:none;white-space:nowrap;
+              box-shadow:0 4px 16px var(--glow);transition:all 0.2s;">
+      Подключиться →
+    </a>
+  </div>
+
+</section>
+{# ═════════════════════════════════════════════════════ #}
+
+
+
 <section style="padding:80px 48px;max-width:1280px;margin:0 auto;" id="qr">
   <div class="section-tag">Уникальная функция</div>
   <h2 class="section-title reveal">QR-столы для ресторанов</h2>
