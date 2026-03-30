@@ -174,7 +174,6 @@ PLATFORM_CATEGORIES = [
 ]
 
 
-@cache_page(60 * 5)   # кэш 5 минут (Redis уже настроен в settings)
 def home(request):
     """
     Главная страница Webordo.
