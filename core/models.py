@@ -2,11 +2,13 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 
+
 class TimeStampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     class Meta:
         abstract = True
+
 
 class Restaurant(TimeStampedModel):
     name_ru = models.CharField(max_length=200)
@@ -15,6 +17,7 @@ class Restaurant(TimeStampedModel):
     slug = models.SlugField(max_length=220, unique=True)
     logo = models.ImageField(upload_to="restaurants/logos/", blank=True, null=True)
     is_active = models.BooleanField(default=True)
+    rating = models.DecimalField("Рейтинг", max_digits=3, decimal_places=1, default=0.0)
     about_ru = models.TextField(blank=True, default="")
     about_ky = models.TextField(blank=True, default="")
     about_en = models.TextField(blank=True, default="")

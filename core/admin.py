@@ -152,12 +152,14 @@ class BranchAdmin(admin.ModelAdmin):
 
 @admin.register(Restaurant)
 class RestaurantAdmin(admin.ModelAdmin):
-    list_display = ("id", "name_ru", "slug", "is_active")
+    list_display = ("id", "name_ru", "slug", "rating", "is_active")
+    list_editable = ("rating",)
     search_fields = ("name_ru", "slug")
     list_filter = ("is_active",)
+    ordering = ("-rating",)
 
     fieldsets = (
-        (None, {"fields": ("name_ru","name_ky","name_en","slug","logo","is_active")}),
+        (None, {"fields": ("name_ru","name_ky","name_en","slug","logo","is_active","rating")}),
         ("О нас", {"fields": ("about_ru","about_ky","about_en")}),
     )
 

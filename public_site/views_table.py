@@ -18,8 +18,11 @@ from django.http import JsonResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.db import transaction
+from django.db.models import F
+from decimal import Decimal
 
 from reservations.models import Place
+from core.models import Restaurant
 from catalog.models import BranchCategory, BranchItem, ItemCategory  # если у тебя ItemCategory называется иначе — поправь
 from orders.models import Order, OrderItem
 
@@ -175,8 +178,8 @@ def table_checkout(request, token):
         # ✅ очищаем корзину
         _save_cart(request, token, {})
 
-        # ⚠️ ВАЖНО: чтобы не было дублей, отправку в телегу делай ТОЛЬКО в одном месте.
-        # Лучше оставить через signals.py (on_commit) и тут НЕ вызывать notify_new_order.
+        # увеличиваем рейтинг ресторана
+        Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
 
         return redirect("table_success", token=token, order_id=order.id)
 
@@ -344,6 +347,9 @@ def table_create_order(request, token):
 
     # ✅ очищаем корзину
     _save_cart(request, token, {})
+
+    # увеличиваем рейтинг ресторана
+    Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
 
     # ✅ редирект на страницу "успех"
     return redirect("table_success", token=token, order_id=order.id)

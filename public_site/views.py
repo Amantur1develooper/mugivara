@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Q, F
 from core.models import Restaurant, Branch
 from catalog.models import BranchCategory, BranchCategoryItem, BranchItem
 from django.utils.translation import get_language
@@ -189,8 +189,8 @@ def home(request):
         Restaurant.objects
         .filter(is_active=True, branches__is_active=True)
         .distinct()
-        .only("id", "name_ru", "name_ky", "name_en", "slug", "logo")
-        .order_by("name_ru")[:8]
+        .only("id", "name_ru", "name_ky", "name_en", "slug", "logo", "rating")
+        .order_by("-rating", "name_ru")[:8]
     )
 
     # Добавляем is_open для каждого ресторана (показываем бейдж на карточке)
@@ -266,7 +266,7 @@ def restaurants_list(request):
         Restaurant.objects
         .filter(is_active=True)
         .prefetch_related("branches")
-        .order_by("name_ru")
+        .order_by("-rating", "name_ru")
     )
 
     if q:
@@ -518,6 +518,9 @@ def checkout(request, branch_id: int):
         payment_status=Order.PaymentStatus.UNPAID,
     )
 
+    # увеличиваем рейтинг ресторана
+    Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
+
     # сохраняем позиции
     lines = []
     for i, r in enumerate(rows, start=1):
@@ -682,7 +685,7 @@ def contacts(request):
                 queryset=Branch.objects.filter(is_active=True).order_by("name_ru"),
             )
         )
-        .order_by("name_ru")
+        .order_by("-rating", "name_ru")
     )
     return render(request, "public_site/contacts.html", {"restaurants": restaurants})
 
