@@ -441,10 +441,113 @@
   .rc:nth-child(8) { animation-delay: 0.42s; }
   .rc:nth-child(n+9) { animation-delay: 0.48s; }
 
+  /* ── CAROUSEL ── */
+  .rl-carousel-section { margin-bottom: 48px; }
+  .rl-carousel-label {
+    font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--accent); font-weight: 600; margin-bottom: 16px;
+  }
+  .rl-carousel-track-wrap {
+    overflow: hidden; cursor: grab; user-select: none; border-radius: 26px;
+  }
+  .rl-carousel-track-wrap:active { cursor: grabbing; }
+  .rl-carousel-track {
+    display: flex; gap: 20px;
+    transition: transform 0.42s cubic-bezier(0.25,0.46,0.45,0.94);
+    will-change: transform;
+  }
+  .rl-cs-card {
+    flex: 0 0 340px; height: 200px;
+    border-radius: 26px; overflow: hidden;
+    text-decoration: none; display: flex;
+    flex-direction: column; align-items: flex-start; justify-content: flex-end;
+    padding: 28px 28px 24px;
+    position: relative;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    transition: transform 0.28s, box-shadow 0.28s;
+  }
+  .rl-cs-card:hover { transform: translateY(-6px) scale(1.02); box-shadow: 0 20px 56px rgba(0,0,0,0.22); }
+  /* разноцветные фоны — циклично через nth-child */
+  .rl-cs-card:nth-child(8n+1) { background: linear-gradient(135deg,#FF4D1C 0%,#FF8A00 100%); }
+  .rl-cs-card:nth-child(8n+2) { background: linear-gradient(135deg,#7C3AED 0%,#DB2777 100%); }
+  .rl-cs-card:nth-child(8n+3) { background: linear-gradient(135deg,#059669 0%,#0EA5E9 100%); }
+  .rl-cs-card:nth-child(8n+4) { background: linear-gradient(135deg,#DC2626 0%,#F59E0B 100%); }
+  .rl-cs-card:nth-child(8n+5) { background: linear-gradient(135deg,#2563EB 0%,#7C3AED 100%); }
+  .rl-cs-card:nth-child(8n+6) { background: linear-gradient(135deg,#0F766E 0%,#2563EB 100%); }
+  .rl-cs-card:nth-child(8n+7) { background: linear-gradient(135deg,#BE185D 0%,#F97316 100%); }
+  .rl-cs-card:nth-child(8n+0) { background: linear-gradient(135deg,#15803D 0%,#CA8A04 100%); }
+  /* паттерн поверх — лёгкий шум */
+  .rl-cs-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 80% 20%, rgba(255,255,255,0.18), transparent);
+    pointer-events: none;
+  }
+  .rl-cs-badge {
+    position: absolute; top: 20px; right: 20px;
+    background: rgba(255,255,255,0.22);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 100px;
+    padding: 5px 14px;
+    font-size: 11px; font-weight: 700; color: white;
+    letter-spacing: 0.3px;
+  }
+  .rl-cs-name {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 22px; font-weight: 900;
+    color: white; line-height: 1.15;
+    letter-spacing: -0.8px;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.2);
+    margin-bottom: 10px;
+    position: relative; z-index: 1;
+  }
+  .rl-cs-free {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,0.95);
+    border-radius: 100px;
+    padding: 7px 18px;
+    font-size: 13px; font-weight: 700;
+    color: #111;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    position: relative; z-index: 1;
+  }
+  .rl-cs-free-icon { font-size: 15px; }
+  .rl-cs-no-delivery {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.4);
+    border-radius: 100px;
+    padding: 7px 18px;
+    font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.9);
+    position: relative; z-index: 1;
+  }
+  .rl-carousel-nav {
+    display: flex; gap: 10px; margin-top: 16px; justify-content: flex-end;
+  }
+  .rl-carousel-btn {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--card); border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; box-shadow: 0 2px 10px var(--shadow);
+    transition: background 0.2s, border-color 0.2s, transform 0.2s;
+    color: var(--text);
+  }
+  .rl-carousel-btn:hover { background: var(--accent); border-color: var(--accent); color: white; transform: scale(1.1); }
+
+  .rc-pill.free-delivery {
+    background: rgba(0,184,150,0.09);
+    border-color: rgba(0,184,150,0.3);
+    color: var(--teal);
+  }
+
   @media (max-width: 700px) {
     .rl-wrap { padding: 24px 16px 60px; }
     .rl-grid { grid-template-columns: 1fr; gap: 16px; }
     .rc-photo { height: 200px; }
+    .rl-cs-card { flex: 0 0 260px; height: 160px; padding: 20px; }
+    .rl-cs-name { font-size: 17px; }
+    .rl-cs-free { font-size: 12px; padding: 6px 14px; }
   }
 </style>
 {% endblock %}
@@ -487,6 +590,50 @@
     </form>
   </div>
 
+
+  {# ── КАРУСЕЛЬ ── #}
+  {% if cards %}
+  <div class="rl-carousel-section">
+    <div class="rl-carousel-label">Акции и доставка</div>
+    <div class="rl-carousel-track-wrap" id="csWrap">
+      <div class="rl-carousel-track" id="csTrack">
+        {% for c in cards %}
+        <a class="rl-cs-card" href="{% url 'public_site:restaurant_contacts' c.obj.slug %}">
+
+          {# Бейдж рейтинга сверху справа #}
+          {% if c.obj.rating and c.obj.rating > 0 %}
+          <div class="rl-cs-badge">⭐ {{ c.obj.rating }}</div>
+          {% endif %}
+
+          {# Название #}
+          <div class="rl-cs-name">{% t c.obj "name" %}</div>
+
+          {# Условие бесплатной доставки или просто тег #}
+          {% if c.free_delivery_from %}
+            <div class="rl-cs-free">
+              <span class="rl-cs-free-icon">🎁</span>
+              Бесплатная доставка от {{ c.free_delivery_from|floatformat:"0" }} сом
+            </div>
+          {% elif c.has_delivery %}
+            <div class="rl-cs-no-delivery">🚚 Есть доставка</div>
+          {% else %}
+            <div class="rl-cs-no-delivery">🥡 Самовывоз</div>
+          {% endif %}
+
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="rl-carousel-nav">
+      <button class="rl-carousel-btn" id="csPrev" aria-label="Назад">
+        <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="rl-carousel-btn" id="csNext" aria-label="Вперёд">
+        <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+  {% endif %}
 
   {# ── GRID ── #}
   <div class="rl-grid">
@@ -556,7 +703,9 @@
             {% if c.min_order %}
               <span class="rc-pill">Мин. {{ c.min_order|floatformat:"0" }} сом</span>
             {% endif %}
-            {% if c.min_fee %}
+            {% if c.free_delivery_from %}
+              <span class="rc-pill free-delivery">🎁 Бесплатно от {{ c.free_delivery_from|floatformat:"0" }} сом</span>
+            {% elif c.min_fee %}
               <span class="rc-pill">Дост. {{ c.min_fee|floatformat:"0" }} сом</span>
             {% endif %}
           {% else %}
@@ -595,4 +744,46 @@
 
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const wrap  = document.getElementById('csWrap');
+  const track = document.getElementById('csTrack');
+  const prev  = document.getElementById('csPrev');
+  const next  = document.getElementById('csNext');
+  if (!wrap || !track) return;
+
+  const CARD_W = () => (track.firstElementChild?.offsetWidth || 200) + 16;
+  let offset = 0, startX = 0, startOff = 0, dragging = false;
+
+  function clamp(v) {
+    const maxOff = Math.max(0, track.scrollWidth - wrap.offsetWidth);
+    return Math.min(Math.max(v, 0), maxOff);
+  }
+  function moveTo(v) {
+    offset = clamp(v);
+    track.style.transform = `translateX(-${offset}px)`;
+  }
+
+  next?.addEventListener('click', () => moveTo(offset + CARD_W() * 3));
+  prev?.addEventListener('click', () => moveTo(offset - CARD_W() * 3));
+
+  wrap.addEventListener('pointerdown', e => {
+    dragging = true; startX = e.clientX; startOff = offset;
+    wrap.setPointerCapture(e.pointerId);
+  });
+  wrap.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    moveTo(startOff - (e.clientX - startX));
+  });
+  wrap.addEventListener('pointerup', () => { dragging = false; });
+
+  /* не открывать ссылку если это был drag */
+  wrap.addEventListener('click', e => {
+    if (Math.abs(offset - startOff) > 6) e.preventDefault();
+  }, true);
+})();
+</script>
 {% endblock %}

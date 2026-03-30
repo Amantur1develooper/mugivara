@@ -110,7 +110,7 @@ def sync_menu_action(modeladmin, request, queryset):
     # остальное как у тебя
 @admin.register(Branch)
 class BranchAdmin(admin.ModelAdmin):
-    list_display = ("id", "restaurant", "name_ru", "is_active", "delivery_enabled", "min_order_amount", "delivery_fee")
+    list_display = ("id", "restaurant", "name_ru", "is_active", "delivery_enabled", "min_order_amount", "delivery_fee", "free_delivery_from")
     list_filter = ("restaurant", "is_active", "delivery_enabled")
     search_fields = ("name_ru", "name_ky", "name_en", "address", "phone")
     inlines = (BranchMenuSetInline, BranchTelegramLinkInline, BranchItemInline)

@@ -285,6 +285,10 @@ def restaurants_list(request):
         has_delivery       = bool(delivery_branches)
         min_order          = min((b.min_order_amount for b in delivery_branches), default=None)
         min_fee            = min((b.delivery_fee    for b in delivery_branches), default=None)
+        free_delivery_from = min(
+            (b.free_delivery_from for b in delivery_branches if b.free_delivery_from and b.free_delivery_from > 0),
+            default=None
+        )
 
         # Время работы — показываем только если у всех филиалов одинаково
         hours_text = None
@@ -305,14 +309,15 @@ def restaurants_list(request):
                 break
 
         cards.append({
-            "obj":            r,
-            "is_open":        is_open,
-            "has_delivery":   has_delivery,
-            "min_order":      min_order,
-            "min_fee":        min_fee,
-            "hours_text":     hours_text,
-            "branches_count": len(branches),
-            "cover":          cover,   # cover_photo первого подходящего филиала
+            "obj":               r,
+            "is_open":           is_open,
+            "has_delivery":      has_delivery,
+            "min_order":         min_order,
+            "min_fee":           min_fee,
+            "free_delivery_from": free_delivery_from,
+            "hours_text":        hours_text,
+            "branches_count":    len(branches),
+            "cover":             cover,
         })
 
     return render(request, "public_site/restaurants_list.html", {
@@ -501,7 +506,14 @@ def checkout(request, branch_id: int):
         )
         return redirect("public_site:cart_detail", branch_id=branch.id)
 
-    delivery_fee = branch.delivery_fee if order_type == Order.Type.DELIVERY else Decimal("0")
+    if order_type == Order.Type.DELIVERY:
+        free_from = branch.free_delivery_from or Decimal("0")
+        if free_from > 0 and subtotal >= free_from:
+            delivery_fee = Decimal("0")
+        else:
+            delivery_fee = branch.delivery_fee
+    else:
+        delivery_fee = Decimal("0")
     total = subtotal + delivery_fee
 
     order = Order.objects.create(

@@ -44,6 +44,10 @@ class Branch(TimeStampedModel):
     delivery_enabled = models.BooleanField(default=False)
     min_order_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    free_delivery_from = models.DecimalField(
+        "Бесплатная доставка от (сом)", max_digits=10, decimal_places=2,
+        default=0, help_text="0 = не действует"
+    )
     
     is_open_24h = models.BooleanField(default=False)
     open_time = models.TimeField(null=True, blank=True)   # например 09:00
