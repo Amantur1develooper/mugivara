@@ -1,6 +1,10 @@
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+import os
+from io import BytesIO
+from django.core.files.base import ContentFile
+from PIL import Image
 
 
 class TimeStampedModel(models.Model):
@@ -53,6 +57,37 @@ class Branch(TimeStampedModel):
     open_time = models.TimeField(null=True, blank=True)   # например 09:00
     close_time = models.TimeField(null=True, blank=True)  # например 22:00
     cover_photo = models.ImageField(upload_to="branches/covers/", blank=True, null=True)
+    promo_photo = models.ImageField(
+        "Фото для акции (фон карусели)",
+        upload_to="branches/promo/", blank=True, null=True,
+    )
+
+    def save(self, *args, **kwargs):
+        self.photo_compression = None
+        if self.promo_photo and hasattr(self.promo_photo, 'file'):
+            try:
+                original_size = self.promo_photo.file.seek(0, 2) or self.promo_photo.file.tell()
+                self.promo_photo.file.seek(0)
+                img = Image.open(self.promo_photo).convert("RGB")
+                orig_w, orig_h = img.size
+                img.thumbnail((1200, 600), Image.LANCZOS)
+                new_w, new_h = img.size
+                buf = BytesIO()
+                img.save(buf, format="WEBP", quality=85, method=6)
+                compressed_size = buf.tell()
+                buf.seek(0)
+                name = os.path.splitext(self.promo_photo.name)[0] + ".webp"
+                self.promo_photo.save(name, ContentFile(buf.read()), save=False)
+                self.photo_compression = {
+                    "before_kb": round(original_size / 1024, 1),
+                    "after_kb":  round(compressed_size / 1024, 1),
+                    "saved_pct": round((1 - compressed_size / original_size) * 100) if original_size else 0,
+                    "orig_size": f"{orig_w}×{orig_h}",
+                    "new_size":  f"{new_w}×{new_h}",
+                }
+            except Exception:
+                pass
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "Филиал"

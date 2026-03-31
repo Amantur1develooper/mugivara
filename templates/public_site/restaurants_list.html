@@ -448,13 +448,17 @@
     color: var(--accent); font-weight: 600; margin-bottom: 16px;
   }
   .rl-carousel-track-wrap {
-    overflow: hidden; cursor: grab; user-select: none; border-radius: 26px;
+    overflow-x: scroll; cursor: grab; user-select: none;
+    border-radius: 26px;
+    scroll-behavior: smooth;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
+  .rl-carousel-track-wrap::-webkit-scrollbar { display: none; }
   .rl-carousel-track-wrap:active { cursor: grabbing; }
   .rl-carousel-track {
     display: flex; gap: 20px;
-    transition: transform 0.42s cubic-bezier(0.25,0.46,0.45,0.94);
-    will-change: transform;
+    width: max-content;
   }
   .rl-cs-card {
     flex: 0 0 340px; height: 200px;
@@ -481,6 +485,11 @@
     content: '';
     position: absolute; inset: 0;
     background: radial-gradient(ellipse 80% 60% at 80% 20%, rgba(255,255,255,0.18), transparent);
+    pointer-events: none;
+  }
+  .rl-cs-photo-overlay {
+    position: absolute; inset: 0; border-radius: 26px;
+    background: linear-gradient(135deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.2) 100%);
     pointer-events: none;
   }
   .rl-cs-badge {
@@ -598,7 +607,11 @@
     <div class="rl-carousel-track-wrap" id="csWrap">
       <div class="rl-carousel-track" id="csTrack">
         {% for c in cards %}
-        <a class="rl-cs-card" href="{% url 'public_site:restaurant_contacts' c.obj.slug %}">
+        <a class="rl-cs-card" href="{% url 'public_site:restaurant_contacts' c.obj.slug %}"
+           {% if c.promo_photo %}style="background-image:url('{{ c.promo_photo.url }}');background-size:cover;background-position:center"{% endif %}>
+
+          {# затемнение поверх фото #}
+          {% if c.promo_photo %}<div class="rl-cs-photo-overlay"></div>{% endif %}
 
           {# Бейдж рейтинга сверху справа #}
           {% if c.obj.rating and c.obj.rating > 0 %}
@@ -749,40 +762,62 @@
 {% block extra_js %}
 <script>
 (function(){
-  const wrap  = document.getElementById('csWrap');
-  const track = document.getElementById('csTrack');
-  const prev  = document.getElementById('csPrev');
-  const next  = document.getElementById('csNext');
-  if (!wrap || !track) return;
+  const wrap = document.getElementById('csWrap');
+  const prev = document.getElementById('csPrev');
+  const next = document.getElementById('csNext');
+  if (!wrap) return;
 
-  const CARD_W = () => (track.firstElementChild?.offsetWidth || 200) + 16;
-  let offset = 0, startX = 0, startOff = 0, dragging = false;
+  const cardW = () => (wrap.firstElementChild?.offsetWidth || 340) + 20;
 
-  function clamp(v) {
-    const maxOff = Math.max(0, track.scrollWidth - wrap.offsetWidth);
-    return Math.min(Math.max(v, 0), maxOff);
+  /* ── кнопки ── */
+  next?.addEventListener('click', () => wrap.scrollBy({ left:  cardW() * 2, behavior: 'smooth' }));
+  prev?.addEventListener('click', () => wrap.scrollBy({ left: -cardW() * 2, behavior: 'smooth' }));
+
+  /* ── авто-скролл ── */
+  let timer;
+  const AUTO_MS = 2800;
+
+  function autoStep() {
+    const maxScroll = wrap.scrollWidth - wrap.clientWidth;
+    if (wrap.scrollLeft >= maxScroll - 2) {
+      wrap.scrollTo({ left: 0, behavior: 'smooth' });
+    } else {
+      wrap.scrollBy({ left: cardW(), behavior: 'smooth' });
+    }
   }
-  function moveTo(v) {
-    offset = clamp(v);
-    track.style.transform = `translateX(-${offset}px)`;
-  }
 
-  next?.addEventListener('click', () => moveTo(offset + CARD_W() * 3));
-  prev?.addEventListener('click', () => moveTo(offset - CARD_W() * 3));
+  function startAuto() { timer = setInterval(autoStep, AUTO_MS); }
+  function stopAuto()  { clearInterval(timer); }
+
+  startAuto();
+
+  wrap.addEventListener('mouseenter', stopAuto);
+  wrap.addEventListener('mouseleave', startAuto);
+  wrap.addEventListener('pointerdown', stopAuto);
+  wrap.addEventListener('pointerup',   () => setTimeout(startAuto, AUTO_MS));
+
+  /* ── drag / swipe ── */
+  let startX = 0, startScroll = 0, dragging = false;
 
   wrap.addEventListener('pointerdown', e => {
-    dragging = true; startX = e.clientX; startOff = offset;
+    dragging = true;
+    startX = e.clientX;
+    startScroll = wrap.scrollLeft;
+    wrap.style.scrollBehavior = 'auto';
     wrap.setPointerCapture(e.pointerId);
   });
   wrap.addEventListener('pointermove', e => {
     if (!dragging) return;
-    moveTo(startOff - (e.clientX - startX));
+    wrap.scrollLeft = startScroll - (e.clientX - startX);
   });
-  wrap.addEventListener('pointerup', () => { dragging = false; });
+  wrap.addEventListener('pointerup', () => {
+    dragging = false;
+    wrap.style.scrollBehavior = 'smooth';
+  });
 
   /* не открывать ссылку если это был drag */
   wrap.addEventListener('click', e => {
-    if (Math.abs(offset - startOff) > 6) e.preventDefault();
+    if (Math.abs(wrap.scrollLeft - startScroll) > 8) e.preventDefault();
   }, true);
 })();
 </script>

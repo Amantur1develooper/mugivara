@@ -289,6 +289,10 @@ def restaurants_list(request):
             (b.free_delivery_from for b in delivery_branches if b.free_delivery_from and b.free_delivery_from > 0),
             default=None
         )
+        promo_photo = next(
+            (b.promo_photo for b in branches if b.promo_photo),
+            None
+        )
 
         # Время работы — показываем только если у всех филиалов одинаково
         hours_text = None
@@ -318,6 +322,7 @@ def restaurants_list(request):
             "hours_text":        hours_text,
             "branches_count":    len(branches),
             "cover":             cover,
+            "promo_photo":       promo_photo,
         })
 
     return render(request, "public_site/restaurants_list.html", {

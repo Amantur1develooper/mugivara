@@ -106,11 +106,21 @@ def branch_edit(request, branch_id):
         branch.open_time  = ot or None
         branch.close_time = ct or None
 
-        branch.save(update_fields=[
-            "delivery_enabled", "min_order_amount", "delivery_fee",
-            "free_delivery_from", "is_open_24h", "open_time", "close_time", "updated_at",
-        ])
-        messages.success(request, "Настройки филиала сохранены")
+        photo = request.FILES.get("promo_photo")
+        if photo:
+            branch.promo_photo = photo
+
+        branch.save()
+
+        c = getattr(branch, "photo_compression", None)
+        if c:
+            messages.success(
+                request,
+                f"Настройки сохранены | Фото акции: {c['before_kb']} KB → {c['after_kb']} KB "
+                f"(−{c['saved_pct']}%, {c['orig_size']} → {c['new_size']})"
+            )
+        else:
+            messages.success(request, "Настройки филиала сохранены")
         return redirect("dashboard:branch_edit", branch_id=branch.id)
 
     return render(request, "dashboard/branch_edit.html", {"branch": branch})
