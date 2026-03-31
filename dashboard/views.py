@@ -186,7 +186,16 @@ def item_add(request, branch_id):
         )
         if photo:
             item.photo = photo
-        item.save()  # компрессия происходит внутри Item.save()
+        item.save()
+
+        c = item.photo_compression
+        if c:
+            photo_msg = (
+                f" | Фото: {c['before_kb']} KB → {c['after_kb']} KB "
+                f"(−{c['saved_pct']}%, {c['orig_size']} → {c['new_size']})"
+            )
+        else:
+            photo_msg = ""
 
         # создаём BranchItem
         bi = BranchItem.objects.create(
@@ -219,7 +228,7 @@ def item_add(request, branch_id):
             # без категории — просто пробуем автосвязи
             ensure_links_for_branch_item(bi)
 
-        messages.success(request, f"Блюдо «{name}» добавлено")
+        messages.success(request, f"Блюдо «{name}» добавлено{photo_msg}")
         return redirect("dashboard:branch_items", branch_id=branch.id)
 
     return render(request, "dashboard/item_add.html", {
@@ -252,12 +261,20 @@ def item_edit(request, branch_item_id):
 
         photo = request.FILES.get("photo")
         if photo:
-            item.photo = photo  # save() сожмёт
+            item.photo = photo
 
         item.save()
         bi.save(update_fields=["price", "is_available", "updated_at"])
 
-        messages.success(request, "Блюдо обновлено")
+        c = item.photo_compression
+        if c:
+            photo_msg = (
+                f" | Фото: {c['before_kb']} KB → {c['after_kb']} KB "
+                f"(−{c['saved_pct']}%, {c['orig_size']} → {c['new_size']})"
+            )
+            messages.success(request, f"Блюдо обновлено{photo_msg}")
+        else:
+            messages.success(request, "Блюдо обновлено")
         return redirect("dashboard:branch_items", branch_id=bi.branch_id)
 
     return render(request, "dashboard/item_edit.html", {"bi": bi, "item": item})

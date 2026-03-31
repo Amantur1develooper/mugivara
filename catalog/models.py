@@ -44,17 +44,33 @@ class Item(TimeStampedModel):
     base_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def save(self, *args, **kwargs):
+        self.photo_compression = None
         if self.photo and hasattr(self.photo, 'file'):
             try:
+                original_size = self.photo.file.seek(0, 2) or self.photo.file.tell()
+                self.photo.file.seek(0)
+
                 img = Image.open(self.photo)
+                orig_w, orig_h = img.size
                 img = img.convert("RGB")
-                # ограничиваем размер до 800x800
                 img.thumbnail((800, 800), Image.LANCZOS)
+                new_w, new_h = img.size
+
                 buf = BytesIO()
                 img.save(buf, format="WEBP", quality=82, method=6)
+                compressed_size = buf.tell()
                 buf.seek(0)
+
                 name = os.path.splitext(self.photo.name)[0] + ".webp"
                 self.photo.save(name, ContentFile(buf.read()), save=False)
+
+                self.photo_compression = {
+                    "before_kb": round(original_size / 1024, 1),
+                    "after_kb":  round(compressed_size / 1024, 1),
+                    "saved_pct": round((1 - compressed_size / original_size) * 100) if original_size else 0,
+                    "orig_size": f"{orig_w}×{orig_h}",
+                    "new_size":  f"{new_w}×{new_h}",
+                }
             except Exception:
                 pass
         super().save(*args, **kwargs)

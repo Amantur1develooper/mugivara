@@ -63,13 +63,13 @@
     <div class="row2">
       <div class="db-form-group">
         <label class="db-label" for="min_order">Минимальная сумма заказа (сом)</label>
-        <input class="db-input" id="min_order" name="min_order_amount" type="number" min="0" step="10"
+        <input class="db-input" id="min_order" name="min_order_amount" type="number" min="0"
                value="{{ branch.min_order_amount|floatformat:'0' }}">
         <div class="db-hint">0 = нет ограничений</div>
       </div>
       <div class="db-form-group">
         <label class="db-label" for="delivery_fee">Стоимость доставки (сом)</label>
-        <input class="db-input" id="delivery_fee" name="delivery_fee" type="number" min="0" step="10"
+        <input class="db-input" id="delivery_fee" name="delivery_fee" type="number" min="0"
                value="{{ branch.delivery_fee|floatformat:'0' }}">
         <div class="db-hint">0 = бесплатная доставка всегда</div>
       </div>
@@ -85,7 +85,7 @@
       <div class="db-form-group" style="margin-bottom:0">
         <label class="db-label" for="free_delivery_from">Бесплатно от (сом)</label>
         <input class="db-input" id="free_delivery_from" name="free_delivery_from"
-               type="number" min="0" step="50"
+               type="number" min="0"
                value="{{ branch.free_delivery_from|floatformat:'0' }}"
                placeholder="Например: 2000">
         <div class="db-hint">0 = акция не действует</div>
