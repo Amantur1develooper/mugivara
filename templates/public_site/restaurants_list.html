@@ -763,61 +763,87 @@
 <script>
 (function(){
   const wrap = document.getElementById('csWrap');
-  const prev = document.getElementById('csPrev');
-  const next = document.getElementById('csNext');
   if (!wrap) return;
 
-  const cardW = () => (wrap.firstElementChild?.offsetWidth || 340) + 20;
-
-  /* ── кнопки ── */
-  next?.addEventListener('click', () => wrap.scrollBy({ left:  cardW() * 2, behavior: 'smooth' }));
-  prev?.addEventListener('click', () => wrap.scrollBy({ left: -cardW() * 2, behavior: 'smooth' }));
+  const STEP = 360;
+  const INTERVAL = 2800;
+  let timer = null;
+  let dragging = false;
+  let dragStartX = 0;
+  let dragStartScroll = 0;
 
   /* ── авто-скролл ── */
-  let timer;
-  const AUTO_MS = 2800;
-
-  function autoStep() {
-    const maxScroll = wrap.scrollWidth - wrap.clientWidth;
-    if (wrap.scrollLeft >= maxScroll - 2) {
+  function tick() {
+    const max = wrap.scrollWidth - wrap.clientWidth;
+    if (max <= 0) return;
+    if (wrap.scrollLeft >= max - 2) {
       wrap.scrollTo({ left: 0, behavior: 'smooth' });
     } else {
-      wrap.scrollBy({ left: cardW(), behavior: 'smooth' });
+      wrap.scrollBy({ left: STEP, behavior: 'smooth' });
     }
   }
-
-  function startAuto() { timer = setInterval(autoStep, AUTO_MS); }
-  function stopAuto()  { clearInterval(timer); }
+  function startAuto() { clearInterval(timer); timer = setInterval(tick, INTERVAL); }
+  function stopAuto()  { clearInterval(timer); timer = null; }
 
   startAuto();
 
+  /* ── кнопки ── */
+  document.getElementById('csPrev')?.addEventListener('click', () => {
+    stopAuto();
+    wrap.scrollBy({ left: -STEP * 2, behavior: 'smooth' });
+    setTimeout(startAuto, INTERVAL);
+  });
+  document.getElementById('csNext')?.addEventListener('click', () => {
+    stopAuto();
+    wrap.scrollBy({ left: STEP * 2, behavior: 'smooth' });
+    setTimeout(startAuto, INTERVAL);
+  });
+
+  /* ── пауза при наведении ── */
   wrap.addEventListener('mouseenter', stopAuto);
-  wrap.addEventListener('mouseleave', startAuto);
-  wrap.addEventListener('pointerdown', stopAuto);
-  wrap.addEventListener('pointerup',   () => setTimeout(startAuto, AUTO_MS));
+  wrap.addEventListener('mouseleave', () => { if (!dragging) startAuto(); });
 
-  /* ── drag / swipe ── */
-  let startX = 0, startScroll = 0, dragging = false;
-
-  wrap.addEventListener('pointerdown', e => {
+  /* ── DESKTOP drag ── */
+  wrap.addEventListener('mousedown', e => {
     dragging = true;
-    startX = e.clientX;
-    startScroll = wrap.scrollLeft;
+    dragStartX = e.pageX;
+    dragStartScroll = wrap.scrollLeft;
+    wrap.style.cursor = 'grabbing';
     wrap.style.scrollBehavior = 'auto';
-    wrap.setPointerCapture(e.pointerId);
+    stopAuto();
+    e.preventDefault(); /* не выделять текст */
   });
-  wrap.addEventListener('pointermove', e => {
+  window.addEventListener('mousemove', e => {
     if (!dragging) return;
-    wrap.scrollLeft = startScroll - (e.clientX - startX);
+    wrap.scrollLeft = dragStartScroll - (e.pageX - dragStartX);
   });
-  wrap.addEventListener('pointerup', () => {
+  window.addEventListener('mouseup', () => {
+    if (!dragging) return;
     dragging = false;
+    wrap.style.cursor = 'grab';
     wrap.style.scrollBehavior = 'smooth';
+    setTimeout(startAuto, INTERVAL);
   });
 
-  /* не открывать ссылку если это был drag */
+  /* ── MOBILE swipe ── */
+  let touchX = 0, touchScroll = 0;
+  wrap.addEventListener('touchstart', e => {
+    touchX = e.touches[0].pageX;
+    touchScroll = wrap.scrollLeft;
+    wrap.style.scrollBehavior = 'auto';
+    stopAuto();
+  }, { passive: true });
+  wrap.addEventListener('touchmove', e => {
+    wrap.scrollLeft = touchScroll - (e.touches[0].pageX - touchX);
+  }, { passive: true });
+  wrap.addEventListener('touchend', () => {
+    wrap.style.scrollBehavior = 'smooth';
+    setTimeout(startAuto, INTERVAL);
+  });
+
+  /* не переходить по ссылке если это был drag */
   wrap.addEventListener('click', e => {
-    if (Math.abs(wrap.scrollLeft - startScroll) > 8) e.preventDefault();
+    if (Math.abs(wrap.scrollLeft - dragStartScroll) > 10) e.preventDefault();
   }, true);
 })();
 </script>
