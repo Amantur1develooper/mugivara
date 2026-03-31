@@ -1,4 +1,6 @@
 from django.contrib import admin, messages
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth import get_user_model
 from django.shortcuts import redirect
 from django.urls import path
 from django import forms
@@ -170,3 +172,37 @@ class MembershipAdmin(admin.ModelAdmin):
     list_display = ("id", "user", "restaurant", "branch", "role", "created_at")
     list_filter = ("role", "restaurant", "branch")
     search_fields = ("user__username", "restaurant__name_ru", "branch__name_ru")
+    autocomplete_fields = ("user", "restaurant", "branch")
+
+
+# ── Inline членств в карточке пользователя ──────────────────────────────────
+
+class MembershipInline(admin.TabularInline):
+    model = Membership
+    extra = 1
+    fields = ("restaurant", "branch", "role")
+    autocomplete_fields = ("restaurant", "branch")
+    verbose_name = "Доступ к ресторану"
+    verbose_name_plural = "Доступы к ресторанам"
+
+
+User = get_user_model()
+
+# отменяем дефолтную регистрацию UserAdmin чтобы добавить inline
+admin.site.unregister(User)
+
+@admin.register(User)
+class UserAdmin(BaseUserAdmin):
+    inlines = (MembershipInline,)
+    list_display = ("username", "email", "first_name", "last_name", "is_staff", "restaurants_list")
+
+    @admin.display(description="Рестораны")
+    def restaurants_list(self, obj):
+        names = (
+            Membership.objects
+            .filter(user=obj)
+            .select_related("restaurant")
+            .values_list("restaurant__name_ru", flat=True)
+            .distinct()
+        )
+        return ", ".join(names) if names else "—"

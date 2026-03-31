@@ -91,9 +91,10 @@ class Membership(TimeStampedModel):
     role = models.CharField(max_length=20, choices=Role.choices)
         
     class Meta:
-        verbose_name = "членство"
-        verbose_name_plural = "членствы"
-        unique_together = ("user", "restaurant", "role")
+        verbose_name = "Доступ к ресторану"
+        verbose_name_plural = "Доступы к ресторанам"
+        unique_together = ("user", "restaurant", "branch")
 
     def __str__(self):
-        return f"{self.user} -> {self.restaurant} ({self.role})"
+        branch_str = f" / {self.branch.name_ru}" if self.branch else " / все филиалы"
+        return f"{self.user} → {self.restaurant}{branch_str} ({self.role})"
