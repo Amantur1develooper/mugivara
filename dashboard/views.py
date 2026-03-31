@@ -6,7 +6,8 @@ from django.http import JsonResponse
 from django.contrib import messages
 from decimal import Decimal, InvalidOperation
 
-from core.models import Restaurant, Branch, Membership
+from django.utils import timezone
+from core.models import Restaurant, Branch, Membership, PromoCode
 from catalog.models import (
     BranchItem, BranchCategory, BranchCategoryItem,
     Item, ItemCategory, Category,
@@ -322,3 +323,67 @@ def toggle_item(request, branch_item_id):
     bi.is_available = not bi.is_available
     bi.save(update_fields=["is_available", "updated_at"])
     return JsonResponse({"ok": True, "is_available": bi.is_available})
+
+
+# ── PROMO CODES ───────────────────────────────────────────────────────────────
+
+@login_required(login_url="dashboard:login")
+def promo_list(request, branch_id):
+    branch = get_object_or_404(Branch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:home")
+
+    if request.method == "POST":
+        code = request.POST.get("code", "").strip().upper()
+        discount_type = request.POST.get("discount_type", "")
+        discount_value = Decimal(request.POST.get("discount_value") or "0")
+        valid_until = request.POST.get("valid_until") or None
+        max_uses = int(request.POST.get("max_uses") or 0)
+
+        if not code:
+            messages.error(request, "Введите промокод")
+        elif PromoCode.objects.filter(branch=branch, code=code).exists():
+            messages.error(request, f"Промокод «{code}» уже существует")
+        else:
+            PromoCode.objects.create(
+                branch=branch,
+                code=code,
+                discount_type=discount_type,
+                discount_value=discount_value,
+                valid_until=valid_until,
+                max_uses=max_uses,
+                is_active=True,
+            )
+            messages.success(request, f"Промокод «{code}» создан")
+        return redirect("dashboard:promo_list", branch_id=branch.id)
+
+    promos = PromoCode.objects.filter(branch=branch).order_by("-created_at")
+    today = timezone.localdate()
+    return render(request, "dashboard/promo_list.html", {
+        "branch": branch,
+        "promos": promos,
+        "today": today,
+        "discount_types": PromoCode.DiscountType.choices,
+    })
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def promo_toggle(request, promo_id):
+    promo = get_object_or_404(PromoCode, id=promo_id)
+    if not _has_branch_access(request.user, promo.branch):
+        return redirect("dashboard:home")
+    promo.is_active = not promo.is_active
+    promo.save(update_fields=["is_active", "updated_at"])
+    return redirect("dashboard:promo_list", branch_id=promo.branch_id)
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def promo_delete(request, promo_id):
+    promo = get_object_or_404(PromoCode, id=promo_id)
+    if not _has_branch_access(request.user, promo.branch):
+        return redirect("dashboard:home")
+    promo.delete()
+    messages.success(request, "Промокод удалён")
+    return redirect("dashboard:promo_list", branch_id=promo.branch_id)

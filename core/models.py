@@ -113,6 +113,43 @@ class Branch(TimeStampedModel):
         # через полночь (18:00-02:00)
         return t >= self.open_time or t < self.close_time
 
+class PromoCode(TimeStampedModel):
+    class DiscountType(models.TextChoices):
+        FREE_DELIVERY = "free_delivery", "Бесплатная доставка"
+        PERCENT       = "percent",       "Скидка в процентах"
+        FIXED         = "fixed",         "Скидка фиксированной суммой"
+
+    branch         = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="promo_codes")
+    code           = models.CharField("Промокод", max_length=50)
+    discount_type  = models.CharField("Тип скидки", max_length=20, choices=DiscountType.choices)
+    discount_value = models.DecimalField(
+        "Размер скидки", max_digits=10, decimal_places=2, default=0,
+        help_text="Для % — число (10 = 10%). Для суммы — сом (500). Для бесплатной доставки — 0.",
+    )
+    valid_until    = models.DateField("Действует до", null=True, blank=True)
+    is_active      = models.BooleanField("Активен", default=True)
+    max_uses       = models.PositiveIntegerField("Макс. использований", default=0, help_text="0 = без ограничений")
+    used_count     = models.PositiveIntegerField("Использован раз", default=0, editable=False)
+
+    class Meta:
+        verbose_name = "Промокод"
+        verbose_name_plural = "Промокоды"
+        unique_together = ("branch", "code")
+
+    def __str__(self):
+        return f"{self.code} ({self.branch.restaurant.name_ru})"
+
+    def is_valid(self):
+        from django.utils import timezone
+        if not self.is_active:
+            return False, "Промокод неактивен"
+        if self.valid_until and self.valid_until < timezone.localdate():
+            return False, "Срок действия промокода истёк"
+        if self.max_uses > 0 and self.used_count >= self.max_uses:
+            return False, "Промокод исчерпан"
+        return True, "ok"
+
+
 class Membership(TimeStampedModel):
     class Role(models.TextChoices):
         OWNER = "owner", "Owner"

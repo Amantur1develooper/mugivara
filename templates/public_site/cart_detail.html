@@ -137,12 +137,28 @@
       </div>
     </div>
 
+    <!-- Promo code -->
+    <div class="mt-4 rounded-2xl bg-white ring-1 ring-stone-200 p-5">
+      <div class="text-sm font-semibold mb-3">{% trans "Промокод" %}</div>
+      <div class="flex gap-2">
+        <input id="promo-input" type="text" placeholder="{% trans 'Введите промокод' %}"
+               class="flex-1 border border-stone-300 rounded-xl px-3 py-2 text-base uppercase">
+        <button type="button" id="promo-apply-btn"
+                class="px-4 py-2 rounded-xl bg-stone-900 text-white text-sm font-semibold hover:bg-stone-700 transition">
+          {% trans "Применить" %}
+        </button>
+      </div>
+      <div id="promo-msg" class="mt-2 text-sm hidden"></div>
+    </div>
+
     <!-- Checkout -->
-    <div class="mt-6 rounded-2xl bg-white ring-1 ring-stone-200 p-5">
+    <div class="mt-4 rounded-2xl bg-white ring-1 ring-stone-200 p-5">
       <h2 class="text-xl font-extrabold">{% trans "Оформление" %}</h2>
 
-      <form action="{% url 'public_site:checkout' branch.id %}" method="post" class="mt-4 grid gap-3">
+      <form action="{% url 'public_site:checkout' branch.id %}" method="post" class="mt-4 grid gap-3"
+            id="checkout-form">
         {% csrf_token %}
+        <input type="hidden" name="promo_code" id="promo-code-hidden">
 
         <!-- optional -->
         <input name="name" placeholder="{% trans 'Имя (не обязательно)' %}"
@@ -200,6 +216,10 @@
 
   {% endif %}
 </div>
+
+<div id="js-promo-url"
+     data-validate-url="{% url 'public_site:validate_promo' branch.id %}"
+     style="display:none"></div>
 
 <script>
   function getCookie(name) {
@@ -304,6 +324,74 @@
 
     await updateRow(rowEl, qty);
   });
+
+  // ── PROMO CODE ──────────────────────────────────────────────────────────────
+  (function(){
+    const validateUrl = document.getElementById('js-promo-url').dataset.validateUrl;
+    const input       = document.getElementById('promo-input');
+    const btn         = document.getElementById('promo-apply-btn');
+    const msg         = document.getElementById('promo-msg');
+    const hidden      = document.getElementById('promo-code-hidden');
+
+    let appliedCode = '';
+
+    function showMsg(text, ok){
+      msg.textContent = text;
+      msg.className = 'mt-2 text-sm ' + (ok ? 'text-green-600' : 'text-red-500');
+      msg.classList.remove('hidden');
+    }
+
+    btn.addEventListener('click', async () => {
+      const code = (input.value || '').trim().toUpperCase();
+      if (!code) return;
+
+      btn.disabled = true;
+      btn.textContent = '...';
+
+      const fd = new FormData();
+      fd.append('code', code);
+      try {
+        const resp = await fetch(validateUrl, {
+          method: 'POST',
+          body: fd,
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': getCookie('csrftoken'),
+          }
+        });
+        const data = await resp.json();
+        if (data.ok) {
+          appliedCode = code;
+          hidden.value = code;
+          let desc = data.label;
+          if (data.discount_type === 'percent') desc += ` (−${parseFloat(data.discount_value).toFixed(0)}%)`;
+          else if (data.discount_type === 'fixed') desc += ` (−${parseFloat(data.discount_value).toFixed(0)} сом)`;
+          showMsg('✓ Промокод применён: ' + desc, true);
+          input.readOnly = true;
+          btn.textContent = 'Изменить';
+          btn.onclick = () => {
+            input.readOnly = false;
+            input.value = '';
+            hidden.value = '';
+            appliedCode = '';
+            msg.classList.add('hidden');
+            btn.textContent = 'Применить';
+            btn.onclick = null;
+            btn.disabled = false;
+          };
+        } else {
+          showMsg(data.error || 'Ошибка', false);
+        }
+      } catch(e) {
+        showMsg('Ошибка сети', false);
+      } finally {
+        if (!appliedCode) {
+          btn.disabled = false;
+          btn.textContent = 'Применить';
+        }
+      }
+    });
+  })();
 
   // phone: keep +996 prefix
   (function(){

@@ -104,6 +104,9 @@
           <a href="{% url 'dashboard:branch_edit' branch.id %}" class="btn-settings">⚙️ Настройки</a>
           <a href="{% url 'dashboard:branch_items' branch.id %}" class="btn-menu">🍽 Меню и цены</a>
         </div>
+        <div class="branch-btns" style="margin-top:-6px">
+          <a href="{% url 'dashboard:promo_list' branch.id %}" class="btn-settings" style="flex:none;width:100%;text-align:center">🎟 Промокоды</a>
+        </div>
       </div>
       {% endfor %}
     </div>

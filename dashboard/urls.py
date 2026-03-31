@@ -17,4 +17,8 @@ urlpatterns = [
     path("item/<int:branch_item_id>/edit/",   views.item_edit,         name="item_edit"),
     path("item/<int:branch_item_id>/price/",  views.update_item_price, name="update_price"),
     path("item/<int:branch_item_id>/toggle/", views.toggle_item,       name="toggle_item"),
+
+    path("branch/<int:branch_id>/promos/",    views.promo_list,   name="promo_list"),
+    path("promo/<int:promo_id>/toggle/",      views.promo_toggle, name="promo_toggle"),
+    path("promo/<int:promo_id>/delete/",      views.promo_delete, name="promo_delete"),
 ]

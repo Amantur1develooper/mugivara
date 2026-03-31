@@ -3,7 +3,7 @@ from django.urls import path, include
 from .views import (
     about, booking_set_status, contacts, hall_plan, home, place_move, reservation, restaurant_about, restaurant_contacts, restaurant_detail, branch_menu,
     add_to_cart, cart_detail, cart_update, cart_remove,
-    checkout, checkout_success, restaurants_list
+    checkout, checkout_success, restaurants_list, validate_promo
 )
 from reservations import views as r
 from public_site.views_table import table_cart, table_create_order, table_cart_update, table_call_waiter, table_menu
@@ -37,6 +37,7 @@ urlpatterns = [
 
     # checkout
     path("b/<int:branch_id>/checkout/", checkout, name="checkout"),
+    path("b/<int:branch_id>/promo/validate/", validate_promo, name="validate_promo"),
     # path("b/<int:branch_id>/checkout/success/<int:order_id>/", checkout_success, name="checkout_success"),
     path("about/", about, name="about"),
     # path("contacts/", contacts, name="contacts"),

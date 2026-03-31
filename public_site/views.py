@@ -519,7 +519,33 @@ def checkout(request, branch_id: int):
             delivery_fee = branch.delivery_fee
     else:
         delivery_fee = Decimal("0")
-    total = subtotal + delivery_fee
+
+    # промокод
+    from core.models import PromoCode
+    promo_code_str = (request.POST.get("promo_code") or "").strip().upper()
+    promo = None
+    promo_discount = Decimal("0")
+    promo_msg_line = ""
+    if promo_code_str:
+        try:
+            promo = PromoCode.objects.get(branch=branch, code=promo_code_str)
+            valid, _ = promo.is_valid()
+            if valid:
+                if promo.discount_type == PromoCode.DiscountType.FREE_DELIVERY:
+                    delivery_fee = Decimal("0")
+                    promo_msg_line = f"Промокод {promo.code}: бесплатная доставка"
+                elif promo.discount_type == PromoCode.DiscountType.PERCENT:
+                    promo_discount = (subtotal * promo.discount_value / Decimal("100")).quantize(Decimal("1"))
+                    promo_msg_line = f"Промокод {promo.code}: −{promo.discount_value}% (−{promo_discount} сом)"
+                elif promo.discount_type == PromoCode.DiscountType.FIXED:
+                    promo_discount = min(promo.discount_value, subtotal)
+                    promo_msg_line = f"Промокод {promo.code}: −{promo_discount} сом"
+            else:
+                promo = None
+        except PromoCode.DoesNotExist:
+            promo = None
+
+    total = subtotal - promo_discount + delivery_fee
 
     order = Order.objects.create(
         branch=branch,
@@ -536,6 +562,10 @@ def checkout(request, branch_id: int):
 
     # увеличиваем рейтинг ресторана
     Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
+
+    # учитываем использование промокода
+    if promo:
+        PromoCode.objects.filter(pk=promo.pk).update(used_count=F("used_count") + 1)
 
     # сохраняем позиции
     lines = []
@@ -574,6 +604,8 @@ def checkout(request, branch_id: int):
 
     msg += "\nСостав:\n" + "\n".join(lines) + "\n"
     msg += f"\nПодытог: {subtotal} сом"
+    if promo_msg_line:
+        msg += f"\n{promo_msg_line}"
     if order_type == Order.Type.DELIVERY:
         msg += f"\nДоставка: {delivery_fee} сом"
     msg += f"\nИтого: {total} сом"
@@ -783,4 +815,30 @@ from core.models import Restaurant
 def restaurant_about(request, slug: str):
     restaurant = get_object_or_404(Restaurant, slug=slug, is_active=True)
     return render(request, "public_site/restaurant_about.html", {"restaurant": restaurant})
+
+
+@require_POST
+def validate_promo(request, branch_id: int):
+    from core.models import PromoCode
+    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    code = (request.POST.get("code") or "").strip().upper()
+
+    if not code:
+        return JsonResponse({"ok": False, "error": "Введите промокод"})
+
+    try:
+        promo = PromoCode.objects.get(branch=branch, code=code)
+    except PromoCode.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Промокод не найден"})
+
+    valid, reason = promo.is_valid()
+    if not valid:
+        return JsonResponse({"ok": False, "error": reason})
+
+    return JsonResponse({
+        "ok": True,
+        "discount_type": promo.discount_type,
+        "discount_value": str(promo.discount_value),
+        "label": promo.get_discount_type_display(),
+    })
 

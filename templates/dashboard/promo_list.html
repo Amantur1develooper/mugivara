@@ -1,0 +1,179 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Промокоды — {{ branch.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+  .promo-table{width:100%;border-collapse:collapse;font-size:14px}
+  .promo-table th{
+    text-align:left;padding:10px 14px;font-size:11px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.5px;color:var(--muted);
+    border-bottom:1px solid var(--border);
+  }
+  .promo-table td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+  .promo-table tr:last-child td{border-bottom:none}
+  .promo-table tr:hover td{background:rgba(0,0,0,.02)}
+
+  .badge{
+    display:inline-flex;align-items:center;padding:3px 10px;border-radius:100px;
+    font-size:11px;font-weight:700;
+  }
+  .badge-green{background:rgba(0,184,150,.1);color:var(--teal);border:1px solid rgba(0,184,150,.2)}
+  .badge-red{background:rgba(255,77,28,.08);color:var(--accent);border:1px solid rgba(255,77,28,.15)}
+  .badge-gray{background:rgba(0,0,0,.05);color:var(--muted);border:1px solid var(--border)}
+
+  .code-chip{
+    font-family:monospace;font-size:13px;font-weight:700;letter-spacing:.5px;
+    background:var(--bg);border:1px solid var(--border);
+    padding:4px 10px;border-radius:8px;
+  }
+
+  .create-form{
+    display:grid;gap:14px;
+    grid-template-columns:1fr 1fr;
+  }
+  @media(max-width:600px){.create-form{grid-template-columns:1fr}}
+  .create-form .full{grid-column:1/-1}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">Промокоды</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:home' %}">Мои заведения</a> /
+      {{ branch.name_ru }}
+    </div>
+  </div>
+</div>
+
+<!-- CREATE FORM -->
+<div class="db-card" style="margin-bottom:24px">
+  <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px">Создать промокод</div>
+
+  <form method="post" class="create-form">
+    {% csrf_token %}
+
+    <div>
+      <label class="db-label">Промокод *</label>
+      <input name="code" required placeholder="SUMMER20"
+             class="db-input" style="text-transform:uppercase">
+    </div>
+
+    <div>
+      <label class="db-label">Тип скидки *</label>
+      <select name="discount_type" class="db-input">
+        {% for val, label in discount_types %}
+          <option value="{{ val }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div>
+      <label class="db-label">Размер скидки</label>
+      <input name="discount_value" type="number" min="0" step="any"
+             placeholder="Для % — 10, для суммы — 500, для доставки — 0"
+             class="db-input">
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">
+        Бесплатная доставка: оставьте 0
+      </div>
+    </div>
+
+    <div>
+      <label class="db-label">Действует до</label>
+      <input name="valid_until" type="date" class="db-input">
+    </div>
+
+    <div>
+      <label class="db-label">Макс. использований</label>
+      <input name="max_uses" type="number" min="0" value="0"
+             placeholder="0 = без ограничений" class="db-input">
+    </div>
+
+    <div class="full" style="display:flex;justify-content:flex-end">
+      <button type="submit" class="db-btn db-btn-primary">Создать промокод</button>
+    </div>
+  </form>
+</div>
+
+<!-- LIST -->
+<div class="db-card">
+  {% if promos %}
+  <div style="overflow-x:auto">
+    <table class="promo-table">
+      <thead>
+        <tr>
+          <th>Промокод</th>
+          <th>Тип</th>
+          <th>Скидка</th>
+          <th>Действует до</th>
+          <th>Использований</th>
+          <th>Статус</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in promos %}
+        <tr>
+          <td><span class="code-chip">{{ p.code }}</span></td>
+          <td>{{ p.get_discount_type_display }}</td>
+          <td>
+            {% if p.discount_type == "free_delivery" %}
+              Бесплатная доставка
+            {% elif p.discount_type == "percent" %}
+              {{ p.discount_value|floatformat:"0" }}%
+            {% else %}
+              {{ p.discount_value|floatformat:"0" }} сом
+            {% endif %}
+          </td>
+          <td>
+            {% if p.valid_until %}
+              {% if p.valid_until < today %}
+                <span class="badge badge-red">{{ p.valid_until }}</span>
+              {% else %}
+                {{ p.valid_until }}
+              {% endif %}
+            {% else %}
+              <span style="color:var(--muted)">Бессрочно</span>
+            {% endif %}
+          </td>
+          <td>
+            {{ p.used_count }}
+            {% if p.max_uses > 0 %} / {{ p.max_uses }}{% endif %}
+          </td>
+          <td>
+            {% if p.is_active %}
+              <span class="badge badge-green">Активен</span>
+            {% else %}
+              <span class="badge badge-gray">Отключён</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <form method="post" action="{% url 'dashboard:promo_toggle' p.id %}">
+                {% csrf_token %}
+                <button type="submit" class="db-btn db-btn-ghost db-btn-sm">
+                  {% if p.is_active %}Отключить{% else %}Включить{% endif %}
+                </button>
+              </form>
+              <form method="post" action="{% url 'dashboard:promo_delete' p.id %}"
+                    onsubmit="return confirm('Удалить промокод {{ p.code }}?')">
+                {% csrf_token %}
+                <button type="submit" class="db-btn db-btn-ghost db-btn-sm"
+                        style="color:var(--accent)">Удалить</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <div style="text-align:center;padding:40px;color:var(--muted);font-size:14px">
+      Пока нет промокодов — создайте первый выше
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
