@@ -7,7 +7,11 @@ from django.contrib import messages
 from decimal import Decimal, InvalidOperation
 
 from core.models import Restaurant, Branch, Membership
-from catalog.models import BranchItem, BranchCategory, BranchCategoryItem
+from catalog.models import (
+    BranchItem, BranchCategory, BranchCategoryItem,
+    Item, ItemCategory, Category,
+)
+from catalog.services import ensure_links_for_branch_item
 
 
 def _user_restaurants(user):
@@ -112,7 +116,7 @@ def branch_edit(request, branch_id):
     return render(request, "dashboard/branch_edit.html", {"branch": branch})
 
 
-# ── BRANCH MENU (prices) ─────────────────────────────────────────────────────
+# ── BRANCH MENU (prices + list) ───────────────────────────────────────────────
 
 @login_required(login_url="dashboard:login")
 def branch_items(request, branch_id):
@@ -135,12 +139,128 @@ def branch_items(request, branch_id):
             .select_related("branch_item__item")
             .order_by("sort_order", "id")
         )
-        menu.append({"category": bc, "items": items})
+        menu.append({"category": bc, "items": list(items)})
 
     return render(request, "dashboard/branch_items.html", {
         "branch": branch,
         "menu": menu,
     })
+
+
+# ── ADD ITEM ─────────────────────────────────────────────────────────────────
+
+@login_required(login_url="dashboard:login")
+def item_add(request, branch_id):
+    branch = get_object_or_404(Branch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:home")
+
+    restaurant = branch.restaurant
+    categories = (
+        BranchCategory.objects
+        .filter(branch=branch, is_active=True)
+        .select_related("category")
+        .order_by("sort_order", "id")
+    )
+
+    if request.method == "POST":
+        name = request.POST.get("name_ru", "").strip()
+        if not name:
+            messages.error(request, "Укажите название блюда")
+            return redirect("dashboard:item_add", branch_id=branch.id)
+
+        try:
+            price = Decimal(request.POST.get("price") or "0")
+        except InvalidOperation:
+            price = Decimal("0")
+
+        description = request.POST.get("description_ru", "").strip()
+        photo = request.FILES.get("photo")
+
+        # создаём Item
+        item = Item(
+            restaurant=restaurant,
+            name_ru=name,
+            description_ru=description,
+            base_price=price,
+        )
+        if photo:
+            item.photo = photo
+        item.save()  # компрессия происходит внутри Item.save()
+
+        # создаём BranchItem
+        bi = BranchItem.objects.create(
+            branch=branch,
+            item=item,
+            price=price,
+            is_available=True,
+        )
+
+        # привязываем к категории если выбрана
+        branch_cat_id = request.POST.get("branch_category_id")
+        if branch_cat_id:
+            try:
+                bc = BranchCategory.objects.get(id=branch_cat_id, branch=branch)
+                # создаём ItemCategory (связь Item <-> Category)
+                ic, _ = ItemCategory.objects.get_or_create(
+                    item=item,
+                    category=bc.category,
+                    defaults={"sort_order": 0},
+                )
+                # создаём BranchCategoryItem
+                BranchCategoryItem.objects.get_or_create(
+                    branch_category=bc,
+                    branch_item=bi,
+                    defaults={"sort_order": 0},
+                )
+            except BranchCategory.DoesNotExist:
+                pass
+        else:
+            # без категории — просто пробуем автосвязи
+            ensure_links_for_branch_item(bi)
+
+        messages.success(request, f"Блюдо «{name}» добавлено")
+        return redirect("dashboard:branch_items", branch_id=branch.id)
+
+    return render(request, "dashboard/item_add.html", {
+        "branch": branch,
+        "categories": categories,
+    })
+
+
+# ── EDIT ITEM ─────────────────────────────────────────────────────────────────
+
+@login_required(login_url="dashboard:login")
+def item_edit(request, branch_item_id):
+    bi = get_object_or_404(BranchItem, id=branch_item_id)
+    if not _has_branch_access(request.user, bi.branch):
+        return redirect("dashboard:home")
+
+    item = bi.item
+
+    if request.method == "POST":
+        name = request.POST.get("name_ru", "").strip()
+        if name:
+            item.name_ru = name
+        item.description_ru = request.POST.get("description_ru", "").strip()
+
+        try:
+            bi.price = Decimal(request.POST.get("price") or "0")
+        except InvalidOperation:
+            pass
+        bi.is_available = request.POST.get("is_available") == "on"
+
+        photo = request.FILES.get("photo")
+        if photo:
+            item.photo = photo  # save() сожмёт
+
+        item.save()
+        bi.save(update_fields=["price", "is_available", "updated_at"])
+
+        messages.success(request, "Блюдо обновлено")
+        return redirect("dashboard:branch_items", branch_id=bi.branch_id)
+
+    return render(request, "dashboard/item_edit.html", {"bi": bi, "item": item})
 
 
 # ── AJAX: update price ────────────────────────────────────────────────────────

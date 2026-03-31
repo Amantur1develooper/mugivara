@@ -134,7 +134,10 @@
       {{ branch.name_ru }}
     </div>
   </div>
-  <a href="{% url 'dashboard:branch_edit' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">⚙️ Настройки филиала</a>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <a href="{% url 'dashboard:item_add' branch.id %}" class="db-btn db-btn-primary db-btn-sm">+ Добавить блюдо</a>
+    <a href="{% url 'dashboard:branch_edit' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">⚙️ Настройки</a>
+  </div>
 </div>
 
 <div class="search-bar">
@@ -185,6 +188,9 @@
               title="{% if bi.is_available %}В наличии{% else %}Нет в наличии{% endif %}">
       </button>
 
+      <a href="{% url 'dashboard:item_edit' bi.id %}" title="Редактировать"
+         style="color:var(--muted);text-decoration:none;font-size:17px;flex-shrink:0;padding:4px">✏️</a>
+
     </div>
     {% endwith %}
     {% empty %}
@@ -202,8 +208,17 @@
 
 <div class="toast" id="toast"></div>
 
+{# передаём URL-шаблоны в JS через data-атрибуты, чтобы учесть языковой префикс /ru/ #}
+<div id="js-urls"
+     data-price-url="{% url 'dashboard:update_price' 99999 %}"
+     data-toggle-url="{% url 'dashboard:toggle_item' 99999 %}"
+     style="display:none"></div>
+
 <script>
 const CSRF = '{{ csrf_token }}';
+const _urls = document.getElementById('js-urls').dataset;
+const priceUrl  = id => _urls.priceUrl.replace('99999', id);
+const toggleUrl = id => _urls.toggleUrl.replace('99999', id);
 
 /* ── показ кнопки при изменении цены ── */
 document.querySelectorAll('.price-input').forEach(inp => {
@@ -233,7 +248,7 @@ function savePrice(btn) {
   btn.classList.add('saving');
   btn.textContent = '...';
 
-  fetch(`/cabinet/item/${id}/price/`, {
+  fetch(priceUrl(id), {
     method: 'POST',
     headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded'},
     body: `price=${encodeURIComponent(val)}`,
@@ -246,7 +261,7 @@ function savePrice(btn) {
       btn.classList.remove('saving', 'visible');
       btn.classList.add('saved');
       setTimeout(() => btn.classList.remove('saved'), 1500);
-      showToast('Цена сохранена', 'ok');
+      showToast('Цена сохранена ✓', 'ok');
     } else {
       showToast(data.error || 'Ошибка', 'err');
       btn.textContent = '✓';
@@ -259,7 +274,7 @@ function savePrice(btn) {
 /* ── переключение доступности ── */
 function toggleItem(btn) {
   const id = btn.dataset.id;
-  fetch(`/cabinet/item/${id}/toggle/`, {
+  fetch(toggleUrl(id), {
     method: 'POST',
     headers: {'X-CSRFToken': CSRF},
   })
@@ -271,14 +286,16 @@ function toggleItem(btn) {
         btn.classList.replace('off','on');
         row.classList.remove('unavailable');
         btn.title = 'В наличии';
+        showToast('Блюдо доступно ✓', 'ok');
       } else {
         btn.classList.replace('on','off');
         row.classList.add('unavailable');
         btn.title = 'Нет в наличии';
+        showToast('Блюдо скрыто', 'ok');
       }
-      showToast(data.is_available ? 'Доступно' : 'Скрыто', 'ok');
     }
-  });
+  })
+  .catch(() => showToast('Ошибка сети', 'err'));
 }
 
 /* ── поиск ── */

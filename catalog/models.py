@@ -1,8 +1,9 @@
 from django.db import models
-
-# Create your models here.
-from django.db import models
 from core.models import Restaurant, Branch, TimeStampedModel
+import os
+from io import BytesIO
+from django.core.files.base import ContentFile
+from PIL import Image
 
 class MenuSet(TimeStampedModel):
     restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name="menu_sets")
@@ -42,8 +43,23 @@ class Item(TimeStampedModel):
     photo = models.ImageField(upload_to="items/photos/", blank=True, null=True)
     base_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
+    def save(self, *args, **kwargs):
+        if self.photo and hasattr(self.photo, 'file'):
+            try:
+                img = Image.open(self.photo)
+                img = img.convert("RGB")
+                # ограничиваем размер до 800x800
+                img.thumbnail((800, 800), Image.LANCZOS)
+                buf = BytesIO()
+                img.save(buf, format="WEBP", quality=82, method=6)
+                buf.seek(0)
+                name = os.path.splitext(self.photo.name)[0] + ".webp"
+                self.photo.save(name, ContentFile(buf.read()), save=False)
+            except Exception:
+                pass
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        # чтобы везде (админка, селекты) было видно кому принадлежит
         return f"{self.restaurant.name_ru} — {self.name_ru}"
     class Meta:
         verbose_name = "Блюдо"

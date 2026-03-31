@@ -1,0 +1,143 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Новое блюдо — {{ branch.name_ru }}{% endblock %}
+
+{% block sidebar_extra %}
+<div class="db-nav-label">Филиал</div>
+<a href="{% url 'dashboard:branch_edit' branch.id %}">
+  <span class="db-nav-icon">⚙️</span> Настройки
+</a>
+<a href="{% url 'dashboard:branch_items' branch.id %}">
+  <span class="db-nav-icon">🍽</span> Меню и цены
+</a>
+{% endblock %}
+
+{% block head_extra %}
+<style>
+  .photo-drop{
+    border:2px dashed var(--border);border-radius:16px;
+    padding:32px;text-align:center;cursor:pointer;
+    transition:border-color .2s,background .2s;
+    position:relative;overflow:hidden;
+  }
+  .photo-drop:hover,.photo-drop.drag{border-color:var(--accent);background:rgba(255,77,28,.03)}
+  .photo-drop input[type=file]{
+    position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;
+  }
+  .photo-drop-icon{font-size:36px;margin-bottom:8px}
+  .photo-drop-text{font-size:14px;color:var(--muted)}
+  .photo-drop-hint{font-size:11px;color:var(--muted);margin-top:4px}
+  #photoPreview{
+    width:100%;height:180px;object-fit:cover;
+    border-radius:12px;display:none;margin-top:12px;
+  }
+  .webp-badge{
+    display:inline-flex;align-items:center;gap:6px;
+    background:rgba(0,184,150,.1);border:1px solid rgba(0,184,150,.2);
+    border-radius:100px;padding:4px 12px;
+    font-size:11px;font-weight:600;color:var(--teal);margin-top:8px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">Новое блюдо</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:home' %}">Заведения</a> /
+      <a href="{% url 'dashboard:branch_items' branch.id %}">{{ branch.name_ru }}</a> /
+      Добавить блюдо
+    </div>
+  </div>
+</div>
+
+<div class="db-card">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+      <div>
+        <div class="db-form-group">
+          <label class="db-label" for="name_ru">Название блюда *</label>
+          <input class="db-input" id="name_ru" name="name_ru" type="text"
+                 placeholder="Например: Лагман по-домашнему" required>
+        </div>
+
+        <div class="db-form-group">
+          <label class="db-label" for="price">Цена (сом) *</label>
+          <input class="db-input" id="price" name="price" type="number"
+                 min="0" step="10" placeholder="0" required>
+        </div>
+
+        <div class="db-form-group">
+          <label class="db-label" for="branch_category_id">Категория</label>
+          <select class="db-input" id="branch_category_id" name="branch_category_id">
+            <option value="">— без категории —</option>
+            {% for cat in categories %}
+            <option value="{{ cat.id }}">{{ cat.category.name_ru }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="db-form-group">
+          <label class="db-label" for="description_ru">Описание</label>
+          <textarea class="db-textarea" id="description_ru" name="description_ru"
+                    placeholder="Состав, особенности, вес..." style="min-height:80px"></textarea>
+        </div>
+      </div>
+
+      <div>
+        <label class="db-label">Фото блюда</label>
+        <div class="photo-drop" id="photoDrop">
+          <input type="file" name="photo" id="photoFile" accept="image/*"
+                 onchange="previewPhoto(this)">
+          <div class="photo-drop-icon">📷</div>
+          <div class="photo-drop-text">Нажмите или перетащите фото</div>
+          <div class="photo-drop-hint">JPG, PNG, WebP — автоматически сожмётся до WebP</div>
+        </div>
+        <img id="photoPreview" alt="Превью">
+        <div class="webp-badge">⚡ Авто-сжатие → WebP, макс 800px</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap">
+      <button type="submit" class="db-btn db-btn-primary">✅ Добавить блюдо</button>
+      <a href="{% url 'dashboard:branch_items' branch.id %}" class="db-btn db-btn-ghost">← Отмена</a>
+    </div>
+  </form>
+</div>
+
+<script>
+function previewPhoto(input) {
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.getElementById('photoPreview');
+      img.src = e.target.result;
+      img.style.display = 'block';
+      document.querySelector('.photo-drop-icon').style.display = 'none';
+      document.querySelector('.photo-drop-text').textContent = input.files[0].name;
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+// drag & drop highlight
+const drop = document.getElementById('photoDrop');
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('drag'); });
+</script>
+
+{% if categories|length == 0 %}
+<div class="db-card" style="border-color:rgba(255,138,0,.25);background:rgba(255,138,0,.04)">
+  <div style="font-size:13px;color:#92400E">
+    ⚠️ В этом филиале нет активных категорий. Блюдо будет добавлено без категории.
+    Категории настраиваются через <a href="/admin/" style="color:var(--accent)">административную панель</a>.
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
