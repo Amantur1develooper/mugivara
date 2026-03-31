@@ -15,6 +15,7 @@ urlpatterns += i18n_patterns(
     
     path("pharmacy/", include(("pharmacy.urls", "pharmacy"), namespace="pharmacy")),
     path("shops/", include(("shops.urls", "shops"), namespace="shops")),
+    path("cabinet/", include(("dashboard.urls", "dashboard"), namespace="dashboard")),
     path("", include("public_site.urls")), 
     
     path("t/<str:token>/cart/update/", table_cart_update, name="table_cart_update"),

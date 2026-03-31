@@ -1,0 +1,136 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Настройки — {{ branch.name_ru }}{% endblock %}
+
+{% block sidebar_extra %}
+<div class="db-nav-label">Филиал</div>
+<a href="{% url 'dashboard:branch_edit' branch.id %}" class="active">
+  <span class="db-nav-icon">⚙️</span> Настройки
+</a>
+<a href="{% url 'dashboard:branch_items' branch.id %}">
+  <span class="db-nav-icon">🍽</span> Меню и цены
+</a>
+{% endblock %}
+
+{% block head_extra %}
+<style>
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .promo-box{
+    background:linear-gradient(135deg,rgba(0,184,150,.06),rgba(0,184,150,.02));
+    border:1.5px solid rgba(0,184,150,.2);
+    border-radius:16px;padding:20px;margin-bottom:20px;
+  }
+  .promo-title{
+    font-family:'Unbounded',sans-serif;font-size:13px;font-weight:800;
+    color:var(--teal);margin-bottom:4px;display:flex;align-items:center;gap:8px;
+  }
+  .promo-desc{font-size:12px;color:var(--muted);margin-bottom:16px}
+  @media(max-width:600px){.row2{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">{{ branch.name_ru }}</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:home' %}">Заведения</a> /
+      {{ branch.restaurant.name_ru }} / Настройки филиала
+    </div>
+  </div>
+</div>
+
+<form method="post">
+{% csrf_token %}
+
+  {# ── ДОСТАВКА ── #}
+  <div class="db-card">
+    <div class="db-card-title">🚚 Доставка</div>
+
+    <div class="db-toggle-row">
+      <div>
+        <div class="db-toggle-label">Доставка включена</div>
+        <div class="db-toggle-desc">Клиенты смогут оформить заказ с доставкой</div>
+      </div>
+      <label class="db-switch">
+        <input type="checkbox" name="delivery_enabled" {% if branch.delivery_enabled %}checked{% endif %}>
+        <span class="db-switch-slider"></span>
+      </label>
+    </div>
+
+    <div style="height:16px"></div>
+
+    <div class="row2">
+      <div class="db-form-group">
+        <label class="db-label" for="min_order">Минимальная сумма заказа (сом)</label>
+        <input class="db-input" id="min_order" name="min_order_amount" type="number" min="0" step="10"
+               value="{{ branch.min_order_amount|floatformat:'0' }}">
+        <div class="db-hint">0 = нет ограничений</div>
+      </div>
+      <div class="db-form-group">
+        <label class="db-label" for="delivery_fee">Стоимость доставки (сом)</label>
+        <input class="db-input" id="delivery_fee" name="delivery_fee" type="number" min="0" step="10"
+               value="{{ branch.delivery_fee|floatformat:'0' }}">
+        <div class="db-hint">0 = бесплатная доставка всегда</div>
+      </div>
+    </div>
+
+    {# ── АКЦИЯ: бесплатная доставка ── #}
+    <div class="promo-box">
+      <div class="promo-title">🎁 Акция — бесплатная доставка</div>
+      <div class="promo-desc">
+        Укажите сумму заказа, после которой доставка становится бесплатной.
+        Клиентам это будет показано в карточке ресторана.
+      </div>
+      <div class="db-form-group" style="margin-bottom:0">
+        <label class="db-label" for="free_delivery_from">Бесплатно от (сом)</label>
+        <input class="db-input" id="free_delivery_from" name="free_delivery_from"
+               type="number" min="0" step="50"
+               value="{{ branch.free_delivery_from|floatformat:'0' }}"
+               placeholder="Например: 2000">
+        <div class="db-hint">0 = акция не действует</div>
+      </div>
+    </div>
+  </div>
+
+  {# ── ЧАСЫ РАБОТЫ ── #}
+  <div class="db-card">
+    <div class="db-card-title">⏰ Часы работы</div>
+
+    <div class="db-toggle-row">
+      <div>
+        <div class="db-toggle-label">Работаем круглосуточно</div>
+        <div class="db-toggle-desc">24/7 — поле времени ниже будет игнорироваться</div>
+      </div>
+      <label class="db-switch">
+        <input type="checkbox" name="is_open_24h" id="is_open_24h"
+               {% if branch.is_open_24h %}checked{% endif %}
+               onchange="document.getElementById('hours-row').style.opacity=this.checked?'0.3':'1'">
+        <span class="db-switch-slider"></span>
+      </label>
+    </div>
+
+    <div id="hours-row" style="margin-top:16px;opacity:{% if branch.is_open_24h %}0.3{% else %}1{% endif %}">
+      <div class="row2">
+        <div class="db-form-group">
+          <label class="db-label" for="open_time">Открытие</label>
+          <input class="db-input" id="open_time" name="open_time" type="time"
+                 value="{% if branch.open_time %}{{ branch.open_time|time:'H:i' }}{% endif %}">
+        </div>
+        <div class="db-form-group">
+          <label class="db-label" for="close_time">Закрытие</label>
+          <input class="db-input" id="close_time" name="close_time" type="time"
+                 value="{% if branch.close_time %}{{ branch.close_time|time:'H:i' }}{% endif %}">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <button type="submit" class="db-btn db-btn-primary">💾 Сохранить настройки</button>
+    <a href="{% url 'dashboard:home' %}" class="db-btn db-btn-ghost">← Назад</a>
+    <a href="{% url 'dashboard:branch_items' branch.id %}" class="db-btn db-btn-ghost">🍽 Меню и цены →</a>
+  </div>
+
+</form>
+{% endblock %}

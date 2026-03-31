@@ -1,0 +1,47 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Редактировать ресторан{% endblock %}
+
+{% block sidebar_extra %}
+<div class="db-nav-label">Ресторан</div>
+<a href="{% url 'dashboard:restaurant_edit' restaurant.id %}" class="active">
+  <span class="db-nav-icon">✏️</span> Описание
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">{{ restaurant.name_ru }}</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:home' %}">Заведения</a> / Описание ресторана
+    </div>
+  </div>
+</div>
+
+<div class="db-card">
+  <div class="db-card-title">📝 Основная информация</div>
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="db-form-group">
+      <label class="db-label" for="name_ru">Название ресторана</label>
+      <input class="db-input" id="name_ru" name="name_ru" type="text"
+             value="{{ restaurant.name_ru }}" placeholder="Название" required>
+    </div>
+
+    <div class="db-form-group">
+      <label class="db-label" for="about_ru">Описание (о нас)</label>
+      <textarea class="db-textarea" id="about_ru" name="about_ru"
+                placeholder="Расскажите о вашем ресторане..."
+                style="min-height:140px">{{ restaurant.about_ru }}</textarea>
+      <div class="db-hint">Покажется на странице ресторана в разделе «О нас»</div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
+      <button type="submit" class="db-btn db-btn-primary">💾 Сохранить</button>
+      <a href="{% url 'dashboard:home' %}" class="db-btn db-btn-ghost">← Назад</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

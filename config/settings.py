@@ -54,9 +54,8 @@ INSTALLED_APPS = [
   "integrations.apps.IntegrationsConfig",
    "reservations",
    'shops',
-   "pharmacy"
-
-
+   "pharmacy",
+   "dashboard",
 ]
 # CELERY_TASK_ALWAYS_EAGER = True
 # CELERY_TASK_EAGER_PROPAGATES = True

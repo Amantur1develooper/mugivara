@@ -1,0 +1,304 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Меню — {{ branch.name_ru }}{% endblock %}
+
+{% block sidebar_extra %}
+<div class="db-nav-label">Филиал</div>
+<a href="{% url 'dashboard:branch_edit' branch.id %}">
+  <span class="db-nav-icon">⚙️</span> Настройки
+</a>
+<a href="{% url 'dashboard:branch_items' branch.id %}" class="active">
+  <span class="db-nav-icon">🍽</span> Меню и цены
+</a>
+{% endblock %}
+
+{% block head_extra %}
+<style>
+  .search-bar{
+    position:relative;margin-bottom:20px;
+  }
+  .search-bar input{
+    width:100%;padding:12px 16px 12px 44px;
+    border-radius:12px;border:1.5px solid var(--border);
+    background:var(--card);font-family:'Geologica',sans-serif;
+    font-size:14px;color:var(--text);outline:none;
+    transition:border-color .2s;
+  }
+  .search-bar input:focus{border-color:rgba(255,77,28,.4)}
+  .search-bar svg{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--muted)}
+
+  .cat-section{margin-bottom:28px}
+  .cat-name{
+    font-family:'Unbounded',sans-serif;font-size:13px;font-weight:800;
+    letter-spacing:-.2px;color:var(--text2);
+    padding:8px 0;border-bottom:2px solid var(--border);
+    margin-bottom:12px;display:flex;align-items:center;gap:8px;
+  }
+  .cat-count{
+    font-size:11px;font-weight:600;
+    background:rgba(255,77,28,.1);color:var(--accent);
+    border-radius:100px;padding:2px 10px;font-family:'Geologica',sans-serif;
+  }
+
+  .item-row{
+    display:flex;align-items:center;gap:14px;
+    padding:13px 16px;border-radius:14px;
+    background:var(--card);border:1px solid var(--border);
+    margin-bottom:8px;
+    transition:border-color .15s,box-shadow .15s;
+  }
+  .item-row:hover{border-color:rgba(255,77,28,.15);box-shadow:0 2px 12px rgba(0,0,0,0.05)}
+  .item-row.unavailable{opacity:.5}
+
+  .item-photo{
+    width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0;
+    background:var(--bg);
+  }
+  .item-photo-placeholder{
+    width:48px;height:48px;border-radius:10px;flex-shrink:0;
+    background:linear-gradient(135deg,#FFF1EB,#FFE4D6);
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;
+  }
+  .item-name{flex:1;font-size:14px;font-weight:500;color:var(--text)}
+  .item-name-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+  .price-cell{display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .price-input{
+    width:110px;padding:8px 12px;border-radius:10px;
+    border:1.5px solid var(--border);
+    font-family:'Geologica',sans-serif;font-size:14px;font-weight:600;
+    color:var(--text);background:var(--bg);outline:none;
+    text-align:right;
+    transition:border-color .2s,box-shadow .2s;
+  }
+  .price-input:focus{border-color:rgba(255,77,28,.4);box-shadow:0 0 0 3px rgba(255,77,28,.08)}
+  .price-currency{font-size:13px;color:var(--muted);white-space:nowrap}
+
+  .save-btn{
+    padding:7px 16px;border-radius:10px;border:none;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:white;font-size:12px;font-weight:600;cursor:pointer;
+    font-family:'Geologica',sans-serif;
+    opacity:0;transition:opacity .2s,transform .2s;transform:scale(.95);
+    flex-shrink:0;
+  }
+  .price-cell:focus-within .save-btn,
+  .save-btn.visible{opacity:1;transform:scale(1)}
+  .save-btn.saving{opacity:.7}
+  .save-btn.saved{background:linear-gradient(135deg,var(--teal),#059669)}
+
+  .toggle-btn{
+    width:40px;height:22px;border-radius:11px;
+    border:none;cursor:pointer;flex-shrink:0;
+    position:relative;transition:background .2s;
+  }
+  .toggle-btn.on{background:var(--teal)}
+  .toggle-btn.off{background:#D1D5DB}
+  .toggle-btn::after{
+    content:'';position:absolute;width:16px;height:16px;
+    border-radius:50%;background:white;top:3px;
+    box-shadow:0 1px 3px rgba(0,0,0,.2);
+    transition:left .2s;
+  }
+  .toggle-btn.on::after{left:21px}
+  .toggle-btn.off::after{left:3px}
+
+  .toast{
+    position:fixed;bottom:24px;right:24px;z-index:999;
+    background:#0D1117;color:white;padding:10px 20px;
+    border-radius:12px;font-size:13px;font-weight:500;
+    box-shadow:0 8px 24px rgba(0,0,0,.2);
+    transform:translateY(20px);opacity:0;
+    transition:all .3s;pointer-events:none;
+  }
+  .toast.show{transform:translateY(0);opacity:1}
+  .toast.ok{background:#047857}
+  .toast.err{background:#B91C1C}
+
+  @media(max-width:600px){
+    .item-photo,.item-photo-placeholder{display:none}
+    .price-input{width:90px}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">Меню и цены</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:home' %}">Заведения</a> /
+      {{ branch.restaurant.name_ru }} /
+      {{ branch.name_ru }}
+    </div>
+  </div>
+  <a href="{% url 'dashboard:branch_edit' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">⚙️ Настройки филиала</a>
+</div>
+
+<div class="search-bar">
+  <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/>
+  </svg>
+  <input type="text" id="searchInput" placeholder="Поиск по названию блюда...">
+</div>
+
+{% if menu %}
+  {% for cat in menu %}
+  <div class="cat-section" data-cat="{{ cat.category.category.name_ru|lower }}">
+    <div class="cat-name">
+      {{ cat.category.category.name_ru }}
+      <span class="cat-count">{{ cat.items|length }}</span>
+    </div>
+
+    {% for row in cat.items %}
+    {% with bi=row.branch_item %}
+    <div class="item-row {% if not bi.is_available %}unavailable{% endif %}" data-name="{{ bi.item.name_ru|lower }}">
+
+      {% if bi.item.photo %}
+        <img class="item-photo" src="{{ bi.item.photo.url }}" alt="{{ bi.item.name_ru }}">
+      {% else %}
+        <div class="item-photo-placeholder">🍽</div>
+      {% endif %}
+
+      <div class="item-name">
+        {{ bi.item.name_ru }}
+        {% if bi.item.description_ru %}
+        <div class="item-name-sub">{{ bi.item.description_ru|truncatechars:60 }}</div>
+        {% endif %}
+      </div>
+
+      <div class="price-cell">
+        <input class="price-input" type="number" min="0" step="10"
+               value="{{ bi.price|floatformat:'0' }}"
+               data-id="{{ bi.id }}"
+               data-original="{{ bi.price|floatformat:'0' }}"
+               title="Цена">
+        <span class="price-currency">сом</span>
+        <button class="save-btn" data-id="{{ bi.id }}" onclick="savePrice(this)">✓</button>
+      </div>
+
+      <button class="toggle-btn {% if bi.is_available %}on{% else %}off{% endif %}"
+              data-id="{{ bi.id }}"
+              onclick="toggleItem(this)"
+              title="{% if bi.is_available %}В наличии{% else %}Нет в наличии{% endif %}">
+      </button>
+
+    </div>
+    {% endwith %}
+    {% empty %}
+    <div style="font-size:13px;color:var(--muted);padding:12px 0">Нет блюд в этой категории</div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+{% else %}
+<div class="db-card" style="text-align:center;padding:48px;color:var(--muted)">
+  <div style="font-size:40px;margin-bottom:12px">🍽</div>
+  <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">Меню пустое</div>
+  <div style="font-size:13px">Добавьте блюда через административную панель, затем вернитесь сюда для управления ценами</div>
+</div>
+{% endif %}
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+
+/* ── показ кнопки при изменении цены ── */
+document.querySelectorAll('.price-input').forEach(inp => {
+  inp.addEventListener('input', () => {
+    const btn = inp.closest('.price-cell').querySelector('.save-btn');
+    if (inp.value !== inp.dataset.original) {
+      btn.classList.add('visible');
+    } else {
+      btn.classList.remove('visible');
+    }
+  });
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      inp.closest('.price-cell').querySelector('.save-btn').click();
+    }
+  });
+});
+
+/* ── сохранение цены ── */
+function savePrice(btn) {
+  const id  = btn.dataset.id;
+  const inp = document.querySelector(`.price-input[data-id="${id}"]`);
+  const val = inp.value.trim();
+  if (!val || isNaN(val)) return;
+
+  btn.classList.add('saving');
+  btn.textContent = '...';
+
+  fetch(`/cabinet/item/${id}/price/`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded'},
+    body: `price=${encodeURIComponent(val)}`,
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      inp.dataset.original = Math.round(parseFloat(data.price));
+      btn.textContent = '✓';
+      btn.classList.remove('saving', 'visible');
+      btn.classList.add('saved');
+      setTimeout(() => btn.classList.remove('saved'), 1500);
+      showToast('Цена сохранена', 'ok');
+    } else {
+      showToast(data.error || 'Ошибка', 'err');
+      btn.textContent = '✓';
+      btn.classList.remove('saving');
+    }
+  })
+  .catch(() => { showToast('Ошибка сети', 'err'); btn.textContent = '✓'; btn.classList.remove('saving'); });
+}
+
+/* ── переключение доступности ── */
+function toggleItem(btn) {
+  const id = btn.dataset.id;
+  fetch(`/cabinet/item/${id}/toggle/`, {
+    method: 'POST',
+    headers: {'X-CSRFToken': CSRF},
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      const row = btn.closest('.item-row');
+      if (data.is_available) {
+        btn.classList.replace('off','on');
+        row.classList.remove('unavailable');
+        btn.title = 'В наличии';
+      } else {
+        btn.classList.replace('on','off');
+        row.classList.add('unavailable');
+        btn.title = 'Нет в наличии';
+      }
+      showToast(data.is_available ? 'Доступно' : 'Скрыто', 'ok');
+    }
+  });
+}
+
+/* ── поиск ── */
+document.getElementById('searchInput').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.item-row').forEach(row => {
+    row.style.display = row.dataset.name.includes(q) ? '' : 'none';
+  });
+  document.querySelectorAll('.cat-section').forEach(sec => {
+    const visible = [...sec.querySelectorAll('.item-row')].some(r => r.style.display !== 'none');
+    sec.style.display = visible ? '' : 'none';
+  });
+});
+
+/* ── toast ── */
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+</script>
+{% endblock %}

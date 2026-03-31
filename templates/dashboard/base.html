@@ -1,0 +1,222 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Кабинет{% endblock %} — Webordo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800;900&family=Geologica:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:     #F4F6FB;
+      --card:   #FFFFFF;
+      --accent: #FF4D1C;
+      --accent2:#FF8A00;
+      --teal:   #00B896;
+      --text:   #0D1117;
+      --text2:  #374151;
+      --muted:  #8B96A8;
+      --border: rgba(0,0,0,0.08);
+      --sidebar-w: 260px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:'Geologica',sans-serif;font-weight:300;min-height:100vh;display:flex}
+
+    /* ── SIDEBAR ── */
+    .db-sidebar{
+      width:var(--sidebar-w);flex-shrink:0;
+      background:var(--card);
+      border-right:1px solid var(--border);
+      display:flex;flex-direction:column;
+      position:fixed;top:0;left:0;bottom:0;z-index:100;
+      padding:28px 0 20px;
+    }
+    .db-logo{
+      font-family:'Unbounded',sans-serif;font-weight:900;font-size:18px;
+      letter-spacing:-1px;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      padding:0 24px;margin-bottom:32px;text-decoration:none;display:block;
+    }
+    .db-nav{flex:1;overflow-y:auto}
+    .db-nav-label{
+      font-size:10px;letter-spacing:2px;text-transform:uppercase;
+      color:var(--muted);font-weight:600;padding:0 24px;margin-bottom:6px;margin-top:20px;
+    }
+    .db-nav a{
+      display:flex;align-items:center;gap:11px;
+      padding:10px 24px;
+      font-size:14px;font-weight:500;color:var(--text2);
+      text-decoration:none;border-radius:0;
+      transition:background .15s,color .15s;
+      border-left:3px solid transparent;
+    }
+    .db-nav a:hover{background:rgba(255,77,28,0.06);color:var(--accent)}
+    .db-nav a.active{background:rgba(255,77,28,0.08);color:var(--accent);border-left-color:var(--accent);font-weight:600}
+    .db-nav-icon{font-size:17px;width:22px;text-align:center;flex-shrink:0}
+    .db-user{
+      padding:16px 24px;border-top:1px solid var(--border);
+      display:flex;align-items:center;gap:12px;
+    }
+    .db-avatar{
+      width:36px;height:36px;border-radius:50%;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      display:flex;align-items:center;justify-content:center;
+      font-family:'Unbounded',sans-serif;font-size:14px;font-weight:800;color:white;
+      flex-shrink:0;
+    }
+    .db-user-name{font-size:13px;font-weight:500;color:var(--text)}
+    .db-logout{font-size:12px;color:var(--muted);text-decoration:none;margin-top:2px;display:block}
+    .db-logout:hover{color:var(--accent)}
+
+    /* ── MAIN ── */
+    .db-main{
+      margin-left:var(--sidebar-w);flex:1;
+      padding:36px 40px 60px;
+      max-width:calc(1280px + var(--sidebar-w));
+    }
+    .db-topbar{
+      display:flex;align-items:center;justify-content:space-between;
+      margin-bottom:32px;flex-wrap:wrap;gap:16px;
+    }
+    .db-page-title{
+      font-family:'Unbounded',sans-serif;font-weight:900;
+      font-size:clamp(20px,3vw,30px);letter-spacing:-1px;color:var(--text);
+    }
+    .db-breadcrumb{font-size:13px;color:var(--muted);margin-top:6px}
+    .db-breadcrumb a{color:var(--muted);text-decoration:none}
+    .db-breadcrumb a:hover{color:var(--accent)}
+
+    /* ── CARDS ── */
+    .db-card{
+      background:var(--card);border-radius:20px;
+      border:1px solid var(--border);
+      box-shadow:0 2px 12px rgba(0,0,0,0.05);
+      padding:28px;margin-bottom:20px;
+    }
+    .db-card-title{
+      font-family:'Unbounded',sans-serif;font-weight:800;
+      font-size:15px;letter-spacing:-0.3px;color:var(--text);
+      margin-bottom:20px;display:flex;align-items:center;gap:10px;
+    }
+
+    /* ── FORM ── */
+    .db-form-group{margin-bottom:18px}
+    .db-label{
+      display:block;font-size:12px;font-weight:600;color:var(--text2);
+      letter-spacing:.3px;text-transform:uppercase;margin-bottom:7px;
+    }
+    .db-input, .db-textarea{
+      width:100%;padding:12px 16px;
+      border-radius:12px;border:1.5px solid var(--border);
+      background:var(--bg);font-family:'Geologica',sans-serif;
+      font-size:14px;color:var(--text);outline:none;
+      transition:border-color .2s,box-shadow .2s;
+    }
+    .db-input:focus,.db-textarea:focus{
+      border-color:rgba(255,77,28,.4);
+      box-shadow:0 0 0 4px rgba(255,77,28,.08);
+    }
+    .db-textarea{min-height:100px;resize:vertical}
+    .db-hint{font-size:12px;color:var(--muted);margin-top:5px}
+
+    /* toggle */
+    .db-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)}
+    .db-toggle-row:last-child{border-bottom:none}
+    .db-toggle-label{font-size:14px;font-weight:500;color:var(--text2)}
+    .db-toggle-desc{font-size:12px;color:var(--muted);margin-top:2px}
+    .db-switch{position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0}
+    .db-switch input{opacity:0;width:0;height:0}
+    .db-switch-slider{
+      position:absolute;inset:0;border-radius:12px;
+      background:#D1D5DB;cursor:pointer;transition:background .2s;
+    }
+    .db-switch-slider::before{
+      content:'';position:absolute;width:18px;height:18px;border-radius:50%;
+      background:white;top:3px;left:3px;
+      box-shadow:0 1px 4px rgba(0,0,0,.2);
+      transition:transform .2s;
+    }
+    .db-switch input:checked + .db-switch-slider{background:var(--teal)}
+    .db-switch input:checked + .db-switch-slider::before{transform:translateX(20px)}
+
+    /* ── BUTTONS ── */
+    .db-btn{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:11px 24px;border-radius:100px;border:none;cursor:pointer;
+      font-family:'Geologica',sans-serif;font-size:14px;font-weight:600;
+      transition:transform .2s,box-shadow .2s;text-decoration:none;
+    }
+    .db-btn-primary{
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      color:white;box-shadow:0 4px 16px rgba(255,77,28,.25);
+    }
+    .db-btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(255,77,28,.3)}
+    .db-btn-ghost{background:var(--bg);color:var(--text2);border:1.5px solid var(--border)}
+    .db-btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+    .db-btn-sm{padding:7px 16px;font-size:13px}
+
+    /* ── MESSAGES ── */
+    .db-messages{margin-bottom:20px}
+    .db-msg{
+      padding:12px 18px;border-radius:12px;font-size:13px;font-weight:500;margin-bottom:8px;
+    }
+    .db-msg.success{background:rgba(0,184,150,.1);color:#047857;border:1px solid rgba(0,184,150,.25)}
+    .db-msg.error  {background:rgba(220,38,38,.08);color:#B91C1C;border:1px solid rgba(220,38,38,.2)}
+
+    @media(max-width:768px){
+      .db-sidebar{transform:translateX(-100%);transition:transform .3s}
+      .db-sidebar.open{transform:translateX(0)}
+      .db-main{margin-left:0;padding:20px 16px 60px}
+      .db-mobile-toggle{
+        display:flex;position:fixed;top:16px;left:16px;z-index:200;
+        width:40px;height:40px;border-radius:50%;
+        background:var(--card);border:1px solid var(--border);
+        align-items:center;justify-content:center;cursor:pointer;
+        box-shadow:0 2px 12px rgba(0,0,0,.1);
+      }
+    }
+    @media(min-width:769px){.db-mobile-toggle{display:none}}
+  </style>
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+
+<button class="db-mobile-toggle" onclick="document.querySelector('.db-sidebar').classList.toggle('open')" aria-label="Меню">
+  <svg width="18" height="18" fill="none" viewBox="0 0 18 18"><path d="M2 4h14M2 9h14M2 14h14" stroke="#374151" stroke-width="1.8" stroke-linecap="round"/></svg>
+</button>
+
+<aside class="db-sidebar">
+  <a href="{% url 'dashboard:home' %}" class="db-logo">Webordo</a>
+
+  <nav class="db-nav">
+    <div class="db-nav-label">Главное</div>
+    <a href="{% url 'dashboard:home' %}" class="{% block nav_home %}{% endblock %}">
+      <span class="db-nav-icon">🏠</span> Мои заведения
+    </a>
+
+    {% block sidebar_extra %}{% endblock %}
+  </nav>
+
+  <div class="db-user">
+    <div class="db-avatar">{{ request.user.username|slice:":1"|upper }}</div>
+    <div>
+      <div class="db-user-name">{{ request.user.username }}</div>
+      <a href="{% url 'dashboard:logout' %}" class="db-logout">Выйти →</a>
+    </div>
+  </div>
+</aside>
+
+<main class="db-main">
+  {% if messages %}
+  <div class="db-messages">
+    {% for msg in messages %}
+    <div class="db-msg {% if msg.tags == 'error' %}error{% else %}success{% endif %}">{{ msg }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

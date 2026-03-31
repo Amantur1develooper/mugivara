@@ -1,0 +1,126 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Мои заведения{% endblock %}
+{% block nav_home %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .rest-block{margin-bottom:36px}
+  .rest-header{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:16px;margin-bottom:16px;flex-wrap:wrap;
+  }
+  .rest-name{
+    font-family:'Unbounded',sans-serif;font-weight:800;font-size:20px;
+    letter-spacing:-.5px;color:var(--text);
+  }
+  .rest-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+  .branch-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+    gap:16px;
+  }
+  .branch-card{
+    background:var(--card);border-radius:18px;
+    border:1px solid var(--border);
+    box-shadow:0 2px 10px rgba(0,0,0,0.04);
+    padding:20px;display:flex;flex-direction:column;gap:14px;
+  }
+  .branch-name{font-size:15px;font-weight:600;color:var(--text)}
+  .branch-meta{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px}
+  .branch-tag{
+    display:inline-flex;align-items:center;gap:5px;
+    padding:4px 10px;border-radius:100px;
+    font-size:11px;font-weight:600;
+    background:rgba(255,77,28,.08);
+    border:1px solid rgba(255,77,28,.15);
+    color:var(--accent);
+  }
+  .branch-tag.teal{background:rgba(0,184,150,.08);border-color:rgba(0,184,150,.2);color:var(--teal)}
+  .branch-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+  .branch-btns a{
+    flex:1;text-align:center;padding:9px 12px;border-radius:10px;
+    font-size:12px;font-weight:600;text-decoration:none;
+    transition:background .15s,color .15s;
+  }
+  .btn-settings{background:var(--bg);color:var(--text2);border:1px solid var(--border)}
+  .btn-settings:hover{background:rgba(255,77,28,.06);color:var(--accent);border-color:rgba(255,77,28,.2)}
+  .btn-menu{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;box-shadow:0 3px 10px rgba(255,77,28,.2)}
+  .btn-menu:hover{box-shadow:0 6px 18px rgba(255,77,28,.3)}
+
+  .empty-state{
+    text-align:center;padding:64px 40px;
+    background:var(--card);border-radius:20px;border:1px solid var(--border);
+  }
+  .empty-state-icon{font-size:48px;margin-bottom:16px}
+  .empty-state h3{font-family:'Unbounded',sans-serif;font-size:17px;font-weight:800;color:var(--text);margin-bottom:8px}
+  .empty-state p{font-size:14px;color:var(--muted)}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">Мои заведения</div>
+    <div class="db-breadcrumb">Управляйте меню, ценами и акциями</div>
+  </div>
+</div>
+
+{% if data %}
+  {% for item in data %}
+  <div class="rest-block">
+    <div class="rest-header">
+      <div class="rest-name">{{ item.restaurant.name_ru }}</div>
+      <div class="rest-actions">
+        <a href="{% url 'dashboard:restaurant_edit' item.restaurant.id %}" class="db-btn db-btn-ghost db-btn-sm">
+          ✏️ Описание ресторана
+        </a>
+      </div>
+    </div>
+
+    {% if item.branches %}
+    <div class="branch-grid">
+      {% for branch in item.branches %}
+      <div class="branch-card">
+        <div>
+          <div class="branch-name">{{ branch.name_ru }}</div>
+          {% if branch.address %}
+          <div class="branch-meta" style="margin-top:5px">📍 {{ branch.address }}</div>
+          {% endif %}
+        </div>
+        <div class="branch-meta">
+          {% if branch.delivery_enabled %}
+            <span class="branch-tag">🚚 Доставка</span>
+          {% endif %}
+          {% if branch.free_delivery_from and branch.free_delivery_from > 0 %}
+            <span class="branch-tag teal">🎁 Бесплатно от {{ branch.free_delivery_from|floatformat:"0" }} сом</span>
+          {% endif %}
+          {% if branch.is_open_24h %}
+            <span class="branch-tag teal">🌙 24/7</span>
+          {% endif %}
+        </div>
+        <div class="branch-btns">
+          <a href="{% url 'dashboard:branch_edit' branch.id %}" class="btn-settings">⚙️ Настройки</a>
+          <a href="{% url 'dashboard:branch_items' branch.id %}" class="btn-menu">🍽 Меню и цены</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="db-card" style="text-align:center;padding:32px;color:var(--muted);font-size:14px">
+      Нет активных филиалов
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+{% else %}
+<div class="empty-state">
+  <div class="empty-state-icon">🏪</div>
+  <h3>Нет заведений</h3>
+  <p>Обратитесь к администратору для подключения вашего ресторана</p>
+</div>
+{% endif %}
+
+{% endblock %}
