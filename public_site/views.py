@@ -154,10 +154,10 @@ PLATFORM_CATEGORIES = [
         "name_ru":     "Отели",
         "name_ky":     "Мейманканалар",
         "name_en":     "Hotels",
-        "url":         None,
+        "url":         "hotels:hotel_list",
         "color":       "#2563EB",
-        "is_active":   False,
-        "coming_soon": True,
+        "is_active":   True,
+        "coming_soon": False,
     },
     {
         "key":         "eco",

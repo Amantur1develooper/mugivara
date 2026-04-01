@@ -1,0 +1,688 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ branch.name_ru }} — Номера{% endblock %}
+{% block cta %}{% endblock %}
+
+{% block head_extra %}
+<style>
+/* ─── HERO ─────────────────────────────────────────── */
+.hb-hero {
+  position: relative;
+  min-height: 260px;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 32px 40px;
+  background: linear-gradient(135deg, #0D1117 0%, #1a2540 100%);
+  overflow: hidden;
+}
+.hb-hero-bg {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  filter: blur(22px) brightness(0.22); transform: scale(1.1);
+}
+.hb-hero-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,.85) 0%, rgba(0,0,0,.15) 70%);
+}
+.hb-hero-dots {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+.hb-back {
+  position: absolute; top: 20px; left: 32px; z-index: 3;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 18px; border-radius: 100px;
+  font-size: 13px; font-weight: 600;
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.18);
+  color: rgba(255,255,255,.8); text-decoration: none;
+  backdrop-filter: blur(8px); transition: all .2s;
+}
+.hb-back:hover { background: rgba(255,255,255,.22); color: #fff; }
+.hb-hero-content { position: relative; z-index: 2; }
+.hb-eyebrow {
+  font-size: 10px; letter-spacing: 3.5px; text-transform: uppercase;
+  color: rgba(255,255,255,.38); font-weight: 600; margin-bottom: 8px;
+}
+.hb-title {
+  font-family: 'Unbounded', sans-serif; font-weight: 900;
+  font-size: clamp(22px, 4.5vw, 44px); letter-spacing: -1.5px;
+  color: #fff; line-height: 1; margin-bottom: 14px;
+}
+.hb-meta {
+  display: flex; gap: 20px; flex-wrap: wrap;
+  font-size: 13px; color: rgba(255,255,255,.5);
+}
+.hb-meta a { color: inherit; text-decoration: none; }
+.hb-meta a:hover { color: rgba(255,255,255,.8); }
+
+/* ─── PAGE WRAP ─────────────────────────────────── */
+.hb-wrap {
+  max-width: 1140px; margin: 0 auto;
+  padding: 40px 28px 100px;
+}
+
+/* ─── CATEGORY DIVIDER ───────────────────────────── */
+.hb-cat {
+  display: flex; align-items: center; gap: 16px;
+  margin: 40px 0 20px;
+}
+.hb-cat-line { flex: 1; height: 1px; background: var(--border); }
+.hb-cat-label {
+  font-family: 'Unbounded', sans-serif; font-weight: 800;
+  font-size: 12px; letter-spacing: .5px; color: var(--text);
+  white-space: nowrap; text-transform: uppercase;
+}
+
+/* ─── ROOM GRID ──────────────────────────────────── */
+.hb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 22px;
+}
+
+/* ─── ROOM CARD ──────────────────────────────────── */
+.rc {
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 24px; overflow: hidden;
+  display: flex; flex-direction: column;
+  box-shadow: 0 2px 12px rgba(0,0,0,.05);
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+.rc:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(0,0,0,.12); }
+
+/* photo */
+.rc-photo {
+  position: relative; height: 210px; overflow: hidden;
+  background: linear-gradient(135deg,#EFF6FF,#DBEAFE);
+  cursor: pointer; flex-shrink: 0;
+}
+.rc-photo img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform .5s ease;
+}
+.rc:hover .rc-photo img { transform: scale(1.06); }
+.rc-photo-empty {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+}
+.rc-photo-empty span { font-size: 64px; opacity: .2; }
+.rc-photo-grad {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 45%, rgba(0,0,0,.5) 100%);
+}
+.rc-photo-cnt {
+  position: absolute; top: 12px; right: 12px;
+  background: rgba(0,0,0,.45); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.15);
+  color: #fff; font-size: 11px; font-weight: 700;
+  padding: 4px 10px; border-radius: 100px;
+}
+.rc-photo-busy {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.52); backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: rgba(255,255,255,.85);
+  letter-spacing: .5px;
+}
+.rc-photo-price {
+  position: absolute; bottom: 12px; left: 14px;
+  font-family: 'Unbounded', sans-serif; font-weight: 900;
+  font-size: 18px; color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,.6);
+}
+.rc-photo-price span { font-size: 11px; font-weight: 400; opacity: .75; }
+
+/* body */
+.rc-body { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.rc-name {
+  font-family: 'Unbounded', sans-serif; font-weight: 800;
+  font-size: 14px; letter-spacing: -.3px; color: var(--text);
+  line-height: 1.3;
+}
+.rc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.rc-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 100px;
+  font-size: 11px; font-weight: 600;
+  background: rgba(37,99,235,.07); border: 1px solid rgba(37,99,235,.15);
+  color: #2563EB;
+}
+.rc-chip.gray {
+  background: var(--bg); border-color: var(--border); color: var(--muted);
+}
+.rc-desc {
+  font-size: 13px; color: var(--muted); line-height: 1.55;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* buttons */
+.rc-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; padding-top: 4px; }
+.rc-btn {
+  padding: 11px 10px; border-radius: 13px;
+  font-size: 12px; font-weight: 700; cursor: pointer; border: none;
+  transition: all .2s; text-align: center; white-space: nowrap;
+}
+.rc-btn-ghost {
+  background: var(--bg); border: 1.5px solid var(--border);
+  color: var(--text2);
+}
+.rc-btn-ghost:hover { background: var(--card2); border-color: rgba(0,0,0,.14); }
+.rc-btn-blue {
+  color: #fff;
+  background: linear-gradient(135deg,#2563EB,#1D4ED8);
+  box-shadow: 0 3px 12px rgba(37,99,235,.28);
+}
+.rc-btn-blue:hover { box-shadow: 0 6px 22px rgba(37,99,235,.42); transform: translateY(-1px); }
+.rc-btn-green {
+  grid-column: 1 / -1;
+  color: #fff;
+  background: linear-gradient(135deg,#059669,#047857);
+  box-shadow: 0 3px 12px rgba(5,150,105,.25);
+}
+.rc-btn-green:hover { box-shadow: 0 6px 22px rgba(5,150,105,.38); transform: translateY(-1px); }
+.rc-btn-disabled {
+  grid-column: 1 / -1;
+  background: var(--bg); border: 1.5px solid var(--border);
+  color: var(--muted); cursor: not-allowed; opacity: .6;
+}
+
+/* ─── MODAL BASE ─────────────────────────────────── */
+.m-overlay {
+  position: fixed; inset: 0; z-index: 900;
+  background: rgba(13,17,23,.65); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .22s ease;
+}
+.m-overlay.open { opacity: 1; pointer-events: auto; }
+
+.m-box {
+  position: relative;
+  background: var(--card); border-radius: 26px; overflow: hidden;
+  width: 100%; max-width: 660px; max-height: 92vh; overflow-y: auto;
+  box-shadow: 0 32px 100px rgba(0,0,0,.35);
+  transform: translateY(24px) scale(.98);
+  transition: transform .25s ease;
+}
+.m-overlay.open .m-box { transform: translateY(0) scale(1); }
+
+.m-close {
+  position: absolute; top: 14px; right: 14px; z-index: 10;
+  width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer;
+  background: rgba(0,0,0,.3); color: #fff; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.m-close:hover { background: rgba(0,0,0,.5); }
+
+/* ─── DETAIL MODAL ───────────────────────────────── */
+.dm-gallery { position: relative; height: 290px; background: #111; flex-shrink: 0; }
+.dm-main { width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity .2s; }
+.dm-no-photo {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+  font-size: 72px; opacity: .25;
+}
+.dm-thumbs {
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 8px;
+}
+.dm-thumb {
+  width: 56px; height: 40px; border-radius: 10px; overflow: hidden; cursor: pointer;
+  border: 2.5px solid rgba(255,255,255,.3); transition: border-color .15s;
+  flex-shrink: 0;
+}
+.dm-thumb.on { border-color: #fff; }
+.dm-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.dm-body { padding: 26px 28px 28px; }
+.dm-name {
+  font-family: 'Unbounded', sans-serif; font-weight: 900;
+  font-size: 20px; letter-spacing: -.5px; color: var(--text); margin-bottom: 4px;
+}
+.dm-price { font-size: 24px; font-weight: 800; color: #2563EB; margin-bottom: 6px; }
+.dm-price small { font-size: 13px; font-weight: 400; color: var(--muted); }
+.dm-guests { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+
+.dm-sec { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); margin: 18px 0 8px; }
+.dm-desc { font-size: 14px; line-height: 1.75; color: var(--text2); white-space: pre-line; }
+.dm-tags { display: flex; flex-wrap: wrap; gap: 7px; }
+.dm-tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 13px; border-radius: 100px; font-size: 12px; font-weight: 600;
+  background: rgba(37,99,235,.07); border: 1px solid rgba(37,99,235,.15); color: #2563EB;
+}
+
+.dm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px; }
+.dm-btn {
+  padding: 14px; border-radius: 15px; border: none;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: all .2s; color: #fff;
+}
+.dm-btn-blue { background: linear-gradient(135deg,#2563EB,#1D4ED8); box-shadow: 0 4px 16px rgba(37,99,235,.3); }
+.dm-btn-blue:hover { box-shadow: 0 8px 26px rgba(37,99,235,.44); transform: translateY(-1px); }
+.dm-btn-green { background: linear-gradient(135deg,#059669,#047857); box-shadow: 0 4px 16px rgba(5,150,105,.28); }
+.dm-btn-green:hover { box-shadow: 0 8px 26px rgba(5,150,105,.4); transform: translateY(-1px); }
+
+/* ─── BOOKING MODAL ──────────────────────────────── */
+.bm-head {
+  padding: 28px 28px 0;
+  border-bottom: 1px solid var(--border); padding-bottom: 18px; margin-bottom: 22px;
+}
+.bm-type-badge {
+  display: inline-block; padding: 4px 12px; border-radius: 100px;
+  font-size: 11px; font-weight: 700; letter-spacing: .5px;
+  margin-bottom: 8px;
+}
+.bm-type-badge.blue { background: rgba(37,99,235,.1); color: #2563EB; }
+.bm-type-badge.green { background: rgba(5,150,105,.1); color: #059669; }
+.bm-title {
+  font-family: 'Unbounded', sans-serif; font-weight: 900;
+  font-size: 18px; letter-spacing: -.5px; color: var(--text); margin-bottom: 2px;
+}
+.bm-subtitle { font-size: 13px; color: var(--muted); }
+
+.bm-body { padding: 0 28px 28px; }
+.bm-grid { display: grid; gap: 16px; }
+.bm-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.bm-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 6px; display: block; }
+.bm-inp {
+  width: 100%; border: 1.5px solid var(--border); border-radius: 13px;
+  padding: 12px 15px; font-size: 14px; font-family: inherit;
+  background: var(--bg); color: var(--text);
+  transition: border-color .15s, box-shadow .15s;
+  box-sizing: border-box;
+}
+.bm-inp:focus { outline: none; border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+
+.bm-total {
+  background: linear-gradient(135deg, rgba(37,99,235,.06), rgba(37,99,235,.03));
+  border: 1.5px solid rgba(37,99,235,.15); border-radius: 15px;
+  padding: 14px 18px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.bm-total-lbl { font-size: 13px; color: var(--text2); font-weight: 500; }
+.bm-total-sum { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 20px; color: #2563EB; }
+
+.bm-submit {
+  width: 100%; padding: 15px; border-radius: 15px; border: none;
+  font-size: 14px; font-weight: 800; cursor: pointer;
+  color: #fff; transition: all .2s;
+  font-family: 'Unbounded', sans-serif; letter-spacing: -.2px;
+}
+.bm-submit.blue { background: linear-gradient(135deg,#2563EB,#1D4ED8); box-shadow: 0 4px 18px rgba(37,99,235,.3); }
+.bm-submit.blue:hover { box-shadow: 0 8px 30px rgba(37,99,235,.45); transform: translateY(-1px); }
+.bm-submit.green { background: linear-gradient(135deg,#059669,#047857); box-shadow: 0 4px 18px rgba(5,150,105,.28); }
+.bm-submit.green:hover { box-shadow: 0 8px 30px rgba(5,150,105,.4); transform: translateY(-1px); }
+
+/* ─── EMPTY ──────────────────────────────────────── */
+.hb-empty {
+  text-align: center; padding: 80px 24px;
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 24px; margin-top: 8px;
+}
+
+/* ─── MOBILE ─────────────────────────────────────── */
+@media (max-width: 640px) {
+  .hb-hero { padding: 24px 20px; min-height: 200px; }
+  .hb-back { left: 16px; }
+  .hb-wrap { padding: 24px 14px 80px; }
+  .hb-grid { grid-template-columns: 1fr; gap: 16px; }
+  .rc-actions { grid-template-columns: 1fr; }
+  .rc-btn-green { grid-column: auto; }
+  .dm-actions, .bm-2col { grid-template-columns: 1fr; }
+  .dm-body, .bm-head, .bm-body { padding-left: 18px; padding-right: 18px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══ HERO ══ -->
+<div class="hb-hero">
+  {% if branch.cover_photo %}
+    <div class="hb-hero-bg" style="background-image:url('{{ branch.cover_photo.url }}')"></div>
+  {% endif %}
+  <div class="hb-hero-overlay"></div>
+  <div class="hb-hero-dots"></div>
+  <a href="{% url 'hotels:hotel_detail' hotel.slug %}" class="hb-back">← {{ hotel.name_ru }}</a>
+  <div class="hb-hero-content">
+    <div class="hb-eyebrow">Отель · Webordo</div>
+    <div class="hb-title">{{ branch.name_ru }}</div>
+    <div class="hb-meta">
+      {% if branch.address %}<span>📍 {{ branch.address }}</span>{% endif %}
+      {% if branch.phone %}
+        <a href="tel:{{ branch.phone }}">📞 {{ branch.phone }}</a>
+        <a href="https://wa.me/{{ branch.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}"
+           target="_blank" rel="noopener">💬 WhatsApp</a>
+      {% endif %}
+      {% if branch.map_url %}
+        <a href="{{ branch.map_url }}" target="_blank" rel="noopener">📍 На карте</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ══ CONTENT ══ -->
+<div class="hb-wrap">
+
+  {% if messages %}
+    {% for m in messages %}
+      <div style="background:var(--card);border:1.5px solid var(--border);border-radius:14px;
+                  padding:12px 18px;margin-bottom:20px;font-size:14px;color:var(--text)">{{ m }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% for cat in categories %}
+    {% if cat.rooms.all %}
+      <div class="hb-cat">
+        <div class="hb-cat-line"></div>
+        <div class="hb-cat-label">{{ cat.name_ru }}</div>
+        <div class="hb-cat-line"></div>
+      </div>
+      <div class="hb-grid">
+        {% for room in cat.rooms.all %}{% include "hotels/_room_card.html" with room=room %}{% endfor %}
+      </div>
+    {% endif %}
+  {% endfor %}
+
+  {% if uncategorized %}
+    {% if categories %}
+      <div class="hb-cat">
+        <div class="hb-cat-line"></div>
+        <div class="hb-cat-label">Другие номера</div>
+        <div class="hb-cat-line"></div>
+      </div>
+    {% endif %}
+    <div class="hb-grid">
+      {% for room in uncategorized %}{% include "hotels/_room_card.html" with room=room %}{% endfor %}
+    </div>
+  {% endif %}
+
+  {% if not categories and not uncategorized %}
+    <div class="hb-empty">
+      <div style="font-size:52px;margin-bottom:16px">🏗️</div>
+      <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:17px;color:var(--text);margin-bottom:8px">Номера пока не добавлены</div>
+      <div style="font-size:14px;color:var(--muted)">Обратитесь в отель напрямую</div>
+      {% if branch.phone %}
+        <a href="tel:{{ branch.phone }}"
+           style="display:inline-flex;align-items:center;gap:8px;margin-top:22px;
+                  padding:13px 28px;border-radius:15px;background:#2563EB;
+                  color:#fff;text-decoration:none;font-weight:700;font-size:14px">
+          📞 Позвонить
+        </a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     DETAIL MODAL
+══════════════════════════════════════════════════ -->
+<div class="m-overlay" id="detailOverlay">
+  <div class="m-box">
+    <button class="m-close" id="detailClose">✕</button>
+
+    <!-- Gallery -->
+    <div class="dm-gallery" id="dmGallery">
+      <img class="dm-main" id="dmMain" src="" alt="">
+      <div class="dm-no-photo" id="dmNoPhoto" style="display:none">🛏️</div>
+      <div class="dm-thumbs" id="dmThumbs"></div>
+    </div>
+
+    <!-- Info -->
+    <div class="dm-body">
+      <div class="dm-name" id="dmName"></div>
+      <div class="dm-price" id="dmPrice"></div>
+      <div class="dm-guests" id="dmGuests"></div>
+
+      <div class="dm-sec">Описание</div>
+      <div class="dm-desc" id="dmDesc"></div>
+
+      <div class="dm-sec" id="dmAmenitiesSec">Что включено</div>
+      <div class="dm-tags" id="dmTags"></div>
+
+      <div class="dm-actions">
+        <button class="dm-btn dm-btn-blue" id="dmBtnBook">📅 Забронировать</button>
+        <button class="dm-btn dm-btn-green" id="dmBtnCheckin">🔑 Заселиться</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════
+     BOOKING MODAL
+══════════════════════════════════════════════════ -->
+<div class="m-overlay" id="bookOverlay">
+  <div class="m-box">
+    <button class="m-close" id="bookClose">✕</button>
+
+    <div class="bm-head">
+      <div class="bm-type-badge blue" id="bmBadge">Бронирование</div>
+      <div class="bm-title" id="bmTitle">Забронировать номер</div>
+      <div class="bm-subtitle" id="bmSub"></div>
+    </div>
+
+    <div class="bm-body">
+      <form method="post" id="bmForm" class="bm-grid">
+        {% csrf_token %}
+        <input type="hidden" name="book_type" id="bmType" value="booking">
+
+        <div class="bm-2col">
+          <div>
+            <label class="bm-lbl">Дата заезда *</label>
+            <input class="bm-inp" type="date" name="checkin" id="bmCheckin" required>
+          </div>
+          <div>
+            <label class="bm-lbl">Ночей *</label>
+            <input class="bm-inp" type="number" name="nights" id="bmNights" min="1" value="1" required>
+          </div>
+        </div>
+
+        <div>
+          <label class="bm-lbl">Гостей</label>
+          <input class="bm-inp" type="number" name="guests" id="bmGuests" min="1" value="1">
+        </div>
+
+        <div>
+          <label class="bm-lbl">Ваше имя *</label>
+          <input class="bm-inp" type="text" name="name" placeholder="Имя" required>
+        </div>
+
+        <div>
+          <label class="bm-lbl">Телефон *</label>
+          <input class="bm-inp" type="tel" name="phone" id="bmPhone"
+                 value="+996" placeholder="+996700123456" required>
+        </div>
+
+        <div>
+          <label class="bm-lbl">Комментарий</label>
+          <textarea class="bm-inp" name="comment" rows="2"
+                    placeholder="Особые пожелания, запрос ранней/поздней выписки..."></textarea>
+        </div>
+
+        <div class="bm-total">
+          <span class="bm-total-lbl" id="bmNightsLbl">1 ночь</span>
+          <span class="bm-total-sum" id="bmTotalSum">0 сом</span>
+        </div>
+
+        <button type="submit" class="bm-submit blue" id="bmSubmit">
+          💬 Подтвердить в WhatsApp
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ JS DATA & LOGIC ══ -->
+<script>
+const ROOMS = {{ rooms_json|safe }};
+let cur = null;
+
+/* ─── helpers ─── */
+const $ = id => document.getElementById(id);
+
+function nightsWord(n) {
+  if (n === 1) return '1 ночь';
+  if (n >= 2 && n <= 4) return n + ' ночи';
+  return n + ' ночей';
+}
+
+/* ─── DETAIL MODAL ─── */
+function openDetail(roomId) {
+  cur = ROOMS.find(r => r.id === roomId);
+  if (!cur) return;
+
+  // gallery
+  const main   = $('dmMain');
+  const noPhoto = $('dmNoPhoto');
+  const thumbs = $('dmThumbs');
+  thumbs.innerHTML = '';
+
+  if (cur.photos.length) {
+    main.src = cur.photos[0];
+    main.style.display = 'block';
+    noPhoto.style.display = 'none';
+
+    if (cur.photos.length > 1) {
+      cur.photos.forEach((url, i) => {
+        const d = document.createElement('div');
+        d.className = 'dm-thumb' + (i === 0 ? ' on' : '');
+        d.innerHTML = `<img src="${url}" loading="lazy">`;
+        d.onclick = () => {
+          main.style.opacity = '0';
+          setTimeout(() => { main.src = url; main.style.opacity = '1'; }, 150);
+          thumbs.querySelectorAll('.dm-thumb').forEach(t => t.classList.remove('on'));
+          d.classList.add('on');
+        };
+        thumbs.appendChild(d);
+      });
+    }
+  } else {
+    main.style.display = 'none';
+    noPhoto.style.display = 'flex';
+  }
+
+  $('dmName').textContent  = cur.name;
+  $('dmPrice').innerHTML   = `${cur.price.toLocaleString()} сом <small>/ ночь</small>`;
+  $('dmGuests').textContent = `👥 Максимум ${cur.max_guests} ${cur.max_guests === 1 ? 'гость' : cur.max_guests < 5 ? 'гостя' : 'гостей'}`;
+  $('dmDesc').textContent  = cur.description || 'Описание не добавлено';
+
+  const tags = $('dmTags');
+  tags.innerHTML = '';
+  const sec = $('dmAmenitiesSec');
+  if (cur.amenities.length) {
+    sec.style.display = '';
+    tags.style.display = '';
+    cur.amenities.forEach(a => {
+      const s = document.createElement('span');
+      s.className = 'dm-tag';
+      s.textContent = '✓ ' + a;
+      tags.appendChild(s);
+    });
+  } else {
+    sec.style.display = 'none';
+    tags.style.display = 'none';
+  }
+
+  $('detailOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDetail() {
+  $('detailOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+$('detailClose').onclick = closeDetail;
+$('detailOverlay').addEventListener('click', e => { if (e.target === $('detailOverlay')) closeDetail(); });
+
+$('dmBtnBook').onclick    = () => openBook('booking');
+$('dmBtnCheckin').onclick = () => openBook('checkin');
+
+/* ─── BOOKING MODAL ─── */
+function openBook(type) {
+  if (!cur) return;
+  closeDetail();
+
+  const isCheckin = type === 'checkin';
+
+  $('bmType').value = type;
+  const badge = $('bmBadge');
+  badge.textContent = isCheckin ? 'Заселиться' : 'Бронирование';
+  badge.className   = 'bm-type-badge ' + (isCheckin ? 'green' : 'blue');
+
+  $('bmTitle').textContent = isCheckin ? 'Заселиться сейчас' : 'Забронировать номер';
+  $('bmSub').textContent   = cur.name;
+
+  const submit = $('bmSubmit');
+  submit.className = 'bm-submit ' + (isCheckin ? 'green' : 'blue');
+  submit.textContent = '💬 Подтвердить в WhatsApp';
+
+  $('bmForm').action = cur.book_url;
+
+  // today
+  const today = new Date().toISOString().slice(0, 10);
+  $('bmCheckin').min = today;
+  if (!$('bmCheckin').value || $('bmCheckin').value < today) {
+    $('bmCheckin').value = today;
+  }
+
+  updateTotal();
+  $('bookOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+/* Direct from card (no detail modal first) */
+function openBookDirect(roomId, type) {
+  cur = ROOMS.find(r => r.id === roomId);
+  if (cur) openBook(type);
+}
+
+function closeBook() {
+  $('bookOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+$('bookClose').onclick = closeBook;
+$('bookOverlay').addEventListener('click', e => { if (e.target === $('bookOverlay')) closeBook(); });
+
+function updateTotal() {
+  if (!cur) return;
+  const n = Math.max(1, parseInt($('bmNights').value) || 1);
+  $('bmTotalSum').textContent  = (cur.price * n).toLocaleString() + ' сом';
+  $('bmNightsLbl').textContent = nightsWord(n);
+}
+
+$('bmNights').addEventListener('input', updateTotal);
+
+/* ─── phone prefix ─── */
+(function () {
+  const ph = $('bmPhone'), pfx = '+996';
+  const norm = () => {
+    let v = (ph.value || '').replace(/[^\d+]/g, '');
+    if (!v.startsWith(pfx)) v = pfx + v.replace(/^\+?9?9?6?/, '').replace(/^\+/, '');
+    ph.value = v;
+  };
+  ph.addEventListener('focus', () => { if (!ph.value) ph.value = pfx; norm(); });
+  ph.addEventListener('input', norm);
+  ph.addEventListener('keydown', e => {
+    if ((ph.selectionStart || 0) <= pfx.length && (e.key === 'Backspace' || e.key === 'Delete'))
+      e.preventDefault();
+  });
+})();
+
+/* ─── ESC ─── */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeDetail(); closeBook(); }
+});
+</script>
+
+{% endblock %}

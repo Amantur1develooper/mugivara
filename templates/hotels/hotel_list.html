@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}Отели — Webordo{% endblock %}
+{% block cta %}{% endblock %}
+
+{% block head_extra %}
+<style>
+  .hl-page { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  .hl-hero {
+    border-radius: 28px; overflow: hidden;
+    background: linear-gradient(135deg, #0D1117, #1c2535);
+    padding: 48px 40px; margin-bottom: 48px; position: relative;
+  }
+  .hl-hero::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse 70% 60% at 0% 100%, rgba(37,99,235,0.3), transparent 60%);
+  }
+  .hl-hero-eyebrow {
+    font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+    color: rgba(255,255,255,0.4); font-weight: 600; margin-bottom: 10px; position: relative;
+  }
+  .hl-hero-title {
+    font-family: 'Unbounded', sans-serif; font-weight: 900;
+    font-size: clamp(28px, 5vw, 52px); letter-spacing: -2px;
+    color: white; line-height: 1; margin-bottom: 14px; position: relative;
+  }
+  .hl-hero-sub { font-size: 15px; color: rgba(255,255,255,0.5); position: relative; }
+  .hl-back {
+    position: absolute; top: 20px; left: 24px; z-index: 2;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.16);
+    color: rgba(255,255,255,0.75); text-decoration: none; transition: all 0.2s;
+  }
+  .hl-back:hover { background: rgba(255,255,255,0.18); color: white; }
+
+  .hl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 22px; }
+
+  .hc {
+    background: var(--card); border: 1.5px solid var(--border); border-radius: 24px;
+    overflow: hidden; display: flex; flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    transition: transform 0.3s, box-shadow 0.3s;
+    text-decoration: none; color: inherit;
+  }
+  .hc:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(0,0,0,0.13); }
+
+  .hc-photo { height: 200px; position: relative; background: var(--card2); overflow: hidden; }
+  .hc-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+  .hc:hover .hc-photo img { transform: scale(1.06); }
+  .hc-photo-empty {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+  }
+  .hc-photo-empty span { font-size: 64px; opacity: 0.3; }
+  .hc-photo-grad {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.55) 100%);
+  }
+  .hc-photo-name {
+    position: absolute; bottom: 14px; left: 16px; right: 16px;
+    font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 15px;
+    color: white; letter-spacing: -0.3px;
+  }
+  .hc-body { padding: 16px 18px 20px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  .hc-meta { font-size: 13px; color: var(--muted); }
+  .hc-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px; border-radius: 14px; font-size: 13px; font-weight: 700;
+    color: white; text-decoration: none;
+    background: linear-gradient(135deg, #2563EB, #1D4ED8);
+    box-shadow: 0 4px 16px rgba(37,99,235,0.3);
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .hc-btn:hover { box-shadow: 0 8px 24px rgba(37,99,235,0.4); transform: translateY(-1px); }
+
+  .hl-empty {
+    grid-column: 1/-1; text-align: center; padding: 80px 24px;
+    background: var(--card); border: 1.5px solid var(--border); border-radius: 24px;
+  }
+
+  @media (max-width: 640px) { .hl-page { padding: 16px 14px 60px; } .hl-hero { padding: 32px 20px; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hl-page">
+
+  <div class="hl-hero">
+    <a href="/" class="hl-back">← Главная</a>
+    <div class="hl-hero-eyebrow">Webordo · Бронирование</div>
+    <div class="hl-hero-title">Отели</div>
+    <div class="hl-hero-sub">Выберите отель и забронируйте номер онлайн</div>
+  </div>
+
+  <div class="hl-grid">
+    {% for c in cards %}
+    <a href="{% url 'hotels:hotel_detail' c.obj.slug %}" class="hc">
+      <div class="hc-photo">
+        {% if c.cover %}
+          <img src="{{ c.cover.url }}" alt="{{ c.obj.name_ru }}" loading="lazy">
+        {% else %}
+          <div class="hc-photo-empty"><span>🏨</span></div>
+        {% endif %}
+        <div class="hc-photo-grad"></div>
+        <div class="hc-photo-name">{{ c.obj.name_ru }}</div>
+      </div>
+      <div class="hc-body">
+        <div class="hc-meta">🏢 {{ c.branches_count }} {% if c.branches_count == 1 %}объект{% else %}объекта{% endif %}</div>
+        <div class="hc-btn">🏨 Смотреть номера</div>
+      </div>
+    </a>
+    {% empty %}
+    <div class="hl-empty">
+      <div style="font-size:48px;margin-bottom:16px">🏗️</div>
+      <div style="font-family:'Unbounded',sans-serif;font-size:17px;font-weight:800;color:var(--text)">
+        Отели скоро появятся
+      </div>
+      <div style="font-size:14px;color:var(--muted);margin-top:8px">Следите за обновлениями</div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

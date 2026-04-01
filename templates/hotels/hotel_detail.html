@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ hotel.name_ru }} — Отель{% endblock %}
+{% block cta %}{% endblock %}
+
+{% block head_extra %}
+<style>
+  .hd-page { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  /* HERO */
+  .hd-hero {
+    position: relative; border-radius: 28px; overflow: hidden;
+    min-height: 260px; display: flex; flex-direction: column;
+    justify-content: flex-end; padding: 32px; margin-bottom: 44px;
+    background: linear-gradient(135deg, #0D1117, #1c2535);
+  }
+  .hd-hero-bg-img {
+    position: absolute; inset: 0; background-size: cover; background-position: center;
+    filter: blur(24px) saturate(0.6) brightness(0.3); transform: scale(1.08);
+  }
+  .hd-hero-overlay {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 0% 100%, rgba(37,99,235,0.25), transparent 60%),
+      linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.1) 60%);
+  }
+  .hd-back {
+    position: absolute; top: 20px; left: 24px; z-index: 2;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.16);
+    color: rgba(255,255,255,0.75); text-decoration: none; transition: all 0.2s;
+  }
+  .hd-back:hover { background: rgba(255,255,255,0.18); color: white; }
+  .hd-hero-content { position: relative; z-index: 1; display: flex; align-items: flex-end; gap: 22px; margin-top: 44px; }
+  .hd-logo {
+    width: 84px; height: 84px; border-radius: 20px; flex-shrink: 0;
+    background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2);
+    overflow: hidden; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+  .hd-logo img { width: 100%; height: 100%; object-fit: cover; }
+  .hd-logo-letter {
+    font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 34px;
+    color: #60A5FA;
+  }
+  .hd-hero-eyebrow { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.4); font-weight: 600; margin-bottom: 8px; }
+  .hd-hero-title {
+    font-family: 'Unbounded', sans-serif; font-weight: 900;
+    font-size: clamp(20px, 4vw, 40px); letter-spacing: -1.5px; color: white; line-height: 1; margin-bottom: 12px;
+  }
+  .hd-hero-pills { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .hd-pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 14px; border-radius: 100px; font-size: 12px; font-weight: 600;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.8);
+    text-decoration: none;
+  }
+  .hd-pill.blue { background: rgba(37,99,235,0.25); border-color: rgba(37,99,235,0.4); color: #93C5FD; }
+
+  /* BRANCH CARDS */
+  .hd-sec-tag { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: #2563EB; font-weight: 600; margin-bottom: 8px; }
+  .hd-sec-title {
+    font-family: 'Unbounded', sans-serif; font-weight: 800;
+    font-size: clamp(18px, 3vw, 28px); letter-spacing: -1px; color: var(--text); margin-bottom: 28px;
+  }
+  .hd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 22px; }
+
+  .bc {
+    background: var(--card); border: 1.5px solid var(--border); border-radius: 24px;
+    overflow: hidden; display: flex; flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .bc:hover { transform: translateY(-5px); box-shadow: 0 20px 50px rgba(0,0,0,0.12); }
+
+  .bc-photo { height: 200px; position: relative; background: var(--card2); overflow: hidden; }
+  .bc-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+  .bc:hover .bc-photo img { transform: scale(1.05); }
+  .bc-photo-empty {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+  }
+  .bc-photo-empty span { font-size: 64px; opacity: 0.25; }
+  .bc-photo-grad { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.6) 100%); }
+  .bc-photo-name {
+    position: absolute; bottom: 14px; left: 16px; right: 16px;
+    font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 14px;
+    color: white; letter-spacing: -0.3px;
+  }
+  .bc-photo-addr { font-size: 12px; color: rgba(255,255,255,0.65); margin-top: 4px; }
+
+  .bc-body { padding: 16px 18px 20px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  .bc-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .bc-chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 100px;
+    font-size: 12px; font-weight: 600; border: 1.5px solid var(--border); background: var(--bg); color: var(--text2);
+    text-decoration: none;
+  }
+  .bc-chip:is(a):hover { background: var(--card2); }
+
+  .bc-btn-main {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 13px 18px; border-radius: 14px;
+    font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 800;
+    color: white; text-decoration: none;
+    background: linear-gradient(135deg, #2563EB, #1D4ED8);
+    box-shadow: 0 6px 20px rgba(37,99,235,0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .bc-btn-main:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(37,99,235,0.4); }
+  .bc-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 14px; border-radius: 12px; font-size: 13px; font-weight: 600;
+    border: 1.5px solid var(--border); background: var(--card); color: var(--text2);
+    text-decoration: none; transition: all 0.2s;
+  }
+  .bc-btn:hover { background: var(--card2); transform: translateY(-1px); }
+  .bc-btn.wa { background: #25D366; border-color: #25D366; color: white; }
+
+  /* ABOUT */
+  .hd-about {
+    margin-top: 52px; border-radius: 24px; overflow: hidden;
+    background: var(--card); border: 1.5px solid var(--border);
+    display: grid; grid-template-columns: 1fr 2fr;
+  }
+  .hd-about-left {
+    padding: 36px 28px; background: linear-gradient(160deg, #0D1117, #1c2535);
+    display: flex; flex-direction: column; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .hd-about-left::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 0% 100%, rgba(37,99,235,0.25), transparent);
+  }
+  .hd-about-label { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.35); font-weight: 600; margin-bottom: 10px; position: relative; }
+  .hd-about-title { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 24px; color: white; position: relative; }
+  .hd-about-right { padding: 36px 32px; }
+  .hd-about-text { font-size: 15px; line-height: 1.85; color: var(--text2); white-space: pre-line; }
+
+  @media (max-width: 860px) { .hd-about { grid-template-columns: 1fr; } }
+  @media (max-width: 640px) {
+    .hd-page { padding: 16px 14px 60px; }
+    .hd-hero { padding: 20px; }
+    .hd-logo { width: 66px; height: 66px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hd-page">
+
+  <!-- HERO -->
+  <div class="hd-hero">
+    {% if hotel.logo %}
+      <div class="hd-hero-bg-img" style="background-image:url('{{ hotel.logo.url }}')"></div>
+    {% endif %}
+    <div class="hd-hero-overlay"></div>
+    <a href="{% url 'hotels:hotel_list' %}" class="hd-back">← Отели</a>
+
+    <div class="hd-hero-content">
+      <div class="hd-logo">
+        {% if hotel.logo %}
+          <img src="{{ hotel.logo.url }}" alt="{{ hotel.name_ru }}" loading="lazy">
+        {% else %}
+          <span class="hd-logo-letter">{{ hotel.name_ru|slice:":1" }}</span>
+        {% endif %}
+      </div>
+      <div>
+        <div class="hd-hero-eyebrow">Отель · Webordo</div>
+        <h1 class="hd-hero-title">{{ hotel.name_ru }}</h1>
+        <div class="hd-hero-pills">
+          <span class="hd-pill">🏢 {{ branches|length }} {% if branches|length == 1 %}объект{% else %}объекта{% endif %}</span>
+          {% if hotel.external_url %}
+            <a href="{{ hotel.external_url }}" target="_blank" rel="noopener" class="hd-pill blue">🌐 Сайт отеля ↗</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BRANCHES -->
+  <div class="hd-sec-tag">Объекты</div>
+  <div class="hd-sec-title">Выберите объект</div>
+
+  <div class="hd-grid">
+    {% for b in branches %}
+    <div class="bc">
+      <div class="bc-photo">
+        {% if b.cover_photo %}
+          <img src="{{ b.cover_photo.url }}" alt="{{ b.name_ru }}" loading="lazy">
+        {% else %}
+          <div class="bc-photo-empty"><span>🏨</span></div>
+        {% endif %}
+        <div class="bc-photo-grad"></div>
+        <div class="bc-photo-name">
+          {{ b.name_ru }}
+          {% if b.address %}<div class="bc-photo-addr">📍 {{ b.address }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="bc-body">
+        <div class="bc-chips">
+          {% if b.phone %}<a href="tel:{{ b.phone }}" class="bc-chip">📞 {{ b.phone }}</a>{% endif %}
+          {% if b.map_url %}<a href="{{ b.map_url }}" target="_blank" rel="noopener" class="bc-chip">📍 Карта</a>{% endif %}
+        </div>
+
+        {% if b.external_url %}
+          <a href="{{ b.external_url }}" target="_blank" rel="noopener" class="bc-btn-main">🏨 Смотреть номера ↗</a>
+        {% else %}
+          <a href="{% url 'hotels:hotel_branch' b.id %}" class="bc-btn-main">🏨 Смотреть номера</a>
+        {% endif %}
+
+        {% if b.phone %}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <a href="tel:{{ b.phone }}" class="bc-btn">📞 Позвонить</a>
+            <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}"
+               target="_blank" rel="noopener" class="bc-btn wa">💬 WhatsApp</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div style="grid-column:1/-1;text-align:center;padding:60px 24px;background:var(--card);border:1.5px solid var(--border);border-radius:20px">
+      <div style="font-size:48px;margin-bottom:12px">🏗️</div>
+      <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:15px;color:var(--text)">Объекты пока не добавлены</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- ABOUT -->
+  {% if hotel.about_ru %}
+  <div class="hd-about">
+    <div class="hd-about-left">
+      <div class="hd-about-label">Об отеле</div>
+      <div class="hd-about-title">{{ hotel.name_ru }}</div>
+    </div>
+    <div class="hd-about-right">
+      <p class="hd-about-text">{{ hotel.about_ru }}</p>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
