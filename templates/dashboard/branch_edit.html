@@ -126,6 +126,21 @@
     </div>
   </div>
 
+  {# ── ВНЕШНИЙ САЙТ ── #}
+  <div class="db-card">
+    <div class="db-card-title">🌐 Внешний сайт / приложение</div>
+    <div class="db-form-group">
+      <label class="db-label" for="external_url">Ссылка на ваш сайт</label>
+      <input class="db-input" id="external_url" name="external_url" type="url"
+             value="{{ branch.external_url }}"
+             placeholder="https://your-restaurant.com/order">
+      <div class="db-hint">
+        Если заполнено — кнопка «Открыть меню» у этого филиала будет переходить на ваш сайт.
+        Оставьте пустым, чтобы использовать наше встроенное меню.
+      </div>
+    </div>
+  </div>
+
   {# ── ФОТО АКЦИИ ── #}
   <div class="db-card">
     <div class="db-card-title">🖼 Фото для акции (фон карусели)</div>

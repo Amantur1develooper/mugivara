@@ -74,7 +74,8 @@ def restaurant_edit(request, restaurant_id):
         if name:
             restaurant.name_ru = name
         restaurant.about_ru = request.POST.get("about_ru", "").strip()
-        restaurant.save(update_fields=["name_ru", "about_ru", "updated_at"])
+        restaurant.external_url = request.POST.get("external_url", "").strip()
+        restaurant.save(update_fields=["name_ru", "about_ru", "external_url", "updated_at"])
         messages.success(request, "Данные ресторана сохранены")
         return redirect("dashboard:restaurant_edit", restaurant_id=restaurant.id)
 
@@ -106,6 +107,8 @@ def branch_edit(request, branch_id):
         ct = request.POST.get("close_time", "").strip()
         branch.open_time  = ot or None
         branch.close_time = ct or None
+
+        branch.external_url = request.POST.get("external_url", "").strip()
 
         photo = request.FILES.get("promo_photo")
         if photo:

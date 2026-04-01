@@ -38,6 +38,16 @@
       <div class="db-hint">Покажется на странице ресторана в разделе «О нас»</div>
     </div>
 
+    <div class="db-form-group">
+      <label class="db-label" for="external_url">Ссылка на ваш сайт / приложение</label>
+      <input class="db-input" id="external_url" name="external_url" type="url"
+             value="{{ restaurant.external_url }}"
+             placeholder="https://your-restaurant.com">
+      <div class="db-hint">
+        Если заполнено — на странице ресторана появится кнопка «Сайт ресторана» со ссылкой на ваш сайт
+      </div>
+    </div>
+
     <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
       <button type="submit" class="db-btn db-btn-primary">💾 Сохранить</button>
       <a href="{% url 'dashboard:home' %}" class="db-btn db-btn-ghost">← Назад</a>

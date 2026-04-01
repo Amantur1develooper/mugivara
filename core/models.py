@@ -25,6 +25,11 @@ class Restaurant(TimeStampedModel):
     about_ru = models.TextField(blank=True, default="")
     about_ky = models.TextField(blank=True, default="")
     about_en = models.TextField(blank=True, default="")
+    external_url = models.URLField(
+        "Ссылка на сайт / приложение",
+        blank=True, default="",
+        help_text="Если заполнено — кнопка «Перейти к заказу» будет вести на этот сайт"
+    )
     
     class Meta:
         verbose_name = "Ресторан"
@@ -60,6 +65,11 @@ class Branch(TimeStampedModel):
     promo_photo = models.ImageField(
         "Фото для акции (фон карусели)",
         upload_to="branches/promo/", blank=True, null=True,
+    )
+    external_url = models.URLField(
+        "Внешний сайт / приложение",
+        blank=True, default="",
+        help_text="Если заполнено — кнопка «Открыть меню» будет вести на этот адрес"
     )
 
     def save(self, *args, **kwargs):

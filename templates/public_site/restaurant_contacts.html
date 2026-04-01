@@ -309,6 +309,13 @@
               <span style="width:6px;height:6px;border-radius:50%;background:currentColor;animation:blink 2.5s infinite;"></span>
               Открыто сейчас
             </span>{% endif %}{% endfor %}
+          {% if restaurant.external_url %}
+            <a href="{{ restaurant.external_url }}" target="_blank" rel="noopener"
+               class="rch-hero-pill"
+               style="background:rgba(255,255,255,0.18);border-color:rgba(255,255,255,0.3);color:white;text-decoration:none;">
+              🌐 Сайт ресторана ↗
+            </a>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -364,10 +371,17 @@
 
         <div class="bc-actions">
 
+          {% if b.external_url %}
+          <a href="{{ b.external_url }}" target="_blank" rel="noopener" class="bc-btn-main">
+            🍽️ Открыть меню
+            <span class="bc-btn-main-badge">Перейти ↗</span>
+          </a>
+          {% else %}
           <a href="{% url 'public_site:branch_menu' b.id %}" class="bc-btn-main">
             🍽️ Открыть меню
             <span class="bc-btn-main-badge">Заказать</span>
           </a>
+          {% endif %}
 
           {% if b.phone %}
             <a href="tel:{{ b.phone }}" class="bc-btn">📞 Позвонить</a>
