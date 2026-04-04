@@ -97,7 +97,15 @@ class Room(TimeStampedModel):
         blank=True, default="",
         help_text="Каждый пункт с новой строки: WiFi, Завтрак, TV ..."
     )
-    price_per_night = models.DecimalField("Цена за чел. / ночь (сом)", max_digits=10, decimal_places=0, default=0)
+    price_per_night = models.DecimalField(
+        "Базовая цена (1 гость) / ночь (сом)",
+        max_digits=10, decimal_places=0, default=0,
+    )
+    price_per_extra_guest = models.DecimalField(
+        "Доплата за каждого доп. гостя / ночь (сом)",
+        max_digits=10, decimal_places=0, default=0,
+        help_text="Пример: база 2000, доплата 1000 → 1 гость=2000, 2 гостя=3000, 3 гостя=4000",
+    )
     max_guests = models.PositiveSmallIntegerField("Макс. гостей", default=2)
     is_available = models.BooleanField("Доступен", default=True)
     sort_order = models.PositiveIntegerField("Порядок", default=0)

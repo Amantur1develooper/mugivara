@@ -571,7 +571,20 @@ function openDetail(roomId) {
   }
 
   $('dmName').textContent  = cur.name;
-  $('dmPrice').innerHTML   = `${cur.price.toLocaleString()} сом <small>/ чел. / ночь</small>`;
+  // тарифная сетка в модале
+  let priceLine = `от ${cur.price.toLocaleString()} сом <small>/ ночь</small>`;
+  if (cur.price_extra > 0) {
+    const rows = [];
+    for (let g = 1; g <= Math.min(cur.max_guests, 5); g++) {
+      const p = calcPricePerNight(cur.price, cur.price_extra, g);
+      const gLabel = g === 1 ? '1 гость' : g + ' ' + (g < 5 ? 'гостя' : 'гостей');
+      rows.push(`${gLabel} — ${p.toLocaleString()} сом`);
+    }
+    priceLine = rows.map((r, i) =>
+      `<span style="display:block;font-size:${i===0?'22':'16'}px;font-weight:${i===0?'800':'600'};color:${i===0?'#2563EB':'var(--text2)'};">${r}</span>`
+    ).join('');
+  }
+  $('dmPrice').innerHTML = priceLine;
   $('dmGuests').textContent = `👥 Максимум ${cur.max_guests} ${cur.max_guests === 1 ? 'гость' : cur.max_guests < 5 ? 'гостя' : 'гостей'}`;
   $('dmDesc').textContent  = cur.description || 'Описание не добавлено';
 
@@ -654,13 +667,24 @@ function closeBook() {
 $('bookClose').onclick = closeBook;
 $('bookOverlay').addEventListener('click', e => { if (e.target === $('bookOverlay')) closeBook(); });
 
+function calcPricePerNight(price, priceExtra, guests) {
+  return price + priceExtra * Math.max(0, guests - 1);
+}
+
 function updateTotal() {
   if (!cur) return;
   const n = Math.max(1, parseInt($('bmNights').value) || 1);
   const g = Math.max(1, parseInt($('bmGuests').value) || 1);
-  const total = cur.price * n * g;
-  $('bmTotalSum').textContent  = total.toLocaleString() + ' сом';
-  $('bmNightsLbl').textContent = `${nightsWord(n)}, ${g} чел. × ${cur.price.toLocaleString()} сом`;
+  const perNight = calcPricePerNight(cur.price, cur.price_extra, g);
+  const total = perNight * n;
+
+  $('bmTotalSum').textContent = total.toLocaleString() + ' сом';
+
+  let lbl = nightsWord(n) + ', ' + g + ' чел.';
+  if (cur.price_extra > 0 && g > 1) {
+    lbl += ` · ${perNight.toLocaleString()} сом/ночь`;
+  }
+  $('bmNightsLbl').textContent = lbl;
 }
 
 $('bmNights').addEventListener('input', updateTotal);

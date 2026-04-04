@@ -57,6 +57,7 @@ def hotel_branch(request, branch_id):
             "id": r.id,
             "name": r.name_ru,
             "price": float(r.price_per_night),
+            "price_extra": float(r.price_per_extra_guest),
             "max_guests": r.max_guests,
             "description": r.description_ru or "",
             "amenities": r.amenities_list,
@@ -103,20 +104,26 @@ def room_book(request, room_id):
     except ValueError:
         guests_int = 1
 
-    total = room.price_per_night * nights_int * guests_int
+    # цена за ночь = базовая + доплата за каждого гостя сверх первого
+    price_per_night = room.price_per_night + room.price_per_extra_guest * max(0, guests_int - 1)
+    total = price_per_night * nights_int
 
     action_text = "Заселиться" if book_type == "checkin" else "Бронирование"
+
+    price_breakdown = f"{room.price_per_night} сом (база)"
+    if room.price_per_extra_guest and guests_int > 1:
+        price_breakdown += f" + {room.price_per_extra_guest} × {guests_int - 1} доп. чел. = {price_per_night} сом/ночь"
 
     msg = (
         f"🏨 {action_text}\n"
         f"Отель: {branch.hotel.name_ru}\n"
         f"Филиал: {branch.name_ru}\n"
         f"Номер: {room.name_ru}\n"
-        f"Цена: {room.price_per_night} сом / чел. / ночь\n"
+        f"Тариф: {price_breakdown}\n"
         f"Заезд: {checkin}\n"
         f"Ночей: {nights_int}\n"
         f"Гостей: {guests_int}\n"
-        f"Итого: {total} сом ({room.price_per_night} × {nights_int} ночей × {guests_int} чел.)\n"
+        f"Итого: {total} сом\n"
         f"Имя: {name}\n"
         f"Телефон: {phone}\n"
     )

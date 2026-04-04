@@ -52,12 +52,12 @@ class RoomCategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Room)
 class RoomAdmin(admin.ModelAdmin):
-    list_display = ("id", "name_ru", "branch", "category", "price_per_night", "max_guests", "is_available")
+    list_display = ("id", "name_ru", "branch", "category", "price_per_night", "price_per_extra_guest", "max_guests", "is_available")
     list_filter = ("branch__hotel", "is_available")
-    list_editable = ("is_available", "price_per_night")
+    list_editable = ("is_available", "price_per_night", "price_per_extra_guest")
     search_fields = ("name_ru", "branch__name_ru")
     fieldsets = (
-        (None, {"fields": ("branch", "category", "name_ru", "price_per_night", "max_guests", "is_available", "sort_order")}),
+        (None, {"fields": ("branch", "category", "name_ru", "price_per_night", "price_per_extra_guest", "max_guests", "is_available", "sort_order")}),
         ("Описание", {"fields": ("description_ru", "amenities_ru")}),
         ("Фотографии", {"fields": ("photo1", "photo2", "photo3")}),
     )
