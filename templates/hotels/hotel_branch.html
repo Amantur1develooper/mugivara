@@ -571,7 +571,7 @@ function openDetail(roomId) {
   }
 
   $('dmName').textContent  = cur.name;
-  $('dmPrice').innerHTML   = `${cur.price.toLocaleString()} сом <small>/ ночь</small>`;
+  $('dmPrice').innerHTML   = `${cur.price.toLocaleString()} сом <small>/ чел. / ночь</small>`;
   $('dmGuests').textContent = `👥 Максимум ${cur.max_guests} ${cur.max_guests === 1 ? 'гость' : cur.max_guests < 5 ? 'гостя' : 'гостей'}`;
   $('dmDesc').textContent  = cur.description || 'Описание не добавлено';
 
@@ -657,11 +657,14 @@ $('bookOverlay').addEventListener('click', e => { if (e.target === $('bookOverla
 function updateTotal() {
   if (!cur) return;
   const n = Math.max(1, parseInt($('bmNights').value) || 1);
-  $('bmTotalSum').textContent  = (cur.price * n).toLocaleString() + ' сом';
-  $('bmNightsLbl').textContent = nightsWord(n);
+  const g = Math.max(1, parseInt($('bmGuests').value) || 1);
+  const total = cur.price * n * g;
+  $('bmTotalSum').textContent  = total.toLocaleString() + ' сом';
+  $('bmNightsLbl').textContent = `${nightsWord(n)}, ${g} чел. × ${cur.price.toLocaleString()} сом`;
 }
 
 $('bmNights').addEventListener('input', updateTotal);
+$('bmGuests').addEventListener('input', updateTotal);
 
 /* ─── phone prefix ─── */
 (function () {

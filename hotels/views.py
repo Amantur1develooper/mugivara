@@ -98,7 +98,12 @@ def room_book(request, room_id):
     except ValueError:
         nights_int = 1
 
-    total = room.price_per_night * nights_int
+    try:
+        guests_int = max(1, int(guests))
+    except ValueError:
+        guests_int = 1
+
+    total = room.price_per_night * nights_int * guests_int
 
     action_text = "Заселиться" if book_type == "checkin" else "Бронирование"
 
@@ -107,11 +112,11 @@ def room_book(request, room_id):
         f"Отель: {branch.hotel.name_ru}\n"
         f"Филиал: {branch.name_ru}\n"
         f"Номер: {room.name_ru}\n"
-        f"Цена: {room.price_per_night} сом/ночь\n"
+        f"Цена: {room.price_per_night} сом / чел. / ночь\n"
         f"Заезд: {checkin}\n"
         f"Ночей: {nights_int}\n"
-        f"Гостей: {guests}\n"
-        f"Итого: {total} сом\n"
+        f"Гостей: {guests_int}\n"
+        f"Итого: {total} сом ({room.price_per_night} × {nights_int} ночей × {guests_int} чел.)\n"
         f"Имя: {name}\n"
         f"Телефон: {phone}\n"
     )
