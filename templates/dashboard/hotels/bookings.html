@@ -1,0 +1,133 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Бронирования — {{ branch.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+  .bk-table{width:100%;border-collapse:collapse;font-size:13px}
+  .bk-table th{text-align:left;padding:10px 14px;font-size:11px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.5px;color:var(--muted);
+    border-bottom:1px solid var(--border)}
+  .bk-table td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+  .bk-table tr:last-child td{border-bottom:none}
+  .bk-table tr:hover td{background:rgba(0,0,0,.015)}
+  .status-pill{
+    display:inline-flex;align-items:center;padding:3px 10px;border-radius:100px;
+    font-size:11px;font-weight:700;
+  }
+  .s-new{background:rgba(37,99,235,.1);color:#2563EB}
+  .s-confirmed{background:rgba(0,184,150,.1);color:var(--teal)}
+  .s-cancelled{background:rgba(255,77,28,.1);color:var(--accent)}
+  .s-checked_in{background:rgba(124,58,237,.1);color:#7C3AED}
+  .s-checked_out{background:rgba(0,0,0,.07);color:var(--muted)}
+  .type-pill{
+    display:inline-flex;align-items:center;padding:2px 8px;border-radius:6px;
+    font-size:10px;font-weight:700;margin-left:6px;
+  }
+  .t-book{background:rgba(37,99,235,.08);color:#2563EB}
+  .t-checkin{background:rgba(0,184,150,.08);color:var(--teal)}
+  .filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+  .filter-btn{
+    padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;
+    text-decoration:none;border:1.5px solid var(--border);color:var(--text2);
+    background:var(--bg);transition:all .15s;
+  }
+  .filter-btn:hover,.filter-btn.active{
+    background:rgba(37,99,235,.08);border-color:rgba(37,99,235,.3);color:#2563EB;
+  }
+  .status-form select{
+    padding:4px 8px;border-radius:8px;font-size:12px;font-weight:600;
+    border:1.5px solid var(--border);background:var(--bg);color:var(--text);
+    cursor:pointer;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">Бронирования</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:hotel_home' %}">Мои отели</a> /
+      {{ hotel.name_ru }} / {{ branch.name_ru }}
+    </div>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <a href="?status=" class="filter-btn {% if not status_filter %}active{% endif %}">Все</a>
+  <a href="?status=new" class="filter-btn {% if status_filter == 'new' %}active{% endif %}">🆕 Новые</a>
+  <a href="?status=confirmed" class="filter-btn {% if status_filter == 'confirmed' %}active{% endif %}">✅ Подтверждено</a>
+  <a href="?status=checked_in" class="filter-btn {% if status_filter == 'checked_in' %}active{% endif %}">🔑 Заселён</a>
+  <a href="?status=checked_out" class="filter-btn {% if status_filter == 'checked_out' %}active{% endif %}">🏁 Выехал</a>
+  <a href="?status=cancelled" class="filter-btn {% if status_filter == 'cancelled' %}active{% endif %}">❌ Отменён</a>
+</div>
+
+<div class="db-card" style="padding:0;overflow:hidden">
+  {% if bookings %}
+  <div style="overflow-x:auto">
+    <table class="bk-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Гость</th>
+          <th>Номер</th>
+          <th>Заезд</th>
+          <th>Ночей</th>
+          <th>Гостей</th>
+          <th>Сумма</th>
+          <th>Тип</th>
+          <th>Статус</th>
+          <th>Дата заявки</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in bookings %}
+        <tr>
+          <td style="color:var(--muted);font-size:12px">{{ b.id }}</td>
+          <td>
+            <div style="font-weight:600">{{ b.customer_name }}</div>
+            <div style="font-size:12px;color:var(--muted)">
+              <a href="tel:{{ b.customer_phone }}" style="color:inherit">{{ b.customer_phone }}</a>
+            </div>
+            {% if b.comment %}
+              <div style="font-size:11px;color:var(--muted);margin-top:2px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
+                   title="{{ b.comment }}">💬 {{ b.comment }}</div>
+            {% endif %}
+          </td>
+          <td style="font-weight:500">{{ b.room.name_ru }}</td>
+          <td style="white-space:nowrap">{{ b.checkin_date|date:"d.m.Y" }}</td>
+          <td style="text-align:center">{{ b.nights }}</td>
+          <td style="text-align:center">{{ b.guests }}</td>
+          <td style="font-weight:700;white-space:nowrap">{{ b.total|floatformat:"0" }} сом</td>
+          <td>
+            {% if b.book_type == 'book' %}
+              <span class="type-pill t-book">📅 Бронь</span>
+            {% else %}
+              <span class="type-pill t-checkin">🔑 Заезд</span>
+            {% endif %}
+          </td>
+          <td>
+            <form method="post" action="{% url 'dashboard:hotel_booking_status' b.id %}" class="status-form">
+              {% csrf_token %}
+              <select name="status" onchange="this.form.submit()">
+                <option value="new"        {% if b.status == 'new' %}selected{% endif %}>🆕 Новый</option>
+                <option value="confirmed"  {% if b.status == 'confirmed' %}selected{% endif %}>✅ Подтверждён</option>
+                <option value="checked_in" {% if b.status == 'checked_in' %}selected{% endif %}>🔑 Заселён</option>
+                <option value="checked_out"{% if b.status == 'checked_out' %}selected{% endif %}>🏁 Выехал</option>
+                <option value="cancelled"  {% if b.status == 'cancelled' %}selected{% endif %}>❌ Отменён</option>
+              </select>
+            </form>
+          </td>
+          <td style="font-size:12px;color:var(--muted);white-space:nowrap">{{ b.created_at|date:"d.m.Y H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:48px 24px;color:var(--muted);font-size:14px">
+    {% if status_filter %}Нет бронирований с таким статусом{% else %}Нет бронирований{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

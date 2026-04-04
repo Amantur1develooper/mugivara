@@ -1,0 +1,170 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Номера — {{ branch.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+  .rl-table{width:100%;border-collapse:collapse;font-size:14px}
+  .rl-table th{text-align:left;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border)}
+  .rl-table td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+  .rl-table tr:last-child td{border-bottom:none}
+  .rl-table tr:hover td{background:rgba(0,0,0,.015)}
+  .avail-btn{
+    display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:8px;
+    font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid;transition:all .15s;
+    background:none;
+  }
+  .avail-on{border-color:rgba(0,184,150,.25);color:var(--teal);background:rgba(0,184,150,.07)}
+  .avail-on:hover{background:rgba(0,184,150,.15)}
+  .avail-off{border-color:var(--border);color:var(--muted);background:var(--bg)}
+  .avail-off:hover{background:rgba(0,0,0,.06)}
+  .cat-head{
+    font-family:'Unbounded',sans-serif;font-weight:800;font-size:12px;
+    text-transform:uppercase;letter-spacing:.5px;color:var(--text);
+    padding:16px 14px 8px;border-bottom:1px solid var(--border);
+    background:var(--bg);
+  }
+  .room-photo{
+    width:48px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0;
+    background:linear-gradient(135deg,#EFF6FF,#DBEAFE);
+    display:flex;align-items:center;justify-content:center;font-size:18px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">Номера</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:hotel_home' %}">Мои отели</a> /
+      {{ hotel.name_ru }} / {{ branch.name_ru }}
+    </div>
+  </div>
+  <a href="{% url 'dashboard:hotel_room_add' branch.id %}" class="db-btn db-btn-primary">+ Добавить номер</a>
+</div>
+
+{% if messages %}
+  {% for m in messages %}
+    <div class="db-card" style="padding:12px 16px;margin-bottom:16px;font-size:14px">{{ m }}</div>
+  {% endfor %}
+{% endif %}
+
+<div class="db-card" style="padding:0;overflow:hidden">
+  {% if categories or uncategorized %}
+  <div style="overflow-x:auto">
+    <table class="rl-table">
+      <thead>
+        <tr>
+          <th>Фото</th>
+          <th>Название</th>
+          <th>Цена (1 гость)</th>
+          <th>Доплата/чел.</th>
+          <th>Макс. гостей</th>
+          <th>Доступен</th>
+          <th>Действия</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cat in categories %}
+          {% if cat.rooms.all %}
+          <tr>
+            <td colspan="7" class="cat-head">{{ cat.name_ru }}</td>
+          </tr>
+          {% for room in cat.rooms.all %}
+          <tr id="row-{{ room.id }}">
+            <td>
+              {% if room.photo1 %}
+                <img src="{{ room.photo1.url }}" class="room-photo">
+              {% else %}
+                <div class="room-photo">🛏️</div>
+              {% endif %}
+            </td>
+            <td style="font-weight:600">{{ room.name_ru }}</td>
+            <td>{{ room.price_per_night|floatformat:"0" }} сом</td>
+            <td>{% if room.price_per_extra_guest %}+{{ room.price_per_extra_guest|floatformat:"0" }} сом{% else %}—{% endif %}</td>
+            <td>{{ room.max_guests }} чел.</td>
+            <td>
+              <button class="avail-btn {% if room.is_available %}avail-on{% else %}avail-off{% endif %}"
+                      data-room="{{ room.id }}"
+                      data-toggle-url="{% url 'dashboard:hotel_room_toggle' room.id %}">
+                {% if room.is_available %}✓ Свободен{% else %}✗ Занято{% endif %}
+              </button>
+            </td>
+            <td>
+              <a href="{% url 'dashboard:hotel_room_edit' room.id %}" class="db-btn db-btn-ghost db-btn-sm">✏️ Изменить</a>
+            </td>
+          </tr>
+          {% endfor %}
+          {% endif %}
+        {% endfor %}
+
+        {% if uncategorized %}
+          {% if categories %}
+          <tr><td colspan="7" class="cat-head">Без категории</td></tr>
+          {% endif %}
+          {% for room in uncategorized %}
+          <tr id="row-{{ room.id }}">
+            <td>
+              {% if room.photo1 %}
+                <img src="{{ room.photo1.url }}" class="room-photo">
+              {% else %}
+                <div class="room-photo">🛏️</div>
+              {% endif %}
+            </td>
+            <td style="font-weight:600">{{ room.name_ru }}</td>
+            <td>{{ room.price_per_night|floatformat:"0" }} сом</td>
+            <td>{% if room.price_per_extra_guest %}+{{ room.price_per_extra_guest|floatformat:"0" }} сом{% else %}—{% endif %}</td>
+            <td>{{ room.max_guests }} чел.</td>
+            <td>
+              <button class="avail-btn {% if room.is_available %}avail-on{% else %}avail-off{% endif %}"
+                      data-room="{{ room.id }}"
+                      data-toggle-url="{% url 'dashboard:hotel_room_toggle' room.id %}">
+                {% if room.is_available %}✓ Свободен{% else %}✗ Занято{% endif %}
+              </button>
+            </td>
+            <td>
+              <a href="{% url 'dashboard:hotel_room_edit' room.id %}" class="db-btn db-btn-ghost db-btn-sm">✏️ Изменить</a>
+            </td>
+          </tr>
+          {% endfor %}
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:48px 24px;color:var(--muted);font-size:14px">
+    Нет номеров —
+    <a href="{% url 'dashboard:hotel_room_add' branch.id %}" style="color:#2563EB;font-weight:600">добавить первый</a>
+  </div>
+  {% endif %}
+</div>
+
+<div id="js-csrf" data-token="{{ csrf_token }}" style="display:none"></div>
+
+<script>
+document.querySelectorAll('.avail-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const url = btn.dataset.toggleUrl;
+    const token = document.getElementById('js-csrf').dataset.token;
+    btn.disabled = true;
+    try {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: {'X-CSRFToken': token, 'X-Requested-With': 'XMLHttpRequest'},
+      });
+      const d = await r.json();
+      if (d.ok) {
+        if (d.is_available) {
+          btn.className = 'avail-btn avail-on';
+          btn.textContent = '✓ Свободен';
+        } else {
+          btn.className = 'avail-btn avail-off';
+          btn.textContent = '✗ Занято';
+        }
+      }
+    } finally { btn.disabled = false; }
+  });
+});
+</script>
+{% endblock %}

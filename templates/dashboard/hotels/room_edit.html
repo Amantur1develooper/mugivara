@@ -1,0 +1,163 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{% if room %}Изменить номер{% else %}Добавить номер{% endif %}{% endblock %}
+
+{% block head_extra %}
+<style>
+  .photo-preview{
+    width:100%;max-height:160px;object-fit:cover;border-radius:12px;
+    margin-bottom:8px;display:block;
+  }
+  .photo-slot{margin-bottom:4px}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">{% if room %}Изменить номер{% else %}Добавить номер{% endif %}</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:hotel_home' %}">Мои отели</a> /
+      {{ branch.hotel.name_ru }} / {{ branch.name_ru }} /
+      <a href="{% url 'dashboard:hotel_room_list' branch.id %}">Номера</a> /
+      {% if room %}{{ room.name_ru }}{% else %}Новый{% endif %}
+    </div>
+  </div>
+</div>
+
+{% if messages %}
+  {% for m in messages %}
+    <div class="db-card" style="padding:12px 16px;margin-bottom:16px;font-size:14px">{{ m }}</div>
+  {% endfor %}
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+{% csrf_token %}
+
+<div class="db-card">
+  <div class="db-card-title">📋 Основное</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="db-form-group">
+      <label class="db-label">Название номера *</label>
+      <input class="db-input" name="name_ru" value="{{ room.name_ru|default:'' }}" required placeholder="Стандарт, Люкс…">
+    </div>
+    <div class="db-form-group">
+      <label class="db-label">Категория</label>
+      <select class="db-input" name="category">
+        <option value="">— Без категории —</option>
+        {% for cat in categories %}
+          <option value="{{ cat.id }}" {% if room and room.category_id == cat.id %}selected{% endif %}>{{ cat.name_ru }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px">
+    <div class="db-form-group">
+      <label class="db-label">Цена за ночь (1 гость) *</label>
+      <input class="db-input" type="number" name="price_per_night" min="0" step="1"
+             value="{{ room.price_per_night|default:'' }}" required placeholder="2000">
+    </div>
+    <div class="db-form-group">
+      <label class="db-label">Доплата за каждого доп. гостя</label>
+      <input class="db-input" type="number" name="price_per_extra_guest" min="0" step="1"
+             value="{{ room.price_per_extra_guest|default:'' }}" placeholder="1000">
+    </div>
+    <div class="db-form-group">
+      <label class="db-label">Макс. гостей *</label>
+      <input class="db-input" type="number" name="max_guests" min="1" max="20"
+             value="{{ room.max_guests|default:1 }}" required>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="db-form-group">
+      <label class="db-label">Порядок сортировки</label>
+      <input class="db-input" type="number" name="sort_order" min="0"
+             value="{{ room.sort_order|default:0 }}">
+    </div>
+    <div class="db-form-group" style="display:flex;align-items:flex-end;padding-bottom:6px">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+        <input type="checkbox" name="is_available"
+               {% if room == None or room.is_available %}checked{% endif %}
+               style="width:18px;height:18px;accent-color:#2563EB">
+        <span class="db-label" style="margin:0">Номер доступен для бронирования</span>
+      </label>
+    </div>
+  </div>
+</div>
+
+<div class="db-card" style="margin-top:16px">
+  <div class="db-card-title">📝 Описание и удобства</div>
+
+  <div class="db-form-group">
+    <label class="db-label">Описание</label>
+    <textarea class="db-textarea" name="description_ru" style="min-height:100px"
+              placeholder="Просторный номер с видом на горы…">{{ room.description_ru|default:'' }}</textarea>
+  </div>
+
+  <div class="db-form-group">
+    <label class="db-label">Удобства (каждое с новой строки)</label>
+    <textarea class="db-textarea" name="amenities_ru" style="min-height:100px"
+              placeholder="WiFi&#10;Кондиционер&#10;Телевизор&#10;Мини-бар">{{ room.amenities_ru|default:'' }}</textarea>
+  </div>
+</div>
+
+<div class="db-card" style="margin-top:16px">
+  <div class="db-card-title">📷 Фотографии</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+
+    <div class="photo-slot">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">Фото 1 (главное)</div>
+      {% if room and room.photo1 %}
+        <img src="{{ room.photo1.url }}" class="photo-preview" id="prev1">
+      {% else %}
+        <img class="photo-preview" id="prev1" style="display:none">
+      {% endif %}
+      <input class="db-input" type="file" name="photo1" accept="image/*"
+             onchange="previewPhoto(this,'prev1')">
+    </div>
+
+    <div class="photo-slot">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">Фото 2</div>
+      {% if room and room.photo2 %}
+        <img src="{{ room.photo2.url }}" class="photo-preview" id="prev2">
+      {% else %}
+        <img class="photo-preview" id="prev2" style="display:none">
+      {% endif %}
+      <input class="db-input" type="file" name="photo2" accept="image/*"
+             onchange="previewPhoto(this,'prev2')">
+    </div>
+
+    <div class="photo-slot">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">Фото 3</div>
+      {% if room and room.photo3 %}
+        <img src="{{ room.photo3.url }}" class="photo-preview" id="prev3">
+      {% else %}
+        <img class="photo-preview" id="prev3" style="display:none">
+      {% endif %}
+      <input class="db-input" type="file" name="photo3" accept="image/*"
+             onchange="previewPhoto(this,'prev3')">
+    </div>
+
+  </div>
+</div>
+
+<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px">
+  <button type="submit" class="db-btn db-btn-primary">💾 Сохранить</button>
+  <a href="{% url 'dashboard:hotel_room_list' branch.id %}" class="db-btn db-btn-ghost">← Назад</a>
+</div>
+
+</form>
+
+<script>
+function previewPhoto(input, imgId) {
+  const img = document.getElementById(imgId);
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => { img.src = e.target.result; img.style.display = 'block'; };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+</script>
+{% endblock %}

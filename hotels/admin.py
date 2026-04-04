@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Hotel, HotelBranch, RoomCategory, Room
+from .models import Hotel, HotelBranch, RoomCategory, Room, HotelMembership, HotelBooking
 
 
 class RoomCategoryInline(admin.TabularInline):
@@ -22,13 +22,20 @@ class HotelBranchInline(admin.TabularInline):
     show_change_link = True
 
 
+class HotelMembershipInline(admin.TabularInline):
+    model = HotelMembership
+    extra = 1
+    fields = ("user", "role")
+    autocomplete_fields = ("user",)
+
+
 @admin.register(Hotel)
 class HotelAdmin(admin.ModelAdmin):
     list_display = ("id", "name_ru", "slug", "rating", "is_active")
     list_editable = ("rating", "is_active")
     search_fields = ("name_ru", "slug")
     prepopulated_fields = {"slug": ("name_ru",)}
-    inlines = (HotelBranchInline,)
+    inlines = (HotelBranchInline, HotelMembershipInline)
     fieldsets = (
         (None, {"fields": ("name_ru", "name_ky", "name_en", "slug", "logo", "is_active", "rating")}),
         ("О нас", {"fields": ("about_ru", "external_url")}),
@@ -48,6 +55,23 @@ class RoomCategoryAdmin(admin.ModelAdmin):
     list_display = ("id", "name_ru", "branch", "sort_order")
     list_filter = ("branch__hotel",)
     search_fields = ("name_ru",)
+
+
+@admin.register(HotelMembership)
+class HotelMembershipAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "hotel", "role", "created_at")
+    list_filter  = ("role", "hotel")
+    search_fields = ("user__username", "hotel__name_ru")
+    autocomplete_fields = ("user",)
+
+
+@admin.register(HotelBooking)
+class HotelBookingAdmin(admin.ModelAdmin):
+    list_display  = ("id", "customer_name", "customer_phone", "room", "branch", "checkin_date", "nights", "guests", "total", "status", "book_type", "created_at")
+    list_filter   = ("status", "book_type", "branch__hotel")
+    list_editable = ("status",)
+    search_fields = ("customer_name", "customer_phone")
+    readonly_fields = ("created_at", "updated_at")
 
 
 @admin.register(Room)

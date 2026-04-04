@@ -5,7 +5,7 @@ from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.urls import reverse
 
-from .models import Hotel, HotelBranch, RoomCategory, Room
+from .models import Hotel, HotelBranch, RoomCategory, Room, HotelBooking
 
 
 def hotel_list(request):
@@ -129,6 +129,22 @@ def room_book(request, room_id):
     )
     if comment:
         msg += f"Комментарий: {comment}\n"
+
+    # сохраняем в БД
+    HotelBooking.objects.create(
+        branch=branch,
+        room=room,
+        book_type=book_type,
+        customer_name=name,
+        customer_phone=phone,
+        checkin_date=checkin,
+        nights=nights_int,
+        guests=guests_int,
+        price_per_night=price_per_night,
+        total=total,
+        comment=comment,
+        status=HotelBooking.Status.NEW,
+    )
 
     wa_number = "".join(ch for ch in (branch.phone or "") if ch.isdigit())
     if wa_number:

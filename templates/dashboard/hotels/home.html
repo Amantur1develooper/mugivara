@@ -1,0 +1,112 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Мои отели{% endblock %}
+{% block nav_hotels %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .h-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+  .h-card {
+    background:var(--card); border:1.5px solid var(--border); border-radius:18px;
+    padding:20px; display:flex; flex-direction:column; gap:14px;
+    box-shadow:0 2px 10px rgba(0,0,0,.04);
+  }
+  .h-name { font-family:'Unbounded',sans-serif; font-weight:800; font-size:15px; color:var(--text); }
+  .h-badge {
+    display:inline-flex; align-items:center; gap:5px; padding:4px 10px;
+    border-radius:100px; font-size:11px; font-weight:600;
+  }
+  .h-badge-open { background:rgba(0,184,150,.08); border:1px solid rgba(0,184,150,.2); color:var(--teal); }
+  .h-badge-closed { background:rgba(0,0,0,.05); border:1px solid var(--border); color:var(--muted); }
+  .h-badge-new { background:rgba(255,77,28,.08); border:1px solid rgba(255,77,28,.15); color:var(--accent); }
+  .h-btns { display:flex; gap:8px; flex-wrap:wrap; }
+  .h-btns a { flex:1; min-width:100px; text-align:center; padding:9px 10px; border-radius:10px; font-size:12px; font-weight:600; text-decoration:none; transition:background .15s; }
+  .btn-s { background:var(--bg); color:var(--text2); border:1px solid var(--border); }
+  .btn-s:hover { background:rgba(37,99,235,.06); color:#2563EB; border-color:rgba(37,99,235,.2); }
+  .btn-p { background:linear-gradient(135deg,#2563EB,#1D4ED8); color:#fff; box-shadow:0 3px 10px rgba(37,99,235,.22); }
+  .btn-p:hover { box-shadow:0 6px 18px rgba(37,99,235,.35); }
+  .h-sep { border:none; border-top:1px solid var(--border); margin:4px 0; }
+  .toggle-btn {
+    padding:6px 14px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;
+    border:1.5px solid; transition:all .15s;
+  }
+  .toggle-open { border-color:rgba(0,184,150,.3); background:rgba(0,184,150,.08); color:var(--teal); }
+  .toggle-open:hover { background:rgba(0,184,150,.15); }
+  .toggle-closed { border-color:rgba(0,0,0,.1); background:var(--bg); color:var(--muted); }
+  .toggle-closed:hover { background:rgba(0,0,0,.06); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">Мои отели</div>
+    <div class="db-breadcrumb">Управляйте номерами и бронированиями</div>
+  </div>
+  <a href="{% url 'dashboard:home' %}" class="db-btn db-btn-ghost db-btn-sm">← Рестораны</a>
+</div>
+
+{% if data %}
+  {% for item in data %}
+  <div style="margin-bottom:32px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:12px">
+        {% if item.hotel.logo %}
+          <img src="{{ item.hotel.logo.url }}" style="width:40px;height:40px;border-radius:10px;object-fit:cover">
+        {% endif %}
+        <div>
+          <div class="h-name">{{ item.hotel.name_ru }}</div>
+          {% if item.new_bookings %}
+            <span class="h-badge h-badge-new">🔔 {{ item.new_bookings }} новых бронирований</span>
+          {% endif %}
+        </div>
+      </div>
+      <a href="{% url 'dashboard:hotel_edit' item.hotel.id %}" class="db-btn db-btn-ghost db-btn-sm">✏️ Описание отеля</a>
+    </div>
+
+    {% if item.branches %}
+    <div class="h-grid">
+      {% for branch in item.branches %}
+      <div class="h-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text)">{{ branch.name_ru }}</div>
+            {% if branch.address %}
+              <div style="font-size:12px;color:var(--muted);margin-top:3px">📍 {{ branch.address }}</div>
+            {% endif %}
+          </div>
+          <form method="post" action="{% url 'dashboard:hotel_branch_toggle' branch.id %}" id="bt-{{ branch.id }}">
+            {% csrf_token %}
+            <button type="submit"
+                    class="toggle-btn {% if branch.is_active %}toggle-open{% else %}toggle-closed{% endif %}">
+              {% if branch.is_active %}🟢 Открыт{% else %}⛔ Закрыт{% endif %}
+            </button>
+          </form>
+        </div>
+        <hr class="h-sep">
+        <div class="h-btns">
+          <a href="{% url 'dashboard:hotel_branch_edit' branch.id %}" class="btn-s">⚙️ Настройки</a>
+          <a href="{% url 'dashboard:hotel_room_list' branch.id %}" class="btn-p">🛏 Номера</a>
+        </div>
+        <div class="h-btns">
+          <a href="{% url 'dashboard:hotel_bookings' branch.id %}" class="btn-s" style="flex:none;width:100%;text-align:center">
+            📋 Бронирования
+            {% with cnt=branch.bookings.count %}{% if cnt %} ({{ cnt }}){% endif %}{% endwith %}
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <div class="db-card" style="text-align:center;padding:28px;color:var(--muted);font-size:14px">Нет филиалов</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+{% else %}
+<div style="text-align:center;padding:64px 40px;background:var(--card);border-radius:20px;border:1px solid var(--border)">
+  <div style="font-size:48px;margin-bottom:16px">🏨</div>
+  <div style="font-family:'Unbounded',sans-serif;font-size:17px;font-weight:800;color:var(--text);margin-bottom:8px">Нет отелей</div>
+  <div style="font-size:14px;color:var(--muted)">Обратитесь к администратору для подключения</div>
+</div>
+{% endif %}
+{% endblock %}

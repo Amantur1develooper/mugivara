@@ -1,0 +1,56 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ hotel.name_ru }} — Настройки{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">{{ hotel.name_ru }}</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:hotel_home' %}">Мои отели</a> / Описание
+    </div>
+  </div>
+</div>
+
+<div class="db-card">
+  <div class="db-card-title">📝 Основная информация</div>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="db-form-group">
+      <label class="db-label">Название отеля</label>
+      <input class="db-input" name="name_ru" value="{{ hotel.name_ru }}" required>
+    </div>
+
+    <div class="db-form-group">
+      <label class="db-label">О нас</label>
+      <textarea class="db-textarea" name="about_ru" style="min-height:120px">{{ hotel.about_ru }}</textarea>
+    </div>
+
+    <div class="db-form-group">
+      <label class="db-label">Внешний сайт</label>
+      <input class="db-input" name="external_url" type="url" value="{{ hotel.external_url }}" placeholder="https://...">
+    </div>
+
+    <div class="db-form-group">
+      <label class="db-label">Логотип</label>
+      {% if hotel.logo %}
+        <img src="{{ hotel.logo.url }}" style="width:80px;height:80px;border-radius:12px;object-fit:cover;margin-bottom:8px;display:block">
+      {% endif %}
+      <input class="db-input" type="file" name="logo" accept="image/*">
+    </div>
+
+    <div class="db-form-group">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+        <input type="checkbox" name="is_active" {% if hotel.is_active %}checked{% endif %}
+               style="width:18px;height:18px;accent-color:#2563EB">
+        <span class="db-label" style="margin:0">Отель активен (виден на сайте)</span>
+      </label>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
+      <button type="submit" class="db-btn db-btn-primary">💾 Сохранить</button>
+      <a href="{% url 'dashboard:hotel_home' %}" class="db-btn db-btn-ghost">← Назад</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

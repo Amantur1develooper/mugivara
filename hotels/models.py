@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from io import BytesIO
 from django.core.files.base import ContentFile
 from PIL import Image
@@ -137,3 +138,55 @@ class Room(TimeStampedModel):
     @property
     def amenities_list(self):
         return [ln.strip() for ln in self.amenities_ru.splitlines() if ln.strip()]
+
+
+class HotelMembership(TimeStampedModel):
+    class Role(models.TextChoices):
+        OWNER   = "owner",   "Владелец"
+        MANAGER = "manager", "Менеджер"
+
+    user  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="hotel_memberships")
+    hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name="memberships")
+    role  = models.CharField("Роль", max_length=20, choices=Role.choices, default=Role.MANAGER)
+
+    class Meta:
+        verbose_name = "Доступ к отелю"
+        verbose_name_plural = "Доступы к отелям"
+        unique_together = ("user", "hotel")
+
+    def __str__(self):
+        return f"{self.user} → {self.hotel} ({self.role})"
+
+
+class HotelBooking(TimeStampedModel):
+    class Status(models.TextChoices):
+        NEW       = "new",       "Новая"
+        CONFIRMED = "confirmed", "Подтверждена"
+        CHECKEDIN = "checkedin", "Заселён"
+        CANCELLED = "cancelled", "Отменена"
+        COMPLETED = "completed", "Завершена"
+
+    class BookType(models.TextChoices):
+        BOOKING = "booking", "Бронирование"
+        CHECKIN = "checkin", "Заселение"
+
+    branch          = models.ForeignKey(HotelBranch, on_delete=models.CASCADE, related_name="bookings")
+    room            = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, related_name="bookings")
+    book_type       = models.CharField("Тип", max_length=10, choices=BookType.choices, default=BookType.BOOKING)
+    customer_name   = models.CharField("Имя", max_length=200)
+    customer_phone  = models.CharField("Телефон", max_length=50)
+    checkin_date    = models.CharField("Дата заезда", max_length=20, blank=True)
+    nights          = models.PositiveSmallIntegerField("Ночей", default=1)
+    guests          = models.PositiveSmallIntegerField("Гостей", default=1)
+    price_per_night = models.DecimalField("Цена/ночь", max_digits=10, decimal_places=0, default=0)
+    total           = models.DecimalField("Итого", max_digits=12, decimal_places=0, default=0)
+    comment         = models.TextField("Комментарий", blank=True)
+    status          = models.CharField("Статус", max_length=20, choices=Status.choices, default=Status.NEW)
+
+    class Meta:
+        verbose_name = "Бронирование"
+        verbose_name_plural = "Бронирования"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"#{self.id} {self.customer_name} → {self.room}"

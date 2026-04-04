@@ -1,0 +1,73 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ branch.name_ru }} — Настройки{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">{{ branch.name_ru }}</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:hotel_home' %}">Мои отели</a> /
+      {{ hotel.name_ru }} / Настройки
+    </div>
+  </div>
+</div>
+
+<div class="db-card">
+  <div class="db-card-title" style="display:flex;justify-content:space-between;align-items:center">
+    <span>⚙️ Настройки филиала</span>
+    <form method="post" action="{% url 'dashboard:hotel_branch_toggle' branch.id %}">
+      {% csrf_token %}
+      <button type="submit"
+              style="padding:7px 16px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid;
+                     {% if branch.is_active %}background:rgba(0,184,150,.08);border-color:rgba(0,184,150,.25);color:var(--teal)
+                     {% else %}background:var(--bg);border-color:var(--border);color:var(--muted){% endif %}">
+        {% if branch.is_active %}🟢 Открыт — закрыть{% else %}⛔ Закрыт — открыть{% endif %}
+      </button>
+    </form>
+  </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="db-form-group">
+        <label class="db-label">Название</label>
+        <input class="db-input" name="name_ru" value="{{ branch.name_ru }}" required>
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Телефон</label>
+        <input class="db-input" name="phone" value="{{ branch.phone }}" placeholder="+996...">
+      </div>
+    </div>
+
+    <div class="db-form-group">
+      <label class="db-label">Адрес</label>
+      <input class="db-input" name="address" value="{{ branch.address }}">
+    </div>
+
+    <div class="db-form-group">
+      <label class="db-label">Ссылка на карту</label>
+      <input class="db-input" name="map_url" type="url" value="{{ branch.map_url }}" placeholder="https://2gis.kg/...">
+    </div>
+
+    <div class="db-form-group">
+      <label class="db-label">Внешний сайт (если есть — кнопка меню ведёт туда)</label>
+      <input class="db-input" name="external_url" type="url" value="{{ branch.external_url }}" placeholder="https://...">
+    </div>
+
+    <div class="db-form-group">
+      <label class="db-label">Обложка (фото)</label>
+      {% if branch.cover_photo %}
+        <img src="{{ branch.cover_photo.url }}"
+             style="width:100%;max-height:160px;object-fit:cover;border-radius:12px;margin-bottom:8px;display:block">
+      {% endif %}
+      <input class="db-input" type="file" name="cover_photo" accept="image/*">
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
+      <button type="submit" class="db-btn db-btn-primary">💾 Сохранить</button>
+      <a href="{% url 'dashboard:hotel_home' %}" class="db-btn db-btn-ghost">← Назад</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
