@@ -2,7 +2,14 @@ from django.contrib import admin, messages
 from django.urls import path
 from django.shortcuts import get_object_or_404, redirect
 
-from .models import Pharmacy, PharmacyBranch, DrugCategory, Drug, DrugInCategory, BranchDrug
+from .models import Pharmacy, PharmacyBranch, DrugCategory, Drug, DrugInCategory, BranchDrug, PharmacyMembership
+
+
+@admin.register(PharmacyMembership)
+class PharmacyMembershipAdmin(admin.ModelAdmin):
+    list_display  = ("user", "pharmacy", "role")
+    list_filter   = ("role", "pharmacy")
+    search_fields = ("user__username", "pharmacy__name_ru")
 from .services import sync_branch_catalog
 
 

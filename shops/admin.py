@@ -2,7 +2,14 @@ from django.contrib import admin
 
 # Register your models here.
 from django.contrib import admin
-from .models import Store, StoreBranch, StoreCategory, StoreProduct, StoreStock
+from .models import Store, StoreBranch, StoreCategory, StoreProduct, StoreStock, StoreMembership
+
+
+@admin.register(StoreMembership)
+class StoreMembershipAdmin(admin.ModelAdmin):
+    list_display = ("user", "store", "role")
+    list_filter  = ("role", "store")
+    search_fields = ("user__username", "store__name_ru")
 
 
 @admin.register(Store)

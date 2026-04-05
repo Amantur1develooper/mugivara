@@ -394,34 +394,63 @@ def promo_delete(request, promo_id):
     return redirect("dashboard:promo_list", branch_id=promo.branch_id)
 
 
+
 # ── ANALYTICS ────────────────────────────────────────────────────────────────
 
 @login_required(login_url="dashboard:login")
 def analytics(request):
     from orders.models import Order
-    from shops.models import StoreOrder
-    from pharmacy.models import PharmacyOrder
-    from hotels.models import HotelBooking
+    from shops.models import StoreOrder, StoreMembership
+    from pharmacy.models import PharmacyOrder, PharmacyMembership
+    from hotels.models import HotelBooking, HotelMembership
     from django.db.models import Sum
 
-    now = timezone.now()
+    user     = request.user
+    is_super = user.is_superuser
 
+    now = timezone.now()
     period = request.GET.get("period", "30")
     try:
         days = int(period)
     except ValueError:
         days = 30
     days = max(1, min(days, 365))
-
     since = now - timedelta(days=days)
 
+    # ── ID организаций пользователя ───────────────────────────────────────────
+    if is_super:
+        my_restaurant_ids = my_hotel_ids = my_store_ids = my_pharmacy_ids = None
+    else:
+        my_restaurant_ids = list(
+            Membership.objects.filter(user=user).values_list("restaurant_id", flat=True)
+        )
+        my_hotel_ids = list(
+            HotelMembership.objects.filter(user=user).values_list("hotel_id", flat=True)
+        )
+        my_store_ids = list(
+            StoreMembership.objects.filter(user=user).values_list("store_id", flat=True)
+        )
+        my_pharmacy_ids = list(
+            PharmacyMembership.objects.filter(user=user).values_list("pharmacy_id", flat=True)
+        )
+
     # ── Посещаемость ──────────────────────────────────────────────────────────
-    qs = PageView.objects.filter(timestamp__gte=since)
+    pv_qs = PageView.objects.filter(timestamp__gte=since)
+
+    allowed_sections = None
+    if not is_super:
+        allowed_sections = set()
+        if my_restaurant_ids: allowed_sections.add("restaurant")
+        if my_hotel_ids:       allowed_sections.add("hotels")
+        if my_store_ids:       allowed_sections.add("shops")
+        if my_pharmacy_ids:    allowed_sections.add("pharmacy")
+        if allowed_sections:
+            pv_qs = pv_qs.filter(section__in=allowed_sections)
 
     by_section = (
-        qs.values("section")
-          .annotate(total=Count("id"), unique=Count("ip_hash", distinct=True))
-          .order_by("-total")
+        pv_qs.values("section")
+             .annotate(total=Count("id"), unique=Count("ip_hash", distinct=True))
+             .order_by("-total")
     )
     section_labels = dict(PageView.SECTION_CHOICES)
     sections_data = [
@@ -433,10 +462,10 @@ def analytics(request):
         }
         for row in by_section
     ]
-    total_views = qs.count()
-    total_unique = qs.values("ip_hash").distinct().count()
+    total_views  = pv_qs.count()
+    total_unique = pv_qs.values("ip_hash").distinct().count()
 
-    chart_days = min(days, 60)
+    chart_days  = min(days, 60)
     chart_since = now - timedelta(days=chart_days)
     daily_qs = (
         PageView.objects
@@ -446,120 +475,61 @@ def analytics(request):
         .annotate(cnt=Count("id"))
         .order_by("day")
     )
+    if not is_super and allowed_sections:
+        daily_qs = daily_qs.filter(section__in=allowed_sections)
     daily_labels = [str(r["day"]) for r in daily_qs]
     daily_values = [r["cnt"] for r in daily_qs]
 
-    # ── Заказы: рестораны ─────────────────────────────────────────────────────
-    rest_orders_period = (
-        Order.objects
-        .filter(created_at__gte=since)
-        .values("branch__restaurant__name_ru")
-        .annotate(cnt=Count("id"), revenue=Sum("total_amount"))
-        .order_by("-cnt")
-    )
-    rest_orders_all = (
-        Order.objects
-        .values("branch__restaurant__name_ru")
-        .annotate(cnt=Count("id"), revenue=Sum("total_amount"))
-        .order_by("-cnt")
-    )
-    rest_total_period = Order.objects.filter(created_at__gte=since).count()
-    rest_total_all    = Order.objects.count()
+    # ── Базовые queryset-ы заказов (уже отфильтрованы по доступу) ─────────────
+    if is_super:
+        rest_qs  = Order.objects.all()
+        shop_qs  = StoreOrder.objects.all()
+        ph_qs    = PharmacyOrder.objects.all()
+        hotel_qs = HotelBooking.objects.all()
+    else:
+        rest_qs  = Order.objects.filter(branch__restaurant_id__in=my_restaurant_ids)
+        shop_qs  = StoreOrder.objects.filter(branch__store_id__in=my_store_ids)
+        ph_qs    = PharmacyOrder.objects.filter(branch__pharmacy_id__in=my_pharmacy_ids)
+        hotel_qs = HotelBooking.objects.filter(branch__hotel_id__in=my_hotel_ids)
 
-    # ── Заказы: магазины ──────────────────────────────────────────────────────
-    shop_orders_period = (
-        StoreOrder.objects
-        .filter(created_at__gte=since)
-        .values("branch__store__name_ru")
-        .annotate(cnt=Count("id"), revenue=Sum("total"))
-        .order_by("-cnt")
-    )
-    shop_orders_all = (
-        StoreOrder.objects
-        .values("branch__store__name_ru")
-        .annotate(cnt=Count("id"), revenue=Sum("total"))
-        .order_by("-cnt")
-    )
-    shop_total_period = StoreOrder.objects.filter(created_at__gte=since).count()
-    shop_total_all    = StoreOrder.objects.count()
-
-    # ── Заказы: аптеки ────────────────────────────────────────────────────────
-    ph_orders_period = (
-        PharmacyOrder.objects
-        .filter(created_at__gte=since)
-        .values("branch__pharmacy__name_ru")
-        .annotate(cnt=Count("id"), revenue=Sum("total_amount"))
-        .order_by("-cnt")
-    )
-    ph_orders_all = (
-        PharmacyOrder.objects
-        .values("branch__pharmacy__name_ru")
-        .annotate(cnt=Count("id"), revenue=Sum("total_amount"))
-        .order_by("-cnt")
-    )
-    ph_total_period = PharmacyOrder.objects.filter(created_at__gte=since).count()
-    ph_total_all    = PharmacyOrder.objects.count()
-
-    # ── Бронирования: отели ───────────────────────────────────────────────────
-    hotel_orders_period = (
-        HotelBooking.objects
-        .filter(created_at__gte=since)
-        .values("branch__hotel__name_ru")
-        .annotate(cnt=Count("id"), revenue=Sum("total"))
-        .order_by("-cnt")
-    )
-    hotel_orders_all = (
-        HotelBooking.objects
-        .values("branch__hotel__name_ru")
-        .annotate(cnt=Count("id"), revenue=Sum("total"))
-        .order_by("-cnt")
-    )
-    hotel_total_period = HotelBooking.objects.filter(created_at__gte=since).count()
-    hotel_total_all    = HotelBooking.objects.count()
-
-    # Итого по всем типам за период и за всё время
-    grand_period = rest_total_period + shop_total_period + ph_total_period + hotel_total_period
-    grand_all    = rest_total_all + shop_total_all + ph_total_all + hotel_total_all
-
-    def _norm(rows, name_key):
-        return [
-            {"name": r[name_key] or "—", "cnt": r["cnt"], "revenue": r.get("revenue") or 0}
-            for r in rows
+    def _agg(qs, name_field, revenue_field, period_since):
+        rows_all = list(
+            qs.values(name_field)
+              .annotate(cnt=Count("id"), revenue=Sum(revenue_field))
+              .order_by("-cnt")
+        )
+        total_all    = qs.count()
+        total_period = qs.filter(created_at__gte=period_since).count()
+        norm = [
+            {"name": r[name_field] or "—", "cnt": r["cnt"], "revenue": r.get("revenue") or 0}
+            for r in rows_all
         ]
+        return norm, total_all, total_period
 
-    order_sections = [
-        {
-            "icon": "🍽",
-            "label": "Рестораны",
-            "total_period": rest_total_period,
-            "total_all": rest_total_all,
-            "rows_all": _norm(rest_orders_all, "branch__restaurant__name_ru"),
-        },
-        {
-            "icon": "🏪",
-            "label": "Магазины",
-            "total_period": shop_total_period,
-            "total_all": shop_total_all,
-            "rows_all": _norm(shop_orders_all, "branch__store__name_ru"),
-        },
-        {
-            "icon": "💊",
-            "label": "Аптеки",
-            "total_period": ph_total_period,
-            "total_all": ph_total_all,
-            "rows_all": _norm(ph_orders_all, "branch__pharmacy__name_ru"),
-        },
-        {
-            "icon": "🏨",
-            "label": "Отели",
-            "total_period": hotel_total_period,
-            "total_all": hotel_total_all,
-            "rows_all": _norm(hotel_orders_all, "branch__hotel__name_ru"),
-        },
+    rest_rows,  rest_total_all,  rest_total_period  = _agg(rest_qs,  "branch__restaurant__name_ru", "total_amount", since)
+    shop_rows,  shop_total_all,  shop_total_period  = _agg(shop_qs,  "branch__store__name_ru",      "total",        since)
+    ph_rows,    ph_total_all,    ph_total_period    = _agg(ph_qs,    "branch__pharmacy__name_ru",   "total_amount", since)
+    hotel_rows, hotel_total_all, hotel_total_period = _agg(hotel_qs, "branch__hotel__name_ru",      "total",        since)
+
+    grand_period = rest_total_period + shop_total_period + ph_total_period + hotel_total_period
+    grand_all    = rest_total_all    + shop_total_all    + ph_total_all    + hotel_total_all
+
+    all_order_sections = [
+        {"icon": "🍽",  "label": "Рестораны", "total_period": rest_total_period,  "total_all": rest_total_all,  "rows_all": rest_rows},
+        {"icon": "🏪",  "label": "Магазины",  "total_period": shop_total_period,  "total_all": shop_total_all,  "rows_all": shop_rows},
+        {"icon": "💊",  "label": "Аптеки",    "total_period": ph_total_period,    "total_all": ph_total_all,    "rows_all": ph_rows},
+        {"icon": "🏨",  "label": "Отели",     "total_period": hotel_total_period, "total_all": hotel_total_all, "rows_all": hotel_rows},
     ]
+
+    # Обычный пользователь видит только разделы, к которым у него есть доступ и данные
+    if not is_super:
+        order_sections = [s for s in all_order_sections if s["total_all"] > 0]
+    else:
+        order_sections = all_order_sections
 
     return render(request, "dashboard/analytics.html", {
         "period": days,
+        "is_super": is_super,
         "sections_data": sections_data,
         "total_views": total_views,
         "total_unique": total_unique,

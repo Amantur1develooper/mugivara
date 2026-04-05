@@ -4,6 +4,7 @@ from decimal import Decimal
 from django.db import models, transaction
 from django.utils.text import slugify
 from django.utils import timezone
+from django.conf import settings
 
 class TimeStampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -168,3 +169,21 @@ class StoreOrderItem(TimeStampedModel):
 
     def __str__(self):
         return f"{self.order_id}: {self.product} x {self.qty}"
+
+
+class StoreMembership(models.Model):
+    class Role(models.TextChoices):
+        OWNER   = "owner",   "Владелец"
+        MANAGER = "manager", "Менеджер"
+
+    user  = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="store_memberships")
+    store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name="memberships")
+    role  = models.CharField("Роль", max_length=20, choices=Role.choices, default=Role.MANAGER)
+
+    class Meta:
+        verbose_name        = "Доступ к магазину"
+        verbose_name_plural = "Доступы к магазинам"
+        unique_together     = ("user", "store")
+
+    def __str__(self):
+        return f"{self.user} → {self.store} ({self.role})"

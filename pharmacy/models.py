@@ -142,3 +142,20 @@ class PharmacyOrderItem(TimeStampedModel):
 
     def __str__(self):
         return f"{self.order_id} - {self.drug_id}"
+
+class PharmacyMembership(models.Model):
+    class Role(models.TextChoices):
+        OWNER   = "owner",   "Владелец"
+        MANAGER = "manager", "Менеджер"
+
+    user     = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="pharmacy_memberships")
+    pharmacy = models.ForeignKey(Pharmacy, on_delete=models.CASCADE, related_name="memberships")
+    role     = models.CharField("Роль", max_length=20, choices=Role.choices, default=Role.MANAGER)
+
+    class Meta:
+        verbose_name        = "Доступ к аптеке"
+        verbose_name_plural = "Доступы к аптекам"
+        unique_together     = ("user", "pharmacy")
+
+    def __str__(self):
+        return f"{self.user} → {self.pharmacy} ({self.role})"

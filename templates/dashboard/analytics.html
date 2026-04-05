@@ -105,7 +105,14 @@
 
 {% block content %}
 <div class="an-title">📊 Аналитика</div>
-<div class="an-sub">Посещаемость и заказы платформы</div>
+<div class="an-sub">
+  Посещаемость и заказы платформы
+  {% if is_super %}
+  &nbsp;<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;background:rgba(255,77,28,0.1);color:var(--accent)">👑 Вся платформа</span>
+  {% else %}
+  &nbsp;<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;background:rgba(0,0,0,0.06);color:var(--text2)">Только ваши организации</span>
+  {% endif %}
+</div>
 
 <!-- Period tabs -->
 <div class="period-tabs">
