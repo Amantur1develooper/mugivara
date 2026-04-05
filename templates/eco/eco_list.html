@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}Эко-проекты — Webordo{% endblock %}
+{% block cta %}{% endblock %}
+
+{% block head_extra %}
+<style>
+  :root {
+    --eco-green:    #16A34A;
+    --eco-green2:   #22C55E;
+    --eco-orange:   #EA580C;
+    --eco-orange2:  #F97316;
+    --eco-bg:       #F0FDF4;
+    --eco-card-bg:  #FFFFFF;
+  }
+
+  .ec-page { max-width: 1100px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* ── HERO ── */
+  .ec-hero {
+    position: relative; overflow: hidden; border-radius: 28px;
+    margin-bottom: 48px;
+    background: linear-gradient(135deg, #052e16 0%, #14532d 50%, #1c1917 100%);
+    padding: 56px 44px 52px;
+  }
+  .ec-hero-orbs {
+    position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+  }
+  .ec-hero-orbs span {
+    position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.45;
+  }
+  .ec-hero-orb1 { width: 420px; height: 420px; background: #16A34A; top: -120px; left: -80px; }
+  .ec-hero-orb2 { width: 300px; height: 300px; background: #EA580C; bottom: -100px; right: -60px; }
+  .ec-hero-orb3 { width: 200px; height: 200px; background: #22C55E; top: 40px; right: 120px; opacity: 0.2; }
+
+  .ec-hero-content { position: relative; z-index: 1; }
+  .ec-hero-back {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 16px; border-radius: 100px; font-size: 12px; font-weight: 600;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.75); text-decoration: none; transition: all 0.2s;
+    margin-bottom: 28px;
+  }
+  .ec-hero-back:hover { background: rgba(255,255,255,0.18); color: white; }
+
+  .ec-hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; letter-spacing: 3px; text-transform: uppercase; font-weight: 700;
+    color: #4ADE80; margin-bottom: 16px;
+  }
+  .ec-hero-eyebrow::before {
+    content: ''; display: inline-block; width: 28px; height: 2px;
+    background: linear-gradient(90deg, #16A34A, #EA580C); border-radius: 2px;
+  }
+
+  .ec-hero-title {
+    font-family: 'Unbounded', sans-serif; font-weight: 900;
+    font-size: clamp(30px, 5vw, 52px); letter-spacing: -2px; line-height: 1;
+    margin-bottom: 18px;
+  }
+  .ec-hero-title .word-eco {
+    background: linear-gradient(135deg, #4ADE80, #22C55E);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .ec-hero-title .word-projects {
+    background: linear-gradient(135deg, #FED7AA, #EA580C);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .ec-hero-sub {
+    font-size: 15px; color: rgba(255,255,255,0.6); line-height: 1.6;
+    max-width: 520px; margin-bottom: 28px;
+  }
+
+  .ec-hero-stats {
+    display: flex; gap: 32px; flex-wrap: wrap;
+  }
+  .ec-hero-stat { }
+  .ec-hero-stat-num {
+    font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 26px;
+    background: linear-gradient(135deg, #4ADE80, #EA580C);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: -1px;
+  }
+  .ec-hero-stat-label { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+
+  /* ── GRID ── */
+  .ec-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 22px; }
+
+  .ecc {
+    background: #fff; border: 1.5px solid #D1FAE5;
+    border-radius: 24px; overflow: hidden;
+    display: flex; flex-direction: column;
+    box-shadow: 0 4px 24px rgba(22,163,74,0.07);
+    transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+    text-decoration: none; color: inherit;
+  }
+  .ecc:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 24px 56px rgba(22,163,74,0.14);
+    border-color: rgba(22,163,74,0.4);
+  }
+
+  /* Photo */
+  .ecc-photo {
+    height: 190px; position: relative; overflow: hidden;
+    background: linear-gradient(135deg, #DCFCE7, #FEF3C7);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ecc-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; }
+  .ecc:hover .ecc-photo img { transform: scale(1.06); }
+  .ecc-photo-placeholder { font-size: 72px; }
+  .ecc-photo-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(5,46,22,0.35) 0%, transparent 60%);
+  }
+  .ecc-badge {
+    position: absolute; top: 14px; right: 14px;
+    padding: 5px 12px; border-radius: 100px;
+    font-size: 11px; font-weight: 800; letter-spacing: 0.5px;
+    background: linear-gradient(135deg, #16A34A, #22C55E);
+    color: white; box-shadow: 0 4px 12px rgba(22,163,74,0.35);
+  }
+
+  /* Body */
+  .ecc-body { padding: 22px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+  .ecc-name {
+    font-family: 'Unbounded', sans-serif; font-weight: 800;
+    font-size: 15px; color: #0f172a; letter-spacing: -0.3px; line-height: 1.3;
+  }
+  .ecc-meta { display: flex; flex-direction: column; gap: 7px; }
+  .ecc-row { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #475569; }
+  .ecc-row-icon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+  .ecc-row a { color: inherit; text-decoration: none; }
+  .ecc-row a:hover { color: var(--eco-green); }
+
+  .ecc-svc-count {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 100px; font-size: 12px; font-weight: 700;
+    background: linear-gradient(135deg, rgba(22,163,74,0.1), rgba(234,88,12,0.07));
+    border: 1px solid rgba(22,163,74,0.2); color: var(--eco-green);
+  }
+
+  /* Footer */
+  .ecc-footer { margin-top: auto; padding-top: 14px; }
+  .ecc-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; padding: 13px 20px; border-radius: 14px;
+    background: linear-gradient(135deg, #16A34A, #EA580C);
+    color: white; font-size: 14px; font-weight: 800;
+    text-decoration: none; transition: all 0.25s;
+    box-shadow: 0 5px 16px rgba(22,163,74,0.3);
+    letter-spacing: 0.2px;
+  }
+  .ecc-btn:hover {
+    box-shadow: 0 10px 28px rgba(22,163,74,0.45);
+    transform: translateY(-1px);
+    background: linear-gradient(135deg, #15803D, #C2410C);
+  }
+
+  /* Empty */
+  .ec-empty {
+    text-align: center; padding: 72px 24px;
+    background: #fff; border-radius: 28px; border: 1.5px dashed #BBF7D0;
+  }
+  .ec-empty-icon { font-size: 64px; margin-bottom: 16px; }
+  .ec-empty-title { font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+  .ec-empty-sub { font-size: 14px; color: #94A3B8; }
+
+  @media (max-width: 600px) {
+    .ec-hero { padding: 40px 20px 36px; }
+    .ec-page { padding: 0 16px 60px; }
+    .ec-hero-stats { gap: 20px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ec-page">
+
+  <!-- HERO -->
+  <div class="ec-hero">
+    <div class="ec-hero-orbs">
+      <span class="ec-hero-orb1"></span>
+      <span class="ec-hero-orb2"></span>
+      <span class="ec-hero-orb3"></span>
+    </div>
+    <div class="ec-hero-content">
+      <a href="/" class="ec-hero-back">← Главная</a>
+      <div class="ec-hero-eyebrow">WEBORDO · ЭКО</div>
+      <div class="ec-hero-title">
+        <span class="word-eco">Эко&#8209;</span><span class="word-projects">проекты</span>
+      </div>
+      <div class="ec-hero-sub">
+        Организации, которые заботятся о нашей планете — вывоз мусора, переработка, озеленение и другие экологические инициативы
+      </div>
+      {% if projects %}
+      <div class="ec-hero-stats">
+        <div class="ec-hero-stat">
+          <div class="ec-hero-stat-num">{{ projects|length }}</div>
+          <div class="ec-hero-stat-label">Эко-проектов</div>
+        </div>
+        <div class="ec-hero-stat">
+          <div class="ec-hero-stat-num">
+            {% with total=0 %}
+            {% for p in projects %}{% with cnt=p.services.count %}{% endwith %}{% endfor %}
+            {{ projects|length }}+
+            {% endwith %}
+          </div>
+          <div class="ec-hero-stat-label">Услуг для вас</div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if projects %}
+  <div class="ec-grid">
+    {% for project in projects %}
+    <div class="ecc">
+      <div class="ecc-photo">
+        {% if project.logo %}
+          <img src="{{ project.logo.url }}" alt="{{ project.name }}" loading="lazy" decoding="async">
+          <div class="ecc-photo-overlay"></div>
+        {% else %}
+          <div class="ecc-photo-placeholder">🌿</div>
+        {% endif %}
+        <div class="ecc-badge">♻️ ЭКО</div>
+      </div>
+
+      <div class="ecc-body">
+        <div class="ecc-name">{{ project.name }}</div>
+        <div class="ecc-meta">
+          {% if project.address %}
+          <div class="ecc-row"><span class="ecc-row-icon">📍</span><span>{{ project.address }}</span></div>
+          {% endif %}
+          {% if project.working_hours %}
+          <div class="ecc-row"><span class="ecc-row-icon">🕐</span><span>{{ project.working_hours }}</span></div>
+          {% endif %}
+          {% if project.phone %}
+          <div class="ecc-row"><span class="ecc-row-icon">📞</span><span>{{ project.phone }}</span></div>
+          {% endif %}
+          {% if project.map_url %}
+          <div class="ecc-row">
+            <span class="ecc-row-icon">🗺</span>
+            <a href="{{ project.map_url }}" target="_blank" rel="noopener">Открыть на карте</a>
+          </div>
+          {% endif %}
+        </div>
+
+        {% with cnt=project.services.count %}
+        {% if cnt %}
+        <div>
+          <span class="ecc-svc-count">🌱 {{ cnt }} услуг{% if cnt == 1 %}а{% elif cnt < 5 %}и{% endif %}</span>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="ecc-footer">
+          <a href="{% url 'eco:eco_detail' project.slug %}" class="ecc-btn">
+            🌿 Смотреть услуги →
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="ec-empty">
+    <div class="ec-empty-icon">🌱</div>
+    <div class="ec-empty-title">Эко-проекты скоро появятся</div>
+    <div class="ec-empty-sub">Информация добавляется администратором</div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

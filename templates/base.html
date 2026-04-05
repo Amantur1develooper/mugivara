@@ -262,6 +262,7 @@
       <li><a href="{% url 'public_site:home' %}#categories">Категории</a></li>
       <li><a href="{% url 'shops:store_list' %}">Магазины</a></li>
       <li><a href="{% url 'legal:legal_list' %}">Юристы</a></li>
+      <li><a href="{% url 'eco:eco_list' %}">Эко</a></li>
       <li><a href="{% url 'public_site:home' %}#qr">QR-столы</a></li>
       <li><a href="{% url 'public_site:about' %}">О нас</a></li>
       <li>
@@ -307,6 +308,7 @@
       <a class="wb-drawer-link" href="{% url 'public_site:home' %}">🏠 Главная</a>
       <a class="wb-drawer-link" href="{% url 'shops:store_list' %}">🛍️ Магазины</a>
       <a class="wb-drawer-link" href="{% url 'legal:legal_list' %}">⚖️ Юристы</a>
+      <a class="wb-drawer-link" href="{% url 'eco:eco_list' %}" style="color:#16A34A;">🌿 Эко-проекты</a>
       <a class="wb-drawer-link" href="{% url 'public_site:about' %}">ℹ️ О нас</a>
       <a class="wb-drawer-link" href="https://wa.me/996558212040" target="_blank" rel="noopener" style="background:linear-gradient(135deg,#FF4D1C,#FF8A00);color:white;border-color:transparent;">
         🚀 Подключить бизнес
@@ -362,6 +364,7 @@
       <a href="https://wa.me/996558212040" target="_blank" rel="noopener">Контакты</a>
       <a href="{% url 'shops:store_list' %}">Магазины</a>
       <a href="{% url 'legal:legal_list' %}">Юристы</a>
+      <a href="{% url 'eco:eco_list' %}">Эко</a>
     </div>
   </footer>
   {% endblock %}

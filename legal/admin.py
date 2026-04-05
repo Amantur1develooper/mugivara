@@ -18,6 +18,6 @@ class LegalOrgAdmin(admin.ModelAdmin):
     inlines            = [LegalServiceInline]
     fieldsets = (
         (None, {"fields": ("name", "slug", "is_active", "sort_order")}),
-        ("Контакты", {"fields": ("address", "phone", "working_hours")}),
+        ("Контакты", {"fields": ("address", "phone", "working_hours", "map_url")}),
         ("Описание и медиа", {"fields": ("description", "logo")}),
     )

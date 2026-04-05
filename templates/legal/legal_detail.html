@@ -225,6 +225,12 @@
           <span>{{ org.phone }}</span>
         </div>
         {% endif %}
+        {% if org.map_url %}
+        <div class="ld-meta-row">
+          <span class="ld-meta-icon">🗺</span>
+          <a href="{{ org.map_url }}" target="_blank" rel="noopener" style="color:#2563EB;text-decoration:none;">Открыть на карте</a>
+        </div>
+        {% endif %}
       </div>
 
       {% if org.description %}
@@ -240,6 +246,9 @@
         {% endif %}
         {% if org.phone %}
         <a href="tel:{{ org.phone }}" class="ld-tel-btn">📞 Позвонить</a>
+        {% endif %}
+        {% if org.map_url %}
+        <a href="{{ org.map_url }}" target="_blank" rel="noopener" class="ld-tel-btn">🗺 На карте</a>
         {% endif %}
       </div>
     </div>

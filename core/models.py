@@ -190,6 +190,7 @@ class PageView(models.Model):
         ("hotels",     "Отели"),
         ("pharmacy",   "Аптеки"),
         ("legal",      "Юристы"),
+        ("eco",        "Эко-проекты"),
         ("restaurant", "Рестораны / меню"),
         ("other",      "Другое"),
     ]

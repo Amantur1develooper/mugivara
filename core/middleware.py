@@ -10,6 +10,7 @@ _SECTION_PREFIXES = [
     ("/hotels",     "hotels"),
     ("/pharmacy",   "pharmacy"),
     ("/legal",      "legal"),
+    ("/eco",        "eco"),
     ("/t/",         "restaurant"),   # меню за столиком
     # публичные страницы ресторанов вида /ru/<slug>/
 ]

@@ -139,6 +139,12 @@
             <span>{{ org.phone }}</span>
           </div>
           {% endif %}
+          {% if org.map_url %}
+          <div class="lc-row">
+            <span class="lc-row-icon">🗺</span>
+            <a href="{{ org.map_url }}" target="_blank" rel="noopener" style="color:#2563EB;text-decoration:none;">Открыть на карте</a>
+          </div>
+          {% endif %}
         </div>
 
         {% with cnt=org.services.count %}
