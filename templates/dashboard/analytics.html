@@ -1,0 +1,278 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Аналитика{% endblock %}
+{% block nav_analytics %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .an-title {
+    font-family: 'Unbounded', sans-serif; font-weight: 900;
+    font-size: 24px; letter-spacing: -1px; color: var(--text); margin-bottom: 6px;
+  }
+  .an-sub { font-size: 14px; color: var(--muted); margin-bottom: 28px; }
+
+  /* Period tabs */
+  .period-tabs { display: flex; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; }
+  .period-tab {
+    padding: 8px 18px; border-radius: 100px; font-size: 13px; font-weight: 600;
+    text-decoration: none; border: 1.5px solid var(--border);
+    background: var(--card); color: var(--text2); transition: all 0.2s;
+  }
+  .period-tab:hover { border-color: var(--accent); color: var(--accent); }
+  .period-tab.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-color: transparent; color: white;
+    box-shadow: 0 4px 14px rgba(255,77,28,0.3);
+  }
+
+  /* KPI row */
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .kpi-card {
+    background: var(--card); border: 1.5px solid var(--border); border-radius: 18px;
+    padding: 20px 22px;
+  }
+  .kpi-card.accent { border-color: rgba(255,77,28,0.25); background: rgba(255,77,28,0.03); }
+  .kpi-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 8px; }
+  .kpi-value { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 30px; letter-spacing: -1px; color: var(--text); line-height: 1; }
+  .kpi-hint { font-size: 12px; color: var(--muted); margin-top: 5px; }
+
+  /* Card */
+  .an-card {
+    background: var(--card); border: 1.5px solid var(--border); border-radius: 18px;
+    padding: 24px; margin-bottom: 24px;
+  }
+  .an-card-title {
+    font-size: 15px; font-weight: 700; color: var(--text);
+    margin-bottom: 18px; display: flex; align-items: center; gap: 10px;
+  }
+  .an-card-title span { font-size: 20px; }
+
+  /* Chart */
+  .chart-wrap { position: relative; height: 220px; }
+
+  /* Section visit table */
+  .sec-table { width: 100%; border-collapse: collapse; }
+  .sec-table th {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--muted); text-align: left; padding: 0 14px 10px;
+  }
+  .sec-table td { padding: 11px 14px; border-top: 1px solid var(--border); font-size: 14px; }
+  .sec-table tr:hover td { background: rgba(0,0,0,0.015); }
+  .sec-row-name { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--text); }
+  .sec-icon { font-size: 18px; width: 28px; text-align: center; }
+  .sec-bar-wrap { height: 7px; background: var(--bg); border-radius: 100px; overflow: hidden; min-width: 80px; max-width: 160px; }
+  .sec-bar { height: 100%; border-radius: 100px; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .num-bold { font-weight: 700; color: var(--text); }
+  .num-muted { font-size: 12px; color: var(--muted); }
+
+  /* Orders block */
+  .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; margin-bottom: 24px; }
+  .ord-section {
+    background: var(--card); border: 1.5px solid var(--border); border-radius: 18px; overflow: hidden;
+  }
+  .ord-section-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .ord-section-label { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: var(--text); }
+  .ord-section-icon { font-size: 20px; }
+  .ord-badges { display: flex; gap: 8px; }
+  .badge {
+    padding: 3px 10px; border-radius: 100px; font-size: 12px; font-weight: 700;
+  }
+  .badge-period { background: rgba(255,77,28,0.1); color: var(--accent); }
+  .badge-all { background: rgba(0,0,0,0.06); color: var(--text2); }
+
+  .ord-table { width: 100%; border-collapse: collapse; }
+  .ord-table td { padding: 10px 20px; border-top: 1px solid var(--border); font-size: 13px; }
+  .ord-table tr:hover td { background: rgba(0,0,0,0.015); }
+  .ord-org-name { font-weight: 600; color: var(--text); }
+  .ord-cnt { font-weight: 700; color: var(--text); white-space: nowrap; }
+  .ord-rev { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .ord-no-data { padding: 20px; text-align: center; font-size: 13px; color: var(--muted); }
+
+  .empty-state { text-align: center; padding: 40px 24px; }
+  .empty-state-icon { font-size: 44px; margin-bottom: 10px; }
+  .empty-state-text { font-size: 13px; color: var(--muted); }
+
+  /* Section divider */
+  .an-section-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
+    color: var(--muted); margin: 32px 0 16px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="an-title">📊 Аналитика</div>
+<div class="an-sub">Посещаемость и заказы платформы</div>
+
+<!-- Period tabs -->
+<div class="period-tabs">
+  <a href="?period=1"   class="period-tab {% if period == 1   %}active{% endif %}">Сегодня</a>
+  <a href="?period=7"   class="period-tab {% if period == 7   %}active{% endif %}">7 дней</a>
+  <a href="?period=30"  class="period-tab {% if period == 30  %}active{% endif %}">30 дней</a>
+  <a href="?period=90"  class="period-tab {% if period == 90  %}active{% endif %}">3 месяца</a>
+  <a href="?period=365" class="period-tab {% if period == 365 %}active{% endif %}">Год</a>
+</div>
+
+<!-- ── VISITS KPI ── -->
+<div class="an-section-label">Посещаемость за {{ period }} дн.</div>
+<div class="kpi-row">
+  <div class="kpi-card">
+    <div class="kpi-label">Просмотров</div>
+    <div class="kpi-value">{{ total_views }}</div>
+    <div class="kpi-hint">всего страниц</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Уникальных</div>
+    <div class="kpi-value">{{ total_unique }}</div>
+    <div class="kpi-hint">по IP-адресу</div>
+  </div>
+  <div class="kpi-card accent">
+    <div class="kpi-label">Заказов за период</div>
+    <div class="kpi-value">{{ grand_period }}</div>
+    <div class="kpi-hint">все разделы</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-label">Заказов всего</div>
+    <div class="kpi-value">{{ grand_all }}</div>
+    <div class="kpi-hint">за всё время</div>
+  </div>
+</div>
+
+<!-- Daily chart -->
+{% if daily_labels %}
+<div class="an-card">
+  <div class="an-card-title"><span>📈</span> Динамика посещений</div>
+  <div class="chart-wrap"><canvas id="dailyChart"></canvas></div>
+</div>
+{% endif %}
+
+<!-- Visits by section -->
+<div class="an-card">
+  <div class="an-card-title"><span>🗂</span> Посещения по разделам</div>
+  {% if sections_data %}
+  {% with max_total=sections_data.0.total %}
+  <table class="sec-table">
+    <thead>
+      <tr>
+        <th>Раздел</th>
+        <th>Просмотры</th>
+        <th>Уникальные</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in sections_data %}
+      <tr>
+        <td>
+          <div class="sec-row-name">
+            <span class="sec-icon">
+              {% if row.section == "markets" %}🛒
+              {% elif row.section == "shops" %}🏪
+              {% elif row.section == "hotels" %}🏨
+              {% elif row.section == "pharmacy" %}💊
+              {% elif row.section == "restaurant" %}🍽
+              {% elif row.section == "home" %}🏠
+              {% else %}📄{% endif %}
+            </span>
+            {{ row.label }}
+          </div>
+        </td>
+        <td><span class="num-bold">{{ row.total }}</span></td>
+        <td><span class="num-muted">{{ row.unique }} уник.</span></td>
+        <td>
+          <div class="sec-bar-wrap">
+            {% if max_total %}
+            <div class="sec-bar" style="width:{% widthratio row.total max_total 100 %}%"></div>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endwith %}
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">📭</div>
+    <div class="empty-state-text">Посещений пока нет — данные появятся автоматически</div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── ORDERS ── -->
+<div class="an-section-label">История заказов</div>
+<div class="orders-grid">
+  {% for sec in order_sections %}
+  <div class="ord-section">
+    <div class="ord-section-head">
+      <div class="ord-section-label">
+        <span class="ord-section-icon">{{ sec.icon }}</span>
+        {{ sec.label }}
+      </div>
+      <div class="ord-badges">
+        <span class="badge badge-period">{{ sec.total_period }} за период</span>
+        <span class="badge badge-all">{{ sec.total_all }} всего</span>
+      </div>
+    </div>
+
+    {% if sec.rows_all %}
+    <table class="ord-table">
+      <tbody>
+        {% for row in sec.rows_all %}
+        <tr>
+          <td>
+            <div class="ord-org-name">{{ row.name }}</div>
+          </td>
+          <td style="text-align:right">
+            <div class="ord-cnt">{{ row.cnt }} зак.</div>
+            {% if row.revenue %}
+            <div class="ord-rev">{{ row.revenue|floatformat:0 }} сом</div>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="ord-no-data">Заказов пока нет</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+{% if daily_labels %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const ctx = document.getElementById('dailyChart').getContext('2d');
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: {{ daily_labels|safe }},
+    datasets: [{
+      label: 'Просмотры',
+      data: {{ daily_values|safe }},
+      borderColor: '#FF4D1C',
+      backgroundColor: 'rgba(255,77,28,0.08)',
+      borderWidth: 2,
+      pointRadius: 3,
+      pointBackgroundColor: '#FF4D1C',
+      fill: true,
+      tension: 0.4,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 11 }, maxRotation: 45 } },
+      y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 11 }, precision: 0 } }
+    }
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

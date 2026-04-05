@@ -180,3 +180,31 @@ class Membership(TimeStampedModel):
     def __str__(self):
         branch_str = f" / {self.branch.name_ru}" if self.branch else " / все филиалы"
         return f"{self.user} → {self.restaurant}{branch_str} ({self.role})"
+
+
+class PageView(models.Model):
+    SECTION_CHOICES = [
+        ("home",       "Главная"),
+        ("markets",    "Рынки"),
+        ("shops",      "Магазины"),
+        ("hotels",     "Отели"),
+        ("pharmacy",   "Аптеки"),
+        ("restaurant", "Рестораны / меню"),
+        ("other",      "Другое"),
+    ]
+
+    section    = models.CharField("Раздел", max_length=20, choices=SECTION_CHOICES, db_index=True)
+    path       = models.CharField("URL", max_length=500)
+    ip_hash    = models.CharField("Хэш IP", max_length=64)
+    session_key = models.CharField("Сессия", max_length=64, blank=True, default="")
+    timestamp  = models.DateTimeField("Время", default=timezone.now, db_index=True)
+
+    class Meta:
+        verbose_name        = "Просмотр страницы"
+        verbose_name_plural = "Просмотры страниц"
+        indexes = [
+            models.Index(fields=["section", "timestamp"]),
+        ]
+
+    def __str__(self):
+        return f"{self.section} {self.path} {self.timestamp:%Y-%m-%d %H:%M}"

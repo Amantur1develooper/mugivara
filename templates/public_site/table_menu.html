@@ -12,7 +12,7 @@
       </div>
 
       {% if place.photo %}
-        <img src="{{ place.photo.url }}" class="w-24 h-24 rounded-2xl object-cover ring-1 ring-stone-200" alt="">
+        <img src="{{ place.photo.url }}" class="w-24 h-24 rounded-2xl object-cover ring-1 ring-stone-200" alt="" loading="lazy" decoding="async">
       {% endif %}
     </div>
   </div>
@@ -41,7 +41,7 @@
             {% with bi=row.branch_item dish=row.branch_item.item %}
             <div class="rounded-3xl bg-white ring-1 ring-stone-200 overflow-hidden">
               {% if dish.photo %}
-                <img src="{{ dish.photo.url }}" class="w-full aspect-[4/3] object-cover" alt="">
+                <img src="{{ dish.photo.url }}" class="w-full aspect-[4/3] object-cover" alt="" loading="lazy" decoding="async">
               {% endif %}
               <div class="p-3">
                 <div class="font-semibold">{% t dish "name" %}</div>

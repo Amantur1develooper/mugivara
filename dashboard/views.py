@@ -7,7 +7,9 @@ from django.contrib import messages
 from decimal import Decimal, InvalidOperation
 
 from django.utils import timezone
-from core.models import Restaurant, Branch, Membership, PromoCode
+from django.db.models import Count
+from datetime import timedelta
+from core.models import Restaurant, Branch, Membership, PromoCode, PageView
 from catalog.models import (
     BranchItem, BranchCategory, BranchCategoryItem,
     Item, ItemCategory, Category,
@@ -390,3 +392,180 @@ def promo_delete(request, promo_id):
     promo.delete()
     messages.success(request, "Промокод удалён")
     return redirect("dashboard:promo_list", branch_id=promo.branch_id)
+
+
+# ── ANALYTICS ────────────────────────────────────────────────────────────────
+
+@login_required(login_url="dashboard:login")
+def analytics(request):
+    from orders.models import Order
+    from shops.models import StoreOrder
+    from pharmacy.models import PharmacyOrder
+    from hotels.models import HotelBooking
+    from django.db.models import Sum
+
+    now = timezone.now()
+
+    period = request.GET.get("period", "30")
+    try:
+        days = int(period)
+    except ValueError:
+        days = 30
+    days = max(1, min(days, 365))
+
+    since = now - timedelta(days=days)
+
+    # ── Посещаемость ──────────────────────────────────────────────────────────
+    qs = PageView.objects.filter(timestamp__gte=since)
+
+    by_section = (
+        qs.values("section")
+          .annotate(total=Count("id"), unique=Count("ip_hash", distinct=True))
+          .order_by("-total")
+    )
+    section_labels = dict(PageView.SECTION_CHOICES)
+    sections_data = [
+        {
+            "section": row["section"],
+            "label": section_labels.get(row["section"], row["section"]),
+            "total": row["total"],
+            "unique": row["unique"],
+        }
+        for row in by_section
+    ]
+    total_views = qs.count()
+    total_unique = qs.values("ip_hash").distinct().count()
+
+    chart_days = min(days, 60)
+    chart_since = now - timedelta(days=chart_days)
+    daily_qs = (
+        PageView.objects
+        .filter(timestamp__gte=chart_since)
+        .extra(select={"day": "DATE(timestamp)"})
+        .values("day")
+        .annotate(cnt=Count("id"))
+        .order_by("day")
+    )
+    daily_labels = [str(r["day"]) for r in daily_qs]
+    daily_values = [r["cnt"] for r in daily_qs]
+
+    # ── Заказы: рестораны ─────────────────────────────────────────────────────
+    rest_orders_period = (
+        Order.objects
+        .filter(created_at__gte=since)
+        .values("branch__restaurant__name_ru")
+        .annotate(cnt=Count("id"), revenue=Sum("total_amount"))
+        .order_by("-cnt")
+    )
+    rest_orders_all = (
+        Order.objects
+        .values("branch__restaurant__name_ru")
+        .annotate(cnt=Count("id"), revenue=Sum("total_amount"))
+        .order_by("-cnt")
+    )
+    rest_total_period = Order.objects.filter(created_at__gte=since).count()
+    rest_total_all    = Order.objects.count()
+
+    # ── Заказы: магазины ──────────────────────────────────────────────────────
+    shop_orders_period = (
+        StoreOrder.objects
+        .filter(created_at__gte=since)
+        .values("branch__store__name_ru")
+        .annotate(cnt=Count("id"), revenue=Sum("total"))
+        .order_by("-cnt")
+    )
+    shop_orders_all = (
+        StoreOrder.objects
+        .values("branch__store__name_ru")
+        .annotate(cnt=Count("id"), revenue=Sum("total"))
+        .order_by("-cnt")
+    )
+    shop_total_period = StoreOrder.objects.filter(created_at__gte=since).count()
+    shop_total_all    = StoreOrder.objects.count()
+
+    # ── Заказы: аптеки ────────────────────────────────────────────────────────
+    ph_orders_period = (
+        PharmacyOrder.objects
+        .filter(created_at__gte=since)
+        .values("branch__pharmacy__name_ru")
+        .annotate(cnt=Count("id"), revenue=Sum("total_amount"))
+        .order_by("-cnt")
+    )
+    ph_orders_all = (
+        PharmacyOrder.objects
+        .values("branch__pharmacy__name_ru")
+        .annotate(cnt=Count("id"), revenue=Sum("total_amount"))
+        .order_by("-cnt")
+    )
+    ph_total_period = PharmacyOrder.objects.filter(created_at__gte=since).count()
+    ph_total_all    = PharmacyOrder.objects.count()
+
+    # ── Бронирования: отели ───────────────────────────────────────────────────
+    hotel_orders_period = (
+        HotelBooking.objects
+        .filter(created_at__gte=since)
+        .values("branch__hotel__name_ru")
+        .annotate(cnt=Count("id"), revenue=Sum("total"))
+        .order_by("-cnt")
+    )
+    hotel_orders_all = (
+        HotelBooking.objects
+        .values("branch__hotel__name_ru")
+        .annotate(cnt=Count("id"), revenue=Sum("total"))
+        .order_by("-cnt")
+    )
+    hotel_total_period = HotelBooking.objects.filter(created_at__gte=since).count()
+    hotel_total_all    = HotelBooking.objects.count()
+
+    # Итого по всем типам за период и за всё время
+    grand_period = rest_total_period + shop_total_period + ph_total_period + hotel_total_period
+    grand_all    = rest_total_all + shop_total_all + ph_total_all + hotel_total_all
+
+    def _norm(rows, name_key):
+        return [
+            {"name": r[name_key] or "—", "cnt": r["cnt"], "revenue": r.get("revenue") or 0}
+            for r in rows
+        ]
+
+    order_sections = [
+        {
+            "icon": "🍽",
+            "label": "Рестораны",
+            "total_period": rest_total_period,
+            "total_all": rest_total_all,
+            "rows_all": _norm(rest_orders_all, "branch__restaurant__name_ru"),
+        },
+        {
+            "icon": "🏪",
+            "label": "Магазины",
+            "total_period": shop_total_period,
+            "total_all": shop_total_all,
+            "rows_all": _norm(shop_orders_all, "branch__store__name_ru"),
+        },
+        {
+            "icon": "💊",
+            "label": "Аптеки",
+            "total_period": ph_total_period,
+            "total_all": ph_total_all,
+            "rows_all": _norm(ph_orders_all, "branch__pharmacy__name_ru"),
+        },
+        {
+            "icon": "🏨",
+            "label": "Отели",
+            "total_period": hotel_total_period,
+            "total_all": hotel_total_all,
+            "rows_all": _norm(hotel_orders_all, "branch__hotel__name_ru"),
+        },
+    ]
+
+    return render(request, "dashboard/analytics.html", {
+        "period": days,
+        "sections_data": sections_data,
+        "total_views": total_views,
+        "total_unique": total_unique,
+        "daily_labels": daily_labels,
+        "daily_values": daily_values,
+        "order_sections": order_sections,
+        "grand_period": grand_period,
+        "grand_all": grand_all,
+    })

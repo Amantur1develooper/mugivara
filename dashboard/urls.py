@@ -23,6 +23,8 @@ urlpatterns = [
     path("promo/<int:promo_id>/toggle/",      views.promo_toggle, name="promo_toggle"),
     path("promo/<int:promo_id>/delete/",      views.promo_delete, name="promo_delete"),
 
+    path("analytics/", views.analytics, name="analytics"),
+
     # ── HOTELS ──────────────────────────────────────────────────────────────
     path("hotels/",                                       hv.hotel_home,          name="hotel_home"),
     path("hotels/<int:hotel_id>/edit/",                   hv.hotel_edit,          name="hotel_edit"),

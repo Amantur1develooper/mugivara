@@ -45,52 +45,56 @@ def pharmacy_detail(request, slug):
     return render(request, "pharmacy/pharmacy_detail.html", {"pharmacy": pharmacy, "branches": branches})
 
 def branch_catalog(request, branch_id: int):
+    from collections import defaultdict
     branch = get_object_or_404(PharmacyBranch, id=branch_id, is_active=True)
     pharmacy = branch.pharmacy
     lang = (get_language() or "ru")[:2]
 
-    cats = DrugCategory.objects.filter(pharmacy=pharmacy, is_active=True).order_by("sort_order", "id")
+    cats = list(DrugCategory.objects.filter(pharmacy=pharmacy, is_active=True).order_by("sort_order", "id"))
 
-    # соберём лекарства по категориям, но показываем только те, что есть в филиале и available
+    # Один запрос для всех связей drug↔category по всем категориям
+    all_links = list(
+        DrugInCategory.objects
+        .select_related("drug")
+        .filter(category__in=cats, drug__is_active=True)
+        .order_by("sort_order", "id")
+    )
+
+    # Группируем по category_id и собираем все drug_id
+    links_by_cat = defaultdict(list)
+    all_drug_ids = []
+    for link in all_links:
+        links_by_cat[link.category_id].append(link)
+        all_drug_ids.append(link.drug_id)
+
+    # Один запрос для всех доступных позиций этого филиала
+    branch_map = {
+        bd.drug_id: bd
+        for bd in BranchDrug.objects.filter(branch=branch, drug_id__in=all_drug_ids, is_available=True)
+    }
+
     menu = []
     for cat in cats:
-        links = (DrugInCategory.objects
-                 .select_related("drug")
-                 .filter(category=cat, drug__is_active=True)
-                 .order_by("sort_order", "id"))
-
-        drug_ids = [x.drug_id for x in links]
-        branch_map = {bd.drug_id: bd for bd in BranchDrug.objects.filter(branch=branch, drug_id__in=drug_ids, is_available=True)}
-
         items = []
-        for ln in links:
+        for ln in links_by_cat.get(cat.id, []):
             bd = branch_map.get(ln.drug_id)
-            if not bd:
-                continue
-            items.append({"drug": ln.drug, "bd": bd})
-
+            if bd:
+                items.append({"drug": ln.drug, "bd": bd})
         if items:
             menu.append({"category": cat, "items": items})
+
     cart = get_cart(request, branch.id)
     _, subtotal, qty_total = cart_details(branch, cart)
 
     return render(request, "pharmacy/branch_catalog.html", {
-    "branch": branch,
-    "pharmacy": pharmacy,
-    "menu": menu,
-    "lang": lang,
-
-    # для base.html (FAB корзины)
-    "is_pharmacy": True,
-    "cart_qty": qty_total,
-    "cart_total": subtotal,
-        })
-    # return render(request, "pharmacy/branch_catalog.html", {
-    #     "branch": branch,
-    #     "pharmacy": pharmacy,
-    #     "menu": menu,
-    #     "lang": lang,
-    # })
+        "branch": branch,
+        "pharmacy": pharmacy,
+        "menu": menu,
+        "lang": lang,
+        "is_pharmacy": True,
+        "cart_qty": qty_total,
+        "cart_total": subtotal,
+    })
 
 def drug_detail(request, branch_id: int, drug_id: int):
     branch = get_object_or_404(PharmacyBranch, id=branch_id, is_active=True)

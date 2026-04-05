@@ -254,7 +254,7 @@ def hotel_bookings(request, branch_id):
         return redirect("dashboard:hotel_home")
 
     status_filter = request.GET.get("status", "")
-    qs = HotelBooking.objects.filter(branch=branch).select_related("room")
+    qs = HotelBooking.objects.filter(branch=branch).select_related("room", "branch")
     if status_filter:
         qs = qs.filter(status=status_filter)
 

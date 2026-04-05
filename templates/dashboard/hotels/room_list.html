@@ -75,7 +75,7 @@
           <tr id="row-{{ room.id }}">
             <td>
               {% if room.photo1 %}
-                <img src="{{ room.photo1.url }}" class="room-photo">
+                <img src="{{ room.photo1.url }}" class="room-photo" loading="lazy" decoding="async">
               {% else %}
                 <div class="room-photo">🛏️</div>
               {% endif %}
@@ -107,7 +107,7 @@
           <tr id="row-{{ room.id }}">
             <td>
               {% if room.photo1 %}
-                <img src="{{ room.photo1.url }}" class="room-photo">
+                <img src="{{ room.photo1.url }}" class="room-photo" loading="lazy" decoding="async">
               {% else %}
                 <div class="room-photo">🛏️</div>
               {% endif %}

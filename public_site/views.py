@@ -142,8 +142,7 @@ PLATFORM_CATEGORIES = [
         "name_ru":     "Рынки",
         "name_ky":     "Базарлар",
         "name_en":     "Markets",
-        "url":         None,                          # не Django-url
-        "external_url": "https://teshiktash.kg/", # <-- вставьте свой адрес
+        "url":         "markets:market_list",
         "color":       "#7C3AED",
         "is_active":   True,
         "coming_soon": False,
@@ -189,13 +188,13 @@ def home(request):
         .filter(is_active=True, branches__is_active=True)
         .distinct()
         .only("id", "name_ru", "name_ky", "name_en", "slug", "logo", "rating")
+        .prefetch_related("branches")
         .order_by("-rating", "name_ru")[:8]
     )
 
-    # Добавляем is_open для каждого ресторана (показываем бейдж на карточке)
     restaurant_cards = []
     for r in top_restaurants:
-        branches = list(r.branches.filter(is_active=True))
+        branches = [b for b in r.branches.all() if b.is_active]
         is_open = any(b.is_open_now() for b in branches)
         has_delivery = any(b.delivery_enabled for b in branches)
         restaurant_cards.append({
@@ -211,12 +210,13 @@ def home(request):
         .filter(is_active=True, branches__is_active=True)
         .distinct()
         .only("id", "name_ru", "name_ky", "name_en", "slug", "logo")
+        .prefetch_related("branches")
         .order_by("name_ru")[:8]
     )
 
     store_cards = []
     for s in top_stores:
-        branches = list(s.branches.filter(is_active=True))
+        branches = [b for b in s.branches.all() if b.is_active]
         has_delivery = any(b.delivery_enabled for b in branches)
         store_cards.append({
             "obj":          s,
@@ -339,22 +339,34 @@ def restaurant_detail(request, slug):
 
 
 def branch_menu(request, branch_id: int):
+    from django.db.models import Prefetch
     branch = get_object_or_404(Branch, id=branch_id, is_active=True)
     lang = (get_language() or "ru")[:2]
 
-    # меню
-    categories = BranchCategory.objects.filter(branch=branch, is_active=True).order_by("sort_order", "id")
+    # Один запрос: все категории + все их позиции через prefetch
+    rows_prefetch = Prefetch(
+        "items_in_category",
+        queryset=BranchCategoryItem.objects
+            .select_related("branch_item__item")
+            .filter(branch_item__is_available=True)
+            .order_by("sort_order", "id"),
+        to_attr="prefetched_items",
+    )
+    categories = list(
+        BranchCategory.objects
+        .filter(branch=branch, is_active=True)
+        .prefetch_related(rows_prefetch)
+        .order_by("sort_order", "id")
+    )
+
     menu = []
     for bc in categories:
-        rows = BranchCategoryItem.objects.select_related("branch_item__item").filter(
-            branch_category=bc,
-            branch_item__is_available=True,
-        ).order_by("sort_order", "id")
-
-        menu.append({
-            "branch_category": bc,
-            "items": rows,  # здесь row.branch_item и row.branch_item.item
-        })
+        rows = bc.prefetched_items
+        if rows:
+            menu.append({
+                "branch_category": bc,
+                "items": rows,
+            })
 
     # корзина
     cart = get_cart(request, branch.id)
@@ -829,6 +841,7 @@ def validate_promo(request, branch_id: int):
     try:
         promo = PromoCode.objects.get(branch=branch, code=code)
     except PromoCode.DoesNotExist:
+                                
         return JsonResponse({"ok": False, "error": "Промокод не найден"})
 
     valid, reason = promo.is_valid()

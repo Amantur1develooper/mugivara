@@ -57,6 +57,7 @@ INSTALLED_APPS = [
    "pharmacy",
    "dashboard",
    "hotels",
+   "markets",
 ]
 # CELERY_TASK_ALWAYS_EAGER = True
 # CELERY_TASK_EAGER_PROPAGATES = True
@@ -70,6 +71,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.middleware.PageViewMiddleware',
 ]
 
 

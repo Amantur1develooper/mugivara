@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ market.name_ru }} — Webordo{% endblock %}
+{% block cta %}{% endblock %}
+
+{% block head_extra %}
+<style>
+  .md-page { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  /* Back button */
+  .md-back {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 18px; border-radius: 100px; font-size: 13px; font-weight: 600;
+    background: var(--card); border: 1.5px solid var(--border);
+    color: var(--text2); text-decoration: none; transition: all 0.2s;
+    margin-bottom: 24px;
+  }
+  .md-back:hover { background: rgba(124,58,237,0.06); border-color: rgba(124,58,237,0.3); color: #7C3AED; }
+
+  /* Gallery */
+  .md-gallery { border-radius: 24px; overflow: hidden; margin-bottom: 28px; background: var(--card2); }
+  .md-main-photo { width: 100%; height: 380px; object-fit: cover; display: block; }
+  .md-main-placeholder {
+    width: 100%; height: 280px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 80px; background: linear-gradient(135deg, #EDE9FE, #DDD6FE);
+  }
+  .md-thumbs {
+    display: flex; gap: 8px; padding: 10px;
+    background: var(--bg); overflow-x: auto;
+  }
+  .md-thumb {
+    width: 80px; height: 60px; flex-shrink: 0; border-radius: 10px;
+    object-fit: cover; cursor: pointer; border: 2px solid transparent;
+    transition: border-color 0.2s, opacity 0.2s; opacity: 0.7;
+  }
+  .md-thumb.active, .md-thumb:hover { border-color: #7C3AED; opacity: 1; }
+
+  /* Info card */
+  .md-card {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 24px; padding: 28px; margin-bottom: 20px;
+  }
+  .md-name {
+    font-family: 'Unbounded', sans-serif; font-weight: 900;
+    font-size: clamp(22px, 4vw, 32px); letter-spacing: -1px;
+    color: var(--text); margin-bottom: 20px;
+  }
+  .md-info-grid { display: flex; flex-direction: column; gap: 14px; }
+  .md-info-row {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 14px 16px; border-radius: 14px;
+    background: var(--bg); border: 1px solid var(--border);
+  }
+  .md-info-icon {
+    font-size: 22px; flex-shrink: 0; width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--card); border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .md-info-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 3px; }
+  .md-info-value { font-size: 14px; font-weight: 500; color: var(--text2); line-height: 1.5; }
+  .md-info-value a { color: inherit; text-decoration: none; }
+  .md-info-value a:hover { text-decoration: underline; }
+
+  /* Description */
+  .md-description { font-size: 15px; color: var(--text2); line-height: 1.7; white-space: pre-line; }
+
+  /* Buttons */
+  .md-actions { display: flex; flex-direction: column; gap: 10px; }
+  .md-wa-btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 15px 24px; border-radius: 14px;
+    background: linear-gradient(135deg, #25D366, #128C7E);
+    color: white; font-size: 15px; font-weight: 700;
+    text-decoration: none; transition: all 0.2s;
+    box-shadow: 0 6px 20px rgba(37,211,102,0.3);
+  }
+  .md-wa-btn:hover { box-shadow: 0 12px 32px rgba(37,211,102,0.45); transform: translateY(-2px); }
+  .md-map-btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 13px 24px; border-radius: 14px;
+    background: var(--bg); border: 1.5px solid var(--border);
+    color: var(--text2); font-size: 14px; font-weight: 600;
+    text-decoration: none; transition: all 0.2s;
+  }
+  .md-map-btn:hover { background: rgba(37,99,235,0.06); border-color: rgba(37,99,235,0.3); color: #2563EB; }
+
+  @media (max-width: 600px) {
+    .md-page { padding: 20px 16px 60px; }
+    .md-main-photo { height: 240px; }
+    .md-card { padding: 20px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="md-page">
+
+  <a href="{% url 'markets:market_list' %}" class="md-back">← Все рынки</a>
+
+  <!-- Gallery -->
+  <div class="md-gallery">
+    {% if market.logo or market.photo1 %}
+      {% with main=market.logo|default:market.photo1 %}
+        <img src="{{ main.url }}" alt="{{ market.name_ru }}" class="md-main-photo" id="mainPhoto" loading="eager">
+      {% endwith %}
+      {% if market.photos %}
+      <div class="md-thumbs" id="thumbsRow">
+        {% if market.logo %}
+          <img src="{{ market.logo.url }}" class="md-thumb active" loading="lazy" decoding="async"
+               onclick="setMain(this, '{{ market.logo.url }}')">
+        {% endif %}
+        {% for p in market.photos %}
+          <img src="{{ p.url }}" class="md-thumb {% if not market.logo and forloop.first %}active{% endif %}"
+               loading="lazy" decoding="async"
+               onclick="setMain(this, '{{ p.url }}')">
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% else %}
+      <div class="md-main-placeholder">🛒</div>
+    {% endif %}
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start">
+
+    <!-- Left: info + description -->
+    <div>
+      <div class="md-card">
+        <div class="md-name">{{ market.name_ru }}</div>
+
+        <div class="md-info-grid">
+          {% if market.address %}
+          <div class="md-info-row">
+            <div class="md-info-icon">📍</div>
+            <div>
+              <div class="md-info-label">Адрес</div>
+              <div class="md-info-value">{{ market.address }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if market.working_hours %}
+          <div class="md-info-row">
+            <div class="md-info-icon">🕐</div>
+            <div>
+              <div class="md-info-label">Часы работы</div>
+              <div class="md-info-value">{{ market.working_hours }}</div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if market.phone %}
+          <div class="md-info-row">
+            <div class="md-info-icon">📞</div>
+            <div>
+              <div class="md-info-label">Телефон / WhatsApp</div>
+              <div class="md-info-value">
+                <a href="tel:{{ market.phone }}">{{ market.phone }}</a>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if market.website_url %}
+          <div class="md-info-row">
+            <div class="md-info-icon">🌐</div>
+            <div>
+              <div class="md-info-label">Сайт рынка</div>
+              <div class="md-info-value">
+                <a href="{{ market.website_url }}" target="_blank" rel="noopener">{{ market.website_url }}</a>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if market.description_ru %}
+      <div class="md-card">
+        <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:14px;margin-bottom:14px;color:var(--text)">О рынке</div>
+        <div class="md-description">{{ market.description_ru }}</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Right: action buttons -->
+    <div style="position:sticky;top:20px">
+      <div class="md-card">
+        <div class="md-actions">
+          {% if market.whatsapp_url %}
+          <a href="{{ market.whatsapp_url }}" target="_blank" rel="noopener" class="md-wa-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Написать в WhatsApp
+          </a>
+          {% endif %}
+
+          {% if market.map_url %}
+          <a href="{{ market.map_url }}" target="_blank" rel="noopener" class="md-map-btn">
+            🗺 Открыть на карте
+          </a>
+          {% endif %}
+
+          {% if market.phone %}
+          <a href="tel:{{ market.phone }}" class="md-map-btn">
+            📞 Позвонить
+          </a>
+          {% endif %}
+
+          {% if market.website_url %}
+          <a href="{{ market.website_url }}" target="_blank" rel="noopener" class="md-map-btn" style="border-color:rgba(124,58,237,0.3);color:#7C3AED;">
+            🌐 Перейти на сайт рынка
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function setMain(thumb, url) {
+  document.getElementById('mainPhoto').src = url;
+  document.querySelectorAll('.md-thumb').forEach(t => t.classList.remove('active'));
+  thumb.classList.add('active');
+}
+</script>
+{% endblock %}

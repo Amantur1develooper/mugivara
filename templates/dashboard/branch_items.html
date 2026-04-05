@@ -160,7 +160,7 @@
     <div class="item-row {% if not bi.is_available %}unavailable{% endif %}" data-name="{{ bi.item.name_ru|lower }}">
 
       {% if bi.item.photo %}
-        <img class="item-photo" src="{{ bi.item.photo.url }}" alt="{{ bi.item.name_ru }}">
+        <img class="item-photo" src="{{ bi.item.photo.url }}" alt="{{ bi.item.name_ru }}" loading="lazy" decoding="async">
       {% else %}
         <div class="item-photo-placeholder">🍽</div>
       {% endif %}
