@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}Юридические услуги — Webordo{% endblock %}
+{% block cta %}{% endblock %}
+
+{% block head_extra %}
+<style>
+  .lg-page { max-width: 1100px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  .lg-hero {
+    border-radius: 28px; overflow: hidden;
+    background: linear-gradient(135deg, #0D1117, #1a1f2e);
+    padding: 48px 40px; margin-bottom: 48px; position: relative;
+  }
+  .lg-hero::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse 60% 70% at 0% 100%, rgba(37,99,235,0.35), transparent 60%);
+  }
+  .lg-hero-eyebrow {
+    font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+    color: rgba(255,255,255,0.4); font-weight: 600; margin-bottom: 10px; position: relative;
+  }
+  .lg-hero-title {
+    font-family: 'Unbounded', sans-serif; font-weight: 900;
+    font-size: clamp(28px, 5vw, 48px); letter-spacing: -2px;
+    color: white; line-height: 1.1; margin-bottom: 14px; position: relative;
+  }
+  .lg-hero-sub { font-size: 15px; color: rgba(255,255,255,0.5); position: relative; max-width: 500px; }
+  .lg-back {
+    position: absolute; top: 20px; left: 24px; z-index: 2;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.16);
+    color: rgba(255,255,255,0.75); text-decoration: none; transition: all 0.2s;
+  }
+  .lg-back:hover { background: rgba(255,255,255,0.18); color: white; }
+
+  .lg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 22px; }
+
+  .lc {
+    background: var(--card); border: 1.5px solid var(--border); border-radius: 24px;
+    overflow: hidden; display: flex; flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    transition: transform 0.3s, box-shadow 0.3s;
+    text-decoration: none; color: inherit;
+  }
+  .lc:hover { transform: translateY(-6px); box-shadow: 0 20px 50px rgba(0,0,0,0.13); }
+
+  .lc-photo {
+    height: 180px; position: relative;
+    background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+    overflow: hidden; display: flex; align-items: center; justify-content: center;
+  }
+  .lc-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s; }
+  .lc:hover .lc-photo img { transform: scale(1.05); }
+  .lc-photo-placeholder { font-size: 64px; }
+
+  .lc-body { padding: 20px; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+  .lc-name {
+    font-family: 'Unbounded', sans-serif; font-weight: 800;
+    font-size: 15px; color: var(--text); letter-spacing: -0.3px;
+  }
+  .lc-meta { display: flex; flex-direction: column; gap: 6px; }
+  .lc-row { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text2); }
+  .lc-row-icon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+
+  .lc-services-count {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 100px; font-size: 12px; font-weight: 700;
+    background: rgba(37,99,235,0.08); border: 1px solid rgba(37,99,235,0.15);
+    color: #2563EB; margin-top: 4px;
+  }
+
+  .lc-footer { margin-top: auto; padding-top: 14px; }
+  .lc-detail-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; padding: 12px 20px; border-radius: 12px;
+    background: linear-gradient(135deg, #1E40AF, #2563EB);
+    color: white; font-size: 14px; font-weight: 700;
+    text-decoration: none; transition: all 0.2s;
+    box-shadow: 0 4px 14px rgba(37,99,235,0.3);
+  }
+  .lc-detail-btn:hover { box-shadow: 0 8px 24px rgba(37,99,235,0.45); transform: translateY(-1px); }
+
+  .lg-empty {
+    text-align: center; padding: 64px 24px;
+    background: var(--card); border-radius: 24px; border: 1.5px solid var(--border);
+  }
+
+  @media (max-width: 600px) {
+    .lg-hero { padding: 40px 20px 32px; }
+    .lg-page { padding: 24px 16px 60px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="lg-page">
+
+  <div class="lg-hero">
+    <a href="/" class="lg-back">← Главная</a>
+    <div class="lg-hero-eyebrow">WEBORDO · ЮРИДИЧЕСКИЕ УСЛУГИ</div>
+    <div class="lg-hero-title">⚖️ Юр. организации</div>
+    <div class="lg-hero-sub">Найдите юриста, узнайте стоимость услуг и обратитесь за помощью прямо сейчас</div>
+  </div>
+
+  {% if orgs %}
+  <div class="lg-grid">
+    {% for org in orgs %}
+    <div class="lc">
+      <div class="lc-photo">
+        {% if org.logo %}
+          <img src="{{ org.logo.url }}" alt="{{ org.name }}" loading="lazy" decoding="async">
+        {% else %}
+          <div class="lc-photo-placeholder">⚖️</div>
+        {% endif %}
+      </div>
+
+      <div class="lc-body">
+        <div class="lc-name">{{ org.name }}</div>
+
+        <div class="lc-meta">
+          {% if org.address %}
+          <div class="lc-row">
+            <span class="lc-row-icon">📍</span>
+            <span>{{ org.address }}</span>
+          </div>
+          {% endif %}
+          {% if org.working_hours %}
+          <div class="lc-row">
+            <span class="lc-row-icon">🕐</span>
+            <span>{{ org.working_hours }}</span>
+          </div>
+          {% endif %}
+          {% if org.phone %}
+          <div class="lc-row">
+            <span class="lc-row-icon">📞</span>
+            <span>{{ org.phone }}</span>
+          </div>
+          {% endif %}
+        </div>
+
+        {% with cnt=org.services.count %}
+        {% if cnt %}
+        <div>
+          <span class="lc-services-count">📋 {{ cnt }} услуг{% if cnt == 1 %}а{% elif cnt < 5 %}и{% endif %}</span>
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <div class="lc-footer">
+          <a href="{% url 'legal:legal_detail' org.slug %}" class="lc-detail-btn">
+            ⚖️ Смотреть услуги
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="lg-empty">
+    <div style="font-size:56px;margin-bottom:16px">⚖️</div>
+    <div style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px">Скоро появятся</div>
+    <div style="font-size:14px;color:var(--muted)">Юридические организации добавляются администратором</div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

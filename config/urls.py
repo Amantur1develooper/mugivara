@@ -17,6 +17,7 @@ urlpatterns += i18n_patterns(
     path("shops/", include(("shops.urls", "shops"), namespace="shops")),
     path("hotels/", include(("hotels.urls", "hotels"), namespace="hotels")),
     path("markets/", include(("markets.urls", "markets"), namespace="markets")),
+    path("legal/", include(("legal.urls", "legal"), namespace="legal")),
     path("cabinet/", include(("dashboard.urls", "dashboard"), namespace="dashboard")),
     path("", include("public_site.urls")), 
     

@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ org.name }} — Юридические услуги{% endblock %}
+{% block cta %}{% endblock %}
+
+{% block head_extra %}
+<style>
+  .ld-page { max-width: 900px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  .ld-back {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 18px; border-radius: 100px; font-size: 13px; font-weight: 600;
+    background: var(--card); border: 1.5px solid var(--border);
+    color: var(--text2); text-decoration: none; transition: all 0.2s;
+    margin-bottom: 24px;
+  }
+  .ld-back:hover { background: rgba(37,99,235,0.06); border-color: rgba(37,99,235,0.3); color: #2563EB; }
+
+  /* Org header card */
+  .ld-org-card {
+    background: var(--card); border: 1.5px solid var(--border); border-radius: 24px;
+    padding: 28px; margin-bottom: 28px;
+    display: flex; gap: 24px; align-items: flex-start;
+  }
+  .ld-org-logo {
+    width: 90px; height: 90px; border-radius: 18px; flex-shrink: 0;
+    object-fit: cover; background: linear-gradient(135deg,#EFF6FF,#DBEAFE);
+    display: flex; align-items: center; justify-content: center; font-size: 44px;
+    overflow: hidden;
+  }
+  .ld-org-logo img { width: 100%; height: 100%; object-fit: cover; }
+  .ld-org-info { flex: 1; min-width: 0; }
+  .ld-org-name {
+    font-family: 'Unbounded', sans-serif; font-weight: 900;
+    font-size: clamp(18px, 3vw, 26px); letter-spacing: -0.5px;
+    color: var(--text); margin-bottom: 14px;
+  }
+  .ld-meta-grid { display: flex; flex-direction: column; gap: 8px; }
+  .ld-meta-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 14px; color: var(--text2);
+  }
+  .ld-meta-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+  .ld-desc {
+    font-size: 14px; color: var(--text2); line-height: 1.7;
+    white-space: pre-line; margin-top: 14px;
+    padding-top: 14px; border-top: 1px solid var(--border);
+  }
+
+  /* Contact buttons */
+  .ld-contacts { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .ld-wa-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 20px; border-radius: 12px;
+    background: linear-gradient(135deg, #25D366, #128C7E);
+    color: white; font-size: 14px; font-weight: 700;
+    text-decoration: none; transition: all 0.2s;
+    box-shadow: 0 4px 14px rgba(37,211,102,0.3);
+  }
+  .ld-wa-btn:hover { box-shadow: 0 8px 24px rgba(37,211,102,0.45); transform: translateY(-1px); }
+  .ld-tel-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 20px; border-radius: 12px;
+    background: var(--bg); border: 1.5px solid var(--border);
+    color: var(--text2); font-size: 14px; font-weight: 600;
+    text-decoration: none; transition: all 0.2s;
+  }
+  .ld-tel-btn:hover { border-color: rgba(37,99,235,0.3); color: #2563EB; background: rgba(37,99,235,0.04); }
+
+  /* Services */
+  .ld-section-title {
+    font-family: 'Unbounded', sans-serif; font-weight: 800;
+    font-size: 16px; color: var(--text); margin-bottom: 16px; letter-spacing: -0.3px;
+  }
+
+  .svc-list { display: flex; flex-direction: column; gap: 12px; }
+  .svc-card {
+    background: var(--card); border: 1.5px solid var(--border); border-radius: 18px;
+    padding: 20px 22px;
+    display: flex; align-items: center; gap: 16px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .svc-card:hover { border-color: rgba(37,99,235,0.3); box-shadow: 0 6px 20px rgba(37,99,235,0.08); }
+
+  .svc-info { flex: 1; min-width: 0; }
+  .svc-name { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .svc-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+  .svc-right { flex-shrink: 0; text-align: right; }
+  .svc-price {
+    font-family: 'Unbounded', sans-serif; font-weight: 800;
+    font-size: 18px; color: var(--text); letter-spacing: -0.5px; line-height: 1;
+  }
+  .svc-price-note { font-size: 11px; color: var(--muted); margin-bottom: 10px; margin-top: 2px; }
+  .svc-order-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 700;
+    background: linear-gradient(135deg, #1E40AF, #2563EB);
+    color: white; border: none; cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 3px 10px rgba(37,99,235,0.25);
+    white-space: nowrap;
+  }
+  .svc-order-btn:hover { box-shadow: 0 6px 18px rgba(37,99,235,0.4); transform: translateY(-1px); }
+
+  .lg-empty {
+    text-align: center; padding: 48px; background: var(--card);
+    border: 1.5px solid var(--border); border-radius: 18px;
+    font-size: 14px; color: var(--muted);
+  }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+    align-items: center; justify-content: center; padding: 16px;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal-box {
+    background: var(--card); border-radius: 24px; padding: 32px;
+    width: 100%; max-width: 500px; position: relative;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.2);
+    animation: modalIn 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.92) translateY(16px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-close {
+    position: absolute; top: 16px; right: 16px;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--bg); border: 1px solid var(--border);
+    cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
+    color: var(--muted); transition: all 0.2s;
+  }
+  .modal-close:hover { background: var(--border); color: var(--text); }
+
+  .modal-title {
+    font-family: 'Unbounded', sans-serif; font-weight: 800;
+    font-size: 17px; color: var(--text); margin-bottom: 6px; padding-right: 40px;
+  }
+  .modal-service-name {
+    font-size: 13px; color: #2563EB; font-weight: 600;
+    background: rgba(37,99,235,0.08); border: 1px solid rgba(37,99,235,0.15);
+    display: inline-block; padding: 4px 12px; border-radius: 100px;
+    margin-bottom: 20px;
+  }
+
+  .modal-field { margin-bottom: 16px; }
+  .modal-label {
+    display: block; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--muted); margin-bottom: 6px;
+  }
+  .modal-input, .modal-textarea {
+    width: 100%; padding: 12px 14px; border-radius: 12px;
+    background: var(--bg); border: 1.5px solid var(--border);
+    font-size: 14px; color: var(--text); outline: none;
+    font-family: inherit; transition: border-color 0.2s;
+    resize: vertical;
+  }
+  .modal-input:focus, .modal-textarea:focus {
+    border-color: #2563EB; background: white;
+  }
+  .modal-textarea { min-height: 100px; }
+
+  .modal-hint {
+    font-size: 12px; color: var(--muted); margin-top: 12px; line-height: 1.5;
+  }
+
+  .modal-submit {
+    width: 100%; padding: 14px; border-radius: 14px; border: none;
+    background: linear-gradient(135deg, #25D366, #128C7E);
+    color: white; font-size: 15px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    box-shadow: 0 6px 20px rgba(37,211,102,0.3);
+    transition: all 0.2s; margin-top: 20px;
+  }
+  .modal-submit:hover { box-shadow: 0 10px 30px rgba(37,211,102,0.45); transform: translateY(-1px); }
+
+  @media (max-width: 600px) {
+    .ld-org-card { flex-direction: column; }
+    .ld-page { padding: 20px 16px 60px; }
+    .svc-card { flex-direction: column; align-items: flex-start; }
+    .svc-right { text-align: left; }
+    .svc-order-btn { width: 100%; justify-content: center; }
+    .modal-box { padding: 24px 20px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ld-page">
+
+  <a href="{% url 'legal:legal_list' %}" class="ld-back">← Все организации</a>
+
+  <!-- Org info -->
+  <div class="ld-org-card">
+    <div class="ld-org-logo">
+      {% if org.logo %}
+        <img src="{{ org.logo.url }}" alt="{{ org.name }}">
+      {% else %}⚖️{% endif %}
+    </div>
+    <div class="ld-org-info">
+      <div class="ld-org-name">{{ org.name }}</div>
+      <div class="ld-meta-grid">
+        {% if org.address %}
+        <div class="ld-meta-row">
+          <span class="ld-meta-icon">📍</span>
+          <span>{{ org.address }}</span>
+        </div>
+        {% endif %}
+        {% if org.working_hours %}
+        <div class="ld-meta-row">
+          <span class="ld-meta-icon">🕐</span>
+          <span>{{ org.working_hours }}</span>
+        </div>
+        {% endif %}
+        {% if org.phone %}
+        <div class="ld-meta-row">
+          <span class="ld-meta-icon">📞</span>
+          <span>{{ org.phone }}</span>
+        </div>
+        {% endif %}
+      </div>
+
+      {% if org.description %}
+      <div class="ld-desc">{{ org.description }}</div>
+      {% endif %}
+
+      <div class="ld-contacts">
+        {% if org.whatsapp_url %}
+        <a href="{{ org.whatsapp_url }}" target="_blank" rel="noopener" class="ld-wa-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Написать в WhatsApp
+        </a>
+        {% endif %}
+        {% if org.phone %}
+        <a href="tel:{{ org.phone }}" class="ld-tel-btn">📞 Позвонить</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Services list -->
+  <div class="ld-section-title">📋 Услуги и цены</div>
+
+  {% if services %}
+  <div class="svc-list">
+    {% for svc in services %}
+    <div class="svc-card">
+      <div class="svc-info">
+        <div class="svc-name">{{ svc.name }}</div>
+        {% if svc.description %}
+        <div class="svc-desc">{{ svc.description }}</div>
+        {% endif %}
+      </div>
+      <div class="svc-right">
+        <div class="svc-price">{{ svc.price|floatformat:0 }} сом</div>
+        {% if svc.price_note %}
+        <div class="svc-price-note">{{ svc.price_note }}</div>
+        {% endif %}
+        <button class="svc-order-btn"
+                data-svc-id="{{ svc.id }}"
+                data-svc-name="{{ svc.name }}"
+                data-svc-price="{{ svc.price|floatformat:0 }}"
+                data-svc-note="{{ svc.price_note }}"
+                data-org-name="{{ org.name }}"
+                data-org-phone="{{ org.whatsapp_digits }}"
+                onclick="openModal(this)">
+          ✉️ Обратиться
+        </button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="lg-empty">Услуги пока не добавлены</div>
+  {% endif %}
+
+</div>
+
+<!-- ── MODAL ── -->
+<div class="modal-overlay" id="reqModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title">Обращение за услугой</div>
+    <div id="modalServiceBadge" class="modal-service-name"></div>
+
+    <div class="modal-field">
+      <label class="modal-label" for="reqFio">ФИО *</label>
+      <input id="reqFio" class="modal-input" type="text" placeholder="Иванов Иван Иванович" autocomplete="name">
+    </div>
+
+    <div class="modal-field">
+      <label class="modal-label" for="reqPhone">Ваш телефон</label>
+      <input id="reqPhone" class="modal-input" type="tel" placeholder="+996 XXX XXX XXX" autocomplete="tel">
+    </div>
+
+    <div class="modal-field">
+      <label class="modal-label" for="reqSituation">Опишите вашу ситуацию *</label>
+      <textarea id="reqSituation" class="modal-textarea"
+                placeholder="Расскажите кратко о вашем вопросе или проблеме, с которой вы хотите обратиться..."></textarea>
+    </div>
+
+    <p class="modal-hint">
+      📱 После нажатия кнопки откроется WhatsApp с готовым сообщением — вам останется только отправить его.
+    </p>
+
+    <button class="modal-submit" onclick="submitModal()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      Отправить в WhatsApp
+    </button>
+  </div>
+</div>
+
+<script>
+let _phone = "";
+let _svcName = "";
+let _svcPrice = "";
+let _svcNote = "";
+let _orgName = "";
+
+function openModal(btn) {
+  _phone   = btn.dataset.orgPhone;
+  _svcName = btn.dataset.svcName;
+  _svcPrice = btn.dataset.svcPrice;
+  _svcNote  = btn.dataset.svcNote;
+  _orgName  = btn.dataset.orgName;
+
+  document.getElementById("modalServiceBadge").textContent = _svcName;
+  document.getElementById("reqFio").value = "";
+  document.getElementById("reqPhone").value = "";
+  document.getElementById("reqSituation").value = "";
+
+  document.getElementById("reqModal").classList.add("open");
+  document.body.style.overflow = "hidden";
+  setTimeout(() => document.getElementById("reqFio").focus(), 120);
+}
+
+function closeModal() {
+  document.getElementById("reqModal").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+function submitModal() {
+  const fio       = document.getElementById("reqFio").value.trim();
+  const phone     = document.getElementById("reqPhone").value.trim();
+  const situation = document.getElementById("reqSituation").value.trim();
+
+  if (!fio) {
+    document.getElementById("reqFio").focus();
+    document.getElementById("reqFio").style.borderColor = "#EF4444";
+    return;
+  }
+  if (!situation) {
+    document.getElementById("reqSituation").focus();
+    document.getElementById("reqSituation").style.borderColor = "#EF4444";
+    return;
+  }
+
+  const priceStr = _svcNote
+    ? `${_svcPrice} сом (${_svcNote})`
+    : `${_svcPrice} сом`;
+
+  let msg = `⚖️ Обращение за юридической услугой\n`;
+  msg += `\nОрганизация: ${_orgName}`;
+  msg += `\nУслуга: ${_svcName}`;
+  msg += `\nСтоимость: ${priceStr}`;
+  msg += `\n\n👤 ФИО: ${fio}`;
+  if (phone) msg += `\n📞 Телефон: ${phone}`;
+  msg += `\n\n📋 Ситуация:\n${situation}`;
+
+  const url = _phone
+    ? `https://wa.me/${_phone}?text=${encodeURIComponent(msg)}`
+    : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+
+  closeModal();
+  window.open(url, "_blank", "noopener");
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") closeModal();
+});
+
+// сброс красной рамки при вводе
+document.getElementById("reqFio").addEventListener("input", e => e.target.style.borderColor = "");
+document.getElementById("reqSituation").addEventListener("input", e => e.target.style.borderColor = "");
+</script>
+{% endblock %}
