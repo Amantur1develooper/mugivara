@@ -10,8 +10,12 @@
 
   <title>{% block title %}Webordo — Цифровая экосистема Кыргызстана{% endblock %}</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;600;800;900&family=Geologica:wght@300;400;500&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com" defer></script>
+  <!-- Preconnect для быстрой загрузки шрифтов -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800;900&family=Geologica:wght@300;400;500&display=swap" rel="stylesheet">
+  <!-- Tailwind — скомпилированный статичный файл, без CDN -->
+  <link rel="stylesheet" href="{% static 'css/tw.css' %}">
 
   <style>
     :root {
