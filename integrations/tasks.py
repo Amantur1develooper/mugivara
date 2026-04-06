@@ -203,22 +203,22 @@ import requests
 from reservations.models import Place
 from integrations.models import TelegramRecipient
 
-def _tg_send(chat_id: str, text: str, message_thread_id=None):
+def _tg_send(chat_id: str, text: str, message_thread_id=None, parse_mode: str = "HTML"):
     if not getattr(settings, "TG_BOT_TOKEN", None):
         return
     url = f"https://api.telegram.org/bot{settings.TG_BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": chat_id, "text": text}
+    payload = {"chat_id": chat_id, "text": text, "parse_mode": parse_mode}
     if message_thread_id:
         payload["message_thread_id"] = int(message_thread_id)
     requests.post(url, json=payload, timeout=10)
 
+
 @shared_task
 def notify_call_waiter(place_id: int, note: str = ""):
-    place = Place.objects.select_related("floor__branch").get(id=place_id)
+    place = Place.objects.select_related("floor__branch__restaurant").get(id=place_id)
     branch = place.floor.branch
+    floor  = place.floor
 
-    # Кому отправлять: берем активных получателей филиала
-    # (лучше тем, у кого включено notify_new_orders=True)
     recs = TelegramRecipient.objects.filter(
         branch=branch,
         is_active=True,
@@ -226,14 +226,20 @@ def notify_call_waiter(place_id: int, note: str = ""):
     )
 
     t = timezone.localtime().strftime("%d.%m.%Y %H:%M")
-    text = (
-        f"🔔 <b>Позвали официанта</b>\n"
-        f"🏢 Филиал: <b>{branch.name_ru}</b>\n"
-        f"🍽️ Место: <b>{place.title}</b>\n"
-    )
+
+    lines = [
+        "🔔 <b>ВЫЗОВ ОФИЦИАНТА</b>",
+        "",
+        f"🏢 <b>{escape(branch.name_ru)}</b>",
+        f"🍽️ Место: <b>{escape(place.title)}</b>",
+    ]
+    if floor.name:
+        lines.append(f"📐 Зал: {escape(floor.name)}")
     if note:
-        text += f"💬 Комментарий: {note}\n"
-    text += f"🕒 {t}"
+        lines.append(f"💬 <i>{escape(note)}</i>")
+    lines.append(f"⏰ {t}")
+
+    text = "\n".join(lines)
 
     for r in recs:
         _tg_send(r.chat_id, text, r.message_thread_id)
