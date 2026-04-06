@@ -1,215 +1,303 @@
 {% extends "base.html" %}
 {% load i18n i18n_attrs static %}
 
-{% block img %}
-  <link rel="icon" type="image/jpg" sizes="32x32" href="{% static 'mini_logo.jpg' %}">
-  <link rel="icon" type="image/jpg" sizes="16x16" href="{% static 'mini_logo.jpg' %}">
-  <link rel="apple-touch-icon" href="{{ branch.cover_photo.url }}">
-  <link rel="shortcut icon" href="{{ branch.cover_photo.url }}">
-{% endblock img %}
+{% block head_extra %}
+<style>
+  .cart-wrap { max-width: 640px; margin: 0 auto; padding: 24px 16px 64px; }
+
+  /* Header */
+  .cart-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px; margin-bottom: 20px;
+  }
+  .cart-header-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .cart-avatar {
+    width: 44px; height: 44px; border-radius: 12px; overflow: hidden;
+    background: var(--bg); border: 1.5px solid var(--border); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px;
+  }
+  .cart-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .cart-title { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 20px; color: var(--text); }
+  .cart-branch { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .cart-header-btns { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
+  .cart-btn-sm {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 600;
+    text-decoration: none; border: 1.5px solid var(--border);
+    background: var(--card); color: var(--text2); transition: all .15s;
+  }
+  .cart-btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+  .cart-btn-wa { background: #25D366; color: white; border-color: #25D366; }
+  .cart-btn-wa:hover { background: #1fb85a; border-color: #1fb85a; color: white; }
+
+  /* Messages */
+  .cart-msg { padding: 10px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 12px;
+               background: rgba(255,77,28,.07); border: 1px solid rgba(255,77,28,.2); color: var(--accent); }
+
+  /* Empty */
+  .cart-empty {
+    text-align: center; padding: 48px 24px;
+    background: var(--card); border: 1.5px dashed var(--border); border-radius: 18px;
+    color: var(--muted); font-size: 14px;
+  }
+
+  /* Item rows */
+  .cart-items { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .cart-row {
+    background: var(--card); border: 1.5px solid var(--border); border-radius: 16px;
+    padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+  }
+  .cart-row-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .cart-row-price { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .cart-row-line { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; }
+
+  .cart-qty-controls { display: flex; align-items: center; gap: 6px; }
+  .cart-qty-btn {
+    width: 34px; height: 34px; border-radius: 9px;
+    border: 1.5px solid var(--border); background: var(--bg);
+    font-size: 18px; font-weight: 700; color: var(--text);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .cart-qty-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .cart-qty-btn:disabled { opacity: .4; cursor: default; }
+  .cart-qty-input {
+    width: 44px; text-align: center; padding: 6px 4px;
+    border: 1.5px solid var(--border); border-radius: 9px;
+    font-size: 14px; font-weight: 700; color: var(--text);
+    background: var(--bg); font-family: inherit;
+    -moz-appearance: textfield;
+  }
+  .cart-qty-input::-webkit-outer-spin-button,
+  .cart-qty-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .cart-del-btn {
+    margin-left: auto; padding: 6px 12px; border-radius: 8px;
+    border: 1.5px solid var(--border); background: var(--bg);
+    font-size: 12px; color: var(--muted); cursor: pointer; flex-shrink: 0;
+    transition: all .15s;
+  }
+  .cart-del-btn:hover { border-color: #EF4444; color: #EF4444; background: rgba(239,68,68,.05); }
+
+  /* Totals card */
+  .cart-totals {
+    background: var(--card); border: 1.5px solid var(--border); border-radius: 16px;
+    padding: 16px; margin-bottom: 14px;
+  }
+  .cart-totals-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px; color: var(--text2); padding: 4px 0;
+  }
+  .cart-totals-row.total {
+    font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 17px;
+    color: var(--text); border-top: 1px solid var(--border); margin-top: 8px; padding-top: 12px;
+  }
+
+  /* Promo */
+  .cart-promo {
+    background: var(--card); border: 1.5px solid var(--border); border-radius: 16px;
+    padding: 16px; margin-bottom: 14px;
+  }
+  .cart-promo-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 10px; }
+  .cart-promo-row { display: flex; gap: 8px; }
+  .cart-promo-input {
+    flex: 1; padding: 10px 14px; border: 1.5px solid var(--border);
+    border-radius: 10px; font-size: 13px; text-transform: uppercase;
+    font-family: inherit; color: var(--text); background: var(--bg);
+    outline: none; transition: border-color .2s;
+  }
+  .cart-promo-input:focus { border-color: var(--accent); background: #fff; }
+  .cart-promo-apply {
+    padding: 10px 18px; border-radius: 10px; border: none;
+    background: var(--text); color: white; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: opacity .15s;
+  }
+  .cart-promo-apply:hover { opacity: .85; }
+  .cart-promo-msg { margin-top: 8px; font-size: 12px; }
+
+  /* Checkout form */
+  .cart-checkout {
+    background: var(--card); border: 1.5px solid var(--border); border-radius: 16px;
+    padding: 20px;
+  }
+  .cart-checkout-title {
+    font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 16px;
+    color: var(--text); margin-bottom: 16px;
+  }
+  .cart-field {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
+    border-radius: 12px; font-size: 14px; font-family: inherit;
+    color: var(--text); background: var(--bg); margin-bottom: 10px;
+    outline: none; transition: border-color .2s;
+  }
+  .cart-field:focus { border-color: var(--accent); background: #fff; }
+  .cart-field::placeholder { color: var(--muted); }
+  .cart-label { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 8px; display: block; }
+  .cart-radio-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .cart-radio-option {
+    display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+    border: 1.5px solid var(--border); border-radius: 12px; cursor: pointer;
+    transition: border-color .15s; font-size: 13px;
+  }
+  .cart-radio-option input:checked + span { font-weight: 600; }
+  .cart-radio-option:has(input:checked) { border-color: var(--accent); background: rgba(255,77,28,.04); }
+
+  .cart-submit {
+    width: 100%; padding: 14px; border-radius: 14px; border: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white; font-family: 'Unbounded', sans-serif;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 6px 20px rgba(255,77,28,.3);
+    transition: transform .15s, box-shadow .15s; margin-top: 6px;
+  }
+  .cart-submit:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(255,77,28,.4); }
+  .cart-submit:active { transform: scale(.99); }
+
+  .min-order-note { font-size: 11px; color: var(--muted); margin: -4px 0 8px; padding: 0 4px; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 py-6">
+<div class="cart-wrap">
 
-  <!-- Header -->
-<div class="flex items-start justify-between gap-4">
-  <div class="flex items-start gap-3 min-w-0">
-    <!-- Avatar -->
-    <div class="w-11 h-11 rounded-full overflow-hidden ring-2 ring-white/25 bg-white/10 flex items-center justify-center flex-shrink-0">
-      {% if branch.cover_photo %}
-        <img src="{{ branch.cover_photo.url }}" alt="{{ branch.name }}"
-             class="w-full h-full object-cover" loading="lazy" decoding="async">
-      {% else %}
-        <span class="text-black font-extrabold">{{ branch.name|first }}</span>
+  <!-- Заголовок -->
+  <div class="cart-header">
+    <div class="cart-header-left">
+      <div class="cart-avatar">
+        {% if branch.cover_photo %}
+          <img src="{{ branch.cover_photo.url }}" alt="{{ branch.name_ru }}">
+        {% else %}
+          {{ branch.name_ru|first }}
+        {% endif %}
+      </div>
+      <div>
+        <div class="cart-title">Корзина</div>
+        <div class="cart-branch">
+          {{ branch.name_ru }}{% if branch.address %} · {{ branch.address }}{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="cart-header-btns">
+      {% if branch.phone %}
+        <a href="tel:{{ branch.phone }}" class="cart-btn-sm">📞</a>
+        {% with clean=branch.phone|cut:"+"|cut:" "|cut:"-" %}
+        <a href="https://wa.me/{{ clean }}" target="_blank" rel="noopener" class="cart-btn-sm cart-btn-wa">
+          💬 WA
+        </a>
+        {% endwith %}
       {% endif %}
-    </div>
-
-    <div class="min-w-0">
-      <h1 class="text-2xl text-black font-extrabold">{% trans "Корзина" %}</h1>
-      <div class="text-black/80 text-sm mt-1 truncate">{{ branch.name }} · {{ branch.address }}</div>
+      <a href="{% url 'public_site:branch_menu' branch.id %}" class="cart-btn-sm">← Меню</a>
     </div>
   </div>
 
-  <div class="flex items-center gap-2 flex-wrap justify-end">
-    {% if branch.phone %}
-      <a href="tel:{{ branch.phone }}"
-         class="px-3 py-2 rounded-xl ring-1 text-black ring-white/25 hover:bg-white/10 font-semibold">
-        📞 <span class="hidden sm:inline">{% trans "Позвонить" %}</span>
-      </a>
-
-      {% with clean=branch.phone|cut:"+"|cut:" "|cut:"-" %}
-      <a href="https://wa.me/{{ clean }}?text={{ 'Здравствуйте! Я оформляю заказ.'|urlencode }}"
-         target="_blank" rel="noopener"
-         class="px-3 py-2 rounded-xl font-semibold text-black"
-         style="background:#25D366;">
-        💬 <span class="hidden sm:inline">WhatsApp</span>
-      </a>
-      {% endwith %}
-    {% endif %}
-
-    <a href="{% url 'public_site:branch_menu' branch.id %}"
-       class="px-4 py-2 rounded-xl ring-1 text-black ring-white/25 hover:bg-white/10">
-      ← {% trans "Назад в меню" %}
-    </a>
-  </div>
-</div>
-
+  <!-- Сообщения -->
   {% if messages %}
-    <div class="mt-4 space-y-2">
-      {% for m in messages %}
-        <div class="rounded-xl p-3 ring-1 ring-stone-200 bg-white text-stone-800">{{ m }}</div>
-      {% endfor %}
-    </div>
+    {% for m in messages %}
+      <div class="cart-msg">{{ m }}</div>
+    {% endfor %}
   {% endif %}
 
   {% if qty_total == 0 %}
-    <div class="mt-6 rounded-2xl ring-1 text-black ring-white/25 p-6 bg-white/5 backdrop-blur">
-      {% trans "Корзина пуста." %}
+    <div class="cart-empty">
+      <div style="font-size:48px;margin-bottom:12px">🛒</div>
+      Корзина пуста. <a href="{% url 'public_site:branch_menu' branch.id %}" style="color:var(--accent);">Вернуться в меню →</a>
     </div>
+
   {% else %}
 
-    <!-- Rows -->
-    <div class="mt-6 space-y-3">
+    <!-- Позиции -->
+    <div class="cart-items">
       {% for r in rows %}
-        {% with bi=r.branch_item dish=r.branch_item.item %}
-        <div class="rounded-2xl bg-white ring-1 ring-stone-200 p-4
-                    flex flex-col sm:flex-row sm:items-center gap-3"
-             data-row="{{ bi.id }}"
-             data-update-url="{% url 'public_site:cart_update' branch.id bi.id %}">
-
-          <!-- left -->
-          <div class="flex-1 min-w-0">
-            <div class="font-semibold truncate">{% t dish "name" %}</div>
-            <div class="text-sm text-stone-500">
-              {{ bi.price }} {% trans "сом" %}
-              <span class="mx-2 text-stone-300">•</span>
-              <span class="text-stone-600 font-semibold">
-                <span data-line-total>{{ r.line_total }}</span> {% trans "сом" %}
-              </span>
-            </div>
-          </div>
-
-          <!-- controls -->
-          <div class="flex items-center justify-between sm:justify-end gap-3">
-            <div class="flex items-center gap-2">
-              <button type="button"
-                      class="w-10 h-10 rounded-xl bg-stone-100 ring-1 ring-stone-200 font-extrabold active:scale-95 transition"
-                      data-dec>−</button>
-
-              <input type="number" min="0" value="{{ r.qty }}"
-                     class="w-16 border border-stone-300 rounded-xl px-2 py-2 text-center text-base"
-                     data-qty-input>
-
-              <button type="button"
-                      class="w-10 h-10 rounded-xl bg-stone-100 ring-1 ring-stone-200 font-extrabold active:scale-95 transition"
-                      data-inc>+</button>
-            </div>
-
-            <button type="button"
-                    class="px-3 py-2 rounded-xl ring-1 ring-stone-200 hover:bg-stone-50 active:scale-95 transition"
-                    data-remove>
-              {% trans "Удалить" %}
-            </button>
-          </div>
-
+      {% with bi=r.branch_item dish=r.branch_item.item %}
+      <div class="cart-row"
+           data-row="{{ bi.id }}"
+           data-update-url="{% url 'public_site:cart_update' branch.id bi.id %}">
+        <div style="flex:1;min-width:0;">
+          <div class="cart-row-name">{% t dish "name" %}</div>
+          <div class="cart-row-price">{{ bi.price }} сом / шт.</div>
         </div>
-        {% endwith %}
+        <div class="cart-qty-controls">
+          <button class="cart-qty-btn" data-dec type="button">−</button>
+          <input class="cart-qty-input" type="number" min="0" value="{{ r.qty }}" data-qty-input>
+          <button class="cart-qty-btn" data-inc type="button">+</button>
+        </div>
+        <div class="cart-row-line"><span data-line-total>{{ r.line_total }}</span> сом</div>
+        <button class="cart-del-btn" data-remove type="button">✕</button>
+      </div>
+      {% endwith %}
       {% endfor %}
     </div>
 
-    <!-- Totals (AJAX) -->
-    <div class="mt-6 rounded-2xl bg-white ring-1 ring-stone-200 p-5">
-      <div class="flex justify-between text-sm text-stone-600">
-        <span>{% trans "Подытог" %}</span>
-        <span><span data-subtotal>{{ subtotal }}</span> {% trans "сом" %}</span>
+    <!-- Итоги -->
+    <div class="cart-totals">
+      <div class="cart-totals-row">
+        <span>Подытог</span>
+        <span><span data-subtotal>{{ subtotal }}</span> сом</span>
       </div>
-
       {% if branch.delivery_enabled %}
-      <div class="flex justify-between text-sm text-stone-600 mt-2">
-        <span>{% trans "Доставка" %}</span>
-        <span><span data-delivery-fee>{{ delivery_fee }}</span> {% trans "сом" %}</span>
+      <div class="cart-totals-row">
+        <span>Доставка</span>
+        <span><span data-delivery-fee>{{ delivery_fee }}</span> сом</span>
       </div>
       {% endif %}
-
-      <div class="flex justify-between text-lg font-extrabold mt-3">
-        <span>{% trans "Итого" %}</span>
-        <span><span data-total>{{ total }}</span> {% trans "сом" %}</span>
+      <div class="cart-totals-row total">
+        <span>Итого</span>
+        <span><span data-total>{{ total }}</span> сом</span>
       </div>
     </div>
 
-    <!-- Promo code -->
-    <div class="mt-4 rounded-2xl bg-white ring-1 ring-stone-200 p-5">
-      <div class="text-sm font-semibold mb-3">{% trans "Промокод" %}</div>
-      <div class="flex gap-2">
-        <input id="promo-input" type="text" placeholder="{% trans 'Введите промокод' %}"
-               class="flex-1 border border-stone-300 rounded-xl px-3 py-2 text-base uppercase">
-        <button type="button" id="promo-apply-btn"
-                class="px-4 py-2 rounded-xl bg-stone-900 text-white text-sm font-semibold hover:bg-stone-700 transition">
-          {% trans "Применить" %}
-        </button>
+    <!-- Промокод -->
+    <div class="cart-promo">
+      <div class="cart-promo-title">🎟 Промокод</div>
+      <div class="cart-promo-row">
+        <input id="promo-input" type="text" placeholder="Введите промокод" class="cart-promo-input">
+        <button type="button" id="promo-apply-btn" class="cart-promo-apply">Применить</button>
       </div>
-      <div id="promo-msg" class="mt-2 text-sm hidden"></div>
+      <div id="promo-msg" class="cart-promo-msg" style="display:none"></div>
     </div>
 
-    <!-- Checkout -->
-    <div class="mt-4 rounded-2xl bg-white ring-1 ring-stone-200 p-5">
-      <h2 class="text-xl font-extrabold">{% trans "Оформление" %}</h2>
+    <!-- Оформление -->
+    <div class="cart-checkout">
+      <div class="cart-checkout-title">📝 Оформление заказа</div>
 
-      <form action="{% url 'public_site:checkout' branch.id %}" method="post" class="mt-4 grid gap-3"
-            id="checkout-form">
+      <form action="{% url 'public_site:checkout' branch.id %}" method="post" id="checkout-form">
         {% csrf_token %}
         <input type="hidden" name="promo_code" id="promo-code-hidden">
 
-        <!-- optional -->
-        <input name="name" placeholder="{% trans 'Имя (не обязательно)' %}"
-               class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base">
+        <input name="name" placeholder="Ваше имя (необязательно)" class="cart-field">
 
-        <!-- REQUIRED +996 -->
-        <input name="phone"
-       id="phone"
-       type="tel"
-       inputmode="numeric"
-       autocomplete="tel"
-       required
-       value="+996"
-       minlength="13"
-       maxlength="13"
-       pattern="^\+996\d{9}$"
-       title="Введите номер в формате +996XXXXXXXXX (9 цифр после +996)"
-       placeholder="+996700123456"
-       class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base">
+        <input name="phone" id="phone" type="tel" inputmode="numeric" autocomplete="tel"
+               required value="+996" minlength="13" maxlength="13"
+               pattern="^\+996\d{9}$"
+               title="Формат: +996XXXXXXXXX"
+               placeholder="+996700123456" class="cart-field">
 
-
-        <!-- REQUIRED address always -->
-        <input name="address"
-               required
-               placeholder="{% trans 'Адрес / стол / кабинка (обязательно)' %}"
-               class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base">
+        <input name="address" required
+               placeholder="{% if branch.delivery_enabled %}Адрес доставки{% else %}Номер стола / кабинки{% endif %}"
+               class="cart-field">
 
         {% if branch.delivery_enabled %}
-          <div class="text-xs text-stone-500">
-            {% trans "Минимальная сумма доставки:" %} {{ branch.min_order_amount }} {% trans "сом" %}
-          </div>
+          <div class="min-order-note">Минимальная сумма доставки: {{ branch.min_order_amount }} сом</div>
         {% endif %}
 
-        <!-- optional -->
-        <textarea name="comment" rows="3" placeholder="{% trans 'Комментарий (не обязательно)' %}"
-                  class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base"></textarea>
+        <textarea name="comment" rows="2" placeholder="Комментарий (необязательно)" class="cart-field" style="resize:vertical"></textarea>
 
-        <div class="grid gap-2">
-          <div class="text-sm font-semibold">{% trans "Способ оплаты" %}</div>
-          <label class="flex items-center gap-2">
+        <label class="cart-label">Способ оплаты</label>
+        <div class="cart-radio-group">
+          <label class="cart-radio-option">
             <input type="radio" name="payment_method" value="cash" checked>
-            <span>{% trans "Наличные" %}</span>
+            <span>💵 Наличные</span>
           </label>
-          <label class="flex items-center gap-2">
+          <label class="cart-radio-option">
             <input type="radio" name="payment_method" value="online">
-            <span>{% trans "Онлайн" %}</span>
+            <span>💳 Онлайн</span>
           </label>
         </div>
 
-        <button class="mt-2 px-4 py-3 rounded-2xl bg-stone-900 text-white font-semibold shadow hover:bg-stone-800 active:scale-[0.99] transition">
-          {% if branch.delivery_enabled %}{% trans "Подтвердить заказ" %}{% else %}{% trans "Подтвердить заказ" %}{% endif %}
+        <button type="submit" class="cart-submit">
+          Оформить заказ →
         </button>
       </form>
     </div>
@@ -217,213 +305,156 @@
   {% endif %}
 </div>
 
-<div id="js-promo-url"
-     data-validate-url="{% url 'public_site:validate_promo' branch.id %}"
-     style="display:none"></div>
+<div id="js-promo-url" data-validate-url="{% url 'public_site:validate_promo' branch.id %}" style="display:none"></div>
 
 <script>
-  function getCookie(name) {
-    const v = document.cookie.split('; ').find(row => row.startsWith(name + '='));
-    return v ? decodeURIComponent(v.split('=')[1]) : '';
+function getCookie(name) {
+  const v = document.cookie.split('; ').find(r => r.startsWith(name + '='));
+  return v ? decodeURIComponent(v.split('=')[1]) : '';
+}
+
+function setAll(sel, val) {
+  document.querySelectorAll(sel).forEach(el => el.textContent = val);
+}
+
+async function postQty(url, qty) {
+  const fd = new FormData();
+  fd.append('qty', qty);
+  const r = await fetch(url, {
+    method: 'POST', body: fd,
+    headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCookie('csrftoken') }
+  });
+  return r.json();
+}
+
+function updateTotals(data) {
+  if (data.subtotal     !== undefined) setAll('[data-subtotal]',     data.subtotal);
+  if (data.delivery_fee !== undefined) setAll('[data-delivery-fee]', data.delivery_fee);
+  if (data.total        !== undefined) setAll('[data-total]',        data.total);
+  if (data.qty_total    !== undefined) {
+    document.querySelectorAll('[data-cart-qty]').forEach(el => el.textContent = data.qty_total);
+    document.querySelectorAll('[data-cart-total]').forEach(el => el.textContent = '· ' + data.total + ' сом');
   }
+}
 
-  function setTextAll(selector, value){
-    document.querySelectorAll(selector).forEach(el => el.textContent = value);
-  }
+async function updateRow(rowEl, qty) {
+  const input      = rowEl.querySelector('[data-qty-input]');
+  const lineTotalEl = rowEl.querySelector('[data-line-total]');
+  const url        = rowEl.dataset.updateUrl;
 
-  async function postQty(url, qty){
-    const fd = new FormData();
-    fd.append('qty', qty);
+  rowEl.querySelectorAll('button').forEach(b => b.disabled = true);
+  input.disabled = true;
 
-    const resp = await fetch(url, {
-      method: 'POST',
-      body: fd,
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-CSRFToken': getCookie('csrftoken'),
-      }
-    });
-    return await resp.json();
-  }
+  try {
+    const data = await postQty(url, qty);
+    if (!data.ok) return;
 
-  function updateTotalsUI(data){
-    if (data.subtotal !== undefined) setTextAll('[data-subtotal]', data.subtotal);
-    if (data.delivery_fee !== undefined) setTextAll('[data-delivery-fee]', data.delivery_fee);
-    if (data.total !== undefined) setTextAll('[data-total]', data.total);
-
-    if (data.qty_total !== undefined) {
-      document.querySelectorAll('[data-cart-qty]').forEach(el => el.textContent = data.qty_total);
+    if ((data.row_qty ?? qty) <= 0) {
+      rowEl.remove();
+    } else {
+      input.value = data.row_qty ?? qty;
+      if (lineTotalEl && data.line_total !== undefined) lineTotalEl.textContent = data.line_total;
     }
-    if (data.total !== undefined) {
-      document.querySelectorAll('[data-cart-total]').forEach(el => el.textContent = `· ${data.total} сом`);
-    }
-  }
 
-  async function updateRow(rowEl, qty){
-    const input = rowEl.querySelector('[data-qty-input]');
-    const lineTotalEl = rowEl.querySelector('[data-line-total]');
-    const url = rowEl.dataset.updateUrl;
+    updateTotals(data);
 
-    rowEl.querySelectorAll('button').forEach(b => b.disabled = true);
-    input.disabled = true;
+    if (parseInt(data.qty_total || '0') === 0) location.reload();
 
-    try{
-      const data = await postQty(url, qty);
-      if (!data.ok) return;
-
-      if ((data.row_qty ?? qty) <= 0){
-        rowEl.remove();
-      } else {
-        input.value = data.row_qty ?? qty;
-        if (lineTotalEl && data.line_total !== undefined) lineTotalEl.textContent = data.line_total;
-      }
-
-      updateTotalsUI(data);
-
-      if (data.qty_total === 0){
-        location.reload();
-      }
-    } finally {
+  } finally {
+    if (rowEl.isConnected) {
       rowEl.querySelectorAll('button').forEach(b => b.disabled = false);
       input.disabled = false;
     }
   }
+}
 
-  document.addEventListener('click', async (e) => {
-    const rowEl = e.target.closest('[data-row]');
-    if (!rowEl) return;
+document.addEventListener('click', async e => {
+  const rowEl = e.target.closest('[data-row]');
+  if (!rowEl) return;
 
-    const input = rowEl.querySelector('[data-qty-input]');
-    let qty = parseInt(input.value || '0', 10);
-    if (Number.isNaN(qty)) qty = 0;
+  const input = rowEl.querySelector('[data-qty-input]');
+  let qty = parseInt(input.value || '0', 10) || 0;
 
-    if (e.target.closest('[data-inc]')){
-      qty += 1;
-      await updateRow(rowEl, qty);
-    }
+  if (e.target.closest('[data-inc]'))    { qty += 1;              await updateRow(rowEl, qty); }
+  if (e.target.closest('[data-dec]'))    { qty = Math.max(0, qty - 1); await updateRow(rowEl, qty); }
+  if (e.target.closest('[data-remove]')) { await updateRow(rowEl, 0); }
+});
 
-    if (e.target.closest('[data-dec]')){
-      qty = Math.max(0, qty - 1);
-      await updateRow(rowEl, qty);
-    }
+document.addEventListener('change', async e => {
+  const input = e.target.closest('[data-qty-input]');
+  if (!input) return;
+  const rowEl = input.closest('[data-row]');
+  if (!rowEl) return;
+  let qty = parseInt(input.value || '0', 10) || 0;
+  await updateRow(rowEl, Math.max(0, qty));
+});
 
-    if (e.target.closest('[data-remove]')){
-      await updateRow(rowEl, 0);
+/* ── PROMO ── */
+(function(){
+  const validateUrl = document.getElementById('js-promo-url').dataset.validateUrl;
+  const input  = document.getElementById('promo-input');
+  const btn    = document.getElementById('promo-apply-btn');
+  const msg    = document.getElementById('promo-msg');
+  const hidden = document.getElementById('promo-code-hidden');
+
+  function showMsg(text, ok) {
+    msg.textContent = text;
+    msg.style.display = '';
+    msg.style.color = ok ? 'var(--teal)' : '#EF4444';
+  }
+
+  btn.addEventListener('click', async () => {
+    const code = (input.value || '').trim().toUpperCase();
+    if (!code) return;
+    btn.disabled = true; btn.textContent = '...';
+
+    const fd = new FormData();
+    fd.append('code', code);
+    try {
+      const r = await fetch(validateUrl, {
+        method: 'POST', body: fd,
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCookie('csrftoken') }
+      });
+      const data = await r.json();
+      if (data.ok) {
+        hidden.value = code; input.readOnly = true;
+        let desc = data.label;
+        if (data.discount_type === 'percent') desc += ` −${parseFloat(data.discount_value).toFixed(0)}%`;
+        else if (data.discount_type === 'fixed') desc += ` −${parseFloat(data.discount_value).toFixed(0)} сом`;
+        showMsg('✓ Промокод применён: ' + desc, true);
+        btn.textContent = 'Убрать';
+        btn.onclick = () => {
+          input.readOnly = false; input.value = ''; hidden.value = '';
+          msg.style.display = 'none';
+          btn.textContent = 'Применить'; btn.onclick = null; btn.disabled = false;
+        };
+      } else {
+        showMsg('✗ ' + (data.error || 'Неверный промокод'), false);
+        btn.textContent = 'Применить'; btn.disabled = false;
+      }
+    } catch {
+      showMsg('Ошибка. Попробуйте ещё раз.', false);
+      btn.textContent = 'Применить'; btn.disabled = false;
     }
   });
+})();
 
-  document.addEventListener('change', async (e) => {
-    const input = e.target.closest('[data-qty-input]');
-    if (!input) return;
-    const rowEl = input.closest('[data-row]');
-    if (!rowEl) return;
-
-    let qty = parseInt(input.value || '0', 10);
-    if (Number.isNaN(qty)) qty = 0;
-    qty = Math.max(0, qty);
-
-    await updateRow(rowEl, qty);
+/* ── Phone formatting ── */
+(function(){
+  const ph = document.getElementById('phone');
+  if (!ph) return;
+  ph.addEventListener('input', () => {
+    let v = ph.value.replace(/[^\d+]/g, '');
+    if (!v.startsWith('+996')) {
+      const digits = v.replace(/\D/g, '');
+      v = '+996' + digits.replace(/^996/, '');
+    }
+    if (v.length > 13) v = v.slice(0, 13);
+    ph.value = v;
   });
-
-  // ── PROMO CODE ──────────────────────────────────────────────────────────────
-  (function(){
-    const validateUrl = document.getElementById('js-promo-url').dataset.validateUrl;
-    const input       = document.getElementById('promo-input');
-    const btn         = document.getElementById('promo-apply-btn');
-    const msg         = document.getElementById('promo-msg');
-    const hidden      = document.getElementById('promo-code-hidden');
-
-    let appliedCode = '';
-
-    function showMsg(text, ok){
-      msg.textContent = text;
-      msg.className = 'mt-2 text-sm ' + (ok ? 'text-green-600' : 'text-red-500');
-      msg.classList.remove('hidden');
-    }
-
-    btn.addEventListener('click', async () => {
-      const code = (input.value || '').trim().toUpperCase();
-      if (!code) return;
-
-      btn.disabled = true;
-      btn.textContent = '...';
-
-      const fd = new FormData();
-      fd.append('code', code);
-      try {
-        const resp = await fetch(validateUrl, {
-          method: 'POST',
-          body: fd,
-          headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': getCookie('csrftoken'),
-          }
-        });
-        const data = await resp.json();
-        if (data.ok) {
-          appliedCode = code;
-          hidden.value = code;
-          let desc = data.label;
-          if (data.discount_type === 'percent') desc += ` (−${parseFloat(data.discount_value).toFixed(0)}%)`;
-          else if (data.discount_type === 'fixed') desc += ` (−${parseFloat(data.discount_value).toFixed(0)} сом)`;
-          showMsg('✓ Промокод применён: ' + desc, true);
-          input.readOnly = true;
-          btn.textContent = 'Изменить';
-          btn.onclick = () => {
-            input.readOnly = false;
-            input.value = '';
-            hidden.value = '';
-            appliedCode = '';
-            msg.classList.add('hidden');
-            btn.textContent = 'Применить';
-            btn.onclick = null;
-            btn.disabled = false;
-          };
-        } else {
-          showMsg(data.error || 'Ошибка', false);
-        }
-      } catch(e) {
-        showMsg('Ошибка сети', false);
-      } finally {
-        if (!appliedCode) {
-          btn.disabled = false;
-          btn.textContent = 'Применить';
-        }
-      }
-    });
-  })();
-
-  // phone: keep +996 prefix
-  (function(){
-    const phone = document.querySelector('input[name="phone"]');
-    if (!phone) return;
-    const prefix = '+996';
-
-    function normalize(){
-      let v = (phone.value || '').trim();
-      v = v.replace(/[^\d+]/g, '');          // only digits and +
-      if (!v.startsWith(prefix)){
-        v = v.replace(/^\+?996?/, '');       // remove wrong prefix if user pasted
-        v = prefix + v.replace(/^\+/, '');
-      }
-      phone.value = v;
-    }
-
-    phone.addEventListener('focus', () => {
-      if (!phone.value) phone.value = prefix;
-      normalize();
-    });
-
-    phone.addEventListener('input', normalize);
-
-    phone.addEventListener('keydown', (e) => {
-      const pos = phone.selectionStart || 0;
-      if (pos <= prefix.length && (e.key === 'Backspace' || e.key === 'Delete')) {
-        e.preventDefault();
-      }
-    });
-  })();
+  ph.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && ph.value === '+996') e.preventDefault();
+  });
+})();
 </script>
 {% endblock %}
-{% block cta %}
-{% endblock cta %}

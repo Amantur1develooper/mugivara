@@ -177,12 +177,13 @@ def home(request):
     """
     Главная страница Webordo.
     Публичная — без авторизации.
-    Отдаёт: категории, топ-рестораны, топ-магазины, статистику платформы.
     """
+    from markets.models import Market
+    from hotels.models import Hotel
+    from legal.models import LegalOrg
+    from eco.models import EcoProject
 
-    # ── ТОП РЕСТОРАНЫ ────────────────────────────────────────────────────────
-    # Берём активные, у которых есть хотя бы один активный филиал.
-    # only() — не тянем тяжёлые поля about_ru/ky/en.
+    # ── РЕСТОРАНЫ ────────────────────────────────────────────────────────────
     top_restaurants = list(
         Restaurant.objects
         .filter(is_active=True, branches__is_active=True)
@@ -191,62 +192,87 @@ def home(request):
         .prefetch_related("branches")
         .order_by("-rating", "name_ru")[:8]
     )
-
     restaurant_cards = []
     for r in top_restaurants:
         branches = [b for b in r.branches.all() if b.is_active]
         is_open = any(b.is_open_now() for b in branches)
         has_delivery = any(b.delivery_enabled for b in branches)
         restaurant_cards.append({
-            "obj":          r,
-            "is_open":      is_open,
-            "has_delivery": has_delivery,
-            "url_name":     "public_site:restaurant_contacts",  # детальная страница
+            "obj": r, "is_open": is_open, "has_delivery": has_delivery,
         })
 
-    # ── ТОП МАГАЗИНЫ ─────────────────────────────────────────────────────────
+    # ── МАГАЗИНЫ ─────────────────────────────────────────────────────────────
     top_stores = list(
         Store.objects
         .filter(is_active=True, branches__is_active=True)
         .distinct()
-        .only("id", "name_ru", "name_ky", "name_en", "slug", "logo")
+        .only("id", "name_ru", "slug", "logo")
         .prefetch_related("branches")
         .order_by("name_ru")[:8]
     )
-
     store_cards = []
     for s in top_stores:
         branches = [b for b in s.branches.all() if b.is_active]
         has_delivery = any(b.delivery_enabled for b in branches)
-        store_cards.append({
-            "obj":          s,
-            "has_delivery": has_delivery,
-            "url_name":     "shops:store_detail",
-        })
+        store_cards.append({"obj": s, "has_delivery": has_delivery})
 
-    # ── СТАТИСТИКА ПЛАТФОРМЫ ──────────────────────────────────────────────────
+    # ── РЫНКИ ────────────────────────────────────────────────────────────────
+    market_cards = list(
+        Market.objects.filter(is_active=True).order_by("sort_order", "name_ru")[:8]
+    )
+
+    # ── ОТЕЛИ ────────────────────────────────────────────────────────────────
+    hotel_cards = list(
+        Hotel.objects.filter(is_active=True, branches__is_active=True)
+        .distinct()
+        .prefetch_related("branches")
+        .order_by("-rating", "name_ru")[:8]
+    )
+
+    # ── АПТЕКИ ───────────────────────────────────────────────────────────────
+    pharmacy_cards = list(
+        Pharmacy.objects.filter(is_active=True).order_by("name_ru")[:8]
+    )
+
+    # ── ЮРИСТЫ ───────────────────────────────────────────────────────────────
+    legal_cards = list(
+        LegalOrg.objects.filter(is_active=True).order_by("sort_order", "name")[:8]
+    )
+
+    # ── ЭКО-ПРОЕКТЫ ──────────────────────────────────────────────────────────
+    eco_cards = list(
+        EcoProject.objects.filter(is_active=True).order_by("sort_order", "name")[:8]
+    )
+
+    # ── СТАТИСТИКА ────────────────────────────────────────────────────────────
     stats = {
-        "restaurant_count": Restaurant.objects.filter(is_active=True).count(),
+        "restaurant_count": len(restaurant_cards),
         "store_count":      Store.objects.filter(is_active=True).count(),
-        "pharmacy_count": Pharmacy.objects.filter(is_active=True).count(),
+        "pharmacy_count":   Pharmacy.objects.filter(is_active=True).count(),
+        "market_count":     Market.objects.filter(is_active=True).count(),
+        "hotel_count":      Hotel.objects.filter(is_active=True).count(),
+        "legal_count":      LegalOrg.objects.filter(is_active=True).count(),
+        "eco_count":        EcoProject.objects.filter(is_active=True).count(),
         "branch_count": (
             Branch.objects.filter(is_active=True).count()
             + StoreBranch.objects.filter(is_active=True).count()
-            + Pharmacy.objects.filter(is_active=True).count()
         ),
     }
-    stats["total"] = stats["restaurant_count"] + stats["store_count"] + stats["pharmacy_count"]
+    stats["total"] = (
+        stats["restaurant_count"] + stats["store_count"] + stats["pharmacy_count"]
+        + stats["market_count"] + stats["hotel_count"] + stats["legal_count"] + stats["eco_count"]
+    )
 
     return render(request, "public_site/home.html", {
-        "categories":        PLATFORM_CATEGORIES,
-        "restaurant_cards":  restaurant_cards,
-        "store_cards":       store_cards,
-        "stats":             stats,
-            "services": [
-    {"icon": "💇", "name_ru": "Красота и уход", "color": "#DB2777", "url": "#", "count": 0},
-    {"icon": "🔧", "name_ru": "Ремонт",          "color": "#D97706", "url": "#", "count": 0},
-    # ...
-],
+        "categories":       PLATFORM_CATEGORIES,
+        "restaurant_cards": restaurant_cards,
+        "store_cards":      store_cards,
+        "market_cards":     market_cards,
+        "hotel_cards":      hotel_cards,
+        "pharmacy_cards":   pharmacy_cards,
+        "legal_cards":      legal_cards,
+        "eco_cards":        eco_cards,
+        "stats":            stats,
     })
 
 
@@ -487,6 +513,7 @@ from .cart import get_cart, cart_details, clear_cart
 
 @require_POST
 def checkout(request, branch_id: int):
+    from django.db import transaction as db_transaction
     branch = get_object_or_404(Branch, id=branch_id, is_active=True)
     cart = get_cart(request, branch.id)
     rows, subtotal, qty_total = cart_details(branch, cart)
@@ -559,46 +586,48 @@ def checkout(request, branch_id: int):
 
     total = subtotal - promo_discount + delivery_fee
 
-    order = Order.objects.create(
-        branch=branch,
-        type=order_type,
-        status=Order.Status.NEW,
-        customer_name=name,
-        customer_phone=phone,
-        delivery_address=address,  # тут же можно хранить "стол/кабинка"
-        comment=comment,
-        total_amount=total,
-        payment_method=payment_method,
-        payment_status=Order.PaymentStatus.UNPAID,
-    )
-
-    # увеличиваем рейтинг ресторана
-    Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
-
-    # учитываем использование промокода
-    if promo:
-        PromoCode.objects.filter(pk=promo.pk).update(used_count=F("used_count") + 1)
-
-    # сохраняем позиции
-    lines = []
-    for i, r in enumerate(rows, start=1):
-        bi = r["branch_item"]
-        qty = r["qty"]
-        line_total = bi.price * qty
-
-        OrderItem.objects.create(
-            order=order,
-            item=bi.item,
-            qty=qty,
-            price_snapshot=bi.price,
-            line_total=line_total
+    # Весь блок — одна транзакция, чтобы on_commit (TG-уведомление)
+    # сработал уже после того как все OrderItem-ы сохранены.
+    with db_transaction.atomic():
+        order = Order.objects.create(
+            branch=branch,
+            type=order_type,
+            status=Order.Status.NEW,
+            customer_name=name,
+            customer_phone=phone,
+            delivery_address=address,
+            comment=comment,
+            total_amount=total,
+            payment_method=payment_method,
+            payment_status=Order.PaymentStatus.UNPAID,
         )
 
-        # имя блюда (RU fallback)
-        item_name = getattr(bi.item, "name_ru", None) or str(bi.item)
-        lines.append(f"{i}) {item_name} × {qty} = {line_total} сом")
+        # увеличиваем рейтинг ресторана
+        Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
 
-    # очищаем корзину
+        # учитываем использование промокода
+        if promo:
+            PromoCode.objects.filter(pk=promo.pk).update(used_count=F("used_count") + 1)
+
+        # сохраняем позиции
+        lines = []
+        for i, r in enumerate(rows, start=1):
+            bi = r["branch_item"]
+            qty = r["qty"]
+            line_total = bi.price * qty
+
+            OrderItem.objects.create(
+                order=order,
+                item=bi.item,
+                qty=qty,
+                price_snapshot=bi.price,
+                line_total=line_total
+            )
+
+            item_name = getattr(bi.item, "name_ru", None) or str(bi.item)
+            lines.append(f"{i}) {item_name} × {qty} = {line_total} сом")
+
+    # очищаем корзину (после коммита транзакции)
     clear_cart(request, branch.id)
 
     # готовим сообщение

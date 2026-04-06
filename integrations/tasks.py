@@ -1,6 +1,7 @@
 from celery import shared_task
 from django.conf import settings
 from django.utils import timezone
+from django.utils.html import escape
 from decimal import Decimal
 
 from integrations.models import TelegramRecipient
@@ -48,9 +49,9 @@ def _order_header(order: Order) -> str:
     return "🔔 НОВЫЙ ЗАКАЗ"
 
 
-def _order_text(order: Order) -> str:
+def _order_text(order: Order, title_override: str = None) -> str:
     lines = []
-    lines.append(_order_header(order))
+    lines.append(title_override if title_override else _order_header(order))
     lines.append(f"🧾 Заказ №{order.id}")
     lines.append(f"🏪 Филиал: {getattr(order.branch, 'name_ru', str(order.branch))}")
 
@@ -75,31 +76,40 @@ def _order_text(order: Order) -> str:
         else:
             lines.append(f"💳 Статус оплаты: {ps}")
 
-    # контакт/адрес
+    # контакт
+    if getattr(order, "customer_name", ""):
+        lines.append(f"👤 Имя: {order.customer_name}")
     if getattr(order, "customer_phone", ""):
         lines.append(f"📞 Телефон: {order.customer_phone}")
 
-    if order.type == Order.Type.DELIVERY and getattr(order, "delivery_address", ""):
-        lines.append(f"📍 Адрес: {order.delivery_address}")
+    # адрес/стол (всегда показываем — там может быть номер стола)
+    if getattr(order, "delivery_address", ""):
+        label = "📍 Адрес" if order.type == Order.Type.DELIVERY else "🪑 Стол/место"
+        lines.append(f"{label}: {order.delivery_address}")
 
     if getattr(order, "comment", ""):
         lines.append(f"📝 Комментарий: {order.comment}")
 
-    # позиции
-    lines.append("")
-    lines.append("🧾 Состав заказа:")
-    for it in order.items.select_related("item").all():
-        name = getattr(it.item, "name_ru", str(it.item))
-        qty = getattr(it, "qty", 1)
-        lt = getattr(it, "line_total", None)
-        if lt is None:
-            lines.append(f"• {name} × {qty}")
-        else:
-            lines.append(f"• {name} × {qty} — {_money(lt)}")
+    # ── СОСТАВ ЗАКАЗА ─────────────────────────────────────────────────────────
+    items = list(order.items.select_related("item").all())
+    if items:
+        lines.append("")
+        lines.append("📋 Состав заказа:")
+        for it in items:
+            name = getattr(it.item, "name_ru", None) or str(it.item)
+            qty = getattr(it, "qty", 1)
+            lt = getattr(it, "line_total", None)
+            if lt is not None:
+                lines.append(f"  • {name} × {qty}  —  {_money(lt)}")
+            else:
+                lines.append(f"  • {name} × {qty}")
+    else:
+        lines.append("")
+        lines.append("⚠️ Состав: нет позиций")
 
     if getattr(order, "total_amount", None) is not None:
         lines.append("")
-        lines.append(f"💰 Итого: {_money(order.total_amount)}")
+        lines.append(f"💰 ИТОГО: {_money(order.total_amount)}")
 
     created = timezone.localtime(order.created_at).strftime("%d.%m.%Y %H:%M")
     lines.append(f"⏰ {created}")

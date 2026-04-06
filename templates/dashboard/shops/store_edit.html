@@ -1,0 +1,49 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ store.name_ru }} — настройки{% endblock %}
+{% block nav_shops %}active{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">✏️ {{ store.name_ru }}</div>
+    <div class="db-breadcrumb">Основные настройки магазина</div>
+  </div>
+  <a href="{% url 'dashboard:shop_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Мои магазины</a>
+</div>
+
+<form method="post" enctype="multipart/form-data" style="max-width:600px">
+  {% csrf_token %}
+
+  <div class="db-form-card">
+    <div class="db-form-section-title">Основное</div>
+
+    <div class="db-form-group">
+      <label class="db-label">Название</label>
+      <input class="db-input" type="text" name="name_ru" value="{{ store.name_ru }}" required>
+    </div>
+
+    <div class="db-form-group">
+      <label class="db-label">Описание</label>
+      <textarea class="db-input" name="about_ru" rows="4" style="resize:vertical">{{ store.about_ru }}</textarea>
+    </div>
+
+    <div class="db-form-group">
+      <label class="db-label">Логотип</label>
+      {% if store.logo %}
+        <img src="{{ store.logo.url }}" style="width:72px;height:72px;border-radius:12px;object-fit:cover;margin-bottom:8px;display:block">
+      {% endif %}
+      <input class="db-input" type="file" name="logo" accept="image/*">
+    </div>
+
+    <div class="db-form-group">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+        <input type="checkbox" name="is_active" {% if store.is_active %}checked{% endif %}
+               style="width:16px;height:16px;accent-color:var(--accent)">
+        <span class="db-label" style="margin-bottom:0">Магазин активен (виден покупателям)</span>
+      </label>
+    </div>
+  </div>
+
+  <button type="submit" class="db-btn db-btn-primary">💾 Сохранить</button>
+</form>
+{% endblock %}

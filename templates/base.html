@@ -95,6 +95,55 @@
     }
     .wb-lang-btn:hover { background: var(--card2); color: var(--text); }
 
+    /* ── DROPDOWN ── */
+    .wb-dd { position: relative; }
+    .wb-dd-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      color: var(--muted); font-size: 13px; letter-spacing: .3px;
+      background: none; border: none; cursor: pointer;
+      font-family: 'Geologica', sans-serif; padding: 0; transition: color .2s;
+    }
+    .wb-dd-btn:hover { color: var(--text); }
+    .wb-dd-btn .arrow {
+      width: 16px; height: 16px; border-radius: 4px;
+      background: var(--bg); border: 1px solid var(--border);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 9px; transition: transform .2s;
+    }
+    .wb-dd.open .wb-dd-btn .arrow { transform: rotate(180deg); }
+
+    .wb-dd-menu {
+      position: absolute; top: calc(100% + 12px); left: 50%; transform: translateX(-50%);
+      width: 480px; background: white;
+      border: 1.5px solid var(--border); border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.12);
+      padding: 20px; display: none; z-index: 500;
+      animation: ddFadeIn .18s ease;
+    }
+    .wb-dd.open .wb-dd-menu { display: block; }
+    @keyframes ddFadeIn { from{opacity:0;transform:translateX(-50%) translateY(-6px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+
+    .wb-dd-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .wb-dd-col-title {
+      font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+      color: var(--muted); padding: 0 10px; margin-bottom: 6px;
+    }
+    .wb-dd-item {
+      display: flex; align-items: center; gap: 10px; padding: 10px 10px;
+      border-radius: 12px; text-decoration: none; color: var(--text);
+      font-size: 13px; transition: background .15s;
+    }
+    .wb-dd-item:hover { background: var(--bg); }
+    .wb-dd-item .dd-icon {
+      width: 34px; height: 34px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0; background: var(--bg);
+      border: 1px solid var(--border);
+    }
+    .wb-dd-item b { display: block; font-weight: 600; font-size: 13px; }
+    .wb-dd-item span { display: block; font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .wb-dd-divider { height: 1px; background: var(--border); margin: 8px 0; }
+
     /* ── MOBILE BURGER ── */
     .wb-burger {
       width: 40px; height: 40px; border-radius: 12px;
@@ -259,11 +308,65 @@
     <a class="wb-logo" href="{% url 'public_site:home' %}">Web<span>o</span>rdo</a>
 
     <ul class="wb-nav-links">
-      <li><a href="{% url 'public_site:home' %}#categories">Категории</a></li>
-      <li><a href="{% url 'shops:store_list' %}">Магазины</a></li>
-      <li><a href="{% url 'legal:legal_list' %}">Юристы</a></li>
-      <li><a href="{% url 'eco:eco_list' %}">Эко</a></li>
-      <li><a href="{% url 'public_site:home' %}#qr">QR-столы</a></li>
+
+      {# ── DROPDOWN: Категории ── #}
+      <li class="wb-dd" id="navDd">
+        <button class="wb-dd-btn" id="navDdBtn" type="button" aria-expanded="false">
+          Категории
+          <span class="arrow">▾</span>
+        </button>
+        <div class="wb-dd-menu" id="navDdMenu" role="menu">
+          <div class="wb-dd-cols">
+            {# Левая колонка — Бизнес #}
+            <div>
+              <div class="wb-dd-col-title">🏢 Бизнес</div>
+              <a class="wb-dd-item" href="{% url 'public_site:restaurants_list' %}">
+                <span class="dd-icon">🍽️</span>
+                <span><b>Рестораны</b><span>Меню, доставка, QR</span></span>
+              </a>
+              <a class="wb-dd-item" href="{% url 'shops:store_list' %}">
+                <span class="dd-icon">🛍️</span>
+                <span><b>Магазины</b><span>Товары и заказы</span></span>
+              </a>
+              <a class="wb-dd-item" href="{% url 'markets:market_list' %}">
+                <span class="dd-icon">🛒</span>
+                <span><b>Рынки</b><span>Базары и торговля</span></span>
+              </a>
+              <a class="wb-dd-item" href="{% url 'hotels:hotel_list' %}">
+                <span class="dd-icon">🏨</span>
+                <span><b>Отели</b><span>Бронирование номеров</span></span>
+              </a>
+              <a class="wb-dd-item" href="{% url 'pharmacy:pharmacy_list' %}">
+                <span class="dd-icon">🏥</span>
+                <span><b>Аптеки</b><span>Лекарства и здоровье</span></span>
+              </a>
+            </div>
+
+            {# Правая колонка — Услуги #}
+            <div>
+              <div class="wb-dd-col-title">⚡ Услуги</div>
+              <a class="wb-dd-item" href="{% url 'legal:legal_list' %}">
+                <span class="dd-icon" style="background:rgba(37,99,235,.07);border-color:rgba(37,99,235,.15)">⚖️</span>
+                <span><b>Юридические</b><span>Консультации, услуги</span></span>
+              </a>
+              <a class="wb-dd-item" href="{% url 'eco:eco_list' %}">
+                <span class="dd-icon" style="background:rgba(5,150,105,.07);border-color:rgba(5,150,105,.15)">♻️</span>
+                <span><b>Эко-проекты</b><span>Вывоз мусора, озеленение</span></span>
+              </a>
+              <a class="wb-dd-item" href="{% url 'public_site:home' %}#services">
+                <span class="dd-icon" style="background:rgba(124,58,237,.07);border-color:rgba(124,58,237,.15)">⚡</span>
+                <span><b>Все услуги</b><span>На главной странице</span></span>
+              </a>
+              <div class="wb-dd-divider"></div>
+              <a class="wb-dd-item" href="{% url 'public_site:about' %}">
+                <span class="dd-icon">ℹ️</span>
+                <span><b>О платформе</b><span>Webordo для бизнеса</span></span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </li>
+
       <li><a href="{% url 'public_site:about' %}">О нас</a></li>
       <li>
         <a class="wb-nav-cta" href="https://wa.me/996558212040" target="_blank" rel="noopener">
@@ -306,11 +409,25 @@
       </div>
 
       <a class="wb-drawer-link" href="{% url 'public_site:home' %}">🏠 Главная</a>
+
+      {# Бизнес-категории #}
+      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+                  color:var(--muted);padding:10px 4px 4px;">🏢 Бизнес</div>
+      <a class="wb-drawer-link" href="{% url 'public_site:restaurants_list' %}">🍽️ Рестораны</a>
       <a class="wb-drawer-link" href="{% url 'shops:store_list' %}">🛍️ Магазины</a>
-      <a class="wb-drawer-link" href="{% url 'legal:legal_list' %}">⚖️ Юристы</a>
-      <a class="wb-drawer-link" href="{% url 'eco:eco_list' %}" style="color:#16A34A;">🌿 Эко-проекты</a>
-      <a class="wb-drawer-link" href="{% url 'public_site:about' %}">ℹ️ О нас</a>
-      <a class="wb-drawer-link" href="https://wa.me/996558212040" target="_blank" rel="noopener" style="background:linear-gradient(135deg,#FF4D1C,#FF8A00);color:white;border-color:transparent;">
+      <a class="wb-drawer-link" href="{% url 'markets:market_list' %}">🛒 Рынки</a>
+      <a class="wb-drawer-link" href="{% url 'hotels:hotel_list' %}">🏨 Отели</a>
+      <a class="wb-drawer-link" href="{% url 'pharmacy:pharmacy_list' %}">🏥 Аптеки</a>
+
+      {# Услуги #}
+      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+                  color:var(--muted);padding:10px 4px 4px;">⚡ Услуги</div>
+      <a class="wb-drawer-link" href="{% url 'legal:legal_list' %}">⚖️ Юридические</a>
+      <a class="wb-drawer-link" href="{% url 'eco:eco_list' %}" style="color:#059669;">♻️ Эко-проекты</a>
+
+      <a class="wb-drawer-link" href="{% url 'public_site:about' %}" style="margin-top:4px;">ℹ️ О нас</a>
+      <a class="wb-drawer-link" href="https://wa.me/996558212040" target="_blank" rel="noopener"
+         style="background:linear-gradient(135deg,#FF4D1C,#FF8A00);color:white;border-color:transparent;margin-top:4px;">
         🚀 Подключить бизнес
       </a>
 
@@ -372,17 +489,31 @@
   {# ── SCRIPTS ── #}
   <script>
   (function(){
+    /* ── MOBILE DRAWER ── */
     const btn  = document.getElementById('burgerBtn');
     const draw = document.getElementById('drawer');
-    if(!btn || !draw) return;
+    if(btn && draw){
+      const open  = () => { draw.classList.add('open');  document.documentElement.style.overflow='hidden'; };
+      const close = () => { draw.classList.remove('open'); document.documentElement.style.overflow=''; };
+      btn.addEventListener('click', open);
+      draw.addEventListener('click', e => { if(e.target.closest('[data-close]')) close(); });
+      draw.querySelectorAll('a').forEach(a => a.addEventListener('click', close));
+      document.addEventListener('keydown', e => { if(e.key==='Escape') close(); });
+    }
 
-    const open  = () => { draw.classList.add('open');  document.documentElement.style.overflow='hidden'; };
-    const close = () => { draw.classList.remove('open'); document.documentElement.style.overflow=''; };
-
-    btn.addEventListener('click', open);
-    draw.addEventListener('click', e => { if(e.target.closest('[data-close]')) close(); });
-    draw.querySelectorAll('a').forEach(a => a.addEventListener('click', close));
-    document.addEventListener('keydown', e => { if(e.key==='Escape') close(); });
+    /* ── DROPDOWN ── */
+    const dd    = document.getElementById('navDd');
+    const ddBtn = document.getElementById('navDdBtn');
+    if(dd && ddBtn){
+      const toggle = () => {
+        const open = dd.classList.toggle('open');
+        ddBtn.setAttribute('aria-expanded', open);
+      };
+      const closeDd = () => { dd.classList.remove('open'); ddBtn.setAttribute('aria-expanded','false'); };
+      ddBtn.addEventListener('click', e => { e.stopPropagation(); toggle(); });
+      document.addEventListener('click', e => { if(!dd.contains(e.target)) closeDd(); });
+      document.addEventListener('keydown', e => { if(e.key==='Escape') closeDd(); });
+    }
   })();
 
   // Scroll reveal

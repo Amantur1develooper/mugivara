@@ -1,0 +1,192 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Товары — {{ branch.name_ru }}{% endblock %}
+{% block nav_shops %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .pt-table { width:100%; border-collapse:collapse; }
+  .pt-table th {
+    font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px;
+    color:var(--muted); text-align:left; padding:0 14px 10px; white-space:nowrap;
+  }
+  .pt-table td { padding:11px 14px; border-top:1px solid var(--border); vertical-align:middle; }
+  .pt-table tr:hover td { background:rgba(0,0,0,.015); }
+
+  .pt-photo { width:44px; height:44px; border-radius:10px; object-fit:cover; background:var(--bg); flex-shrink:0; }
+  .pt-photo-ph { width:44px; height:44px; border-radius:10px; background:var(--bg); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .pt-name { font-size:14px; font-weight:600; color:var(--text); }
+  .pt-cat  { font-size:11px; color:var(--muted); margin-top:2px; }
+
+  .pt-qty-input, .pt-price-input {
+    width:90px; padding:6px 10px; border-radius:8px;
+    border:1.5px solid var(--border); background:var(--bg);
+    font-size:13px; font-weight:600; color:var(--text);
+    font-family:inherit; text-align:right; outline:none; transition:border-color .2s;
+  }
+  .pt-qty-input:focus, .pt-price-input:focus { border-color:var(--accent); background:#fff; }
+  .pt-save-btn {
+    padding:5px 12px; border-radius:8px; border:none; cursor:pointer;
+    font-size:11px; font-weight:700; transition:all .15s;
+    background:var(--bg); border:1.5px solid var(--border); color:var(--text2);
+  }
+  .pt-save-btn:hover { background:rgba(255,77,28,.08); border-color:rgba(255,77,28,.3); color:var(--accent); }
+  .pt-save-btn.saved { background:rgba(0,184,150,.1); border-color:rgba(0,184,150,.3); color:var(--teal); }
+
+  .pt-cat-head {
+    display:flex; align-items:center; gap:10px;
+    padding:10px 14px; background:var(--bg);
+    border-top:1px solid var(--border); border-bottom:1px solid var(--border);
+  }
+  .pt-cat-name { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); }
+
+  .pt-unit { font-size:11px; color:var(--muted); }
+
+  .pt-stock-low  { color:#EF4444; font-weight:700; }
+  .pt-stock-ok   { color:var(--teal); }
+  .pt-stock-zero { color:var(--muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">📦 Товары и остатки</div>
+    <div class="db-breadcrumb">{{ store.name_ru }} — {{ branch.name_ru }}</div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <a href="{% url 'dashboard:shop_orders' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📋 Заказы</a>
+    <a href="{% url 'dashboard:shop_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
+  </div>
+</div>
+
+{% if stocks %}
+<div style="background:var(--card);border:1.5px solid var(--border);border-radius:18px;overflow:hidden">
+  <table class="pt-table">
+    <thead>
+      <tr>
+        <th style="padding-left:20px">Товар</th>
+        <th>Цена (сом)</th>
+        <th>Остаток</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% regroup stocks by product.category as cat_list %}
+      {% for cat in cat_list %}
+        <tr>
+          <td colspan="4" style="padding:0">
+            <div class="pt-cat-head">
+              <span class="pt-cat-name">
+                {% if cat.grouper %}{{ cat.grouper.name_ru }}{% else %}Без категории{% endif %}
+              </span>
+              <span style="font-size:11px;color:var(--muted)">({{ cat.list|length }} товаров)</span>
+            </div>
+          </td>
+        </tr>
+        {% for stock in cat.list %}
+        <tr id="row-{{ stock.id }}">
+          <td style="padding-left:20px">
+            <div style="display:flex;align-items:center;gap:12px">
+              {% if stock.product.photo %}
+                <img src="{{ stock.product.photo.url }}" class="pt-photo">
+              {% else %}
+                <div class="pt-photo-ph">📦</div>
+              {% endif %}
+              <div>
+                <div class="pt-name">{{ stock.product.name_ru }}</div>
+                <div class="pt-unit">{{ stock.product.get_unit_display }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input class="pt-price-input" type="number" min="0" step="10"
+                     value="{{ stock.product.price|floatformat:0 }}"
+                     id="price-{{ stock.id }}" data-stock="{{ stock.id }}">
+              <button class="pt-save-btn" id="price-btn-{{ stock.id }}"
+                      onclick="savePrice({{ stock.id }})">✓</button>
+            </div>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input class="pt-qty-input" type="number" min="0" step="1"
+                     value="{{ stock.qty|floatformat:0 }}"
+                     id="qty-{{ stock.id }}" data-stock="{{ stock.id }}"
+                     class="{% if stock.qty == 0 %}pt-stock-zero{% elif stock.qty < 3 %}pt-stock-low{% else %}pt-stock-ok{% endif %}">
+              <button class="pt-save-btn" id="qty-btn-{{ stock.id }}"
+                      onclick="saveQty({{ stock.id }})">✓</button>
+            </div>
+          </td>
+          <td>
+            <span id="status-{{ stock.id }}" style="font-size:12px;color:var(--muted)">
+              {% if stock.qty == 0 %}
+                <span style="color:#EF4444;font-weight:700">Нет</span>
+              {% elif stock.qty < 3 %}
+                <span style="color:#F97316;font-weight:700">Мало</span>
+              {% else %}
+                <span style="color:var(--teal);font-weight:600">В наличии</span>
+              {% endif %}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div style="text-align:center;padding:64px;background:var(--card);border:1.5px dashed var(--border);border-radius:18px">
+  <div style="font-size:48px;margin-bottom:12px">📦</div>
+  <div style="font-size:14px;color:var(--muted)">Товары не добавлены. Добавьте товары через панель администратора.</div>
+</div>
+{% endif %}
+
+<script>
+const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+
+async function saveQty(id) {
+  const qty = document.getElementById(`qty-${id}`).value;
+  const btn = document.getElementById(`qty-btn-${id}`);
+  const res = await fetch(`{% url 'dashboard:shop_stock_update' 0 %}`.replace('/0/', `/${id}/`), {
+    method: "POST",
+    headers: {"X-CSRFToken": CSRF, "Content-Type": "application/x-www-form-urlencoded"},
+    body: `qty=${qty}`
+  });
+  const data = await res.json();
+  if (data.ok) {
+    btn.textContent = "✓"; btn.classList.add("saved");
+    const st = document.getElementById(`status-${id}`);
+    const q = parseFloat(data.qty);
+    st.innerHTML = q === 0
+      ? '<span style="color:#EF4444;font-weight:700">Нет</span>'
+      : q < 3
+        ? '<span style="color:#F97316;font-weight:700">Мало</span>'
+        : '<span style="color:var(--teal);font-weight:600">В наличии</span>';
+    setTimeout(() => { btn.textContent = "✓"; btn.classList.remove("saved"); }, 1500);
+  }
+}
+
+async function savePrice(id) {
+  const price = document.getElementById(`price-${id}`).value;
+  const btn = document.getElementById(`price-btn-${id}`);
+  const res = await fetch(`{% url 'dashboard:shop_price_update' 0 %}`.replace('/0/', `/${id}/`), {
+    method: "POST",
+    headers: {"X-CSRFToken": CSRF, "Content-Type": "application/x-www-form-urlencoded"},
+    body: `price=${price}`
+  });
+  const data = await res.json();
+  if (data.ok) {
+    btn.classList.add("saved");
+    setTimeout(() => btn.classList.remove("saved"), 1500);
+  }
+}
+
+// Enter to save
+document.querySelectorAll(".pt-qty-input").forEach(inp => {
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") saveQty(inp.dataset.stock); });
+});
+document.querySelectorAll(".pt-price-input").forEach(inp => {
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") savePrice(inp.dataset.stock); });
+});
+</script>
+{% endblock %}

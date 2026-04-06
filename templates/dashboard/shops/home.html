@@ -1,0 +1,125 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Мои магазины{% endblock %}
+{% block nav_shops %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .sh-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+  .sh-card {
+    background:var(--card); border:1.5px solid var(--border); border-radius:18px;
+    padding:20px; display:flex; flex-direction:column; gap:14px;
+    box-shadow:0 2px 10px rgba(0,0,0,.04);
+  }
+  .sh-name { font-family:'Unbounded',sans-serif; font-weight:800; font-size:15px; color:var(--text); }
+  .sh-badge {
+    display:inline-flex; align-items:center; gap:5px; padding:4px 10px;
+    border-radius:100px; font-size:11px; font-weight:600;
+  }
+  .sh-badge-open  { background:rgba(0,184,150,.08); border:1px solid rgba(0,184,150,.2); color:var(--teal); }
+  .sh-badge-closed{ background:rgba(0,0,0,.05); border:1px solid var(--border); color:var(--muted); }
+  .sh-badge-new   { background:rgba(255,77,28,.08); border:1px solid rgba(255,77,28,.15); color:var(--accent); }
+  .sh-btns { display:flex; gap:8px; flex-wrap:wrap; }
+  .sh-btns a { flex:1; min-width:90px; text-align:center; padding:9px 10px; border-radius:10px; font-size:12px; font-weight:600; text-decoration:none; transition:background .15s; }
+  .btn-s  { background:var(--bg); color:var(--text2); border:1px solid var(--border); }
+  .btn-s:hover { background:rgba(255,77,28,.06); color:var(--accent); border-color:rgba(255,77,28,.2); }
+  .btn-p  { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; box-shadow:0 3px 10px rgba(255,77,28,.2); }
+  .btn-p:hover { box-shadow:0 6px 18px rgba(255,77,28,.35); }
+  .btn-orders { background:linear-gradient(135deg,#7C3AED,#5B21B6); color:#fff; box-shadow:0 3px 10px rgba(124,58,237,.2); position:relative; }
+  .btn-orders:hover { box-shadow:0 6px 18px rgba(124,58,237,.35); }
+  .btn-orders-badge {
+    position:absolute; top:-6px; right:-6px;
+    width:18px; height:18px; border-radius:50%;
+    background:var(--accent); color:#fff; font-size:10px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; border:2px solid var(--card);
+  }
+  .toggle-btn { padding:6px 14px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; border:1.5px solid; transition:all .15s; }
+  .toggle-open   { border-color:rgba(0,184,150,.3); background:rgba(0,184,150,.08); color:var(--teal); }
+  .toggle-open:hover { background:rgba(0,184,150,.15); }
+  .toggle-closed { border-color:rgba(0,0,0,.1); background:var(--bg); color:var(--muted); }
+  .toggle-closed:hover { background:rgba(0,0,0,.06); }
+
+  .sh-empty {
+    text-align:center; padding:64px 24px;
+    background:var(--card); border:1.5px dashed var(--border); border-radius:24px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">🏪 Мои магазины</div>
+    <div class="db-breadcrumb">Управление товарами, остатками и заказами</div>
+  </div>
+</div>
+
+{% if data %}
+  {% for item in data %}
+  <div style="margin-bottom:36px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:12px">
+        {% if item.store.logo %}
+          <img src="{{ item.store.logo.url }}" style="width:42px;height:42px;border-radius:10px;object-fit:cover">
+        {% else %}
+          <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#FF4D1C,#FF8A00);display:flex;align-items:center;justify-content:center;font-size:20px">🏪</div>
+        {% endif %}
+        <div>
+          <div class="sh-name">{{ item.store.name_ru }}</div>
+          {% if item.new_orders %}
+            <span class="sh-badge sh-badge-new">🔔 {{ item.new_orders }} новых заказов</span>
+          {% endif %}
+        </div>
+      </div>
+      <a href="{% url 'dashboard:shop_store_edit' item.store.id %}" class="db-btn db-btn-ghost db-btn-sm">✏️ Настройки магазина</a>
+    </div>
+
+    {% if item.branches %}
+    <div class="sh-grid">
+      {% for branch in item.branches %}
+      <div class="sh-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text)">{{ branch.name_ru }}</div>
+            {% if branch.address %}
+              <div style="font-size:12px;color:var(--muted);margin-top:3px">📍 {{ branch.address }}</div>
+            {% endif %}
+            {% if branch.delivery_enabled %}
+              <div style="font-size:11px;color:var(--teal);margin-top:4px;font-weight:600">🚚 Доставка включена</div>
+            {% endif %}
+          </div>
+          <form method="post" action="{% url 'dashboard:shop_branch_toggle' branch.id %}">
+            {% csrf_token %}
+            <button type="submit" class="toggle-btn {% if branch.is_active %}toggle-open{% else %}toggle-closed{% endif %}">
+              {% if branch.is_active %}Открыт{% else %}Закрыт{% endif %}
+            </button>
+          </form>
+        </div>
+
+        <div class="sh-btns">
+          <a href="{% url 'dashboard:shop_branch_edit' branch.id %}" class="btn-s">⚙️ Настройки</a>
+          <a href="{% url 'dashboard:shop_product_list' branch.id %}" class="btn-p">📦 Товары</a>
+        </div>
+        <div class="sh-btns">
+          <a href="{% url 'dashboard:shop_orders' branch.id %}" class="btn-orders" style="position:relative">
+            📋 Заказы
+            {% with cnt=branch.orders.filter.count %}{% endwith %}
+          </a>
+          <a href="{% url 'shops:branch_catalog' branch.id %}" target="_blank" class="btn-s">👁 Витрина</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <div style="color:var(--muted);font-size:13px;padding:12px 0">Нет активных филиалов</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+{% else %}
+<div class="sh-empty">
+  <div style="font-size:48px;margin-bottom:12px">🏪</div>
+  <div style="font-family:'Unbounded',sans-serif;font-size:16px;font-weight:800;color:var(--text);margin-bottom:8px">Магазины не подключены</div>
+  <div style="font-size:13px;color:var(--muted)">Обратитесь к администратору для добавления доступа</div>
+</div>
+{% endif %}
+{% endblock %}
