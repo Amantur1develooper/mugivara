@@ -17,6 +17,10 @@ media
 .idea/**/dictionaries
 .idea/**/shelf
 
+staticfiles/
+media/
+*.pyc
+__pycache__/
 # AWS User-specific
 .idea/**/aws.xml
 
