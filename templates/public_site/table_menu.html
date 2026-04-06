@@ -1,115 +1,512 @@
 {% extends "base.html" %}
 {% load i18n i18n_attrs %}
 
-{% block content %}
-<div class="max-w-6xl mx-auto px-4 py-6">
-  <div class="rounded-3xl bg-white ring-1 ring-stone-200 p-5 shadow">
-    <div class="flex items-start justify-between gap-4">
-      <div>
-        <div class="text-sm text-stone-500">{% trans "Заказ со стола" %}</div>
-        <h1 class="text-2xl font-extrabold">{{ place.title }}</h1>
-        <div class="mt-1 text-sm text-stone-600">{{ branch.name_ru }} · {{ branch.address }}</div>
-      </div>
+{% block title %}{{ branch.name_ru }} — Меню · Стол {{ place.title }}{% endblock %}
+{% block cta %}{% endblock %}
+{% block footer %}{% endblock %}
 
-      {% if place.photo %}
-        <img src="{{ place.photo.url }}" class="w-24 h-24 rounded-2xl object-cover ring-1 ring-stone-200" alt="" loading="lazy" decoding="async">
-      {% endif %}
-    </div>
-  </div>
-<!-- ✅ липкие категории -->
-<div class="sticky top-2 z-40 -mx-4 px-4">
-  <div class="rounded-3xl bg-white/90 backdrop-blur ring-1 ring-stone-200 shadow px-3 py-2">
-    <div class="flex gap-2 overflow-x-auto no-scrollbar">
-      {% for c in menu %}
-        <a href="#cat-{{ c.branch_category.id }}"
-           data-cat-link="{{ c.branch_category.id }}"
-           class="px-3 py-2 rounded-2xl text-sm font-semibold bg-stone-100 text-stone-800 whitespace-nowrap">
-          {% t c.branch_category.category "name" %}
-        </a>
-      {% endfor %}
-    </div>
-  </div>
-</div>
+{% block head_extra %}
+<style>
+  /* ── BASE ── */
+  body { background: var(--bg); }
+  .tm-wrap { max-width: 900px; margin: 0 auto; }
 
-  <section class="mt-6">
-    {% for c in menu %}
-      <div class="mb-8">
-        <div class="mb-8" id="cat-{{ c.branch_category.id }}" data-cat-section="{{ c.branch_category.id }}">
+  /* ── TOP BAR ── */
+  .tm-topbar {
+    position: sticky; top: 64px; z-index: 110;
+    background: rgba(255,255,255,.97); backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  }
+  .tm-topbar-inner {
+    max-width: 900px; margin: 0 auto;
+    padding: 10px 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .tm-place-info { flex: 1; min-width: 0; }
+  .tm-place-name {
+    font-family: 'Unbounded', sans-serif; font-weight: 800;
+    font-size: 14px; color: var(--text); letter-spacing: -.3px;
+  }
+  .tm-branch-name { font-size: 11px; color: var(--muted); margin-top: 1px; }
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {% for row in c.items %}
-            {% with bi=row.branch_item dish=row.branch_item.item %}
-            <div class="rounded-3xl bg-white ring-1 ring-stone-200 overflow-hidden">
-              {% if dish.photo %}
-                <img src="{{ dish.photo.url }}" class="w-full aspect-[4/3] object-cover" alt="" loading="lazy" decoding="async">
-              {% endif %}
-              <div class="p-3">
-                <div class="font-semibold">{% t dish "name" %}</div>
-                <div class="text-sm text-stone-500 mt-1">{{ bi.price }} {% trans "сом" %}</div>
+  /* ── CALL WAITER ── */
+  .tm-call-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 10px 18px; border-radius: 12px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+    color: white; font-family: 'Unbounded', sans-serif;
+    font-size: 12px; font-weight: 700; white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(245,158,11,.35);
+    transition: transform .15s, box-shadow .15s;
+  }
+  .tm-call-btn:hover { transform: translateY(-1px); box-shadow: 0 7px 20px rgba(245,158,11,.4); }
+  .tm-call-btn:active { transform: scale(.97); }
+  .tm-call-btn.called { background: linear-gradient(135deg, #10B981, #059669); box-shadow: 0 4px 14px rgba(16,185,129,.35); }
 
-                <form action="{% url 'table_add_to_cart' token bi.id %}" method="post"
-                      class="mt-3 flex items-center gap-2" data-add-to-cart>
-                  {% csrf_token %}
-                  <input type="number" name="qty" value="1" min="1"
-                         class="w-14 border border-stone-300 rounded-xl px-2 py-1 text-center">
-                  <button type="submit" class="flex-1 px-3 py-2 rounded-2xl bg-stone-900 text-white font-semibold">
-                    {% trans "В корзину" %}
-                  </button>
-                </form>
-              </div>
-            </div>
-            {% endwith %}
-          {% endfor %}
-        </div>
-      </div>
-    {% endfor %}
-  </section>
-</div>
+  /* ── CAT NAV ── */
+  .tm-cats {
+    max-width: 900px; margin: 0 auto;
+    padding: 8px 16px 10px;
+    display: flex; gap: 6px; overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tm-cats::-webkit-scrollbar { display: none; }
+  .tm-cat-pill {
+    flex-shrink: 0; padding: 7px 16px; border-radius: 100px;
+    font-size: 12px; font-weight: 600; text-decoration: none;
+    border: 1.5px solid var(--border); background: var(--bg);
+    color: var(--text2); transition: all .18s; white-space: nowrap;
+    cursor: pointer;
+  }
+  .tm-cat-pill:hover { border-color: var(--accent); color: var(--accent); }
+  .tm-cat-pill.active { background: var(--text); border-color: var(--text); color: #fff; }
 
-<!-- ✅ плавающая корзина -->
-<a href="{% url 'table_cart' token %}"
-   class="fixed bottom-5 right-5 z-50 rounded-full bg-stone-900 text-white shadow-lg px-4 py-3 flex items-center gap-2">
-  🍽️ <span data-cart-badge>{{ cart_qty }}</span>
-  <span class="hidden sm:inline"> сом</span>
-  {% comment %} <span class="hidden sm:inline">· {{ cart_total }} сом</span> {% endcomment %}
-</a>
+  /* ── CONTENT ── */
+  .tm-content { max-width: 900px; margin: 0 auto; padding: 20px 16px 140px; }
 
-
-<script>
-  function getCookie(name) {
-    const v = document.cookie.split('; ').find(row => row.startsWith(name + '='));
-    return v ? decodeURIComponent(v.split('=')[1]) : '';
+  /* ── CATEGORY SECTION ── */
+  .tm-cat-section { scroll-margin-top: 145px; margin-bottom: 40px; }
+  .tm-cat-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+  }
+  .tm-cat-title {
+    font-family: 'Unbounded', sans-serif; font-weight: 800;
+    font-size: 16px; letter-spacing: -.4px; color: var(--text); white-space: nowrap;
+  }
+  .tm-cat-line { flex: 1; height: 1px; background: var(--border); }
+  .tm-cat-count {
+    font-size: 11px; font-weight: 700; color: var(--accent);
+    background: rgba(255,77,28,.08); border: 1px solid rgba(255,77,28,.15);
+    padding: 2px 9px; border-radius: 100px;
   }
 
-  document.addEventListener('submit', async (e) => {
-    const form = e.target.closest('form[data-add-to-cart]');
-    if (!form) return;
-    e.preventDefault();
+  /* ── DISH GRID ── */
+  .tm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 14px;
+  }
+  @media (max-width: 480px) {
+    .tm-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  }
 
-    const btn = form.querySelector('button[type="submit"]');
-    btn && (btn.disabled = true);
+  /* ── DISH CARD ── */
+  .tm-dish {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 18px; overflow: hidden;
+    display: flex; flex-direction: column;
+    transition: transform .22s, box-shadow .22s;
+    box-shadow: 0 2px 10px rgba(0,0,0,.05);
+    position: relative;
+  }
+  .tm-dish:hover { transform: translateY(-4px); box-shadow: 0 14px 36px rgba(0,0,0,.1); }
 
-    try {
-      const resp = await fetch(form.action, {
-        method: 'POST',
-        body: new FormData(form),
-        headers: {'X-Requested-With':'XMLHttpRequest','X-CSRFToken': getCookie('csrftoken')}
-      });
-      const data = await resp.json();
-      if (data.ok) {
-        const badge = document.querySelector('[data-cart-badge]');
-        if (badge) badge.textContent = data.qty;
+  .tm-dish-photo { position: relative; height: 140px; background: var(--card2); overflow: hidden; }
+  .tm-dish-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s; }
+  .tm-dish:hover .tm-dish-photo img { transform: scale(1.06); }
+  .tm-dish-photo-empty {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(145deg, #FFF8F5, #FFE8D8);
+    font-size: 40px; opacity: .3;
+  }
+  .tm-dish-price-badge {
+    position: absolute; bottom: 8px; right: 8px;
+    padding: 4px 10px; border-radius: 100px;
+    font-family: 'Unbounded', sans-serif; font-size: 12px; font-weight: 800;
+    background: rgba(0,0,0,.55); backdrop-filter: blur(6px);
+    color: white; border: 1px solid rgba(255,255,255,.15);
+  }
 
-        const total = document.querySelector('[data-cart-total]');
-        if (total) total.textContent = data.total;
-      }
-    } finally {
-      btn && (btn.disabled = false);
+  .tm-dish-body { padding: 12px 12px 14px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .tm-dish-name {
+    font-family: 'Unbounded', sans-serif; font-weight: 700;
+    font-size: 12px; letter-spacing: -.2px; color: var(--text); line-height: 1.3;
+  }
+  .tm-dish-desc { font-size: 11px; color: var(--muted); line-height: 1.5;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+
+  /* ── ADD CONTROLS ── */
+  .tm-dish-footer { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  .tm-dish-price { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 14px; color: var(--text); }
+
+  .tm-add-btn {
+    width: 36px; height: 36px; border-radius: 12px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white; font-size: 20px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px var(--glow); transition: transform .18s, box-shadow .18s;
+    flex-shrink: 0;
+  }
+  .tm-add-btn:hover { transform: scale(1.1); box-shadow: 0 6px 18px var(--glow); }
+  .tm-add-btn:active { transform: scale(.93); }
+  .tm-add-btn.loading { opacity: .6; pointer-events: none; }
+
+  /* qty row — показывается когда товар в корзине */
+  .tm-qty-row {
+    display: none; align-items: center; gap: 0;
+    border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden;
+    background: var(--bg);
+  }
+  .tm-qty-row.visible { display: flex; }
+  .tm-qty-btn {
+    width: 32px; height: 36px; border: none; background: transparent;
+    cursor: pointer; color: var(--text); font-size: 16px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; transition: background .12s;
+  }
+  .tm-qty-btn:hover { background: var(--card2); }
+  .tm-qty-num {
+    min-width: 24px; text-align: center;
+    font-family: 'Unbounded', sans-serif; font-size: 12px; font-weight: 800; color: var(--text);
+  }
+
+  /* ── FLOATING CART FAB ── */
+  .tm-fab {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    z-index: 9000;
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 22px; border-radius: 18px;
+    background: linear-gradient(135deg, #0D1117, #1c2535);
+    border: 1px solid rgba(255,255,255,.12); color: white;
+    text-decoration: none; min-width: 260px; max-width: min(92vw, 460px);
+    box-shadow: 0 16px 44px rgba(0,0,0,.3);
+    transition: transform .2s, opacity .2s;
+  }
+  .tm-fab.hide { opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(16px); }
+  .tm-fab-icon {
+    width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0;
+    background: rgba(255,255,255,.1); display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .tm-fab-info { flex: 1; min-width: 0; }
+  .tm-fab-label { font-size: 10px; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .5px; }
+  .tm-fab-total { font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 800; color: white; }
+  .tm-fab-badge {
+    padding: 6px 13px; border-radius: 100px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 800; color: white;
+    box-shadow: 0 3px 10px var(--glow);
+  }
+
+  /* ── TOAST ── */
+  .tm-toast-wrap { position: fixed; top: 80px; right: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+  .tm-toast {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 16px; border-radius: 12px;
+    background: rgba(13,17,23,.95); color: white; font-size: 13px; font-weight: 600;
+    border: 1px solid rgba(255,255,255,.1);
+    box-shadow: 0 8px 28px rgba(0,0,0,.25);
+    opacity: 0; transform: translateX(12px); transition: all .2s;
+    max-width: 260px;
+  }
+  .tm-toast.show { opacity: 1; transform: translateX(0); }
+
+  /* ── WAITER MODAL ── */
+  .tm-modal-bg {
+    position: fixed; inset: 0; z-index: 10000;
+    background: rgba(0,0,0,.5); backdrop-filter: blur(4px);
+    display: flex; align-items: flex-end; justify-content: center; padding: 0;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .tm-modal-bg.open { opacity: 1; pointer-events: auto; }
+  .tm-modal {
+    background: var(--card); border-radius: 24px 24px 0 0;
+    padding: 24px 20px 36px; width: 100%; max-width: 480px;
+    transform: translateY(100%); transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+    box-shadow: 0 -20px 60px rgba(0,0,0,.2);
+  }
+  .tm-modal-bg.open .tm-modal { transform: translateY(0); }
+  .tm-modal-handle {
+    width: 36px; height: 4px; border-radius: 2px;
+    background: var(--border); margin: 0 auto 20px;
+  }
+  .tm-modal-title { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 18px; color: var(--text); margin-bottom: 8px; }
+  .tm-modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+  .tm-modal-note {
+    width: 100%; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 12px;
+    font-size: 14px; font-family: inherit; color: var(--text); background: var(--bg);
+    resize: none; outline: none; margin-bottom: 14px; transition: border-color .2s;
+  }
+  .tm-modal-note:focus { border-color: #F59E0B; }
+  .tm-modal-send {
+    width: 100%; padding: 14px; border-radius: 14px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+    color: white; font-family: 'Unbounded', sans-serif; font-size: 14px; font-weight: 700;
+    box-shadow: 0 6px 20px rgba(245,158,11,.35); transition: transform .15s;
+  }
+  .tm-modal-send:hover { transform: translateY(-1px); }
+  .tm-modal-cancel {
+    width: 100%; padding: 12px; border-radius: 14px; border: 1.5px solid var(--border);
+    background: var(--bg); color: var(--text2); font-size: 14px; font-weight: 600;
+    cursor: pointer; margin-top: 8px; font-family: inherit;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tm-toast-wrap" id="toastWrap"></div>
+
+<!-- ── WAITER MODAL ── -->
+<div class="tm-modal-bg" id="waiterModal">
+  <div class="tm-modal">
+    <div class="tm-modal-handle"></div>
+    <div class="tm-modal-title">🔔 Позвать официанта</div>
+    <div class="tm-modal-sub">Хотите что-то добавить или есть вопрос? Официант придёт к столу {{ place.title }}.</div>
+    <textarea class="tm-modal-note" id="waiterNote" rows="3" placeholder="Примечание (необязательно)..."></textarea>
+    <button class="tm-modal-send" id="waiterSendBtn" type="button">🔔 Вызвать официанта</button>
+    <button class="tm-modal-cancel" id="waiterCancelBtn" type="button">Отмена</button>
+  </div>
+</div>
+
+<!-- ── STICKY TOP BAR ── -->
+<div class="tm-topbar">
+  <div class="tm-topbar-inner">
+    <div class="tm-place-info">
+      <div class="tm-place-name">🪑 {{ place.title }}</div>
+      <div class="tm-branch-name">{{ branch.name_ru }}{% if branch.address %} · {{ branch.address }}{% endif %}</div>
+    </div>
+    <button class="tm-call-btn" id="callWaiterBtn" type="button">
+      🔔 Официант
+    </button>
+  </div>
+
+  <!-- Category pills -->
+  <div class="tm-cats" id="catsBar">
+    {% for c in menu %}
+      {% if c.items %}
+      <button class="tm-cat-pill{% if forloop.first %} active{% endif %}"
+              data-cat="{{ c.branch_category.id }}"
+              type="button">
+        {% t c.branch_category.category "name" %}
+      </button>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ── CONTENT ── -->
+<div class="tm-content" id="menuContent">
+  {% for c in menu %}
+    {% if c.items %}
+    <div class="tm-cat-section" id="cat-{{ c.branch_category.id }}">
+      <div class="tm-cat-header">
+        <div class="tm-cat-title">{% t c.branch_category.category "name" %}</div>
+        <div class="tm-cat-line"></div>
+        <div class="tm-cat-count">{{ c.items|length }}</div>
+      </div>
+
+      <div class="tm-grid">
+        {% for row in c.items %}
+        {% with bi=row.branch_item dish=row.branch_item.item %}
+        <div class="tm-dish" data-bi="{{ bi.id }}">
+          <div class="tm-dish-photo">
+            {% if dish.photo %}
+              <img src="{{ dish.photo.url }}" alt="{% t dish 'name' %}" loading="lazy">
+            {% else %}
+              <div class="tm-dish-photo-empty">🍽️</div>
+            {% endif %}
+            <div class="tm-dish-price-badge">{{ bi.price|floatformat:0 }} с</div>
+          </div>
+          <div class="tm-dish-body">
+            <div class="tm-dish-name">{% t dish "name" %}</div>
+            {% t dish "description" as desc %}
+            {% if desc %}<div class="tm-dish-desc">{{ desc }}</div>{% endif %}
+            <div class="tm-dish-footer">
+              <div class="tm-dish-price">{{ bi.price|floatformat:0 }} сом</div>
+              <div class="tm-qty-row" id="qty-row-{{ bi.id }}">
+                <button class="tm-qty-btn" data-action="dec" data-bi="{{ bi.id }}" type="button">−</button>
+                <span class="tm-qty-num" id="qty-num-{{ bi.id }}">0</span>
+                <button class="tm-qty-btn" data-action="inc" data-bi="{{ bi.id }}" type="button">+</button>
+              </div>
+              <button class="tm-add-btn" id="add-{{ bi.id }}"
+                      data-add="{{ bi.id }}" type="button" title="Добавить">+</button>
+            </div>
+          </div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  {% endfor %}
+</div>
+
+<!-- ── FLOATING CART FAB ── -->
+<a href="{% url 'public_site:table_cart' token %}" class="tm-fab hide" id="cartFab">
+  <div class="tm-fab-icon">🧺</div>
+  <div class="tm-fab-info">
+    <div class="tm-fab-label">Ваш заказ</div>
+    <div class="tm-fab-total" id="fabTotal">{{ cart_total }} сом</div>
+  </div>
+  <div class="tm-fab-badge" id="fabQty">{{ cart_qty }}</div>
+</a>
+
+<script>
+const TOKEN = "{{ token }}";
+const CSRF  = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+const ADD_URL    = "{% url 'public_site:table_add_to_cart' token 0 %}".replace("/0/", "/{id}/");
+const UPDATE_URL = "{% url 'public_site:table_cart_update' token %}";
+const WAITER_URL = "{% url 'public_site:table_call_waiter' token %}";
+
+/* ── CART STATE ── */
+let cartQty   = {{ cart_qty }};
+let cartTotal = {{ cart_total }};
+
+function post(url, body) {
+  return fetch(url, {
+    method: "POST", body,
+    headers: { "X-CSRFToken": CSRF, "X-Requested-With": "XMLHttpRequest" }
+  }).then(r => r.json());
+}
+
+/* ── TOAST ── */
+function toast(text, color = "var(--teal)") {
+  const wrap = document.getElementById("toastWrap");
+  const el = document.createElement("div");
+  el.className = "tm-toast";
+  el.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></span>${text}`;
+  wrap.appendChild(el);
+  requestAnimationFrame(() => { el.classList.add("show"); });
+  setTimeout(() => {
+    el.classList.remove("show");
+    setTimeout(() => el.remove(), 300);
+  }, 2200);
+}
+
+/* ── UPDATE FAB ── */
+function updateFab(qty, total) {
+  cartQty = qty; cartTotal = total;
+  const fab = document.getElementById("cartFab");
+  document.getElementById("fabQty").textContent   = qty;
+  document.getElementById("fabTotal").textContent = total + " сом";
+  fab.classList.toggle("hide", qty === 0);
+  if (qty > 0) document.getElementById("fabQty").animate([{transform:"scale(1)"},{transform:"scale(1.3)"},{transform:"scale(1)"}], {duration:220});
+}
+
+/* ── UPDATE CARD CONTROLS ── */
+function updateCard(biId, itemQty) {
+  const qtyRow  = document.getElementById(`qty-row-${biId}`);
+  const qtyNum  = document.getElementById(`qty-num-${biId}`);
+  const addBtn  = document.getElementById(`add-${biId}`);
+  if (!qtyRow || !qtyNum || !addBtn) return;
+
+  if (itemQty > 0) {
+    qtyNum.textContent = itemQty;
+    qtyRow.classList.add("visible");
+    addBtn.style.display = "none";
+  } else {
+    qtyRow.classList.remove("visible");
+    addBtn.style.display = "";
+  }
+}
+
+/* ── ADD TO CART ── */
+document.addEventListener("click", async e => {
+  const btn = e.target.closest("[data-add]");
+  if (!btn) return;
+  const biId = btn.dataset.add;
+  btn.classList.add("loading");
+
+  try {
+    const fd = new FormData();
+    fd.append("qty", "1");
+    const data = await post(ADD_URL.replace("{id}", biId), fd);
+    if (!data.ok) return;
+    updateFab(data.qty, data.total.toFixed ? Math.round(data.total) : data.total);
+    updateCard(biId, 1);
+    toast("✓ Добавлено в заказ");
+  } catch(err) {
+    toast("Ошибка, попробуйте ещё", "#EF4444");
+  } finally {
+    btn.classList.remove("loading");
+  }
+});
+
+/* ── QTY CONTROLS ── */
+document.addEventListener("click", async e => {
+  const btn = e.target.closest("[data-action]");
+  if (!btn || !btn.dataset.bi) return;
+  const biId = btn.dataset.bi;
+  const action = btn.dataset.action;
+  btn.disabled = true;
+
+  try {
+    const fd = new FormData();
+    fd.append("branch_item_id", biId);
+    fd.append("action", action);
+    const data = await post(UPDATE_URL, fd);
+    if (!data.ok) return;
+    updateFab(data.qty, Math.round(parseFloat(data.total)));
+    updateCard(biId, data.item_qty);
+  } catch(err) {
+    toast("Ошибка", "#EF4444");
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* ── CATEGORY PILLS ── */
+document.querySelectorAll("[data-cat]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const sec = document.getElementById("cat-" + btn.dataset.cat);
+    if (!sec) return;
+    const topOffset = document.querySelector(".tm-topbar").offsetHeight + 64 + 8;
+    const y = sec.getBoundingClientRect().top + window.scrollY - topOffset;
+    window.scrollTo({ top: y, behavior: "smooth" });
+  });
+});
+
+/* Active pill on scroll */
+const catSections = document.querySelectorAll(".tm-cat-section[id]");
+const catPills    = document.querySelectorAll("[data-cat]");
+const catObs = new IntersectionObserver(entries => {
+  entries.forEach(en => {
+    if (en.isIntersecting) {
+      const id = en.target.id.replace("cat-", "");
+      catPills.forEach(p => p.classList.toggle("active", p.dataset.cat === id));
+      const active = document.querySelector(`[data-cat="${id}"]`);
+      if (active) active.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
     }
-  }, true);
+  });
+}, { rootMargin: "-20% 0px -70% 0px" });
+catSections.forEach(s => catObs.observe(s));
+
+/* ── FAB initial state ── */
+updateFab({{ cart_qty }}, {{ cart_total }});
+
+/* ── CALL WAITER ── */
+const modal       = document.getElementById("waiterModal");
+const callBtn     = document.getElementById("callWaiterBtn");
+const waiterSend  = document.getElementById("waiterSendBtn");
+const waiterCancel= document.getElementById("waiterCancelBtn");
+const waiterNote  = document.getElementById("waiterNote");
+
+callBtn.addEventListener("click", () => modal.classList.add("open"));
+waiterCancel.addEventListener("click", () => modal.classList.remove("open"));
+modal.addEventListener("click", e => { if (e.target === modal) modal.classList.remove("open"); });
+
+waiterSend.addEventListener("click", async () => {
+  waiterSend.disabled = true;
+  waiterSend.textContent = "Вызываю...";
+  try {
+    const fd = new FormData();
+    fd.append("note", waiterNote.value || "");
+    const data = await post(WAITER_URL, fd);
+    if (data.ok) {
+      modal.classList.remove("open");
+      waiterNote.value = "";
+      callBtn.classList.add("called");
+      callBtn.textContent = "✅ Вызван";
+      toast("✅ Официант уже идёт!", "var(--teal)");
+      setTimeout(() => { callBtn.classList.remove("called"); callBtn.textContent = "🔔 Официант"; }, 15000);
+    }
+  } catch {
+    toast("Ошибка. Попробуйте ещё раз.", "#EF4444");
+  } finally {
+    waiterSend.disabled = false;
+    waiterSend.textContent = "🔔 Вызвать официанта";
+  }
+});
 </script>
 {% endblock %}
-{% block footer %}
-     <a href="{% url 'public_site:home' %}">Разработка Amantur agency
-</a>
-{% endblock footer %}
