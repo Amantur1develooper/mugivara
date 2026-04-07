@@ -13,6 +13,10 @@ class LegalOrg(TimeStampedModel):
                                      help_text="Пример: Пн–Пт: 09:00–18:00")
     map_url       = models.URLField("Ссылка на карту", blank=True, default="")
     logo          = models.ImageField("Логотип", upload_to="legal/logos/", blank=True, null=True)
+    tg_chat_id    = models.CharField("TG Chat ID", max_length=50, blank=True, default="",
+                                     help_text="ID чата/группы Telegram куда слать заявки. Пример: -1001234567890")
+    tg_thread_id  = models.PositiveIntegerField("TG Thread ID (топик)", null=True, blank=True,
+                                                help_text="ID топика если группа с темами")
     is_active     = models.BooleanField("Активна", default=True)
     sort_order    = models.PositiveSmallIntegerField("Порядок", default=0)
 

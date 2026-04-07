@@ -20,4 +20,6 @@ class LegalOrgAdmin(admin.ModelAdmin):
         (None, {"fields": ("name", "slug", "is_active", "sort_order")}),
         ("Контакты", {"fields": ("address", "phone", "working_hours", "map_url")}),
         ("Описание и медиа", {"fields": ("description", "logo")}),
+        ("Telegram уведомления", {"fields": ("tg_chat_id", "tg_thread_id"),
+                                  "description": "Заявки от клиентов будут дублироваться в указанный чат Telegram"}),
     )
