@@ -375,7 +375,7 @@ def branch_menu(request, branch_id: int):
         queryset=BranchCategoryItem.objects
             .select_related("branch_item__item")
             .filter(branch_item__is_available=True)
-            .order_by("sort_order", "id"),
+            .order_by("sort_order", "-branch_item__item__order_count", "id"),
         to_attr="prefetched_items",
     )
     categories = list(

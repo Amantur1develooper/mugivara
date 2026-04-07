@@ -539,3 +539,106 @@ def analytics(request):
         "grand_period": grand_period,
         "grand_all": grand_all,
     })
+
+
+# ── ORDERS ANALYTICS ─────────────────────────────────────────────────────────
+
+@login_required(login_url="dashboard:login")
+def orders_analytics(request):
+    from orders.models import Order, OrderItem
+    from django.db.models import Sum, Count
+    from django.utils import timezone
+    from datetime import timedelta, date
+
+    user     = request.user
+    is_super = user.is_superuser
+
+    # ── фильтры ──────────────────────────────────────────────────────────────
+    period = request.GET.get("period", "30")
+    try:
+        days = int(period)
+    except ValueError:
+        days = 30
+    days = max(1, min(days, 365))
+
+    now   = timezone.now()
+    since = now - timedelta(days=days)
+
+    # ── доступные рестораны ───────────────────────────────────────────────────
+    if is_super:
+        restaurants = Restaurant.objects.filter(branches__orders__isnull=False).distinct().order_by("name_ru")
+        restaurant_id = request.GET.get("restaurant")
+        if restaurant_id and restaurant_id.isdigit():
+            order_qs = Order.objects.filter(branch__restaurant_id=int(restaurant_id))
+        else:
+            order_qs = Order.objects.all()
+            restaurant_id = None
+    else:
+        my_ids = list(Membership.objects.filter(user=user).values_list("restaurant_id", flat=True))
+        restaurants = Restaurant.objects.filter(id__in=my_ids).order_by("name_ru")
+        order_qs    = Order.objects.filter(branch__restaurant_id__in=my_ids)
+        restaurant_id = None
+
+    # ── применяем фильтр по периоду ───────────────────────────────────────────
+    order_qs_period = order_qs.filter(created_at__gte=since)
+
+    # ── KPI ──────────────────────────────────────────────────────────────────
+    total_orders  = order_qs_period.count()
+    total_revenue = order_qs_period.aggregate(s=Sum("total_amount"))["s"] or 0
+    total_items   = (
+        OrderItem.objects
+        .filter(order__in=order_qs_period)
+        .aggregate(s=Sum("qty"))["s"] or 0
+    )
+
+    # ── топ блюд за период ────────────────────────────────────────────────────
+    top_items = (
+        OrderItem.objects
+        .filter(order__in=order_qs_period)
+        .values("item__name_ru")
+        .annotate(qty_total=Sum("qty"), order_count=Count("order", distinct=True))
+        .order_by("-qty_total")[:30]
+    )
+
+    # ── динамика по дням ──────────────────────────────────────────────────────
+    chart_days  = min(days, 60)
+    chart_since = now - timedelta(days=chart_days)
+    daily_qs = (
+        order_qs
+        .filter(created_at__gte=chart_since)
+        .extra(select={"day": "DATE(created_at)"})
+        .values("day")
+        .annotate(cnt=Count("id"), revenue=Sum("total_amount"))
+        .order_by("day")
+    )
+    chart_labels  = [str(r["day"]) for r in daily_qs]
+    chart_orders  = [r["cnt"] for r in daily_qs]
+    chart_revenue = [float(r["revenue"] or 0) for r in daily_qs]
+
+    # ── список всех заказов (пагинация) ───────────────────────────────────────
+    from django.core.paginator import Paginator
+
+    orders_list = (
+        order_qs_period
+        .select_related("branch", "branch__restaurant")
+        .prefetch_related("items__item")
+        .order_by("-created_at")
+    )
+    paginator = Paginator(orders_list, 30)
+    page_num  = request.GET.get("page", 1)
+    page_obj  = paginator.get_page(page_num)
+
+    return render(request, "dashboard/orders.html", {
+        "period":        days,
+        "is_super":      is_super,
+        "restaurants":   restaurants,
+        "restaurant_id": restaurant_id,
+        "total_orders":  total_orders,
+        "total_revenue": total_revenue,
+        "total_items":   total_items,
+        "top_items":     list(top_items),
+        "chart_labels":  chart_labels,
+        "chart_orders":  chart_orders,
+        "chart_revenue": chart_revenue,
+        "page_obj":      page_obj,
+    })

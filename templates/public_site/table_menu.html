@@ -110,6 +110,11 @@
     background: linear-gradient(145deg, #FFF8F5, #FFE8D8);
     font-size: 40px; opacity: .3;
   }
+  .tm-hot-badge {
+    position: absolute; top: 8px; left: 8px;
+    padding: 3px 9px; border-radius: 100px; font-size: 10px; font-weight: 700;
+    background: rgba(255,77,28,.88); color: white; backdrop-filter: blur(4px);
+  }
   .tm-dish-price-badge {
     position: absolute; bottom: 8px; right: 8px;
     padding: 4px 10px; border-radius: 100px;
@@ -306,6 +311,7 @@
             {% else %}
               <div class="tm-dish-photo-empty">🍽️</div>
             {% endif %}
+            {% if dish.order_count >= 10 %}<div class="tm-hot-badge">🔥 {{ dish.order_count }}</div>{% endif %}
             <div class="tm-dish-price-badge">{{ bi.price|floatformat:0 }} с</div>
           </div>
           <div class="tm-dish-body">

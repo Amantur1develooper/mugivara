@@ -26,6 +26,7 @@ urlpatterns = [
     path("promo/<int:promo_id>/delete/",      views.promo_delete, name="promo_delete"),
 
     path("analytics/", views.analytics, name="analytics"),
+    path("orders/",    views.orders_analytics, name="orders"),
 
     # ── SHOPS ───────────────────────────────────────────────────────────────
     path("shops/",                                          sv.shop_home,          name="shop_home"),

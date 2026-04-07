@@ -167,6 +167,13 @@
 
       <div class="item-name">
         {{ bi.item.name_ru }}
+        {% if bi.item.order_count >= 1 %}
+        <span style="margin-left:6px;display:inline-flex;align-items:center;gap:3px;
+                     padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700;
+                     background:rgba(255,77,28,.1);color:var(--accent)">
+          🔥 {{ bi.item.order_count }}
+        </span>
+        {% endif %}
         {% if bi.item.description_ru %}
         <div class="item-name-sub">{{ bi.item.description_ru|truncatechars:60 }}</div>
         {% endif %}

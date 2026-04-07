@@ -62,8 +62,12 @@ class MenuSetAdmin(admin.ModelAdmin):
 
 @admin.register(Item)
 class ItemAdmin(admin.ModelAdmin):
+    list_display  = ("id", "name_ru", "restaurant", "order_count", "base_price")
+    list_filter   = ("restaurant",)
+    ordering      = ("-order_count",)
     search_fields = ("name_ru", "name_ky", "name_en")
-    inlines = (ItemCategoryInline,) 
+    readonly_fields = ("order_count",)
+    inlines = (ItemCategoryInline,)
     
     def get_search_results(self, request, queryset, search_term):
         qs, use_distinct = super().get_search_results(request, queryset, search_term)
