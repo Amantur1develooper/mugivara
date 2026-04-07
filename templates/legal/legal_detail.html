@@ -75,15 +75,19 @@
     font-size: 16px; color: var(--text); margin-bottom: 16px; letter-spacing: -0.3px;
   }
 
-  .svc-list { display: flex; flex-direction: column; gap: 12px; }
+  .svc-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
   .svc-card {
     background: var(--card); border: 1.5px solid var(--border); border-radius: 18px;
-    padding: 20px 22px;
-    display: flex; align-items: center; gap: 16px;
+    overflow: hidden;
     transition: border-color 0.2s, box-shadow 0.2s;
   }
   .svc-card:hover { border-color: rgba(37,99,235,0.3); box-shadow: 0 6px 20px rgba(37,99,235,0.08); }
 
+  .svc-photo {
+    width: 100%; aspect-ratio: 16/9; object-fit: cover;
+    display: block; background: #f0f4ff;
+  }
+  .svc-body { padding: 16px 18px; display: flex; align-items: flex-start; gap: 14px; }
   .svc-info { flex: 1; min-width: 0; }
   .svc-name { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
   .svc-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
@@ -184,7 +188,8 @@
   @media (max-width: 600px) {
     .ld-org-card { flex-direction: column; }
     .ld-page { padding: 20px 16px 60px; }
-    .svc-card { flex-direction: column; align-items: flex-start; }
+    .svc-list { grid-template-columns: 1fr; }
+    .svc-body { flex-direction: column; }
     .svc-right { text-align: left; }
     .svc-order-btn { width: 100%; justify-content: center; }
     .modal-box { padding: 24px 20px; }
@@ -261,6 +266,10 @@
   <div class="svc-list">
     {% for svc in services %}
     <div class="svc-card">
+      {% if svc.photo %}
+      <img src="{{ svc.photo.url }}" class="svc-photo" alt="{{ svc.name }}">
+      {% endif %}
+      <div class="svc-body">
       <div class="svc-info">
         <div class="svc-name">{{ svc.name }}</div>
         {% if svc.description %}
@@ -283,6 +292,7 @@
           ✉️ Обратиться
         </button>
       </div>
+      </div>{# /svc-body #}
     </div>
     {% endfor %}
   </div>

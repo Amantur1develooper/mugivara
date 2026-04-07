@@ -1,0 +1,62 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Юр. организации{% endblock %}
+{% block nav_legal %}active{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">⚖️ Юр. организации</div>
+    <div class="db-breadcrumb">Личный кабинет юридических организаций</div>
+  </div>
+</div>
+
+{% if messages %}
+<div class="db-messages">
+  {% for m in messages %}
+  <div class="db-msg {{ m.tags }}">{{ m }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if not orgs %}
+<div class="db-card" style="text-align:center;padding:60px 24px;color:var(--muted)">
+  <div style="font-size:48px;margin-bottom:16px">⚖️</div>
+  <div style="font-size:16px;font-weight:600;color:var(--text2)">Нет доступных организаций</div>
+  <div style="font-size:13px;margin-top:8px">Обратитесь к администратору чтобы получить доступ</div>
+</div>
+{% endif %}
+
+<div style="display:flex;flex-direction:column;gap:16px">
+{% for org in orgs %}
+<div class="db-card" style="padding:0;overflow:hidden">
+  <div style="display:flex;align-items:center;gap:16px;padding:20px 24px;border-bottom:1px solid var(--border)">
+    <div style="width:52px;height:52px;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#EFF6FF,#DBEAFE);
+                display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">
+      {% if org.logo %}<img src="{{ org.logo.url }}" style="width:100%;height:100%;object-fit:cover">
+      {% else %}⚖️{% endif %}
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:15px;color:var(--text)">{{ org.name }}</div>
+      {% if org.phone %}<div style="font-size:13px;color:var(--muted);margin-top:3px">📞 {{ org.phone }}</div>{% endif %}
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a href="{% url 'dashboard:legal_org_edit' org.id %}" class="db-btn db-btn-ghost db-btn-sm">✏️ Инфо</a>
+      <a href="{% url 'dashboard:legal_services' org.id %}" class="db-btn db-btn-primary db-btn-sm">📋 Услуги</a>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:24px;padding:14px 24px;background:var(--bg)">
+    <div style="font-size:13px;color:var(--muted)">
+      <span style="font-weight:700;color:var(--text2)">{{ org.services.count }}</span> услуг
+    </div>
+    {% if org.address %}
+    <div style="font-size:13px;color:var(--muted)">📍 {{ org.address }}</div>
+    {% endif %}
+    {% if org.working_hours %}
+    <div style="font-size:13px;color:var(--muted)">🕐 {{ org.working_hours }}</div>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+</div>
+{% endblock %}

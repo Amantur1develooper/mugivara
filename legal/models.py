@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 import re
 from core.models import TimeStampedModel
@@ -43,6 +44,7 @@ class LegalService(TimeStampedModel):
                                     verbose_name="Организация")
     name        = models.CharField("Название услуги", max_length=300)
     description = models.TextField("Описание услуги", blank=True, default="")
+    photo       = models.ImageField("Фото услуги / юриста", upload_to="legal/services/", blank=True, null=True)
     price       = models.DecimalField("Цена (сом)", max_digits=10, decimal_places=0, default=0)
     price_note  = models.CharField("Примечание к цене", max_length=100, blank=True, default="",
                                    help_text="Например: от, за консультацию, за час")
@@ -56,3 +58,19 @@ class LegalService(TimeStampedModel):
 
     def __str__(self):
         return f"{self.org}: {self.name}"
+
+
+class LegalMembership(TimeStampedModel):
+    """Доступ пользователя к личному кабинету юр. организации."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                             related_name="legal_memberships")
+    org  = models.ForeignKey(LegalOrg, on_delete=models.CASCADE,
+                             related_name="memberships")
+
+    class Meta:
+        verbose_name        = "Доступ к юр. организации"
+        verbose_name_plural = "Доступы к юр. организациям"
+        unique_together     = ("user", "org")
+
+    def __str__(self):
+        return f"{self.user} → {self.org}"

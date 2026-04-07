@@ -1,0 +1,94 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ org.name }} — Настройки{% endblock %}
+{% block nav_legal %}active{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">✏️ {{ org.name }}</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:legal_home' %}">Юр. организации</a> / Настройки
+    </div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <a href="{% url 'dashboard:legal_services' org.id %}" class="db-btn db-btn-ghost db-btn-sm">📋 Услуги</a>
+  </div>
+</div>
+
+{% if messages %}
+<div class="db-messages">
+  {% for m in messages %}<div class="db-msg {{ m.tags }}">{{ m }}</div>{% endfor %}
+</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+    <div class="db-card">
+      <div class="db-card-title">🏢 Основное</div>
+
+      <div class="db-form-group">
+        <label class="db-label">Название *</label>
+        <input name="name" class="db-input" value="{{ org.name }}" required>
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Описание</label>
+        <textarea name="description" class="db-textarea">{{ org.description }}</textarea>
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Адрес</label>
+        <input name="address" class="db-input" value="{{ org.address }}">
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Телефон / WhatsApp</label>
+        <input name="phone" class="db-input" value="{{ org.phone }}" placeholder="+996 XXX XXX XXX">
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Часы работы</label>
+        <input name="working_hours" class="db-input" value="{{ org.working_hours }}" placeholder="Пн–Пт: 09:00–18:00">
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Ссылка на карту</label>
+        <input name="map_url" class="db-input" type="url" value="{{ org.map_url }}" placeholder="https://2gis.kg/...">
+      </div>
+    </div>
+
+    <div>
+      <div class="db-card">
+        <div class="db-card-title">🖼 Логотип</div>
+        {% if org.logo %}
+        <img src="{{ org.logo.url }}" style="width:120px;height:120px;object-fit:cover;border-radius:16px;margin-bottom:12px;display:block">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:12px;cursor:pointer">
+          <input type="checkbox" name="logo_clear"> Удалить логотип
+        </label>
+        {% endif %}
+        <div class="db-form-group" style="margin:0">
+          <label class="db-label">{% if org.logo %}Заменить{% else %}Загрузить{% endif %}</label>
+          <input name="logo" type="file" accept="image/*" class="db-input" style="padding:8px">
+        </div>
+      </div>
+
+      <div class="db-card" style="margin-top:0">
+        <div class="db-card-title">📲 Telegram уведомления</div>
+        <div class="db-form-group">
+          <label class="db-label">Chat ID группы</label>
+          <input name="tg_chat_id" class="db-input" value="{{ org.tg_chat_id }}" placeholder="-1001234567890">
+          <div class="db-hint">ID Telegram-группы куда будут приходить заявки от клиентов</div>
+        </div>
+        <div class="db-form-group" style="margin:0">
+          <label class="db-label">Thread ID (топик, необязательно)</label>
+          <input name="tg_thread_id" class="db-input" value="{{ org.tg_thread_id|default:'' }}" placeholder="123">
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="margin-top:8px;display:flex;gap:12px;align-items:center">
+    <button type="submit" class="db-btn db-btn-primary">💾 Сохранить</button>
+    <a href="{% url 'dashboard:legal_home' %}" class="db-btn db-btn-ghost">Отмена</a>
+  </div>
+</form>
+{% endblock %}

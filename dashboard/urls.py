@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from hotels import dashboard_views as hv
 from shops import dashboard_views as sv
+from legal import dashboard_views as lv
 
 app_name = "dashboard"
 
@@ -48,4 +49,13 @@ urlpatterns = [
     path("hotels/room/<int:room_id>/toggle/",             hv.hotel_room_toggle,   name="hotel_room_toggle"),
     path("hotels/branch/<int:branch_id>/bookings/",       hv.hotel_bookings,      name="hotel_bookings"),
     path("hotels/booking/<int:booking_id>/status/",       hv.hotel_booking_status, name="hotel_booking_status"),
+
+    # ── LEGAL ────────────────────────────────────────────────────────────────
+    path("legal/",                                      lv.legal_home,           name="legal_home"),
+    path("legal/<int:org_id>/edit/",                    lv.legal_org_edit,       name="legal_org_edit"),
+    path("legal/<int:org_id>/services/",                lv.legal_services,       name="legal_services"),
+    path("legal/<int:org_id>/services/add/",            lv.legal_service_add,    name="legal_service_add"),
+    path("legal/service/<int:svc_id>/edit/",            lv.legal_service_edit,   name="legal_service_edit"),
+    path("legal/service/<int:svc_id>/toggle/",          lv.legal_service_toggle, name="legal_service_toggle"),
+    path("legal/service/<int:svc_id>/delete/",          lv.legal_service_delete, name="legal_service_delete"),
 ]

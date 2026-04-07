@@ -1,0 +1,118 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ org.name }} — Услуги{% endblock %}
+{% block nav_legal %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .svc-row {
+    display:flex;align-items:center;gap:16px;
+    padding:16px 20px;border-bottom:1px solid var(--border);
+    transition:background .15s;
+  }
+  .svc-row:last-child{border-bottom:none}
+  .svc-row:hover{background:rgba(0,0,0,.02)}
+  .svc-photo {
+    width:64px;height:64px;border-radius:14px;flex-shrink:0;overflow:hidden;
+    background:linear-gradient(135deg,#F0F4FF,#E0EAFF);
+    display:flex;align-items:center;justify-content:center;font-size:24px;
+  }
+  .svc-photo img{width:100%;height:100%;object-fit:cover}
+  .svc-info{flex:1;min-width:0}
+  .svc-name{font-weight:700;font-size:14px;color:var(--text)}
+  .svc-desc{font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:380px}
+  .svc-price{font-family:'Unbounded',sans-serif;font-weight:800;font-size:14px;color:var(--text);white-space:nowrap}
+  .svc-price-note{font-size:11px;color:var(--muted)}
+  .svc-actions{display:flex;gap:6px;flex-shrink:0}
+  .badge-on {background:rgba(0,184,150,.12);color:#047857;border:1px solid rgba(0,184,150,.2);padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600}
+  .badge-off{background:rgba(0,0,0,.05);color:var(--muted);border:1px solid var(--border);padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">📋 Услуги</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:legal_home' %}">Юр. организации</a> /
+      <a href="{% url 'dashboard:legal_org_edit' org.id %}">{{ org.name }}</a> / Услуги
+    </div>
+  </div>
+  <a href="{% url 'dashboard:legal_service_add' org.id %}" class="db-btn db-btn-primary">+ Добавить услугу</a>
+</div>
+
+{% if messages %}
+<div class="db-messages">
+  {% for m in messages %}<div class="db-msg {{ m.tags }}">{{ m }}</div>{% endfor %}
+</div>
+{% endif %}
+
+<div class="db-card" style="padding:0;overflow:hidden">
+  {% if not services %}
+  <div style="text-align:center;padding:60px 24px;color:var(--muted)">
+    <div style="font-size:40px;margin-bottom:12px">📋</div>
+    <div style="font-weight:600;color:var(--text2)">Услуги не добавлены</div>
+    <div style="font-size:13px;margin-top:6px">Нажмите «+ Добавить услугу» чтобы начать</div>
+  </div>
+  {% endif %}
+
+  {% for svc in services %}
+  <div class="svc-row" id="svc-{{ svc.id }}">
+    <div class="svc-photo">
+      {% if svc.photo %}<img src="{{ svc.photo.url }}" alt="{{ svc.name }}">
+      {% else %}⚖️{% endif %}
+    </div>
+
+    <div class="svc-info">
+      <div class="svc-name">{{ svc.name }}</div>
+      {% if svc.description %}<div class="svc-desc">{{ svc.description }}</div>{% endif %}
+    </div>
+
+    <div style="text-align:right;flex-shrink:0">
+      <div class="svc-price">{{ svc.price|floatformat:0 }} сом</div>
+      {% if svc.price_note %}<div class="svc-price-note">{{ svc.price_note }}</div>{% endif %}
+    </div>
+
+    <div>
+      <span id="badge-{{ svc.id }}" class="{% if svc.is_active %}badge-on{% else %}badge-off{% endif %}">
+        {% if svc.is_active %}Активна{% else %}Скрыта{% endif %}
+      </span>
+    </div>
+
+    <div class="svc-actions">
+      <button onclick="toggleSvc({{ svc.id }})" class="db-btn db-btn-ghost db-btn-sm" id="toggle-{{ svc.id }}"
+              title="{% if svc.is_active %}Скрыть{% else %}Показать{% endif %}">
+        {% if svc.is_active %}🔒{% else %}✅{% endif %}
+      </button>
+      <a href="{% url 'dashboard:legal_service_edit' svc.id %}" class="db-btn db-btn-ghost db-btn-sm">✏️</a>
+      <form method="post" action="{% url 'dashboard:legal_service_delete' svc.id %}"
+            onsubmit="return confirm('Удалить услугу «{{ svc.name }}»?')" style="display:inline">
+        {% csrf_token %}
+        <button type="submit" class="db-btn db-btn-ghost db-btn-sm" style="color:#EF4444">🗑</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<script>
+function toggleSvc(id) {
+  fetch("{% url 'dashboard:legal_service_toggle' 0 %}".replace('/0/', '/' + id + '/'), {
+    method: 'POST',
+    headers: {'X-CSRFToken': '{{ csrf_token }}'},
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (!d.ok) return;
+    const badge  = document.getElementById('badge-' + id);
+    const btn    = document.getElementById('toggle-' + id);
+    if (d.is_active) {
+      badge.className = 'badge-on'; badge.textContent = 'Активна';
+      btn.textContent = '🔒';
+    } else {
+      badge.className = 'badge-off'; badge.textContent = 'Скрыта';
+      btn.textContent = '✅';
+    }
+  });
+}
+</script>
+{% endblock %}
