@@ -606,7 +606,7 @@ def orders_analytics(request):
     daily_qs = (
         order_qs
         .filter(created_at__gte=chart_since)
-        .extra(select={"day": "DATE(created_at)"})
+        .extra(select={"day": 'DATE("orders_order"."created_at")'})
         .values("day")
         .annotate(cnt=Count("id"), revenue=Sum("total_amount"))
         .order_by("day")
