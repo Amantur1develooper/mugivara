@@ -9,6 +9,17 @@
 </a>
 {% endblock %}
 
+{% block head_extra %}
+<style>
+  .photo-drop{
+    border:2px dashed var(--border);border-radius:16px;
+    padding:28px;text-align:center;cursor:pointer;position:relative;overflow:hidden;
+    transition:border-color .2s,background .2s;
+  }
+  .photo-drop:hover{border-color:rgba(255,77,28,.3);background:rgba(255,77,28,.02)}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="db-topbar">
   <div>
@@ -19,39 +30,85 @@
   </div>
 </div>
 
+<form method="post" enctype="multipart/form-data">
+{% csrf_token %}
+
 <div class="db-card">
   <div class="db-card-title">📝 Основная информация</div>
-  <form method="post">
-    {% csrf_token %}
 
-    <div class="db-form-group">
-      <label class="db-label" for="name_ru">Название ресторана</label>
-      <input class="db-input" id="name_ru" name="name_ru" type="text"
-             value="{{ restaurant.name_ru }}" placeholder="Название" required>
-    </div>
+  <div class="db-form-group">
+    <label class="db-label" for="name_ru">Название ресторана</label>
+    <input class="db-input" id="name_ru" name="name_ru" type="text"
+           value="{{ restaurant.name_ru }}" placeholder="Название" required>
+  </div>
 
-    <div class="db-form-group">
-      <label class="db-label" for="about_ru">Описание (о нас)</label>
-      <textarea class="db-textarea" id="about_ru" name="about_ru"
-                placeholder="Расскажите о вашем ресторане..."
-                style="min-height:140px">{{ restaurant.about_ru }}</textarea>
-      <div class="db-hint">Покажется на странице ресторана в разделе «О нас»</div>
-    </div>
+  <div class="db-form-group">
+    <label class="db-label" for="about_ru">Описание (о нас)</label>
+    <textarea class="db-textarea" id="about_ru" name="about_ru"
+              placeholder="Расскажите о вашем ресторане..."
+              style="min-height:140px">{{ restaurant.about_ru }}</textarea>
+    <div class="db-hint">Покажется на странице ресторана в разделе «О нас»</div>
+  </div>
 
-    <div class="db-form-group">
-      <label class="db-label" for="external_url">Ссылка на ваш сайт / приложение</label>
-      <input class="db-input" id="external_url" name="external_url" type="url"
-             value="{{ restaurant.external_url }}"
-             placeholder="https://your-restaurant.com">
-      <div class="db-hint">
-        Если заполнено — на странице ресторана появится кнопка «Сайт ресторана» со ссылкой на ваш сайт
-      </div>
+  <div class="db-form-group">
+    <label class="db-label" for="external_url">Ссылка на ваш сайт / приложение</label>
+    <input class="db-input" id="external_url" name="external_url" type="url"
+           value="{{ restaurant.external_url }}"
+           placeholder="https://your-restaurant.com">
+    <div class="db-hint">
+      Если заполнено — на странице ресторана появится кнопка «Сайт ресторана»
     </div>
-
-    <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
-      <button type="submit" class="db-btn db-btn-primary">💾 Сохранить</button>
-      <a href="{% url 'dashboard:home' %}" class="db-btn db-btn-ghost">← Назад</a>
-    </div>
-  </form>
+  </div>
 </div>
+
+<div class="db-card">
+  <div class="db-card-title">🖼 Логотип ресторана</div>
+
+  {% if restaurant.logo %}
+  <div style="margin-bottom:16px;display:flex;align-items:center;gap:16px">
+    <img src="{{ restaurant.logo.url }}" alt="Логотип"
+         style="width:80px;height:80px;border-radius:12px;object-fit:cover;border:1px solid var(--border)">
+    <div style="font-size:13px;color:var(--muted)">Текущий логотип</div>
+  </div>
+  {% endif %}
+
+  <div class="photo-drop" id="logoDrop">
+    <input type="file" name="logo" accept="image/*" id="logoFile"
+           style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%"
+           onchange="previewLogo(this)">
+    <div style="font-size:32px;margin-bottom:8px">🏷</div>
+    <div id="logoDropText" style="font-size:14px;color:var(--muted)">
+      {% if restaurant.logo %}Загрузить новый логотип{% else %}Нажмите или перетащите логотип{% endif %}
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px">
+      Авто-сжатие → WebP · Рекомендуемый размер 400×400 px
+    </div>
+  </div>
+  <img id="logoPreview" alt="Превью" style="display:none;width:80px;height:80px;
+       object-fit:cover;border-radius:12px;margin-top:12px;border:1px solid var(--border)">
+</div>
+
+<div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
+  <button type="submit" class="db-btn db-btn-primary">💾 Сохранить</button>
+  <a href="{% url 'dashboard:home' %}" class="db-btn db-btn-ghost">← Назад</a>
+</div>
+
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function previewLogo(input) {
+  if (!input.files || !input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('logoPreview');
+    img.src = e.target.result;
+    img.style.display = 'block';
+    document.getElementById('logoDropText').textContent = input.files[0].name;
+    document.getElementById('logoDrop').style.borderColor = 'var(--accent)';
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+</script>
 {% endblock %}

@@ -10,6 +10,9 @@
 <a href="{% url 'dashboard:branch_items' branch.id %}">
   <span class="db-nav-icon">🍽</span> Меню и цены
 </a>
+<a href="{% url 'dashboard:branch_categories' branch.id %}">
+  <span class="db-nav-icon">📂</span> Категории
+</a>
 {% endblock %}
 
 {% block head_extra %}
@@ -141,6 +144,42 @@
     </div>
   </div>
 
+  {# ── ГЛАВНОЕ ФОТО ФИЛИАЛА ── #}
+  <div class="db-card">
+    <div class="db-card-title">📷 Главное фото филиала</div>
+
+    {% if branch.cover_photo %}
+    <div style="margin-bottom:16px;position:relative;border-radius:16px;overflow:hidden;max-height:180px">
+      <img src="{{ branch.cover_photo.url }}" alt="Главное фото"
+           style="width:100%;height:180px;object-fit:cover;display:block">
+      <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,0,0,.45),transparent);
+                  display:flex;align-items:flex-end;padding:16px">
+        <span style="color:white;font-size:13px;font-weight:600">Текущее главное фото</span>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="photo-drop" id="coverDrop" style="border:2px dashed var(--border);border-radius:16px;
+         padding:28px;text-align:center;cursor:pointer;position:relative;overflow:hidden;
+         transition:border-color .2s,background .2s">
+      <input type="file" name="cover_photo" accept="image/*" id="coverFile"
+             style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%"
+             onchange="previewCover(this)">
+      <div style="font-size:32px;margin-bottom:8px">📷</div>
+      <div id="coverDropText" style="font-size:14px;color:var(--muted)">
+        {% if branch.cover_photo %}Загрузить новое главное фото{% else %}Нажмите или перетащите фото{% endif %}
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">
+        Авто-сжатие → WebP · Рекомендуемый размер 1200×600 px
+      </div>
+    </div>
+    <img id="coverPreview" alt="Превью" style="display:none;width:100%;max-height:180px;
+         object-fit:cover;border-radius:12px;margin-top:12px">
+    <div style="margin-top:10px;font-size:12px;color:var(--muted)">
+      Главное фото отображается в шапке страницы филиала.
+    </div>
+  </div>
+
   {# ── ФОТО АКЦИИ ── #}
   <div class="db-card">
     <div class="db-card-title">🖼 Фото для акции (фон карусели)</div>
@@ -190,6 +229,18 @@
 
 {% block extra_js %}
 <script>
+function previewCover(input) {
+  if (!input.files || !input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('coverPreview');
+    img.src = e.target.result;
+    img.style.display = 'block';
+    document.getElementById('coverDropText').textContent = input.files[0].name;
+    document.getElementById('coverDrop').style.borderColor = 'var(--accent)';
+  };
+  reader.readAsDataURL(input.files[0]);
+}
 function previewPromo(input) {
   if (!input.files || !input.files[0]) return;
   const reader = new FileReader();

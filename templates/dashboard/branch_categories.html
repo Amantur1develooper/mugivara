@@ -1,0 +1,233 @@
+{% extends "dashboard/base.html" %}
+{% load static %}
+
+{% block title %}Категории — {{ branch.name_ru }}{% endblock %}
+
+{% block sidebar_extra %}
+<div class="db-nav-label">Филиал</div>
+<a href="{% url 'dashboard:branch_edit' branch.id %}">
+  <span class="db-nav-icon">⚙️</span> Настройки
+</a>
+<a href="{% url 'dashboard:branch_items' branch.id %}">
+  <span class="db-nav-icon">🍽</span> Меню и цены
+</a>
+<a href="{% url 'dashboard:branch_categories' branch.id %}" class="active">
+  <span class="db-nav-icon">📂</span> Категории
+</a>
+{% endblock %}
+
+{% block head_extra %}
+<style>
+  .cat-row{
+    display:flex;align-items:center;gap:14px;
+    padding:14px 16px;border-radius:14px;
+    background:var(--card);border:1px solid var(--border);
+    margin-bottom:8px;transition:border-color .15s;
+  }
+  .cat-row:hover{border-color:rgba(255,77,28,.15)}
+  .cat-row.inactive{opacity:.5}
+
+  .cat-drag{
+    color:var(--muted);cursor:grab;font-size:18px;flex-shrink:0;
+    user-select:none;
+  }
+  .cat-name{flex:1;font-size:14px;font-weight:500;color:var(--text)}
+  .cat-meta{font-size:11px;color:var(--muted);margin-top:2px}
+
+  .order-input{
+    width:64px;padding:6px 10px;border-radius:10px;
+    border:1.5px solid var(--border);
+    font-family:'Geologica',sans-serif;font-size:13px;font-weight:600;
+    color:var(--text);background:var(--bg);outline:none;text-align:center;
+    transition:border-color .2s;
+  }
+  .order-input:focus{border-color:rgba(255,77,28,.4)}
+
+  .toggle-btn{
+    width:40px;height:22px;border-radius:11px;
+    border:none;cursor:pointer;flex-shrink:0;
+    position:relative;transition:background .2s;
+  }
+  .toggle-btn.on{background:var(--teal)}
+  .toggle-btn.off{background:#D1D5DB}
+  .toggle-btn::after{
+    content:'';position:absolute;width:16px;height:16px;
+    border-radius:50%;background:white;top:3px;
+    box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .2s;
+  }
+  .toggle-btn.on::after{left:21px}
+  .toggle-btn.off::after{left:3px}
+
+  .add-form{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:16px;padding:20px;margin-bottom:24px;
+  }
+  .add-form select{
+    width:100%;padding:10px 14px;border-radius:12px;
+    border:1.5px solid var(--border);
+    font-family:'Geologica',sans-serif;font-size:14px;
+    color:var(--text);background:var(--bg);outline:none;
+    transition:border-color .2s;
+  }
+  .add-form select:focus{border-color:rgba(255,77,28,.4)}
+
+  .toast{
+    position:fixed;bottom:24px;right:24px;z-index:999;
+    background:#0D1117;color:white;padding:10px 20px;
+    border-radius:12px;font-size:13px;font-weight:500;
+    box-shadow:0 8px 24px rgba(0,0,0,.2);
+    transform:translateY(20px);opacity:0;
+    transition:all .3s;pointer-events:none;
+  }
+  .toast.show{transform:translateY(0);opacity:1}
+  .toast.ok{background:#047857}
+  .toast.err{background:#B91C1C}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">Категории меню</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:home' %}">Заведения</a> /
+      {{ branch.restaurant.name_ru }} /
+      {{ branch.name_ru }}
+    </div>
+  </div>
+</div>
+
+{# ── ДОБАВИТЬ КАТЕГОРИЮ ── #}
+<div class="add-form">
+  <div class="db-card-title" style="margin-bottom:14px">➕ Добавить категорию</div>
+  <form method="post" action="{% url 'dashboard:category_add' branch.id %}" style="display:flex;gap:12px;flex-wrap:wrap">
+    {% csrf_token %}
+    <select name="category_id" style="flex:1;min-width:200px" required>
+      <option value="">— Выберите категорию —</option>
+      {% for ms in menu_sets %}
+        <optgroup label="{{ ms.name }}">
+          {% for cat in ms.categories.all %}
+          <option value="{{ cat.id }}">{{ cat.name_ru }}</option>
+          {% endfor %}
+        </optgroup>
+      {% empty %}
+        <option disabled>Нет доступных меню-сетов</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="db-btn db-btn-primary">Добавить</button>
+  </form>
+  <div style="font-size:12px;color:var(--muted);margin-top:10px">
+    Категории берутся из меню-сетов, настроенных для этого ресторана в административной панели.
+  </div>
+</div>
+
+{# ── СПИСОК КАТЕГОРИЙ ── #}
+{% if categories %}
+<div class="db-card-title" style="margin-bottom:12px">📂 Категории филиала</div>
+<div id="catList">
+{% for bc in categories %}
+<div class="cat-row {% if not bc.is_active %}inactive{% endif %}" data-id="{{ bc.id }}">
+
+  <span class="cat-drag" title="Перетащить для сортировки">⠿</span>
+
+  <div class="cat-name">
+    {{ bc.category.name_ru }}
+    <div class="cat-meta">{{ bc.category.menu_set.name }}</div>
+  </div>
+
+  <input class="order-input" type="number" min="0"
+         value="{{ bc.sort_order }}"
+         data-id="{{ bc.id }}"
+         title="Порядок сортировки"
+         onchange="saveOrder(this)">
+
+  <button class="toggle-btn {% if bc.is_active %}on{% else %}off{% endif %}"
+          data-id="{{ bc.id }}"
+          onclick="toggleCat(this)"
+          title="{% if bc.is_active %}Видна{% else %}Скрыта{% endif %}">
+  </button>
+
+  <form method="post" action="{% url 'dashboard:category_remove' bc.id %}"
+        style="flex-shrink:0"
+        onsubmit="return confirm('Удалить категорию «{{ bc.category.name_ru }}» из этого филиала?')">
+    {% csrf_token %}
+    <button type="submit" style="background:none;border:none;cursor:pointer;
+            color:var(--muted);font-size:16px;padding:4px" title="Удалить">🗑</button>
+  </form>
+
+</div>
+{% endfor %}
+</div>
+{% else %}
+<div class="db-card" style="text-align:center;padding:40px;color:var(--muted)">
+  <div style="font-size:36px;margin-bottom:10px">📂</div>
+  <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">Категорий нет</div>
+  <div style="font-size:13px">Добавьте категории из меню-сетов ресторана</div>
+</div>
+{% endif %}
+
+<div class="toast" id="toast"></div>
+
+<div id="js-urls"
+     data-toggle-url="{% url 'dashboard:category_toggle' 99999 %}"
+     data-reorder-url="{% url 'dashboard:category_reorder' 99999 %}"
+     style="display:none"></div>
+
+<script>
+const CSRF = '{{ csrf_token }}';
+const _urls = document.getElementById('js-urls').dataset;
+const toggleUrl  = id => _urls.toggleUrl.replace('99999', id);
+const reorderUrl = id => _urls.reorderUrl.replace('99999', id);
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function toggleCat(btn) {
+  const id = btn.dataset.id;
+  fetch(toggleUrl(id), {
+    method: 'POST',
+    headers: {'X-CSRFToken': CSRF},
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      const row = btn.closest('.cat-row');
+      if (data.is_active) {
+        btn.classList.replace('off', 'on');
+        row.classList.remove('inactive');
+        btn.title = 'Видна';
+        showToast('Категория активна ✓', 'ok');
+      } else {
+        btn.classList.replace('on', 'off');
+        row.classList.add('inactive');
+        btn.title = 'Скрыта';
+        showToast('Категория скрыта', 'ok');
+      }
+    }
+  })
+  .catch(() => showToast('Ошибка сети', 'err'));
+}
+
+function saveOrder(input) {
+  const id = input.dataset.id;
+  const val = parseInt(input.value);
+  if (isNaN(val)) return;
+
+  fetch(reorderUrl(id), {
+    method: 'POST',
+    headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded'},
+    body: `sort_order=${val}`,
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) showToast('Порядок сохранён ✓', 'ok');
+    else showToast('Ошибка', 'err');
+  })
+  .catch(() => showToast('Ошибка сети', 'err'));
+}
+</script>
+{% endblock %}

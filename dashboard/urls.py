@@ -15,7 +15,13 @@ urlpatterns = [
 
     path("branch/<int:branch_id>/edit/",     views.branch_edit,  name="branch_edit"),
     path("branch/<int:branch_id>/items/",    views.branch_items, name="branch_items"),
-    path("branch/<int:branch_id>/add-item/", views.item_add,     name="item_add"),
+    path("branch/<int:branch_id>/add-item/",    views.item_add,           name="item_add"),
+    path("branch/<int:branch_id>/categories/", views.branch_categories,  name="branch_categories"),
+    path("branch/<int:branch_id>/categories/add/", views.category_add,   name="category_add"),
+
+    path("category/<int:bc_id>/toggle/",  views.category_toggle,  name="category_toggle"),
+    path("category/<int:bc_id>/reorder/", views.category_reorder, name="category_reorder"),
+    path("category/<int:bc_id>/remove/",  views.category_remove,  name="category_remove"),
 
     path("item/<int:branch_item_id>/edit/",   views.item_edit,         name="item_edit"),
     path("item/<int:branch_item_id>/price/",  views.update_item_price, name="update_price"),

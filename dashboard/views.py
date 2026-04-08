@@ -7,12 +7,12 @@ from django.contrib import messages
 from decimal import Decimal, InvalidOperation
 
 from django.utils import timezone
-from django.db.models import Count
+from django.db.models import Count, Max
 from datetime import timedelta
 from core.models import Restaurant, Branch, Membership, PromoCode, PageView
 from catalog.models import (
     BranchItem, BranchCategory, BranchCategoryItem,
-    Item, ItemCategory, Category,
+    Item, ItemCategory, Category, MenuSet,
 )
 from catalog.services import ensure_links_for_branch_item
 
@@ -77,7 +77,12 @@ def restaurant_edit(request, restaurant_id):
             restaurant.name_ru = name
         restaurant.about_ru = request.POST.get("about_ru", "").strip()
         restaurant.external_url = request.POST.get("external_url", "").strip()
-        restaurant.save(update_fields=["name_ru", "about_ru", "external_url", "updated_at"])
+
+        logo = request.FILES.get("logo")
+        if logo:
+            restaurant.logo = logo
+
+        restaurant.save()
         messages.success(request, "Данные ресторана сохранены")
         return redirect("dashboard:restaurant_edit", restaurant_id=restaurant.id)
 
@@ -115,6 +120,10 @@ def branch_edit(request, branch_id):
         photo = request.FILES.get("promo_photo")
         if photo:
             branch.promo_photo = photo
+
+        cover = request.FILES.get("cover_photo")
+        if cover:
+            branch.cover_photo = cover
 
         branch.save()
 
@@ -642,3 +651,97 @@ def orders_analytics(request):
         "chart_revenue": chart_revenue,
         "page_obj":      page_obj,
     })
+
+
+# ── CATEGORIES ────────────────────────────────────────────────────────────────
+
+@login_required(login_url="dashboard:login")
+def branch_categories(request, branch_id):
+    branch = get_object_or_404(Branch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:home")
+
+    categories = (
+        BranchCategory.objects
+        .filter(branch=branch)
+        .select_related("category__menu_set")
+        .order_by("sort_order", "id")
+    )
+    # MenuSets доступные для этого ресторана (для формы добавления)
+    menu_sets = (
+        MenuSet.objects
+        .filter(restaurant=branch.restaurant, is_active=True)
+        .prefetch_related("categories")
+    )
+
+    return render(request, "dashboard/branch_categories.html", {
+        "branch": branch,
+        "categories": categories,
+        "menu_sets": menu_sets,
+    })
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def category_add(request, branch_id):
+    branch = get_object_or_404(Branch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:home")
+
+    category_id = request.POST.get("category_id")
+    if category_id:
+        try:
+            cat = Category.objects.select_related("menu_set").get(
+                id=category_id, menu_set__restaurant=branch.restaurant
+            )
+            max_order = BranchCategory.objects.filter(branch=branch).aggregate(
+                m=Max("sort_order")
+            )["m"] or 0
+            BranchCategory.objects.get_or_create(
+                branch=branch,
+                category=cat,
+                defaults={"sort_order": max_order + 10, "is_active": True},
+            )
+            messages.success(request, f"Категория «{cat.name_ru}» добавлена")
+        except Category.DoesNotExist:
+            messages.error(request, "Категория не найдена")
+
+    return redirect("dashboard:branch_categories", branch_id=branch.id)
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def category_toggle(request, bc_id):
+    bc = get_object_or_404(BranchCategory, id=bc_id)
+    if not _has_branch_access(request.user, bc.branch):
+        return JsonResponse({"ok": False}, status=403)
+    bc.is_active = not bc.is_active
+    bc.save(update_fields=["is_active", "updated_at"])
+    return JsonResponse({"ok": True, "is_active": bc.is_active})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def category_reorder(request, bc_id):
+    bc = get_object_or_404(BranchCategory, id=bc_id)
+    if not _has_branch_access(request.user, bc.branch):
+        return JsonResponse({"ok": False}, status=403)
+    try:
+        sort_order = int(request.POST.get("sort_order", bc.sort_order))
+    except (ValueError, TypeError):
+        return JsonResponse({"ok": False, "error": "invalid"})
+    bc.sort_order = sort_order
+    bc.save(update_fields=["sort_order", "updated_at"])
+    return JsonResponse({"ok": True})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def category_remove(request, bc_id):
+    bc = get_object_or_404(BranchCategory, id=bc_id)
+    if not _has_branch_access(request.user, bc.branch):
+        return redirect("dashboard:home")
+    branch_id = bc.branch_id
+    bc.delete()
+    messages.success(request, "Категория удалена из филиала")
+    return redirect("dashboard:branch_categories", branch_id=branch_id)

@@ -11,6 +11,9 @@
 <a href="{% url 'dashboard:branch_items' branch.id %}" class="active">
   <span class="db-nav-icon">🍽</span> Меню и цены
 </a>
+<a href="{% url 'dashboard:branch_categories' branch.id %}">
+  <span class="db-nav-icon">📂</span> Категории
+</a>
 {% endblock %}
 
 {% block head_extra %}
@@ -172,6 +175,11 @@
                      padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700;
                      background:rgba(255,77,28,.1);color:var(--accent)">
           🔥 {{ bi.item.order_count }}
+        </span>
+        <span style="margin-left:4px;display:inline-flex;align-items:center;gap:3px;
+                     padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700;
+                     background:rgba(245,158,11,.1);color:#B45309">
+          ⭐ {{ bi.item.rating|floatformat:1 }}
         </span>
         {% endif %}
         {% if bi.item.description_ru %}

@@ -43,6 +43,7 @@ class Item(TimeStampedModel):
     photo = models.ImageField(upload_to="items/photos/", blank=True, null=True)
     base_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     order_count = models.PositiveIntegerField("Кол-во заказов", default=0, db_index=True)
+    rating      = models.DecimalField("Рейтинг", max_digits=3, decimal_places=1, default=1.0)
 
     def save(self, *args, **kwargs):
         self.photo_compression = None

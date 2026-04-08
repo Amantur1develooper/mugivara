@@ -115,6 +115,7 @@
     padding: 3px 9px; border-radius: 100px; font-size: 10px; font-weight: 700;
     background: rgba(255,77,28,.88); color: white; backdrop-filter: blur(4px);
   }
+  .tm-rating { display:inline-flex; align-items:center; gap:3px; font-size:11px; font-weight:700; color:#F59E0B; margin-top:2px; }
   .tm-dish-price-badge {
     position: absolute; bottom: 8px; right: 8px;
     padding: 4px 10px; border-radius: 100px;
@@ -319,7 +320,10 @@
             {% t dish "description" as desc %}
             {% if desc %}<div class="tm-dish-desc">{{ desc }}</div>{% endif %}
             <div class="tm-dish-footer">
-              <div class="tm-dish-price">{{ bi.price|floatformat:0 }} сом</div>
+              <div>
+                <div class="tm-dish-price">{{ bi.price|floatformat:0 }} сом</div>
+                <div class="tm-rating">⭐ {{ dish.rating|floatformat:1 }}</div>
+              </div>
               <div class="tm-qty-row" id="qty-row-{{ bi.id }}">
                 <button class="tm-qty-btn" data-action="dec" data-bi="{{ bi.id }}" type="button">−</button>
                 <span class="tm-qty-num" id="qty-num-{{ bi.id }}">0</span>

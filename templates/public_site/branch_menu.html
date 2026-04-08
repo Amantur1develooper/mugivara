@@ -232,6 +232,12 @@
     backdrop-filter: blur(6px); letter-spacing: .2px;
     display: flex; align-items: center; gap: 4px;
   }
+  /* рейтинг звёздами */
+  .dish-rating {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; font-weight: 700; color: #F59E0B;
+  }
+  .dish-rating-val { color: var(--text2); font-weight: 600; font-size: 12px; }
 
   /* бейдж цены поверх фото */
   .dish-price-badge {
@@ -567,6 +573,9 @@
                 <div class="dish-footer">
                   <div>
                     <div class="dish-price">{{ bi.price|floatformat:"0" }} <span style="font-size:11px;font-weight:500;color:var(--muted);">сом</span></div>
+                    <div class="dish-rating">
+                      ⭐ <span class="dish-rating-val">{{ dish.rating|floatformat:1 }}</span>
+                    </div>
                   </div>
 
                   {# форма добавления + кнопка #}
