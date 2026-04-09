@@ -2,7 +2,7 @@
 from django.urls import path, include
 from .views import (
     about, booking_set_status, contacts, hall_plan, home, place_move, reservation, restaurant_about, restaurant_contacts, restaurant_detail, branch_menu, restaurant_branch_menu,
-    add_to_cart, cart_detail, cart_update, cart_remove,
+    add_to_cart, cart_detail, cart_json, cart_update, cart_remove,
     checkout, checkout_success, restaurants_list, validate_promo
 )
 from reservations import views as r
@@ -29,6 +29,7 @@ urlpatterns = [
 
     # корзина
     path("b/<int:branch_id>/cart/", cart_detail, name="cart_detail"),
+    path("b/<int:branch_id>/cart.json/", cart_json, name="cart_json"),
     path("b/<int:branch_id>/cart/update/<int:branch_item_id>/", cart_update, name="cart_update"),
     path("b/<int:branch_id>/cart/remove/<int:branch_item_id>/", cart_remove, name="cart_remove"),
 

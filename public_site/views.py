@@ -364,6 +364,16 @@ def restaurant_detail(request, slug):
 
 
 
+def _calc_delivery(branch, subtotal: Decimal) -> Decimal:
+    """Реальная стоимость доставки с учётом акции бесплатной доставки."""
+    if not branch.delivery_enabled:
+        return Decimal("0")
+    free_from = branch.free_delivery_from or Decimal("0")
+    if free_from > 0 and subtotal >= free_from:
+        return Decimal("0")
+    return branch.delivery_fee or Decimal("0")
+
+
 def _build_branch_menu_context(request, branch):
     """Shared logic for branch menu views."""
     from django.db.models import Prefetch
@@ -410,6 +420,41 @@ def restaurant_branch_menu(request, restaurant_slug: str, branch_id: int):
 
 
 
+def cart_json(request, branch_id: int):
+    """AJAX: вернуть содержимое корзины как JSON для модального окна."""
+    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    cart = get_cart(request, branch.id)
+    rows, subtotal, qty_total = cart_details(branch, cart)
+    delivery_fee = _calc_delivery(branch, subtotal)
+    total = subtotal + delivery_fee
+    free_from = branch.free_delivery_from or Decimal("0")
+
+    from django.urls import reverse
+    items = []
+    for r in rows:
+        bi = r["branch_item"]
+        items.append({
+            "bi_id":       bi.id,
+            "name":        bi.item.name_ru,
+            "price":       str(bi.price),
+            "qty":         r["qty"],
+            "line_total":  str(r["line_total"]),
+            "update_url":  reverse("public_site:cart_update", args=[branch_id, bi.id]),
+        })
+    return JsonResponse({
+        "ok":               True,
+        "items":            items,
+        "subtotal":         str(subtotal),
+        "delivery_fee":     str(delivery_fee),
+        "delivery_enabled": branch.delivery_enabled,
+        "total":            str(total),
+        "qty_total":        qty_total,
+        "min_order_amount": str(branch.min_order_amount),
+        "free_from":        str(free_from),
+        "free_delivery_reached": delivery_fee == 0 and free_from > 0 and branch.delivery_enabled,
+    })
+
+
 def cart_detail(request, branch_id: int):
     branch = get_object_or_404(Branch, id=branch_id, is_active=True)
     cart = get_cart(request, branch.id)
@@ -450,8 +495,9 @@ def cart_update(request, branch_id: int, branch_item_id: int):
     cart = get_cart(request, branch.id)
     rows, subtotal, qty_total = cart_details(branch, cart)
 
-    delivery_fee = branch.delivery_fee if branch.delivery_enabled else Decimal("0")
+    delivery_fee = _calc_delivery(branch, subtotal)
     total = subtotal + delivery_fee
+    free_from = branch.free_delivery_from or Decimal("0")
 
     # строка конкретного товара
     row_qty = 0
@@ -464,13 +510,15 @@ def cart_update(request, branch_id: int, branch_item_id: int):
 
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         return JsonResponse({
-            "ok": True,
-            "row_qty": row_qty,
-            "line_total": str(line_total),
-            "subtotal": str(subtotal),
+            "ok":           True,
+            "row_qty":      row_qty,
+            "line_total":   str(line_total),
+            "subtotal":     str(subtotal),
             "delivery_fee": str(delivery_fee),
-            "total": str(total),
-            "qty_total": qty_total,
+            "total":        str(total),
+            "qty_total":    qty_total,
+            "free_from":    str(free_from),
+            "free_delivery_reached": delivery_fee == 0 and free_from > 0 and branch.delivery_enabled,
         })
 
     return redirect("public_site:cart_detail", branch_id=branch.id)

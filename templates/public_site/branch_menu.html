@@ -503,13 +503,13 @@
         </div>
 
         {# корзина в hero #}
-        <a href="{% url 'public_site:cart_detail' branch.id %}"
+        <button type="button" onclick="openCartModal()"
            class="bm-hero-cart {% if cart_qty > 0 %}active{% endif %}"
            id="heroCart">
           🧺 Корзина
           <span class="bm-hero-cart-badge" data-cart-qty>{{ cart_qty }}</span>
           <span data-cart-total style="font-size:12px;opacity:.8;">· {{ cart_total }} сом</span>
-        </a>
+        </button>
       </div>
     </div>
   </div>
@@ -617,8 +617,7 @@
 
 
 
-<a id="cartFab"
-   href="{% url 'public_site:cart_detail' branch.id %}"
+<button type="button" id="cartFab" onclick="openCartModal()"
    class="cart-fab {% if not cart_qty or cart_qty == 0 %}hide{% endif %}">
   <div class="cart-fab-icon">🧺</div>
   <div class="cart-fab-info">
@@ -626,10 +625,226 @@
     <div class="cart-fab-total" data-cart-total>{{ cart_total }} сом</div>
   </div>
   <div class="cart-fab-badge" data-cart-qty>{{ cart_qty }} шт</div>
-</a>
+</button>
 
 {# ══ КНОПКА НАВЕРХ ══ #}
 <button id="bm-top-btn" class="bm-top-btn hide" type="button" aria-label="Наверх">↑</button>
+
+{# ══ МОДАЛЬНОЕ ОКНО КОРЗИНЫ ══ #}
+<div id="cartModal" class="cm-backdrop" onclick="backdropClose(event)">
+  <div class="cm-sheet" role="dialog" aria-label="Корзина">
+
+    {# шапка #}
+    <div class="cm-header">
+      <div class="cm-header-left">
+        <div class="cm-avatar">
+          {% if branch.cover_photo %}<img src="{{ branch.cover_photo.url }}" alt="">
+          {% else %}{{ branch.name_ru|first }}{% endif %}
+        </div>
+        <div>
+          <div class="cm-title">Корзина</div>
+          <div class="cm-branch">{{ branch.name_ru }}{% if branch.address %} · {{ branch.address }}{% endif %}</div>
+        </div>
+      </div>
+      <button class="cm-close" onclick="closeCartModal()" aria-label="Закрыть">✕</button>
+    </div>
+
+    {# тело — заполняется JS #}
+    <div class="cm-body" id="cmBody">
+      <div class="cm-loading">Загрузка…</div>
+    </div>
+
+  </div>
+</div>
+
+{# data-атрибуты для JS #}
+<div id="cm-urls"
+     data-cart-json="{% url 'public_site:cart_json' branch.id %}"
+     data-checkout-url="{% url 'public_site:checkout' branch.id %}"
+     data-promo-url="{% url 'public_site:validate_promo' branch.id %}"
+     data-delivery-enabled="{{ branch.delivery_enabled|yesno:'true,false' }}"
+     data-delivery-fee="{{ branch.delivery_fee|floatformat:'0' }}"
+     data-min-order="{{ branch.min_order_amount|floatformat:'0' }}"
+     style="display:none"></div>
+
+<style>
+/* ══ Модал корзины ══ */
+.cm-backdrop {
+  position: fixed; inset: 0; z-index: 9000;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s;
+}
+.cm-backdrop.open { opacity: 1; pointer-events: all; }
+
+.cm-sheet {
+  width: 100%; max-width: 540px;
+  background: var(--card, #fff);
+  border-radius: 24px 24px 0 0;
+  max-height: 92dvh;
+  display: flex; flex-direction: column;
+  transform: translateY(100%);
+  transition: transform .32s cubic-bezier(.32,1,.32,1);
+  overflow: hidden;
+}
+.cm-backdrop.open .cm-sheet { transform: translateY(0); }
+
+/* шапка */
+.cm-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border, rgba(0,0,0,.08));
+  flex-shrink: 0;
+}
+.cm-header-left { display: flex; align-items: center; gap: 12px; }
+.cm-avatar {
+  width: 40px; height: 40px; border-radius: 10px; overflow: hidden;
+  background: var(--bg, #f5f5f5); border: 1.5px solid var(--border, #eee);
+  display: flex; align-items: center; justify-content: center; font-weight: 900;
+  flex-shrink: 0;
+}
+.cm-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.cm-title { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 17px; color: var(--text, #111); }
+.cm-branch { font-size: 11px; color: var(--muted, #888); margin-top: 2px; }
+.cm-close {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1.5px solid var(--border, #eee); background: var(--bg, #f5f5f5);
+  font-size: 14px; cursor: pointer; color: var(--muted, #888);
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s;
+}
+.cm-close:hover { background: #fee2e2; color: #ef4444; border-color: #fca5a5; }
+
+/* тело */
+.cm-body { overflow-y: auto; padding: 16px 20px 24px; flex: 1; }
+.cm-loading { text-align: center; color: var(--muted, #888); padding: 40px; font-size: 14px; }
+
+/* пустая корзина */
+.cm-empty { text-align: center; padding: 40px 20px; color: var(--muted, #888); }
+.cm-empty-icon { font-size: 48px; margin-bottom: 12px; }
+.cm-empty-text { font-size: 14px; }
+
+/* позиции */
+.cm-items { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.cm-row {
+  background: var(--bg, #f9f9f9); border: 1.5px solid var(--border, #eee);
+  border-radius: 14px; padding: 12px 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.cm-row-name { font-size: 14px; font-weight: 600; color: var(--text, #111); }
+.cm-row-price { font-size: 11px; color: var(--muted, #888); margin-top: 2px; }
+.cm-row-total { font-size: 13px; font-weight: 700; color: var(--text, #111); white-space: nowrap; }
+
+.cm-qty { display: flex; align-items: center; gap: 6px; }
+.cm-qty-btn {
+  width: 32px; height: 32px; border-radius: 8px;
+  border: 1.5px solid var(--border, #ddd); background: var(--card, #fff);
+  font-size: 17px; font-weight: 700; color: var(--text, #111);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all .15s; flex-shrink: 0;
+}
+.cm-qty-btn:hover { border-color: var(--accent, #ff4d1c); color: var(--accent, #ff4d1c); }
+.cm-qty-num {
+  width: 36px; text-align: center; font-size: 14px; font-weight: 700;
+  color: var(--text, #111); font-family: inherit;
+}
+
+/* итоги */
+.cm-totals {
+  background: var(--bg, #f9f9f9); border: 1.5px solid var(--border, #eee);
+  border-radius: 14px; padding: 14px; margin-bottom: 12px;
+}
+.cm-total-row {
+  display: flex; justify-content: space-between;
+  font-size: 13px; color: var(--text2, #555); padding: 3px 0;
+}
+.cm-total-row.big {
+  font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 16px;
+  color: var(--text, #111);
+  border-top: 1px solid var(--border, #eee); margin-top: 8px; padding-top: 10px;
+}
+
+/* промокод */
+.cm-promo {
+  background: var(--bg, #f9f9f9); border: 1.5px solid var(--border, #eee);
+  border-radius: 14px; padding: 14px; margin-bottom: 12px;
+}
+.cm-promo-title { font-size: 13px; font-weight: 600; color: var(--text, #111); margin-bottom: 10px; }
+.cm-promo-row { display: flex; gap: 8px; }
+.cm-promo-input {
+  flex: 1; padding: 10px 12px; border: 1.5px solid var(--border, #ddd);
+  border-radius: 10px; font-size: 13px; text-transform: uppercase;
+  font-family: inherit; color: var(--text, #111); background: var(--card, #fff);
+  outline: none; transition: border-color .2s;
+}
+.cm-promo-input:focus { border-color: var(--accent, #ff4d1c); }
+.cm-promo-btn {
+  padding: 10px 16px; border-radius: 10px; border: none;
+  background: var(--text, #111); color: white;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: inherit; transition: opacity .15s; white-space: nowrap;
+}
+.cm-promo-btn:hover { opacity: .85; }
+.cm-promo-msg { margin-top: 6px; font-size: 12px; }
+
+/* форма */
+.cm-form-title {
+  font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 15px;
+  color: var(--text, #111); margin-bottom: 14px;
+}
+.cm-field {
+  width: 100%; padding: 12px 14px; border: 1.5px solid var(--border, #ddd);
+  border-radius: 12px; font-size: 14px; font-family: inherit;
+  color: var(--text, #111); background: var(--bg, #f9f9f9);
+  margin-bottom: 10px; outline: none; transition: border-color .2s; box-sizing: border-box;
+}
+.cm-field:focus { border-color: var(--accent, #ff4d1c); background: #fff; }
+.cm-field::placeholder { color: var(--muted, #aaa); }
+.cm-radio-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.cm-radio-opt {
+  display: flex; align-items: center; gap: 7px;
+  padding: 9px 14px; border: 1.5px solid var(--border, #ddd);
+  border-radius: 10px; cursor: pointer; font-size: 13px;
+  transition: border-color .15s;
+}
+.cm-radio-opt:has(input:checked) { border-color: var(--accent, #ff4d1c); background: rgba(255,77,28,.04); }
+.cm-submit {
+  width: 100%; padding: 14px; border-radius: 14px; border: none;
+  background: linear-gradient(135deg, var(--accent, #ff4d1c), var(--accent2, #ff8a00));
+  color: white; font-family: 'Unbounded', sans-serif;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(255,77,28,.3);
+  transition: transform .15s, box-shadow .15s; margin-top: 4px;
+}
+.cm-submit:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(255,77,28,.4); }
+.cm-submit:active { transform: scale(.99); }
+.cm-submit:disabled { opacity: .6; cursor: default; transform: none; }
+.cm-min-note { font-size: 11px; color: var(--muted, #aaa); margin: -4px 0 8px; padding: 0 2px; }
+
+/* баннер акции бесплатной доставки */
+.cm-free-banner {
+  border-radius: 12px; padding: 10px 14px;
+  font-size: 13px; font-weight: 600; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 6px;
+  transition: background .3s, color .3s;
+}
+.cm-free-hint {
+  background: rgba(255,138,0,.10); border: 1.5px solid rgba(255,138,0,.25);
+  color: #b45309;
+}
+.cm-free-ok {
+  background: rgba(0,184,150,.12); border: 1.5px solid rgba(0,184,150,.3);
+  color: #047857;
+  animation: cm-free-pop .35s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes cm-free-pop {
+  from { transform: scale(.95); opacity: .7; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+.cm-free-val { color: #047857; font-weight: 700; }
+</style>
 
 {% endblock %}
 
@@ -781,6 +996,304 @@ document.addEventListener('submit', async (e) => {
     const top = sections[0].getBoundingClientRect().top;
     if (top > 200) setActive('bm-top');
   }, { passive: true });
+})();
+</script>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   CART MODAL
+══════════════════════════════════════════════════════════ */
+(function(){
+  const CSRF   = getCookie('csrftoken');
+  const modal  = document.getElementById('cartModal');
+  const body   = document.getElementById('cmBody');
+  const urls   = document.getElementById('cm-urls').dataset;
+
+  let promoCode = '';
+
+  /* ── Открыть / закрыть ── */
+  window.openCartModal = function() {
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    loadCart();
+  };
+  window.closeCartModal = function() {
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+  };
+  window.backdropClose = function(e) {
+    if (e.target === modal) closeCartModal();
+  };
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCartModal(); });
+
+  /* ── Загрузить корзину ── */
+  async function loadCart() {
+    body.innerHTML = '<div class="cm-loading">Загрузка…</div>';
+    try {
+      const r = await fetch(urls.cartJson);
+      const d = await r.json();
+      renderCart(d);
+    } catch {
+      body.innerHTML = '<div class="cm-loading">Ошибка загрузки</div>';
+    }
+  }
+
+  /* ── Отрисовать корзину ── */
+  function renderCart(d) {
+    if (!d.items || d.items.length === 0) {
+      body.innerHTML = `
+        <div class="cm-empty">
+          <div class="cm-empty-icon">🛒</div>
+          <div class="cm-empty-text">Корзина пуста</div>
+        </div>`;
+      return;
+    }
+
+    const itemsHtml = d.items.map(item => `
+      <div class="cm-row" data-bi-id="${item.bi_id}" data-update-url="${item.update_url}">
+        <div style="flex:1;min-width:0">
+          <div class="cm-row-name">${item.name}</div>
+          <div class="cm-row-price">${item.price} сом / шт.</div>
+        </div>
+        <div class="cm-qty">
+          <button class="cm-qty-btn" data-cm-dec>−</button>
+          <span class="cm-qty-num">${item.qty}</span>
+          <button class="cm-qty-btn" data-cm-inc>+</button>
+        </div>
+        <div class="cm-row-total">${item.line_total} сом</div>
+      </div>`).join('');
+
+    const freeFrom    = parseFloat(d.free_from || 0);
+    const subtotalNum = parseFloat(d.subtotal || 0);
+
+    let freeBanner = '';
+    if (d.delivery_enabled && freeFrom > 0) {
+      if (d.free_delivery_reached) {
+        freeBanner = `<div class="cm-free-banner cm-free-ok">🎉 Доставка бесплатная!</div>`;
+      } else {
+        const need = Math.ceil(freeFrom - subtotalNum);
+        freeBanner = `<div class="cm-free-banner cm-free-hint">🚚 До бесплатной доставки ещё <strong>${need} сом</strong></div>`;
+      }
+    }
+
+    const deliveryLabel = d.free_delivery_reached
+      ? `<span class="cm-free-val">Бесплатно 🎉</span>`
+      : `<span id="cmDeliveryFee">${d.delivery_fee} сом</span>`;
+
+    const deliveryRow = d.delivery_enabled
+      ? `<div class="cm-total-row"><span>Доставка</span>${deliveryLabel}</div>`
+      : '';
+
+    const minNote = d.delivery_enabled && parseFloat(d.min_order_amount) > 0
+      ? `<div class="cm-min-note">Минимальная сумма доставки: ${d.min_order_amount} сом</div>` : '';
+
+    body.innerHTML = `
+      ${freeBanner}
+      <div class="cm-items" id="cmItems">${itemsHtml}</div>
+
+      <div class="cm-totals">
+        <div class="cm-total-row"><span>Подытог</span><span id="cmSubtotal">${d.subtotal} сом</span></div>
+        ${deliveryRow}
+        <div class="cm-total-row big"><span>Итого</span><span id="cmTotal">${d.total} сом</span></div>
+      </div>
+
+      <div class="cm-promo">
+        <div class="cm-promo-title">🎟 Промокод</div>
+        <div class="cm-promo-row">
+          <input id="cmPromoInput" type="text" placeholder="Введите промокод" class="cm-promo-input" value="${promoCode}">
+          <button type="button" id="cmPromoBtn" class="cm-promo-btn">Применить</button>
+        </div>
+        <div id="cmPromoMsg" class="cm-promo-msg" style="display:none"></div>
+      </div>
+
+      <div style="background:var(--card,#fff);border:1.5px solid var(--border,#eee);border-radius:14px;padding:16px 18px">
+        <div class="cm-form-title">📝 Оформление заказа</div>
+        <form id="cmCheckoutForm" action="${urls.checkoutUrl}" method="post">
+          <input type="hidden" name="csrfmiddlewaretoken" value="${CSRF}">
+          <input type="hidden" name="promo_code" id="cmPromoHidden" value="${promoCode}">
+
+          <input name="name" placeholder="Ваше имя (необязательно)" class="cm-field">
+
+          <input name="phone" id="cmPhone" type="tel" inputmode="numeric" autocomplete="tel"
+                 required value="+996" minlength="13" maxlength="13"
+                 pattern="^\\+996\\d{9}$" title="Формат: +996XXXXXXXXX"
+                 placeholder="+996700123456" class="cm-field">
+
+          <input name="address" required
+                 placeholder="${d.delivery_enabled ? 'Адрес доставки' : 'Номер стола / кабинки'}"
+                 class="cm-field">
+          ${minNote}
+
+          <textarea name="comment" rows="2" placeholder="Комментарий (необязательно)"
+                    class="cm-field" style="resize:vertical"></textarea>
+
+          <label style="font-size:12px;font-weight:600;color:var(--text2,#555);display:block;margin-bottom:8px">Способ оплаты</label>
+          <div class="cm-radio-group">
+            <label class="cm-radio-opt"><input type="radio" name="payment_method" value="cash" checked><span>💵 Наличные</span></label>
+            <label class="cm-radio-opt"><input type="radio" name="payment_method" value="online"><span>💳 Онлайн</span></label>
+          </div>
+
+          <button type="submit" class="cm-submit" id="cmSubmitBtn">
+            Оформить заказ →
+          </button>
+        </form>
+      </div>`;
+
+    bindModalEvents();
+  }
+
+  /* ── Привязать события в модале ── */
+  function bindModalEvents() {
+    // Прокрутка к форме
+    document.getElementById('cmSubmitBtn').addEventListener('click', () => {
+      const form = document.getElementById('cmCheckoutForm');
+      if (!form.checkValidity()) return;
+    });
+
+    // Телефон
+    const ph = document.getElementById('cmPhone');
+    if (ph) {
+      ph.addEventListener('input', () => {
+        let v = ph.value.replace(/[^\d+]/g, '');
+        if (!v.startsWith('+996')) v = '+996' + v.replace(/\D/g,'').replace(/^996/,'');
+        if (v.length > 13) v = v.slice(0, 13);
+        ph.value = v;
+      });
+      ph.addEventListener('keydown', e => { if (e.key === 'Backspace' && ph.value === '+996') e.preventDefault(); });
+    }
+
+    // Промокод
+    const promoInput = document.getElementById('cmPromoInput');
+    const promoBtn   = document.getElementById('cmPromoBtn');
+    const promoMsg   = document.getElementById('cmPromoMsg');
+    const promoHid   = document.getElementById('cmPromoHidden');
+
+    if (promoCode) { promoInput.readOnly = true; promoBtn.textContent = 'Убрать'; }
+
+    promoBtn.addEventListener('click', async () => {
+      if (promoInput.readOnly) { // сброс
+        promoInput.readOnly = false; promoInput.value = '';
+        promoHid.value = ''; promoCode = '';
+        promoMsg.style.display = 'none';
+        promoBtn.textContent = 'Применить'; return;
+      }
+      const code = promoInput.value.trim().toUpperCase();
+      if (!code) return;
+      promoBtn.disabled = true; promoBtn.textContent = '…';
+      try {
+        const fd = new FormData();
+        fd.append('code', code);
+        const r = await fetch(urls.promoUrl, {
+          method: 'POST', body: fd,
+          headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': CSRF }
+        });
+        const data = await r.json();
+        if (data.ok) {
+          promoCode = code; promoHid.value = code;
+          promoInput.readOnly = true;
+          let desc = data.label || code;
+          if (data.discount_type === 'percent') desc += ` −${parseFloat(data.discount_value).toFixed(0)}%`;
+          else if (data.discount_type === 'fixed') desc += ` −${parseFloat(data.discount_value).toFixed(0)} сом`;
+          showPromoMsg('✓ Промокод применён: ' + desc, true);
+          promoBtn.textContent = 'Убрать'; promoBtn.disabled = false;
+        } else {
+          showPromoMsg('✗ ' + (data.error || 'Неверный промокод'), false);
+          promoBtn.textContent = 'Применить'; promoBtn.disabled = false;
+        }
+      } catch { promoBtn.textContent = 'Применить'; promoBtn.disabled = false; }
+    });
+
+    function showPromoMsg(t, ok) {
+      promoMsg.textContent = t; promoMsg.style.display = '';
+      promoMsg.style.color = ok ? 'var(--teal,#00b896)' : '#ef4444';
+    }
+  }
+
+  /* ── Qty изменение в модале (делегирование) ── */
+  document.getElementById('cmBody').addEventListener('click', async e => {
+    const row = e.target.closest('.cm-row');
+    if (!row) return;
+    const qtyEl = row.querySelector('.cm-qty-num');
+    let qty = parseInt(qtyEl.textContent) || 0;
+
+    if (e.target.closest('[data-cm-inc]')) qty += 1;
+    else if (e.target.closest('[data-cm-dec]')) qty = Math.max(0, qty - 1);
+    else return;
+
+    row.querySelectorAll('.cm-qty-btn').forEach(b => b.disabled = true);
+    try {
+      const fd = new FormData(); fd.append('qty', qty);
+      const r = await fetch(row.dataset.updateUrl, {
+        method: 'POST', body: fd,
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': CSRF }
+      });
+      const d = await r.json();
+      if (!d.ok) return;
+
+      if ((d.row_qty ?? qty) <= 0) {
+        row.remove();
+        const items = document.getElementById('cmItems');
+        if (items && !items.querySelector('.cm-row')) loadCart();
+      } else {
+        qtyEl.textContent = d.row_qty ?? qty;
+        const totalEl = row.querySelector('.cm-row-total');
+        if (totalEl && d.line_total !== undefined) totalEl.textContent = d.line_total + ' сом';
+      }
+
+      // обновить суммы в модале
+      if (d.subtotal !== undefined) { const el = document.getElementById('cmSubtotal'); if (el) el.textContent = d.subtotal + ' сом'; }
+      if (d.total    !== undefined) { const el = document.getElementById('cmTotal');    if (el) el.textContent = d.total    + ' сом'; }
+      updateFreeDeliveryBanner(d);
+
+      // обновить глобальный UI (FAB, hero)
+      updateCartUI(d.qty_total, d.total);
+    } finally {
+      if (row.isConnected) row.querySelectorAll('.cm-qty-btn').forEach(b => b.disabled = false);
+    }
+  });
+
+  /* ── Обновить баннер и доставку без перерисовки всего модала ── */
+  function updateFreeDeliveryBanner(d) {
+    if (!d.delivery_enabled || !parseFloat(d.free_from || 0)) return;
+
+    // баннер
+    let banner = document.querySelector('.cm-free-banner');
+    const freeFrom    = parseFloat(d.free_from);
+    const subtotalNum = parseFloat(d.subtotal || 0);
+
+    if (!banner) {
+      banner = document.createElement('div');
+      const items = document.getElementById('cmItems');
+      if (items) items.parentNode.insertBefore(banner, items);
+    }
+
+    if (d.free_delivery_reached) {
+      banner.className = 'cm-free-banner cm-free-ok';
+      banner.innerHTML = '🎉 Доставка бесплатная!';
+    } else {
+      const need = Math.ceil(freeFrom - subtotalNum);
+      banner.className = 'cm-free-banner cm-free-hint';
+      banner.innerHTML = `🚚 До бесплатной доставки ещё <strong>${need} сом</strong>`;
+    }
+
+    // строка доставки в итогах
+    const deliveryEl = document.getElementById('cmDeliveryFee');
+    if (deliveryEl) {
+      if (d.free_delivery_reached) {
+        deliveryEl.outerHTML = `<span class="cm-free-val">Бесплатно 🎉</span>`;
+      } else {
+        deliveryEl.textContent = d.delivery_fee + ' сом';
+      }
+    }
+  }
+
+  /* ── Когда добавили товар — обновить модал если он открыт ── */
+  const _origUpdate = window.updateCartUI;
+  window.updateCartUI = function(qty, total) {
+    _origUpdate(qty, total);
+    if (modal.classList.contains('open')) loadCart();
+  };
+
 })();
 </script>
 {% endblock %}
