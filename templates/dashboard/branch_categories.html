@@ -365,9 +365,14 @@ function addCategory(chip) {
     headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded'},
     body: `category_id=${catId}`,
   })
-  .then(r => r.json())
+  .then(r => {
+    if (!r.ok) {
+      return r.text().then(t => { throw new Error(`HTTP ${r.status}: ${t.slice(0,200)}`); });
+    }
+    return r.json();
+  })
   .then(data => {
-    if (!data.ok) { showToast(data.error || 'Ошибка', 'err'); chip.classList.remove('loading'); return; }
+    if (!data.ok) { showToast(data.error || 'Ошибка сервера', 'err'); chip.classList.remove('loading'); return; }
 
     // Убрать chip из доступных
     chip.remove();
@@ -415,7 +420,11 @@ function addCategory(chip) {
     refreshPositions();
     showToast(`«${data.name}» добавлена ✓`);
   })
-  .catch(() => { showToast('Ошибка сети', 'err'); chip.classList.remove('loading'); });
+  .catch(err => {
+    console.error('category_add error:', err);
+    showToast('Ошибка: ' + (err.message || 'сеть'), 'err');
+    chip.classList.remove('loading');
+  });
 }
 
 /* ── Toggle ── */

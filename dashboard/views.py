@@ -672,7 +672,7 @@ def branch_categories(request, branch_id):
     # Все категории ресторана, ещё не добавленные в филиал
     all_cats = (
         Category.objects
-        .filter(menu_set__restaurant=branch.restaurant, menu_set__is_active=True)
+        .filter(menu_set__restaurant=branch.restaurant)
         .select_related("menu_set")
         .order_by("menu_set__name", "name_ru")
     )
