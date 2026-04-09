@@ -1,7 +1,7 @@
 
 from django.urls import path, include
 from .views import (
-    about, booking_set_status, contacts, hall_plan, home, place_move, reservation, restaurant_about, restaurant_contacts, restaurant_detail, branch_menu,
+    about, booking_set_status, contacts, hall_plan, home, place_move, reservation, restaurant_about, restaurant_contacts, restaurant_detail, branch_menu, restaurant_branch_menu,
     add_to_cart, cart_detail, cart_update, cart_remove,
     checkout, checkout_success, restaurants_list, validate_promo
 )
@@ -45,6 +45,7 @@ urlpatterns = [
     # path("reservation/", reservation, name="reservation"),
     # slug — лучше в конце
     path("<slug:slug>/", restaurant_detail, name="restaurant_detail"),
+    path("<slug:restaurant_slug>/<int:branch_id>/", restaurant_branch_menu, name="restaurant_branch_menu"),
     
     path("<int:branch_id>/hall/", hall_plan, name="hall_plan"),
     path("place/<int:place_id>/move/", place_move, name="place_move"),

@@ -364,12 +364,9 @@ def restaurant_detail(request, slug):
 
 
 
-def branch_menu(request, branch_id: int):
+def _build_branch_menu_context(request, branch):
+    """Shared logic for branch menu views."""
     from django.db.models import Prefetch
-    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
-    lang = (get_language() or "ru")[:2]
-
-    # Один запрос: все категории + все их позиции через prefetch
     rows_prefetch = Prefetch(
         "items_in_category",
         queryset=BranchCategoryItem.objects
@@ -384,26 +381,32 @@ def branch_menu(request, branch_id: int):
         .prefetch_related(rows_prefetch)
         .order_by("sort_order", "id")
     )
-
     menu = []
     for bc in categories:
-        rows = bc.prefetched_items
-        if rows:
-            menu.append({
-                "branch_category": bc,
-                "items": rows,
-            })
+        if bc.prefetched_items:
+            menu.append({"branch_category": bc, "items": bc.prefetched_items})
 
-    # корзина
     cart = get_cart(request, branch.id)
     _, total, qty_total = cart_details(branch, cart)
+    return {"branch": branch, "menu": menu, "cart_qty": qty_total, "cart_total": total}
 
-    return render(request, "public_site/branch_menu.html", {
-        "branch": branch,
-        "menu": menu,
-        "cart_qty": qty_total,
-        "cart_total": total,
-    })
+
+def branch_menu(request, branch_id: int):
+    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    ctx = _build_branch_menu_context(request, branch)
+    return render(request, "public_site/branch_menu.html", ctx)
+
+
+def restaurant_branch_menu(request, restaurant_slug: str, branch_id: int):
+    """Clean URL: /restaurant-slug/<branch_id>/"""
+    branch = get_object_or_404(
+        Branch, id=branch_id,
+        restaurant__slug=restaurant_slug,
+        is_active=True,
+    )
+    ctx = _build_branch_menu_context(request, branch)
+    ctx["restaurant_slug"] = restaurant_slug  # for back link in template
+    return render(request, "public_site/branch_menu.html", ctx)
 
 
 

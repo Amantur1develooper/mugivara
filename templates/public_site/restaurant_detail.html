@@ -280,7 +280,7 @@
   <section class="grid" id="branchesGrid">
     {% for b in branches %}
       <a class="card branch-card" data-name="{{ b.name_ru|default:b.name_ru|default:'' }} {{ b.address|default:'' }} {{ b.phone|default:'' }}"
-         href="{% url 'public_site:branch_menu' b.id %}">
+         href="{% url 'public_site:restaurant_branch_menu' restaurant.slug b.id %}">
         <div class="cover">
           {% if b.cover_photo %}
             <img src="{{ b.cover_photo.url }}" alt="{{ b.name_ru|default:b.name_ru }}" loading="lazy" decoding="async">

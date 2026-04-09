@@ -459,9 +459,15 @@
 
     <div class="bm-hero-content">
       {# назад #}
-      <a href="{% url 'public_site:restaurant_contacts' branch.restaurant.slug %}" class="bm-hero-back">
+      {% if restaurant_slug %}
+      <a href="{% url 'public_site:restaurant_detail' restaurant_slug %}" class="bm-hero-back">
         ← {% t branch.restaurant "name" %}
       </a>
+      {% else %}
+      <a href="{% url 'public_site:restaurant_detail' branch.restaurant.slug %}" class="bm-hero-back">
+        ← {% t branch.restaurant "name" %}
+      </a>
+      {% endif %}
 
       <div class="bm-hero-row">
         <div>
