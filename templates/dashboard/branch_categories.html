@@ -18,98 +18,148 @@
 
 {% block head_extra %}
 <style>
-  .cat-list{ list-style:none; margin:0; padding:0; }
+/* ── Available chips ── */
+.avail-section { margin-bottom: 28px; }
+.avail-group-label {
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  letter-spacing: .5px; text-transform: uppercase;
+  margin-bottom: 8px; margin-top: 14px;
+}
+.avail-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 100px;
+  border: 1.5px dashed var(--border);
+  background: var(--card);
+  font-size: 13px; font-weight: 500; color: var(--text);
+  cursor: pointer; transition: all .18s;
+  user-select: none;
+}
+.chip:hover {
+  border-color: var(--accent); color: var(--accent);
+  background: rgba(255,77,28,.06);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 10px rgba(255,77,28,.12);
+}
+.chip .chip-plus { font-size: 15px; opacity: .55; }
+.chip.loading { opacity: .5; pointer-events: none; }
+.no-avail { font-size: 13px; color: var(--muted); padding: 8px 0; }
 
-  .cat-row{
-    display:flex; align-items:center; gap:12px;
-    padding:14px 16px; border-radius:14px;
-    background:var(--card); border:1.5px solid var(--border);
-    margin-bottom:8px;
-    transition:border-color .15s, box-shadow .15s, opacity .15s;
-    cursor:default;
-  }
-  .cat-row:hover{ border-color:rgba(255,77,28,.18); }
-  .cat-row.inactive{ opacity:.45; }
-  .cat-row.dragging{
-    opacity:.35; border-color:rgba(255,77,28,.4);
-    box-shadow: 0 4px 20px rgba(0,0,0,.12);
-  }
-  .cat-row.drag-over{
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(255,77,28,.15);
-    background: rgba(255,77,28,.03);
-  }
+/* ── Active list ── */
+.section-title {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 12px; font-weight: 800; color: var(--text2);
+  letter-spacing: -.2px; padding: 8px 0;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 14px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.section-count {
+  font-size: 11px; font-weight: 600;
+  background: rgba(255,77,28,.1); color: var(--accent);
+  border-radius: 100px; padding: 2px 10px;
+  font-family: 'Geologica', sans-serif;
+}
 
-  .drag-handle{
-    color:var(--muted); cursor:grab; font-size:20px; flex-shrink:0;
-    user-select:none; line-height:1; padding:2px 4px;
-    border-radius:6px; transition:color .15s, background .15s;
-  }
-  .drag-handle:hover{ color:var(--accent); background:rgba(255,77,28,.07); }
-  .drag-handle:active{ cursor:grabbing; }
+.cat-list { list-style: none; margin: 0; padding: 0; }
 
-  .cat-info{ flex:1; min-width:0; }
-  .cat-name-text{ font-size:14px; font-weight:600; color:var(--text); }
-  .cat-meta{ font-size:11px; color:var(--muted); margin-top:2px; }
+.cat-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 16px; border-radius: 14px;
+  background: var(--card); border: 1.5px solid var(--border);
+  margin-bottom: 8px;
+  transition: border-color .15s, box-shadow .15s, opacity .2s;
+}
+.cat-row.inactive { opacity: .4; }
+.cat-row.dragging {
+  opacity: .3; border-style: dashed;
+  box-shadow: 0 6px 24px rgba(0,0,0,.13);
+}
+.cat-row.drag-over {
+  border-color: var(--accent);
+  background: rgba(255,77,28,.04);
+  box-shadow: 0 0 0 3px rgba(255,77,28,.12);
+}
 
-  .arrow-btns{ display:flex; flex-direction:column; gap:2px; flex-shrink:0; }
-  .arrow-btn{
-    width:26px; height:22px; border-radius:6px;
-    border:1.5px solid var(--border); background:var(--bg);
-    cursor:pointer; display:flex; align-items:center; justify-content:center;
-    font-size:11px; color:var(--muted);
-    transition:border-color .15s, color .15s, background .15s;
-  }
-  .arrow-btn:hover:not(:disabled){
-    border-color:var(--accent); color:var(--accent); background:rgba(255,77,28,.06);
-  }
-  .arrow-btn:disabled{ opacity:.25; cursor:default; }
+.pos-badge {
+  width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0;
+  background: rgba(255,77,28,.1); color: var(--accent);
+  font-size: 12px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Unbounded', sans-serif;
+  transition: background .2s;
+}
+.drag-handle {
+  color: var(--muted); cursor: grab; font-size: 20px; flex-shrink: 0;
+  user-select: none; padding: 2px 2px;
+  transition: color .15s;
+}
+.drag-handle:hover { color: var(--accent); }
+.drag-handle:active { cursor: grabbing; }
 
-  .toggle-btn{
-    width:40px; height:22px; border-radius:11px;
-    border:none; cursor:pointer; flex-shrink:0;
-    position:relative; transition:background .2s;
-  }
-  .toggle-btn.on{ background:var(--teal); }
-  .toggle-btn.off{ background:#D1D5DB; }
-  .toggle-btn::after{
-    content:''; position:absolute; width:16px; height:16px;
-    border-radius:50%; background:white; top:3px;
-    box-shadow:0 1px 3px rgba(0,0,0,.2); transition:left .2s;
-  }
-  .toggle-btn.on::after{ left:21px; }
-  .toggle-btn.off::after{ left:3px; }
+.cat-name { flex: 1; font-size: 14px; font-weight: 600; color: var(--text); }
+.cat-ms   { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-  .add-form{
-    background:var(--card); border:1px solid var(--border);
-    border-radius:16px; padding:20px; margin-bottom:24px;
-  }
-  .add-form select{
-    flex:1; min-width:200px;
-    padding:10px 14px; border-radius:12px;
-    border:1.5px solid var(--border);
-    font-family:'Geologica',sans-serif; font-size:14px;
-    color:var(--text); background:var(--bg); outline:none;
-    transition:border-color .2s;
-  }
-  .add-form select:focus{ border-color:rgba(255,77,28,.4); }
+.arrow-btns { display: flex; gap: 4px; flex-shrink: 0; }
+.arrow-btn {
+  width: 30px; height: 30px; border-radius: 8px;
+  border: 1.5px solid var(--border); background: var(--bg);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: var(--muted);
+  transition: border-color .15s, color .15s, background .15s;
+}
+.arrow-btn:hover:not(:disabled) {
+  border-color: var(--accent); color: var(--accent);
+  background: rgba(255,77,28,.06);
+}
+.arrow-btn:disabled { opacity: .2; cursor: default; }
 
-  .save-indicator{
-    position:fixed; bottom:24px; right:24px; z-index:999;
-    background:#0D1117; color:white; padding:10px 20px;
-    border-radius:12px; font-size:13px; font-weight:500;
-    box-shadow:0 8px 24px rgba(0,0,0,.2);
-    transform:translateY(20px); opacity:0;
-    transition:all .3s; pointer-events:none;
-  }
-  .save-indicator.show{ transform:translateY(0); opacity:1; }
-  .save-indicator.ok{ background:#047857; }
-  .save-indicator.err{ background:#B91C1C; }
+.toggle-btn {
+  width: 40px; height: 22px; border-radius: 11px;
+  border: none; cursor: pointer; flex-shrink: 0;
+  position: relative; transition: background .2s;
+}
+.toggle-btn.on  { background: var(--teal); }
+.toggle-btn.off { background: #D1D5DB; }
+.toggle-btn::after {
+  content: ''; position: absolute;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: white; top: 3px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: left .2s;
+}
+.toggle-btn.on::after  { left: 21px; }
+.toggle-btn.off::after { left: 3px; }
 
-  .hint-drag{
-    font-size:12px; color:var(--muted); margin-bottom:14px;
-    display:flex; align-items:center; gap:6px;
-  }
+.del-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); font-size: 15px; padding: 5px;
+  border-radius: 8px; flex-shrink: 0;
+  transition: color .15s, background .15s;
+}
+.del-btn:hover { color: #ef4444; background: rgba(239,68,68,.08); }
+
+.empty-state {
+  text-align: center; padding: 36px; color: var(--muted);
+  border: 1.5px dashed var(--border); border-radius: 16px;
+  margin-bottom: 8px;
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 999;
+  background: #0D1117; color: white; padding: 10px 20px;
+  border-radius: 12px; font-size: 13px; font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0,0,0,.2);
+  transform: translateY(20px); opacity: 0;
+  transition: all .3s; pointer-events: none;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.ok  { background: #047857; }
+.toast.err { background: #B91C1C; }
+
+@media(max-width:600px) {
+  .arrow-btns { display: none; }
+}
 </style>
 {% endblock %}
 
@@ -119,162 +169,161 @@
     <div class="db-page-title">Категории меню</div>
     <div class="db-breadcrumb">
       <a href="{% url 'dashboard:home' %}">Заведения</a> /
-      {{ branch.restaurant.name_ru }} /
-      {{ branch.name_ru }}
+      {{ branch.restaurant.name_ru }} / {{ branch.name_ru }}
     </div>
   </div>
 </div>
 
-{# ── ДОБАВИТЬ КАТЕГОРИЮ ── #}
-<div class="add-form">
-  <div class="db-card-title" style="margin-bottom:14px">➕ Добавить категорию</div>
-  <form method="post" action="{% url 'dashboard:category_add' branch.id %}"
-        style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
-    {% csrf_token %}
-    <select name="category_id" required>
-      <option value="">— Выберите категорию —</option>
-      {% for ms in menu_sets %}
-        <optgroup label="{{ ms.name }}">
-          {% for cat in ms.categories.all %}
-          <option value="{{ cat.id }}">{{ cat.name_ru }}</option>
-          {% endfor %}
-        </optgroup>
-      {% empty %}
-        <option disabled>Нет доступных меню-сетов</option>
-      {% endfor %}
-    </select>
-    <button type="submit" class="db-btn db-btn-primary" style="flex-shrink:0">Добавить</button>
-  </form>
-  <div style="font-size:12px;color:var(--muted);margin-top:10px">
-    Категории берутся из меню-сетов ресторана. Если нужной нет — добавьте её в административной панели.
+{# ── ДОСТУПНЫЕ КАТЕГОРИИ ── #}
+<div class="db-card avail-section">
+  <div class="db-card-title" style="margin-bottom:4px">➕ Добавить категорию</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:16px">
+    Нажмите на категорию — она сразу появится в меню филиала
   </div>
+
+  {% if available_cats %}
+    {% regroup available_cats by menu_set.name as grouped %}
+    {% for group in grouped %}
+      <div class="avail-group-label">{{ group.grouper }}</div>
+      <div class="avail-chips">
+        {% for cat in group.list %}
+        <div class="chip" data-id="{{ cat.id }}" data-name="{{ cat.name_ru }}" data-ms="{{ cat.menu_set.name }}" onclick="addCategory(this)">
+          <span class="chip-plus">+</span> {{ cat.name_ru }}
+        </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="no-avail">Все категории ресторана уже добавлены в этот филиал</div>
+  {% endif %}
 </div>
 
-{# ── СПИСОК КАТЕГОРИЙ ── #}
-{% if categories %}
-<div class="hint-drag">
-  <span>⠿</span> Перетащите строку или используйте стрелки для изменения порядка отображения в меню
+{# ── АКТИВНЫЕ КАТЕГОРИИ ── #}
+<div class="section-title">
+  Порядок категорий в меню
+  <span class="section-count" id="catCount">{{ categories|length }}</span>
 </div>
+
+<p style="font-size:12px;color:var(--muted);margin:-6px 0 14px;display:flex;align-items:center;gap:6px">
+  <span style="font-size:16px">⠿</span> Перетащите или используйте стрелки ◀ ▶ для изменения порядка
+</p>
 
 <ul class="cat-list" id="catList">
 {% for bc in categories %}
 <li class="cat-row {% if not bc.is_active %}inactive{% endif %}"
-    draggable="true"
-    data-id="{{ bc.id }}"
-    data-order="{{ bc.sort_order }}">
-
+    draggable="true" data-id="{{ bc.id }}">
   <span class="drag-handle" title="Перетащить">⠿</span>
-
-  <div class="cat-info">
-    <div class="cat-name-text">{{ bc.category.name_ru }}</div>
-    <div class="cat-meta">{{ bc.category.menu_set.name }}</div>
+  <div class="pos-badge pos-num">{{ forloop.counter }}</div>
+  <div style="flex:1;min-width:0">
+    <div class="cat-name">{{ bc.category.name_ru }}</div>
+    <div class="cat-ms">{{ bc.category.menu_set.name }}</div>
   </div>
-
   <div class="arrow-btns">
     <button class="arrow-btn" onclick="moveUp(this)" title="Выше">▲</button>
     <button class="arrow-btn" onclick="moveDown(this)" title="Ниже">▼</button>
   </div>
-
   <button class="toggle-btn {% if bc.is_active %}on{% else %}off{% endif %}"
-          data-id="{{ bc.id }}"
-          onclick="toggleCat(this)"
-          title="{% if bc.is_active %}Видна{% else %}Скрыта{% endif %}">
+          data-id="{{ bc.id }}" onclick="toggleCat(this)"
+          title="{% if bc.is_active %}Видна в меню{% else %}Скрыта{% endif %}">
   </button>
-
-  <form method="post" action="{% url 'dashboard:category_remove' bc.id %}"
-        style="flex-shrink:0"
-        onsubmit="return confirm('Удалить категорию «{{ bc.category.name_ru }}» из филиала?')">
-    {% csrf_token %}
-    <button type="submit"
-            style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:4px"
-            title="Удалить">🗑</button>
-  </form>
-
+  <button class="del-btn" data-id="{{ bc.id }}"
+          data-name="{{ bc.category.name_ru }}"
+          onclick="removeCat(this)" title="Убрать из филиала">✕</button>
+</li>
+{% empty %}
+<li>
+  <div class="empty-state">
+    <div style="font-size:32px;margin-bottom:8px">📂</div>
+    <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px">Нет категорий</div>
+    <div style="font-size:13px">Добавьте категории выше — нажмите на нужную</div>
+  </div>
 </li>
 {% endfor %}
 </ul>
 
-{% else %}
-<div class="db-card" style="text-align:center;padding:40px;color:var(--muted)">
-  <div style="font-size:36px;margin-bottom:10px">📂</div>
-  <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px">Категорий нет</div>
-  <div style="font-size:13px">Добавьте категории из меню-сетов ресторана выше</div>
-</div>
-{% endif %}
-
-<div class="save-indicator" id="toast"></div>
+<div class="toast" id="toast"></div>
 
 <div id="js-urls"
+     data-add-url="{% url 'dashboard:category_add' branch.id %}"
      data-toggle-url="{% url 'dashboard:category_toggle' 99999 %}"
      data-reorder-url="{% url 'dashboard:category_reorder' 99999 %}"
+     data-remove-url="{% url 'dashboard:category_remove' 99999 %}"
      style="display:none"></div>
 
 <script>
-const CSRF = '{{ csrf_token }}';
-const _urls = document.getElementById('js-urls').dataset;
-const toggleUrl  = id => _urls.toggleUrl.replace('99999', id);
-const reorderUrl = id => _urls.reorderUrl.replace('99999', id);
+const CSRF       = '{{ csrf_token }}';
+const _u         = document.getElementById('js-urls').dataset;
+const addUrl     = _u.addUrl;
+const toggleUrl  = id => _u.toggleUrl.replace('99999', id);
+const reorderUrl = id => _u.reorderUrl.replace('99999', id);
+const removeUrl  = id => _u.removeUrl.replace('99999', id);
 
 /* ── Toast ── */
-function showToast(msg, type) {
+let _toastTimer;
+function showToast(msg, type='ok') {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = `save-indicator show ${type}`;
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove('show'), 2000);
+  t.className = `toast show ${type}`;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
 }
 
-/* ── Сохранить порядок одного элемента ── */
-function saveSortOrder(li, order) {
-  li.dataset.order = order;
-  const id = li.dataset.id;
-  fetch(reorderUrl(id), {
-    method: 'POST',
-    headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded'},
-    body: `sort_order=${order}`,
-  })
-  .then(r => r.json())
-  .then(d => { if (!d.ok) showToast('Ошибка сохранения', 'err'); })
-  .catch(() => showToast('Ошибка сети', 'err'));
-}
-
-/* ── Пересчитать и сохранить порядок для всех элементов ── */
-function rebuildAndSave() {
-  const items = [...document.querySelectorAll('#catList .cat-row')];
-  items.forEach((li, idx) => {
-    const order = (idx + 1) * 10;
-    saveSortOrder(li, order);
+/* ── Позиции ── */
+function refreshPositions() {
+  const rows = [...document.querySelectorAll('#catList .cat-row')];
+  rows.forEach((li, i) => {
+    const b = li.querySelector('.pos-badge');
+    if (b) b.textContent = i + 1;
   });
-  updateArrows();
-  showToast('Порядок сохранён ✓', 'ok');
+  const [first, last] = [rows[0], rows[rows.length - 1]];
+  rows.forEach(li => {
+    const [up, dn] = li.querySelectorAll('.arrow-btn');
+    if (up)  up.disabled  = li === first;
+    if (dn) dn.disabled  = li === last;
+  });
+  document.getElementById('catCount').textContent = rows.length;
 }
 
-/* ── Кнопки ▲▼ ── */
+/* ── Сохранить весь порядок (batch) ── */
+let _saveTimer;
+function scheduleOrderSave() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => {
+    const rows = [...document.querySelectorAll('#catList .cat-row')];
+    let pending = rows.length;
+    if (!pending) return;
+    rows.forEach((li, i) => {
+      fetch(reorderUrl(li.dataset.id), {
+        method: 'POST',
+        headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `sort_order=${(i + 1) * 10}`,
+      })
+      .then(r => r.json())
+      .then(() => { if (--pending === 0) showToast('Порядок сохранён ✓'); })
+      .catch(() => showToast('Ошибка сохранения', 'err'));
+    });
+  }, 400);
+}
+
+/* ── Стрелки ── */
 function moveUp(btn) {
-  const li = btn.closest('.cat-row');
-  const prev = li.previousElementSibling;
-  if (prev) { li.parentNode.insertBefore(li, prev); rebuildAndSave(); }
+  const li = btn.closest('.cat-row'), prev = li.previousElementSibling;
+  if (prev && prev.classList.contains('cat-row')) {
+    li.parentNode.insertBefore(li, prev);
+    refreshPositions(); scheduleOrderSave();
+  }
 }
 function moveDown(btn) {
-  const li = btn.closest('.cat-row');
-  const next = li.nextElementSibling;
-  if (next) { li.parentNode.insertBefore(next, li); rebuildAndSave(); }
+  const li = btn.closest('.cat-row'), next = li.nextElementSibling;
+  if (next && next.classList.contains('cat-row')) {
+    li.parentNode.insertBefore(next, li);
+    refreshPositions(); scheduleOrderSave();
+  }
 }
-
-function updateArrows() {
-  const items = [...document.querySelectorAll('#catList .cat-row')];
-  items.forEach((li, idx) => {
-    const [up, down] = li.querySelectorAll('.arrow-btn');
-    up.disabled   = idx === 0;
-    down.disabled = idx === items.length - 1;
-  });
-}
-updateArrows();
 
 /* ── Drag & Drop ── */
 let dragged = null;
-
-document.querySelectorAll('#catList .cat-row').forEach(li => {
+function initDrag(li) {
   li.addEventListener('dragstart', e => {
     dragged = li;
     setTimeout(() => li.classList.add('dragging'), 0);
@@ -284,11 +333,10 @@ document.querySelectorAll('#catList .cat-row').forEach(li => {
     li.classList.remove('dragging');
     document.querySelectorAll('.cat-row').forEach(r => r.classList.remove('drag-over'));
     dragged = null;
-    rebuildAndSave();
+    refreshPositions(); scheduleOrderSave();
   });
   li.addEventListener('dragover', e => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    e.preventDefault(); e.dataTransfer.dropEffect = 'move';
     if (li !== dragged) {
       document.querySelectorAll('.cat-row').forEach(r => r.classList.remove('drag-over'));
       li.classList.add('drag-over');
@@ -296,45 +344,113 @@ document.querySelectorAll('#catList .cat-row').forEach(li => {
   });
   li.addEventListener('dragleave', () => li.classList.remove('drag-over'));
   li.addEventListener('drop', e => {
-    e.preventDefault();
-    li.classList.remove('drag-over');
+    e.preventDefault(); li.classList.remove('drag-over');
     if (dragged && dragged !== li) {
-      const list = document.getElementById('catList');
-      const items = [...list.children];
-      const fromIdx = items.indexOf(dragged);
-      const toIdx   = items.indexOf(li);
-      if (fromIdx < toIdx) {
-        list.insertBefore(dragged, li.nextSibling);
-      } else {
-        list.insertBefore(dragged, li);
-      }
+      const items = [...li.parentNode.children];
+      const fi = items.indexOf(dragged), ti = items.indexOf(li);
+      li.parentNode.insertBefore(dragged, fi < ti ? li.nextSibling : li);
     }
   });
-});
+}
+document.querySelectorAll('#catList .cat-row').forEach(initDrag);
+refreshPositions();
+
+/* ── Добавить категорию (AJAX) ── */
+function addCategory(chip) {
+  chip.classList.add('loading');
+  const catId = chip.dataset.id;
+
+  fetch(addUrl, {
+    method: 'POST',
+    headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded'},
+    body: `category_id=${catId}`,
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (!data.ok) { showToast(data.error || 'Ошибка', 'err'); chip.classList.remove('loading'); return; }
+
+    // Убрать chip из доступных
+    chip.remove();
+    // Если чипов в группе не осталось — убрать группу
+    const chips = chip.closest('.avail-chips');
+    if (chips && !chips.querySelector('.chip')) {
+      const label = chips.previousElementSibling;
+      if (label && label.classList.contains('avail-group-label')) label.remove();
+      chips.remove();
+    }
+    // Если вообще не осталось — показать заглушку
+    const avail = document.querySelector('.avail-section');
+    if (avail && !avail.querySelector('.chip')) {
+      const hint = avail.querySelector('.no-avail') || document.createElement('div');
+      hint.className = 'no-avail';
+      hint.textContent = 'Все категории ресторана уже добавлены в этот филиал';
+      if (!avail.querySelector('.no-avail')) avail.appendChild(hint);
+    }
+
+    // Убрать заглушку "нет категорий" если была
+    const empty = document.querySelector('.empty-state');
+    if (empty) empty.closest('li').remove();
+
+    // Добавить новую строку в список
+    const li = document.createElement('li');
+    li.className = 'cat-row';
+    li.draggable = true;
+    li.dataset.id = data.bc_id;
+    li.innerHTML = `
+      <span class="drag-handle" title="Перетащить">⠿</span>
+      <div class="pos-badge pos-num"></div>
+      <div style="flex:1;min-width:0">
+        <div class="cat-name">${data.name}</div>
+        <div class="cat-ms">${data.menu_set}</div>
+      </div>
+      <div class="arrow-btns">
+        <button class="arrow-btn" onclick="moveUp(this)" title="Выше">▲</button>
+        <button class="arrow-btn" onclick="moveDown(this)" title="Ниже">▼</button>
+      </div>
+      <button class="toggle-btn on" data-id="${data.bc_id}" onclick="toggleCat(this)" title="Видна в меню"></button>
+      <button class="del-btn" data-id="${data.bc_id}" data-name="${data.name}" onclick="removeCat(this)" title="Убрать из филиала">✕</button>
+    `;
+    document.getElementById('catList').appendChild(li);
+    initDrag(li);
+    refreshPositions();
+    showToast(`«${data.name}» добавлена ✓`);
+  })
+  .catch(() => { showToast('Ошибка сети', 'err'); chip.classList.remove('loading'); });
+}
 
 /* ── Toggle ── */
 function toggleCat(btn) {
   const id = btn.dataset.id;
-  fetch(toggleUrl(id), {
-    method: 'POST',
-    headers: {'X-CSRFToken': CSRF},
-  })
+  fetch(toggleUrl(id), { method: 'POST', headers: {'X-CSRFToken': CSRF} })
   .then(r => r.json())
   .then(data => {
-    if (data.ok) {
-      const row = btn.closest('.cat-row');
-      if (data.is_active) {
-        btn.classList.replace('off', 'on');
-        row.classList.remove('inactive');
-        btn.title = 'Видна';
-        showToast('Категория активна ✓', 'ok');
-      } else {
-        btn.classList.replace('on', 'off');
-        row.classList.add('inactive');
-        btn.title = 'Скрыта';
-        showToast('Категория скрыта', 'ok');
-      }
+    if (!data.ok) return;
+    const row = btn.closest('.cat-row');
+    if (data.is_active) {
+      btn.classList.replace('off','on'); row.classList.remove('inactive');
+      btn.title = 'Видна в меню'; showToast('Категория видна ✓');
+    } else {
+      btn.classList.replace('on','off'); row.classList.add('inactive');
+      btn.title = 'Скрыта'; showToast('Категория скрыта');
     }
+  })
+  .catch(() => showToast('Ошибка сети', 'err'));
+}
+
+/* ── Удалить ── */
+function removeCat(btn) {
+  const name = btn.dataset.name;
+  if (!confirm(`Убрать категорию «${name}» из этого филиала?`)) return;
+  const id = btn.dataset.id;
+
+  fetch(removeUrl(id), { method: 'POST', headers: {'X-CSRFToken': CSRF} })
+  .then(r => {
+    // remove возвращает redirect, считаем любой ответ успехом
+    const li = btn.closest('.cat-row');
+    li.style.transition = 'opacity .2s, transform .2s';
+    li.style.opacity = '0'; li.style.transform = 'translateX(20px)';
+    setTimeout(() => { li.remove(); refreshPositions(); }, 220);
+    showToast(`«${name}» убрана`);
   })
   .catch(() => showToast('Ошибка сети', 'err'));
 }

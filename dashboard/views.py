@@ -661,23 +661,27 @@ def branch_categories(request, branch_id):
     if not _has_branch_access(request.user, branch):
         return redirect("dashboard:home")
 
-    categories = (
+    active_bcs = list(
         BranchCategory.objects
         .filter(branch=branch)
         .select_related("category__menu_set")
         .order_by("sort_order", "id")
     )
-    # MenuSets доступные для этого ресторана (для формы добавления)
-    menu_sets = (
-        MenuSet.objects
-        .filter(restaurant=branch.restaurant, is_active=True)
-        .prefetch_related("categories")
+    added_cat_ids = {bc.category_id for bc in active_bcs}
+
+    # Все категории ресторана, ещё не добавленные в филиал
+    all_cats = (
+        Category.objects
+        .filter(menu_set__restaurant=branch.restaurant, menu_set__is_active=True)
+        .select_related("menu_set")
+        .order_by("menu_set__name", "name_ru")
     )
+    available_cats = [c for c in all_cats if c.id not in added_cat_ids]
 
     return render(request, "dashboard/branch_categories.html", {
         "branch": branch,
-        "categories": categories,
-        "menu_sets": menu_sets,
+        "categories": active_bcs,
+        "available_cats": available_cats,
     })
 
 
@@ -686,27 +690,32 @@ def branch_categories(request, branch_id):
 def category_add(request, branch_id):
     branch = get_object_or_404(Branch, id=branch_id)
     if not _has_branch_access(request.user, branch):
-        return redirect("dashboard:home")
+        return JsonResponse({"ok": False}, status=403)
 
     category_id = request.POST.get("category_id")
-    if category_id:
-        try:
-            cat = Category.objects.select_related("menu_set").get(
-                id=category_id, menu_set__restaurant=branch.restaurant
-            )
-            max_order = BranchCategory.objects.filter(branch=branch).aggregate(
-                m=Max("sort_order")
-            )["m"] or 0
-            BranchCategory.objects.get_or_create(
-                branch=branch,
-                category=cat,
-                defaults={"sort_order": max_order + 10, "is_active": True},
-            )
-            messages.success(request, f"Категория «{cat.name_ru}» добавлена")
-        except Category.DoesNotExist:
-            messages.error(request, "Категория не найдена")
-
-    return redirect("dashboard:branch_categories", branch_id=branch.id)
+    try:
+        cat = Category.objects.select_related("menu_set").get(
+            id=category_id, menu_set__restaurant=branch.restaurant
+        )
+        max_order = BranchCategory.objects.filter(branch=branch).aggregate(
+            m=Max("sort_order")
+        )["m"] or 0
+        bc, created = BranchCategory.objects.get_or_create(
+            branch=branch,
+            category=cat,
+            defaults={"sort_order": max_order + 10, "is_active": True},
+        )
+        return JsonResponse({
+            "ok": True,
+            "bc_id": bc.id,
+            "cat_id": cat.id,
+            "name": cat.name_ru,
+            "menu_set": cat.menu_set.name,
+            "sort_order": bc.sort_order,
+            "is_active": bc.is_active,
+        })
+    except Category.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Категория не найдена"})
 
 
 @require_POST
@@ -740,8 +749,6 @@ def category_reorder(request, bc_id):
 def category_remove(request, bc_id):
     bc = get_object_or_404(BranchCategory, id=bc_id)
     if not _has_branch_access(request.user, bc.branch):
-        return redirect("dashboard:home")
-    branch_id = bc.branch_id
+        return JsonResponse({"ok": False}, status=403)
     bc.delete()
-    messages.success(request, "Категория удалена из филиала")
-    return redirect("dashboard:branch_categories", branch_id=branch_id)
+    return JsonResponse({"ok": True})
