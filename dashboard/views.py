@@ -75,8 +75,14 @@ def restaurant_edit(request, restaurant_id):
         name = request.POST.get("name_ru", "").strip()
         if name:
             restaurant.name_ru = name
-        restaurant.about_ru = request.POST.get("about_ru", "").strip()
+        restaurant.about_ru     = request.POST.get("about_ru", "").strip()
         restaurant.external_url = request.POST.get("external_url", "").strip()
+        restaurant.phone        = request.POST.get("phone", "").strip()
+        restaurant.whatsapp     = request.POST.get("whatsapp", "").strip()
+        restaurant.instagram    = request.POST.get("instagram", "").strip()
+        restaurant.telegram     = request.POST.get("telegram", "").strip()
+        restaurant.map_url      = request.POST.get("map_url", "").strip()
+        restaurant.tiktok       = request.POST.get("tiktok", "").strip()
 
         logo = request.FILES.get("logo")
         if logo:

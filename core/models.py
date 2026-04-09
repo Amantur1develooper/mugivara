@@ -30,7 +30,14 @@ class Restaurant(TimeStampedModel):
         blank=True, default="",
         help_text="Если заполнено — кнопка «Перейти к заказу» будет вести на этот сайт"
     )
-    
+    phone        = models.CharField("Телефон", max_length=60, blank=True, default="")
+    whatsapp     = models.CharField("WhatsApp (номер)", max_length=60, blank=True, default="",
+                                    help_text="Только цифры со знаком +, напр. +996700123456")
+    instagram    = models.URLField("Instagram", blank=True, default="")
+    telegram     = models.CharField("Telegram (@username или ссылка)", max_length=120, blank=True, default="")
+    map_url      = models.URLField("Ссылка на карту (2GIS / Google Maps)", blank=True, default="")
+    tiktok       = models.URLField("TikTok", blank=True, default="")
+
     class Meta:
         verbose_name = "Ресторан"
         verbose_name_plural = "Рестораны"
