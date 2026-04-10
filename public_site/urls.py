@@ -15,6 +15,7 @@ from public_site.views_table import (
 app_name = "public_site"
 
 urlpatterns = [
+    
     path("", home, name="home"),
     path("restaurants/", restaurants_list, name="restaurants_list"),
     # path("shops/", include("shops.urls")),
