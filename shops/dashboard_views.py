@@ -4,7 +4,8 @@ from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Q, Max
+from django.db import models as _models
 
 from .models import (
     Store, StoreBranch, StoreCategory, StoreProduct,
@@ -176,6 +177,176 @@ def shop_price_update(request, stock_id):
     stock.product.price = price
     stock.product.save(update_fields=["price"])
     return JsonResponse({"ok": True, "price": str(price)})
+
+
+# ── PRODUCT ADD / EDIT / DELETE / TOGGLE ─────────────────────────────────────
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_product_add(request, branch_id):
+    branch = get_object_or_404(StoreBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return JsonResponse({"ok": False}, status=403)
+
+    name_ru = request.POST.get("name_ru", "").strip()
+    if not name_ru:
+        return JsonResponse({"ok": False, "error": "Укажите название товара"})
+
+    category_id = request.POST.get("category_id") or None
+    category = None
+    if category_id:
+        try:
+            category = StoreCategory.objects.get(id=category_id, store=branch.store)
+        except StoreCategory.DoesNotExist:
+            pass
+
+    product = StoreProduct(
+        store=branch.store,
+        category=category,
+        name_ru=name_ru,
+        name_ky=request.POST.get("name_ky", "").strip(),
+        name_en=request.POST.get("name_en", "").strip(),
+        price=_dec(request.POST.get("price", "0")),
+        unit=request.POST.get("unit", "pcs"),
+        is_active=True,
+    )
+    if request.FILES.get("photo"):
+        product.photo = request.FILES["photo"]
+    product.save()
+
+    qty = _dec(request.POST.get("qty", "0"))
+    stock = StoreStock.objects.create(branch=branch, product=product, qty=qty)
+
+    return JsonResponse({
+        "ok": True,
+        "stock_id": stock.id,
+        "product_id": product.id,
+        "name_ru": product.name_ru,
+        "name_ky": product.name_ky,
+        "name_en": product.name_en,
+        "price": str(product.price),
+        "qty": str(stock.qty),
+        "unit": product.unit,
+        "unit_display": product.get_unit_display(),
+        "photo_url": product.photo.url if product.photo else "",
+        "is_active": product.is_active,
+        "category_id": category.id if category else 0,
+    })
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_product_edit(request, stock_id):
+    stock = get_object_or_404(StoreStock, id=stock_id)
+    if not _has_branch_access(request.user, stock.branch):
+        return JsonResponse({"ok": False}, status=403)
+
+    product = stock.product
+    name_ru = request.POST.get("name_ru", "").strip()
+    if name_ru:
+        product.name_ru = name_ru
+    product.name_ky = request.POST.get("name_ky", "").strip()
+    product.name_en = request.POST.get("name_en", "").strip()
+    product.price = _dec(request.POST.get("price", str(product.price)))
+    product.unit = request.POST.get("unit", product.unit)
+
+    category_id = request.POST.get("category_id") or None
+    if category_id:
+        try:
+            product.category = StoreCategory.objects.get(id=category_id, store=stock.branch.store)
+        except StoreCategory.DoesNotExist:
+            product.category = None
+    else:
+        product.category = None
+
+    if request.FILES.get("photo"):
+        product.photo = request.FILES["photo"]
+    product.save()
+
+    stock.qty = _dec(request.POST.get("qty", str(stock.qty)))
+    stock.save(update_fields=["qty"])
+
+    return JsonResponse({
+        "ok": True,
+        "name_ru": product.name_ru,
+        "name_ky": product.name_ky,
+        "name_en": product.name_en,
+        "price": str(product.price),
+        "qty": str(stock.qty),
+        "unit_display": product.get_unit_display(),
+        "photo_url": product.photo.url if product.photo else "",
+        "category_id": product.category_id or 0,
+    })
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_product_delete(request, stock_id):
+    stock = get_object_or_404(StoreStock, id=stock_id)
+    if not _has_branch_access(request.user, stock.branch):
+        return JsonResponse({"ok": False}, status=403)
+    try:
+        stock.product.delete()
+    except Exception:
+        return JsonResponse({"ok": False, "error": "Товар используется в заказах и не может быть удалён"})
+    return JsonResponse({"ok": True})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_product_toggle(request, stock_id):
+    stock = get_object_or_404(StoreStock, id=stock_id)
+    if not _has_branch_access(request.user, stock.branch):
+        return JsonResponse({"ok": False}, status=403)
+    p = stock.product
+    p.is_active = not p.is_active
+    p.save(update_fields=["is_active"])
+    return JsonResponse({"ok": True, "is_active": p.is_active})
+
+
+# ── CATEGORY ADD / RENAME / DELETE ────────────────────────────────────────────
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_category_add(request, branch_id):
+    branch = get_object_or_404(StoreBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return JsonResponse({"ok": False}, status=403)
+    name = request.POST.get("name_ru", "").strip()
+    if not name:
+        return JsonResponse({"ok": False, "error": "Укажите название категории"})
+    max_order = branch.store.categories.aggregate(m=Max("sort_order"))["m"] or 0
+    cat = StoreCategory.objects.create(
+        store=branch.store,
+        name_ru=name,
+        sort_order=max_order + 10,
+        is_active=True,
+    )
+    return JsonResponse({"ok": True, "id": cat.id, "name_ru": cat.name_ru})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_category_rename(request, category_id):
+    cat = get_object_or_404(StoreCategory, id=category_id)
+    if not _has_store_access(request.user, cat.store):
+        return JsonResponse({"ok": False}, status=403)
+    name = request.POST.get("name_ru", "").strip()
+    if not name:
+        return JsonResponse({"ok": False, "error": "Название не может быть пустым"})
+    cat.name_ru = name
+    cat.save(update_fields=["name_ru"])
+    return JsonResponse({"ok": True, "name_ru": cat.name_ru})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_category_delete(request, category_id):
+    cat = get_object_or_404(StoreCategory, id=category_id)
+    if not _has_store_access(request.user, cat.store):
+        return JsonResponse({"ok": False}, status=403)
+    cat.delete()   # StoreProduct.category = SET_NULL, товары остаются
+    return JsonResponse({"ok": True})
 
 
 # ── ORDERS ────────────────────────────────────────────────────────────────────

@@ -7,6 +7,9 @@
 <a href="{% url 'dashboard:restaurant_edit' restaurant.id %}" class="active">
   <span class="db-nav-icon">✏️</span> Описание
 </a>
+<a href="{% url 'dashboard:menu_sets' restaurant.id %}">
+  <span class="db-nav-icon">📋</span> Сеты категорий
+</a>
 {% endblock %}
 
 {% block head_extra %}

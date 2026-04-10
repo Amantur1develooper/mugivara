@@ -772,3 +772,111 @@ def category_remove(request, bc_id):
         return JsonResponse({"ok": False}, status=403)
     bc.delete()
     return JsonResponse({"ok": True})
+
+
+# ── MENU SETS (сеты категорий) ────────────────────────────────────────────────
+
+def _has_restaurant_access(user, restaurant):
+    if user.is_superuser:
+        return True
+    return Membership.objects.filter(user=user, restaurant=restaurant).exists()
+
+
+@login_required(login_url="dashboard:login")
+def menu_sets(request, restaurant_id):
+    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+    if not _has_restaurant_access(request.user, restaurant):
+        return redirect("dashboard:home")
+    sets = (
+        MenuSet.objects
+        .filter(restaurant=restaurant)
+        .prefetch_related("categories")
+        .order_by("id")
+    )
+    return render(request, "dashboard/menu_sets.html", {
+        "restaurant": restaurant,
+        "sets": sets,
+    })
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def menu_set_add(request, restaurant_id):
+    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+    if not _has_restaurant_access(request.user, restaurant):
+        return JsonResponse({"ok": False}, status=403)
+    name = request.POST.get("name", "").strip()
+    if not name:
+        return JsonResponse({"ok": False, "error": "Укажите название сета"})
+    ms = MenuSet.objects.create(restaurant=restaurant, name=name, is_active=True)
+    return JsonResponse({"ok": True, "id": ms.id, "name": ms.name})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def menu_set_rename(request, menu_set_id):
+    ms = get_object_or_404(MenuSet, id=menu_set_id)
+    if not _has_restaurant_access(request.user, ms.restaurant):
+        return JsonResponse({"ok": False}, status=403)
+    name = request.POST.get("name", "").strip()
+    if not name:
+        return JsonResponse({"ok": False, "error": "Название не может быть пустым"})
+    ms.name = name
+    ms.save(update_fields=["name", "updated_at"])
+    return JsonResponse({"ok": True, "name": ms.name})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def menu_set_delete(request, menu_set_id):
+    ms = get_object_or_404(MenuSet, id=menu_set_id)
+    if not _has_restaurant_access(request.user, ms.restaurant):
+        return JsonResponse({"ok": False}, status=403)
+    ms.delete()
+    return JsonResponse({"ok": True})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def ms_category_add(request, menu_set_id):
+    ms = get_object_or_404(MenuSet, id=menu_set_id)
+    if not _has_restaurant_access(request.user, ms.restaurant):
+        return JsonResponse({"ok": False}, status=403)
+    name_ru = request.POST.get("name_ru", "").strip()
+    if not name_ru:
+        return JsonResponse({"ok": False, "error": "Укажите название категории"})
+    cat = Category.objects.create(
+        menu_set=ms,
+        name_ru=name_ru,
+        name_ky=request.POST.get("name_ky", "").strip(),
+        name_en=request.POST.get("name_en", "").strip(),
+    )
+    return JsonResponse({"ok": True, "id": cat.id, "name_ru": cat.name_ru,
+                         "name_ky": cat.name_ky, "name_en": cat.name_en})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def ms_category_edit(request, category_id):
+    cat = get_object_or_404(Category, id=category_id)
+    if not _has_restaurant_access(request.user, cat.menu_set.restaurant):
+        return JsonResponse({"ok": False}, status=403)
+    name_ru = request.POST.get("name_ru", "").strip()
+    if not name_ru:
+        return JsonResponse({"ok": False, "error": "Название не может быть пустым"})
+    cat.name_ru = name_ru
+    cat.name_ky = request.POST.get("name_ky", "").strip()
+    cat.name_en = request.POST.get("name_en", "").strip()
+    cat.save(update_fields=["name_ru", "name_ky", "name_en", "updated_at"])
+    return JsonResponse({"ok": True, "name_ru": cat.name_ru,
+                         "name_ky": cat.name_ky, "name_en": cat.name_en})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def ms_category_delete(request, category_id):
+    cat = get_object_or_404(Category, id=category_id)
+    if not _has_restaurant_access(request.user, cat.menu_set.restaurant):
+        return JsonResponse({"ok": False}, status=403)
+    cat.delete()
+    return JsonResponse({"ok": True})

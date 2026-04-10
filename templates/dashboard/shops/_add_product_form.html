@@ -1,0 +1,46 @@
+<div class="pl-add-grid">
+  <div class="pl-add-field">
+    <div class="pl-add-photo-wrap">
+      <input type="file" accept="image/*"
+             onchange="previewAddPhoto(this,'add-preview-{{ panel_id }}','add-ph-{{ panel_id }}')">
+      <div class="pl-add-photo-ph" id="add-ph-{{ panel_id }}">📷</div>
+      <img class="pl-add-photo-preview" id="add-preview-{{ panel_id }}" alt="">
+    </div>
+  </div>
+  <div class="pl-add-field">
+    <label class="pl-add-label">Название *</label>
+    <input class="pl-add-input" id="add-name-{{ panel_id }}" placeholder="Название (RU)"
+           onkeydown="if(event.key==='Enter')submitAddProduct('{{ panel_id }}')">
+  </div>
+  <div class="pl-add-field">
+    <label class="pl-add-label">Цена (сом)</label>
+    <input class="pl-add-input" id="add-price-{{ panel_id }}" type="number" min="0" placeholder="0" value="0">
+  </div>
+  <div class="pl-add-field">
+    <label class="pl-add-label">Остаток</label>
+    <input class="pl-add-input" id="add-qty-{{ panel_id }}" type="number" min="0" placeholder="0" value="0">
+  </div>
+  <div class="pl-add-field">
+    <label class="pl-add-label">Единица</label>
+    <select class="pl-add-select" id="add-unit-{{ panel_id }}">
+      <option value="pcs">шт</option>
+      <option value="kg">кг</option>
+      <option value="l">л</option>
+    </select>
+  </div>
+  <div class="pl-add-field">
+    <label class="pl-add-label">&nbsp;</label>
+    <button class="pl-add-btn" onclick="submitAddProduct('{{ panel_id }}')">Добавить</button>
+  </div>
+</div>
+<button class="pl-toggle-extra" onclick="toggleExtra('{{ panel_id }}')">▸ KY / EN названия</button>
+<div class="pl-add-extra" id="add-extra-{{ panel_id }}">
+  <div class="pl-add-field">
+    <label class="pl-add-label">Название (KY)</label>
+    <input class="pl-add-input" id="add-name-ky-{{ panel_id }}" placeholder="Аты (кыргызча)">
+  </div>
+  <div class="pl-add-field">
+    <label class="pl-add-label">Название (EN)</label>
+    <input class="pl-add-input" id="add-name-en-{{ panel_id }}" placeholder="Name (English)">
+  </div>
+</div>

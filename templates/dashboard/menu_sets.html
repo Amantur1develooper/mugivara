@@ -1,0 +1,414 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Сеты категорий — {{ restaurant.name_ru }}{% endblock %}
+
+{% block sidebar_extra %}
+<div class="db-nav-label">Ресторан</div>
+<a href="{% url 'dashboard:restaurant_edit' restaurant.id %}">
+  <span class="db-nav-icon">✏️</span> Описание
+</a>
+<a href="{% url 'dashboard:menu_sets' restaurant.id %}" class="active">
+  <span class="db-nav-icon">📋</span> Сеты категорий
+</a>
+{% endblock %}
+
+{% block head_extra %}
+<style>
+  .ms-grid { display: flex; flex-direction: column; gap: 16px; }
+
+  .ms-card {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 18px; overflow: hidden;
+  }
+  .ms-card-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,.015);
+  }
+  .ms-card-icon { font-size: 18px; }
+  .ms-name-display {
+    flex: 1; font-size: 15px; font-weight: 700; color: var(--text);
+    cursor: pointer; padding: 2px 6px; border-radius: 6px;
+    transition: background .15s;
+  }
+  .ms-name-display:hover { background: rgba(0,0,0,.05); }
+  .ms-name-edit {
+    flex: 1; font-size: 15px; font-weight: 700;
+    background: var(--bg); border: 1.5px solid var(--accent);
+    border-radius: 8px; padding: 4px 10px; outline: none;
+    display: none;
+  }
+  .ms-head-btn {
+    padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: none; transition: all .15s;
+  }
+  .ms-head-btn.save { background: var(--accent); color: white; display: none; }
+  .ms-head-btn.del  { background: rgba(239,68,68,.1); color: #dc2626; border: 1px solid rgba(239,68,68,.2); }
+  .ms-head-btn.del:hover { background: rgba(239,68,68,.2); }
+
+  /* категории внутри сета */
+  .ms-cats { padding: 12px 18px; display: flex; flex-direction: column; gap: 6px; min-height: 10px; }
+  .cat-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border-radius: 10px;
+    background: var(--bg); border: 1px solid var(--border);
+  }
+  .cat-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .cat-name-display {
+    flex: 1; font-size: 13px; font-weight: 600; color: var(--text2);
+    cursor: pointer; padding: 2px 4px; border-radius: 4px;
+    transition: background .15s;
+  }
+  .cat-name-display:hover { background: rgba(0,0,0,.05); }
+  .cat-langs { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .cat-edit-form { display: none; flex: 1; gap: 6px; flex-direction: column; }
+  .cat-edit-inputs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .cat-edit-input {
+    flex: 1; min-width: 120px; font-size: 12px; padding: 5px 8px;
+    border: 1.5px solid var(--accent); border-radius: 7px;
+    background: var(--bg); outline: none;
+  }
+  .cat-edit-actions { display: flex; gap: 6px; }
+  .cat-btn {
+    padding: 4px 10px; border-radius: 7px; font-size: 11px; font-weight: 700;
+    cursor: pointer; border: none; transition: all .15s;
+  }
+  .cat-btn.save  { background: var(--accent); color: white; }
+  .cat-btn.cancel { background: var(--border); color: var(--text2); }
+  .cat-btn.del   { background: rgba(239,68,68,.1); color: #dc2626; border: 1px solid rgba(239,68,68,.2); margin-left: auto; }
+  .cat-btn.del:hover { background: rgba(239,68,68,.2); }
+
+  /* форма добавления категории */
+  .ms-add-cat {
+    padding: 10px 18px 14px;
+    border-top: 1px dashed var(--border);
+  }
+  .ms-add-cat-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+  .ms-add-cat-input {
+    flex: 1; min-width: 140px; font-size: 13px; padding: 8px 12px;
+    border: 1.5px solid var(--border); border-radius: 10px;
+    background: var(--card); outline: none; font-family: inherit;
+    transition: border-color .2s;
+  }
+  .ms-add-cat-input:focus { border-color: var(--accent); }
+  .ms-add-cat-input.ky { border-color: rgba(0,184,150,.35); }
+  .ms-add-cat-input.en { border-color: rgba(37,99,235,.35); }
+  .ms-add-cat-btn {
+    padding: 8px 16px; background: var(--accent); color: white;
+    border: none; border-radius: 10px; font-size: 13px; font-weight: 700;
+    cursor: pointer; white-space: nowrap; transition: opacity .15s;
+  }
+  .ms-add-cat-btn:hover { opacity: .88; }
+
+  /* новый сет */
+  .new-set-card {
+    background: var(--card); border: 2px dashed var(--border);
+    border-radius: 18px; padding: 20px 22px;
+  }
+  .new-set-row { display: flex; gap: 10px; align-items: center; }
+  .new-set-input {
+    flex: 1; font-size: 15px; font-weight: 700; padding: 10px 14px;
+    border: 1.5px solid var(--border); border-radius: 12px;
+    background: var(--bg); outline: none; font-family: inherit;
+    transition: border-color .2s;
+  }
+  .new-set-input:focus { border-color: var(--accent); }
+  .new-set-btn {
+    padding: 10px 20px; background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white; border: none; border-radius: 12px; font-size: 13px; font-weight: 700;
+    cursor: pointer; white-space: nowrap; transition: opacity .15s;
+  }
+  .new-set-btn:hover { opacity: .88; }
+
+  .ms-empty {
+    text-align: center; padding: 16px; color: var(--muted); font-size: 13px; font-style: italic;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">📋 Сеты категорий</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:home' %}">Заведения</a> /
+      <a href="{% url 'dashboard:restaurant_edit' restaurant.id %}">{{ restaurant.name_ru }}</a> /
+      Сеты категорий
+    </div>
+  </div>
+</div>
+
+<div style="font-size:13px;color:var(--muted);margin-bottom:20px;max-width:600px">
+  Сет — это группа категорий (например «Основное меню», «Завтраки», «Напитки»).
+  Категории из сетов можно подключать к каждому филиалу отдельно.
+</div>
+
+<div class="ms-grid" id="setsGrid">
+
+{% for ms in sets %}
+<div class="ms-card" id="ms-{{ ms.id }}">
+  <div class="ms-card-head">
+    <span class="ms-card-icon">📁</span>
+    <span class="ms-name-display" onclick="startRenameSet({{ ms.id }})">{{ ms.name }}</span>
+    <input class="ms-name-edit" id="ms-name-input-{{ ms.id }}" value="{{ ms.name }}"
+           onkeydown="if(event.key==='Enter')saveSetName({{ ms.id }});if(event.key==='Escape')cancelRenameSet({{ ms.id }})">
+    <button class="ms-head-btn save" id="ms-save-btn-{{ ms.id }}"
+            onclick="saveSetName({{ ms.id }})">Сохранить</button>
+    <button class="ms-head-btn del" onclick="deleteSet({{ ms.id }}, '{{ ms.name|escapejs }}')">🗑</button>
+  </div>
+
+  <div class="ms-cats" id="ms-cats-{{ ms.id }}">
+    {% for cat in ms.categories.all %}
+    <div class="cat-row" id="cat-{{ cat.id }}">
+      <div class="cat-dot"></div>
+      <div style="flex:1;min-width:0">
+        <div class="cat-name-display" onclick="startEditCat({{ cat.id }})">{{ cat.name_ru }}</div>
+        {% if cat.name_ky or cat.name_en %}
+        <div class="cat-langs">
+          {% if cat.name_ky %}KY: {{ cat.name_ky }}{% endif %}
+          {% if cat.name_en %}{% if cat.name_ky %} · {% endif %}EN: {{ cat.name_en }}{% endif %}
+        </div>
+        {% endif %}
+        <div class="cat-edit-form" id="cat-edit-{{ cat.id }}">
+          <div class="cat-edit-inputs">
+            <input class="cat-edit-input" placeholder="Название (RU) *"
+                   id="cat-ru-{{ cat.id }}" value="{{ cat.name_ru }}">
+            <input class="cat-edit-input" placeholder="Аты (KY)"
+                   id="cat-ky-{{ cat.id }}" value="{{ cat.name_ky }}">
+            <input class="cat-edit-input" placeholder="Name (EN)"
+                   id="cat-en-{{ cat.id }}" value="{{ cat.name_en }}">
+          </div>
+          <div class="cat-edit-actions">
+            <button class="cat-btn save" onclick="saveCat({{ cat.id }})">Сохранить</button>
+            <button class="cat-btn cancel" onclick="cancelEditCat({{ cat.id }})">Отмена</button>
+            <button class="cat-btn del" onclick="deleteCat({{ cat.id }}, '{{ cat.name_ru|escapejs }}')">🗑 Удалить</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="ms-empty" id="ms-empty-{{ ms.id }}">Нет категорий. Добавьте первую ↓</div>
+    {% endfor %}
+  </div>
+
+  <div class="ms-add-cat">
+    <div class="ms-add-cat-row">
+      <input class="ms-add-cat-input" placeholder="Категория (RU) *"
+             id="new-cat-ru-{{ ms.id }}"
+             onkeydown="if(event.key==='Enter')addCat({{ ms.id }})">
+      <input class="ms-add-cat-input ky" placeholder="Аты (KY)"
+             id="new-cat-ky-{{ ms.id }}"
+             onkeydown="if(event.key==='Enter')addCat({{ ms.id }})">
+      <input class="ms-add-cat-input en" placeholder="Name (EN)"
+             id="new-cat-en-{{ ms.id }}"
+             onkeydown="if(event.key==='Enter')addCat({{ ms.id }})">
+      <button class="ms-add-cat-btn" onclick="addCat({{ ms.id }})">＋ Добавить</button>
+    </div>
+  </div>
+</div>
+{% empty %}
+<div style="text-align:center;padding:40px;color:var(--muted)">
+  <div style="font-size:36px;margin-bottom:10px">📂</div>
+  <div style="font-size:15px;font-weight:600;color:var(--text2)">Нет ни одного сета</div>
+  <div style="font-size:13px;margin-top:6px">Создайте первый сет ниже</div>
+</div>
+{% endfor %}
+
+</div>
+
+{# ── Добавить новый сет ── #}
+<div class="new-set-card" style="margin-top:20px">
+  <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:12px">＋ Новый сет категорий</div>
+  <div class="new-set-row">
+    <input class="new-set-input" id="newSetName" placeholder="Название сета, например: Завтраки"
+           onkeydown="if(event.key==='Enter')createSet()">
+    <button class="new-set-btn" onclick="createSet()">Создать</button>
+  </div>
+</div>
+
+<script>
+const CSRF = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+
+function post(url, data) {
+  const fd = new FormData();
+  for (const [k, v] of Object.entries(data)) fd.append(k, v);
+  return fetch(url, {
+    method: 'POST', body: fd,
+    headers: { 'X-CSRFToken': CSRF, 'X-Requested-With': 'XMLHttpRequest' }
+  }).then(r => r.json());
+}
+
+/* ── Создать новый сет ── */
+async function createSet() {
+  const inp = document.getElementById('newSetName');
+  const name = inp.value.trim();
+  if (!name) { inp.focus(); return; }
+  inp.disabled = true;
+  const d = await post("{% url 'dashboard:menu_set_add' restaurant.id %}", { name });
+  inp.disabled = false;
+  if (!d.ok) { alert(d.error || 'Ошибка'); return; }
+  inp.value = '';
+  appendSetCard(d.id, d.name);
+}
+
+function appendSetCard(id, name) {
+  const addUrl   = `/cabinet/menu-set/${id}/category/add/`;
+  const renameUrl= `/cabinet/menu-set/${id}/rename/`;
+  const deleteUrl= `/cabinet/menu-set/${id}/delete/`;
+  const html = `
+  <div class="ms-card" id="ms-${id}">
+    <div class="ms-card-head">
+      <span class="ms-card-icon">📁</span>
+      <span class="ms-name-display" onclick="startRenameSet(${id})">${escHtml(name)}</span>
+      <input class="ms-name-edit" id="ms-name-input-${id}" value="${escHtml(name)}"
+             onkeydown="if(event.key==='Enter')saveSetName(${id});if(event.key==='Escape')cancelRenameSet(${id})">
+      <button class="ms-head-btn save" id="ms-save-btn-${id}"
+              onclick="saveSetName(${id})">Сохранить</button>
+      <button class="ms-head-btn del" onclick="deleteSet(${id},'${escJs(name)}')">🗑</button>
+    </div>
+    <div class="ms-cats" id="ms-cats-${id}">
+      <div class="ms-empty" id="ms-empty-${id}">Нет категорий. Добавьте первую ↓</div>
+    </div>
+    <div class="ms-add-cat">
+      <div class="ms-add-cat-row">
+        <input class="ms-add-cat-input" placeholder="Категория (RU) *"
+               id="new-cat-ru-${id}" onkeydown="if(event.key==='Enter')addCat(${id})">
+        <input class="ms-add-cat-input ky" placeholder="Аты (KY)"
+               id="new-cat-ky-${id}" onkeydown="if(event.key==='Enter')addCat(${id})">
+        <input class="ms-add-cat-input en" placeholder="Name (EN)"
+               id="new-cat-en-${id}" onkeydown="if(event.key==='Enter')addCat(${id})">
+        <button class="ms-add-cat-btn" onclick="addCat(${id})">＋ Добавить</button>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('setsGrid').insertAdjacentHTML('beforeend', html);
+}
+
+/* ── Переименовать сет ── */
+function startRenameSet(id) {
+  document.querySelector(`#ms-${id} .ms-name-display`).style.display = 'none';
+  const inp = document.getElementById(`ms-name-input-${id}`);
+  inp.style.display = 'block'; inp.focus(); inp.select();
+  document.getElementById(`ms-save-btn-${id}`).style.display = 'block';
+}
+function cancelRenameSet(id) {
+  document.querySelector(`#ms-${id} .ms-name-display`).style.display = '';
+  document.getElementById(`ms-name-input-${id}`).style.display = 'none';
+  document.getElementById(`ms-save-btn-${id}`).style.display = 'none';
+}
+async function saveSetName(id) {
+  const inp  = document.getElementById(`ms-name-input-${id}`);
+  const name = inp.value.trim();
+  if (!name) return;
+  const d = await post(`/cabinet/menu-set/${id}/rename/`, { name });
+  if (!d.ok) { alert(d.error || 'Ошибка'); return; }
+  document.querySelector(`#ms-${id} .ms-name-display`).textContent = d.name;
+  cancelRenameSet(id);
+}
+
+/* ── Удалить сет ── */
+async function deleteSet(id, name) {
+  if (!confirm(`Удалить сет «${name}»?\nВсе категории внутри тоже будут удалены.`)) return;
+  const d = await post(`/cabinet/menu-set/${id}/delete/`, {});
+  if (!d.ok) { alert(d.error || 'Ошибка'); return; }
+  document.getElementById(`ms-${id}`)?.remove();
+}
+
+/* ── Добавить категорию ── */
+async function addCat(msId) {
+  const ruInp = document.getElementById(`new-cat-ru-${msId}`);
+  const kyInp = document.getElementById(`new-cat-ky-${msId}`);
+  const enInp = document.getElementById(`new-cat-en-${msId}`);
+  const name_ru = ruInp.value.trim();
+  if (!name_ru) { ruInp.focus(); return; }
+  ruInp.disabled = kyInp.disabled = enInp.disabled = true;
+  const d = await post(`/cabinet/menu-set/${msId}/category/add/`, {
+    name_ru, name_ky: kyInp.value.trim(), name_en: enInp.value.trim()
+  });
+  ruInp.disabled = kyInp.disabled = enInp.disabled = false;
+  if (!d.ok) { alert(d.error || 'Ошибка'); return; }
+  ruInp.value = kyInp.value = enInp.value = '';
+  document.getElementById(`ms-empty-${msId}`)?.remove();
+  appendCatRow(msId, d.id, d.name_ru, d.name_ky, d.name_en);
+  ruInp.focus();
+}
+
+function appendCatRow(msId, id, ru, ky, en) {
+  const langsHtml = (ky || en)
+    ? `<div class="cat-langs">${ky ? 'KY: '+escHtml(ky) : ''}${(ky && en) ? ' · ' : ''}${en ? 'EN: '+escHtml(en) : ''}</div>` : '';
+  const html = `
+  <div class="cat-row" id="cat-${id}">
+    <div class="cat-dot"></div>
+    <div style="flex:1;min-width:0">
+      <div class="cat-name-display" onclick="startEditCat(${id})">${escHtml(ru)}</div>
+      ${langsHtml}
+      <div class="cat-edit-form" id="cat-edit-${id}">
+        <div class="cat-edit-inputs">
+          <input class="cat-edit-input" placeholder="Название (RU) *" id="cat-ru-${id}" value="${escHtml(ru)}">
+          <input class="cat-edit-input" placeholder="Аты (KY)" id="cat-ky-${id}" value="${escHtml(ky||'')}">
+          <input class="cat-edit-input" placeholder="Name (EN)" id="cat-en-${id}" value="${escHtml(en||'')}">
+        </div>
+        <div class="cat-edit-actions">
+          <button class="cat-btn save" onclick="saveCat(${id})">Сохранить</button>
+          <button class="cat-btn cancel" onclick="cancelEditCat(${id})">Отмена</button>
+          <button class="cat-btn del" onclick="deleteCat(${id},'${escJs(ru)}')">🗑 Удалить</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById(`ms-cats-${msId}`).insertAdjacentHTML('beforeend', html);
+}
+
+/* ── Редактировать категорию ── */
+function startEditCat(id) {
+  document.querySelector(`#cat-${id} .cat-name-display`).style.display = 'none';
+  const langs = document.querySelector(`#cat-${id} .cat-langs`);
+  if (langs) langs.style.display = 'none';
+  const form = document.getElementById(`cat-edit-${id}`);
+  form.style.display = 'flex';
+  document.getElementById(`cat-ru-${id}`).focus();
+}
+function cancelEditCat(id) {
+  document.querySelector(`#cat-${id} .cat-name-display`).style.display = '';
+  const langs = document.querySelector(`#cat-${id} .cat-langs`);
+  if (langs) langs.style.display = '';
+  document.getElementById(`cat-edit-${id}`).style.display = 'none';
+}
+async function saveCat(id) {
+  const ru = document.getElementById(`cat-ru-${id}`).value.trim();
+  const ky = document.getElementById(`cat-ky-${id}`).value.trim();
+  const en = document.getElementById(`cat-en-${id}`).value.trim();
+  if (!ru) { document.getElementById(`cat-ru-${id}`).focus(); return; }
+  const d = await post(`/cabinet/ms-category/${id}/edit/`, { name_ru: ru, name_ky: ky, name_en: en });
+  if (!d.ok) { alert(d.error || 'Ошибка'); return; }
+  const row = document.getElementById(`cat-${id}`);
+  row.querySelector('.cat-name-display').textContent = d.name_ru;
+  let langs = row.querySelector('.cat-langs');
+  const langsText = [ky ? `KY: ${d.name_ky}` : '', en ? `EN: ${d.name_en}` : ''].filter(Boolean).join(' · ');
+  if (langsText) {
+    if (!langs) {
+      langs = document.createElement('div');
+      langs.className = 'cat-langs';
+      row.querySelector('.cat-name-display').after(langs);
+    }
+    langs.textContent = langsText;
+  } else if (langs) {
+    langs.remove();
+  }
+  cancelEditCat(id);
+}
+
+/* ── Удалить категорию ── */
+async function deleteCat(id, name) {
+  if (!confirm(`Удалить категорию «${name}»?`)) return;
+  const d = await post(`/cabinet/ms-category/${id}/delete/`, {});
+  if (!d.ok) { alert(d.error || 'Ошибка'); return; }
+  document.getElementById(`cat-${id}`)?.remove();
+}
+
+/* ── Утилиты ── */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escJs(s) { return String(s).replace(/'/g,"\\'"); }
+</script>
+{% endblock %}

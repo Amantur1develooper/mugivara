@@ -1,0 +1,99 @@
+{% load i18n %}
+{% with qty=stock.qty|floatformat:0 active=stock.product.is_active %}
+<div class="pl-product" id="stock-row-{{ stock.id }}">
+  <div class="pl-product-row">
+
+    {% if stock.product.photo %}
+      <img src="{{ stock.product.photo.url }}" class="pl-photo">
+    {% else %}
+      <div class="pl-photo-ph">📦</div>
+    {% endif %}
+
+    <div class="pl-info">
+      <div class="pl-name" id="pname-{{ stock.id }}">{{ stock.product.name_ru }}</div>
+      <div class="pl-unit" id="punit-{{ stock.id }}">{{ stock.product.get_unit_display }}</div>
+    </div>
+
+    <div class="pl-field-wrap">
+      <input class="pl-input" type="number" min="0" step="10"
+             value="{{ stock.product.price|floatformat:0 }}"
+             id="price-{{ stock.id }}" data-stock="{{ stock.id }}">
+      <button class="pl-save-btn" id="price-btn-{{ stock.id }}"
+              onclick="savePrice({{ stock.id }})">✓</button>
+    </div>
+
+    <div class="pl-field-wrap">
+      <input class="pl-input" type="number" min="0" step="1"
+             value="{{ stock.qty|floatformat:0 }}"
+             id="qty-{{ stock.id }}" data-stock="{{ stock.id }}">
+      <button class="pl-save-btn" id="qty-btn-{{ stock.id }}"
+              onclick="saveQty({{ stock.id }})">✓</button>
+    </div>
+
+    <span class="pl-status
+      {% if not active %}off
+      {% elif stock.qty == 0 %}none
+      {% elif stock.qty < 3 %}low
+      {% else %}ok{% endif %}"
+      id="status-{{ stock.id }}">
+      {% if not active %}Выкл
+      {% elif stock.qty == 0 %}Нет
+      {% elif stock.qty < 3 %}Мало
+      {% else %}В наличии{% endif %}
+    </span>
+
+    <div class="pl-actions">
+      <button class="pl-act-btn {% if active %}toggle-on{% else %}toggle-off{% endif %}"
+              id="toggle-btn-{{ stock.id }}"
+              title="{% if active %}Скрыть{% else %}Показать{% endif %}"
+              onclick="toggleProduct({{ stock.id }})">{% if active %}👁{% else %}🚫{% endif %}</button>
+      <button class="pl-act-btn" title="Редактировать"
+              onclick="openEditPanel({{ stock.id }})">✏️</button>
+      <button class="pl-act-btn del" title="Удалить"
+              onclick="deleteProduct({{ stock.id }}, '{{ stock.product.name_ru|escapejs }}')">🗑</button>
+    </div>
+  </div>
+
+  {# Inline edit panel #}
+  <div class="pl-edit-panel" id="edit-panel-{{ stock.id }}">
+    <div class="pl-edit-grid">
+      <div class="pl-edit-photo-wrap" style="position:relative;cursor:pointer">
+        <input type="file" accept="image/*" onchange="previewEditPhoto(this,{{ stock.id }})">
+        {% if stock.product.photo %}
+          <img src="{{ stock.product.photo.url }}" class="pl-edit-thumb" id="edit-thumb-{{ stock.id }}">
+        {% else %}
+          <div class="pl-edit-ph" id="edit-thumb-{{ stock.id }}">📷</div>
+        {% endif %}
+      </div>
+      <div class="pl-edit-col">
+        <label class="pl-edit-label">Название RU *</label>
+        <input class="pl-edit-input" id="edit-ru-{{ stock.id }}" value="{{ stock.product.name_ru }}">
+        <label class="pl-edit-label" style="margin-top:4px">KY</label>
+        <input class="pl-edit-input" id="edit-ky-{{ stock.id }}" value="{{ stock.product.name_ky }}">
+      </div>
+      <div class="pl-edit-col">
+        <label class="pl-edit-label">EN</label>
+        <input class="pl-edit-input" id="edit-en-{{ stock.id }}" value="{{ stock.product.name_en }}">
+        <label class="pl-edit-label" style="margin-top:4px">Единица</label>
+        <select class="pl-edit-select" id="edit-unit-{{ stock.id }}">
+          <option value="pcs" {% if stock.product.unit == 'pcs' %}selected{% endif %}>шт</option>
+          <option value="kg"  {% if stock.product.unit == 'kg'  %}selected{% endif %}>кг</option>
+          <option value="l"   {% if stock.product.unit == 'l'   %}selected{% endif %}>л</option>
+        </select>
+      </div>
+      <div class="pl-edit-col">
+        <label class="pl-edit-label">Цена</label>
+        <input class="pl-edit-input" id="edit-price-{{ stock.id }}" type="number" min="0"
+               value="{{ stock.product.price|floatformat:0 }}">
+        <label class="pl-edit-label" style="margin-top:4px">Остаток</label>
+        <input class="pl-edit-input" id="edit-qty-{{ stock.id }}" type="number" min="0"
+               value="{{ stock.qty|floatformat:0 }}">
+      </div>
+    </div>
+    <div class="pl-edit-actions">
+      <button class="pl-edit-save" onclick="saveEditProduct({{ stock.id }})">💾 Сохранить</button>
+      <button class="pl-edit-cancel" onclick="closeEditPanel({{ stock.id }})">Отмена</button>
+    </div>
+  </div>
+</div>
+{% endwith %}
