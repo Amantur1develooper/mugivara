@@ -827,21 +827,39 @@
 .cm-free-banner {
   border-radius: 12px; padding: 10px 14px;
   font-size: 13px; font-weight: 600; margin-bottom: 12px;
-  display: flex; align-items: center; gap: 6px;
-  transition: background .3s, color .3s;
+  display: block;
 }
 .cm-free-hint {
   background: rgba(255,138,0,.10); border: 1.5px solid rgba(255,138,0,.25);
   color: #b45309;
 }
+.cm-free-hint-top { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.cm-free-bar-wrap {
+  height: 6px; border-radius: 3px;
+  background: rgba(255,138,0,.18); overflow: hidden;
+}
+.cm-free-bar {
+  height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+  transition: width .4s cubic-bezier(.4,0,.2,1);
+}
 .cm-free-ok {
   background: rgba(0,184,150,.12); border: 1.5px solid rgba(0,184,150,.3);
-  color: #047857;
-  animation: cm-free-pop .35s cubic-bezier(.34,1.56,.64,1);
+  color: #047857; text-align: center; font-size: 15px;
+  animation: cm-free-pop .5s cubic-bezier(.34,1.56,.64,1);
 }
 @keyframes cm-free-pop {
-  from { transform: scale(.95); opacity: .7; }
-  to   { transform: scale(1);   opacity: 1; }
+  0%   { transform: scale(.85); opacity: 0; }
+  60%  { transform: scale(1.06); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+.cm-free-ok-flash {
+  animation: cm-free-flash .7s ease forwards;
+}
+@keyframes cm-free-flash {
+  0%   { box-shadow: 0 0 0 0 rgba(0,184,150,.6); transform: scale(.9); opacity: 0; }
+  40%  { box-shadow: 0 0 0 10px rgba(0,184,150,.0); transform: scale(1.04); opacity: 1; }
+  100% { box-shadow: 0 0 0 0 rgba(0,184,150,.0); transform: scale(1); }
 }
 .cm-free-val { color: #047857; font-weight: 700; }
 </style>
@@ -1146,7 +1164,11 @@ document.addEventListener('submit', async (e) => {
         freeBanner = `<div class="cm-free-banner cm-free-ok">🎉 Доставка бесплатная!</div>`;
       } else {
         const need = Math.ceil(freeFrom - subtotalNum);
-        freeBanner = `<div class="cm-free-banner cm-free-hint">🚚 До бесплатной доставки ещё <strong>${need} сом</strong></div>`;
+        const pct  = Math.min(100, Math.round((subtotalNum / freeFrom) * 100));
+        freeBanner = `<div class="cm-free-banner cm-free-hint">
+          <div class="cm-free-hint-top">🚚 До бесплатной доставки ещё <strong>${need} сом</strong></div>
+          <div class="cm-free-bar-wrap"><div class="cm-free-bar" style="width:${pct}%"></div></div>
+        </div>`;
       }
     }
 
@@ -1335,23 +1357,40 @@ document.addEventListener('submit', async (e) => {
   function updateFreeDeliveryBanner(d) {
     if (!d.delivery_enabled || !parseFloat(d.free_from || 0)) return;
 
-    let banner = document.querySelector('.cm-free-banner');
     const freeFrom    = parseFloat(d.free_from);
     const subtotalNum = parseFloat(d.subtotal || 0);
-
-    if (!banner) {
-      banner = document.createElement('div');
-      const items = document.getElementById('cmItems');
-      if (items) items.parentNode.insertBefore(banner, items);
-    }
+    let banner = document.querySelector('.cm-free-banner');
+    const wasHint = banner && banner.classList.contains('cm-free-hint');
+    const itemsEl = document.getElementById('cmItems');
 
     if (d.free_delivery_reached) {
-      banner.className = 'cm-free-banner cm-free-ok';
-      banner.innerHTML = '🎉 Доставка бесплатная!';
+      if (wasHint) {
+        // переход с подсказки на "бесплатно" — создать новый элемент чтобы анимация сработала
+        const newBanner = document.createElement('div');
+        newBanner.className = 'cm-free-banner cm-free-ok cm-free-ok-flash';
+        newBanner.textContent = '🎉 Доставка бесплатная!';
+        if (banner) {
+          banner.replaceWith(newBanner);
+        } else if (itemsEl) {
+          itemsEl.parentNode.insertBefore(newBanner, itemsEl);
+        }
+      } else if (!banner) {
+        const newBanner = document.createElement('div');
+        newBanner.className = 'cm-free-banner cm-free-ok';
+        newBanner.textContent = '🎉 Доставка бесплатная!';
+        if (itemsEl) itemsEl.parentNode.insertBefore(newBanner, itemsEl);
+      }
     } else {
       const need = Math.ceil(freeFrom - subtotalNum);
+      const pct  = Math.min(100, Math.round((subtotalNum / freeFrom) * 100));
+      if (!banner) {
+        banner = document.createElement('div');
+        if (itemsEl) itemsEl.parentNode.insertBefore(banner, itemsEl);
+      }
       banner.className = 'cm-free-banner cm-free-hint';
-      banner.innerHTML = `🚚 До бесплатной доставки ещё <strong>${need} сом</strong>`;
+      banner.innerHTML = `
+        <div class="cm-free-hint-top">🚚 До бесплатной доставки ещё <strong>${need} сом</strong></div>
+        <div class="cm-free-bar-wrap"><div class="cm-free-bar" style="width:${pct}%"></div></div>`;
     }
 
     const deliveryEl = document.getElementById('cmDeliveryFee');
