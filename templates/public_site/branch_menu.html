@@ -1004,18 +1004,23 @@ document.addEventListener('submit', async (e) => {
    CART MODAL
 ══════════════════════════════════════════════════════════ */
 (function(){
-  const CSRF   = getCookie('csrftoken');
-  const modal  = document.getElementById('cartModal');
-  const body   = document.getElementById('cmBody');
-  const urls   = document.getElementById('cm-urls').dataset;
+  const CSRF  = getCookie('csrftoken');
+  const modal = document.getElementById('cartModal');
+  const body  = document.getElementById('cmBody');
+  const urls  = document.getElementById('cm-urls').dataset;
 
-  let promoCode = '';
+  let promoCode   = '';
+  let cartRendered = false;  // true после первого полного рендера
 
   /* ── Открыть / закрыть ── */
   window.openCartModal = function() {
     modal.classList.add('open');
     document.body.style.overflow = 'hidden';
-    loadCart();
+    if (cartRendered) {
+      silentRefresh();   // уже отрисован — только обновить данные
+    } else {
+      loadCart();        // первый раз — полная загрузка
+    }
   };
   window.closeCartModal = function() {
     modal.classList.remove('open');
@@ -1026,19 +1031,87 @@ document.addEventListener('submit', async (e) => {
   };
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCartModal(); });
 
-  /* ── Загрузить корзину ── */
+  /* ── Первая полная загрузка ── */
   async function loadCart() {
     body.innerHTML = '<div class="cm-loading">Загрузка…</div>';
     try {
       const r = await fetch(urls.cartJson);
-      const d = await r.json();
-      renderCart(d);
+      renderCart(await r.json());
     } catch {
       body.innerHTML = '<div class="cm-loading">Ошибка загрузки</div>';
     }
   }
 
-  /* ── Отрисовать корзину ── */
+  /* ── Тихое обновление — не трогает форму и скролл ── */
+  async function silentRefresh() {
+    try {
+      const r = await fetch(urls.cartJson);
+      patchCart(await r.json());
+    } catch {}
+  }
+
+  /* ── Патч: обновить строки и суммы без пересоздания формы ── */
+  function patchCart(d) {
+    const itemsEl = document.getElementById('cmItems');
+
+    if (!d.items || d.items.length === 0) {
+      body.innerHTML = `
+        <div class="cm-empty">
+          <div class="cm-empty-icon">🛒</div>
+          <div class="cm-empty-text">Корзина пуста</div>
+        </div>`;
+      cartRendered = false;
+      return;
+    }
+
+    // если форма ещё не отрисована — полный рендер
+    if (!itemsEl) { renderCart(d); return; }
+
+    const seen = new Set();
+    d.items.forEach(item => {
+      seen.add(String(item.bi_id));
+      let row = itemsEl.querySelector(`[data-bi-id="${item.bi_id}"]`);
+      if (row) {
+        // обновить qty и line_total на месте
+        const qEl = row.querySelector('.cm-qty-num');
+        const tEl = row.querySelector('.cm-row-total');
+        if (qEl) qEl.textContent = item.qty;
+        if (tEl) tEl.textContent = item.line_total + ' сом';
+      } else {
+        // новый товар — добавить строку
+        const div = document.createElement('div');
+        div.className = 'cm-row';
+        div.dataset.biId = item.bi_id;
+        div.dataset.updateUrl = item.update_url;
+        div.innerHTML = `
+          <div style="flex:1;min-width:0">
+            <div class="cm-row-name">${item.name}</div>
+            <div class="cm-row-price">${item.price} сом / шт.</div>
+          </div>
+          <div class="cm-qty">
+            <button class="cm-qty-btn" data-cm-dec>−</button>
+            <span class="cm-qty-num">${item.qty}</span>
+            <button class="cm-qty-btn" data-cm-inc>+</button>
+          </div>
+          <div class="cm-row-total">${item.line_total} сом</div>`;
+        itemsEl.appendChild(div);
+      }
+    });
+
+    // удалить строки, которых больше нет
+    itemsEl.querySelectorAll('.cm-row').forEach(row => {
+      if (!seen.has(row.dataset.biId)) row.remove();
+    });
+
+    // обновить суммы
+    const subEl = document.getElementById('cmSubtotal');
+    const totEl = document.getElementById('cmTotal');
+    if (subEl) subEl.textContent = d.subtotal + ' сом';
+    if (totEl) totEl.textContent = d.total    + ' сом';
+    updateFreeDeliveryBanner(d);
+  }
+
+  /* ── Полный рендер (только при первом открытии) ── */
   function renderCart(d) {
     if (!d.items || d.items.length === 0) {
       body.innerHTML = `
@@ -1046,6 +1119,7 @@ document.addEventListener('submit', async (e) => {
           <div class="cm-empty-icon">🛒</div>
           <div class="cm-empty-text">Корзина пуста</div>
         </div>`;
+      cartRendered = false;
       return;
     }
 
@@ -1064,7 +1138,7 @@ document.addEventListener('submit', async (e) => {
       </div>`).join('');
 
     const freeFrom    = parseFloat(d.free_from || 0);
-    const subtotalNum = parseFloat(d.subtotal || 0);
+    const subtotalNum = parseFloat(d.subtotal  || 0);
 
     let freeBanner = '';
     if (d.delivery_enabled && freeFrom > 0) {
@@ -1081,8 +1155,7 @@ document.addEventListener('submit', async (e) => {
       : `<span id="cmDeliveryFee">${d.delivery_fee} сом</span>`;
 
     const deliveryRow = d.delivery_enabled
-      ? `<div class="cm-total-row"><span>Доставка</span>${deliveryLabel}</div>`
-      : '';
+      ? `<div class="cm-total-row"><span>Доставка</span>${deliveryLabel}</div>` : '';
 
     const minNote = d.delivery_enabled && parseFloat(d.min_order_amount) > 0
       ? `<div class="cm-min-note">Минимальная сумма доставки: ${d.min_order_amount} сом</div>` : '';
@@ -1139,18 +1212,17 @@ document.addEventListener('submit', async (e) => {
         </form>
       </div>`;
 
+    cartRendered = true;
     bindModalEvents();
   }
 
   /* ── Привязать события в модале ── */
   function bindModalEvents() {
-    // Прокрутка к форме
     document.getElementById('cmSubmitBtn').addEventListener('click', () => {
       const form = document.getElementById('cmCheckoutForm');
       if (!form.checkValidity()) return;
     });
 
-    // Телефон
     const ph = document.getElementById('cmPhone');
     if (ph) {
       ph.addEventListener('input', () => {
@@ -1162,7 +1234,6 @@ document.addEventListener('submit', async (e) => {
       ph.addEventListener('keydown', e => { if (e.key === 'Backspace' && ph.value === '+996') e.preventDefault(); });
     }
 
-    // Промокод
     const promoInput = document.getElementById('cmPromoInput');
     const promoBtn   = document.getElementById('cmPromoBtn');
     const promoMsg   = document.getElementById('cmPromoMsg');
@@ -1171,7 +1242,7 @@ document.addEventListener('submit', async (e) => {
     if (promoCode) { promoInput.readOnly = true; promoBtn.textContent = 'Убрать'; }
 
     promoBtn.addEventListener('click', async () => {
-      if (promoInput.readOnly) { // сброс
+      if (promoInput.readOnly) {
         promoInput.readOnly = false; promoInput.value = '';
         promoHid.value = ''; promoCode = '';
         promoMsg.style.display = 'none';
@@ -1233,7 +1304,15 @@ document.addEventListener('submit', async (e) => {
       if ((d.row_qty ?? qty) <= 0) {
         row.remove();
         const items = document.getElementById('cmItems');
-        if (items && !items.querySelector('.cm-row')) loadCart();
+        if (items && !items.querySelector('.cm-row')) {
+          // последний товар удалён — показать пустое состояние без fetch
+          body.innerHTML = `
+            <div class="cm-empty">
+              <div class="cm-empty-icon">🛒</div>
+              <div class="cm-empty-text">Корзина пуста</div>
+            </div>`;
+          cartRendered = false;
+        }
       } else {
         qtyEl.textContent = d.row_qty ?? qty;
         const totalEl = row.querySelector('.cm-row-total');
@@ -1245,18 +1324,17 @@ document.addEventListener('submit', async (e) => {
       if (d.total    !== undefined) { const el = document.getElementById('cmTotal');    if (el) el.textContent = d.total    + ' сом'; }
       updateFreeDeliveryBanner(d);
 
-      // обновить глобальный UI (FAB, hero)
-      updateCartUI(d.qty_total, d.total);
+      // обновить FAB/hero напрямую, без перезагрузки модала
+      _origUpdate(d.qty_total, d.total);
     } finally {
       if (row.isConnected) row.querySelectorAll('.cm-qty-btn').forEach(b => b.disabled = false);
     }
   });
 
-  /* ── Обновить баннер и доставку без перерисовки всего модала ── */
+  /* ── Обновить баннер и строку доставки точечно ── */
   function updateFreeDeliveryBanner(d) {
     if (!d.delivery_enabled || !parseFloat(d.free_from || 0)) return;
 
-    // баннер
     let banner = document.querySelector('.cm-free-banner');
     const freeFrom    = parseFloat(d.free_from);
     const subtotalNum = parseFloat(d.subtotal || 0);
@@ -1276,7 +1354,6 @@ document.addEventListener('submit', async (e) => {
       banner.innerHTML = `🚚 До бесплатной доставки ещё <strong>${need} сом</strong>`;
     }
 
-    // строка доставки в итогах
     const deliveryEl = document.getElementById('cmDeliveryFee');
     if (deliveryEl) {
       if (d.free_delivery_reached) {
@@ -1287,11 +1364,11 @@ document.addEventListener('submit', async (e) => {
     }
   }
 
-  /* ── Когда добавили товар — обновить модал если он открыт ── */
+  /* ── Когда добавили товар со страницы — обновить модал если открыт ── */
   const _origUpdate = window.updateCartUI;
   window.updateCartUI = function(qty, total) {
     _origUpdate(qty, total);
-    if (modal.classList.contains('open')) loadCart();
+    if (modal.classList.contains('open')) silentRefresh();
   };
 
 })();
