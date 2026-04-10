@@ -37,6 +37,15 @@
     border-radius:100px;padding:4px 12px;
     font-size:11px;font-weight:600;color:var(--teal);margin-top:8px;
   }
+  /* Lang tabs */
+  .lang-tabs{display:flex;gap:4px;margin-bottom:8px}
+  .lang-tab{
+    padding:4px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;
+    border:1.5px solid var(--border);background:var(--card);color:var(--muted);
+    transition:all .15s;user-select:none;
+  }
+  .lang-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .lang-panel{display:none}.lang-panel.active{display:block}
 </style>
 {% endblock %}
 
@@ -60,9 +69,24 @@
 
       <div>
         <div class="db-form-group">
-          <label class="db-label" for="name_ru">Название блюда *</label>
-          <input class="db-input" id="name_ru" name="name_ru" type="text"
-                 placeholder="Например: Лагман по-домашнему" required>
+          <label class="db-label">Название блюда *</label>
+          <div class="lang-tabs">
+            <div class="lang-tab active" onclick="switchLang('name','ru',this)">RU</div>
+            <div class="lang-tab" onclick="switchLang('name','ky',this)">KY</div>
+            <div class="lang-tab" onclick="switchLang('name','en',this)">EN</div>
+          </div>
+          <div class="lang-panel active" id="name-ru">
+            <input class="db-input" name="name_ru" type="text"
+                   placeholder="Например: Лагман по-домашнему" required>
+          </div>
+          <div class="lang-panel" id="name-ky">
+            <input class="db-input" name="name_ky" type="text"
+                   placeholder="Мисалы: Үй лагманы">
+          </div>
+          <div class="lang-panel" id="name-en">
+            <input class="db-input" name="name_en" type="text"
+                   placeholder="e.g. Homestyle Lagman">
+          </div>
         </div>
 
         <div class="db-form-group">
@@ -82,9 +106,24 @@
         </div>
 
         <div class="db-form-group">
-          <label class="db-label" for="description_ru">Описание</label>
-          <textarea class="db-textarea" id="description_ru" name="description_ru"
-                    placeholder="Состав, особенности, вес..." style="min-height:80px"></textarea>
+          <label class="db-label">Описание</label>
+          <div class="lang-tabs">
+            <div class="lang-tab active" onclick="switchLang('desc','ru',this)">RU</div>
+            <div class="lang-tab" onclick="switchLang('desc','ky',this)">KY</div>
+            <div class="lang-tab" onclick="switchLang('desc','en',this)">EN</div>
+          </div>
+          <div class="lang-panel active" id="desc-ru">
+            <textarea class="db-textarea" name="description_ru"
+                      placeholder="Состав, особенности, вес..." style="min-height:80px"></textarea>
+          </div>
+          <div class="lang-panel" id="desc-ky">
+            <textarea class="db-textarea" name="description_ky"
+                      placeholder="Курам, өзгөчөлүктөр, салмак..." style="min-height:80px"></textarea>
+          </div>
+          <div class="lang-panel" id="desc-en">
+            <textarea class="db-textarea" name="description_en"
+                      placeholder="Ingredients, features, weight..." style="min-height:80px"></textarea>
+          </div>
         </div>
       </div>
 
@@ -129,6 +168,14 @@ const drop = document.getElementById('photoDrop');
 drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
 drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
 drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('drag'); });
+
+function switchLang(group, lang, tab) {
+  // deactivate all tabs and panels in this group
+  tab.closest('.db-form-group').querySelectorAll('.lang-tab').forEach(t => t.classList.remove('active'));
+  tab.closest('.db-form-group').querySelectorAll('.lang-panel').forEach(p => p.classList.remove('active'));
+  tab.classList.add('active');
+  document.getElementById(group + '-' + lang).classList.add('active');
+}
 </script>
 
 {% if categories|length == 0 %}

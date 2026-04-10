@@ -212,7 +212,11 @@ def item_add(request, branch_id):
         item = Item(
             restaurant=restaurant,
             name_ru=name,
+            name_ky=request.POST.get("name_ky", "").strip(),
+            name_en=request.POST.get("name_en", "").strip(),
             description_ru=description,
+            description_ky=request.POST.get("description_ky", "").strip(),
+            description_en=request.POST.get("description_en", "").strip(),
             base_price=price,
         )
         if photo:
@@ -282,7 +286,11 @@ def item_edit(request, branch_item_id):
         name = request.POST.get("name_ru", "").strip()
         if name:
             item.name_ru = name
+        item.name_ky = request.POST.get("name_ky", "").strip()
+        item.name_en = request.POST.get("name_en", "").strip()
         item.description_ru = request.POST.get("description_ru", "").strip()
+        item.description_ky = request.POST.get("description_ky", "").strip()
+        item.description_en = request.POST.get("description_en", "").strip()
 
         try:
             bi.price = Decimal(request.POST.get("price") or "0")
@@ -599,7 +607,12 @@ def orders_analytics(request):
 
     # ── KPI ──────────────────────────────────────────────────────────────────
     total_orders  = order_qs_period.count()
-    total_revenue = order_qs_period.aggregate(s=Sum("total_amount"))["s"] or 0
+    # Выручка — только стоимость блюд (без доставки)
+    total_revenue = (
+        OrderItem.objects
+        .filter(order__in=order_qs_period)
+        .aggregate(s=Sum("line_total"))["s"] or 0
+    )
     total_items   = (
         OrderItem.objects
         .filter(order__in=order_qs_period)
@@ -623,7 +636,7 @@ def orders_analytics(request):
         .filter(created_at__gte=chart_since)
         .extra(select={"day": 'DATE("orders_order"."created_at")'})
         .values("day")
-        .annotate(cnt=Count("id"), revenue=Sum("total_amount"))
+        .annotate(cnt=Count("id", distinct=True), revenue=Sum("items__line_total"))
         .order_by("day")
     )
     chart_labels  = [str(r["day"]) for r in daily_qs]
@@ -637,6 +650,7 @@ def orders_analytics(request):
         order_qs_period
         .select_related("branch", "branch__restaurant")
         .prefetch_related("items__item")
+        .annotate(items_total=Sum("items__line_total"))
         .order_by("-created_at")
     )
     paginator = Paginator(orders_list, 30)

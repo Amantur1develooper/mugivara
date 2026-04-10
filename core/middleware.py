@@ -33,6 +33,10 @@ def _detect_section(path: str) -> str | None:
             stripped = path[len(lang) - 1:]  # оставляем ведущий /
             break
 
+    # пропускаем личный кабинет и админку после срезания языкового префикса
+    if any(stripped.startswith(s) for s in _SKIP_PREFIXES):
+        return None
+
     for prefix, section in _SECTION_PREFIXES:
         if stripped.startswith(prefix):
             return section

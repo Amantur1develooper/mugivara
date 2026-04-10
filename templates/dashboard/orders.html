@@ -148,7 +148,7 @@
     <div class="kpi-hint">за {{ period }} дн.</div>
   </div>
   <div class="kpi-card teal">
-    <div class="kpi-label">Выручка</div>
+    <div class="kpi-label">Выручка (блюда)</div>
     <div class="kpi-value" style="font-size:22px">{{ total_revenue|floatformat:0 }}</div>
     <div class="kpi-hint">сом за период</div>
   </div>
@@ -157,13 +157,6 @@
     <div class="kpi-value">{{ total_items }}</div>
     <div class="kpi-hint">штук блюд</div>
   </div>
-  {% if total_orders %}
-  <div class="kpi-card">
-    <div class="kpi-label">Средний чек</div>
-    <div class="kpi-value" style="font-size:22px">{{ total_revenue|floatformat:0|add:0 }}</div>
-    <div class="kpi-hint">~ {{ total_revenue|floatformat:0 }} / {{ total_orders }} = ср. чек</div>
-  </div>
-  {% endif %}
 </div>
 
 {# ── CHART + TOP DISHES ──────────────────────────────────────────────────── #}
@@ -254,7 +247,7 @@
         </div>
       </td>
       <td data-label="Итого">
-        <div class="ord-total">{{ order.total_amount|floatformat:0 }} сом</div>
+        <div class="ord-total">{{ order.items_total|floatformat:0 }} сом</div>
         <div style="font-size:11px;color:var(--muted);margin-top:3px">
           {% if order.payment_method == 'cash' %}💵 Наличные{% else %}💳 Онлайн{% endif %}
         </div>

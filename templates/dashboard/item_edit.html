@@ -36,6 +36,15 @@
     background:white;top:3px;left:3px;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:transform .2s}
   .db-switch input:checked + .db-switch-slider{background:var(--teal)}
   .db-switch input:checked + .db-switch-slider::before{transform:translateX(20px)}
+  /* Lang tabs */
+  .lang-tabs{display:flex;gap:4px;margin-bottom:8px}
+  .lang-tab{
+    padding:4px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;
+    border:1.5px solid var(--border);background:var(--card);color:var(--muted);
+    transition:all .15s;user-select:none;
+  }
+  .lang-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .lang-panel{display:none}.lang-panel.active{display:block}
 </style>
 {% endblock %}
 
@@ -59,9 +68,24 @@
 
       <div>
         <div class="db-form-group">
-          <label class="db-label" for="name_ru">Название блюда</label>
-          <input class="db-input" id="name_ru" name="name_ru" type="text"
-                 value="{{ item.name_ru }}" required>
+          <label class="db-label">Название блюда</label>
+          <div class="lang-tabs">
+            <div class="lang-tab active" onclick="switchLang('name','ru',this)">RU</div>
+            <div class="lang-tab" onclick="switchLang('name','ky',this)">KY</div>
+            <div class="lang-tab" onclick="switchLang('name','en',this)">EN</div>
+          </div>
+          <div class="lang-panel active" id="name-ru">
+            <input class="db-input" name="name_ru" type="text"
+                   value="{{ item.name_ru }}" required>
+          </div>
+          <div class="lang-panel" id="name-ky">
+            <input class="db-input" name="name_ky" type="text"
+                   value="{{ item.name_ky }}">
+          </div>
+          <div class="lang-panel" id="name-en">
+            <input class="db-input" name="name_en" type="text"
+                   value="{{ item.name_en }}">
+          </div>
         </div>
 
         <div class="db-form-group">
@@ -71,9 +95,24 @@
         </div>
 
         <div class="db-form-group">
-          <label class="db-label" for="description_ru">Описание</label>
-          <textarea class="db-textarea" id="description_ru" name="description_ru"
-                    style="min-height:80px">{{ item.description_ru }}</textarea>
+          <label class="db-label">Описание</label>
+          <div class="lang-tabs">
+            <div class="lang-tab active" onclick="switchLang('desc','ru',this)">RU</div>
+            <div class="lang-tab" onclick="switchLang('desc','ky',this)">KY</div>
+            <div class="lang-tab" onclick="switchLang('desc','en',this)">EN</div>
+          </div>
+          <div class="lang-panel active" id="desc-ru">
+            <textarea class="db-textarea" name="description_ru"
+                      style="min-height:80px">{{ item.description_ru }}</textarea>
+          </div>
+          <div class="lang-panel" id="desc-ky">
+            <textarea class="db-textarea" name="description_ky"
+                      style="min-height:80px">{{ item.description_ky }}</textarea>
+          </div>
+          <div class="lang-panel" id="desc-en">
+            <textarea class="db-textarea" name="description_en"
+                      style="min-height:80px">{{ item.description_en }}</textarea>
+          </div>
         </div>
 
         <div class="avail-row">
@@ -124,6 +163,13 @@ function previewPhoto(input) {
     };
     reader.readAsDataURL(input.files[0]);
   }
+}
+
+function switchLang(group, lang, tab) {
+  tab.closest('.db-form-group').querySelectorAll('.lang-tab').forEach(t => t.classList.remove('active'));
+  tab.closest('.db-form-group').querySelectorAll('.lang-panel').forEach(p => p.classList.remove('active'));
+  tab.classList.add('active');
+  document.getElementById(group + '-' + lang).classList.add('active');
 }
 </script>
 {% endblock %}
