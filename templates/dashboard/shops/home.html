@@ -104,7 +104,7 @@
             📋 Заказы
             {% with cnt=branch.orders.filter.count %}{% endwith %}
           </a>
-          <a href="{% url 'shops:branch_catalog' branch.id %}" target="_blank" class="btn-s">👁 Витрина</a>
+          <a href="{% url 'shops:branch_catalog_delivery' branch.id %}" target="_blank" class="btn-s">👁 Витрина</a>
         </div>
       </div>
       {% endfor %}
