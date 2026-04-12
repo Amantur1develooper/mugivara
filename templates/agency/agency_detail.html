@@ -7,15 +7,15 @@
 {% block head_extra %}
 <style>
   :root {
-    --ag-bg: #07090f;
-    --ag-card: #0e1117;
-    --ag-card2: #111520;
-    --ag-border: rgba(255,255,255,0.07);
-    --ag-text: #f0f2f8;
-    --ag-muted: rgba(240,242,248,0.45);
-    --ag-cyan: #00e5ff;
+    --ag-bg: #f5f7ff;
+    --ag-card: #ffffff;
+    --ag-card2: #f0f2ff;
+    --ag-border: rgba(99,102,241,0.12);
+    --ag-text: #0f1120;
+    --ag-muted: #64748b;
+    --ag-cyan: #6366f1;
     --ag-purple: #8b5cf6;
-    --ag-grad: linear-gradient(135deg, #00e5ff, #8b5cf6);
+    --ag-grad: linear-gradient(135deg, #6366f1, #8b5cf6);
   }
 
   body { background: var(--ag-bg); }
@@ -31,41 +31,42 @@
   }
   .ag-hero-cover {
     position: absolute; inset: 0;
-    background: linear-gradient(135deg, #0a0f1a, #090d16);
+    background: linear-gradient(135deg, #eef0ff, #ede9fe);
     overflow: hidden;
   }
-  .ag-hero-cover img { width: 100%; height: 100%; object-fit: cover; opacity: 0.35; }
+  .ag-hero-cover img { width: 100%; height: 100%; object-fit: cover; opacity: 0.5; }
   .ag-hero-cover-glow {
     position: absolute; inset: 0;
     background:
-      radial-gradient(ellipse 60% 80% at 0% 60%, rgba(0,229,255,0.18), transparent 55%),
-      radial-gradient(ellipse 50% 60% at 100% 10%, rgba(139,92,246,0.2), transparent 55%);
+      radial-gradient(ellipse 60% 80% at 0% 60%, rgba(99,102,241,0.12), transparent 55%),
+      radial-gradient(ellipse 50% 60% at 100% 10%, rgba(139,92,246,0.1), transparent 55%);
   }
   .ag-hero-grid {
-    position: absolute; inset: 0; opacity: 0.025;
-    background-image: linear-gradient(rgba(255,255,255,1) 1px, transparent 1px),
-                      linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px);
+    position: absolute; inset: 0; opacity: 0.04;
+    background-image: linear-gradient(rgba(99,102,241,1) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(99,102,241,1) 1px, transparent 1px);
     background-size: 48px 48px;
   }
   .ag-hero-content {
     position: relative; z-index: 2;
     padding: 100px 40px 36px;
-    background: linear-gradient(to top, var(--ag-bg) 0%, rgba(7,9,15,0.6) 60%, transparent 100%);
+    background: linear-gradient(to top, var(--ag-bg) 0%, rgba(245,247,255,0.5) 60%, transparent 100%);
   }
   .ag-back {
     position: absolute; top: 20px; left: 40px; z-index: 3;
     display: inline-flex; align-items: center; gap: 8px;
     padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;
-    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
-    color: rgba(255,255,255,0.65); text-decoration: none; transition: all 0.2s;
+    background: rgba(255,255,255,0.8); border: 1px solid rgba(99,102,241,0.2);
+    color: #6366f1; text-decoration: none; transition: all 0.2s;
   }
-  .ag-back:hover { background: rgba(255,255,255,0.12); color: white; }
+  .ag-back:hover { background: white; color: #4f46e5; }
 
   .ag-logo-row { display: flex; align-items: flex-end; gap: 18px; margin-bottom: 16px; }
   .ag-logo {
     width: 64px; height: 64px; border-radius: 16px; overflow: hidden; flex-shrink: 0;
-    border: 2px solid rgba(255,255,255,0.12); background: #111827;
+    border: 2px solid rgba(99,102,241,0.2); background: white;
     display: flex; align-items: center; justify-content: center; font-size: 28px;
+    box-shadow: 0 4px 16px rgba(99,102,241,0.15);
   }
   .ag-logo img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -93,13 +94,13 @@
   .ag-svc {
     background: var(--ag-card); border: 1px solid var(--ag-border); border-radius: 18px;
     overflow: hidden; display: flex; transition: border-color 0.25s, box-shadow 0.25s;
-    cursor: pointer;
+    cursor: pointer; box-shadow: 0 2px 10px rgba(99,102,241,0.06);
   }
-  .ag-svc:hover { border-color: rgba(0,229,255,0.18); box-shadow: 0 8px 28px rgba(0,0,0,0.3); }
+  .ag-svc:hover { border-color: rgba(99,102,241,0.25); box-shadow: 0 10px 30px rgba(99,102,241,0.12); }
 
   .ag-svc-photo {
     width: 100px; flex-shrink: 0;
-    background: linear-gradient(135deg, #0a0f1a, #111827);
+    background: linear-gradient(135deg, #eef0ff, #ede9fe);
     display: flex; align-items: center; justify-content: center;
     font-size: 32px; position: relative; overflow: hidden;
   }
@@ -158,6 +159,7 @@
   .ag-info-card {
     background: var(--ag-card); border: 1px solid var(--ag-border); border-radius: 18px;
     padding: 24px; position: sticky; top: 20px;
+    box-shadow: 0 2px 16px rgba(99,102,241,0.07);
   }
 
   .ag-contact-title {
@@ -182,18 +184,18 @@
   .ag-modal-bg.open { display: flex; }
 
   .ag-modal {
-    background: #0e1117; border: 1px solid rgba(0,229,255,0.15);
+    background: #fff; border: 1px solid rgba(99,102,241,0.15);
     border-radius: 24px; padding: 32px; width: 100%; max-width: 480px;
-    position: relative; box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+    position: relative; box-shadow: 0 20px 60px rgba(99,102,241,0.15);
   }
   .ag-modal-close {
     position: absolute; top: 16px; right: 16px;
     width: 32px; height: 32px; border-radius: 50%;
-    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-    color: rgba(255,255,255,0.5); font-size: 16px; cursor: pointer;
+    background: rgba(99,102,241,0.07); border: 1px solid rgba(99,102,241,0.15);
+    color: #6366f1; font-size: 16px; cursor: pointer;
     display: flex; align-items: center; justify-content: center; transition: all 0.2s;
   }
-  .ag-modal-close:hover { background: rgba(255,255,255,0.1); color: white; }
+  .ag-modal-close:hover { background: rgba(99,102,241,0.12); color: #4f46e5; }
 
   .ag-modal-title {
     font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 800;
@@ -201,8 +203,8 @@
   }
   .ag-modal-svc {
     font-size: 13px; color: var(--ag-cyan); margin-bottom: 24px;
-    padding: 6px 12px; background: rgba(0,229,255,0.08);
-    border-radius: 8px; border: 1px solid rgba(0,229,255,0.15);
+    padding: 6px 12px; background: rgba(99,102,241,0.07);
+    border-radius: 8px; border: 1px solid rgba(99,102,241,0.15);
     display: inline-block;
   }
 
@@ -213,25 +215,25 @@
   }
   .ag-field input, .ag-field textarea {
     width: 100%; padding: 12px 16px; border-radius: 10px;
-    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    background: #f8f9ff; border: 1px solid rgba(99,102,241,0.18);
     color: var(--ag-text); font-size: 14px; outline: none;
     transition: border-color 0.2s; font-family: inherit; resize: vertical;
     box-sizing: border-box;
   }
   .ag-field input:focus, .ag-field textarea:focus {
-    border-color: rgba(0,229,255,0.4);
-    background: rgba(0,229,255,0.03);
+    border-color: rgba(99,102,241,0.5);
+    background: #fff;
   }
   .ag-field textarea { min-height: 100px; }
 
   .ag-submit-btn {
     width: 100%; padding: 14px; border-radius: 12px;
-    background: var(--ag-grad); color: #07090f;
+    background: var(--ag-grad); color: #fff;
     font-size: 14px; font-weight: 800; border: none; cursor: pointer;
     transition: all 0.25s; letter-spacing: 0.3px;
-    box-shadow: 0 4px 20px rgba(0,229,255,0.25);
+    box-shadow: 0 4px 16px rgba(99,102,241,0.3);
   }
-  .ag-submit-btn:hover { box-shadow: 0 8px 30px rgba(0,229,255,0.4); transform: translateY(-1px); }
+  .ag-submit-btn:hover { box-shadow: 0 8px 28px rgba(99,102,241,0.45); transform: translateY(-1px); }
   .ag-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
   .ag-submit-success {
@@ -256,7 +258,7 @@
 {% endblock %}
 
 {% block content %}
-<div style="background:var(--ag-bg);min-height:100vh">
+<div style="background:var(--ag-bg);min-height:100vh;color:var(--ag-text)">
 <div class="ag-page">
 
   <!-- HERO -->

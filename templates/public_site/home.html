@@ -402,7 +402,7 @@
     {% if pharmacy_cards %}
     <a href="#pharmacy" class="cat-pill" data-section="pharmacy">🏥 Аптеки</a>
     {% endif %}
-    {% if legal_cards or eco_cards %}
+    {% if legal_cards or eco_cards or agency_cards %}
     <a href="#services" class="cat-pill" data-section="services">⚡ Услуги</a>
     {% endif %}
   </nav>
@@ -633,8 +633,8 @@
 <div class="sec-divider"></div>
 {% endif %}
 
-<!-- ═══════════════════ УСЛУГИ (Юристы + Эко) ═══════════════════ -->
-{% if legal_cards or eco_cards %}
+<!-- ═══════════════════ УСЛУГИ (Юристы + Эко + IT) ═══════════════════ -->
+{% if legal_cards or eco_cards or agency_cards %}
 <section id="services" style="background:linear-gradient(160deg,rgba(37,99,235,.03) 0%,rgba(5,150,105,.04) 100%);">
   <div class="sec-wrap">
 
@@ -709,6 +709,40 @@
               {% endif %}
             </div>
             <span class="svc-row-arrow" style="color:#059669;">→</span>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- IT Агентства -->
+      {% if agency_cards %}
+      <div class="svc-block" id="svc-agency">
+        <div class="svc-block-head">
+          <div class="svc-block-icon" style="background:rgba(99,102,241,.08);border-color:rgba(99,102,241,.2);">💻</div>
+          <div>
+            <div class="svc-block-title">IT Агентства</div>
+            <div class="svc-block-sub">Разработка, дизайн, AI, маркетинг</div>
+          </div>
+          <a href="{% url 'agency:agency_list' %}" class="svc-block-all" style="color:#6366f1;border-color:rgba(99,102,241,.3);">Все →</a>
+        </div>
+        <div class="svc-list">
+          {% for ag in agency_cards %}
+          <a href="{% url 'agency:agency_detail' ag.slug %}" class="svc-row" id="agency-{{ ag.slug }}">
+            <div class="svc-row-icon">
+              {% if ag.logo %}<img src="{{ ag.logo.url }}" alt="{{ ag.name }}" loading="lazy"
+                   style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
+              {% else %}<span style="font-size:20px;">💻</span>{% endif %}
+            </div>
+            <div class="svc-row-info">
+              <div class="svc-row-name">{{ ag.name }}</div>
+              {% if ag.tagline %}
+              <div class="svc-row-sub">{{ ag.tagline|truncatechars:36 }}</div>
+              {% elif ag.website %}
+              <div class="svc-row-sub">🌐 {{ ag.website|slice:"8:36" }}</div>
+              {% endif %}
+            </div>
+            <span class="svc-row-arrow" style="color:#6366f1;">→</span>
           </a>
           {% endfor %}
         </div>

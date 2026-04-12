@@ -182,6 +182,7 @@ def home(request):
     from hotels.models import Hotel
     from legal.models import LegalOrg
     from eco.models import EcoProject
+    from agency.models import Agency
 
     # ── РЕСТОРАНЫ ────────────────────────────────────────────────────────────
     top_restaurants = list(
@@ -244,6 +245,11 @@ def home(request):
         EcoProject.objects.filter(is_active=True).order_by("sort_order", "name")[:8]
     )
 
+    # ── IT АГЕНТСТВА ─────────────────────────────────────────────────────────
+    agency_cards = list(
+        Agency.objects.filter(is_active=True).order_by("sort_order", "name")[:8]
+    )
+
     # ── СТАТИСТИКА ────────────────────────────────────────────────────────────
     stats = {
         "restaurant_count": len(restaurant_cards),
@@ -272,6 +278,7 @@ def home(request):
         "pharmacy_cards":   pharmacy_cards,
         "legal_cards":      legal_cards,
         "eco_cards":        eco_cards,
+        "agency_cards":     agency_cards,
         "stats":            stats,
     })
 
