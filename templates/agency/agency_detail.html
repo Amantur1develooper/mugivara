@@ -1,0 +1,479 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{{ agency.name }} — IT Агентство{% endblock %}
+{% block cta %}{% endblock %}
+
+{% block head_extra %}
+<style>
+  :root {
+    --ag-bg: #07090f;
+    --ag-card: #0e1117;
+    --ag-card2: #111520;
+    --ag-border: rgba(255,255,255,0.07);
+    --ag-text: #f0f2f8;
+    --ag-muted: rgba(240,242,248,0.45);
+    --ag-cyan: #00e5ff;
+    --ag-purple: #8b5cf6;
+    --ag-grad: linear-gradient(135deg, #00e5ff, #8b5cf6);
+  }
+
+  body { background: var(--ag-bg); }
+  .ag-page { max-width: 1100px; margin: 0 auto; padding: 0 24px 100px; }
+
+  /* ── HERO ── */
+  .ag-hero {
+    position: relative; overflow: hidden;
+    background: var(--ag-bg);
+    padding: 0; margin: 0 -24px 0;
+    min-height: 320px;
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .ag-hero-cover {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, #0a0f1a, #090d16);
+    overflow: hidden;
+  }
+  .ag-hero-cover img { width: 100%; height: 100%; object-fit: cover; opacity: 0.35; }
+  .ag-hero-cover-glow {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 80% at 0% 60%, rgba(0,229,255,0.18), transparent 55%),
+      radial-gradient(ellipse 50% 60% at 100% 10%, rgba(139,92,246,0.2), transparent 55%);
+  }
+  .ag-hero-grid {
+    position: absolute; inset: 0; opacity: 0.025;
+    background-image: linear-gradient(rgba(255,255,255,1) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+  .ag-hero-content {
+    position: relative; z-index: 2;
+    padding: 100px 40px 36px;
+    background: linear-gradient(to top, var(--ag-bg) 0%, rgba(7,9,15,0.6) 60%, transparent 100%);
+  }
+  .ag-back {
+    position: absolute; top: 20px; left: 40px; z-index: 3;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.65); text-decoration: none; transition: all 0.2s;
+  }
+  .ag-back:hover { background: rgba(255,255,255,0.12); color: white; }
+
+  .ag-logo-row { display: flex; align-items: flex-end; gap: 18px; margin-bottom: 16px; }
+  .ag-logo {
+    width: 64px; height: 64px; border-radius: 16px; overflow: hidden; flex-shrink: 0;
+    border: 2px solid rgba(255,255,255,0.12); background: #111827;
+    display: flex; align-items: center; justify-content: center; font-size: 28px;
+  }
+  .ag-logo img { width: 100%; height: 100%; object-fit: cover; }
+
+  .ag-hero-name {
+    font-family: 'Unbounded', sans-serif; font-weight: 900;
+    font-size: clamp(26px, 4vw, 42px); letter-spacing: -1.5px;
+    color: var(--ag-text); line-height: 1.1;
+  }
+  .ag-hero-tagline { font-size: 15px; color: var(--ag-muted); margin-top: 8px; }
+
+  /* ── LAYOUT ── */
+  .ag-layout { display: grid; grid-template-columns: 1fr 360px; gap: 28px; padding-top: 36px; }
+
+  /* ── SERVICE CARDS ── */
+  .ag-section-title {
+    font-family: 'Unbounded', sans-serif; font-weight: 800;
+    font-size: 13px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--ag-muted); margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .ag-section-title::after { content: ''; flex: 1; height: 1px; background: var(--ag-border); }
+
+  .ag-services { display: flex; flex-direction: column; gap: 16px; }
+
+  .ag-svc {
+    background: var(--ag-card); border: 1px solid var(--ag-border); border-radius: 18px;
+    overflow: hidden; display: flex; transition: border-color 0.25s, box-shadow 0.25s;
+    cursor: pointer;
+  }
+  .ag-svc:hover { border-color: rgba(0,229,255,0.18); box-shadow: 0 8px 28px rgba(0,0,0,0.3); }
+
+  .ag-svc-photo {
+    width: 100px; flex-shrink: 0;
+    background: linear-gradient(135deg, #0a0f1a, #111827);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; position: relative; overflow: hidden;
+  }
+  .ag-svc-photo img { width: 100%; height: 100%; object-fit: cover; }
+
+  .ag-svc-body { padding: 18px 20px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+
+  .ag-svc-type-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 100px; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.5px; text-transform: uppercase;
+    background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.15);
+    color: var(--ag-cyan); width: fit-content;
+  }
+  .ag-svc-type-design { background: rgba(236,72,153,0.1); border-color: rgba(236,72,153,0.2); color: #ec4899; }
+  .ag-svc-type-seo    { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.2); color: #10b981; }
+  .ag-svc-type-mobile { background: rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.2); color: var(--ag-purple); }
+  .ag-svc-type-ai     { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.2); color: #f59e0b; }
+  .ag-svc-type-devops { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.2); color: #3b82f6; }
+  .ag-svc-type-support{ background: rgba(107,114,128,0.1); border-color: rgba(107,114,128,0.2); color: #9ca3af; }
+
+  .ag-svc-name {
+    font-family: 'Unbounded', sans-serif; font-weight: 700;
+    font-size: 14px; color: var(--ag-text); letter-spacing: -0.2px;
+  }
+  .ag-svc-desc { font-size: 13px; color: var(--ag-muted); line-height: 1.6; }
+  .ag-svc-stack { font-size: 11px; color: rgba(0,229,255,0.6); font-weight: 500; }
+
+  .ag-svc-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-top: auto; padding-top: 10px;
+    border-top: 1px solid var(--ag-border);
+  }
+  .ag-svc-price {
+    font-family: 'Unbounded', sans-serif; font-size: 16px; font-weight: 800;
+    background: var(--ag-grad); -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .ag-svc-price-note { font-size: 11px; color: var(--ag-muted); margin-top: 2px; }
+  .ag-svc-days {
+    font-size: 11px; color: var(--ag-muted);
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  .ag-svc-order-btn {
+    padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 700;
+    background: rgba(0,229,255,0.1); border: 1px solid rgba(0,229,255,0.2);
+    color: var(--ag-cyan); cursor: pointer; transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .ag-svc-order-btn:hover { background: rgba(0,229,255,0.18); }
+
+  /* ── SIDEBAR ── */
+  .ag-sidebar { display: flex; flex-direction: column; gap: 20px; }
+
+  .ag-info-card {
+    background: var(--ag-card); border: 1px solid var(--ag-border); border-radius: 18px;
+    padding: 24px; position: sticky; top: 20px;
+  }
+
+  .ag-contact-title {
+    font-family: 'Unbounded', sans-serif; font-size: 14px; font-weight: 800;
+    color: var(--ag-text); margin-bottom: 16px;
+  }
+  .ag-contact-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid var(--ag-border);
+    font-size: 13px; color: var(--ag-muted);
+  }
+  .ag-contact-row:last-of-type { border-bottom: none; }
+  .ag-contact-row a { color: var(--ag-cyan); text-decoration: none; }
+  .ag-contact-row a:hover { text-decoration: underline; }
+
+  /* ── ORDER MODAL ── */
+  .ag-modal-bg {
+    display: none; position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .ag-modal-bg.open { display: flex; }
+
+  .ag-modal {
+    background: #0e1117; border: 1px solid rgba(0,229,255,0.15);
+    border-radius: 24px; padding: 32px; width: 100%; max-width: 480px;
+    position: relative; box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+  }
+  .ag-modal-close {
+    position: absolute; top: 16px; right: 16px;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.5); font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+  }
+  .ag-modal-close:hover { background: rgba(255,255,255,0.1); color: white; }
+
+  .ag-modal-title {
+    font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 800;
+    color: var(--ag-text); margin-bottom: 6px;
+  }
+  .ag-modal-svc {
+    font-size: 13px; color: var(--ag-cyan); margin-bottom: 24px;
+    padding: 6px 12px; background: rgba(0,229,255,0.08);
+    border-radius: 8px; border: 1px solid rgba(0,229,255,0.15);
+    display: inline-block;
+  }
+
+  .ag-field { margin-bottom: 16px; }
+  .ag-field label {
+    display: block; font-size: 11px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--ag-muted); margin-bottom: 8px;
+  }
+  .ag-field input, .ag-field textarea {
+    width: 100%; padding: 12px 16px; border-radius: 10px;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    color: var(--ag-text); font-size: 14px; outline: none;
+    transition: border-color 0.2s; font-family: inherit; resize: vertical;
+    box-sizing: border-box;
+  }
+  .ag-field input:focus, .ag-field textarea:focus {
+    border-color: rgba(0,229,255,0.4);
+    background: rgba(0,229,255,0.03);
+  }
+  .ag-field textarea { min-height: 100px; }
+
+  .ag-submit-btn {
+    width: 100%; padding: 14px; border-radius: 12px;
+    background: var(--ag-grad); color: #07090f;
+    font-size: 14px; font-weight: 800; border: none; cursor: pointer;
+    transition: all 0.25s; letter-spacing: 0.3px;
+    box-shadow: 0 4px 20px rgba(0,229,255,0.25);
+  }
+  .ag-submit-btn:hover { box-shadow: 0 8px 30px rgba(0,229,255,0.4); transform: translateY(-1px); }
+  .ag-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .ag-submit-success {
+    text-align: center; padding: 24px 0;
+  }
+  .ag-submit-success .icon { font-size: 48px; margin-bottom: 12px; }
+  .ag-submit-success .title { font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 800; color: var(--ag-text); margin-bottom: 8px; }
+  .ag-submit-success .sub { font-size: 14px; color: var(--ag-muted); }
+
+  @media (max-width: 900px) {
+    .ag-layout { grid-template-columns: 1fr; }
+    .ag-info-card { position: static; }
+  }
+  @media (max-width: 640px) {
+    .ag-hero-content { padding: 80px 20px 28px; }
+    .ag-back { left: 20px; }
+    .ag-page { padding: 0 16px 60px; }
+    .ag-svc { flex-direction: column; }
+    .ag-svc-photo { width: 100%; height: 120px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="background:var(--ag-bg);min-height:100vh">
+<div class="ag-page">
+
+  <!-- HERO -->
+  <div class="ag-hero">
+    <div class="ag-hero-cover">
+      {% if agency.cover %}<img src="{{ agency.cover.url }}" alt="">{% endif %}
+      <div class="ag-hero-cover-glow"></div>
+      <div class="ag-hero-grid"></div>
+    </div>
+    <a href="{% url 'agency:agency_list' %}" class="ag-back">← Все агентства</a>
+    <div class="ag-hero-content">
+      <div class="ag-logo-row">
+        <div class="ag-logo">
+          {% if agency.logo %}<img src="{{ agency.logo.url }}" alt="">{% else %}⚡{% endif %}
+        </div>
+        <div>
+          <div class="ag-hero-name">{{ agency.name }}</div>
+          {% if agency.tagline %}<div class="ag-hero-tagline">{{ agency.tagline }}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAYOUT -->
+  <div class="ag-layout">
+
+    <!-- SERVICES -->
+    <div>
+      {% if agency.description %}
+      <div style="background:var(--ag-card);border:1px solid var(--ag-border);border-radius:18px;padding:24px;margin-bottom:28px">
+        <div style="font-size:14px;color:var(--ag-muted);line-height:1.8;">{{ agency.description }}</div>
+      </div>
+      {% endif %}
+
+      <div class="ag-section-title">Услуги</div>
+
+      {% if services %}
+      <div class="ag-services">
+        {% for svc in services %}
+        <div class="ag-svc" onclick="openOrder({{ svc.id }}, '{{ svc.name|escapejs }}')">
+          <div class="ag-svc-photo">
+            {% if svc.photo %}<img src="{{ svc.photo.url }}" alt="">{% else %}
+            {% if svc.service_type == 'dev' %}💻
+            {% elif svc.service_type == 'design' %}🎨
+            {% elif svc.service_type == 'seo' %}📈
+            {% elif svc.service_type == 'mobile' %}📱
+            {% elif svc.service_type == 'ai' %}🤖
+            {% elif svc.service_type == 'devops' %}☁️
+            {% elif svc.service_type == 'support' %}🛠
+            {% else %}⚡{% endif %}
+            {% endif %}
+          </div>
+          <div class="ag-svc-body">
+            <div class="ag-svc-type-badge ag-svc-type-{{ svc.service_type }}">{{ svc.get_service_type_display }}</div>
+            <div class="ag-svc-name">{{ svc.name }}</div>
+            {% if svc.description %}
+              <div class="ag-svc-desc">{{ svc.description|truncatechars:160 }}</div>
+            {% endif %}
+            {% if svc.tech_stack %}
+              <div class="ag-svc-stack">🔧 {{ svc.tech_stack }}</div>
+            {% endif %}
+            <div class="ag-svc-footer">
+              <div>
+                {% if svc.price %}
+                  <div class="ag-svc-price">{{ svc.price|floatformat:0 }} сом</div>
+                  {% if svc.price_note %}<div class="ag-svc-price-note">{{ svc.price_note }}</div>{% endif %}
+                {% else %}
+                  <div class="ag-svc-price" style="font-size:13px">по договорённости</div>
+                {% endif %}
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                {% if svc.delivery_days %}
+                  <div class="ag-svc-days">⏱ {{ svc.delivery_days }} дн.</div>
+                {% endif %}
+                <button class="ag-svc-order-btn" onclick="event.stopPropagation();openOrder({{ svc.id }}, '{{ svc.name|escapejs }}')">
+                  Заказать →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      {% else %}
+      <div style="text-align:center;padding:60px 24px;background:var(--ag-card);border:1px solid var(--ag-border);border-radius:18px">
+        <div style="font-size:42px;margin-bottom:12px">🚧</div>
+        <div style="font-size:14px;color:var(--ag-muted)">Услуги скоро появятся</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="ag-sidebar">
+      <div class="ag-info-card">
+        <div class="ag-contact-title">Контакты</div>
+        {% if agency.phone %}
+        <div class="ag-contact-row">
+          <span>📞</span>
+          <a href="tel:{{ agency.phone }}">{{ agency.phone }}</a>
+        </div>
+        {% endif %}
+        {% if agency.email %}
+        <div class="ag-contact-row">
+          <span>✉️</span>
+          <a href="mailto:{{ agency.email }}">{{ agency.email }}</a>
+        </div>
+        {% endif %}
+        {% if agency.website %}
+        <div class="ag-contact-row">
+          <span>🌐</span>
+          <a href="{{ agency.website }}" target="_blank" rel="noopener">{{ agency.website|slice:"8:36" }}…</a>
+        </div>
+        {% endif %}
+        {% if agency.address %}
+        <div class="ag-contact-row">
+          <span>📍</span>
+          <span>{{ agency.address }}</span>
+        </div>
+        {% endif %}
+
+        <button class="ag-submit-btn" style="margin-top:20px" onclick="openOrder(null,'')">
+          ✉️ Написать нам
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ORDER MODAL -->
+<div class="ag-modal-bg" id="agModal">
+  <div class="ag-modal">
+    <button class="ag-modal-close" onclick="closeModal()">✕</button>
+    <div id="agModalContent">
+      <div class="ag-modal-title">Заявка</div>
+      <div class="ag-modal-svc" id="agModalSvc" style="display:none"></div>
+      <div class="ag-field">
+        <label>Ваше имя *</label>
+        <input id="agName" placeholder="Как к вам обращаться?">
+      </div>
+      <div class="ag-field">
+        <label>Телефон / WhatsApp</label>
+        <input id="agPhone" placeholder="+996 ..." type="tel">
+      </div>
+      <div class="ag-field">
+        <label>Опишите задачу *</label>
+        <textarea id="agMessage" placeholder="Расскажите о вашем проекте..."></textarea>
+      </div>
+      <input type="hidden" id="agSvcId" value="">
+      <button class="ag-submit-btn" id="agSubmitBtn" onclick="submitInquiry()">Отправить заявку →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openOrder(svcId, svcName) {
+  document.getElementById("agModal").classList.add("open");
+  document.getElementById("agSvcId").value = svcId || "";
+  const svcEl = document.getElementById("agModalSvc");
+  if (svcName) { svcEl.textContent = "⚡ " + svcName; svcEl.style.display = "inline-block"; }
+  else { svcEl.style.display = "none"; }
+}
+function closeModal() {
+  document.getElementById("agModal").classList.remove("open");
+  document.getElementById("agModalContent").innerHTML = `
+    <div class="ag-modal-title">Заявка</div>
+    <div class="ag-modal-svc" id="agModalSvc" style="display:none"></div>
+    <div class="ag-field"><label>Ваше имя *</label><input id="agName" placeholder="Как к вам обращаться?"></div>
+    <div class="ag-field"><label>Телефон / WhatsApp</label><input id="agPhone" placeholder="+996 ..." type="tel"></div>
+    <div class="ag-field"><label>Опишите задачу *</label><textarea id="agMessage" placeholder="Расскажите о вашем проекте..."></textarea></div>
+    <input type="hidden" id="agSvcId" value="">
+    <button class="ag-submit-btn" id="agSubmitBtn" onclick="submitInquiry()">Отправить заявку →</button>
+  `;
+}
+document.getElementById("agModal").addEventListener("click", function(e) {
+  if (e.target === this) closeModal();
+});
+
+async function submitInquiry() {
+  const name    = document.getElementById("agName").value.trim();
+  const phone   = document.getElementById("agPhone").value.trim();
+  const message = document.getElementById("agMessage").value.trim();
+  const svc_id  = document.getElementById("agSvcId").value;
+
+  if (!name || !message) {
+    alert("Заполните имя и описание задачи");
+    return;
+  }
+
+  const btn = document.getElementById("agSubmitBtn");
+  btn.disabled = true; btn.textContent = "Отправляем...";
+
+  const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+  try {
+    const r = await fetch("{% url 'agency:agency_inquiry' agency.slug %}", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+      body: JSON.stringify({ name, phone, message, service_id: svc_id || null })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      document.getElementById("agModalContent").innerHTML = `
+        <div class="ag-submit-success">
+          <div class="icon">✅</div>
+          <div class="title">Заявка отправлена!</div>
+          <div class="sub">Мы свяжемся с вами в ближайшее время</div>
+        </div>`;
+    } else {
+      btn.disabled = false; btn.textContent = "Отправить заявку →";
+      alert(d.error || "Ошибка. Попробуйте снова.");
+    }
+  } catch(e) {
+    btn.disabled = false; btn.textContent = "Отправить заявку →";
+    alert("Ошибка сети. Попробуйте снова.");
+  }
+}
+</script>
+{% endblock %}

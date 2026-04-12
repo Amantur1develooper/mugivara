@@ -1,0 +1,137 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Услуги — {{ agency.name }}{% endblock %}
+{% block nav_agency %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .asvc-grid { display:flex; flex-direction:column; gap:12px; }
+  .asvc-row {
+    background:var(--card); border:1.5px solid var(--border); border-radius:16px;
+    display:flex; align-items:center; gap:16px; padding:16px 20px;
+    transition:border-color .2s;
+  }
+  .asvc-row:hover { border-color:rgba(0,229,255,.2); }
+  .asvc-photo {
+    width:56px; height:56px; border-radius:12px; overflow:hidden; flex-shrink:0;
+    background:linear-gradient(135deg,#0a0f1a,#111827);
+    display:flex; align-items:center; justify-content:center; font-size:24px;
+    border:1.5px solid var(--border);
+  }
+  .asvc-photo img { width:100%; height:100%; object-fit:cover; }
+  .asvc-info { flex:1; min-width:0; }
+  .asvc-name { font-weight:700; font-size:14px; color:var(--text); margin-bottom:3px; }
+  .asvc-meta { font-size:12px; color:var(--muted); display:flex; gap:12px; flex-wrap:wrap; }
+  .asvc-type-badge {
+    display:inline-flex; align-items:center; gap:4px;
+    padding:2px 8px; border-radius:100px; font-size:10px; font-weight:700;
+    background:rgba(0,229,255,.08); border:1px solid rgba(0,229,255,.15); color:#00e5ff;
+  }
+  .asvc-price { font-family:'Unbounded',sans-serif; font-size:13px; font-weight:800; color:var(--text); white-space:nowrap; }
+  .asvc-inactive { opacity:.45; }
+  .asvc-actions { display:flex; gap:6px; }
+  .asvc-btn {
+    padding:7px 12px; border-radius:8px; font-size:12px; font-weight:600;
+    border:1px solid var(--border); background:var(--bg); color:var(--text2);
+    text-decoration:none; cursor:pointer; transition:all .15s;
+  }
+  .asvc-btn:hover { background:rgba(0,229,255,.06); border-color:rgba(0,229,255,.2); color:#00e5ff; }
+  .asvc-btn-del:hover { background:rgba(255,59,48,.08); border-color:rgba(255,59,48,.2); color:#ff3b30; }
+  .asvc-toggle-on  { color:#00b896; border-color:rgba(0,184,150,.2); background:rgba(0,184,150,.06); }
+  .asvc-toggle-off { color:var(--muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">⚡ Услуги</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:agency_home' %}">IT Агентства</a> → {{ agency.name }}
+    </div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <a href="{% url 'dashboard:agency_edit' agency.id %}" class="db-btn db-btn-ghost db-btn-sm">⚙️ Настройки</a>
+    <a href="{% url 'dashboard:agency_service_add' agency.id %}" class="db-btn db-btn-primary db-btn-sm">+ Добавить услугу</a>
+  </div>
+</div>
+
+{% if messages %}
+<div class="db-messages">
+  {% for m in messages %}<div class="db-msg {{ m.tags }}">{{ m }}</div>{% endfor %}
+</div>
+{% endif %}
+
+{% if services %}
+<div class="asvc-grid">
+  {% for svc in services %}
+  <div class="asvc-row {% if not svc.is_active %}asvc-inactive{% endif %}" id="svc-row-{{ svc.id }}">
+    <div class="asvc-photo">
+      {% if svc.photo %}<img src="{{ svc.photo.url }}" alt="">
+      {% elif svc.service_type == 'dev' %}💻
+      {% elif svc.service_type == 'design' %}🎨
+      {% elif svc.service_type == 'seo' %}📈
+      {% elif svc.service_type == 'mobile' %}📱
+      {% elif svc.service_type == 'ai' %}🤖
+      {% elif svc.service_type == 'devops' %}☁️
+      {% elif svc.service_type == 'support' %}🛠
+      {% else %}⚡{% endif %}
+    </div>
+    <div class="asvc-info">
+      <div class="asvc-name">{{ svc.name }}</div>
+      <div class="asvc-meta">
+        <span class="asvc-type-badge">{{ svc.get_service_type_display }}</span>
+        {% if svc.tech_stack %}<span>🔧 {{ svc.tech_stack|truncatechars:40 }}</span>{% endif %}
+        {% if svc.delivery_days %}<span>⏱ {{ svc.delivery_days }} дн.</span>{% endif %}
+      </div>
+    </div>
+    <div class="asvc-price">
+      {% if svc.price %}{{ svc.price|floatformat:0 }} сом{% if svc.price_note %} <span style="font-size:11px;font-weight:400;color:var(--muted)">{{ svc.price_note }}</span>{% endif %}
+      {% else %}<span style="font-size:12px;font-weight:400;color:var(--muted)">договорная</span>{% endif %}
+    </div>
+    <div class="asvc-actions">
+      <button class="asvc-btn {% if svc.is_active %}asvc-toggle-on{% else %}asvc-toggle-off{% endif %}"
+              id="toggle-{{ svc.id }}" onclick="toggleSvc({{ svc.id }}, this)"
+              title="{% if svc.is_active %}Скрыть{% else %}Показать{% endif %}">
+        {% if svc.is_active %}👁{% else %}🚫{% endif %}
+      </button>
+      <a href="{% url 'dashboard:agency_service_edit' svc.id %}" class="asvc-btn">✏️</a>
+      <form method="post" action="{% url 'dashboard:agency_service_delete' svc.id %}" style="display:inline"
+            onsubmit="return confirm('Удалить «{{ svc.name|escapejs }}»?')">
+        {% csrf_token %}
+        <button class="asvc-btn asvc-btn-del" type="submit">🗑</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="db-card" style="text-align:center;padding:60px 24px">
+  <div style="font-size:48px;margin-bottom:16px">⚡</div>
+  <div style="font-size:15px;font-weight:700;color:var(--text2);margin-bottom:8px">Услуги не добавлены</div>
+  <div style="font-size:13px;color:var(--muted);margin-bottom:20px">Добавьте первую услугу вашего агентства</div>
+  <a href="{% url 'dashboard:agency_service_add' agency.id %}" class="db-btn db-btn-primary">+ Добавить услугу</a>
+</div>
+{% endif %}
+
+<script>
+async function toggleSvc(id, btn) {
+  const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+  const url = "{% url 'dashboard:agency_service_toggle' 0 %}".replace("/0/", `/${id}/`);
+  const r = await fetch(url, {
+    method: "POST", headers: { "X-CSRFToken": csrf }
+  });
+  const d = await r.json();
+  if (d.ok) {
+    const row = document.getElementById("svc-row-" + id);
+    if (d.is_active) {
+      btn.textContent = "👁"; btn.className = btn.className.replace("asvc-toggle-off","asvc-toggle-on");
+      row.classList.remove("asvc-inactive");
+    } else {
+      btn.textContent = "🚫"; btn.className = btn.className.replace("asvc-toggle-on","asvc-toggle-off");
+      row.classList.add("asvc-inactive");
+    }
+  }
+}
+</script>
+{% endblock %}

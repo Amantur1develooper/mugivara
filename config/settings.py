@@ -60,6 +60,7 @@ INSTALLED_APPS = [
    "markets",
    "legal",
    "eco",
+   "agency",
 ]
 # CELERY_TASK_ALWAYS_EAGER = True
 # CELERY_TASK_EAGER_PROPAGATES = True

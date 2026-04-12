@@ -3,6 +3,7 @@ from . import views
 from hotels import dashboard_views as hv
 from shops import dashboard_views as sv
 from legal import dashboard_views as lv
+from agency import dashboard_views as av
 
 app_name = "dashboard"
 
@@ -60,6 +61,15 @@ urlpatterns = [
     path("shops/category/<int:category_id>/delete/",        sv.shop_category_delete,  name="shop_category_delete"),
     path("shops/branch/<int:branch_id>/orders/",            sv.shop_orders,           name="shop_orders"),
     path("shops/order/<int:order_id>/status/",              sv.shop_order_status,     name="shop_order_status"),
+
+    # ── AGENCY ──────────────────────────────────────────────────────────────
+    path("agency/",                                      av.agency_home,           name="agency_home"),
+    path("agency/<int:agency_id>/edit/",                 av.agency_edit,           name="agency_edit"),
+    path("agency/<int:agency_id>/services/",             av.agency_services,       name="agency_services"),
+    path("agency/<int:agency_id>/services/add/",         av.agency_service_add,    name="agency_service_add"),
+    path("agency/service/<int:svc_id>/edit/",            av.agency_service_edit,   name="agency_service_edit"),
+    path("agency/service/<int:svc_id>/toggle/",          av.agency_service_toggle, name="agency_service_toggle"),
+    path("agency/service/<int:svc_id>/delete/",          av.agency_service_delete, name="agency_service_delete"),
 
     # ── HOTELS ──────────────────────────────────────────────────────────────
     path("hotels/",                                       hv.hotel_home,          name="hotel_home"),

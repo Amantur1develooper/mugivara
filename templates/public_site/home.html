@@ -141,6 +141,20 @@
     }
   }
 
+  /* ═══ RESTAURANTS — 2-col grid on mobile ═══ */
+  .cards-grid-2 {
+    display:grid !important;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    overflow-x:unset !important;
+  }
+  @media (min-width:700px) {
+    .cards-grid-2 {
+      grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+      gap:16px;
+    }
+  }
+
   /* ═══ BIZ CARD ═══ */
   .biz-card {
     flex-shrink:0; width:220px;
@@ -153,6 +167,7 @@
   }
   .biz-card:hover { transform:translateY(-5px); box-shadow:0 16px 40px rgba(0,0,0,.1); }
   @media (min-width:700px) { .biz-card { width:auto; } }
+  .cards-grid-2 .biz-card { width:auto; }
 
   .biz-img {
     position:relative; height:160px;
@@ -373,7 +388,7 @@
 <div class="cat-nav-wrap" id="catNav">
   <nav class="cat-nav" aria-label="Категории">
     {% if restaurant_cards %}
-    <a href="#restaurants" class="cat-pill active" data-section="restaurants">🍽️ Рестораны</a>
+    <a href="#restaurants" class="cat-pill active" data-section="restaurants">🍽️ Еда</a>
     {% endif %}
     {% if store_cards %}
     <a href="#stores" class="cat-pill" data-section="stores">🛍️ Магазины</a>
@@ -400,12 +415,12 @@
     <div class="sec-head">
       <div>
         <div class="sec-tag">Еда и напитки</div>
-        <h2 class="sec-title">Рестораны</h2>
+        <h2 class="sec-title">Еда</h2>
       </div>
-      <a href="{% url 'public_site:restaurants_list' %}" class="sec-all">Все рестораны →</a>
+      <a href="{% url 'public_site:restaurants_list' %}" class="sec-all">Все заведения →</a>
     </div>
 
-    <div class="cards-scroller">
+    <div class="cards-grid-2">
       {% for card in restaurant_cards %}
       <a href="{% url 'public_site:restaurant_contacts' card.obj.slug %}" class="biz-card">
         <div class="biz-img">

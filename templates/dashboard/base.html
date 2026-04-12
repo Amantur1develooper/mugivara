@@ -192,7 +192,7 @@
   <nav class="db-nav">
     <div class="db-nav-label">Главное</div>
     <a href="{% url 'dashboard:home' %}" class="{% block nav_home %}{% endblock %}">
-      <span class="db-nav-icon">🏠</span> Мои заведения
+      <span class="db-nav-icon">🍽️</span> Еда
     </a>
     <a href="{% url 'dashboard:hotel_home' %}" class="{% block nav_hotels %}{% endblock %}">
       <span class="db-nav-icon">🏨</span> Мои отели
@@ -208,6 +208,9 @@
     </a>
     <a href="{% url 'dashboard:legal_home' %}" class="{% block nav_legal %}{% endblock %}">
       <span class="db-nav-icon">⚖️</span> Юр. организации
+    </a>
+    <a href="{% url 'dashboard:agency_home' %}" class="{% block nav_agency %}{% endblock %}">
+      <span class="db-nav-icon">💻</span> IT Агентства
     </a>
 
     {% block sidebar_extra %}{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{% if svc %}Редактировать{% else %}Добавить{% endif %} услугу{% endblock %}
+{% block nav_agency %}active{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">{% if svc %}✏️ Редактировать{% else %}➕ Добавить{% endif %} услугу</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:agency_home' %}">IT Агентства</a> →
+      <a href="{% url 'dashboard:agency_services' agency.id %}">{{ agency.name }}</a> →
+      {% if svc %}{{ svc.name }}{% else %}Новая услуга{% endif %}
+    </div>
+  </div>
+</div>
+
+{% if messages %}
+<div class="db-messages">
+  {% for m in messages %}<div class="db-msg {{ m.tags }}">{{ m }}</div>{% endfor %}
+</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+    <div class="db-card">
+      <div class="db-card-title" style="margin-bottom:20px">Основное</div>
+
+      <div class="db-form-group">
+        <label class="db-label">Тип услуги</label>
+        <select class="db-input" name="service_type">
+          {% for val, label in service_types %}
+          <option value="{{ val }}" {% if svc and svc.service_type == val %}selected{% elif not svc and val == 'dev' %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="db-form-group">
+        <label class="db-label">Название услуги *</label>
+        <input class="db-input" name="name" value="{{ svc.name|default:'' }}" placeholder="Разработка сайта на Django" required>
+      </div>
+
+      <div class="db-form-group">
+        <label class="db-label">Описание</label>
+        <textarea class="db-input" name="description" rows="4"
+                  placeholder="Подробное описание услуги, что входит, что не входит...">{{ svc.description|default:'' }}</textarea>
+      </div>
+
+      <div class="db-form-group">
+        <label class="db-label">Стек технологий</label>
+        <input class="db-input" name="tech_stack" value="{{ svc.tech_stack|default:'' }}"
+               placeholder="React, Django, PostgreSQL, Docker">
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="db-card">
+        <div class="db-card-title" style="margin-bottom:20px">Цена и сроки</div>
+
+        <div class="db-form-group">
+          <label class="db-label">Цена (сом)</label>
+          <input class="db-input" name="price" type="number" min="0"
+                 value="{{ svc.price|default:0|floatformat:0 }}" placeholder="0 = по договорённости">
+        </div>
+        <div class="db-form-group">
+          <label class="db-label">Примечание к цене</label>
+          <input class="db-input" name="price_note" value="{{ svc.price_note|default:'' }}"
+                 placeholder="от, за проект, за час, в месяц">
+        </div>
+        <div class="db-form-group">
+          <label class="db-label">Срок выполнения (дней)</label>
+          <input class="db-input" name="delivery_days" type="number" min="1"
+                 value="{{ svc.delivery_days|default:'' }}" placeholder="Например: 14">
+        </div>
+        <div class="db-form-group">
+          <label class="db-label">Порядок сортировки</label>
+          <input class="db-input" name="sort_order" type="number" min="0"
+                 value="{{ svc.sort_order|default:0 }}">
+        </div>
+      </div>
+
+      <div class="db-card">
+        <div class="db-card-title" style="margin-bottom:20px">Фото / Превью</div>
+        {% if svc and svc.photo %}
+          <div style="margin-bottom:12px">
+            <img src="{{ svc.photo.url }}" style="width:100%;height:100px;object-fit:cover;border-radius:10px;border:1.5px solid var(--border)">
+            <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;cursor:pointer">
+              <input type="checkbox" name="photo_clear"> Удалить фото
+            </label>
+          </div>
+        {% endif %}
+        <input class="db-input" type="file" name="photo" accept="image/*">
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">Рекомендуется 600×400 или шире</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:20px">
+    <button class="db-btn db-btn-primary" type="submit">💾 {% if svc %}Сохранить{% else %}Добавить{% endif %}</button>
+    <a href="{% url 'dashboard:agency_services' agency.id %}" class="db-btn db-btn-ghost" style="margin-left:8px">Отмена</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ agency.name }} — Настройки{% endblock %}
+{% block nav_agency %}active{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">⚙️ Настройки агентства</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:agency_home' %}">IT Агентства</a> → {{ agency.name }}
+    </div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <a href="{% url 'dashboard:agency_services' agency.id %}" class="db-btn db-btn-primary db-btn-sm">⚡ Услуги</a>
+    <a href="{% url 'agency:agency_detail' agency.slug %}" target="_blank" class="db-btn db-btn-ghost db-btn-sm">👁 Витрина</a>
+  </div>
+</div>
+
+{% if messages %}
+<div class="db-messages">
+  {% for m in messages %}
+  <div class="db-msg {{ m.tags }}">{{ m }}</div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+    <div class="db-card">
+      <div class="db-card-title" style="margin-bottom:20px">Основная информация</div>
+
+      <div class="db-form-group">
+        <label class="db-label">Название *</label>
+        <input class="db-input" name="name" value="{{ agency.name }}" required>
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Слоган</label>
+        <input class="db-input" name="tagline" value="{{ agency.tagline }}" placeholder="Краткое описание агентства">
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Описание</label>
+        <textarea class="db-input" name="description" rows="4" placeholder="Подробное описание агентства...">{{ agency.description }}</textarea>
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Сайт</label>
+        <input class="db-input" name="website" type="url" value="{{ agency.website }}" placeholder="https://example.com">
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Телефон / WhatsApp</label>
+        <input class="db-input" name="phone" value="{{ agency.phone }}" placeholder="+996 ...">
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Email</label>
+        <input class="db-input" name="email" type="email" value="{{ agency.email }}" placeholder="info@agency.kg">
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Адрес</label>
+        <input class="db-input" name="address" value="{{ agency.address }}" placeholder="Бишкек, ул. ...">
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="db-card">
+        <div class="db-card-title" style="margin-bottom:20px">Медиа</div>
+
+        <div class="db-form-group">
+          <label class="db-label">Логотип</label>
+          {% if agency.logo %}
+            <div style="margin-bottom:10px">
+              <img src="{{ agency.logo.url }}" style="height:60px;border-radius:10px;border:1.5px solid var(--border)">
+              <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;cursor:pointer">
+                <input type="checkbox" name="logo_clear"> Удалить логотип
+              </label>
+            </div>
+          {% endif %}
+          <input class="db-input" type="file" name="logo" accept="image/*">
+        </div>
+
+        <div class="db-form-group">
+          <label class="db-label">Обложка</label>
+          {% if agency.cover %}
+            <div style="margin-bottom:10px">
+              <img src="{{ agency.cover.url }}" style="width:100%;height:80px;object-fit:cover;border-radius:10px;border:1.5px solid var(--border)">
+              <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:12px;cursor:pointer">
+                <input type="checkbox" name="cover_clear"> Удалить обложку
+              </label>
+            </div>
+          {% endif %}
+          <input class="db-input" type="file" name="cover" accept="image/*">
+        </div>
+      </div>
+
+      <div class="db-card">
+        <div class="db-card-title" style="margin-bottom:20px">Telegram уведомления</div>
+        <div class="db-form-group">
+          <label class="db-label">TG Chat ID</label>
+          <input class="db-input" name="tg_chat_id" value="{{ agency.tg_chat_id }}" placeholder="-1001234567890">
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">ID чата/группы для получения заявок</div>
+        </div>
+        <div class="db-form-group">
+          <label class="db-label">TG Thread ID (топик)</label>
+          <input class="db-input" name="tg_thread_id" type="number" value="{{ agency.tg_thread_id|default:'' }}" placeholder="Если используются топики">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:20px">
+    <button class="db-btn db-btn-primary" type="submit">💾 Сохранить</button>
+    <a href="{% url 'dashboard:agency_home' %}" class="db-btn db-btn-ghost" style="margin-left:8px">Отмена</a>
+  </div>
+</form>
+{% endblock %}
