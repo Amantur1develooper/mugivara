@@ -60,7 +60,15 @@ def home(request):
     for r in restaurants:
         branches = list(r.branches.filter(is_active=True).order_by("name_ru"))
         data.append({"restaurant": r, "branches": branches})
-    return render(request, "dashboard/home.html", {"data": data})
+    from karaoke.models import KaraokeVenue, KaraokeMembership
+    user = request.user
+    if user.is_staff or user.is_superuser:
+        karaoke_venues = list(KaraokeVenue.objects.prefetch_related("rooms").all())
+    else:
+        ids = KaraokeMembership.objects.filter(user=user).values_list("venue_id", flat=True)
+        karaoke_venues = list(KaraokeVenue.objects.filter(id__in=ids).prefetch_related("rooms"))
+
+    return render(request, "dashboard/home.html", {"data": data, "karaoke_venues": karaoke_venues})
 
 
 # ── RESTAURANT ───────────────────────────────────────────────────────────────
