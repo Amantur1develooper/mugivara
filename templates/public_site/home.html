@@ -405,6 +405,9 @@
     {% if legal_cards or eco_cards or agency_cards %}
     <a href="#services" class="cat-pill" data-section="services">⚡ Услуги</a>
     {% endif %}
+    {% if karaoke_cards %}
+    <a href="#entertainment" class="cat-pill" data-section="entertainment">🎤 Развлечения</a>
+    {% endif %}
   </nav>
 </div>
 
@@ -749,6 +752,54 @@
       </div>
       {% endif %}
 
+    </div>
+  </div>
+</section>
+<div class="sec-divider"></div>
+{% endif %}
+
+<!-- ═══════════════════ РАЗВЛЕЧЕНИЯ (Karaoke) ═══════════════════ -->
+{% if karaoke_cards %}
+<section id="entertainment">
+  <div class="sec-wrap">
+    <div class="sec-head">
+      <div>
+        <div class="sec-tag" style="background:rgba(168,85,247,.07);border-color:rgba(168,85,247,.2);color:#a855f7;">
+          Развлечения
+        </div>
+        <h2 class="sec-title">Karaoke</h2>
+      </div>
+      <a href="{% url 'karaoke:karaoke_list' %}" class="sec-all">Все заведения →</a>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;">
+      {% for venue in karaoke_cards %}
+      <a href="{% url 'karaoke:karaoke_detail' venue.slug %}" class="biz-card" style="text-decoration:none;color:inherit;">
+        <div class="biz-img" style="background:linear-gradient(135deg,#1a0a2e,#0d0514);">
+          {% if venue.cover %}
+            <img src="{{ venue.cover.url }}" alt="{{ venue.name }}" loading="lazy" decoding="async">
+          {% elif venue.logo %}
+            <img src="{{ venue.logo.url }}" alt="{{ venue.name }}" loading="lazy" decoding="async">
+          {% else %}
+            <div class="biz-img-ph">🎤</div>
+          {% endif %}
+          <div class="biz-overlay"></div>
+          <div class="biz-badge badge-open">🎤 Karaoke</div>
+          <div class="biz-name-over">{{ venue.name }}</div>
+        </div>
+        <div class="biz-body">
+          <div class="biz-pills">
+            <span class="biz-pill">🚪 {{ venue.rooms.count }} кабинок</span>
+            {% if venue.working_hours %}
+            <span class="biz-pill">🕐 {{ venue.working_hours }}</span>
+            {% endif %}
+          </div>
+          <div class="biz-cta">
+            <span class="biz-cta-text">Забронировать →</span>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
     </div>
   </div>
 </section>

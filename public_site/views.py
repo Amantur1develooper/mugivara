@@ -183,6 +183,7 @@ def home(request):
     from legal.models import LegalOrg
     from eco.models import EcoProject
     from agency.models import Agency
+    from karaoke.models import KaraokeVenue
 
     # ── РЕСТОРАНЫ ────────────────────────────────────────────────────────────
     top_restaurants = list(
@@ -250,6 +251,11 @@ def home(request):
         Agency.objects.filter(is_active=True).order_by("sort_order", "name")[:8]
     )
 
+    # ── KARAOKE ───────────────────────────────────────────────────────────────
+    karaoke_cards = list(
+        KaraokeVenue.objects.filter(is_active=True).order_by("sort_order", "name")[:12]
+    )
+
     # ── СТАТИСТИКА ────────────────────────────────────────────────────────────
     stats = {
         "restaurant_count": len(restaurant_cards),
@@ -279,6 +285,7 @@ def home(request):
         "legal_cards":      legal_cards,
         "eco_cards":        eco_cards,
         "agency_cards":     agency_cards,
+        "karaoke_cards":    karaoke_cards,
         "stats":            stats,
     })
 

@@ -365,6 +365,16 @@
                 <span class="dd-icon" style="background:rgba(124,58,237,.07);border-color:rgba(124,58,237,.15)">⚡</span>
                 <span><b>Все услуги</b><span>На главной странице</span></span>
               </a>
+              <a class="wb-dd-item" href="{% url 'agency:agency_list' %}">
+                <span class="dd-icon" style="background:rgba(99,102,241,.07);border-color:rgba(99,102,241,.15)">💻</span>
+                <span><b>IT Агентства</b><span>Разработка, дизайн, SEO</span></span>
+              </a>
+              <div class="wb-dd-divider"></div>
+              <div class="wb-dd-col-title" style="margin-top:4px">🎤 Развлечения</div>
+              <a class="wb-dd-item" href="{% url 'karaoke:karaoke_list' %}">
+                <span class="dd-icon" style="background:rgba(168,85,247,.08);border-color:rgba(168,85,247,.2)">🎤</span>
+                <span><b>Karaoke</b><span>Бронирование кабинок</span></span>
+              </a>
               <div class="wb-dd-divider"></div>
               <a class="wb-dd-item" href="{% url 'public_site:about' %}">
                 <span class="dd-icon">ℹ️</span>
@@ -432,6 +442,11 @@
                   color:var(--muted);padding:10px 4px 4px;">⚡ Услуги</div>
       <a class="wb-drawer-link" href="{% url 'legal:legal_list' %}">⚖️ Юридические</a>
       <a class="wb-drawer-link" href="{% url 'eco:eco_list' %}" style="color:#059669;">♻️ Эко-проекты</a>
+
+      {# Развлечения #}
+      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+                  color:var(--muted);padding:10px 4px 4px;">🎤 Развлечения</div>
+      <a class="wb-drawer-link" href="{% url 'karaoke:karaoke_list' %}" style="color:#a855f7;">🎤 Karaoke</a>
 
       <a class="wb-drawer-link" href="{% url 'public_site:about' %}" style="margin-top:4px;">ℹ️ О нас</a>
       <a class="wb-drawer-link" href="https://wa.me/996558212040" target="_blank" rel="noopener"
