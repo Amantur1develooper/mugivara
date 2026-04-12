@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load i18n static %}
+{% block title %}Развлечения — Karaoke{% endblock %}
+{% block cta %}{% endblock %}
+{% block head_extra %}
+<style>
+  :root{--kr-bg:#0a050f;--kr-card:#100a18;--kr-border:rgba(168,85,247,.13);--kr-text:#f5f0ff;--kr-muted:rgba(245,240,255,.5);--kr-purple:#a855f7;--kr-pink:#ec4899;--kr-grad:linear-gradient(135deg,#a855f7,#ec4899);}
+  body{background:var(--kr-bg);color:var(--kr-text);}
+  .kr-page{max-width:1100px;margin:0 auto;padding:0 24px 80px;}
+  .kr-hero{position:relative;overflow:hidden;background:linear-gradient(135deg,#1a0a2e,#0d0514);padding:80px 40px 60px;margin:0 -24px 52px;border-bottom:1px solid var(--kr-border);}
+  .kr-hero-glow{position:absolute;inset:0;background:radial-gradient(ellipse 50% 80% at 10% 60%,rgba(168,85,247,.2),transparent 55%),radial-gradient(ellipse 40% 50% at 90% 20%,rgba(236,72,153,.15),transparent 55%);}
+  .kr-hero-grid{position:absolute;inset:0;opacity:.03;background-image:linear-gradient(rgba(168,85,247,1) 1px,transparent 1px),linear-gradient(90deg,rgba(168,85,247,1) 1px,transparent 1px);background-size:48px 48px;}
+  .kr-back{position:absolute;top:24px;left:40px;z-index:2;display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:100px;font-size:13px;font-weight:600;background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.25);color:rgba(168,85,247,.9);text-decoration:none;}
+  .kr-hero-ew{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--kr-purple);font-weight:700;margin-bottom:14px;position:relative;display:flex;align-items:center;gap:10px;}
+  .kr-hero-ew::before{content:'';width:32px;height:1.5px;background:var(--kr-purple);display:block;}
+  .kr-hero-title{font-family:'Unbounded',sans-serif;font-weight:900;font-size:clamp(30px,5vw,52px);letter-spacing:-2px;color:var(--kr-text);line-height:1.05;margin-bottom:14px;position:relative;}
+  .kr-hero-title span{background:var(--kr-grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .kr-hero-sub{font-size:15px;color:var(--kr-muted);max-width:480px;line-height:1.7;position:relative;}
+  .kr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px;}
+  .kr-card{background:var(--kr-card);border:1px solid var(--kr-border);border-radius:20px;overflow:hidden;text-decoration:none;color:inherit;transition:transform .3s,border-color .3s,box-shadow .3s;}
+  .kr-card:hover{transform:translateY(-6px);border-color:rgba(168,85,247,.3);box-shadow:0 20px 50px rgba(168,85,247,.15);}
+  .kr-card-cover{height:180px;background:linear-gradient(135deg,#1a0a2e,#0d0818);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative;overflow:hidden;}
+  .kr-card-cover img{width:100%;height:100%;object-fit:cover;opacity:.8;transition:transform .4s;}
+  .kr-card:hover .kr-card-cover img{transform:scale(1.05);}
+  .kr-card-body{padding:20px;}
+  .kr-card-name{font-family:'Unbounded',sans-serif;font-weight:800;font-size:15px;color:var(--kr-text);margin-bottom:6px;}
+  .kr-card-tag{font-size:13px;color:var(--kr-muted);}
+  .kr-card-meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;}
+  .kr-card-meta span{font-size:12px;color:var(--kr-muted);}
+  .kr-card-btn{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:16px;padding:12px;border-radius:12px;background:var(--kr-grad);color:#fff;font-size:13px;font-weight:800;box-shadow:0 4px 18px rgba(168,85,247,.3);}
+  .kr-empty{text-align:center;padding:80px 24px;background:var(--kr-card);border:1px solid var(--kr-border);border-radius:24px;}
+  @media(max-width:640px){.kr-hero{padding:64px 20px 48px;margin:0 -16px 40px;}.kr-back{left:20px;}.kr-page{padding:0 16px 60px;}}
+</style>
+{% endblock %}
+{% block content %}
+<div style="background:var(--kr-bg);min-height:100vh">
+<div class="kr-page">
+  <div class="kr-hero">
+    <div class="kr-hero-glow"></div>
+    <div class="kr-hero-grid"></div>
+    <a href="/" class="kr-back">← Главная</a>
+    <div class="kr-hero-ew">WEBORDO · РАЗВЛЕЧЕНИЯ</div>
+    <div class="kr-hero-title">🎤 <span>Karaoke</span></div>
+    <div class="kr-hero-sub">Выберите заведение, забронируйте кабинку и проведите незабываемый вечер</div>
+  </div>
+  {% if venues %}
+  <div class="kr-grid">
+    {% for v in venues %}
+    <a href="{% url 'karaoke:karaoke_detail' v.slug %}" class="kr-card">
+      <div class="kr-card-cover">
+        {% if v.cover %}<img src="{{ v.cover.url }}" alt="{{ v.name }}" loading="lazy">{% else %}🎤{% endif %}
+      </div>
+      <div class="kr-card-body">
+        <div class="kr-card-name">{{ v.name }}</div>
+        {% if v.tagline %}<div class="kr-card-tag">{{ v.tagline }}</div>{% endif %}
+        <div class="kr-card-meta">
+          {% if v.address %}<span>📍 {{ v.address|truncatechars:30 }}</span>{% endif %}
+          {% if v.working_hours %}<span>🕐 {{ v.working_hours }}</span>{% endif %}
+          <span>🚪 {{ v.rooms.count }} кабинок</span>
+        </div>
+        <div class="kr-card-btn">Выбрать кабинку →</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="kr-empty">
+    <div style="font-size:56px;margin-bottom:16px">🎤</div>
+    <div style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:800;margin-bottom:8px">Скоро появятся</div>
+    <div style="font-size:14px;color:var(--kr-muted)">Заведения добавляются администратором</div>
+  </div>
+  {% endif %}
+</div>
+</div>
+{% endblock %}

@@ -61,6 +61,7 @@ INSTALLED_APPS = [
    "legal",
    "eco",
    "agency",
+   "karaoke",
 ]
 # CELERY_TASK_ALWAYS_EAGER = True
 # CELERY_TASK_EAGER_PROPAGATES = True

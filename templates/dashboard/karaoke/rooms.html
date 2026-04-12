@@ -1,0 +1,98 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Кабинки — {{ venue.name }}{% endblock %}
+{% block nav_karaoke %}active{% endblock %}
+{% block head_extra %}
+<style>
+  .kr-room-row{background:var(--card);border:1.5px solid var(--border);border-radius:14px;display:flex;align-items:center;gap:14px;padding:14px 18px;margin-bottom:10px;transition:border-color .2s;}
+  .kr-room-row:hover{border-color:rgba(168,85,247,.25);}
+  .kr-room-thumb{width:56px;height:46px;border-radius:10px;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#1a0a2e,#0d0514);display:flex;align-items:center;justify-content:center;font-size:20px;border:1px solid var(--border);}
+  .kr-room-thumb img{width:100%;height:100%;object-fit:cover;}
+  .kr-cat-head{display:flex;align-items:center;gap:10px;margin:20px 0 10px;font-family:'Unbounded',sans-serif;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
+  .kr-cat-head::after{content:'';flex:1;height:1px;background:var(--border);}
+</style>
+{% endblock %}
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">🚪 Кабинки</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:karaoke_home' %}">Karaoke</a> → {{ venue.name }}
+    </div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <a href="{% url 'dashboard:karaoke_chess' venue.id %}" class="db-btn db-btn-ghost db-btn-sm">♟️ Шахматка</a>
+    <a href="{% url 'dashboard:karaoke_room_add' venue.id %}" class="db-btn db-btn-primary db-btn-sm">+ Кабинка</a>
+  </div>
+</div>
+{% if messages %}
+<div class="db-messages">{% for m in messages %}<div class="db-msg {{m.tags}}">{{m}}</div>{% endfor %}</div>
+{% endif %}
+
+<!-- Категории -->
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+  <div style="font-size:13px;font-weight:600;color:var(--text2)">Категории кабинок:</div>
+  {% for cat in categories %}
+  <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);border-radius:100px;font-size:12px;color:#a855f7">
+    {{ cat.name }}
+    <button onclick="deleteCat({{ cat.id }}, this)" style="background:none;border:none;cursor:pointer;color:inherit;font-size:14px;padding:0;line-height:1">×</button>
+  </span>
+  {% endfor %}
+  <div style="display:flex;gap:6px">
+    <input id="newCatName" class="db-input" style="padding:5px 10px;width:150px;font-size:12px" placeholder="Название категории">
+    <button onclick="addCat()" class="db-btn db-btn-ghost db-btn-sm">+ Добавить</button>
+  </div>
+</div>
+
+{% if categories %}
+  {% for cat in categories %}
+  {% if cat.rooms.all %}
+  <div class="kr-cat-head">{{ cat.name }}</div>
+  {% for room in cat.rooms.all %}
+  {% include "dashboard/karaoke/_room_row.html" with room=room venue=venue %}
+  {% endfor %}
+  {% endif %}
+  {% endfor %}
+{% endif %}
+
+{% if uncategorized %}
+{% if categories %}<div class="kr-cat-head">Без категории</div>{% endif %}
+{% for room in uncategorized %}
+{% include "dashboard/karaoke/_room_row.html" with room=room venue=venue %}
+{% endfor %}
+{% endif %}
+
+{% if not categories and not uncategorized %}
+<div class="db-card" style="text-align:center;padding:60px 24px">
+  <div style="font-size:48px;margin-bottom:12px">🚪</div>
+  <div style="font-size:15px;font-weight:700;color:var(--text2);margin-bottom:8px">Кабинки не добавлены</div>
+  <a href="{% url 'dashboard:karaoke_room_add' venue.id %}" class="db-btn db-btn-primary">+ Добавить первую кабинку</a>
+</div>
+{% endif %}
+
+<script>
+const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1]||"";
+async function addCat() {
+  const name = document.getElementById("newCatName").value.trim();
+  if (!name) return;
+  const fd = new FormData(); fd.append("name", name);
+  const r = await fetch("{% url 'dashboard:karaoke_cat_add' venue.id %}", {method:"POST",body:fd,headers:{"X-CSRFToken":csrf}});
+  const d = await r.json();
+  if (d.ok) location.reload();
+}
+async function deleteCat(id, btn) {
+  if (!confirm("Удалить категорию? Кабинки останутся.")) return;
+  const r = await fetch(`{% url 'dashboard:karaoke_cat_delete' 0 %}`.replace("/0/",`/${id}/`),{method:"POST",headers:{"X-CSRFToken":csrf}});
+  const d = await r.json();
+  if (d.ok) btn.closest("span").remove();
+}
+async function toggleRoom(id, btn) {
+  const r = await fetch(`{% url 'dashboard:karaoke_room_toggle' 0 %}`.replace("/0/",`/${id}/`),{method:"POST",headers:{"X-CSRFToken":csrf}});
+  const d = await r.json();
+  if (d.ok) {
+    const row = document.getElementById(`rrow-${id}`);
+    if (d.is_active) { btn.textContent="👁"; row.style.opacity="1"; }
+    else { btn.textContent="🚫"; row.style.opacity=".45"; }
+  }
+}
+</script>
+{% endblock %}

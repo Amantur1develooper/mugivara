@@ -1,0 +1,23 @@
+<div class="kr-room-row" id="rrow-{{ room.id }}" {% if not room.is_active %}style="opacity:.45"{% endif %}>
+  <div class="kr-room-thumb">
+    {% with p=room.main_photo %}
+    {% if p %}<img src="{{ p.photo.url }}" alt="">{% else %}🎤{% endif %}
+    {% endwith %}
+  </div>
+  <div style="flex:1;min-width:0">
+    <div style="font-weight:700;font-size:14px;color:var(--text)">{{ room.name }}</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap">
+      <span>👥 до {{ room.capacity }} чел.</span>
+      {% if room.price_per_hour %}<span>💰 {{ room.price_per_hour|floatformat:0 }} сом/ч</span>{% endif %}
+      <span>📸 {{ room.photos.count }}/5 фото</span>
+    </div>
+  </div>
+  <div style="display:flex;gap:6px">
+    <button class="db-btn db-btn-ghost db-btn-sm" onclick="toggleRoom({{ room.id }}, this)" title="{% if room.is_active %}Скрыть{% else %}Показать{% endif %}">{% if room.is_active %}👁{% else %}🚫{% endif %}</button>
+    <a href="{% url 'dashboard:karaoke_room_edit' room.id %}" class="db-btn db-btn-ghost db-btn-sm">✏️</a>
+    <form method="post" action="{% url 'dashboard:karaoke_room_delete' room.id %}" style="display:inline" onsubmit="return confirm('Удалить «{{ room.name|escapejs }}»?')">
+      {% csrf_token %}
+      <button class="db-btn db-btn-ghost db-btn-sm" type="submit" style="color:#ff3b30">🗑</button>
+    </form>
+  </div>
+</div>

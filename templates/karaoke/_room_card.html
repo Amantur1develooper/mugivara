@@ -1,0 +1,31 @@
+<div class="kr-room" onclick="openBook({{ room.id }}, '{{ room.name|escapejs }}', '{{ room.price_per_hour|floatformat:0 }}')">
+  {% with photos=room.photos.all %}
+  {% if photos %}
+  <div class="kr-slider" data-cur="0">
+    <div class="kr-slider-imgs">
+      {% for p in photos %}<img class="kr-slider-img" src="{{ p.photo.url }}" alt="{{ room.name }}" loading="lazy">{% endfor %}
+    </div>
+    {% if photos|length > 1 %}
+    <button class="kr-slider-arr prev" onclick="event.stopPropagation()">‹</button>
+    <button class="kr-slider-arr next" onclick="event.stopPropagation()">›</button>
+    <div class="kr-slider-dot">{% for p in photos %}<span {% if forloop.first %}class="on"{% endif %}></span>{% endfor %}</div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="kr-room-img">🎤</div>
+  {% endif %}
+  {% endwith %}
+  <div class="kr-room-body">
+    <div class="kr-room-name">{{ room.name }}</div>
+    <div class="kr-room-meta">
+      <span>👥 до {{ room.capacity }} чел.</span>
+    </div>
+    {% if room.price_per_hour %}
+    <div class="kr-room-price">{{ room.price_per_hour|floatformat:0 }} сом/час</div>
+    {% endif %}
+    {% if room.description %}
+    <div style="font-size:12px;color:var(--kr-muted);margin-top:6px;line-height:1.5;">{{ room.description|truncatechars:80 }}</div>
+    {% endif %}
+    <span class="kr-room-book-btn">🗓 Забронировать</span>
+  </div>
+</div>

@@ -1,0 +1,133 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Меню — {{ venue.name }}{% endblock %}
+{% block nav_karaoke %}active{% endblock %}
+{% block head_extra %}
+<style>
+  .kmi-row{background:var(--card);border:1.5px solid var(--border);border-radius:12px;display:flex;align-items:center;gap:12px;padding:12px 16px;margin-bottom:8px;}
+  .kmi-row:hover{border-color:rgba(168,85,247,.22);}
+  .kmi-photo{width:48px;height:40px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid var(--border);}
+  .kmi-photo img{width:100%;height:100%;object-fit:cover;}
+  .kmi-add-form{background:var(--bg);border:1.5px dashed var(--border);border-radius:12px;padding:14px;margin-top:10px;display:none;}
+  .kmi-add-form.open{display:block;}
+</style>
+{% endblock %}
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">🍽️ Меню</div>
+    <div class="db-breadcrumb"><a href="{% url 'dashboard:karaoke_home' %}">Karaoke</a> → {{ venue.name }}</div>
+  </div>
+  <a href="{% url 'karaoke:karaoke_menu' venue.slug %}" target="_blank" class="db-btn db-btn-ghost db-btn-sm">👁 QR-меню</a>
+</div>
+
+{% if messages %}
+<div class="db-messages">{% for m in messages %}<div class="db-msg {{m.tags}}">{{m}}</div>{% endfor %}</div>
+{% endif %}
+
+<!-- ДОБАВИТЬ КАТЕГОРИЮ -->
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:24px;flex-wrap:wrap">
+  <input id="newCatName" class="db-input" style="max-width:200px" placeholder="Новая категория">
+  <button onclick="addCat()" class="db-btn db-btn-ghost db-btn-sm">+ Категория</button>
+</div>
+
+{% for cat in cats %}
+<div style="margin-bottom:28px">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+    <div style="font-family:'Unbounded',sans-serif;font-size:12px;font-weight:800;color:var(--text2)">{{ cat.name }}</div>
+    <button onclick="toggleAddForm({{ cat.id }})" class="db-btn db-btn-ghost db-btn-sm">+ Блюдо</button>
+  </div>
+
+  {% for item in cat.items.all %}
+  <div class="kmi-row" id="kmi-{{ item.id }}" {% if not item.is_active %}style="opacity:.45"{% endif %}>
+    <div class="kmi-photo">
+      {% if item.photo %}<img src="{{ item.photo.url }}" alt="">{% else %}🍽️{% endif %}
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:600;font-size:13px;color:var(--text)">{{ item.name }}</div>
+      <div style="font-size:12px;color:var(--muted)">{{ item.price|floatformat:0 }} сом</div>
+    </div>
+    <button onclick="toggleItem({{ item.id }}, this)" class="db-btn db-btn-ghost db-btn-sm">{% if item.is_active %}👁{% else %}🚫{% endif %}</button>
+    <button onclick="deleteItem({{ item.id }})" class="db-btn db-btn-ghost db-btn-sm" style="color:#ff3b30">🗑</button>
+  </div>
+  {% empty %}
+  <div style="font-size:13px;color:var(--muted);padding:8px 0">Нет позиций</div>
+  {% endfor %}
+
+  <!-- Форма добавления -->
+  <div class="kmi-add-form" id="addform-{{ cat.id }}">
+    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end">
+      <div>
+        <label class="db-label">Название *</label>
+        <input class="db-input" id="iname-{{ cat.id }}" placeholder="Шашлык">
+      </div>
+      <div>
+        <label class="db-label">Цена (сом)</label>
+        <input class="db-input" id="iprice-{{ cat.id }}" type="number" min="0" value="0">
+      </div>
+      <div>
+        <label class="db-label">Фото</label>
+        <input class="db-input" id="iphoto-{{ cat.id }}" type="file" accept="image/*">
+      </div>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <button onclick="addItem({{ cat.id }})" class="db-btn db-btn-primary db-btn-sm">Добавить</button>
+      <button onclick="toggleAddForm({{ cat.id }})" class="db-btn db-btn-ghost db-btn-sm">Отмена</button>
+    </div>
+  </div>
+</div>
+{% empty %}
+<div class="db-card" style="text-align:center;padding:48px">
+  <div style="font-size:36px;margin-bottom:12px">🍽️</div>
+  <div style="font-size:14px;color:var(--muted)">Сначала добавьте категорию меню</div>
+</div>
+{% endfor %}
+
+<script>
+const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1]||"";
+
+function toggleAddForm(catId) {
+  const el = document.getElementById(`addform-${catId}`);
+  el.classList.toggle("open");
+}
+
+async function addCat() {
+  const name = document.getElementById("newCatName").value.trim();
+  if (!name) return;
+  const fd = new FormData(); fd.append("name", name);
+  const r = await fetch("{% url 'dashboard:karaoke_menu_cat_add' venue.id %}", {method:"POST",body:fd,headers:{"X-CSRFToken":csrf}});
+  const d = await r.json();
+  if (d.ok) location.reload();
+}
+
+async function addItem(catId) {
+  const name = document.getElementById(`iname-${catId}`).value.trim();
+  const price = document.getElementById(`iprice-${catId}`).value;
+  const photoInput = document.getElementById(`iphoto-${catId}`);
+  if (!name) { alert("Введите название"); return; }
+  const fd = new FormData();
+  fd.append("name", name); fd.append("price", price); fd.append("cat_id", catId);
+  if (photoInput.files[0]) fd.append("photo", photoInput.files[0]);
+  const r = await fetch("{% url 'dashboard:karaoke_menu_item_add' venue.id %}", {method:"POST",body:fd,headers:{"X-CSRFToken":csrf}});
+  const d = await r.json();
+  if (d.ok) location.reload();
+  else alert(d.error || "Ошибка");
+}
+
+async function deleteItem(id) {
+  if (!confirm("Удалить позицию?")) return;
+  const r = await fetch(`{% url 'dashboard:karaoke_menu_item_delete' 0 %}`.replace("/0/",`/${id}/`), {method:"POST",headers:{"X-CSRFToken":csrf}});
+  const d = await r.json();
+  if (d.ok) document.getElementById(`kmi-${id}`)?.remove();
+}
+
+async function toggleItem(id, btn) {
+  const r = await fetch(`{% url 'dashboard:karaoke_menu_item_toggle' 0 %}`.replace("/0/",`/${id}/`), {method:"POST",headers:{"X-CSRFToken":csrf}});
+  const d = await r.json();
+  if (d.ok) {
+    const row = document.getElementById(`kmi-${id}`);
+    if (d.is_active) { btn.textContent="👁"; row.style.opacity="1"; }
+    else { btn.textContent="🚫"; row.style.opacity=".45"; }
+  }
+}
+</script>
+{% endblock %}

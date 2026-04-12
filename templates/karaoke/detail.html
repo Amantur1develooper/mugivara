@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+{% load i18n static %}
+{% block title %}{{ venue.name }} — Karaoke{% endblock %}
+{% block cta %}{% endblock %}
+
+{% block head_extra %}
+<style>
+  :root {
+    --kr-bg:#0a050f; --kr-card:#100a18; --kr-border:rgba(168,85,247,.13);
+    --kr-text:#f5f0ff; --kr-muted:rgba(245,240,255,.5);
+    --kr-purple:#a855f7; --kr-pink:#ec4899;
+    --kr-grad:linear-gradient(135deg,#a855f7,#ec4899);
+  }
+  body { background:var(--kr-bg); color:var(--kr-text); }
+  .kr-page { max-width:1100px; margin:0 auto; padding:0 20px 80px; }
+
+  /* HERO */
+  .kr-hero { position:relative; min-height:340px; display:flex; flex-direction:column; justify-content:flex-end; overflow:hidden; margin:0 -20px; }
+  .kr-hero-cover { position:absolute; inset:0; background:linear-gradient(135deg,#1a0a2e,#0a0514); }
+  .kr-hero-cover img { width:100%; height:100%; object-fit:cover; opacity:.4; }
+  .kr-hero-glow { position:absolute; inset:0; background:radial-gradient(ellipse 60% 80% at 30% 60%,rgba(168,85,247,.25),transparent 55%),radial-gradient(ellipse 40% 50% at 80% 20%,rgba(236,72,153,.18),transparent 55%); }
+  .kr-hero-grid { position:absolute; inset:0; opacity:.03; background-image:linear-gradient(rgba(168,85,247,1) 1px,transparent 1px),linear-gradient(90deg,rgba(168,85,247,1) 1px,transparent 1px); background-size:48px 48px; }
+  .kr-hero-content { position:relative; z-index:2; padding:100px 40px 36px; background:linear-gradient(to top,var(--kr-bg) 0%,rgba(10,5,15,.5) 60%,transparent 100%); }
+  .kr-back { position:absolute; top:20px; left:40px; z-index:3; display:inline-flex; align-items:center; gap:8px; padding:8px 16px; border-radius:100px; font-size:13px; font-weight:600; background:rgba(168,85,247,.1); border:1px solid rgba(168,85,247,.25); color:rgba(168,85,247,.9); text-decoration:none; transition:all .2s; }
+  .kr-back:hover { background:rgba(168,85,247,.18); color:#a855f7; }
+  .kr-logo-row { display:flex; align-items:flex-end; gap:16px; margin-bottom:14px; }
+  .kr-logo { width:60px; height:60px; border-radius:16px; overflow:hidden; border:2px solid rgba(168,85,247,.3); background:#1a0a2e; display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0; }
+  .kr-logo img { width:100%; height:100%; object-fit:cover; }
+  .kr-hero-name { font-family:'Unbounded',sans-serif; font-weight:900; font-size:clamp(26px,4vw,44px); letter-spacing:-1.5px; color:var(--kr-text); }
+  .kr-hero-tag { font-size:14px; color:var(--kr-muted); margin-top:6px; }
+
+  /* TAPLINK BTNS */
+  .kr-tl { display:flex; flex-direction:column; gap:12px; margin:28px 0 36px; }
+  .kr-tl-btn { display:flex; align-items:center; gap:14px; padding:16px 20px; border-radius:16px; border:1px solid var(--kr-border); background:rgba(168,85,247,.06); color:var(--kr-text); text-decoration:none; font-size:15px; font-weight:600; transition:all .2s; }
+  .kr-tl-btn:hover { background:rgba(168,85,247,.12); border-color:rgba(168,85,247,.28); transform:translateY(-2px); }
+  .kr-tl-btn-icon { width:40px; height:40px; border-radius:10px; background:var(--kr-grad); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+  .kr-tl-btn-primary { background:var(--kr-grad); border:none; color:#fff; box-shadow:0 6px 24px rgba(168,85,247,.35); }
+  .kr-tl-btn-primary:hover { box-shadow:0 10px 32px rgba(168,85,247,.5); }
+
+  /* SECTION */
+  .kr-section { margin-bottom:40px; }
+  .kr-sec-title { font-family:'Unbounded',sans-serif; font-size:11px; font-weight:800; letter-spacing:3px; text-transform:uppercase; color:rgba(168,85,247,.7); margin-bottom:20px; display:flex; align-items:center; gap:10px; }
+  .kr-sec-title::after { content:''; flex:1; height:1px; background:var(--kr-border); }
+
+  /* ROOM CARDS */
+  .kr-rooms-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
+  @media(max-width:640px){ .kr-rooms-grid { grid-template-columns:1fr 1fr; gap:12px; } }
+
+  .kr-room { background:var(--kr-card); border:1px solid var(--kr-border); border-radius:18px; overflow:hidden; cursor:pointer; transition:transform .25s,border-color .25s,box-shadow .25s; }
+  .kr-room:hover { transform:translateY(-5px); border-color:rgba(168,85,247,.3); box-shadow:0 16px 40px rgba(168,85,247,.15); }
+  .kr-room-img { height:150px; background:linear-gradient(135deg,#1a0a2e,#0d0818); display:flex; align-items:center; justify-content:center; font-size:36px; position:relative; overflow:hidden; }
+  .kr-room-img img { width:100%; height:100%; object-fit:cover; transition:transform .4s; }
+  .kr-room:hover .kr-room-img img { transform:scale(1.07); }
+  .kr-room-body { padding:14px 16px; }
+  .kr-room-name { font-weight:700; font-size:14px; color:var(--kr-text); margin-bottom:6px; }
+  .kr-room-meta { font-size:12px; color:var(--kr-muted); display:flex; flex-wrap:wrap; gap:8px; }
+  .kr-room-price { font-family:'Unbounded',sans-serif; font-size:13px; font-weight:800; background:var(--kr-grad); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; margin-top:8px; }
+  .kr-room-book-btn { margin-top:10px; display:block; text-align:center; padding:9px; border-radius:10px; background:rgba(168,85,247,.12); border:1px solid rgba(168,85,247,.25); color:var(--kr-purple); font-size:12px; font-weight:700; text-decoration:none; transition:all .2s; }
+  .kr-room-book-btn:hover { background:rgba(168,85,247,.22); }
+
+  /* INFO */
+  .kr-info { display:flex; flex-wrap:wrap; gap:16px; background:var(--kr-card); border:1px solid var(--kr-border); border-radius:18px; padding:20px 24px; margin-bottom:32px; }
+  .kr-info-item { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--kr-muted); }
+  .kr-info-item a { color:var(--kr-purple); text-decoration:none; }
+
+  /* BOOKING MODAL */
+  .kr-modal-bg { display:none; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.8); backdrop-filter:blur(6px); align-items:center; justify-content:center; padding:16px; }
+  .kr-modal-bg.open { display:flex; }
+  .kr-modal { background:#100a18; border:1px solid rgba(168,85,247,.2); border-radius:24px; padding:28px; width:100%; max-width:480px; position:relative; box-shadow:0 30px 80px rgba(0,0,0,.7),0 0 0 1px rgba(168,85,247,.08); max-height:90vh; overflow-y:auto; }
+  .kr-modal-close { position:absolute; top:14px; right:14px; width:32px; height:32px; border-radius:50%; background:rgba(168,85,247,.1); border:1px solid rgba(168,85,247,.2); color:var(--kr-purple); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .kr-modal-close:hover { background:rgba(168,85,247,.2); }
+  .kr-modal-title { font-family:'Unbounded',sans-serif; font-size:17px; font-weight:800; color:var(--kr-text); margin-bottom:4px; }
+  .kr-modal-sub { font-size:13px; color:var(--kr-purple); margin-bottom:20px; }
+
+  .kr-field { margin-bottom:14px; }
+  .kr-field label { display:block; font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--kr-muted); margin-bottom:7px; }
+  .kr-field input, .kr-field textarea, .kr-field select {
+    width:100%; padding:11px 14px; border-radius:10px;
+    background:rgba(168,85,247,.07); border:1px solid rgba(168,85,247,.18);
+    color:var(--kr-text); font-size:14px; outline:none; transition:border-color .2s; font-family:inherit; box-sizing:border-box;
+  }
+  .kr-field input:focus, .kr-field textarea:focus { border-color:rgba(168,85,247,.5); background:rgba(168,85,247,.1); }
+  .kr-row2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+  .kr-slots { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  .kr-slot { padding:5px 10px; border-radius:8px; font-size:11px; font-weight:600; background:rgba(168,85,247,.08); border:1px solid rgba(168,85,247,.18); color:var(--kr-purple); cursor:pointer; transition:all .15s; }
+  .kr-slot.busy { background:rgba(236,72,153,.1); border-color:rgba(236,72,153,.25); color:#ec4899; cursor:default; text-decoration:line-through; }
+  .kr-slot.selected { background:var(--kr-grad); border-color:transparent; color:#fff; }
+
+  .kr-submit-btn { width:100%; padding:14px; border-radius:12px; background:var(--kr-grad); color:#fff; font-size:14px; font-weight:800; border:none; cursor:pointer; transition:all .25s; box-shadow:0 4px 20px rgba(168,85,247,.35); margin-top:4px; }
+  .kr-submit-btn:hover { box-shadow:0 8px 30px rgba(168,85,247,.5); transform:translateY(-1px); }
+  .kr-submit-btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+
+  .kr-success { text-align:center; padding:20px 0; }
+  .kr-success .ic { font-size:48px; margin-bottom:12px; }
+  .kr-success .ttl { font-family:'Unbounded',sans-serif; font-size:17px; font-weight:800; color:var(--kr-text); margin-bottom:8px; }
+  .kr-success .sub { font-size:13px; color:var(--kr-muted); margin-bottom:20px; }
+
+  /* ROOM PHOTO SLIDER */
+  .kr-slider { position:relative; height:150px; overflow:hidden; }
+  .kr-slider-imgs { display:flex; height:100%; transition:transform .3s; }
+  .kr-slider-img { width:100%; flex-shrink:0; object-fit:cover; }
+  .kr-slider-dot { position:absolute; bottom:6px; left:50%; transform:translateX(-50%); display:flex; gap:4px; }
+  .kr-slider-dot span { width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,.4); cursor:pointer; }
+  .kr-slider-dot span.on { background:#fff; }
+  .kr-slider-arr { position:absolute; top:50%; transform:translateY(-50%); width:26px; height:26px; border-radius:50%; background:rgba(0,0,0,.5); border:none; color:#fff; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .kr-slider-arr.prev { left:6px; }
+  .kr-slider-arr.next { right:6px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="background:var(--kr-bg);min-height:100vh">
+<div class="kr-page">
+
+  <!-- HERO -->
+  <div class="kr-hero">
+    <div class="kr-hero-cover">
+      {% if venue.cover %}<img src="{{ venue.cover.url }}" alt="">{% endif %}
+      <div class="kr-hero-glow"></div>
+      <div class="kr-hero-grid"></div>
+    </div>
+    <a href="{% url 'karaoke:karaoke_list' %}" class="kr-back">← Все заведения</a>
+    <div class="kr-hero-content">
+      <div class="kr-logo-row">
+        <div class="kr-logo">
+          {% if venue.logo %}<img src="{{ venue.logo.url }}" alt="">{% else %}🎤{% endif %}
+        </div>
+        <div>
+          <div class="kr-hero-name">{{ venue.name }}</div>
+          {% if venue.tagline %}<div class="kr-hero-tag">{{ venue.tagline }}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAPLINK BUTTONS -->
+  <div class="kr-tl">
+    <a href="#rooms" class="kr-tl-btn kr-tl-btn-primary">
+      <div class="kr-tl-btn-icon">🚪</div>
+      <span>Выбрать и забронировать кабинку</span>
+    </a>
+    {% if menu_cats %}
+    <a href="{% url 'karaoke:karaoke_menu' venue.slug %}" class="kr-tl-btn">
+      <div class="kr-tl-btn-icon">🍽️</div>
+      <span>Открыть меню</span>
+    </a>
+    {% endif %}
+    {% if venue.phone %}
+    <a href="tel:{{ venue.phone }}" class="kr-tl-btn">
+      <div class="kr-tl-btn-icon">📞</div>
+      <span>{{ venue.phone }}</span>
+    </a>
+    {% endif %}
+    {% if venue.whatsapp %}
+    <a href="https://wa.me/{{ venue.whatsapp }}" target="_blank" class="kr-tl-btn">
+      <div class="kr-tl-btn-icon">💬</div>
+      <span>Написать в WhatsApp</span>
+    </a>
+    {% endif %}
+    {% if venue.map_url %}
+    <a href="{{ venue.map_url }}" target="_blank" rel="noopener" class="kr-tl-btn">
+      <div class="kr-tl-btn-icon">📍</div>
+      <span>{{ venue.address|default:"Открыть на карте" }}</span>
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- INFO -->
+  {% if venue.working_hours or venue.address %}
+  <div class="kr-info">
+    {% if venue.working_hours %}<div class="kr-info-item">🕐 {{ venue.working_hours }}</div>{% endif %}
+    {% if venue.address and not venue.map_url %}<div class="kr-info-item">📍 {{ venue.address }}</div>{% endif %}
+  </div>
+  {% endif %}
+
+  <!-- ОПИСАНИЕ -->
+  {% if venue.description %}
+  <div style="background:var(--kr-card);border:1px solid var(--kr-border);border-radius:18px;padding:22px;margin-bottom:32px;">
+    <div style="font-size:14px;color:var(--kr-muted);line-height:1.8;">{{ venue.description }}</div>
+  </div>
+  {% endif %}
+
+  <!-- КАБИНКИ -->
+  <div id="rooms">
+    {% if categories %}
+      {% for cat in categories %}
+        {% if cat.rooms.filter %}
+        <div class="kr-section">
+          <div class="kr-sec-title">{{ cat.name }}</div>
+          <div class="kr-rooms-grid">
+            {% for room in cat.rooms.all %}{% if room.is_active %}
+            {% include "karaoke/_room_card.html" with room=room venue=venue %}
+            {% endif %}{% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+    {% if uncategorized %}
+    <div class="kr-section">
+      {% if categories %}<div class="kr-sec-title">Остальные кабинки</div>{% endif %}
+      <div class="kr-rooms-grid">
+        {% for room in uncategorized %}{% if room.is_active %}
+        {% include "karaoke/_room_card.html" with room=room venue=venue %}
+        {% endif %}{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+</div>
+
+<!-- BOOKING MODAL -->
+<div class="kr-modal-bg" id="krModal">
+  <div class="kr-modal">
+    <button class="kr-modal-close" onclick="closeKrModal()">✕</button>
+    <div id="krModalContent"></div>
+  </div>
+</div>
+
+<script>
+let selectedRoomId = null;
+
+function openBook(roomId, roomName, price) {
+  selectedRoomId = roomId;
+  const today = new Date().toISOString().split("T")[0];
+  document.getElementById("krModalContent").innerHTML = `
+    <div class="kr-modal-title">🎤 Бронирование</div>
+    <div class="kr-modal-sub">🚪 ${roomName}${price ? ' · ' + price + ' сом/час' : ''}</div>
+    <div class="kr-field">
+      <label>Дата *</label>
+      <input type="date" id="krDate" min="${today}" value="${today}" onchange="loadSlots()">
+    </div>
+    <div class="kr-row2">
+      <div class="kr-field">
+        <label>Начало *</label>
+        <input type="time" id="krStart" value="19:00" step="1800">
+      </div>
+      <div class="kr-field">
+        <label>Конец *</label>
+        <input type="time" id="krEnd" value="21:00" step="1800">
+      </div>
+    </div>
+    <div id="krSlotsWrap" style="margin-bottom:14px;display:none">
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--kr-muted);margin-bottom:7px;">Занятые слоты</div>
+      <div class="kr-slots" id="krSlots"></div>
+    </div>
+    <div class="kr-row2">
+      <div class="kr-field">
+        <label>Имя *</label>
+        <input type="text" id="krName" placeholder="Ваше имя">
+      </div>
+      <div class="kr-field">
+        <label>Телефон *</label>
+        <input type="tel" id="krPhone" placeholder="+996 ...">
+      </div>
+    </div>
+    <div class="kr-field">
+      <label>Кол-во гостей</label>
+      <input type="number" id="krGuests" min="1" value="2">
+    </div>
+    <div class="kr-field">
+      <label>Примечание</label>
+      <input type="text" id="krNotes" placeholder="Особые пожелания...">
+    </div>
+    <button class="kr-submit-btn" id="krSubmitBtn" onclick="submitBooking()">Забронировать →</button>
+  `;
+  document.getElementById("krModal").classList.add("open");
+  loadSlots();
+}
+
+function closeKrModal() {
+  document.getElementById("krModal").classList.remove("open");
+}
+document.getElementById("krModal").addEventListener("click", e => { if(e.target===document.getElementById("krModal")) closeKrModal(); });
+
+async function loadSlots() {
+  const date = document.getElementById("krDate")?.value;
+  if (!date || !selectedRoomId) return;
+  const r = await fetch(`{% url 'karaoke:karaoke_slots' venue.slug %}?room=${selectedRoomId}&date=${date}`);
+  const d = await r.json();
+  const wrap = document.getElementById("krSlotsWrap");
+  const el = document.getElementById("krSlots");
+  if (!d.slots?.length) { wrap.style.display="none"; return; }
+  wrap.style.display = "block";
+  el.innerHTML = d.slots.map(s =>
+    `<span class="kr-slot busy">${s.start}–${s.end}</span>`
+  ).join("");
+}
+
+async function submitBooking() {
+  const name  = document.getElementById("krName")?.value.trim();
+  const phone = document.getElementById("krPhone")?.value.trim();
+  const date  = document.getElementById("krDate")?.value;
+  const start = document.getElementById("krStart")?.value;
+  const end   = document.getElementById("krEnd")?.value;
+  const guests= document.getElementById("krGuests")?.value;
+  const notes = document.getElementById("krNotes")?.value.trim();
+  if (!name || !phone || !date || !start || !end) { alert("Заполните все обязательные поля"); return; }
+  const btn = document.getElementById("krSubmitBtn");
+  btn.disabled = true; btn.textContent = "Отправляем...";
+  const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+  const url = "{% url 'karaoke:karaoke_book' venue.slug 0 %}".replace("/0/", `/${selectedRoomId}/`);
+  try {
+    const r = await fetch(url, {
+      method:"POST", headers:{"Content-Type":"application/json","X-CSRFToken":csrf},
+      body: JSON.stringify({name, phone, date, start, end, guests, notes})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      let html = `<div class="kr-success"><div class="ic">✅</div><div class="ttl">Заявка принята!</div><div class="sub">Ждите подтверждения. Мы свяжемся с вами.</div>`;
+      if (d.wa_url) {
+        html += `<a href="${d.wa_url}" target="_blank" class="kr-submit-btn" style="display:block;text-decoration:none;text-align:center;margin-top:10px;">💬 Написать нам в WhatsApp</a>`;
+      }
+      html += `</div>`;
+      document.getElementById("krModalContent").innerHTML = html;
+    } else {
+      btn.disabled = false; btn.textContent = "Забронировать →";
+      alert(d.error || "Ошибка. Попробуйте снова.");
+    }
+  } catch(e) {
+    btn.disabled = false; btn.textContent = "Забронировать →";
+    alert("Ошибка сети.");
+  }
+}
+
+// Слайдер фотографий кабинки
+document.addEventListener("click", e => {
+  const arr = e.target.closest(".kr-slider-arr");
+  if (!arr) return;
+  const slider = arr.closest(".kr-slider");
+  const imgs = slider.querySelector(".kr-slider-imgs");
+  const total = imgs.children.length;
+  let cur = parseInt(slider.dataset.cur || "0");
+  if (arr.classList.contains("next")) cur = (cur + 1) % total;
+  else cur = (cur - 1 + total) % total;
+  slider.dataset.cur = cur;
+  imgs.style.transform = `translateX(-${cur * 100}%)`;
+  slider.querySelectorAll(".kr-slider-dot span").forEach((d,i) => d.classList.toggle("on", i===cur));
+});
+</script>
+{% endblock %}

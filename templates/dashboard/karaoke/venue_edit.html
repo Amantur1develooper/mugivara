@@ -1,0 +1,61 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Настройки — {{ venue.name }}{% endblock %}
+{% block nav_karaoke %}active{% endblock %}
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">⚙️ Настройки заведения</div>
+    <div class="db-breadcrumb"><a href="{% url 'dashboard:karaoke_home' %}">Karaoke</a> → {{ venue.name }}</div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <a href="{% url 'dashboard:karaoke_chess' venue.id %}" class="db-btn db-btn-primary db-btn-sm">♟️ Шахматка</a>
+    <a href="{% url 'karaoke:karaoke_detail' venue.slug %}" target="_blank" class="db-btn db-btn-ghost db-btn-sm">👁 Витрина</a>
+  </div>
+</div>
+{% if messages %}
+<div class="db-messages">{% for m in messages %}<div class="db-msg {{m.tags}}">{{m}}</div>{% endfor %}</div>
+{% endif %}
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    <div class="db-card">
+      <div class="db-card-title" style="margin-bottom:18px">Основное</div>
+      {% for fname, label, ptype in field_defs %}{% endfor %}
+      <div class="db-form-group"><label class="db-label">Название *</label><input class="db-input" name="name" value="{{ venue.name }}" required></div>
+      <div class="db-form-group"><label class="db-label">Слоган</label><input class="db-input" name="tagline" value="{{ venue.tagline }}" placeholder="Лучшее место для компании"></div>
+      <div class="db-form-group"><label class="db-label">Описание</label><textarea class="db-input" name="description" rows="3">{{ venue.description }}</textarea></div>
+      <div class="db-form-group"><label class="db-label">Адрес</label><input class="db-input" name="address" value="{{ venue.address }}"></div>
+      <div class="db-form-group"><label class="db-label">Часы работы</label><input class="db-input" name="working_hours" value="{{ venue.working_hours }}" placeholder="Пн–Вс: 18:00–04:00"></div>
+      <div class="db-form-group"><label class="db-label">Телефон</label><input class="db-input" name="phone" value="{{ venue.phone }}"></div>
+      <div class="db-form-group"><label class="db-label">WhatsApp (без + и пробелов)</label><input class="db-input" name="whatsapp" value="{{ venue.whatsapp }}" placeholder="996700123456"></div>
+      <div class="db-form-group"><label class="db-label">Ссылка на карту</label><input class="db-input" name="map_url" type="url" value="{{ venue.map_url }}"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="db-card">
+        <div class="db-card-title" style="margin-bottom:18px">Медиа</div>
+        <div class="db-form-group">
+          <label class="db-label">Логотип</label>
+          {% if venue.logo %}<div style="margin-bottom:10px"><img src="{{ venue.logo.url }}" style="height:56px;border-radius:10px;border:1.5px solid var(--border)">
+          <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;cursor:pointer"><input type="checkbox" name="logo_clear"> Удалить</label></div>{% endif %}
+          <input class="db-input" type="file" name="logo" accept="image/*">
+        </div>
+        <div class="db-form-group">
+          <label class="db-label">Обложка</label>
+          {% if venue.cover %}<div style="margin-bottom:10px"><img src="{{ venue.cover.url }}" style="width:100%;height:70px;object-fit:cover;border-radius:10px;border:1.5px solid var(--border)">
+          <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;cursor:pointer"><input type="checkbox" name="cover_clear"> Удалить</label></div>{% endif %}
+          <input class="db-input" type="file" name="cover" accept="image/*">
+        </div>
+      </div>
+      <div class="db-card">
+        <div class="db-card-title" style="margin-bottom:18px">Telegram уведомления</div>
+        <div class="db-form-group"><label class="db-label">TG Chat ID</label><input class="db-input" name="tg_chat_id" value="{{ venue.tg_chat_id }}" placeholder="-1001234567890"></div>
+        <div class="db-form-group"><label class="db-label">TG Thread ID (топик)</label><input class="db-input" name="tg_thread_id" type="number" value="{{ venue.tg_thread_id|default:'' }}"></div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:20px">
+    <button class="db-btn db-btn-primary" type="submit">💾 Сохранить</button>
+    <a href="{% url 'dashboard:karaoke_home' %}" class="db-btn db-btn-ghost" style="margin-left:8px">Отмена</a>
+  </div>
+</form>
+{% endblock %}

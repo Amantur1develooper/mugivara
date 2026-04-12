@@ -4,6 +4,7 @@ from hotels import dashboard_views as hv
 from shops import dashboard_views as sv
 from legal import dashboard_views as lv
 from agency import dashboard_views as av
+from karaoke import dashboard_views as kv
 
 app_name = "dashboard"
 
@@ -70,6 +71,26 @@ urlpatterns = [
     path("agency/service/<int:svc_id>/edit/",            av.agency_service_edit,   name="agency_service_edit"),
     path("agency/service/<int:svc_id>/toggle/",          av.agency_service_toggle, name="agency_service_toggle"),
     path("agency/service/<int:svc_id>/delete/",          av.agency_service_delete, name="agency_service_delete"),
+
+    # ── KARAOKE ─────────────────────────────────────────────────────────────
+    path("karaoke/",                                         kv.karaoke_home,           name="karaoke_home"),
+    path("karaoke/<int:venue_id>/edit/",                     kv.karaoke_venue_edit,     name="karaoke_venue_edit"),
+    path("karaoke/<int:venue_id>/rooms/",                    kv.karaoke_rooms,          name="karaoke_rooms"),
+    path("karaoke/<int:venue_id>/rooms/add/",                kv.karaoke_room_add,       name="karaoke_room_add"),
+    path("karaoke/room/<int:room_id>/edit/",                 kv.karaoke_room_edit,      name="karaoke_room_edit"),
+    path("karaoke/room/<int:room_id>/toggle/",               kv.karaoke_room_toggle,    name="karaoke_room_toggle"),
+    path("karaoke/room/<int:room_id>/delete/",               kv.karaoke_room_delete,    name="karaoke_room_delete"),
+    path("karaoke/<int:venue_id>/cat/add/",                  kv.karaoke_cat_add,        name="karaoke_cat_add"),
+    path("karaoke/cat/<int:cat_id>/delete/",                 kv.karaoke_cat_delete,     name="karaoke_cat_delete"),
+    path("karaoke/<int:venue_id>/chess/",                    kv.karaoke_chess,          name="karaoke_chess"),
+    path("karaoke/<int:venue_id>/booking/add/",              kv.karaoke_booking_add,    name="karaoke_booking_add"),
+    path("karaoke/booking/<int:booking_id>/status/",         kv.karaoke_booking_status, name="karaoke_booking_status"),
+    path("karaoke/booking/<int:booking_id>/delete/",         kv.karaoke_booking_delete, name="karaoke_booking_delete"),
+    path("karaoke/<int:venue_id>/menu/",                     kv.karaoke_menu_manage,    name="karaoke_menu_manage"),
+    path("karaoke/<int:venue_id>/menu/cat/add/",             kv.karaoke_menu_cat_add,   name="karaoke_menu_cat_add"),
+    path("karaoke/<int:venue_id>/menu/item/add/",            kv.karaoke_menu_item_add,  name="karaoke_menu_item_add"),
+    path("karaoke/menu/item/<int:item_id>/delete/",          kv.karaoke_menu_item_delete, name="karaoke_menu_item_delete"),
+    path("karaoke/menu/item/<int:item_id>/toggle/",          kv.karaoke_menu_item_toggle, name="karaoke_menu_item_toggle"),
 
     # ── HOTELS ──────────────────────────────────────────────────────────────
     path("hotels/",                                       hv.hotel_home,          name="hotel_home"),

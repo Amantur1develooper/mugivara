@@ -1,0 +1,47 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Развлечения — Karaoke{% endblock %}
+{% block nav_karaoke %}active{% endblock %}
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">🎤 Мои заведения</div>
+    <div class="db-breadcrumb">Управление кабинками, бронированиями и меню</div>
+  </div>
+</div>
+{% if messages %}
+<div class="db-messages">{% for m in messages %}<div class="db-msg {{m.tags}}">{{m}}</div>{% endfor %}</div>
+{% endif %}
+{% if not venues %}
+<div class="db-card" style="text-align:center;padding:60px 24px">
+  <div style="font-size:48px;margin-bottom:16px">🎤</div>
+  <div style="font-size:16px;font-weight:600;color:var(--text2)">Нет доступных заведений</div>
+  <div style="font-size:13px;color:var(--muted);margin-top:8px">Обратитесь к администратору</div>
+</div>
+{% endif %}
+<div style="display:flex;flex-direction:column;gap:16px">
+{% for venue in venues %}
+<div class="db-card" style="padding:0;overflow:hidden">
+  <div style="display:flex;align-items:center;gap:16px;padding:20px 24px;border-bottom:1px solid var(--border)">
+    <div style="width:52px;height:52px;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#1a0a2e,#0d0514);border:1.5px solid rgba(168,85,247,.25);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">
+      {% if venue.logo %}<img src="{{ venue.logo.url }}" style="width:100%;height:100%;object-fit:cover">{% else %}🎤{% endif %}
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:15px;color:var(--text)">{{ venue.name }}</div>
+      {% if venue.tagline %}<div style="font-size:13px;color:var(--muted);margin-top:3px">{{ venue.tagline }}</div>{% endif %}
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a href="{% url 'dashboard:karaoke_chess' venue.id %}" class="db-btn db-btn-primary db-btn-sm">♟️ Шахматка</a>
+      <a href="{% url 'dashboard:karaoke_rooms' venue.id %}" class="db-btn db-btn-ghost db-btn-sm">🚪 Кабинки</a>
+      <a href="{% url 'dashboard:karaoke_menu_manage' venue.id %}" class="db-btn db-btn-ghost db-btn-sm">🍽️ Меню</a>
+      <a href="{% url 'dashboard:karaoke_venue_edit' venue.id %}" class="db-btn db-btn-ghost db-btn-sm">⚙️</a>
+    </div>
+  </div>
+  <div style="display:flex;gap:24px;padding:14px 24px;background:var(--bg)">
+    <div style="font-size:13px;color:var(--muted)"><span style="font-weight:700;color:var(--text2)">{{ venue.rooms.count }}</span> кабинок</div>
+    {% if venue.address %}<div style="font-size:13px;color:var(--muted)">📍 {{ venue.address }}</div>{% endif %}
+    {% if venue.working_hours %}<div style="font-size:13px;color:var(--muted)">🕐 {{ venue.working_hours }}</div>{% endif %}
+  </div>
+</div>
+{% endfor %}
+</div>
+{% endblock %}
