@@ -129,19 +129,33 @@ def shop_product_list(request, branch_id):
     if not _has_branch_access(request.user, branch):
         return redirect("dashboard:shop_home")
 
-    stocks = (
+    stocks = list(
         StoreStock.objects
         .filter(branch=branch)
         .select_related("product", "product__category")
         .order_by("product__category__sort_order", "product__id")
     )
-    categories = branch.store.categories.filter(is_active=True).order_by("sort_order", "id")
+    categories = list(branch.store.categories.filter(is_active=True).order_by("sort_order", "id"))
+
+    # Группируем по категориям (включая пустые!)
+    stock_map = {}
+    for s in stocks:
+        cid = s.product.category_id or 0
+        stock_map.setdefault(cid, []).append(s)
+
+    cat_sections = [
+        {"cat": cat, "stocks": stock_map.get(cat.id, [])}
+        for cat in categories
+    ]
+    uncat_stocks = stock_map.get(0, [])
 
     return render(request, "dashboard/shops/product_list.html", {
-        "branch": branch,
-        "store": branch.store,
-        "stocks": stocks,
-        "categories": categories,
+        "branch":       branch,
+        "store":        branch.store,
+        "stocks":       stocks,
+        "categories":   categories,
+        "cat_sections": cat_sections,
+        "uncat_stocks": uncat_stocks,
     })
 
 

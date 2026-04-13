@@ -1,4 +1,4 @@
-<div class="pl-add-grid">
+<div style="display:grid;grid-template-columns:80px 1fr 1fr 1fr;gap:10px;align-items:end;margin-bottom:10px">
   <div class="pl-add-field">
     <div class="pl-add-photo-wrap">
       <input type="file" accept="image/*"
@@ -8,17 +8,27 @@
     </div>
   </div>
   <div class="pl-add-field">
-    <label class="pl-add-label">Название *</label>
+    <label class="pl-add-label">🇷🇺 Название *</label>
     <input class="pl-add-input" id="add-name-{{ panel_id }}" placeholder="Название (RU)"
            onkeydown="if(event.key==='Enter')submitAddProduct('{{ panel_id }}')">
   </div>
+  <div class="pl-add-field">
+    <label class="pl-add-label">🇰🇬 Кыргызча</label>
+    <input class="pl-add-input" id="add-name-ky-{{ panel_id }}" placeholder="Аты (KY)">
+  </div>
+  <div class="pl-add-field">
+    <label class="pl-add-label">🇬🇧 English</label>
+    <input class="pl-add-input" id="add-name-en-{{ panel_id }}" placeholder="Name (EN)">
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end">
   <div class="pl-add-field">
     <label class="pl-add-label">Цена (сом)</label>
     <input class="pl-add-input" id="add-price-{{ panel_id }}" type="number" min="0" placeholder="0" value="0">
   </div>
   <div class="pl-add-field">
     <label class="pl-add-label">Остаток</label>
-    <input class="pl-add-input" id="add-qty-{{ panel_id }}" type="number" min="0" placeholder="0" value="0">
+    <input class="pl-add-input" id="add-qty-{{ panel_id }}" type="number" min="0" step="1" placeholder="0" value="0">
   </div>
   <div class="pl-add-field">
     <label class="pl-add-label">Единица</label>
@@ -30,17 +40,6 @@
   </div>
   <div class="pl-add-field">
     <label class="pl-add-label">&nbsp;</label>
-    <button class="pl-add-btn" onclick="submitAddProduct('{{ panel_id }}')">Добавить</button>
-  </div>
-</div>
-<button class="pl-toggle-extra" onclick="toggleExtra('{{ panel_id }}')">▸ KY / EN названия</button>
-<div class="pl-add-extra" id="add-extra-{{ panel_id }}">
-  <div class="pl-add-field">
-    <label class="pl-add-label">Название (KY)</label>
-    <input class="pl-add-input" id="add-name-ky-{{ panel_id }}" placeholder="Аты (кыргызча)">
-  </div>
-  <div class="pl-add-field">
-    <label class="pl-add-label">Название (EN)</label>
-    <input class="pl-add-input" id="add-name-en-{{ panel_id }}" placeholder="Name (English)">
+    <button class="pl-add-btn" onclick="submitAddProduct('{{ panel_id }}')">✅ Добавить</button>
   </div>
 </div>
