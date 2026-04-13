@@ -897,11 +897,13 @@
 /* ══ МОДАЛ БЛЮДА ══ */
 .dish-clickable { cursor: pointer; }
 
+/* ── мобиль: снизу, выше корзины ── */
 .dm-backdrop {
   position: fixed; inset: 0; z-index: 8500;
   background: rgba(0,0,0,.6);
   backdrop-filter: blur(6px);
   display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 100px; /* выше cart-fab (bottom:24px + ~70px высота) */
   opacity: 0; pointer-events: none;
   transition: opacity .25s;
 }
@@ -911,14 +913,26 @@
   position: relative;
   width: 100%; max-width: 480px;
   background: var(--card, #fff);
-  border-radius: 24px 24px 0 0;
-  max-height: 90dvh;
+  border-radius: 24px; /* полностью скруглён, т.к. не касается края */
+  max-height: calc(92dvh - 100px);
   display: flex; flex-direction: column;
-  transform: translateY(100%);
+  transform: translateY(calc(100% + 100px));
   transition: transform .32s cubic-bezier(.32,1,.32,1);
   overflow: hidden;
 }
 .dm-backdrop.open .dm-sheet { transform: translateY(0); }
+
+/* ── планшет и ноутбук: по центру ── */
+@media (min-width: 640px) {
+  .dm-backdrop { align-items: center; padding-bottom: 0; }
+  .dm-sheet {
+    border-radius: 24px;
+    max-height: 85vh;
+    max-width: 560px;
+    transform: translateY(32px) scale(.96);
+  }
+  .dm-backdrop.open .dm-sheet { transform: translateY(0) scale(1); }
+}
 
 .dm-close {
   position: absolute; top: 12px; right: 14px; z-index: 10;
@@ -932,8 +946,11 @@
 .dm-close:hover { background: rgba(0,0,0,.65); }
 
 .dm-photo-wrap {
-  position: relative; width: 100%; height: 240px;
+  position: relative; width: 100%; height: 220px;
   background: var(--card2, #f5f5f5); flex-shrink: 0; overflow: hidden;
+}
+@media (min-width: 640px) {
+  .dm-photo-wrap { height: 280px; }
 }
 .dm-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
 .dm-photo-empty {
@@ -944,34 +961,36 @@
 }
 
 .dm-body {
-  padding: 20px 20px 24px;
+  padding: 20px 24px 28px;
   overflow-y: auto;
-  display: flex; flex-direction: column; gap: 10px;
+  display: flex; flex-direction: column; gap: 12px;
+  flex: 1;
 }
 .dm-name {
   font-family: 'Unbounded', sans-serif;
-  font-size: 17px; font-weight: 800;
+  font-size: 18px; font-weight: 800;
   color: var(--text); letter-spacing: -.4px;
-  line-height: 1.25;
+  line-height: 1.3;
 }
 .dm-desc {
   font-size: 14px; color: var(--text2, #555);
-  line-height: 1.6;
+  line-height: 1.7;
 }
 .dm-footer {
   display: flex; align-items: center;
   justify-content: space-between; gap: 16px;
-  margin-top: 8px;
+  margin-top: auto; padding-top: 12px;
+  border-top: 1px solid var(--border, rgba(0,0,0,.07));
 }
 .dm-price {
   font-family: 'Unbounded', sans-serif;
-  font-size: 20px; font-weight: 900;
+  font-size: 22px; font-weight: 900;
   color: var(--accent, #ff4d1c);
 }
 .dm-add-btn {
-  width: auto; padding: 0 28px;
+  width: auto !important; padding: 0 32px !important;
   font-size: 14px; font-weight: 700;
-  white-space: nowrap;
+  white-space: nowrap; height: 48px;
 }
 </style>
 
