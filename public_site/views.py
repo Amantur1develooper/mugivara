@@ -96,7 +96,7 @@ from core.models import Restaurant, Branch
 # ─────────────────────────────────────────────────────────────────────────────
 
 from shops.models import Store, StoreBranch
-from core.models import Restaurant, Branch
+from core.models import Restaurant, Branch, AdBanner
 
 
 # Категории платформы — добавляй новые строки когда запускаешь новое направление
@@ -276,11 +276,14 @@ def home(request):
         + stats["eco_count"] + stats["agency_count"] + stats["karaoke_count"]
     )
 
+    ad_banners = list(AdBanner.objects.filter(is_active=True).order_by("sort_order"))
+
     return render(request, "public_site/home.html", {
         "categories":       PLATFORM_CATEGORIES,
         "restaurant_cards": restaurant_cards,
         "store_cards":      store_cards,
         "market_cards":     market_cards,
+        "ad_banners":       ad_banners,
         "hotel_cards":      hotel_cards,
         "pharmacy_cards":   pharmacy_cards,
         "legal_cards":      legal_cards,

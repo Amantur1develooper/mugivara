@@ -224,3 +224,42 @@ class PageView(models.Model):
 
     def __str__(self):
         return f"{self.section} {self.path} {self.timestamp:%Y-%m-%d %H:%M}"
+
+
+class AdBanner(models.Model):
+    """Рекламный баннер на главной странице."""
+
+    class ButtonStyle(models.TextChoices):
+        PRIMARY  = "primary",  "Синяя (основная)"
+        SUCCESS  = "success",  "Зелёная"
+        DANGER   = "danger",   "Красная"
+        DARK     = "dark",     "Тёмная"
+
+    title         = models.CharField("Заголовок / alt", max_length=200, blank=True, default="")
+    image_desktop = models.ImageField(
+        "Фото для ПК (широкий баннер, ~2560×192)",
+        upload_to="ads/desktop/", blank=True, null=True,
+    )
+    image_tablet  = models.ImageField(
+        "Фото для планшета (~840×345)",
+        upload_to="ads/tablet/", blank=True, null=True,
+    )
+    image_mobile  = models.ImageField(
+        "Фото для телефона (~850×192)",
+        upload_to="ads/mobile/", blank=True, null=True,
+    )
+    button_text   = models.CharField("Текст кнопки", max_length=60, blank=True, default="",
+                                     help_text="Например: Купить, Перейти, Подробнее")
+    button_url    = models.URLField("Ссылка кнопки", blank=True, default="")
+    button_style  = models.CharField("Стиль кнопки", max_length=20,
+                                     choices=ButtonStyle.choices, default=ButtonStyle.PRIMARY)
+    is_active     = models.BooleanField("Активен", default=True)
+    sort_order    = models.PositiveSmallIntegerField("Порядок", default=0)
+
+    class Meta:
+        verbose_name        = "Рекламный баннер"
+        verbose_name_plural = "Рекламные баннеры"
+        ordering            = ["sort_order"]
+
+    def __str__(self):
+        return self.title or f"Баннер #{self.pk}"

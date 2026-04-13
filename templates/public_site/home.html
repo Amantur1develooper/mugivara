@@ -277,6 +277,43 @@
   @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(1.4)} }
   @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
 
+  /* ═══ AD BANNERS ═══ */
+  .ad-banners-wrap {
+    max-width:1280px; margin:0 auto; padding:0 16px 32px;
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .ad-banner {
+    display:block; position:relative; border-radius:16px;
+    overflow:hidden; text-decoration:none;
+    box-shadow:0 2px 12px rgba(0,0,0,.08);
+    transition:box-shadow .2s, transform .2s;
+  }
+  .ad-banner:hover { box-shadow:0 6px 24px rgba(0,0,0,.14); transform:translateY(-1px); }
+  .ad-banner--no-link { cursor:default; }
+  .ad-banner--no-link:hover { transform:none; box-shadow:0 2px 12px rgba(0,0,0,.08); }
+  .ad-banner picture, .ad-banner img {
+    display:block; width:100%; height:auto;
+    max-height:345px; object-fit:cover;
+  }
+  .ad-banner__btn-wrap {
+    position:absolute; bottom:16px; right:20px;
+    pointer-events:none;
+  }
+  .ad-banner__btn {
+    display:inline-block; padding:10px 22px;
+    border-radius:10px; font-size:14px; font-weight:700;
+    font-family:'Unbounded',sans-serif;
+    box-shadow:0 4px 14px rgba(0,0,0,.18);
+  }
+  .ad-banner__btn--primary { background:var(--accent); color:#fff; }
+  .ad-banner__btn--success  { background:#10b981; color:#fff; }
+  .ad-banner__btn--danger   { background:#ef4444; color:#fff; }
+  .ad-banner__btn--dark     { background:#1e293b; color:#fff; }
+  @media (max-width:640px) {
+    .ad-banner__btn { font-size:12px; padding:8px 14px; bottom:10px; right:12px; }
+    .ad-banner { border-radius:12px; }
+  }
+
   /* ═══ SECTION BG ALTERNATION ═══ */
   .sec-alt { background:var(--bg); }
 
@@ -391,6 +428,37 @@
     
   </nav>
 </div>
+
+<!-- ═══════════════════ РЕКЛАМНЫЕ БАННЕРЫ ═══════════════════ -->
+{% if ad_banners %}
+<div class="ad-banners-wrap">
+  {% for banner in ad_banners %}
+  <a class="ad-banner{% if not banner.button_url %} ad-banner--no-link{% endif %}"
+     {% if banner.button_url %}href="{{ banner.button_url }}" target="_blank" rel="noopener"{% endif %}
+     title="{{ banner.title }}">
+
+    {# Адаптивная картинка: desktop / tablet / mobile #}
+    <picture>
+      {% if banner.image_desktop %}<source srcset="{{ banner.image_desktop.url }}" media="(min-width: 1024px)">{% endif %}
+      {% if banner.image_tablet %}<source srcset="{{ banner.image_tablet.url }}" media="(min-width: 640px)">{% endif %}
+      {% if banner.image_mobile %}
+        <img src="{{ banner.image_mobile.url }}" alt="{{ banner.title }}" loading="lazy">
+      {% elif banner.image_tablet %}
+        <img src="{{ banner.image_tablet.url }}" alt="{{ banner.title }}" loading="lazy">
+      {% elif banner.image_desktop %}
+        <img src="{{ banner.image_desktop.url }}" alt="{{ banner.title }}" loading="lazy">
+      {% endif %}
+    </picture>
+
+    {% if banner.button_text %}
+    <div class="ad-banner__btn-wrap">
+      <span class="ad-banner__btn ad-banner__btn--{{ banner.button_style }}">{{ banner.button_text }}</span>
+    </div>
+    {% endif %}
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
 
 <!-- ═══════════════════ РЕСТОРАНЫ ═══════════════════ -->
 {% if restaurant_cards %}

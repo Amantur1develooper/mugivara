@@ -5,7 +5,7 @@ from django.shortcuts import redirect
 from django.urls import path
 from django import forms
 from django.contrib.admin.widgets import AutocompleteSelect
-from .models import Restaurant, Branch, Membership, PromoCode
+from .models import Restaurant, Branch, Membership, PromoCode, AdBanner
 from catalog.models import MenuSet, Item, BranchMenuSet, BranchItem
 from catalog.services import sync_branch_menu, ensure_links_for_branch_item
 from integrations.admin import BranchTelegramLinkInline
@@ -173,6 +173,19 @@ class PromoCodeAdmin(admin.ModelAdmin):
     list_filter  = ("discount_type", "is_active", "branch__restaurant")
     search_fields = ("code", "branch__name_ru", "branch__restaurant__name_ru")
     list_editable = ("is_active",)
+
+
+@admin.register(AdBanner)
+class AdBannerAdmin(admin.ModelAdmin):
+    list_display  = ("__str__", "button_text", "button_style", "is_active", "sort_order")
+    list_editable = ("is_active", "sort_order")
+    list_filter   = ("is_active", "button_style")
+    fieldsets = (
+        (None, {"fields": ("title", "is_active", "sort_order")}),
+        ("Изображения", {"fields": ("image_desktop", "image_tablet", "image_mobile"),
+                         "description": "Загрузите хотя бы одно фото. Для разных устройств — разные фото."}),
+        ("Кнопка", {"fields": ("button_text", "button_url", "button_style")}),
+    )
 
 
 @admin.register(Membership)
