@@ -222,7 +222,7 @@ LOGGING = {
     "handlers": {
         "file": {
             "class": "logging.FileHandler",
-            "filename": BASE_DIR / "logs/django_errors.log",
+            "filename": str(BASE_DIR / "logs/django_errors.log"),
             "level": "ERROR",
         },
     },
