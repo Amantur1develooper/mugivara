@@ -226,42 +226,31 @@ class PageView(models.Model):
         return f"{self.section} {self.path} {self.timestamp:%Y-%m-%d %H:%M}"
 
 
-class AdBanner(models.Model):
-    """Рекламный баннер на главной странице."""
+class Banner(models.Model):
+    """Рекламный баннер на главной странице (три формата)."""
 
-    class ButtonStyle(models.TextChoices):
-        PRIMARY = "primary", "Синяя"
-        SUCCESS = "success", "Зелёная"
-        DANGER  = "danger",  "Красная"
-        DARK    = "dark",    "Тёмная"
-        WHITE   = "white",   "Белая"
-
-    title         = models.CharField("Название (для себя)", max_length=200, blank=True, default="")
-    image_desktop = models.ImageField(
-        "Фото для ПК (широкий баннер, ~2560×192)",
-        upload_to="ads/desktop/", blank=True, null=True,
+    title        = models.CharField("Название", max_length=200)
+    image_wide   = models.ImageField(
+        "ПК — широкий (2560×192)",
+        upload_to="banners/wide/", blank=True, null=True,
     )
-    image_tablet  = models.ImageField(
-        "Фото для планшета (~840×345)",
-        upload_to="ads/tablet/", blank=True, null=True,
+    image_tablet = models.ImageField(
+        "Планшет (840×345)",
+        upload_to="banners/tablet/", blank=True, null=True,
     )
-    image_mobile  = models.ImageField(
-        "Фото для телефона (~850×192)",
-        upload_to="ads/mobile/", blank=True, null=True,
+    image_mobile = models.ImageField(
+        "Телефон (850×192)",
+        upload_to="banners/mobile/", blank=True, null=True,
     )
-    link_url      = models.URLField("Ссылка (куда ведёт баннер)", blank=True, default="")
-    button_text   = models.CharField("Текст кнопки", max_length=60, blank=True, default="",
-                                     help_text="Например: Купить, Перейти, Подробнее. Оставь пустым — кнопки не будет.")
-    button_style  = models.CharField("Цвет кнопки", max_length=20,
-                                     choices=ButtonStyle.choices, default=ButtonStyle.PRIMARY)
-    click_count   = models.PositiveIntegerField("Переходов всего", default=0, editable=False)
-    is_active     = models.BooleanField("Активен", default=True)
-    sort_order    = models.PositiveSmallIntegerField("Порядок", default=0)
+    link_url    = models.URLField("Ссылка", blank=True, default="")
+    is_active   = models.BooleanField("Активен", default=True)
+    sort_order  = models.PositiveSmallIntegerField("Порядок", default=0)
+    click_count = models.PositiveIntegerField("Кликов", default=0, editable=False)
 
     class Meta:
-        verbose_name        = "Рекламный баннер"
-        verbose_name_plural = "Рекламные баннеры"
+        verbose_name        = "Баннер"
+        verbose_name_plural = "Баннеры"
         ordering            = ["sort_order"]
 
     def __str__(self):
-        return self.title or f"Баннер #{self.pk}"
+        return self.title

@@ -441,14 +441,14 @@
   {% endif %}
 
     <picture>
-      {% if banner.obj.image_desktop %}<source srcset="{{ banner.obj.image_desktop.url }}" media="(min-width: 1024px)">{% endif %}
+      {% if banner.obj.image_wide %}<source srcset="{{ banner.obj.image_wide.url }}" media="(min-width: 1024px)">{% endif %}
       {% if banner.obj.image_tablet %}<source srcset="{{ banner.obj.image_tablet.url }}" media="(min-width: 640px)">{% endif %}
       {% if banner.obj.image_mobile %}
         <img src="{{ banner.obj.image_mobile.url }}" alt="{{ banner.obj.title }}" loading="lazy">
       {% elif banner.obj.image_tablet %}
         <img src="{{ banner.obj.image_tablet.url }}" alt="{{ banner.obj.title }}" loading="lazy">
-      {% elif banner.obj.image_desktop %}
-        <img src="{{ banner.obj.image_desktop.url }}" alt="{{ banner.obj.title }}" loading="lazy">
+      {% elif banner.obj.image_wide %}
+        <img src="{{ banner.obj.image_wide.url }}" alt="{{ banner.obj.title }}" loading="lazy">
       {% endif %}
     </picture>
     {% if banner.obj.button_text %}

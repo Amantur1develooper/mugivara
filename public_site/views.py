@@ -96,7 +96,7 @@ from core.models import Restaurant, Branch
 # ─────────────────────────────────────────────────────────────────────────────
 
 from shops.models import Store, StoreBranch
-from core.models import Restaurant, Branch, AdBanner
+from core.models import Restaurant, Branch, Banner
 
 
 # Категории платформы — добавляй новые строки когда запускаешь новое направление
@@ -281,9 +281,9 @@ def home(request):
         ad_banners = [
             {
                 "obj": b,
-                "click_url": reverse("public_site:ad_banner_click", args=[b.id]) if b.link_url else "",
+                "click_url": reverse("public_site:banner_click", args=[b.id]) if b.link_url else "",
             }
-            for b in AdBanner.objects.filter(is_active=True).order_by("sort_order")
+            for b in Banner.objects.filter(is_active=True).order_by("sort_order")
         ]
     except Exception:
         ad_banners = []
@@ -966,19 +966,17 @@ def validate_promo(request, branch_id: int):
     })
 
 
-def ad_banner_click(request, banner_id: int):
-    """Считает клик по баннеру и перенаправляет на целевой URL."""
+def banner_click(request, banner_id: int):
+    """Считает клик и редиректит на целевой URL баннера."""
     from django.http import HttpResponseRedirect, HttpResponseNotFound
-    from core.models import AdBanner
     from django.db.models import F
 
     try:
-        banner = AdBanner.objects.filter(id=banner_id, is_active=True).only("link_url").get()
-    except AdBanner.DoesNotExist:
+        banner = Banner.objects.filter(id=banner_id, is_active=True).only("link_url").get()
+    except Banner.DoesNotExist:
         return HttpResponseNotFound()
 
-    # Атомарный инкремент — без race condition
-    AdBanner.objects.filter(id=banner_id).update(click_count=F("click_count") + 1)
+    Banner.objects.filter(id=banner_id).update(click_count=F("click_count") + 1)
 
     if banner.link_url:
         return HttpResponseRedirect(banner.link_url)
