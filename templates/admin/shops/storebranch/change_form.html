@@ -1,0 +1,14 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block object-tools-items %}
+  {{ block.super }}
+  {% if change and not is_popup and request.user.is_superuser %}
+    <li>
+      <a class="button" style="background:#2563eb;color:#fff;"
+         href="{% url 'admin:shops_storebranch_duplicate' object_id %}">
+        📋 Дублировать филиал
+      </a>
+    </li>
+  {% endif %}
+{% endblock %}
