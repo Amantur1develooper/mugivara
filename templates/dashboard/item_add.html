@@ -14,38 +14,82 @@
 
 {% block head_extra %}
 <style>
-  .photo-drop{
-    border:2px dashed var(--border);border-radius:16px;
-    padding:32px;text-align:center;cursor:pointer;
+  /* ── LANG GRID ── */
+  .lang-grid {
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:10px;
+  }
+  @media(max-width:680px){ .lang-grid{ grid-template-columns:1fr; } }
+
+  .lang-field { display:flex; flex-direction:column; gap:6px; }
+  .lang-badge {
+    display:inline-flex; align-items:center; gap:5px;
+    font-size:11px; font-weight:700; letter-spacing:.5px;
+    padding:2px 8px; border-radius:6px;
+    background:var(--bg); border:1px solid var(--border); color:var(--muted);
+    width:fit-content;
+  }
+  .lang-badge.ru { background:rgba(37,99,235,.08); border-color:rgba(37,99,235,.2); color:#2563EB; }
+  .lang-badge.ky { background:rgba(5,150,105,.08); border-color:rgba(5,150,105,.2); color:#059669; }
+  .lang-badge.en { background:rgba(168,85,247,.08); border-color:rgba(168,85,247,.2); color:#a855f7; }
+
+  /* ── PHOTO ── */
+  .photo-drop {
+    border:2px dashed var(--border); border-radius:16px;
+    padding:28px; text-align:center; cursor:pointer;
     transition:border-color .2s,background .2s;
-    position:relative;overflow:hidden;
+    position:relative; overflow:hidden;
   }
-  .photo-drop:hover,.photo-drop.drag{border-color:var(--accent);background:rgba(255,77,28,.03)}
-  .photo-drop input[type=file]{
-    position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;
+  .photo-drop:hover,.photo-drop.drag { border-color:var(--accent); background:rgba(255,77,28,.03); }
+  .photo-drop input[type=file] { position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%; }
+  #photoPreview { width:100%;height:180px;object-fit:cover;border-radius:12px;display:none;margin-bottom:10px; }
+
+  /* ── CATEGORY ROW ── */
+  .cat-row { display:flex; gap:8px; align-items:flex-start; }
+  .cat-row select { flex:1; }
+  .cat-add-btn {
+    flex-shrink:0; height:42px; padding:0 14px;
+    background:var(--bg); border:1.5px solid var(--border);
+    border-radius:10px; font-size:13px; font-weight:600;
+    color:var(--text2); cursor:pointer;
+    transition:all .15s; white-space:nowrap;
+    display:flex; align-items:center; gap:5px;
   }
-  .photo-drop-icon{font-size:36px;margin-bottom:8px}
-  .photo-drop-text{font-size:14px;color:var(--muted)}
-  .photo-drop-hint{font-size:11px;color:var(--muted);margin-top:4px}
-  #photoPreview{
-    width:100%;height:180px;object-fit:cover;
-    border-radius:12px;display:none;margin-top:12px;
+  .cat-add-btn:hover { border-color:var(--accent); color:var(--accent); }
+
+  /* ── INLINE NEW CAT ── */
+  .new-cat-panel {
+    display:none; margin-top:10px;
+    background:var(--bg); border:1.5px solid var(--border);
+    border-radius:12px; padding:16px;
   }
-  .webp-badge{
-    display:inline-flex;align-items:center;gap:6px;
-    background:rgba(0,184,150,.1);border:1px solid rgba(0,184,150,.2);
-    border-radius:100px;padding:4px 12px;
-    font-size:11px;font-weight:600;color:var(--teal);margin-top:8px;
+  .new-cat-panel.open { display:block; }
+  .new-cat-grid {
+    display:grid; grid-template-columns:1fr 1fr 1fr;
+    gap:8px; margin-bottom:10px;
   }
-  /* Lang tabs */
-  .lang-tabs{display:flex;gap:4px;margin-bottom:8px}
-  .lang-tab{
-    padding:4px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;
-    border:1.5px solid var(--border);background:var(--card);color:var(--muted);
-    transition:all .15s;user-select:none;
+  @media(max-width:680px){ .new-cat-grid{ grid-template-columns:1fr; } }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-size:11px; font-weight:700; letter-spacing:.8px;
+    text-transform:uppercase; color:var(--muted);
+    border-bottom:1px solid var(--border); padding-bottom:8px;
+    margin-bottom:16px; margin-top:24px;
   }
-  .lang-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
-  .lang-panel{display:none}.lang-panel.active{display:block}
+  .section-label:first-child { margin-top:0; }
+
+  /* ── FORM LAYOUT ── */
+  .form-cols { display:grid; grid-template-columns:1fr 340px; gap:24px; }
+  @media(max-width:900px){ .form-cols{ grid-template-columns:1fr; } }
+
+  .webp-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    background:rgba(0,184,150,.1); border:1px solid rgba(0,184,150,.2);
+    border-radius:100px; padding:4px 12px;
+    font-size:11px; font-weight:600; color:var(--teal); margin-top:8px;
+  }
 </style>
 {% endblock %}
 
@@ -61,94 +105,139 @@
   </div>
 </div>
 
-<div class="db-card">
-  <form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
+<form method="post" enctype="multipart/form-data" id="itemForm">
+{% csrf_token %}
+<input type="hidden" name="new_cat_ru" id="newCatRu">
+<input type="hidden" name="new_cat_ky" id="newCatKy">
+<input type="hidden" name="new_cat_en" id="newCatEn">
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+<div class="form-cols">
 
-      <div>
-        <div class="db-form-group">
-          <label class="db-label">Название блюда *</label>
-          <div class="lang-tabs">
-            <div class="lang-tab active" onclick="switchLang('name','ru',this)">RU</div>
-            <div class="lang-tab" onclick="switchLang('name','ky',this)">KY</div>
-            <div class="lang-tab" onclick="switchLang('name','en',this)">EN</div>
-          </div>
-          <div class="lang-panel active" id="name-ru">
-            <input class="db-input" name="name_ru" type="text"
-                   placeholder="Например: Лагман по-домашнему" required>
-          </div>
-          <div class="lang-panel" id="name-ky">
-            <input class="db-input" name="name_ky" type="text"
-                   placeholder="Мисалы: Үй лагманы">
-          </div>
-          <div class="lang-panel" id="name-en">
-            <input class="db-input" name="name_en" type="text"
-                   placeholder="e.g. Homestyle Lagman">
-          </div>
-        </div>
+  <!-- ── ЛЕВАЯ КОЛОНКА: основная инфо ── -->
+  <div class="db-card" style="padding:24px">
 
-        <div class="db-form-group">
-          <label class="db-label" for="price">Цена (сом) *</label>
-          <input class="db-input" id="price" name="price" type="number"
-                 min="0" placeholder="0" required>
-        </div>
+    <div class="section-label">📝 Название блюда</div>
+    <div class="lang-grid">
+      <div class="lang-field">
+        <span class="lang-badge ru">🇷🇺 Русский *</span>
+        <input class="db-input" name="name_ru" type="text"
+               placeholder="Лагман по-домашнему" required>
+      </div>
+      <div class="lang-field">
+        <span class="lang-badge ky">🇰🇬 Кыргызча</span>
+        <input class="db-input" name="name_ky" type="text"
+               placeholder="Үй лагманы">
+      </div>
+      <div class="lang-field">
+        <span class="lang-badge en">🇬🇧 English</span>
+        <input class="db-input" name="name_en" type="text"
+               placeholder="Homestyle Lagman">
+      </div>
+    </div>
 
-        <div class="db-form-group">
-          <label class="db-label" for="branch_category_id">Категория</label>
+    <div class="section-label" style="margin-top:24px">📄 Описание</div>
+    <div class="lang-grid">
+      <div class="lang-field">
+        <span class="lang-badge ru">🇷🇺 Русский</span>
+        <textarea class="db-textarea" name="description_ru"
+                  placeholder="Состав, особенности, вес..." style="min-height:80px;resize:vertical"></textarea>
+      </div>
+      <div class="lang-field">
+        <span class="lang-badge ky">🇰🇬 Кыргызча</span>
+        <textarea class="db-textarea" name="description_ky"
+                  placeholder="Курам, өзгөчөлүктөр..." style="min-height:80px;resize:vertical"></textarea>
+      </div>
+      <div class="lang-field">
+        <span class="lang-badge en">🇬🇧 English</span>
+        <textarea class="db-textarea" name="description_en"
+                  placeholder="Ingredients, weight..." style="min-height:80px;resize:vertical"></textarea>
+      </div>
+    </div>
+
+    <div class="section-label" style="margin-top:24px">🗂 Категория и цена</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+
+      <div class="db-form-group" style="margin:0">
+        <label class="db-label" for="branch_category_id">Категория</label>
+        <div class="cat-row">
           <select class="db-input" id="branch_category_id" name="branch_category_id">
             <option value="">— без категории —</option>
             {% for cat in categories %}
             <option value="{{ cat.id }}">{{ cat.category.name_ru }}</option>
             {% endfor %}
+            <option value="__new__" id="newCatOption" style="display:none;font-weight:700;color:var(--accent)">
+              ✅ Новая категория
+            </option>
           </select>
+          <button type="button" class="cat-add-btn" onclick="toggleNewCat()">
+            <span id="newCatBtnIcon">＋</span> Новая
+          </button>
         </div>
 
-        <div class="db-form-group">
-          <label class="db-label">Описание</label>
-          <div class="lang-tabs">
-            <div class="lang-tab active" onclick="switchLang('desc','ru',this)">RU</div>
-            <div class="lang-tab" onclick="switchLang('desc','ky',this)">KY</div>
-            <div class="lang-tab" onclick="switchLang('desc','en',this)">EN</div>
+        <!-- Панель создания новой категории -->
+        <div class="new-cat-panel" id="newCatPanel">
+          <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">
+            Название новой категории:
           </div>
-          <div class="lang-panel active" id="desc-ru">
-            <textarea class="db-textarea" name="description_ru"
-                      placeholder="Состав, особенности, вес..." style="min-height:80px"></textarea>
+          <div class="new-cat-grid">
+            <div class="lang-field">
+              <span class="lang-badge ru">🇷🇺 Русский *</span>
+              <input class="db-input" id="ncRu" type="text" placeholder="Салаты"
+                     oninput="updateNewCat()">
+            </div>
+            <div class="lang-field">
+              <span class="lang-badge ky">🇰🇬 Кыргызча</span>
+              <input class="db-input" id="ncKy" type="text" placeholder="Салаттар"
+                     oninput="updateNewCat()">
+            </div>
+            <div class="lang-field">
+              <span class="lang-badge en">🇬🇧 English</span>
+              <input class="db-input" id="ncEn" type="text" placeholder="Salads"
+                     oninput="updateNewCat()">
+            </div>
           </div>
-          <div class="lang-panel" id="desc-ky">
-            <textarea class="db-textarea" name="description_ky"
-                      placeholder="Курам, өзгөчөлүктөр, салмак..." style="min-height:80px"></textarea>
-          </div>
-          <div class="lang-panel" id="desc-en">
-            <textarea class="db-textarea" name="description_en"
-                      placeholder="Ingredients, features, weight..." style="min-height:80px"></textarea>
+          <div style="font-size:11px;color:var(--muted)">
+            Категория будет создана автоматически при сохранении блюда
           </div>
         </div>
       </div>
 
-      <div>
-        <label class="db-label">Фото блюда</label>
-        <div class="photo-drop" id="photoDrop">
-          <input type="file" name="photo" id="photoFile" accept="image/*"
-                 onchange="previewPhoto(this)">
-          <div class="photo-drop-icon">📷</div>
-          <div class="photo-drop-text">Нажмите или перетащите фото</div>
-          <div class="photo-drop-hint">JPG, PNG, WebP — автоматически сожмётся до WebP</div>
-        </div>
-        <img id="photoPreview" alt="Превью">
-        <div class="webp-badge">⚡ Авто-сжатие → WebP, макс 800px</div>
+      <div class="db-form-group" style="margin:0">
+        <label class="db-label" for="price">Цена (сом) *</label>
+        <input class="db-input" id="price" name="price" type="number"
+               min="0" step="1" placeholder="0" required>
       </div>
     </div>
+  </div>
 
-    <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap">
-      <button type="submit" class="db-btn db-btn-primary">✅ Добавить блюдо</button>
-      <a href="{% url 'dashboard:branch_items' branch.id %}" class="db-btn db-btn-ghost">← Отмена</a>
+  <!-- ── ПРАВАЯ КОЛОНКА: фото ── -->
+  <div class="db-card" style="padding:24px">
+    <div class="section-label" style="margin-top:0">📷 Фото блюда</div>
+    <img id="photoPreview" alt="Превью">
+    <div class="photo-drop" id="photoDrop">
+      <input type="file" name="photo" id="photoFile" accept="image/*"
+             onchange="previewPhoto(this)">
+      <div id="dropIcon" style="font-size:36px;margin-bottom:8px">📷</div>
+      <div id="dropText" style="font-size:14px;color:var(--muted)">Нажмите или перетащите</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">JPG, PNG, WebP</div>
     </div>
-  </form>
+    <div class="webp-badge">⚡ Авто-сжатие → WebP, макс 800px</div>
+
+    <div style="margin-top:24px;display:flex;flex-direction:column;gap:10px">
+      <button type="submit" class="db-btn db-btn-primary" style="width:100%">
+        ✅ Добавить блюдо
+      </button>
+      <a href="{% url 'dashboard:branch_items' branch.id %}" class="db-btn db-btn-ghost" style="width:100%;text-align:center">
+        ← Отмена
+      </a>
+    </div>
+  </div>
+
 </div>
+</form>
 
 <script>
+/* Photo preview */
 function previewPhoto(input) {
   if (input.files && input.files[0]) {
     const reader = new FileReader();
@@ -156,35 +245,77 @@ function previewPhoto(input) {
       const img = document.getElementById('photoPreview');
       img.src = e.target.result;
       img.style.display = 'block';
-      document.querySelector('.photo-drop-icon').style.display = 'none';
-      document.querySelector('.photo-drop-text').textContent = input.files[0].name;
+      document.getElementById('dropIcon').style.display = 'none';
+      document.getElementById('dropText').textContent = input.files[0].name;
     };
     reader.readAsDataURL(input.files[0]);
   }
 }
 
-// drag & drop highlight
 const drop = document.getElementById('photoDrop');
 drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
 drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
 drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('drag'); });
 
-function switchLang(group, lang, tab) {
-  // deactivate all tabs and panels in this group
-  tab.closest('.db-form-group').querySelectorAll('.lang-tab').forEach(t => t.classList.remove('active'));
-  tab.closest('.db-form-group').querySelectorAll('.lang-panel').forEach(p => p.classList.remove('active'));
-  tab.classList.add('active');
-  document.getElementById(group + '-' + lang).classList.add('active');
+/* New category panel */
+function toggleNewCat() {
+  const panel = document.getElementById('newCatPanel');
+  const sel   = document.getElementById('branch_category_id');
+  const icon  = document.getElementById('newCatBtnIcon');
+  const opt   = document.getElementById('newCatOption');
+  const open  = panel.classList.toggle('open');
+  icon.textContent = open ? '✕' : '＋';
+  if (open) {
+    opt.style.display = '';
+    sel.value = '__new__';
+    document.getElementById('ncRu').focus();
+  } else {
+    opt.style.display = 'none';
+    sel.value = '';
+    clearNewCatFields();
+  }
 }
-</script>
 
-{% if categories|length == 0 %}
-<div class="db-card" style="border-color:rgba(255,138,0,.25);background:rgba(255,138,0,.04)">
-  <div style="font-size:13px;color:#92400E">
-    ⚠️ В этом филиале нет активных категорий. Блюдо будет добавлено без категории.
-    Категории настраиваются через <a href="/admin/" style="color:var(--accent)">административную панель</a>.
-  </div>
-</div>
-{% endif %}
+function updateNewCat() {
+  document.getElementById('newCatRu').value = document.getElementById('ncRu').value.trim();
+  document.getElementById('newCatKy').value = document.getElementById('ncKy').value.trim();
+  document.getElementById('newCatEn').value = document.getElementById('ncEn').value.trim();
+}
+
+function clearNewCatFields() {
+  ['ncRu','ncKy','ncEn','newCatRu','newCatKy','newCatEn'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+}
+
+/* If user picks existing category — close panel */
+document.getElementById('branch_category_id').addEventListener('change', function() {
+  if (this.value !== '__new__') {
+    const panel = document.getElementById('newCatPanel');
+    if (panel.classList.contains('open')) {
+      panel.classList.remove('open');
+      document.getElementById('newCatBtnIcon').textContent = '＋';
+      document.getElementById('newCatOption').style.display = 'none';
+      clearNewCatFields();
+    }
+  }
+});
+
+/* Validate new cat name before submit */
+document.getElementById('itemForm').addEventListener('submit', function(e) {
+  const sel = document.getElementById('branch_category_id');
+  if (sel.value === '__new__') {
+    const ru = document.getElementById('ncRu').value.trim();
+    if (!ru) {
+      e.preventDefault();
+      document.getElementById('ncRu').focus();
+      document.getElementById('ncRu').style.borderColor = 'var(--accent)';
+      document.getElementById('ncRu').placeholder = 'Введите название на русском!';
+      return;
+    }
+    updateNewCat();
+  }
+});
+</script>
 
 {% endblock %}

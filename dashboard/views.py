@@ -250,25 +250,48 @@ def item_add(request, branch_id):
 
         # привязываем к категории если выбрана
         branch_cat_id = request.POST.get("branch_category_id")
-        if branch_cat_id:
+
+        # создание новой категории inline
+        if branch_cat_id == "__new__":
+            new_cat_ru = request.POST.get("new_cat_ru", "").strip()
+            if new_cat_ru:
+                # Ищем или создаём глобальную Category в MenuSet ресторана
+                menu_set = MenuSet.objects.filter(restaurant=restaurant).first()
+                if not menu_set:
+                    menu_set = MenuSet.objects.create(restaurant=restaurant, name_ru="Меню")
+                cat, _ = Category.objects.get_or_create(
+                    menu_set=menu_set,
+                    name_ru=new_cat_ru,
+                    defaults={
+                        "name_ky": request.POST.get("new_cat_ky", "").strip() or new_cat_ru,
+                        "name_en": request.POST.get("new_cat_en", "").strip() or new_cat_ru,
+                    },
+                )
+                max_order = BranchCategory.objects.filter(branch=branch).aggregate(m=Max("sort_order"))["m"] or 0
+                bc, _ = BranchCategory.objects.get_or_create(
+                    branch=branch,
+                    category=cat,
+                    defaults={"sort_order": max_order + 1, "is_active": True},
+                )
+                BranchCategoryItem.objects.get_or_create(
+                    branch_category=bc, branch_item=bi, defaults={"sort_order": 0}
+                )
+                ItemCategory.objects.get_or_create(item=item, category=cat, defaults={"sort_order": 0})
+            else:
+                ensure_links_for_branch_item(bi)
+
+        elif branch_cat_id:
             try:
                 bc = BranchCategory.objects.get(id=branch_cat_id, branch=branch)
-                # создаём ItemCategory (связь Item <-> Category)
-                ic, _ = ItemCategory.objects.get_or_create(
-                    item=item,
-                    category=bc.category,
-                    defaults={"sort_order": 0},
+                ItemCategory.objects.get_or_create(
+                    item=item, category=bc.category, defaults={"sort_order": 0}
                 )
-                # создаём BranchCategoryItem
                 BranchCategoryItem.objects.get_or_create(
-                    branch_category=bc,
-                    branch_item=bi,
-                    defaults={"sort_order": 0},
+                    branch_category=bc, branch_item=bi, defaults={"sort_order": 0}
                 )
             except BranchCategory.DoesNotExist:
                 pass
         else:
-            # без категории — просто пробуем автосвязи
             ensure_links_for_branch_item(bi)
 
         messages.success(request, f"Блюдо «{name}» добавлено{photo_msg}")
