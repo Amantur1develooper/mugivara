@@ -416,28 +416,28 @@
 {% if ad_banners %}
 <div class="ad-banners-wrap">
   {% for banner in ad_banners %}
-  {% if banner.link_url %}
+  {% if banner.click_url %}
   <a class="ad-banner"
-     href="{% url 'public_site:ad_banner_click' banner.id %}"
+     href="{{ banner.click_url }}"
      target="_blank" rel="noopener"
-     title="{{ banner.title }}">
+     title="{{ banner.obj.title }}">
   {% else %}
   <div class="ad-banner">
   {% endif %}
 
     <picture>
-      {% if banner.image_desktop %}<source srcset="{{ banner.image_desktop.url }}" media="(min-width: 1024px)">{% endif %}
-      {% if banner.image_tablet %}<source srcset="{{ banner.image_tablet.url }}" media="(min-width: 640px)">{% endif %}
-      {% if banner.image_mobile %}
-        <img src="{{ banner.image_mobile.url }}" alt="{{ banner.title }}" loading="lazy">
-      {% elif banner.image_tablet %}
-        <img src="{{ banner.image_tablet.url }}" alt="{{ banner.title }}" loading="lazy">
-      {% elif banner.image_desktop %}
-        <img src="{{ banner.image_desktop.url }}" alt="{{ banner.title }}" loading="lazy">
+      {% if banner.obj.image_desktop %}<source srcset="{{ banner.obj.image_desktop.url }}" media="(min-width: 1024px)">{% endif %}
+      {% if banner.obj.image_tablet %}<source srcset="{{ banner.obj.image_tablet.url }}" media="(min-width: 640px)">{% endif %}
+      {% if banner.obj.image_mobile %}
+        <img src="{{ banner.obj.image_mobile.url }}" alt="{{ banner.obj.title }}" loading="lazy">
+      {% elif banner.obj.image_tablet %}
+        <img src="{{ banner.obj.image_tablet.url }}" alt="{{ banner.obj.title }}" loading="lazy">
+      {% elif banner.obj.image_desktop %}
+        <img src="{{ banner.obj.image_desktop.url }}" alt="{{ banner.obj.title }}" loading="lazy">
       {% endif %}
     </picture>
 
-  {% if banner.link_url %}</a>{% else %}</div>{% endif %}
+  {% if banner.click_url %}</a>{% else %}</div>{% endif %}
   {% endfor %}
 </div>
 {% endif %}

@@ -276,7 +276,16 @@ def home(request):
         + stats["eco_count"] + stats["agency_count"] + stats["karaoke_count"]
     )
 
-    ad_banners = list(AdBanner.objects.filter(is_active=True).order_by("sort_order"))
+    try:
+        ad_banners = [
+            {
+                "obj": b,
+                "click_url": f"/ads/{b.id}/click/" if b.link_url else "",
+            }
+            for b in AdBanner.objects.filter(is_active=True).order_by("sort_order")
+        ]
+    except Exception:
+        ad_banners = []
 
     return render(request, "public_site/home.html", {
         "categories":       PLATFORM_CATEGORIES,
