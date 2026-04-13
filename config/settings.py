@@ -203,10 +203,6 @@ CACHES = {
     }
 }
 
-# Хранить сессии в Redis (быстрее чем в БД)
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-SESSION_CACHE_ALIAS = "default"
-SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 дней
 
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
