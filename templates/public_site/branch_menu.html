@@ -548,12 +548,19 @@
         <div class="bm-grid">
           {% for row in c.items %}
             {% with bi=row.branch_item dish=row.branch_item.item %}
-            <article class="dish-card" data-bi-id="{{ bi.id }}">
+            {% t dish "name" as dish_name %}
+            {% t dish "description" as dish_desc %}
+            <article class="dish-card" data-bi-id="{{ bi.id }}"
+              data-dish-name="{{ dish_name }}"
+              data-dish-desc="{{ dish_desc }}"
+              data-dish-price="{{ bi.price|floatformat:'0' }}"
+              data-dish-photo="{% if dish.photo %}{{ dish.photo.url }}{% endif %}"
+              data-dish-hot="{% if dish.order_count >= 10 %}{{ dish.order_count }}{% endif %}">
 
-              {# ФОТО #}
-              <div class="dish-photo">
+              {# ФОТО — кликабельное #}
+              <div class="dish-photo dish-clickable">
                 {% if dish.photo %}
-                  <img src="{{ dish.photo.url }}" alt="{% t dish 'name' %}"
+                  <img src="{{ dish.photo.url }}" alt="{{ dish_name }}"
                        loading="lazy" width="320" height="170">
                 {% else %}
                   <div class="dish-photo-empty">
@@ -569,11 +576,10 @@
 
               {# BODY #}
               <div class="dish-body">
-                <div class="dish-name">{% t dish "name" %}</div>
+                <div class="dish-name dish-clickable">{{ dish_name }}</div>
 
-                {% t dish "description" as desc %}
-                {% if desc %}
-                  <div class="dish-desc">{{ desc }}</div>
+                {% if dish_desc %}
+                  <div class="dish-desc dish-clickable">{{ dish_desc }}</div>
                 {% endif %}
 
                 <div class="dish-footer">
@@ -654,6 +660,31 @@
       <div class="cm-loading">Загрузка…</div>
     </div>
 
+  </div>
+</div>
+
+{# ══ МОДАЛЬНОЕ ОКНО БЛЮДА ══ #}
+<div id="dishModal" class="dm-backdrop" onclick="dmBackdropClose(event)">
+  <div class="dm-sheet" role="dialog" aria-label="Блюдо">
+    <button class="dm-close" onclick="closeDishModal()" aria-label="Закрыть">✕</button>
+    <div class="dm-photo-wrap">
+      <img id="dmPhoto" src="" alt="" class="dm-photo">
+      <div id="dmPhotoEmpty" class="dm-photo-empty" style="display:none">🍽️</div>
+      <div id="dmHot" class="dish-hot-badge" style="display:none"></div>
+    </div>
+    <div class="dm-body">
+      <div id="dmName" class="dm-name"></div>
+      <div id="dmDesc" class="dm-desc"></div>
+      <div class="dm-footer">
+        <div id="dmPrice" class="dm-price"></div>
+        <form id="dmForm" method="post" data-add-to-cart>
+          {% csrf_token %}
+          <button type="submit" class="dish-add-btn dm-add-btn" aria-label="В корзину">
+            В корзину
+          </button>
+        </form>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -862,6 +893,86 @@
   100% { box-shadow: 0 0 0 0 rgba(0,184,150,.0); transform: scale(1); }
 }
 .cm-free-val { color: #047857; font-weight: 700; }
+
+/* ══ МОДАЛ БЛЮДА ══ */
+.dish-clickable { cursor: pointer; }
+
+.dm-backdrop {
+  position: fixed; inset: 0; z-index: 8500;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .25s;
+}
+.dm-backdrop.open { opacity: 1; pointer-events: all; }
+
+.dm-sheet {
+  position: relative;
+  width: 100%; max-width: 480px;
+  background: var(--card, #fff);
+  border-radius: 24px 24px 0 0;
+  max-height: 90dvh;
+  display: flex; flex-direction: column;
+  transform: translateY(100%);
+  transition: transform .32s cubic-bezier(.32,1,.32,1);
+  overflow: hidden;
+}
+.dm-backdrop.open .dm-sheet { transform: translateY(0); }
+
+.dm-close {
+  position: absolute; top: 12px; right: 14px; z-index: 10;
+  width: 32px; height: 32px; border-radius: 50%; border: none;
+  background: rgba(0,0,0,.45); color: #fff;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+  transition: background .15s;
+}
+.dm-close:hover { background: rgba(0,0,0,.65); }
+
+.dm-photo-wrap {
+  position: relative; width: 100%; height: 240px;
+  background: var(--card2, #f5f5f5); flex-shrink: 0; overflow: hidden;
+}
+.dm-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dm-photo-empty {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 72px; opacity: .18;
+  background: linear-gradient(145deg, #FFF8F5, #FFEADF);
+}
+
+.dm-body {
+  padding: 20px 20px 24px;
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.dm-name {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 17px; font-weight: 800;
+  color: var(--text); letter-spacing: -.4px;
+  line-height: 1.25;
+}
+.dm-desc {
+  font-size: 14px; color: var(--text2, #555);
+  line-height: 1.6;
+}
+.dm-footer {
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 16px;
+  margin-top: 8px;
+}
+.dm-price {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 20px; font-weight: 900;
+  color: var(--accent, #ff4d1c);
+}
+.dm-add-btn {
+  width: auto; padding: 0 28px;
+  font-size: 14px; font-weight: 700;
+  white-space: nowrap;
+}
 </style>
 
 {% endblock %}
@@ -1410,6 +1521,73 @@ document.addEventListener('submit', async (e) => {
     if (modal.classList.contains('open')) silentRefresh();
   };
 
+})();
+
+// ══════════════════════════════════════════
+// МОДАЛЬНОЕ ОКНО БЛЮДА
+// ══════════════════════════════════════════
+(function() {
+  const backdrop = document.getElementById('dishModal');
+  const dmPhoto  = document.getElementById('dmPhoto');
+  const dmEmpty  = document.getElementById('dmPhotoEmpty');
+  const dmHot    = document.getElementById('dmHot');
+  const dmName   = document.getElementById('dmName');
+  const dmDesc   = document.getElementById('dmDesc');
+  const dmPrice  = document.getElementById('dmPrice');
+  const dmForm   = document.getElementById('dmForm');
+
+  function openDishModal(card) {
+    const photoUrl = card.dataset.dishPhoto;
+    const hot      = card.dataset.dishHot;
+
+    if (photoUrl) {
+      dmPhoto.src = photoUrl;
+      dmPhoto.style.display = 'block';
+      dmEmpty.style.display = 'none';
+    } else {
+      dmPhoto.style.display = 'none';
+      dmEmpty.style.display = 'flex';
+    }
+
+    if (hot) {
+      dmHot.textContent = '🔥 ' + hot;
+      dmHot.style.display = 'flex';
+    } else {
+      dmHot.style.display = 'none';
+    }
+
+    dmName.textContent  = card.dataset.dishName  || '';
+    dmDesc.textContent  = card.dataset.dishDesc  || '';
+    dmPrice.textContent = (card.dataset.dishPrice || '0') + ' сом';
+
+    // подставляем URL формы из карточки
+    const biId = card.dataset.biId;
+    dmForm.action = "{% url 'public_site:add_to_cart' 0 %}".replace('/0/', '/' + biId + '/');
+
+    backdrop.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  window.closeDishModal = function() {
+    backdrop.classList.remove('open');
+    document.body.style.overflow = '';
+  };
+
+  window.dmBackdropClose = function(e) {
+    if (e.target === backdrop) closeDishModal();
+  };
+
+  // закрытие на Escape
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && backdrop.classList.contains('open')) closeDishModal();
+  });
+
+  // клик на .dish-clickable открывает модал
+  document.querySelectorAll('.dish-card').forEach(card => {
+    card.querySelectorAll('.dish-clickable').forEach(el => {
+      el.addEventListener('click', () => openDishModal(card));
+    });
+  });
 })();
 </script>
 {% endblock %}
