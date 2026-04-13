@@ -9,5 +9,13 @@
         Синхронизировать меню
       </a>
     </li>
+    {% if request.user.is_superuser %}
+    <li>
+      <a class="button" style="background:#2563eb;color:#fff;"
+         href="{% url 'admin:core_branch_duplicate' object_id %}">
+        📋 Дублировать филиал
+      </a>
+    </li>
+    {% endif %}
   {% endif %}
 {% endblock %}

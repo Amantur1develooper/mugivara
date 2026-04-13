@@ -1554,6 +1554,7 @@ document.addEventListener('submit', async (e) => {
   const dmDesc   = document.getElementById('dmDesc');
   const dmPrice  = document.getElementById('dmPrice');
   const dmForm   = document.getElementById('dmForm');
+  const topBtn   = document.getElementById('bm-top-btn');
 
   function openDishModal(card) {
     const photoUrl = card.dataset.dishPhoto;
@@ -1585,11 +1586,13 @@ document.addEventListener('submit', async (e) => {
 
     backdrop.classList.add('open');
     document.body.style.overflow = 'hidden';
+    if (topBtn) topBtn.classList.add('hide');
   }
 
   window.closeDishModal = function() {
     backdrop.classList.remove('open');
     document.body.style.overflow = '';
+    if (topBtn) topBtn.classList.toggle('hide', window.scrollY < 600);
   };
 
   window.dmBackdropClose = function(e) {

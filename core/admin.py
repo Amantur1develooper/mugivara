@@ -1,10 +1,11 @@
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth import get_user_model
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.urls import path
 from django import forms
 from django.contrib.admin.widgets import AutocompleteSelect
+from django.db import transaction
 from .models import Restaurant, Branch, Membership, PromoCode, Banner
 from catalog.models import MenuSet, Item, BranchMenuSet, BranchItem
 from catalog.services import sync_branch_menu, ensure_links_for_branch_item
@@ -137,6 +138,11 @@ class BranchAdmin(admin.ModelAdmin):
                 self.admin_site.admin_view(self.sync_menu_view),
                 name="core_branch_sync_menu",
             ),
+            path(
+                "<path:object_id>/duplicate/",
+                self.admin_site.admin_view(self.duplicate_view),
+                name="core_branch_duplicate",
+            ),
         ]
         return custom + urls
 
@@ -150,6 +156,124 @@ class BranchAdmin(admin.ModelAdmin):
             level=messages.SUCCESS,
         )
         return redirect(request.META.get("HTTP_REFERER", "../"))
+
+    def duplicate_view(self, request, object_id):
+        from catalog.models import BranchMenuSet, BranchItem, BranchCategory, BranchCategoryItem
+
+        original = self.get_object(request, object_id)
+        if original is None:
+            self.message_user(request, "Филиал не найден.", level=messages.ERROR)
+            return redirect("..")
+
+        if not request.user.is_superuser:
+            self.message_user(request, "Только суперпользователи могут дублировать филиалы.", level=messages.ERROR)
+            return redirect("..")
+
+        class DuplicateForm(forms.Form):
+            name_ru  = forms.CharField(label="Название (рус)", max_length=200,
+                                       initial=original.name_ru + " (копия)")
+            name_ky  = forms.CharField(label="Название (кыргызча)", max_length=200,
+                                       required=False, initial=original.name_ky)
+            name_en  = forms.CharField(label="Название (eng)", max_length=200,
+                                       required=False, initial=original.name_en)
+            address  = forms.CharField(label="Адрес", max_length=300,
+                                       required=False, initial=original.address)
+            phone    = forms.CharField(label="Телефон", max_length=50,
+                                       required=False, initial=original.phone)
+            copy_prices = forms.BooleanField(
+                label="Скопировать цены (если не отмечено — цены будут 0)",
+                required=False, initial=True,
+            )
+
+        if request.method == "POST":
+            form = DuplicateForm(request.POST)
+            if form.is_valid():
+                d = form.cleaned_data
+                with transaction.atomic():
+                    # 1. Новый филиал
+                    new_branch = Branch.objects.create(
+                        restaurant=original.restaurant,
+                        name_ru=d["name_ru"],
+                        name_ky=d["name_ky"],
+                        name_en=d["name_en"],
+                        address=d["address"],
+                        phone=d["phone"],
+                        is_active=original.is_active,
+                        delivery_enabled=original.delivery_enabled,
+                        min_order_amount=original.min_order_amount,
+                        delivery_fee=original.delivery_fee,
+                        free_delivery_from=original.free_delivery_from,
+                        is_open_24h=original.is_open_24h,
+                        open_time=original.open_time,
+                        close_time=original.close_time,
+                        cover_photo=original.cover_photo,
+                        external_url=original.external_url,
+                    )
+
+                    # 2. MenuSets
+                    for bms in original.branch_menu_sets.all():
+                        BranchMenuSet.objects.create(
+                            branch=new_branch,
+                            menu_set=bms.menu_set,
+                            is_active=bms.is_active,
+                        )
+
+                    # 3. BranchItem — те же Item, но новые записи (цены опционально)
+                    old_to_new_bi = {}  # old BranchItem.id → new BranchItem
+                    for bi in original.branch_items.select_related("item").all():
+                        new_bi = BranchItem.objects.create(
+                            branch=new_branch,
+                            item=bi.item,
+                            price=bi.price if d["copy_prices"] else 0,
+                            is_available=bi.is_available,
+                            sort_order=bi.sort_order,
+                            delivery_available=bi.delivery_available,
+                        )
+                        old_to_new_bi[bi.id] = new_bi
+
+                    # 4. BranchCategory — те же Category
+                    old_to_new_bc = {}  # old BranchCategory.id → new BranchCategory
+                    for bc in original.branch_categories.select_related("category").all():
+                        new_bc = BranchCategory.objects.create(
+                            branch=new_branch,
+                            category=bc.category,
+                            sort_order=bc.sort_order,
+                            is_active=bc.is_active,
+                        )
+                        old_to_new_bc[bc.id] = new_bc
+
+                    # 5. BranchCategoryItem — связи категорий и блюд
+                    for bc in original.branch_categories.prefetch_related("items_in_category__branch_item").all():
+                        new_bc = old_to_new_bc.get(bc.id)
+                        if not new_bc:
+                            continue
+                        for bci in bc.items_in_category.all():
+                            new_bi = old_to_new_bi.get(bci.branch_item_id)
+                            if new_bi:
+                                BranchCategoryItem.objects.create(
+                                    branch_category=new_bc,
+                                    branch_item=new_bi,
+                                    sort_order=bci.sort_order,
+                                )
+
+                self.message_user(
+                    request,
+                    f"Филиал «{new_branch.name_ru}» успешно создан! "
+                    f"Скопировано блюд: {len(old_to_new_bi)}, категорий: {len(old_to_new_bc)}.",
+                    level=messages.SUCCESS,
+                )
+                return redirect(f"../../{new_branch.id}/change/")
+        else:
+            form = DuplicateForm()
+
+        context = {
+            **self.admin_site.each_context(request),
+            "title": f"Дублировать филиал: {original}",
+            "original": original,
+            "form": form,
+            "opts": self.model._meta,
+        }
+        return render(request, "admin/core/branch/duplicate.html", context)
 
 
 @admin.register(Restaurant)
