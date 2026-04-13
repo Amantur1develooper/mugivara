@@ -1,4 +1,5 @@
 import hashlib
+import threading
 from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
 
@@ -79,16 +80,19 @@ class PageViewMiddleware(MiddlewareMixin):
         ip_hash = hashlib.sha256(ip.encode()).hexdigest()[:32]
         session_key = (request.session.session_key or "")[:64]
 
-        try:
-            from core.models import PageView
-            PageView.objects.create(
-                section=section,
-                path=path[:500],
-                ip_hash=ip_hash,
-                session_key=session_key,
-                timestamp=timezone.now(),
-            )
-        except Exception:
-            pass  # никогда не ломаем пользовательский запрос
+        # INSERT в фоне — не блокируем ответ пользователю
+        def _save():
+            try:
+                from core.models import PageView
+                PageView.objects.create(
+                    section=section,
+                    path=path[:500],
+                    ip_hash=ip_hash,
+                    session_key=session_key,
+                    timestamp=timezone.now(),
+                )
+            except Exception:
+                pass
 
+        threading.Thread(target=_save, daemon=True).start()
         return response

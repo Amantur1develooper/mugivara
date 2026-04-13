@@ -173,6 +173,11 @@ PLATFORM_CATEGORIES = [
 ]
 
 
+from django.views.decorators.cache import cache_page
+from django.views.decorators.vary import vary_on_cookie
+
+@cache_page(60 * 3)       # кэш 3 минуты
+@vary_on_cookie           # разный кэш для разных языков/сессий
 def home(request):
     """
     Главная страница Webordo.
@@ -294,6 +299,8 @@ def home(request):
 
 
 
+@cache_page(60 * 2)       # кэш 2 минуты (поисковые запросы не кэшируются — vary on GET)
+@vary_on_cookie
 def restaurants_list(request):
     """
     GET /restaurants/

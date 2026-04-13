@@ -155,8 +155,14 @@
   /* ── GRID ── */
   .rl-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: 24px;
+  }
+  @media (max-width: 700px) {
+    .rl-grid {
+      grid-template-columns: 1fr 1fr !important;
+      gap: 12px;
+    }
   }
 
   /* ── CARD ── */
@@ -451,6 +457,7 @@
     overflow-x: scroll; cursor: grab; user-select: none;
     border-radius: 26px;
     scroll-behavior: smooth;
+    scroll-snap-type: x mandatory;
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
@@ -460,6 +467,18 @@
     display: flex; gap: 20px;
     width: max-content;
   }
+  .rl-cs-card { scroll-snap-align: start; }
+
+  /* ── Dots ── */
+  .rl-carousel-dots {
+    display: flex; gap: 6px; justify-content: center; margin-top: 14px;
+  }
+  .rl-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--border); transition: all .3s; cursor: pointer; border: none;
+    padding: 0; flex-shrink: 0;
+  }
+  .rl-dot.active { width: 20px; border-radius: 3px; background: var(--accent); }
   .rl-cs-card {
     flex: 0 0 340px; height: 200px;
     border-radius: 26px; overflow: hidden;
@@ -551,9 +570,16 @@
   }
 
   @media (max-width: 700px) {
-    .rl-wrap { padding: 24px 16px 60px; }
-    .rl-grid { grid-template-columns: 1fr; gap: 16px; }
-    .rc-photo { height: 200px; }
+    .rl-wrap { padding: 24px 12px 60px; }
+    .rc-photo { height: 130px; }
+    .rc-photo-name { font-size: 13px; }
+    .rc-photo-info { padding: 10px 12px; }
+    .rc-body { padding: 10px 12px 14px; gap: 8px; }
+    .rc-pill { font-size: 10px; padding: 4px 8px; }
+    .rc-btn { font-size: 10px; padding: 7px 12px; }
+    .rc-footer-hint { display: none; }
+    .rc-status { font-size: 9px; padding: 4px 8px; top: 8px; left: 8px; }
+    .rc-branches-badge { font-size: 9px; padding: 3px 7px; top: 8px; right: 8px; }
     .rl-cs-card { flex: 0 0 260px; height: 160px; padding: 20px; }
     .rl-cs-name { font-size: 17px; }
     .rl-cs-free { font-size: 12px; padding: 6px 14px; }
@@ -637,13 +663,16 @@
         {% endfor %}
       </div>
     </div>
-    <div class="rl-carousel-nav">
-      <button class="rl-carousel-btn" id="csPrev" aria-label="Назад">
-        <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <button class="rl-carousel-btn" id="csNext" aria-label="Вперёд">
-        <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:14px;">
+      <div class="rl-carousel-dots" id="csDots"></div>
+      <div class="rl-carousel-nav" style="margin-top:0">
+        <button class="rl-carousel-btn" id="csPrev" aria-label="Назад">
+          <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="rl-carousel-btn" id="csNext" aria-label="Вперёд">
+          <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
     </div>
   </div>
   {% endif %}
@@ -762,48 +791,77 @@
 {% block extra_js %}
 <script>
 (function(){
-  const wrap = document.getElementById('csWrap');
-  if (!wrap) return;
+  const wrap  = document.getElementById('csWrap');
+  const track = document.getElementById('csTrack');
+  const dotsEl = document.getElementById('csDots');
+  if (!wrap || !track) return;
 
-  const STEP = 360;
-  const INTERVAL = 2800;
+  const cards = Array.from(track.querySelectorAll('.rl-cs-card'));
+  const INTERVAL = 3200;
+  let current = 0;
   let timer = null;
   let dragging = false;
-  let dragStartX = 0;
-  let dragStartScroll = 0;
+  let dragStartX = 0, dragStartScroll = 0;
 
-  /* ── авто-скролл ── */
-  function tick() {
+  /* ── Dots ── */
+  function buildDots() {
+    if (!dotsEl || cards.length <= 1) return;
+    dotsEl.innerHTML = '';
+    cards.forEach((_, i) => {
+      const d = document.createElement('button');
+      d.className = 'rl-dot' + (i === 0 ? ' active' : '');
+      d.setAttribute('aria-label', `Слайд ${i+1}`);
+      d.addEventListener('click', () => { goTo(i); resetAuto(); });
+      dotsEl.appendChild(d);
+    });
+  }
+  function setActiveDot(idx) {
+    dotsEl?.querySelectorAll('.rl-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+  }
+
+  /* ── Navigation ── */
+  function goTo(idx) {
+    if (!cards.length) return;
+    current = (idx + cards.length) % cards.length;
+    const card = cards[current];
+    wrap.scrollTo({ left: card.offsetLeft, behavior: 'smooth' });
+    setActiveDot(current);
+  }
+
+  function next() {
     const max = wrap.scrollWidth - wrap.clientWidth;
     if (max <= 0) return;
-    if (wrap.scrollLeft >= max - 2) {
-      wrap.scrollTo({ left: 0, behavior: 'smooth' });
-    } else {
-      wrap.scrollBy({ left: STEP, behavior: 'smooth' });
-    }
+    goTo(current + 1);
   }
-  function startAuto() { clearInterval(timer); timer = setInterval(tick, INTERVAL); }
-  function stopAuto()  { clearInterval(timer); timer = null; }
 
+  /* ── Auto ── */
+  function startAuto() { clearInterval(timer); timer = setInterval(next, INTERVAL); }
+  function resetAuto()  { stopAuto(); setTimeout(startAuto, INTERVAL); }
+  function stopAuto()   { clearInterval(timer); timer = null; }
+
+  buildDots();
   startAuto();
 
-  /* ── кнопки ── */
-  document.getElementById('csPrev')?.addEventListener('click', () => {
-    stopAuto();
-    wrap.scrollBy({ left: -STEP * 2, behavior: 'smooth' });
-    setTimeout(startAuto, INTERVAL);
-  });
-  document.getElementById('csNext')?.addEventListener('click', () => {
-    stopAuto();
-    wrap.scrollBy({ left: STEP * 2, behavior: 'smooth' });
-    setTimeout(startAuto, INTERVAL);
-  });
+  /* ── Update dot on scroll (user swipe) ── */
+  wrap.addEventListener('scroll', () => {
+    if (!cards.length) return;
+    let closest = 0, minDist = Infinity;
+    cards.forEach((c, i) => {
+      const dist = Math.abs(c.offsetLeft - wrap.scrollLeft);
+      if (dist < minDist) { minDist = dist; closest = i; }
+    });
+    if (closest !== current) { current = closest; setActiveDot(current); }
+  }, { passive: true });
 
-  /* ── пауза при наведении ── */
+  /* ── Кнопки ── */
+  document.getElementById('csPrev')?.addEventListener('click', () => { goTo(current - 1); resetAuto(); });
+  document.getElementById('csNext')?.addEventListener('click', () => { goTo(current + 1); resetAuto(); });
+
+  /* ── Пауза при наведении ── */
   wrap.addEventListener('mouseenter', stopAuto);
   wrap.addEventListener('mouseleave', () => { if (!dragging) startAuto(); });
 
-  /* ── DESKTOP drag ── */
+  /* ── Desktop drag ── */
   wrap.addEventListener('mousedown', e => {
     dragging = true;
     dragStartX = e.pageX;
@@ -811,7 +869,7 @@
     wrap.style.cursor = 'grabbing';
     wrap.style.scrollBehavior = 'auto';
     stopAuto();
-    e.preventDefault(); /* не выделять текст */
+    e.preventDefault();
   });
   window.addEventListener('mousemove', e => {
     if (!dragging) return;
@@ -822,10 +880,10 @@
     dragging = false;
     wrap.style.cursor = 'grab';
     wrap.style.scrollBehavior = 'smooth';
-    setTimeout(startAuto, INTERVAL);
+    resetAuto();
   });
 
-  /* ── MOBILE swipe ── */
+  /* ── Mobile swipe ── */
   let touchX = 0, touchScroll = 0;
   wrap.addEventListener('touchstart', e => {
     touchX = e.touches[0].pageX;
@@ -838,7 +896,7 @@
   }, { passive: true });
   wrap.addEventListener('touchend', () => {
     wrap.style.scrollBehavior = 'smooth';
-    setTimeout(startAuto, INTERVAL);
+    resetAuto();
   });
 
   /* не переходить по ссылке если это был drag */

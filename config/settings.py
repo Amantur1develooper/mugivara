@@ -111,6 +111,13 @@ DATABASES = {
         "PASSWORD": env("DB_PASSWORD"),
         "HOST": env("DB_HOST"),
         "PORT": env("DB_PORT"),
+        # Держим соединение живым между запросами — критично при высоком пинге до БД
+        "CONN_MAX_AGE": 60,
+        "CONN_HEALTH_CHECKS": True,
+        "OPTIONS": {
+            "connect_timeout": 10,
+            "options": "-c statement_timeout=30000",  # 30 сек макс на запрос
+        },
     }
 }
 # DATABASES = {
@@ -187,8 +194,19 @@ CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": REDIS_URL,
+        "TIMEOUT": 300,
+        "OPTIONS": {
+            "MAX_ENTRIES": 1000,
+            "socket_connect_timeout": 5,
+            "socket_timeout": 5,
+        },
     }
 }
+
+# Хранить сессии в Redis (быстрее чем в БД)
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 30  # 30 дней
 
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL

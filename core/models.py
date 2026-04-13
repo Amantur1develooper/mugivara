@@ -41,6 +41,10 @@ class Restaurant(TimeStampedModel):
     class Meta:
         verbose_name = "Ресторан"
         verbose_name_plural = "Рестораны"
+        indexes = [
+            models.Index(fields=["is_active", "-rating"], name="restaurant_active_rating_idx"),
+            models.Index(fields=["slug"], name="restaurant_slug_idx"),
+        ]
         
     def __str__(self):
         return self.name_ru
@@ -109,6 +113,9 @@ class Branch(TimeStampedModel):
     class Meta:
         verbose_name = "Филиал"
         verbose_name_plural = "Филиалы"
+        indexes = [
+            models.Index(fields=["restaurant", "is_active"], name="branch_restaurant_active_idx"),
+        ]
         
     def __str__(self):
         return f"{self.restaurant.name_ru} — {self.name_ru}"
