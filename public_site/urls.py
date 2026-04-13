@@ -3,7 +3,7 @@ from django.urls import path, include
 from .views import (
     about, booking_set_status, contacts, hall_plan, home, place_move, reservation, restaurant_about, restaurant_contacts, restaurant_detail, branch_menu, restaurant_branch_menu,
     add_to_cart, cart_detail, cart_json, cart_update, cart_remove,
-    checkout, checkout_success, restaurants_list, validate_promo
+    checkout, checkout_success, restaurants_list, validate_promo, ad_banner_click,
 )
 from reservations import views as r
 from public_site.views_table import (
@@ -17,6 +17,7 @@ app_name = "public_site"
 urlpatterns = [
     
     path("", home, name="home"),
+    path("ads/<int:banner_id>/click/", ad_banner_click, name="ad_banner_click"),
     path("restaurants/", restaurants_list, name="restaurants_list"),
     # path("shops/", include("shops.urls")),
     path("t/<str:token>/menu/", table_menu, name="table_menu"),

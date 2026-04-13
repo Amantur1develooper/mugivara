@@ -955,3 +955,22 @@ def validate_promo(request, branch_id: int):
         "label": promo.get_discount_type_display(),
     })
 
+
+def ad_banner_click(request, banner_id: int):
+    """Считает клик по баннеру и перенаправляет на целевой URL."""
+    from django.http import HttpResponseRedirect, HttpResponseNotFound
+    from core.models import AdBanner
+    from django.db.models import F
+
+    try:
+        banner = AdBanner.objects.filter(id=banner_id, is_active=True).only("link_url").get()
+    except AdBanner.DoesNotExist:
+        return HttpResponseNotFound()
+
+    # Атомарный инкремент — без race condition
+    AdBanner.objects.filter(id=banner_id).update(click_count=F("click_count") + 1)
+
+    if banner.link_url:
+        return HttpResponseRedirect(banner.link_url)
+    return HttpResponseRedirect("/")
+

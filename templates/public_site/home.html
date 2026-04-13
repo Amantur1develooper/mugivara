@@ -289,28 +289,11 @@
     transition:box-shadow .2s, transform .2s;
   }
   .ad-banner:hover { box-shadow:0 6px 24px rgba(0,0,0,.14); transform:translateY(-1px); }
-  .ad-banner--no-link { cursor:default; }
-  .ad-banner--no-link:hover { transform:none; box-shadow:0 2px 12px rgba(0,0,0,.08); }
   .ad-banner picture, .ad-banner img {
     display:block; width:100%; height:auto;
     max-height:345px; object-fit:cover;
   }
-  .ad-banner__btn-wrap {
-    position:absolute; bottom:16px; right:20px;
-    pointer-events:none;
-  }
-  .ad-banner__btn {
-    display:inline-block; padding:10px 22px;
-    border-radius:10px; font-size:14px; font-weight:700;
-    font-family:'Unbounded',sans-serif;
-    box-shadow:0 4px 14px rgba(0,0,0,.18);
-  }
-  .ad-banner__btn--primary { background:var(--accent); color:#fff; }
-  .ad-banner__btn--success  { background:#10b981; color:#fff; }
-  .ad-banner__btn--danger   { background:#ef4444; color:#fff; }
-  .ad-banner__btn--dark     { background:#1e293b; color:#fff; }
   @media (max-width:640px) {
-    .ad-banner__btn { font-size:12px; padding:8px 14px; bottom:10px; right:12px; }
     .ad-banner { border-radius:12px; }
   }
 
@@ -433,11 +416,15 @@
 {% if ad_banners %}
 <div class="ad-banners-wrap">
   {% for banner in ad_banners %}
-  <a class="ad-banner{% if not banner.button_url %} ad-banner--no-link{% endif %}"
-     {% if banner.button_url %}href="{{ banner.button_url }}" target="_blank" rel="noopener"{% endif %}
+  {% if banner.link_url %}
+  <a class="ad-banner"
+     href="{% url 'public_site:ad_banner_click' banner.id %}"
+     target="_blank" rel="noopener"
      title="{{ banner.title }}">
+  {% else %}
+  <div class="ad-banner">
+  {% endif %}
 
-    {# Адаптивная картинка: desktop / tablet / mobile #}
     <picture>
       {% if banner.image_desktop %}<source srcset="{{ banner.image_desktop.url }}" media="(min-width: 1024px)">{% endif %}
       {% if banner.image_tablet %}<source srcset="{{ banner.image_tablet.url }}" media="(min-width: 640px)">{% endif %}
@@ -450,12 +437,7 @@
       {% endif %}
     </picture>
 
-    {% if banner.button_text %}
-    <div class="ad-banner__btn-wrap">
-      <span class="ad-banner__btn ad-banner__btn--{{ banner.button_style }}">{{ banner.button_text }}</span>
-    </div>
-    {% endif %}
-  </a>
+  {% if banner.link_url %}</a>{% else %}</div>{% endif %}
   {% endfor %}
 </div>
 {% endif %}

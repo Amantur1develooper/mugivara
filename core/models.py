@@ -229,13 +229,7 @@ class PageView(models.Model):
 class AdBanner(models.Model):
     """Рекламный баннер на главной странице."""
 
-    class ButtonStyle(models.TextChoices):
-        PRIMARY  = "primary",  "Синяя (основная)"
-        SUCCESS  = "success",  "Зелёная"
-        DANGER   = "danger",   "Красная"
-        DARK     = "dark",     "Тёмная"
-
-    title         = models.CharField("Заголовок / alt", max_length=200, blank=True, default="")
+    title         = models.CharField("Название (для себя)", max_length=200, blank=True, default="")
     image_desktop = models.ImageField(
         "Фото для ПК (широкий баннер, ~2560×192)",
         upload_to="ads/desktop/", blank=True, null=True,
@@ -248,11 +242,8 @@ class AdBanner(models.Model):
         "Фото для телефона (~850×192)",
         upload_to="ads/mobile/", blank=True, null=True,
     )
-    button_text   = models.CharField("Текст кнопки", max_length=60, blank=True, default="",
-                                     help_text="Например: Купить, Перейти, Подробнее")
-    button_url    = models.URLField("Ссылка кнопки", blank=True, default="")
-    button_style  = models.CharField("Стиль кнопки", max_length=20,
-                                     choices=ButtonStyle.choices, default=ButtonStyle.PRIMARY)
+    link_url      = models.URLField("Ссылка (куда ведёт баннер)", blank=True, default="")
+    click_count   = models.PositiveIntegerField("Переходов всего", default=0, editable=False)
     is_active     = models.BooleanField("Активен", default=True)
     sort_order    = models.PositiveSmallIntegerField("Порядок", default=0)
 
