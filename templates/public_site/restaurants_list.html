@@ -601,17 +601,17 @@
 
 
   {# ── КАРУСЕЛЬ ── #}
-  {% if cards %}
+  {% if promo_cards %}
   <div class="rl-carousel-section">
     <div class="rl-carousel-label">Акции и доставка</div>
     <div class="rl-carousel-track-wrap" id="csWrap">
       <div class="rl-carousel-track" id="csTrack">
-        {% for c in cards %}
+        {% for c in promo_cards %}
         <a class="rl-cs-card" href="{% url 'public_site:restaurant_contacts' c.obj.slug %}"
-           {% if c.promo_photo %}style="background-image:url('{{ c.promo_photo.url }}');background-size:cover;background-position:center"{% endif %}>
+           style="background-image:url('{{ c.promo_photo.url }}');background-size:cover;background-position:center">
 
           {# затемнение поверх фото #}
-          {% if c.promo_photo %}<div class="rl-cs-photo-overlay"></div>{% endif %}
+          <div class="rl-cs-photo-overlay"></div>
 
           {# Бейдж рейтинга сверху справа #}
           {% if c.obj.rating and c.obj.rating > 0 %}

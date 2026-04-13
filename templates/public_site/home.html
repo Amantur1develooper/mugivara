@@ -82,7 +82,7 @@
   }
   .cat-nav {
     display:flex; gap:6px; overflow-x:auto; padding:12px 16px;
-    max-width:1280px; margin:0 auto;
+    max-width:1280px; margin:0 auto; justify-content:center;
   }
   .cat-nav::-webkit-scrollbar { display:none; }
   .cat-nav { -ms-overflow-style:none; scrollbar-width:none; }
@@ -361,26 +361,6 @@
       <a class="btn-primary" href="#restaurants">🚀 Открыть платформу</a>
       <a class="btn-ghost" href="#platform" style="display:none" id="howItWorks">Как работает</a>
     </div>
-
-    <!-- Статистика -->
-    <div class="stats-row">
-      <div class="stat-cell">
-        <span class="stat-num" data-target="{{ stats.total }}">{{ stats.total }}</span>
-        <span class="stat-label">Бизнесов</span>
-      </div>
-      <div class="stat-cell">
-        <span class="stat-num" data-target="{{ stats.branch_count }}">{{ stats.branch_count }}</span>
-        <span class="stat-label">Филиалов</span>
-      </div>
-      <div class="stat-cell">
-        <span class="stat-num">7</span>
-        <span class="stat-label">Категорий</span>
-      </div>
-      <div class="stat-cell">
-        <span class="stat-num">3</span>
-        <span class="stat-label">Города КР</span>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -394,19 +374,19 @@
     <a href="#stores" class="cat-pill" data-section="stores">🛍️ Магазины</a>
     {% endif %}
     {% if market_cards %}
-    <a href="#markets" class="cat-pill" data-section="markets">🛒 Рынки</a>
+    <a href="#services" class="cat-pill" data-section="services">🛒 Рынки</a>
     {% endif %}
     {% if hotel_cards %}
-    <a href="#hotels" class="cat-pill" data-section="hotels">🏨 Отели</a>
+    <a href="#services" class="cat-pill">🏨 Отели</a>
     {% endif %}
     {% if pharmacy_cards %}
-    <a href="#pharmacy" class="cat-pill" data-section="pharmacy">🏥 Аптеки</a>
+    <a href="#services" class="cat-pill">🏥 Аптеки</a>
     {% endif %}
     {% if legal_cards or eco_cards or agency_cards %}
     <a href="#services" class="cat-pill" data-section="services">⚡ Услуги</a>
     {% endif %}
     {% if karaoke_cards %}
-    <a href="#entertainment" class="cat-pill" data-section="entertainment">🎤 Развлечения</a>
+    <a href="#services" class="cat-pill">🎤 Karaoke</a>
     {% endif %}
   </nav>
 </div>
@@ -470,7 +450,7 @@
       <a href="{% url 'shops:store_list' %}" class="sec-all">Все магазины →</a>
     </div>
 
-    <div class="cards-scroller">
+    <div class="cards-grid-2">
       {% for card in store_cards %}
       <a href="{% url 'shops:store_detail' card.obj.slug %}" class="biz-card">
         <div class="biz-img">
@@ -502,142 +482,8 @@
 <div class="sec-divider"></div>
 {% endif %}
 
-<!-- ═══════════════════ РЫНКИ ═══════════════════ -->
-{% if market_cards %}
-<section id="markets">
-  <div class="sec-wrap">
-    <div class="sec-head">
-      <div>
-        <div class="sec-tag">Оптом и в розницу</div>
-        <h2 class="sec-title">Рынки</h2>
-      </div>
-      <a href="{% url 'markets:market_list' %}" class="sec-all">Все рынки →</a>
-    </div>
-
-    <div class="cards-scroller">
-      {% for market in market_cards %}
-      <a href="{% url 'markets:market_detail' market.slug %}" class="biz-card">
-        <div class="biz-img">
-          {% if market.logo %}
-            <img src="{{ market.logo.url }}" alt="{{ market.name_ru }}" loading="lazy">
-          {% else %}
-            <div class="biz-img-ph">🛒</div>
-          {% endif %}
-          <div class="biz-overlay"></div>
-          <div class="biz-name-over">{{ market.name_ru }}</div>
-        </div>
-        <div class="biz-body">
-          <div class="biz-pills">
-            {% if market.working_hours %}
-              <span class="biz-pill">⏰ {{ market.working_hours|truncatechars:20 }}</span>
-            {% endif %}
-            {% if market.address %}
-              <span class="biz-pill">📍 {{ market.address|truncatechars:24 }}</span>
-            {% endif %}
-          </div>
-          <div class="biz-cta">
-            <span class="biz-cta-text">Подробнее →</span>
-          </div>
-        </div>
-      </a>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-<div class="sec-divider"></div>
-{% endif %}
-
-<!-- ═══════════════════ ОТЕЛИ ═══════════════════ -->
-{% if hotel_cards %}
-<section id="hotels" class="sec-alt">
-  <div class="sec-wrap">
-    <div class="sec-head">
-      <div>
-        <div class="sec-tag">Проживание</div>
-        <h2 class="sec-title">Отели</h2>
-      </div>
-      <a href="{% url 'hotels:hotel_list' %}" class="sec-all">Все отели →</a>
-    </div>
-
-    <div class="cards-scroller">
-      {% for hotel in hotel_cards %}
-      <a href="{% url 'hotels:hotel_detail' hotel.slug %}" class="biz-card">
-        <div class="biz-img">
-          {% with branch=hotel.branches.all|first %}
-          {% if hotel.logo %}
-            <img src="{{ hotel.logo.url }}" alt="{{ hotel.name_ru }}" loading="lazy">
-          {% elif branch and branch.cover_photo %}
-            <img src="{{ branch.cover_photo.url }}" alt="{{ hotel.name_ru }}" loading="lazy">
-          {% else %}
-            <div class="biz-img-ph">🏨</div>
-          {% endif %}
-          {% endwith %}
-          <div class="biz-overlay"></div>
-          {% if hotel.rating %}
-          <div class="biz-badge" style="background:rgba(255,193,7,.2);color:#B45309;">
-            ⭐ {{ hotel.rating }}
-          </div>
-          {% endif %}
-          <div class="biz-name-over">{{ hotel.name_ru }}</div>
-        </div>
-        <div class="biz-body">
-          <div class="biz-pills">
-            <span class="biz-pill">🏨 Бронирование</span>
-          </div>
-          <div class="biz-cta">
-            <span class="biz-cta-text">Смотреть →</span>
-          </div>
-        </div>
-      </a>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-<div class="sec-divider"></div>
-{% endif %}
-
-<!-- ═══════════════════ АПТЕКИ ═══════════════════ -->
-{% if pharmacy_cards %}
-<section id="pharmacy">
-  <div class="sec-wrap">
-    <div class="sec-head">
-      <div>
-        <div class="sec-tag">Здоровье</div>
-        <h2 class="sec-title">Аптеки</h2>
-      </div>
-      <a href="{% url 'pharmacy:pharmacy_list' %}" class="sec-all">Все аптеки →</a>
-    </div>
-
-    <div class="cards-scroller">
-      {% for ph in pharmacy_cards %}
-      <a href="{% url 'pharmacy:pharmacy_detail' ph.slug %}" class="biz-card">
-        <div class="biz-img">
-          {% if ph.logo %}
-            <img src="{{ ph.logo.url }}" alt="{{ ph.name_ru }}" loading="lazy">
-          {% else %}
-            <div class="biz-img-ph">🏥</div>
-          {% endif %}
-          <div class="biz-overlay"></div>
-          <div class="biz-name-over">{{ ph.name_ru }}</div>
-        </div>
-        <div class="biz-body">
-          <div class="biz-pills">
-            <span class="biz-pill">💊 Лекарства</span>
-          </div>
-          <div class="biz-cta">
-            <span class="biz-cta-text">Открыть →</span>
-          </div>
-        </div>
-      </a>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-<div class="sec-divider"></div>
-{% endif %}
-
-<!-- ═══════════════════ УСЛУГИ (Юристы + Эко + IT) ═══════════════════ -->
-{% if legal_cards or eco_cards or agency_cards %}
+<!-- ═══════════════════ УСЛУГИ ═══════════════════ -->
+{% if legal_cards or eco_cards or agency_cards or market_cards or hotel_cards or pharmacy_cards or karaoke_cards %}
 <section id="services" style="background:linear-gradient(160deg,rgba(37,99,235,.03) 0%,rgba(5,150,105,.04) 100%);">
   <div class="sec-wrap">
 
@@ -650,7 +496,7 @@
       </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:4px;" class="services-grid">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;margin-top:4px;" class="services-grid">
 
       <!-- Юридические -->
       {% if legal_cards %}
@@ -718,6 +564,108 @@
       </div>
       {% endif %}
 
+      <!-- Рынки -->
+      {% if market_cards %}
+      <div class="svc-block" id="svc-markets">
+        <div class="svc-block-head">
+          <div class="svc-block-icon" style="background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.2);">🛒</div>
+          <div>
+            <div class="svc-block-title">Рынки</div>
+            <div class="svc-block-sub">Базары и торговля оптом</div>
+          </div>
+          <a href="{% url 'markets:market_list' %}" class="svc-block-all" style="color:#D97706;border-color:rgba(245,158,11,.3);">Все →</a>
+        </div>
+        <div class="svc-list">
+          {% for market in market_cards %}
+          <a href="{% url 'markets:market_detail' market.slug %}" class="svc-row">
+            <div class="svc-row-icon">
+              {% if market.logo %}<img src="{{ market.logo.url }}" alt="{{ market.name_ru }}" loading="lazy"
+                   style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
+              {% else %}<span style="font-size:20px;">🛒</span>{% endif %}
+            </div>
+            <div class="svc-row-info">
+              <div class="svc-row-name">{{ market.name_ru }}</div>
+              {% if market.address %}
+              <div class="svc-row-sub">📍 {{ market.address|truncatechars:32 }}</div>
+              {% elif market.working_hours %}
+              <div class="svc-row-sub">⏰ {{ market.working_hours }}</div>
+              {% endif %}
+            </div>
+            <span class="svc-row-arrow" style="color:#D97706;">→</span>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Отели -->
+      {% if hotel_cards %}
+      <div class="svc-block" id="svc-hotels">
+        <div class="svc-block-head">
+          <div class="svc-block-icon" style="background:rgba(14,165,233,.08);border-color:rgba(14,165,233,.2);">🏨</div>
+          <div>
+            <div class="svc-block-title">Отели</div>
+            <div class="svc-block-sub">Бронирование номеров</div>
+          </div>
+          <a href="{% url 'hotels:hotel_list' %}" class="svc-block-all" style="color:#0284C7;border-color:rgba(14,165,233,.3);">Все →</a>
+        </div>
+        <div class="svc-list">
+          {% for hotel in hotel_cards %}
+          <a href="{% url 'hotels:hotel_detail' hotel.slug %}" class="svc-row">
+            <div class="svc-row-icon">
+              {% if hotel.logo %}<img src="{{ hotel.logo.url }}" alt="{{ hotel.name_ru }}" loading="lazy"
+                   style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
+              {% else %}<span style="font-size:20px;">🏨</span>{% endif %}
+            </div>
+            <div class="svc-row-info">
+              <div class="svc-row-name">{{ hotel.name_ru }}</div>
+              {% if hotel.rating %}
+              <div class="svc-row-sub">⭐ {{ hotel.rating }} · бронирование</div>
+              {% else %}
+              <div class="svc-row-sub">🛏 Проживание</div>
+              {% endif %}
+            </div>
+            <span class="svc-row-arrow" style="color:#0284C7;">→</span>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Аптеки -->
+      {% if pharmacy_cards %}
+      <div class="svc-block" id="svc-pharmacy">
+        <div class="svc-block-head">
+          <div class="svc-block-icon" style="background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.2);">🏥</div>
+          <div>
+            <div class="svc-block-title">Аптеки</div>
+            <div class="svc-block-sub">Лекарства и здоровье</div>
+          </div>
+          <a href="{% url 'pharmacy:pharmacy_list' %}" class="svc-block-all" style="color:#DC2626;border-color:rgba(239,68,68,.3);">Все →</a>
+        </div>
+        <div class="svc-list">
+          {% for ph in pharmacy_cards %}
+          <a href="{% url 'pharmacy:pharmacy_detail' ph.slug %}" class="svc-row">
+            <div class="svc-row-icon">
+              {% if ph.logo %}<img src="{{ ph.logo.url }}" alt="{{ ph.name_ru }}" loading="lazy"
+                   style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
+              {% else %}<span style="font-size:20px;">🏥</span>{% endif %}
+            </div>
+            <div class="svc-row-info">
+              <div class="svc-row-name">{{ ph.name_ru }}</div>
+              {% if ph.address %}
+              <div class="svc-row-sub">📍 {{ ph.address|truncatechars:32 }}</div>
+              {% else %}
+              <div class="svc-row-sub">💊 Лекарства</div>
+              {% endif %}
+            </div>
+            <span class="svc-row-arrow" style="color:#DC2626;">→</span>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
       <!-- IT Агентства -->
       {% if agency_cards %}
       <div class="svc-block" id="svc-agency">
@@ -752,54 +700,36 @@
       </div>
       {% endif %}
 
-    </div>
-  </div>
-</section>
-<div class="sec-divider"></div>
-{% endif %}
-
-<!-- ═══════════════════ РАЗВЛЕЧЕНИЯ (Karaoke) ═══════════════════ -->
-{% if karaoke_cards %}
-<section id="entertainment">
-  <div class="sec-wrap">
-    <div class="sec-head">
-      <div>
-        <div class="sec-tag" style="background:rgba(168,85,247,.07);border-color:rgba(168,85,247,.2);color:#a855f7;">
-          Развлечения
+      <!-- Karaoke -->
+      {% if karaoke_cards %}
+      <div class="svc-block" id="svc-karaoke">
+        <div class="svc-block-head">
+          <div class="svc-block-icon" style="background:rgba(168,85,247,.08);border-color:rgba(168,85,247,.2);">🎤</div>
+          <div>
+            <div class="svc-block-title">Karaoke</div>
+            <div class="svc-block-sub">Бронирование кабинок</div>
+          </div>
+          <a href="{% url 'karaoke:karaoke_list' %}" class="svc-block-all" style="color:#a855f7;border-color:rgba(168,85,247,.3);">Все →</a>
         </div>
-        <h2 class="sec-title">Karaoke</h2>
+        <div class="svc-list">
+          {% for venue in karaoke_cards %}
+          <a href="{% url 'karaoke:karaoke_detail' venue.slug %}" class="svc-row">
+            <div class="svc-row-icon">
+              {% if venue.logo %}<img src="{{ venue.logo.url }}" alt="{{ venue.name }}" loading="lazy"
+                   style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
+              {% else %}<span style="font-size:20px;">🎤</span>{% endif %}
+            </div>
+            <div class="svc-row-info">
+              <div class="svc-row-name">{{ venue.name }}</div>
+              <div class="svc-row-sub">🚪 {{ venue.rooms.count }} кабинок{% if venue.working_hours %} · {{ venue.working_hours }}{% endif %}</div>
+            </div>
+            <span class="svc-row-arrow" style="color:#a855f7;">→</span>
+          </a>
+          {% endfor %}
+        </div>
       </div>
-      <a href="{% url 'karaoke:karaoke_list' %}" class="sec-all">Все заведения →</a>
-    </div>
+      {% endif %}
 
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;">
-      {% for venue in karaoke_cards %}
-      <a href="{% url 'karaoke:karaoke_detail' venue.slug %}" class="biz-card" style="text-decoration:none;color:inherit;">
-        <div class="biz-img" style="background:linear-gradient(135deg,#1a0a2e,#0d0514);">
-          {% if venue.cover %}
-            <img src="{{ venue.cover.url }}" alt="{{ venue.name }}" loading="lazy" decoding="async">
-          {% elif venue.logo %}
-            <img src="{{ venue.logo.url }}" alt="{{ venue.name }}" loading="lazy" decoding="async">
-          {% else %}
-            <div class="biz-img-ph">🎤</div>
-          {% endif %}
-          <div class="biz-overlay"></div>
-          <div class="biz-badge badge-open">🎤 Karaoke</div>
-          <div class="biz-name-over">{{ venue.name }}</div>
-        </div>
-        <div class="biz-body">
-          <div class="biz-pills">
-            <span class="biz-pill">🚪 {{ venue.rooms.count }} кабинок</span>
-            {% if venue.working_hours %}
-            <span class="biz-pill">🕐 {{ venue.working_hours }}</span>
-            {% endif %}
-          </div>
-          <div class="biz-cta">
-            <span class="biz-cta-text">Забронировать →</span>
-          </div>
-        </div>
-      </a>
-      {% endfor %}
     </div>
   </div>
 </section>
@@ -811,6 +741,28 @@
   <h2>Добавьте свой бизнес</h2>
   <p>Присоединяйтесь к платформе Webordo — QR-меню, онлайн-заказы и аналитика в одном месте</p>
   <a href="{% url 'dashboard:login' %}">Войти в личный кабинет →</a>
+</div>
+
+<!-- ═══════════════════ СТАТИСТИКА ═══════════════════ -->
+<div style="max-width:700px;margin:0 auto 56px;padding:0 24px;">
+  <div class="stats-row">
+    <div class="stat-cell">
+      <span class="stat-num" data-target="{{ stats.total }}">{{ stats.total }}</span>
+      <span class="stat-label">Бизнесов</span>
+    </div>
+    <div class="stat-cell">
+      <span class="stat-num" data-target="{{ stats.branch_count }}">{{ stats.branch_count }}</span>
+      <span class="stat-label">Филиалов</span>
+    </div>
+    <div class="stat-cell">
+      <span class="stat-num">9</span>
+      <span class="stat-label">Категорий</span>
+    </div>
+    <div class="stat-cell">
+      <span class="stat-num">2</span>
+      <span class="stat-label">Города КР</span>
+    </div>
+  </div>
 </div>
 
 <script>

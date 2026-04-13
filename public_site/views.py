@@ -258,13 +258,15 @@ def home(request):
 
     # ── СТАТИСТИКА ────────────────────────────────────────────────────────────
     stats = {
-        "restaurant_count": len(restaurant_cards),
+        "restaurant_count": Restaurant.objects.filter(is_active=True).count(),
         "store_count":      Store.objects.filter(is_active=True).count(),
         "pharmacy_count":   Pharmacy.objects.filter(is_active=True).count(),
         "market_count":     Market.objects.filter(is_active=True).count(),
         "hotel_count":      Hotel.objects.filter(is_active=True).count(),
         "legal_count":      LegalOrg.objects.filter(is_active=True).count(),
         "eco_count":        EcoProject.objects.filter(is_active=True).count(),
+        "agency_count":     Agency.objects.filter(is_active=True).count(),
+        "karaoke_count":    KaraokeVenue.objects.filter(is_active=True).count(),
         "branch_count": (
             Branch.objects.filter(is_active=True).count()
             + StoreBranch.objects.filter(is_active=True).count()
@@ -272,7 +274,8 @@ def home(request):
     }
     stats["total"] = (
         stats["restaurant_count"] + stats["store_count"] + stats["pharmacy_count"]
-        + stats["market_count"] + stats["hotel_count"] + stats["legal_count"] + stats["eco_count"]
+        + stats["market_count"] + stats["hotel_count"] + stats["legal_count"]
+        + stats["eco_count"] + stats["agency_count"] + stats["karaoke_count"]
     )
 
     return render(request, "public_site/home.html", {
@@ -365,11 +368,13 @@ def restaurants_list(request):
             "promo_photo":       promo_photo,
         })
 
+    promo_cards = [c for c in cards if c["promo_photo"]]
     return render(request, "public_site/restaurants_list.html", {
-        "cards":    cards,
-        "q":        q,
-        "open_now": open_now,
-        "total":    len(cards),
+        "cards":       cards,
+        "promo_cards": promo_cards,
+        "q":           q,
+        "open_now":    open_now,
+        "total":       len(cards),
     })
 def restaurant_detail(request, slug):
     restaurant = get_object_or_404(Restaurant, slug=slug, is_active=True)
