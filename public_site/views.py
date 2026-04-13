@@ -277,10 +277,11 @@ def home(request):
     )
 
     try:
+        from django.urls import reverse
         ad_banners = [
             {
                 "obj": b,
-                "click_url": f"/ads/{b.id}/click/" if b.link_url else "",
+                "click_url": reverse("public_site:ad_banner_click", args=[b.id]) if b.link_url else "",
             }
             for b in AdBanner.objects.filter(is_active=True).order_by("sort_order")
         ]
