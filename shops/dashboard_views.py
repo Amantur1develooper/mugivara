@@ -17,6 +17,14 @@ LOGIN_URL = "dashboard:login"
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
+def _fmt(value):
+    """Decimal → int если целое, иначе float без лишних нулей."""
+    try:
+        d = Decimal(str(value))
+        return int(d) if d == d.to_integral_value() else float(d.normalize())
+    except Exception:
+        return value
+
 def _user_stores(user):
     ids = StoreMembership.objects.filter(user=user).values_list("store_id", flat=True)
     return Store.objects.filter(id__in=ids)
@@ -173,7 +181,7 @@ def shop_stock_update(request, stock_id):
         return JsonResponse({"ok": False, "error": "Некорректное значение"})
     stock.qty = qty
     stock.save(update_fields=["qty"])
-    return JsonResponse({"ok": True, "qty": str(stock.qty)})
+    return JsonResponse({"ok": True, "qty": _fmt(stock.qty)})
 
 
 @require_POST
@@ -190,7 +198,7 @@ def shop_price_update(request, stock_id):
         return JsonResponse({"ok": False, "error": "Некорректная цена"})
     stock.product.price = price
     stock.product.save(update_fields=["price"])
-    return JsonResponse({"ok": True, "price": str(price)})
+    return JsonResponse({"ok": True, "price": _fmt(price)})
 
 
 # ── PRODUCT ADD / EDIT / DELETE / TOGGLE ─────────────────────────────────────
@@ -238,8 +246,8 @@ def shop_product_add(request, branch_id):
         "name_ru": product.name_ru,
         "name_ky": product.name_ky,
         "name_en": product.name_en,
-        "price": str(product.price),
-        "qty": str(stock.qty),
+        "price": _fmt(product.price),
+        "qty": _fmt(stock.qty),
         "unit": product.unit,
         "unit_display": product.get_unit_display(),
         "photo_url": product.photo.url if product.photo else "",
@@ -285,8 +293,8 @@ def shop_product_edit(request, stock_id):
         "name_ru": product.name_ru,
         "name_ky": product.name_ky,
         "name_en": product.name_en,
-        "price": str(product.price),
-        "qty": str(stock.qty),
+        "price": _fmt(product.price),
+        "qty": _fmt(stock.qty),
         "unit_display": product.get_unit_display(),
         "photo_url": product.photo.url if product.photo else "",
         "category_id": product.category_id or 0,

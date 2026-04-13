@@ -577,14 +577,14 @@ function productRowHTML(p) {
       </div>
       <div class="pl-field-wrap">
         <input class="pl-input" type="number" min="0" step="10"
-               value="${parseFloat(p.price).toFixed(0)}"
+               value="${p.price}"
                id="price-${p.stock_id}" data-stock="${p.stock_id}">
         <button class="pl-save-btn" id="price-btn-${p.stock_id}"
                 onclick="savePrice(${p.stock_id})">✓</button>
       </div>
       <div class="pl-field-wrap">
         <input class="pl-input" type="number" min="0" step="1"
-               value="${parseFloat(p.qty).toFixed(0)}"
+               value="${p.qty}"
                id="qty-${p.stock_id}" data-stock="${p.stock_id}">
         <button class="pl-save-btn" id="qty-btn-${p.stock_id}"
                 onclick="saveQty(${p.stock_id})">✓</button>
@@ -636,10 +636,10 @@ function editPanelHTML(p) {
     <div class="pl-edit-col">
       <label class="pl-edit-label">Цена</label>
       <input class="pl-edit-input" id="edit-price-${p.stock_id}" type="number" min="0"
-             value="${parseFloat(p.price).toFixed(0)}">
+             value="${p.price}">
       <label class="pl-edit-label" style="margin-top:4px">Остаток</label>
       <input class="pl-edit-input" id="edit-qty-${p.stock_id}" type="number" min="0"
-             value="${parseFloat(p.qty).toFixed(0)}">
+             value="${p.qty}">
     </div>
   </div>
   <div class="pl-edit-actions">
