@@ -177,15 +177,15 @@ class PromoCodeAdmin(admin.ModelAdmin):
 
 @admin.register(AdBanner)
 class AdBannerAdmin(admin.ModelAdmin):
-    list_display  = ("__str__", "link_url", "click_count", "is_active", "sort_order")
+    list_display  = ("__str__", "button_text", "click_count", "is_active", "sort_order")
     list_editable = ("is_active", "sort_order")
-    list_filter   = ("is_active",)
+    list_filter   = ("is_active", "button_style")
     readonly_fields = ("click_count",)
     fieldsets = (
         (None, {"fields": ("title", "is_active", "sort_order", "click_count")}),
         ("Изображения", {"fields": ("image_desktop", "image_tablet", "image_mobile"),
                          "description": "Загрузите хотя бы одно фото. Для разных устройств — разные фото."}),
-        ("Ссылка", {"fields": ("link_url",)}),
+        ("Кнопка и ссылка", {"fields": ("link_url", "button_text", "button_style")}),
     )
 
 

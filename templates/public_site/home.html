@@ -293,8 +293,23 @@
     display:block; width:100%; height:auto;
     max-height:345px; object-fit:cover;
   }
+  .ad-banner__btn-wrap {
+    position:absolute; bottom:16px; right:20px; pointer-events:none;
+  }
+  .ad-banner__btn {
+    display:inline-block; padding:10px 22px; border-radius:10px;
+    font-size:14px; font-weight:700; font-family:'Unbounded',sans-serif;
+    box-shadow:0 4px 14px rgba(0,0,0,.22);
+  }
+  .ad-banner__btn--primary { background:var(--accent); color:#fff; }
+  .ad-banner__btn--success  { background:#10b981; color:#fff; }
+  .ad-banner__btn--danger   { background:#ef4444; color:#fff; }
+  .ad-banner__btn--dark     { background:#1e293b; color:#fff; }
+  .ad-banner__btn--white    { background:#fff; color:#1e293b; }
   @media (max-width:640px) {
     .ad-banner { border-radius:12px; }
+    .ad-banner__btn { font-size:12px; padding:8px 14px; }
+    .ad-banner__btn-wrap { bottom:10px; right:12px; }
   }
 
   /* ═══ SECTION BG ALTERNATION ═══ */
@@ -436,6 +451,11 @@
         <img src="{{ banner.obj.image_desktop.url }}" alt="{{ banner.obj.title }}" loading="lazy">
       {% endif %}
     </picture>
+    {% if banner.obj.button_text %}
+    <div class="ad-banner__btn-wrap">
+      <span class="ad-banner__btn ad-banner__btn--{{ banner.obj.button_style }}">{{ banner.obj.button_text }}</span>
+    </div>
+    {% endif %}
 
   {% if banner.click_url %}</a>{% else %}</div>{% endif %}
   {% endfor %}
