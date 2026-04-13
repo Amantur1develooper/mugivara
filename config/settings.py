@@ -216,28 +216,6 @@ REST_FRAMEWORK = {
 
 TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN", "")
 
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "level": "DEBUG",
-        },
-        "file": {
-            "class": "logging.FileHandler",
-            "filename": str(BASE_DIR / "logs/django_errors.log"),
-            "level": "DEBUG",
-        },
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["console", "file"],
-            "level": "DEBUG",
-            "propagate": False,
-        },
-    },
-}
 
 
 CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
