@@ -15,6 +15,7 @@ from catalog.models import (
     Item, ItemCategory, Category, MenuSet,
 )
 from catalog.services import ensure_links_for_branch_item
+from reservations.models import Floor, Place
 
 
 def _user_restaurants(user):
@@ -910,4 +911,74 @@ def ms_category_delete(request, category_id):
     if not _has_restaurant_access(request.user, cat.menu_set.restaurant):
         return JsonResponse({"ok": False}, status=403)
     cat.delete()
+    return JsonResponse({"ok": True})
+
+
+# ── TABLES (столики) ──────────────────────────────────────────────────────────
+
+@login_required(login_url="dashboard:login")
+def branch_tables(request, branch_id):
+    branch = get_object_or_404(Branch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:home")
+    floors = branch.floors.prefetch_related("places").order_by("sort_order", "id")
+    return render(request, "dashboard/tables.html", {"branch": branch, "floors": floors})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def floor_add(request, branch_id):
+    branch = get_object_or_404(Branch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return JsonResponse({"ok": False}, status=403)
+    name = request.POST.get("name", "").strip() or "Зал"
+    floor = Floor.objects.create(branch=branch, name_ru=name)
+    return JsonResponse({"ok": True, "id": floor.id, "name": floor.name_ru})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def floor_delete(request, floor_id):
+    floor = get_object_or_404(Floor, id=floor_id)
+    if not _has_branch_access(request.user, floor.branch):
+        return JsonResponse({"ok": False}, status=403)
+    floor.delete()
+    return JsonResponse({"ok": True})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def table_add(request, floor_id):
+    floor = get_object_or_404(Floor, id=floor_id)
+    if not _has_branch_access(request.user, floor.branch):
+        return JsonResponse({"ok": False}, status=403)
+
+    seats = max(1, int(request.POST.get("seats") or 2))
+    bulk = request.POST.get("bulk") == "1"
+    created = []
+
+    if bulk:
+        prefix = request.POST.get("prefix", "Стол").strip() or "Стол"
+        start  = max(1, int(request.POST.get("start") or 1))
+        count  = min(50, max(1, int(request.POST.get("count") or 1)))
+        for i in range(start, start + count):
+            p = Place.objects.create(floor=floor, title=f"{prefix} {i}", seats=seats)
+            created.append({"id": p.id, "title": p.title, "seats": p.seats, "token": p.token})
+    else:
+        title = request.POST.get("title", "").strip()
+        if not title:
+            return JsonResponse({"ok": False, "error": "Название обязательно"})
+        p = Place.objects.create(floor=floor, title=title, seats=seats)
+        created.append({"id": p.id, "title": p.title, "seats": p.seats, "token": p.token})
+
+    return JsonResponse({"ok": True, "tables": created})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def table_delete(request, table_id):
+    place = get_object_or_404(Place, id=table_id)
+    if not _has_branch_access(request.user, place.floor.branch):
+        return JsonResponse({"ok": False}, status=403)
+    place.delete()
     return JsonResponse({"ok": True})

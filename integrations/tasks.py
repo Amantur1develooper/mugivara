@@ -117,6 +117,36 @@ def _order_text(order: Order, title_override: str = None) -> str:
     return "\n".join(lines)
 
 
+def _table_order_text(order: Order) -> str:
+    """Short, clear format for dine-in table orders."""
+    lines = []
+    lines.append(f"🪑 ЗАКАЗ — {order.table_place.title}")
+    lines.append(f"🏪 {getattr(order.branch, 'name_ru', str(order.branch))}")
+
+    items = list(order.items.select_related("item").all())
+    if items:
+        lines.append("")
+        for it in items:
+            name = getattr(it.item, "name_ru", None) or str(it.item)
+            lines.append(f"• {name}  ×{it.qty}")
+    else:
+        lines.append("⚠️ Состав не указан")
+
+    if getattr(order, "total_amount", None):
+        lines.append("")
+        lines.append(f"💰 Итого: {_money(order.total_amount)}")
+
+    if getattr(order, "customer_name", ""):
+        lines.append(f"👤 {order.customer_name}")
+    if getattr(order, "customer_phone", ""):
+        lines.append(f"📞 {order.customer_phone}")
+    if getattr(order, "comment", ""):
+        lines.append(f"💬 {order.comment}")
+
+    lines.append(f"⏰ {timezone.localtime(order.created_at).strftime('%H:%M')}")
+    return "\n".join(lines)
+
+
 @shared_task
 def notify_new_order(order_id: int):
     token = _tg_token()
@@ -136,7 +166,11 @@ def notify_new_order(order_id: int):
     if not recipients.exists():
         return "No recipients"
 
-    text = _order_text(order)
+    # Use short format for table (dine-in) orders
+    if getattr(order, "table_place_id", None):
+        text = _table_order_text(order)
+    else:
+        text = _order_text(order)
 
     sent = 0
     for r in recipients:

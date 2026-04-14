@@ -9,6 +9,7 @@ from reservations import views as r
 from public_site.views_table import (
     table_cart, table_create_order, table_cart_update,
     table_call_waiter, table_menu, table_add_to_cart,
+    branch_tables_page,
 )
 
 
@@ -26,6 +27,7 @@ urlpatterns = [
     path("t/<str:token>/cart/update/", table_cart_update, name="table_cart_update"),
     path("t/<str:token>/order/create/", table_create_order, name="table_create_order"),
     path("t/<str:token>/call-waiter/", table_call_waiter, name="table_call_waiter"),
+    path("<int:branch_id>/tables/", branch_tables_page, name="branch_tables"),
     # ВАЖНО: без ведущего "/"
     path("<int:branch_id>/menu/", branch_menu, name="branch_menu"),
 

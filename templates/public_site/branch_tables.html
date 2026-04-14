@@ -1,0 +1,173 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>{{ branch.name_ru }} — Выберите стол</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f5f7;
+      min-height: 100vh;
+      color: #1a1a1a;
+    }
+
+    /* ── header ── */
+    .hdr {
+      background: #fff;
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid #e8e8e8;
+      position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .hdr-logo {
+      width: 44px; height: 44px; border-radius: 12px; object-fit: cover;
+      background: linear-gradient(135deg, #FF4D1C, #FF8A00);
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .hdr-logo img { width: 100%; height: 100%; border-radius: 12px; object-fit: cover; }
+    .hdr-info { flex: 1; min-width: 0; }
+    .hdr-name {
+      font-size: 16px; font-weight: 800; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .hdr-sub { font-size: 12px; color: #888; margin-top: 2px; }
+
+    /* ── content ── */
+    .content { padding: 20px 16px 40px; max-width: 520px; margin: 0 auto; }
+
+    /* ── floor section ── */
+    .floor-section { margin-bottom: 28px; }
+    .floor-title {
+      font-size: 13px; font-weight: 700; color: #888;
+      text-transform: uppercase; letter-spacing: .6px;
+      margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .floor-title::after {
+      content: ''; flex: 1; height: 1px; background: #e8e8e8;
+    }
+
+    /* ── 2-column table grid ── */
+    .tables-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .table-btn {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: #fff;
+      border: 2px solid #e8e8e8;
+      border-radius: 18px;
+      padding: 18px 12px 14px;
+      text-decoration: none; color: inherit;
+      min-height: 100px;
+      transition: all .15s;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .table-btn:active {
+      transform: scale(.97);
+      background: #fff8f5;
+      border-color: #FF4D1C;
+    }
+    .table-btn::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,77,28,.06), transparent);
+      opacity: 0; transition: opacity .15s;
+    }
+    .table-btn:active::before { opacity: 1; }
+
+    .table-icon {
+      font-size: 26px; margin-bottom: 6px;
+      line-height: 1;
+    }
+    .table-num {
+      font-size: 18px; font-weight: 800; color: #1a1a1a;
+      line-height: 1.1;
+    }
+    .table-seats {
+      font-size: 11px; color: #aaa; margin-top: 4px;
+      display: flex; align-items: center; gap: 3px;
+    }
+
+    /* ── empty state ── */
+    .empty {
+      text-align: center; padding: 60px 24px;
+      background: #fff; border-radius: 20px; border: 1px solid #e8e8e8;
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-title { font-size: 17px; font-weight: 800; margin-bottom: 6px; }
+    .empty-sub { font-size: 14px; color: #888; }
+
+    /* ── footer hint ── */
+    .hint {
+      text-align: center; font-size: 12px; color: #bbb;
+      margin-top: 32px; line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo">
+    {% if branch.restaurant.logo %}
+      <img src="{{ branch.restaurant.logo.url }}" alt="{{ branch.name_ru }}">
+    {% else %}
+      🍽
+    {% endif %}
+  </div>
+  <div class="hdr-info">
+    <div class="hdr-name">{{ branch.name_ru }}</div>
+    <div class="hdr-sub">Выберите ваш столик</div>
+  </div>
+</div>
+
+<div class="content">
+
+  {% if floors %}
+    {% for section in floors %}
+      <div class="floor-section">
+        {% if floors|length > 1 or section.floor.name_ru != "Основной зал" %}
+          <div class="floor-title">🏠 {{ section.floor.name_ru }}</div>
+        {% endif %}
+
+        <div class="tables-grid">
+          {% for place in section.places %}
+          <a class="table-btn" href="{% url 'public_site:table_menu' token=place.token %}">
+            <div class="table-icon">🪑</div>
+            <div class="table-num">{{ place.title }}</div>
+            {% if place.seats %}
+            <div class="table-seats">
+              <span>👤</span> {{ place.seats }} мест
+            </div>
+            {% endif %}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+
+    <div class="hint">
+      Нажмите на свой столик, чтобы открыть меню и сделать заказ
+    </div>
+
+  {% else %}
+    <div class="empty">
+      <div class="empty-icon">🪑</div>
+      <div class="empty-title">Столики пока не настроены</div>
+      <div class="empty-sub">Обратитесь к персоналу</div>
+    </div>
+  {% endif %}
+
+</div>
+
+</body>
+</html>

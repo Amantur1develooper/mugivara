@@ -181,6 +181,13 @@ def table_checkout(request, token):
         # увеличиваем рейтинг ресторана
         Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
 
+        # ✅ уведомление в Telegram
+        try:
+            from integrations.tasks import notify_new_order
+            notify_new_order.delay(order.id)
+        except Exception:
+            pass
+
         return redirect("table_success", token=token, order_id=order.id)
 
     return render(request, "public_site/table_checkout.html", {
@@ -351,5 +358,33 @@ def table_create_order(request, token):
     # увеличиваем рейтинг ресторана
     Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
 
+    # ✅ уведомление в Telegram
+    try:
+        from integrations.tasks import notify_new_order
+        notify_new_order.delay(order.id)
+    except Exception:
+        pass
+
     # ✅ редирект на страницу "успех"
     return redirect("table_success", token=token, order_id=order.id)
+
+
+# ── Branch tables public page ─────────────────────────────────────────────────
+
+def branch_tables_page(request, branch_id):
+    from core.models import Branch
+    from reservations.models import Floor
+    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    floors = (Floor.objects
+              .filter(branch=branch, is_active=True)
+              .prefetch_related("places")
+              .order_by("sort_order", "id"))
+    floors_with_tables = [
+        {"floor": f, "places": [p for p in f.places.all() if p.is_active]}
+        for f in floors
+        if any(p.is_active for p in f.places.all())
+    ]
+    return render(request, "public_site/branch_tables.html", {
+        "branch": branch,
+        "floors": floors_with_tables,
+    })

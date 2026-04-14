@@ -42,6 +42,12 @@ urlpatterns = [
     path("promo/<int:promo_id>/toggle/",      views.promo_toggle, name="promo_toggle"),
     path("promo/<int:promo_id>/delete/",      views.promo_delete, name="promo_delete"),
 
+    path("branch/<int:branch_id>/tables/",         views.branch_tables, name="branch_tables"),
+    path("branch/<int:branch_id>/tables/floor/add/", views.floor_add,   name="floor_add"),
+    path("floor/<int:floor_id>/delete/",             views.floor_delete, name="floor_delete"),
+    path("floor/<int:floor_id>/table/add/",          views.table_add,    name="table_add"),
+    path("table/<int:table_id>/delete/",             views.table_delete, name="table_delete"),
+
     path("analytics/", views.analytics, name="analytics"),
     path("orders/",    views.orders_analytics, name="orders"),
 

@@ -1,0 +1,520 @@
+{% extends "dashboard/base.html" %}
+{% load i18n %}
+{% block title %}Столики — {{ branch.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+/* ── layout ── */
+.tbl-wrap { display:flex; flex-direction:column; gap:20px; max-width:860px; }
+
+/* ── floor card ── */
+.tbl-floor {
+  background:var(--card); border:1.5px solid var(--border);
+  border-radius:18px; overflow:hidden;
+}
+.tbl-floor-head {
+  display:flex; align-items:center; gap:10px;
+  padding:14px 18px; background:var(--bg);
+  border-bottom:1px solid var(--border);
+}
+.tbl-floor-name {
+  flex:1; font-size:14px; font-weight:700; color:var(--text);
+}
+.tbl-floor-count { font-size:11px; color:var(--muted); }
+.tbl-floor-del {
+  width:28px; height:28px; border-radius:8px; border:none;
+  background:transparent; color:var(--muted); cursor:pointer; font-size:14px;
+  display:flex; align-items:center; justify-content:center; transition:all .15s;
+}
+.tbl-floor-del:hover { background:rgba(239,68,68,.1); color:#dc2626; }
+
+/* ── table rows ── */
+.tbl-row {
+  display:flex; align-items:center; gap:12px;
+  padding:10px 18px; border-bottom:1px solid var(--border);
+}
+.tbl-row:last-of-type { border-bottom:none; }
+.tbl-num {
+  width:28px; height:28px; border-radius:8px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff; font-size:11px; font-weight:800;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.tbl-title { flex:1; font-size:14px; font-weight:600; color:var(--text); }
+.tbl-seats { font-size:12px; color:var(--muted); white-space:nowrap; }
+.tbl-actions { display:flex; gap:6px; align-items:center; }
+.tbl-action-btn {
+  padding:5px 10px; border-radius:8px; font-size:11px; font-weight:600;
+  cursor:pointer; border:1.5px solid var(--border); background:var(--bg);
+  color:var(--text2); transition:all .15s; text-decoration:none; white-space:nowrap;
+}
+.tbl-action-btn:hover { border-color:var(--accent); color:var(--accent); background:rgba(255,77,28,.04); }
+.tbl-action-btn.del:hover { border-color:#dc2626; color:#dc2626; background:rgba(239,68,68,.06); }
+.tbl-action-btn.copied { border-color:var(--teal); color:var(--teal); background:rgba(0,184,150,.06); }
+
+/* ── QR canvas ── */
+.tbl-qr-wrap {
+  display:none; padding:14px 18px;
+  border-top:1px dashed var(--border);
+  background:rgba(0,0,0,.01);
+}
+.tbl-qr-wrap.open { display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
+.tbl-qr-info { font-size:12px; color:var(--muted); line-height:1.6; }
+.tbl-qr-url {
+  font-size:12px; font-family:monospace;
+  background:var(--bg); border:1px solid var(--border);
+  border-radius:8px; padding:6px 10px; word-break:break-all;
+  color:var(--text2); margin-top:8px;
+}
+
+/* ── add forms ── */
+.tbl-add-panel {
+  padding:14px 18px; border-top:1px dashed var(--border);
+  background:rgba(255,77,28,.01);
+}
+.tbl-add-tabs {
+  display:flex; gap:0; margin-bottom:12px;
+  border:1.5px solid var(--border); border-radius:10px; overflow:hidden; width:fit-content;
+}
+.tbl-add-tab {
+  padding:6px 14px; font-size:12px; font-weight:600; cursor:pointer;
+  background:var(--bg); color:var(--muted); border:none; transition:all .15s;
+}
+.tbl-add-tab.active { background:var(--accent); color:#fff; }
+.tbl-add-grid { display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end; }
+.tbl-add-field { display:flex; flex-direction:column; gap:4px; min-width:90px; }
+.tbl-add-label { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.3px; }
+.tbl-add-input {
+  padding:7px 10px; border:1.5px solid var(--border); border-radius:9px;
+  font-size:13px; background:var(--card); outline:none; font-family:inherit;
+  transition:border-color .2s; width:100%;
+}
+.tbl-add-input:focus { border-color:var(--accent); }
+.tbl-add-btn {
+  padding:8px 16px; background:var(--accent); color:#fff;
+  border:none; border-radius:9px; font-size:12px; font-weight:700;
+  cursor:pointer; white-space:nowrap; align-self:flex-end; transition:opacity .15s;
+}
+.tbl-add-btn:hover { opacity:.88; }
+
+/* ── new floor bar ── */
+.tbl-new-floor {
+  display:flex; gap:8px; align-items:center;
+  padding:12px 16px; background:var(--card);
+  border:1.5px dashed var(--border); border-radius:14px;
+}
+.tbl-new-floor-input {
+  flex:1; padding:8px 12px; border:1.5px solid var(--border); border-radius:9px;
+  font-size:13px; background:var(--bg); outline:none; font-family:inherit;
+  transition:border-color .2s;
+}
+.tbl-new-floor-input:focus { border-color:var(--accent); }
+.tbl-new-floor-btn {
+  padding:8px 20px; background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff; border:none; border-radius:9px; font-size:13px; font-weight:700;
+  cursor:pointer; white-space:nowrap;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">🪑 Столики</div>
+    <div class="db-breadcrumb">{{ branch.restaurant.name_ru }} — {{ branch.name_ru }}</div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="db-btn db-btn-ghost db-btn-sm" onclick="copyTablePageUrl()" id="copyPageBtn">
+      📋 Ссылка на все столы
+    </button>
+    <a href="{% url 'dashboard:home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
+  </div>
+</div>
+
+{# hidden URL for the public tables page #}
+<div id="tables-page-url" style="display:none">{% url 'public_site:branch_tables' branch.id %}</div>
+
+{# URL templates for JS #}
+<div id="tbl-urls" style="display:none"
+  data-floor-add="{% url 'dashboard:floor_add' branch.id %}"
+  data-floor-del-tpl="{% url 'dashboard:floor_delete' 0 %}"
+  data-table-add-tpl="{% url 'dashboard:table_add' 0 %}"
+  data-table-del-tpl="{% url 'dashboard:table_delete' 0 %}"
+></div>
+
+<div class="tbl-wrap" id="tblWrap">
+
+{% for floor in floors %}
+<div class="tbl-floor" id="floor-{{ floor.id }}" data-floor-id="{{ floor.id }}">
+
+  <div class="tbl-floor-head">
+    <span style="font-size:16px">🏠</span>
+    <span class="tbl-floor-name">{{ floor.name_ru }}</span>
+    <span class="tbl-floor-count" id="fcount-{{ floor.id }}">{{ floor.places.count }} столиков</span>
+    <button class="tbl-floor-del" title="Удалить зал" onclick="deleteFloor({{ floor.id }}, '{{ floor.name_ru|escapejs }}')">🗑</button>
+  </div>
+
+  <div id="floor-rows-{{ floor.id }}">
+    {% for place in floor.places.all %}
+    <div class="tbl-row" id="trow-{{ place.id }}">
+      <div class="tbl-num">{{ forloop.counter }}</div>
+      <div class="tbl-title">{{ place.title }}</div>
+      <div class="tbl-seats">👤 {{ place.seats }}</div>
+      <div class="tbl-actions">
+        <button class="tbl-action-btn" onclick="copyUrl('{{ place.token }}', this)">📋 Ссылка</button>
+        <button class="tbl-action-btn" onclick="toggleQr({{ place.id }})">QR</button>
+        <button class="tbl-action-btn del" onclick="deleteTable({{ place.id }})">🗑</button>
+      </div>
+    </div>
+    <div class="tbl-qr-wrap" id="qr-{{ place.id }}">
+      <canvas id="qrc-{{ place.id }}" width="128" height="128"
+              style="border-radius:10px;flex-shrink:0"></canvas>
+      <div class="tbl-qr-info">
+        <div><b>{{ place.title }}</b></div>
+        <div>Гость сканирует QR → открывается меню прямо на столике.</div>
+        <div style="margin-top:6px">
+          <button class="tbl-action-btn" onclick="downloadQr({{ place.id }}, '{{ place.title|escapejs }}')">⬇ Скачать PNG</button>
+        </div>
+        <div class="tbl-qr-url" id="qr-url-{{ place.id }}"></div>
+      </div>
+    </div>
+    {% empty %}
+    <div style="padding:16px 18px;color:var(--muted);font-size:13px;font-style:italic"
+         id="floor-empty-{{ floor.id }}">
+      Нет столиков — добавьте ниже
+    </div>
+    {% endfor %}
+  </div>
+
+  {# ── Add table panel ── #}
+  <div class="tbl-add-panel">
+    <div class="tbl-add-tabs">
+      <button class="tbl-add-tab active" onclick="switchTab({{ floor.id }},'single',this)">＋ Один столик</button>
+      <button class="tbl-add-tab" onclick="switchTab({{ floor.id }},'bulk',this)">⚡ Пакетно</button>
+    </div>
+
+    {# single #}
+    <div id="tab-single-{{ floor.id }}">
+      <div class="tbl-add-grid">
+        <div class="tbl-add-field" style="flex:2;min-width:140px">
+          <label class="tbl-add-label">Название</label>
+          <input class="tbl-add-input" id="s-title-{{ floor.id }}" placeholder="Стол 1, VIP 2…">
+        </div>
+        <div class="tbl-add-field" style="width:80px">
+          <label class="tbl-add-label">Мест</label>
+          <input class="tbl-add-input" id="s-seats-{{ floor.id }}" type="number" min="1" value="4">
+        </div>
+        <button class="tbl-add-btn" onclick="addSingle({{ floor.id }})">Добавить</button>
+      </div>
+    </div>
+
+    {# bulk #}
+    <div id="tab-bulk-{{ floor.id }}" style="display:none">
+      <div class="tbl-add-grid">
+        <div class="tbl-add-field" style="flex:2;min-width:110px">
+          <label class="tbl-add-label">Префикс</label>
+          <input class="tbl-add-input" id="b-prefix-{{ floor.id }}" value="Стол" placeholder="Стол">
+        </div>
+        <div class="tbl-add-field" style="width:70px">
+          <label class="tbl-add-label">С номера</label>
+          <input class="tbl-add-input" id="b-start-{{ floor.id }}" type="number" min="1" value="1">
+        </div>
+        <div class="tbl-add-field" style="width:70px">
+          <label class="tbl-add-label">Количество</label>
+          <input class="tbl-add-input" id="b-count-{{ floor.id }}" type="number" min="1" max="50" value="10">
+        </div>
+        <div class="tbl-add-field" style="width:70px">
+          <label class="tbl-add-label">Мест</label>
+          <input class="tbl-add-input" id="b-seats-{{ floor.id }}" type="number" min="1" value="4">
+        </div>
+        <button class="tbl-add-btn" onclick="addBulk({{ floor.id }})">Создать</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">
+        Пример: «Стол» с 1, кол-во 10 → создаст Стол 1 … Стол 10
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endfor %}
+
+{# ── New floor bar ── #}
+<div class="tbl-new-floor">
+  <span style="font-size:18px">🏠</span>
+  <input class="tbl-new-floor-input" id="newFloorName" placeholder="Название зала — Основной зал, Терраса, VIP…"
+         onkeydown="if(event.key==='Enter') addFloor()">
+  <button class="tbl-new-floor-btn" onclick="addFloor()">＋ Добавить зал</button>
+</div>
+
+</div>{# /tblWrap #}
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSe2sIy6jPXoB2VfjMivJFGAJUPeyhAEHtMg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+const CSRF = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+const URLS = document.getElementById('tbl-urls').dataset;
+const sUrl = (tpl, id) => tpl.replace('/0/', `/${id}/`);
+
+// Build absolute table URL from token
+// We use a real reversed URL with placeholder to get the correct i18n prefix
+const TABLE_URL_TPL = '{{ request.build_absolute_uri }}';
+const TABLE_PATH_TPL = '{% url "table_menu" token="PLACEHOLDER_TOKEN" %}';
+function tableUrl(token) {
+  return window.location.origin + TABLE_PATH_TPL.replace('PLACEHOLDER_TOKEN', token);
+}
+
+async function post(url, data) {
+  const fd = new FormData();
+  for (const [k, v] of Object.entries(data)) fd.append(k, v);
+  const r = await fetch(url, {method:'POST', body:fd, headers:{'X-CSRFToken':CSRF}});
+  return r.json();
+}
+
+/* ── Floor add ── */
+async function addFloor() {
+  const inp = document.getElementById('newFloorName');
+  const name = inp.value.trim() || 'Зал';
+  const d = await post(URLS.floorAdd, {name});
+  if (!d.ok) { alert(d.error || 'Ошибка'); return; }
+  inp.value = '';
+  appendFloor(d.id, d.name);
+}
+
+function appendFloor(id, name) {
+  const html = `
+  <div class="tbl-floor" id="floor-${id}" data-floor-id="${id}">
+    <div class="tbl-floor-head">
+      <span style="font-size:16px">🏠</span>
+      <span class="tbl-floor-name">${esc(name)}</span>
+      <span class="tbl-floor-count" id="fcount-${id}">0 столиков</span>
+      <button class="tbl-floor-del" title="Удалить зал" onclick="deleteFloor(${id},'${escJs(name)}')">🗑</button>
+    </div>
+    <div id="floor-rows-${id}">
+      <div style="padding:16px 18px;color:var(--muted);font-size:13px;font-style:italic"
+           id="floor-empty-${id}">Нет столиков — добавьте ниже</div>
+    </div>
+    <div class="tbl-add-panel">
+      <div class="tbl-add-tabs">
+        <button class="tbl-add-tab active" onclick="switchTab(${id},'single',this)">＋ Один столик</button>
+        <button class="tbl-add-tab" onclick="switchTab(${id},'bulk',this)">⚡ Пакетно</button>
+      </div>
+      <div id="tab-single-${id}">
+        <div class="tbl-add-grid">
+          <div class="tbl-add-field" style="flex:2;min-width:140px">
+            <label class="tbl-add-label">Название</label>
+            <input class="tbl-add-input" id="s-title-${id}" placeholder="Стол 1, VIP 2…">
+          </div>
+          <div class="tbl-add-field" style="width:80px">
+            <label class="tbl-add-label">Мест</label>
+            <input class="tbl-add-input" id="s-seats-${id}" type="number" min="1" value="4">
+          </div>
+          <button class="tbl-add-btn" onclick="addSingle(${id})">Добавить</button>
+        </div>
+      </div>
+      <div id="tab-bulk-${id}" style="display:none">
+        <div class="tbl-add-grid">
+          <div class="tbl-add-field" style="flex:2;min-width:110px">
+            <label class="tbl-add-label">Префикс</label>
+            <input class="tbl-add-input" id="b-prefix-${id}" value="Стол">
+          </div>
+          <div class="tbl-add-field" style="width:70px">
+            <label class="tbl-add-label">С номера</label>
+            <input class="tbl-add-input" id="b-start-${id}" type="number" min="1" value="1">
+          </div>
+          <div class="tbl-add-field" style="width:70px">
+            <label class="tbl-add-label">Количество</label>
+            <input class="tbl-add-input" id="b-count-${id}" type="number" min="1" max="50" value="10">
+          </div>
+          <div class="tbl-add-field" style="width:70px">
+            <label class="tbl-add-label">Мест</label>
+            <input class="tbl-add-input" id="b-seats-${id}" type="number" min="1" value="4">
+          </div>
+          <button class="tbl-add-btn" onclick="addBulk(${id})">Создать</button>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">
+          Пример: «Стол» с 1, кол-во 10 → создаст Стол 1 … Стол 10
+        </div>
+      </div>
+    </div>
+  </div>`;
+  const wrap = document.getElementById('tblWrap');
+  const bar = wrap.querySelector('.tbl-new-floor');
+  wrap.insertBefore(createEl(html), bar);
+}
+
+/* ── Floor delete ── */
+async function deleteFloor(id, name) {
+  if (!confirm(`Удалить зал «${name}» со всеми столиками?`)) return;
+  const d = await post(sUrl(URLS.floorDelTpl, id), {});
+  if (!d.ok) { alert('Ошибка'); return; }
+  document.getElementById(`floor-${id}`)?.remove();
+}
+
+/* ── Table add: single ── */
+async function addSingle(floorId) {
+  const titleInp = document.getElementById(`s-title-${floorId}`);
+  const seatsInp = document.getElementById(`s-seats-${floorId}`);
+  const title = titleInp.value.trim();
+  if (!title) { titleInp.focus(); return; }
+  const d = await post(sUrl(URLS.tableAddTpl, floorId), {title, seats: seatsInp.value || 4});
+  if (!d.ok) { alert(d.error || 'Ошибка'); return; }
+  titleInp.value = '';
+  d.tables.forEach(t => appendTableRow(floorId, t));
+  updateCount(floorId, d.tables.length);
+  titleInp.focus();
+}
+
+/* ── Table add: bulk ── */
+async function addBulk(floorId) {
+  const prefix = document.getElementById(`b-prefix-${floorId}`)?.value.trim() || 'Стол';
+  const start  = document.getElementById(`b-start-${floorId}`)?.value || 1;
+  const count  = document.getElementById(`b-count-${floorId}`)?.value || 1;
+  const seats  = document.getElementById(`b-seats-${floorId}`)?.value || 4;
+  const d = await post(sUrl(URLS.tableAddTpl, floorId), {bulk:1, prefix, start, count, seats});
+  if (!d.ok) { alert(d.error || 'Ошибка'); return; }
+  d.tables.forEach(t => appendTableRow(floorId, t));
+  updateCount(floorId, d.tables.length);
+  // update start field for next batch
+  const startInp = document.getElementById(`b-start-${floorId}`);
+  if (startInp) startInp.value = parseInt(start) + parseInt(count);
+}
+
+/* ── Table row HTML ── */
+function appendTableRow(floorId, t) {
+  document.getElementById(`floor-empty-${floorId}`)?.remove();
+  const rows = document.getElementById(`floor-rows-${floorId}`);
+  const n = rows.querySelectorAll('.tbl-row').length + 1;
+  const html = `
+  <div class="tbl-row" id="trow-${t.id}">
+    <div class="tbl-num">${n}</div>
+    <div class="tbl-title">${esc(t.title)}</div>
+    <div class="tbl-seats">👤 ${t.seats}</div>
+    <div class="tbl-actions">
+      <button class="tbl-action-btn" onclick="copyUrl('${escJs(t.token)}',this)">📋 Ссылка</button>
+      <button class="tbl-action-btn" onclick="toggleQr(${t.id})">QR</button>
+      <button class="tbl-action-btn del" onclick="deleteTable(${t.id})">🗑</button>
+    </div>
+  </div>
+  <div class="tbl-qr-wrap" id="qr-${t.id}">
+    <canvas id="qrc-${t.id}" width="128" height="128" style="border-radius:10px;flex-shrink:0"></canvas>
+    <div class="tbl-qr-info">
+      <div><b>${esc(t.title)}</b></div>
+      <div>Гость сканирует QR → открывается меню прямо на столике.</div>
+      <div style="margin-top:6px">
+        <button class="tbl-action-btn" onclick="downloadQr(${t.id},'${escJs(t.title)}')">⬇ Скачать PNG</button>
+      </div>
+      <div class="tbl-qr-url" id="qr-url-${t.id}"></div>
+    </div>
+  </div>`;
+  rows.insertAdjacentHTML('beforeend', html);
+}
+
+/* ── Table delete ── */
+async function deleteTable(id) {
+  if (!confirm('Удалить столик?')) return;
+  const d = await post(sUrl(URLS.tableDelTpl, id), {});
+  if (!d.ok) { alert('Ошибка'); return; }
+  const row = document.getElementById(`trow-${id}`);
+  const qrEl = document.getElementById(`qr-${id}`);
+  const floorEl = row?.closest('.tbl-floor');
+  const floorId = floorEl?.dataset.floorId;
+  row?.remove(); qrEl?.remove();
+  renumberRows(floorId);
+  updateCount(floorId, -1);
+}
+
+/* ── Copy URL ── */
+function copyUrl(token, btn) {
+  const url = tableUrl(token);
+  navigator.clipboard.writeText(url).then(() => {
+    btn.textContent = '✅ Скопировано';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 Ссылка'; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+/* ── QR toggle ── */
+function toggleQr(id) {
+  const wrap = document.getElementById(`qr-${id}`);
+  if (!wrap) return;
+  const opening = !wrap.classList.contains('open');
+  wrap.classList.toggle('open');
+  if (opening) {
+    const canvas = document.getElementById(`qrc-${id}`);
+    const urlEl  = document.getElementById(`qr-url-${id}`);
+    // find token from row's copy button
+    const row = document.getElementById(`trow-${id}`);
+    const copyBtn = row?.querySelector('[onclick^="copyUrl"]');
+    const token = copyBtn?.getAttribute('onclick')?.match(/copyUrl\('([^']+)'/)?.[1];
+    if (!token) return;
+    const url = tableUrl(token);
+    if (urlEl) urlEl.textContent = url;
+    if (canvas && !canvas.dataset.drawn) {
+      new QRCode(canvas, {text: url, width:128, height:128, correctLevel: QRCode.CorrectLevel.M});
+      canvas.dataset.drawn = '1';
+    }
+  }
+}
+
+/* ── QR download ── */
+function downloadQr(id, title) {
+  const canvas = document.getElementById(`qrc-${id}`);
+  if (!canvas) return;
+  // qrcode.js renders to inner canvas
+  const inner = canvas.tagName === 'CANVAS' ? canvas : canvas.querySelector('canvas');
+  const a = document.createElement('a');
+  a.download = `qr-${title.replace(/\s+/g,'-')}.png`;
+  a.href = (inner || canvas).toDataURL('image/png');
+  a.click();
+}
+
+/* ── Tabs ── */
+function switchTab(floorId, tab, btn) {
+  const tabBtns = btn.parentElement.querySelectorAll('.tbl-add-tab');
+  tabBtns.forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const single = document.getElementById(`tab-single-${floorId}`);
+  const bulk   = document.getElementById(`tab-bulk-${floorId}`);
+  if (single) single.style.display = tab === 'single' ? '' : 'none';
+  if (bulk)   bulk.style.display   = tab === 'bulk'   ? '' : 'none';
+}
+
+/* ── Helpers ── */
+function updateCount(floorId, delta) {
+  const el = document.getElementById(`fcount-${floorId}`);
+  if (!el) return;
+  const cur = parseInt(el.textContent) || 0;
+  const next = Math.max(0, cur + delta);
+  el.textContent = `${next} столиков`;
+}
+function renumberRows(floorId) {
+  if (!floorId) return;
+  document.querySelectorAll(`#floor-rows-${floorId} .tbl-row`).forEach((row, i) => {
+    const num = row.querySelector('.tbl-num');
+    if (num) num.textContent = i + 1;
+  });
+}
+function createEl(html) {
+  const t = document.createElement('template');
+  t.innerHTML = html.trim();
+  return t.content.firstChild;
+}
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escJs(s) { return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+/* ── Copy branch tables page URL ── */
+function copyTablePageUrl() {
+  const path = document.getElementById('tables-page-url')?.textContent.trim();
+  if (!path) return;
+  const url = window.location.origin + path;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById('copyPageBtn');
+    if (btn) {
+      btn.textContent = '✅ Ссылка скопирована';
+      setTimeout(() => { btn.textContent = '📋 Ссылка на все столы'; }, 2000);
+    }
+  });
+}
+</script>
+{% endblock %}
