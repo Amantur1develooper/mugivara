@@ -115,14 +115,13 @@
 
   /* ── PHOTO ── */
   .bc-photo {
-    position: relative; height: 220px;
+    position: relative;
     background: var(--card2); overflow: hidden; flex-shrink: 0;
   }
   .bc-photo img {
-    width: 100%; height: 100%; object-fit: cover; display: block;
-    transition: transform 0.5s ease;
+    width: 100%; height: auto; display: block;
+    object-fit: contain;
   }
-  .bc:hover .bc-photo img { transform: scale(1.05); }
   .bc-photo-empty {
     width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
     background: linear-gradient(135deg, #FFF1EB, #FFE4D6, #FFD6C8);
@@ -185,42 +184,38 @@
   .bc-chip.allday   { background: rgba(0,184,150,0.08);  border-color: rgba(0,184,150,0.25); color: var(--teal); }
 
   /* ── КНОПКИ ── */
-  .bc-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-
-  .bc-btn-main {
-    grid-column: 1 / -1;
-    display: flex; align-items: center; justify-content: center; gap: 10px;
-    padding: 14px 20px; border-radius: 16px;
-    font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 800;
-    letter-spacing: -0.3px; color: white; text-decoration: none;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    box-shadow: 0 6px 24px var(--glow);
-    position: relative; overflow: hidden;
-    transition: transform 0.2s, box-shadow 0.2s;
+  .bc-actions {
+    display: flex; flex-direction: column; gap: 8px;
   }
-  .bc-btn-main::after {
-    content: ''; position: absolute; inset: -2px;
-    background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.28) 50%, transparent 70%);
-    transform: translateX(-130%); animation: shimmer 2.8s linear infinite;
-  }
-  @keyframes shimmer { 0%{transform:translateX(-130%);} 60%{transform:translateX(130%);} 100%{transform:translateX(130%);} }
-  .bc-btn-main:hover { transform: translateY(-2px); box-shadow: 0 12px 36px var(--glow); }
-  .bc-btn-main-badge {
-    padding: 4px 10px; border-radius: 100px; font-size: 11px;
-    background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.25);
-  }
+  .bc-actions-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
   .bc-btn {
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    padding: 11px 14px; border-radius: 14px; font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 10px 14px; border-radius: 12px; font-size: 12px; font-weight: 600;
     border: 1.5px solid var(--border); background: var(--card); color: var(--text2);
-    text-decoration: none; transition: all 0.2s; white-space: nowrap;
+    text-decoration: none; transition: all 0.15s; white-space: nowrap;
   }
-  .bc-btn:hover { border-color: rgba(0,0,0,0.14); background: var(--card2); transform: translateY(-1px); }
-  .bc-btn.wa { background:#25D366; border-color:#25D366; color:white; box-shadow:0 4px 16px rgba(37,211,102,.28); }
-  .bc-btn.wa:hover { background:#22C05E; border-color:#22C05E; }
+  .bc-btn:hover { border-color: rgba(0,0,0,.14); background: var(--card2); }
+
+  .bc-btn.menu {
+    background: rgba(255,77,28,.07);
+    border-color: rgba(255,77,28,.22);
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .bc-btn.menu:hover { background: rgba(255,77,28,.13); border-color: rgba(255,77,28,.35); }
+
+  .bc-btn.wa { background:#25D366; border-color:#25D366; color:#fff; }
+  .bc-btn.wa:hover { background:#1fba5a; border-color:#1fba5a; }
+
+  .bc-btn.call { background: var(--card); border-color: var(--border); color: var(--text2); }
+  .bc-btn.call:hover { background: var(--card2); }
+
   .bc-btn.book { background:rgba(37,99,235,.06); border-color:rgba(37,99,235,.2); color:#2563EB; }
-  .bc-btn.book:hover { background:rgba(37,99,235,.1); border-color:rgba(37,99,235,.3); }
+  .bc-btn.book:hover { background:rgba(37,99,235,.1); }
+
+  .bc-btn.map { background: rgba(0,0,0,.04); border-color: var(--border); color: var(--text2); }
+  .bc-btn.map:hover { background: rgba(0,0,0,.07); }
 
   /* ═══ ABOUT ═══ */
   .rch-about {
@@ -277,15 +272,14 @@
     .rch-logo { width: 68px; height: 68px; border-radius: 16px; }
     .rch-logo-letter { font-size: 28px; }
     .bc-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .bc-photo { height: 120px; }
     .bc-photo-name { font-size: 12px; }
     .bc-photo-addr { display: none; }
     .bc-status { padding: 4px 8px; font-size: 10px; gap: 5px; }
     .bc-hours { font-size: 9px; padding: 3px 8px; }
     .bc-body { padding: 12px 12px 14px; gap: 10px; }
     .bc-chip { font-size: 10px; padding: 4px 10px; }
-    .bc-actions { grid-template-columns: 1fr; gap: 6px; }
-    .bc-btn-main { padding: 11px 12px; font-size: 11px; }
+    .bc-actions { gap: 6px; }
+    .bc-actions-row { grid-template-columns: 1fr; gap: 6px; }
     .bc-btn { padding: 9px 10px; font-size: 11px; }
   }
 </style>
@@ -386,45 +380,45 @@
 
         <div class="bc-actions">
 
+          {# Меню — первая строка, одна кнопка на всю ширину #}
           {% if b.external_url %}
-          <a href="{{ b.external_url }}" target="_blank" rel="noopener" class="bc-btn-main">
-            🍽️ Открыть меню
-            <span class="bc-btn-main-badge">Перейти ↗</span>
+          <a href="{{ b.external_url }}" target="_blank" rel="noopener" class="bc-btn menu">
+            🍽️ Открыть меню ↗
           </a>
           {% else %}
-          <a href="{% url 'public_site:branch_menu' b.id %}" class="bc-btn-main">
+          <a href="{% url 'public_site:branch_menu' b.id %}" class="bc-btn menu">
             🍽️ Открыть меню
-            <span class="bc-btn-main-badge">Заказать</span>
           </a>
           {% endif %}
 
+          {# Вторая строка: Позвонить + WhatsApp #}
           {% if b.phone %}
-            <a href="tel:{{ b.phone }}" class="bc-btn">📞 Позвонить</a>
+          <div class="bc-actions-row">
+            <a href="tel:{{ b.phone }}" class="bc-btn call">📞 Позвонить</a>
             <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}"
                target="_blank" rel="noopener" class="bc-btn wa">💬 WhatsApp</a>
+          </div>
           {% endif %}
 
-          {% if b.map_url %}
-            <a href="{{ b.map_url }}" target="_blank" rel="noopener" class="bc-btn">📍 Как доехать</a>
-          {% endif %}
-
-          {% if b.phone %}
-            {% with wa=b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' %}
-              <a target="_blank" rel="noopener" class="bc-btn book"
-                 href="https://wa.me/{{ wa }}?text={% filter urlencode %}Здравствуйте! Хочу забронировать стол.
+          {# Третья строка: Маршрут + Бронирование #}
+          <div class="bc-actions-row">
+            {% if b.map_url %}
+            <a href="{{ b.map_url }}" target="_blank" rel="noopener" class="bc-btn map">📍 Маршрут</a>
+            {% endif %}
+            {% if b.phone %}
+              {% with wa=b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' %}
+              <a href="https://wa.me/{{ wa }}?text={% filter urlencode %}Здравствуйте! Хочу забронировать стол.
 
 Филиал: {% t b "name" %}
 Дата: __.__.____
 Время: __:__
 Гостей: __
-Имя: __
-Комментарий: __{% endfilter %}">
-                🗓️ Бронирование
-              </a>
-            {% endwith %}
-          {% else %}
-            <a href="{% url 'public_site:reservation' b.id %}" class="bc-btn book">🗓️ Бронирование</a>
-          {% endif %}
+Имя: __{% endfilter %}" target="_blank" rel="noopener" class="bc-btn book">🗓️ Бронирование</a>
+              {% endwith %}
+            {% else %}
+              <a href="{% url 'public_site:reservation' b.id %}" class="bc-btn book">🗓️ Бронирование</a>
+            {% endif %}
+          </div>
 
         </div>
       </div>
