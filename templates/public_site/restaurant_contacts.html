@@ -258,6 +258,13 @@
     color: var(--text); letter-spacing: -0.5px;
   }
 
+  /* ═══ BRANCHES GRID ═══ */
+  .bc-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 22px;
+  }
+
   /* ═══ RESPONSIVE ═══ */
   @media (max-width: 860px) {
     .rch-about { grid-template-columns: 1fr; }
@@ -265,13 +272,21 @@
     .rch-about-right { padding: 28px 24px; }
   }
   @media (max-width: 640px) {
-    .rc-page { padding: 16px 14px 60px; }
+    .rc-page { padding: 16px 10px 60px; }
     .rch-hero { padding: 20px; }
     .rch-logo { width: 68px; height: 68px; border-radius: 16px; }
     .rch-logo-letter { font-size: 28px; }
-    .bc-photo { height: 190px; }
-    .bc-actions { grid-template-columns: 1fr; }
-    .bc-btn-main { grid-column: auto; }
+    .bc-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .bc-photo { height: 120px; }
+    .bc-photo-name { font-size: 12px; }
+    .bc-photo-addr { display: none; }
+    .bc-status { padding: 4px 8px; font-size: 10px; gap: 5px; }
+    .bc-hours { font-size: 9px; padding: 3px 8px; }
+    .bc-body { padding: 12px 12px 14px; gap: 10px; }
+    .bc-chip { font-size: 10px; padding: 4px 10px; }
+    .bc-actions { grid-template-columns: 1fr; gap: 6px; }
+    .bc-btn-main { padding: 11px 12px; font-size: 11px; }
+    .bc-btn { padding: 9px 10px; font-size: 11px; }
   }
 </style>
 {% endblock %}
@@ -326,7 +341,7 @@
   <div class="rch-sec-tag">Филиалы</div>
   <div class="rch-sec-title">Выберите филиал</div>
 
-  <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:22px;">
+  <div class="bc-grid">
     {% for b in branches %}
     <div class="bc">
 
