@@ -193,7 +193,10 @@
       <a href="{% url 'dashboard:karaoke_home' %}">Мои заведения</a> → {{ venue.name }}
     </div>
   </div>
-  <a href="{% url 'dashboard:karaoke_rooms' venue.id %}" class="db-btn db-btn-ghost db-btn-sm">🚪 Кабинки</a>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a href="{% url 'dashboard:karaoke_report' venue.id %}" class="db-btn db-btn-ghost db-btn-sm">📊 Отчёт</a>
+    <a href="{% url 'dashboard:karaoke_rooms' venue.id %}" class="db-btn db-btn-ghost db-btn-sm">🚪 Кабинки</a>
+  </div>
 </div>
 
 <!-- DATE NAV -->

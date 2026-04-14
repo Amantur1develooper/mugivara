@@ -1,0 +1,420 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Отчёт — {{ venue.name }}{% endblock %}
+{% block nav_karaoke %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+/* ── KPI cards ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.kpi-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 16px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.kpi-icon  { font-size: 22px; line-height: 1; }
+.kpi-val   { font-family: 'Unbounded', sans-serif; font-size: 22px; font-weight: 800; color: var(--text); line-height: 1; }
+.kpi-label { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+/* ── Period tabs ── */
+.period-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+.period-tab {
+  padding: 7px 16px; border-radius: 100px; font-size: 12px; font-weight: 700;
+  border: 1.5px solid var(--border); background: var(--card); color: var(--muted);
+  text-decoration: none; transition: all .15s;
+}
+.period-tab.active, .period-tab:hover {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+.custom-range {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
+}
+
+/* ── Day table ── */
+.day-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.day-table th {
+  background: var(--bg); padding: 10px 12px; text-align: left;
+  font-weight: 700; color: var(--muted); font-size: 11px;
+  border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+.day-table td {
+  padding: 11px 12px; border-bottom: 1px solid var(--border);
+  color: var(--text2); vertical-align: middle;
+}
+.day-table tr:last-child td { border-bottom: none; }
+.day-table tr:hover td { background: rgba(255,77,28,.03); }
+
+/* ── Orders list ── */
+.order-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 14px 16px;
+  display: flex; gap: 14px; align-items: flex-start;
+}
+.order-card-body { flex: 1; min-width: 0; }
+.order-card-title { font-weight: 700; font-size: 13px; color: var(--text); }
+.order-card-items { font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.7; }
+.order-card-total { font-weight: 800; color: var(--accent); font-size: 14px; margin-top: 4px; }
+
+/* ── Add order modal ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,.6); backdrop-filter: blur(4px);
+  align-items: flex-end; justify-content: center;
+}
+@media (min-width: 600px) {
+  .modal-overlay { align-items: center; padding: 16px; }
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 20px 20px 0 0; padding: 20px 20px 32px;
+  width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; position: relative;
+}
+@media (min-width: 600px) { .modal-box { border-radius: 20px; padding: 24px; } }
+.modal-handle {
+  width: 36px; height: 4px; border-radius: 2px; background: var(--border);
+  margin: 0 auto 16px; display: block;
+}
+@media (min-width: 600px) { .modal-handle { display: none; } }
+.modal-close {
+  position: absolute; top: 14px; right: 14px;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--bg); border: 1px solid var(--border);
+  cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;
+}
+.modal-title { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 15px; color: var(--text); margin-bottom: 18px; }
+
+/* ── item picker ── */
+.item-picker { display: flex; flex-direction: column; gap: 8px; max-height: 300px; overflow-y: auto; }
+.item-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: 10px; background: var(--bg);
+}
+.item-row-name { flex: 1; font-size: 13px; color: var(--text); }
+.item-row-price { font-size: 12px; color: var(--muted); flex-shrink: 0; }
+.item-qty-ctrl { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.item-qty-ctrl button {
+  width: 26px; height: 26px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--card); color: var(--text); font-size: 16px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;
+}
+.item-qty-val { min-width: 20px; text-align: center; font-weight: 700; font-size: 13px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">📊 Отчёт</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:karaoke_home' %}">Karaoke</a> → {{ venue.name }}
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a href="{% url 'dashboard:karaoke_chess' venue.id %}" class="db-btn db-btn-ghost db-btn-sm">♟️ Шахматка</a>
+    <button onclick="openAddOrder()" class="db-btn db-btn-primary db-btn-sm">+ Заказ еды</button>
+  </div>
+</div>
+
+<!-- PERIOD TABS -->
+<div class="period-tabs">
+  <a href="?period=today"
+     class="period-tab {% if period == 'today' %}active{% endif %}">Сегодня</a>
+  <a href="?period=week"
+     class="period-tab {% if period == 'week' %}active{% endif %}">Неделя</a>
+  <a href="?period=month"
+     class="period-tab {% if period == 'month' %}active{% endif %}">Месяц</a>
+  <a href="#" onclick="toggleCustom(); return false"
+     class="period-tab {% if period == 'custom' %}active{% endif %}">📅 Период</a>
+</div>
+<form method="get" id="customRangeForm"
+      style="{% if period != 'custom' %}display:none;{% endif %}"
+      class="custom-range">
+  <input type="hidden" name="period" value="custom">
+  <input type="date" name="date_from" value="{{ date_from|date:'Y-m-d' }}" class="db-input" style="width:auto;padding:6px 10px">
+  <span style="color:var(--muted)">—</span>
+  <input type="date" name="date_to" value="{{ date_to|date:'Y-m-d' }}" class="db-input" style="width:auto;padding:6px 10px">
+  <button type="submit" class="db-btn db-btn-ghost db-btn-sm">Применить</button>
+</form>
+
+<div style="font-size:12px;color:var(--muted);margin-bottom:18px">
+  {{ date_from|date:"d.m.Y" }}{% if date_from != date_to %} — {{ date_to|date:"d.m.Y" }}{% endif %}
+</div>
+
+<!-- KPI CARDS -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-icon">📅</div>
+    <div class="kpi-val">{{ total_bookings }}</div>
+    <div class="kpi-label">Бронирований</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon">👥</div>
+    <div class="kpi-val">{{ total_guests }}</div>
+    <div class="kpi-label">Гостей</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon">🧾</div>
+    <div class="kpi-val">{{ total_orders }}</div>
+    <div class="kpi-label">Заказов еды</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon">🍽️</div>
+    <div class="kpi-val">{{ total_dishes }}</div>
+    <div class="kpi-label">Блюд заказано</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon">🏠</div>
+    <div class="kpi-val">{{ room_revenue|floatformat:0 }}</div>
+    <div class="kpi-label">Выручка (залы), сом</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon">🍕</div>
+    <div class="kpi-val">{{ food_revenue|floatformat:0 }}</div>
+    <div class="kpi-label">Выручка (еда), сом</div>
+  </div>
+  <div class="kpi-card" style="border-color:rgba(255,77,28,.3);background:rgba(255,77,28,.04)">
+    <div class="kpi-icon">💰</div>
+    <div class="kpi-val" style="color:var(--accent)">{{ total_revenue|floatformat:0 }}</div>
+    <div class="kpi-label">ИТОГО, сом</div>
+  </div>
+</div>
+
+<!-- DAY BREAKDOWN -->
+{% if days %}
+<div class="db-card" style="padding:0;overflow:hidden;margin-bottom:28px">
+  <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-weight:700;font-size:13px">
+    По дням
+  </div>
+  <div style="overflow-x:auto">
+    <table class="day-table">
+      <thead>
+        <tr>
+          <th>Дата</th>
+          <th>Бронирований</th>
+          <th>Гостей</th>
+          <th>Заказов еды</th>
+          <th>Блюд</th>
+          <th>Выручка (еда)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in days %}
+        {% if d.bookings or d.orders %}
+        <tr>
+          <td>
+            <a href="{% url 'dashboard:karaoke_chess' venue.id %}?date={{ d.date|date:'Y-m-d' }}"
+               style="color:var(--accent);text-decoration:none;font-weight:600">
+              {{ d.date|date:"d.m, D" }}
+            </a>
+            {% if d.date == today %}<span style="font-size:10px;color:var(--teal);margin-left:4px">сегодня</span>{% endif %}
+          </td>
+          <td>{{ d.bookings }}</td>
+          <td>{% if d.guests %}<b>{{ d.guests }}</b>{% else %}—{% endif %}</td>
+          <td>{{ d.orders }}</td>
+          <td>{{ d.dishes }}</td>
+          <td>{% if d.food_rev %}{{ d.food_rev|floatformat:0 }} сом{% else %}—{% endif %}</td>
+        </tr>
+        {% endif %}
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted)">Нет данных</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- FOOD ORDERS LIST -->
+{% if orders %}
+<div style="margin-bottom:28px">
+  <div style="font-weight:800;font-size:13px;font-family:'Unbounded',sans-serif;color:var(--text2);margin-bottom:14px">
+    🧾 Заказы еды
+    <span style="font-weight:400;font-size:12px;color:var(--muted);margin-left:8px">{{ orders|length }} шт.</span>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:10px">
+    {% for o in orders %}
+    <div class="order-card" id="order-{{ o.id }}">
+      <div style="font-size:22px;line-height:1;flex-shrink:0;padding-top:2px">🧾</div>
+      <div class="order-card-body">
+        <div class="order-card-title">
+          {% if o.room %}{{ o.room.name }}{% else %}Без кабинки{% endif %}
+          &nbsp;·&nbsp; {{ o.order_date|date:"d.m.Y" }}
+          {% if o.booking %}&nbsp;·&nbsp; {{ o.booking.start_time|time:"H:i" }}–{{ o.booking.end_time|time:"H:i" }}{% endif %}
+        </div>
+        <div class="order-card-items">
+          {% for item in o.items.all %}
+          {{ item.menu_item.name }} × {{ item.qty }}
+          <span style="color:var(--text2)">— {{ item.line_total|floatformat:0 }} сом</span>{% if not forloop.last %}<br>{% endif %}
+          {% empty %}
+          <span style="color:var(--muted)">Нет позиций</span>
+          {% endfor %}
+        </div>
+        {% if o.comment %}<div style="font-size:11px;color:var(--muted);margin-top:4px">💬 {{ o.comment }}</div>{% endif %}
+        <div class="order-card-total">Итого: {{ o.total_amount|floatformat:0 }} сом</div>
+      </div>
+      <button onclick="deleteOrder({{ o.id }})" class="db-btn db-btn-ghost db-btn-sm" style="color:#ff3b30;flex-shrink:0">🗑</button>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if not orders and not bookings %}
+<div class="db-card" style="text-align:center;padding:48px;color:var(--muted)">
+  <div style="font-size:36px;margin-bottom:12px">📊</div>
+  <div>Нет данных за выбранный период</div>
+</div>
+{% endif %}
+
+<!-- ADD ORDER MODAL -->
+<div class="modal-overlay" id="addOrderModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title">🧾 Добавить заказ еды</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div>
+        <label class="db-label">Дата</label>
+        <input class="db-input" type="date" id="aoDate" value="{{ today|date:'Y-m-d' }}">
+      </div>
+      <div>
+        <label class="db-label">Кабинка</label>
+        <select class="db-input" id="aoRoom">
+          <option value="">— Любая —</option>
+          {% for room in venue.rooms.all %}
+          <option value="{{ room.id }}">{{ room.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:14px">
+      <label class="db-label">Примечание</label>
+      <input class="db-input" id="aoComment" placeholder="Необязательно">
+    </div>
+
+    <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">
+      Блюда
+    </div>
+    <div class="item-picker" id="itemPicker">
+      {% for cat in menu_cats %}
+      <div style="font-size:11px;font-weight:700;color:var(--muted);padding:4px 2px;text-transform:uppercase;letter-spacing:.4px">
+        {{ cat.name }}
+      </div>
+      {% for item in cat.items.all %}
+      {% if item.is_active %}
+      <div class="item-row" data-item-id="{{ item.id }}">
+        <div class="item-row-name">{{ item.name }}</div>
+        <div class="item-row-price">{{ item.price|floatformat:0 }} сом</div>
+        <div class="item-qty-ctrl">
+          <button type="button" onclick="changeQty({{ item.id }}, -1)">−</button>
+          <span class="item-qty-val" id="qty-{{ item.id }}">0</span>
+          <button type="button" onclick="changeQty({{ item.id }}, 1)">+</button>
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+      {% endfor %}
+    </div>
+
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div style="font-weight:700;font-size:14px;color:var(--text)">
+        Итого: <span id="aoTotal">0</span> сом
+      </div>
+      <button onclick="submitOrder()" class="db-btn db-btn-primary">✅ Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+const ADD_ORDER_URL = "{% url 'dashboard:karaoke_order_add' venue.id %}";
+const DEL_ORDER_URL = `{% url 'dashboard:karaoke_order_delete' 0 %}`;
+
+// item prices for total calc
+const ITEM_PRICES = {
+  {% for cat in menu_cats %}{% for item in cat.items.all %}{% if item.is_active %}
+  {{ item.id }}: {{ item.price|floatformat:0 }},
+  {% endif %}{% endfor %}{% endfor %}
+};
+const qtys = {};
+
+function openAddOrder(date, roomId) {
+  if (date) document.getElementById("aoDate").value = date;
+  if (roomId) document.getElementById("aoRoom").value = roomId;
+  // reset qtys
+  document.querySelectorAll(".item-qty-val").forEach(el => {
+    el.textContent = "0";
+    const id = el.id.replace("qty-", "");
+    qtys[id] = 0;
+  });
+  updateTotal();
+  document.getElementById("addOrderModal").classList.add("open");
+}
+
+function closeModal() {
+  document.getElementById("addOrderModal").classList.remove("open");
+}
+document.getElementById("addOrderModal").addEventListener("click", e => {
+  if (e.target === document.getElementById("addOrderModal")) closeModal();
+});
+
+function changeQty(itemId, delta) {
+  const cur = qtys[itemId] || 0;
+  const nw = Math.max(0, cur + delta);
+  qtys[itemId] = nw;
+  document.getElementById(`qty-${itemId}`).textContent = nw;
+  updateTotal();
+}
+
+function updateTotal() {
+  let total = 0;
+  for (const [id, qty] of Object.entries(qtys)) {
+    if (qty > 0) total += (ITEM_PRICES[id] || 0) * qty;
+  }
+  document.getElementById("aoTotal").textContent = total.toLocaleString("ru-RU");
+}
+
+async function submitOrder() {
+  const fd = new FormData();
+  fd.append("order_date", document.getElementById("aoDate").value);
+  fd.append("room_id",    document.getElementById("aoRoom").value);
+  fd.append("comment",    document.getElementById("aoComment").value);
+
+  let n = 0, hasItems = false;
+  for (const [id, qty] of Object.entries(qtys)) {
+    if (qty > 0) {
+      fd.append(`item_id_${n}`, id);
+      fd.append(`qty_${n}`, qty);
+      n++; hasItems = true;
+    }
+  }
+  if (!hasItems) { alert("Добавьте хотя бы одно блюдо"); return; }
+
+  const r = await fetch(ADD_ORDER_URL, {method:"POST", body:fd, headers:{"X-CSRFToken":csrf}});
+  const d = await r.json();
+  if (d.ok) { closeModal(); location.reload(); }
+  else alert(d.error || "Ошибка");
+}
+
+async function deleteOrder(id) {
+  if (!confirm("Удалить заказ?")) return;
+  const r = await fetch(DEL_ORDER_URL.replace("/0/", `/${id}/`), {method:"POST", headers:{"X-CSRFToken":csrf}});
+  const d = await r.json();
+  if (d.ok) document.getElementById(`order-${id}`)?.remove();
+}
+
+function toggleCustom() {
+  const f = document.getElementById("customRangeForm");
+  f.style.display = f.style.display === "none" ? "flex" : "none";
+}
+</script>
+{% endblock %}

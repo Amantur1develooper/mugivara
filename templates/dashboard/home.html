@@ -248,6 +248,9 @@
           <a href="{% url 'dashboard:karaoke_chess' venue.id %}" class="kr-btn-chess">♟️ Шахматка</a>
           <a href="{% url 'dashboard:karaoke_rooms' venue.id %}" class="kr-btn-rooms">🚪 Кабинки</a>
         </div>
+        <div class="kr-venue-btns" style="margin-top:6px">
+          <a href="{% url 'dashboard:karaoke_report' venue.id %}" class="kr-btn-rooms" style="text-align:center">📊 Отчёт</a>
+        </div>
       </div>
     </div>
     {% endfor %}

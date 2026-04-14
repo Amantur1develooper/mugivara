@@ -1,13 +1,16 @@
 import json
 from datetime import date, datetime, timedelta
+from decimal import Decimal
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.contrib import messages
 
+from django.db.models import Sum, Count
 from .models import (KaraokeVenue, RoomCategory, KaraokeRoom, KaraokeRoomPhoto,
-                     KaraokeBooking, KaraokeMenuCategory, KaraokeMenuItem, KaraokeMembership)
+                     KaraokeBooking, KaraokeMenuCategory, KaraokeMenuItem, KaraokeMembership,
+                     KaraokeOrder, KaraokeOrderItem)
 
 LOGIN_URL = "dashboard:login"
 
@@ -410,3 +413,187 @@ def karaoke_menu_item_update(request, item_id):
         "margin": margin,
         "margin_pct": pct,
     })
+
+
+# ── ОТЧЁТ ─────────────────────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def karaoke_report(request, venue_id):
+    venue = get_object_or_404(KaraokeVenue, id=venue_id)
+    if not _check_access(request.user, venue):
+        return redirect("dashboard:karaoke_home")
+
+    today = date.today()
+
+    # Period from GET params
+    period = request.GET.get("period", "week")
+    date_from_str = request.GET.get("date_from", "")
+    date_to_str   = request.GET.get("date_to", "")
+
+    if period == "today":
+        date_from = date_to = today
+    elif period == "month":
+        date_from = today.replace(day=1)
+        date_to   = today
+    elif period == "custom" and date_from_str and date_to_str:
+        try:
+            date_from = datetime.strptime(date_from_str, "%Y-%m-%d").date()
+            date_to   = datetime.strptime(date_to_str,   "%Y-%m-%d").date()
+        except ValueError:
+            date_from = today - timedelta(days=6)
+            date_to   = today
+    else:  # week default
+        period    = "week"
+        date_from = today - timedelta(days=6)
+        date_to   = today
+
+    # ── Брони ────────────────────────────────────────────────────────────────
+    bookings_qs = (
+        KaraokeBooking.objects
+        .filter(venue=venue, booking_date__range=(date_from, date_to))
+        .exclude(status="cancelled")
+        .select_related("room")
+        .order_by("booking_date", "start_time")
+    )
+
+    total_bookings = bookings_qs.count()
+    total_guests   = bookings_qs.aggregate(s=Sum("guests"))["s"] or 0
+
+    # Room revenue: price_per_hour * duration
+    room_revenue = Decimal("0")
+    for b in bookings_qs:
+        if b.room and b.room.price_per_hour:
+            # duration in hours
+            def _mins(t):
+                return (t.hour if t.hour >= 6 else t.hour + 24) * 60 + t.minute
+            dur_h = (_mins(b.end_time) - _mins(b.start_time)) / 60
+            if dur_h > 0:
+                room_revenue += b.room.price_per_hour * Decimal(str(round(dur_h, 2)))
+
+    # ── Заказы еды ────────────────────────────────────────────────────────────
+    orders_qs = (
+        KaraokeOrder.objects
+        .filter(venue=venue, order_date__range=(date_from, date_to))
+        .prefetch_related("items__menu_item")
+        .select_related("room", "booking")
+        .order_by("-order_date", "-created_at")
+    )
+
+    total_orders    = orders_qs.count()
+    total_dishes    = orders_qs.aggregate(s=Sum("items__qty"))["s"] or 0
+    food_revenue    = orders_qs.aggregate(s=Sum("total_amount"))["s"] or Decimal("0")
+    total_revenue   = room_revenue + food_revenue
+
+    # ── Per-day breakdown ─────────────────────────────────────────────────────
+    days = []
+    cur = date_from
+    while cur <= date_to:
+        day_bookings = [b for b in bookings_qs if b.booking_date == cur]
+        day_orders   = [o for o in orders_qs   if o.order_date   == cur]
+        days.append({
+            "date":     cur,
+            "bookings": len(day_bookings),
+            "guests":   sum(b.guests for b in day_bookings),
+            "orders":   len(day_orders),
+            "dishes":   sum(i.qty for o in day_orders for i in o.items.all()),
+            "food_rev": sum(o.total_amount for o in day_orders),
+        })
+        cur += timedelta(days=1)
+
+    # ── Menu items for add-order form ─────────────────────────────────────────
+    menu_cats = venue.menu_categories.prefetch_related("items").filter(
+        items__is_active=True
+    ).distinct()
+
+    return render(request, "dashboard/karaoke/report.html", {
+        "venue":          venue,
+        "period":         period,
+        "date_from":      date_from,
+        "date_to":        date_to,
+        "today":          today,
+        # summary
+        "total_bookings": total_bookings,
+        "total_guests":   total_guests,
+        "total_orders":   total_orders,
+        "total_dishes":   total_dishes,
+        "room_revenue":   room_revenue,
+        "food_revenue":   food_revenue,
+        "total_revenue":  total_revenue,
+        # detail
+        "bookings":       bookings_qs,
+        "orders":         orders_qs,
+        "days":           days,
+        "menu_cats":      menu_cats,
+    })
+
+
+# ── ЗАКАЗ ЕДЫ — создать ───────────────────────────────────────────────────────
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def karaoke_order_add(request, venue_id):
+    venue = get_object_or_404(KaraokeVenue, id=venue_id)
+    if not _check_access(request.user, venue):
+        return JsonResponse({"ok": False}, status=403)
+
+    order_date_str = request.POST.get("order_date", "").strip()
+    booking_id     = request.POST.get("booking_id", "").strip()
+    room_id        = request.POST.get("room_id", "").strip()
+    comment        = request.POST.get("comment", "").strip()
+
+    try:
+        order_date = datetime.strptime(order_date_str, "%Y-%m-%d").date()
+    except ValueError:
+        order_date = date.today()
+
+    booking = None
+    if booking_id.isdigit():
+        booking = KaraokeBooking.objects.filter(id=int(booking_id), venue=venue).first()
+
+    room = None
+    if room_id.isdigit():
+        room = KaraokeRoom.objects.filter(id=int(room_id), venue=venue).first()
+    elif booking:
+        room = booking.room
+
+    order = KaraokeOrder.objects.create(
+        venue=venue,
+        booking=booking,
+        room=room,
+        order_date=order_date,
+        comment=comment,
+    )
+
+    # Items: item_id_{n} + qty_{n} pairs from POST
+    total = Decimal("0")
+    for key, val in request.POST.items():
+        if key.startswith("item_id_"):
+            n = key[len("item_id_"):]
+            qty_str = request.POST.get(f"qty_{n}", "1")
+            try:
+                item_id = int(val)
+                qty = max(1, int(qty_str))
+                menu_item = KaraokeMenuItem.objects.get(id=item_id, venue=venue, is_active=True)
+                oi = KaraokeOrderItem(order=order, menu_item=menu_item, qty=qty,
+                                      price_snapshot=menu_item.price)
+                oi.save()
+                total += oi.line_total
+            except (KaraokeMenuItem.DoesNotExist, ValueError):
+                continue
+
+    order.total_amount = total
+    order.save(update_fields=["total_amount"])
+
+    return JsonResponse({"ok": True, "id": order.id, "total": str(total)})
+
+
+# ── ЗАКАЗ ЕДЫ — удалить ──────────────────────────────────────────────────────
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def karaoke_order_delete(request, order_id):
+    order = get_object_or_404(KaraokeOrder, id=order_id)
+    if not _check_access(request.user, order.venue):
+        return JsonResponse({"ok": False}, status=403)
+    order.delete()
+    return JsonResponse({"ok": True})

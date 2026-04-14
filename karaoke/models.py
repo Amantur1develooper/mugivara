@@ -165,6 +165,53 @@ class KaraokeMenuItem(TimeStampedModel):
         return f"{self.venue} / {self.name}"
 
 
+# ── ЗАКАЗЫ ЕДЫ ────────────────────────────────────────────────────────────────
+
+class KaraokeOrder(TimeStampedModel):
+    venue      = models.ForeignKey(KaraokeVenue, on_delete=models.CASCADE, related_name="food_orders")
+    booking    = models.ForeignKey("KaraokeBooking", on_delete=models.SET_NULL,
+                                   null=True, blank=True, related_name="food_orders")
+    room       = models.ForeignKey(KaraokeRoom, on_delete=models.SET_NULL,
+                                   null=True, blank=True, related_name="food_orders")
+    order_date = models.DateField("Дата заказа")
+    comment    = models.CharField("Примечание", max_length=300, blank=True, default="")
+    total_amount = models.DecimalField("Итого", max_digits=10, decimal_places=0, default=0)
+
+    class Meta:
+        verbose_name        = "Заказ еды"
+        verbose_name_plural = "Заказы еды"
+        ordering            = ["-order_date", "-created_at"]
+
+    def __str__(self):
+        return f"{self.venue} / {self.order_date} / #{self.id}"
+
+    def recalc_total(self):
+        total = sum(i.line_total for i in self.items.all())
+        self.total_amount = total
+        self.save(update_fields=["total_amount"])
+
+
+class KaraokeOrderItem(TimeStampedModel):
+    order          = models.ForeignKey(KaraokeOrder, on_delete=models.CASCADE, related_name="items")
+    menu_item      = models.ForeignKey(KaraokeMenuItem, on_delete=models.PROTECT, related_name="order_items")
+    qty            = models.PositiveSmallIntegerField("Кол-во", default=1)
+    price_snapshot = models.DecimalField("Цена на момент заказа", max_digits=10, decimal_places=0, default=0)
+    line_total     = models.DecimalField("Сумма", max_digits=10, decimal_places=0, default=0)
+
+    class Meta:
+        verbose_name        = "Позиция заказа"
+        verbose_name_plural = "Позиции заказа"
+
+    def save(self, *args, **kwargs):
+        if not self.price_snapshot:
+            self.price_snapshot = self.menu_item.price
+        self.line_total = self.price_snapshot * self.qty
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.menu_item.name} × {self.qty}"
+
+
 # ── ДОСТУП ВЛАДЕЛЬЦА ───────────────────────────────────────────────────────────
 
 class KaraokeMembership(TimeStampedModel):
