@@ -4,29 +4,184 @@
 
 {% block head_extra %}
 <style>
-  .chess-wrap { overflow-x:auto; }
-  .chess-table { border-collapse:collapse; min-width:100%; font-size:12px; }
-  .chess-table th, .chess-table td { border:1px solid var(--border); padding:0; white-space:nowrap; }
-  .chess-table th { background:var(--bg); padding:8px 10px; font-weight:600; color:var(--muted); text-align:center; }
-  .chess-room-th { text-align:left !important; padding:10px 14px !important; font-weight:700; color:var(--text); min-width:130px; }
-  .chess-cell { width:52px; height:48px; cursor:pointer; transition:background .15s; position:relative; }
-  .chess-cell.free { background:rgba(0,184,150,.06); }
-  .chess-cell.free:hover { background:rgba(0,184,150,.15); }
-  .chess-cell.busy { background:rgba(168,85,247,.18); cursor:default; }
-  .chess-cell.confirmed { background:rgba(0,184,150,.2); cursor:default; }
-  .chess-cell.completed { background:rgba(100,116,139,.15); cursor:default; }
-  .chess-cell-inner { width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; padding:2px; }
+/* ── CHESS WRAP ─────────────────────────────────────────────── */
+.chess-scroll-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--card);
+}
 
-  .chess-booking-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:4px; }
-  .dot-pending { background:#a855f7; }
-  .dot-confirmed { background:#00b896; }
-  .dot-completed { background:#64748b; }
+.chess-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  /* don't use min-width:100% — let it be as wide as content */
+}
 
-  .add-booking-form { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px; margin-bottom:24px; }
+/* ── CELLS ────────────────────────────────────────────────────── */
+.chess-table th,
+.chess-table td {
+  border: 1px solid var(--border);
+  padding: 0;
+  white-space: nowrap;
+}
 
-  .chess-legend { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
-  .chess-legend-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); }
-  .chess-legend-box { width:16px; height:16px; border-radius:4px; }
+/* Sticky first column — room names */
+.chess-room-th {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: var(--card);
+  text-align: left;
+  padding: 10px 14px;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 110px;
+  max-width: 130px;
+  border-right: 2px solid var(--border);
+}
+
+/* Sticky time header row */
+.chess-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bg);
+  padding: 8px 6px;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: center;
+  min-width: 52px;
+}
+/* Corner cell: sticky left + top */
+.chess-table thead th:first-child {
+  z-index: 4;
+  background: var(--bg);
+}
+
+/* Time slot cells */
+.chess-cell {
+  width: 52px;
+  height: 52px;
+  cursor: pointer;
+  transition: background .1s;
+  position: relative;
+}
+@media (max-width: 640px) {
+  .chess-cell { width: 44px; height: 48px; }
+  .chess-room-th { min-width: 90px; max-width: 100px; font-size: 11px; padding: 8px 10px; }
+}
+.chess-cell.free     { background: rgba(0,184,150,.06); }
+.chess-cell.free:active { background: rgba(0,184,150,.22); }
+.chess-cell.busy      { background: rgba(168,85,247,.22); cursor: default; }
+.chess-cell.confirmed { background: rgba(0,184,150,.22); cursor: default; }
+.chess-cell.completed { background: rgba(100,116,139,.15); cursor: default; }
+.chess-cell.cancelled { background: rgba(255,59,48,.08); cursor: default; }
+
+.chess-cell-inner {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; padding: 2px; line-height: 1.2;
+  text-align: center; color: var(--text2);
+}
+
+/* ── DATE NAV ─────────────────────────────────────────────────── */
+.date-nav {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.date-nav-center {
+  font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 15px;
+  color: var(--text); display: flex; align-items: center; gap: 8px;
+}
+@media (max-width: 480px) {
+  .date-nav { gap: 6px; }
+  .date-nav-center { font-size: 13px; }
+  .date-jump { display: none; }
+  .date-jump.open { display: flex; width: 100%; }
+}
+.date-jump { display: flex; gap: 6px; }
+
+/* ── LEGEND ───────────────────────────────────────────────────── */
+.chess-legend {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; align-items: center;
+}
+.chess-legend-item {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--muted);
+}
+.chess-legend-box { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+
+/* ── BOOKING CARDS ────────────────────────────────────────────── */
+.booking-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  position: relative;
+}
+.booking-card-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  flex-shrink: 0; margin-top: 4px;
+}
+.booking-card-body { flex: 1; min-width: 0; }
+.booking-card-title { font-weight: 700; font-size: 13px; color: var(--text); }
+.booking-card-meta  { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.5; }
+.booking-card-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+@media (max-width: 480px) {
+  .booking-card { flex-direction: column; gap: 10px; }
+  .booking-card-actions { width: 100%; justify-content: space-between; }
+  .booking-card-actions select { flex: 1; }
+}
+
+/* ── MODAL ────────────────────────────────────────────────────── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,.6); backdrop-filter: blur(4px);
+  align-items: flex-end; justify-content: center; padding: 0;
+}
+@media (min-width: 600px) {
+  .modal-overlay { align-items: center; padding: 16px; }
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px 20px 0 0;
+  padding: 20px 20px 32px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+@media (min-width: 600px) {
+  .modal-box { border-radius: 20px; max-width: 440px; padding: 24px; }
+}
+.modal-title {
+  font-family: 'Unbounded', sans-serif; font-weight: 800;
+  font-size: 15px; color: var(--text); margin-bottom: 4px;
+}
+.modal-sub { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+.modal-close {
+  position: absolute; top: 14px; right: 14px;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--bg); border: 1px solid var(--border);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: var(--text2);
+}
+/* drag handle on mobile */
+.modal-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--border); margin: 0 auto 16px; display: none;
+}
+@media (max-width: 599px) {
+  .modal-handle { display: block; }
+}
 </style>
 {% endblock %}
 
@@ -42,34 +197,35 @@
 </div>
 
 <!-- DATE NAV -->
-<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+<div class="date-nav">
   <a href="?date={{ prev_date }}" class="db-btn db-btn-ghost db-btn-sm">← Пред.</a>
-  <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:16px;color:var(--text)">
+  <div class="date-nav-center">
     {{ view_date|date:"d.m.Y" }}
-    {% if view_date == today %}<span style="font-size:11px;color:var(--teal);margin-left:6px">Сегодня</span>{% endif %}
+    {% if view_date == today %}<span style="font-size:11px;color:var(--teal)">Сегодня</span>{% endif %}
   </div>
   <a href="?date={{ next_date }}" class="db-btn db-btn-ghost db-btn-sm">След. →</a>
-  <form method="get" style="display:flex;gap:6px">
+  <button class="db-btn db-btn-ghost db-btn-sm" onclick="toggleDateJump()" id="dateToggleBtn">📅</button>
+  <form method="get" class="date-jump" id="dateJumpForm" style="display:none">
     <input type="date" name="date" value="{{ view_date|date:'Y-m-d' }}" class="db-input" style="width:auto;padding:6px 10px">
-    <button type="submit" class="db-btn db-btn-ghost db-btn-sm">Перейти</button>
+    <button type="submit" class="db-btn db-btn-ghost db-btn-sm">→</button>
   </form>
 </div>
 
 <!-- LEGEND -->
 <div class="chess-legend">
-  <div class="chess-legend-item"><div class="chess-legend-box" style="background:rgba(0,184,150,.06);border:1px solid rgba(0,184,150,.2)"></div> Свободно</div>
-  <div class="chess-legend-item"><div class="chess-legend-box" style="background:rgba(168,85,247,.18)"></div> Ожидает</div>
-  <div class="chess-legend-item"><div class="chess-legend-box" style="background:rgba(0,184,150,.2)"></div> Подтверждено</div>
+  <div class="chess-legend-item"><div class="chess-legend-box" style="background:rgba(0,184,150,.12);border:1px solid rgba(0,184,150,.3)"></div> Свободно</div>
+  <div class="chess-legend-item"><div class="chess-legend-box" style="background:rgba(168,85,247,.22)"></div> Ожидает</div>
+  <div class="chess-legend-item"><div class="chess-legend-box" style="background:rgba(0,184,150,.22)"></div> Подтверждено</div>
   <div class="chess-legend-item"><div class="chess-legend-box" style="background:rgba(100,116,139,.15)"></div> Завершено</div>
 </div>
 
 <!-- CHESS TABLE -->
 {% if rooms %}
-<div class="chess-wrap db-card" style="padding:0;overflow:hidden">
+<div class="chess-scroll-wrap">
   <table class="chess-table">
     <thead>
       <tr>
-        <th class="chess-room-th">Кабинка</th>
+        <th class="chess-room-th" style="background:var(--bg)">Кабинка</th>
         {% for slot in slots %}
         <th>{{ slot }}</th>
         {% endfor %}
@@ -80,15 +236,15 @@
       <tr>
         <th class="chess-room-th">
           {{ room.name }}
-          {% if room.price_per_hour %}<div style="font-weight:400;color:var(--muted)">{{ room.price_per_hour|floatformat:0 }} с/ч</div>{% endif %}
+          {% if room.price_per_hour %}
+          <div style="font-weight:400;color:var(--muted);font-size:10px;margin-top:1px">{{ room.price_per_hour|floatformat:0 }} с/ч</div>
+          {% endif %}
         </th>
         {% for slot in slots %}
-        {% with slot_h=slot|slice:":2" %}
         <td class="chess-cell free" id="cell-{{ room.id }}-{{ slot|slice:':2' }}"
             onclick="openAddBooking({{ room.id }}, '{{ room.name|escapejs }}', '{{ view_date|date:'Y-m-d' }}', '{{ slot }}')">
           <div class="chess-cell-inner"></div>
         </td>
-        {% endwith %}
         {% endfor %}
       </tr>
       {% endfor %}
@@ -97,7 +253,6 @@
 </div>
 
 <script>
-// Mark booked cells
 const bookings = [
   {% for b in bookings %}
   {room:{{ b.room_id }}, start:"{{ b.start_time|time:'H:i' }}", end:"{{ b.end_time|time:'H:i' }}", status:"{{ b.status }}", name:"{{ b.customer_name|escapejs }}", phone:"{{ b.customer_phone|escapejs }}", id:{{ b.id }}},
@@ -106,8 +261,8 @@ const bookings = [
 const slots = [{% for s in slots %}"{{ s }}",{% endfor %}];
 
 function timeToMinutes(t) {
-  const [h,m] = t.split(":").map(Number);
-  return (h < 6 ? h + 24 : h) * 60 + m; // handle midnight wrap
+  const [h, m] = t.split(":").map(Number);
+  return (h < 6 ? h + 24 : h) * 60 + m;
 }
 
 bookings.forEach(b => {
@@ -116,12 +271,15 @@ bookings.forEach(b => {
     const ss = timeToMinutes(slot), se = ss + 60;
     if (bs < se && be > ss) {
       const cell = document.getElementById(`cell-${b.room}-${slot.slice(0,2)}`);
-      if (cell) {
-        cell.classList.remove("free");
-        cell.classList.add(b.status === "confirmed" ? "confirmed" : b.status === "completed" ? "completed" : "busy");
-        cell.onclick = () => openBookingDetail(b);
-        cell.querySelector(".chess-cell-inner").innerHTML = `<span style="font-size:9px;text-align:center;line-height:1.2;">${b.name.split(" ")[0]}</span>`;
-      }
+      if (!cell) return;
+      cell.classList.remove("free");
+      if (b.status === "confirmed")  cell.classList.add("confirmed");
+      else if (b.status === "completed") cell.classList.add("completed");
+      else if (b.status === "cancelled") cell.classList.add("cancelled");
+      else cell.classList.add("busy");
+      cell.onclick = () => openBookingDetail(b);
+      cell.querySelector(".chess-cell-inner").innerHTML =
+        `<span>${b.name.split(" ")[0]}</span>`;
     }
   });
 });
@@ -138,23 +296,34 @@ bookings.forEach(b => {
 <div style="margin-top:28px">
   <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:13px;color:var(--text2);margin-bottom:14px">
     Бронирования на {{ view_date|date:"d.m.Y" }}
+    <span style="font-weight:400;font-size:12px;color:var(--muted);margin-left:8px">{{ bookings|length }} шт.</span>
   </div>
   <div style="display:flex;flex-direction:column;gap:10px">
     {% for b in bookings %}
-    <div class="db-card" style="padding:14px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap" id="brow-{{ b.id }}">
-      <div style="flex:1;min-width:200px">
-        <div style="font-weight:700;font-size:14px;color:var(--text)">{{ b.room.name }} · {{ b.start_time|time:"H:i" }}–{{ b.end_time|time:"H:i" }}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:3px">{{ b.customer_name }} · {{ b.customer_phone }} · {{ b.guests }} чел.</div>
-        {% if b.notes %}<div style="font-size:12px;color:var(--muted);margin-top:2px">💬 {{ b.notes }}</div>{% endif %}
+    <div class="booking-card" id="brow-{{ b.id }}">
+      <div class="booking-card-dot"
+        style="background:{% if b.status == 'confirmed' %}#00b896{% elif b.status == 'completed' %}#64748b{% elif b.status == 'cancelled' %}#ff3b30{% else %}#a855f7{% endif %}">
       </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <select onchange="updateStatus({{ b.id }}, this.value)" class="db-input" style="padding:6px 10px;width:auto;font-size:12px">
-          <option value="pending" {% if b.status == 'pending' %}selected{% endif %}>Ожидает</option>
+      <div class="booking-card-body">
+        <div class="booking-card-title">
+          {{ b.room.name }} &nbsp;·&nbsp; {{ b.start_time|time:"H:i" }}–{{ b.end_time|time:"H:i" }}
+        </div>
+        <div class="booking-card-meta">
+          👤 {{ b.customer_name }}
+          {% if b.customer_phone %}&nbsp;·&nbsp; 📞 {{ b.customer_phone }}{% endif %}
+          {% if b.guests %}&nbsp;·&nbsp; 👥 {{ b.guests }} чел.{% endif %}
+          {% if b.notes %}<br>💬 {{ b.notes }}{% endif %}
+        </div>
+      </div>
+      <div class="booking-card-actions">
+        <select onchange="updateStatus({{ b.id }}, this.value)"
+                class="db-input" style="padding:6px 10px;font-size:12px;width:auto">
+          <option value="pending"   {% if b.status == 'pending'   %}selected{% endif %}>Ожидает</option>
           <option value="confirmed" {% if b.status == 'confirmed' %}selected{% endif %}>Подтверждено</option>
           <option value="completed" {% if b.status == 'completed' %}selected{% endif %}>Завершено</option>
           <option value="cancelled" {% if b.status == 'cancelled' %}selected{% endif %}>Отменено</option>
         </select>
-        <button onclick="deleteBooking({{ b.id }})" class="db-btn db-btn-ghost db-btn-sm" style="color:#ff3b30">🗑</button>
+        <button onclick="deleteBooking({{ b.id }})" class="db-btn db-btn-ghost db-btn-sm" style="color:#ff3b30;flex-shrink:0">🗑</button>
       </div>
     </div>
     {% endfor %}
@@ -163,11 +332,12 @@ bookings.forEach(b => {
 {% endif %}
 
 <!-- ADD BOOKING MODAL -->
-<div style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px" id="addModal">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;width:100%;max-width:440px;position:relative">
-    <button onclick="document.getElementById('addModal').style.display='none'" style="position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;background:var(--bg);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>
-    <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:15px;color:var(--text);margin-bottom:4px">Добавить бронирование</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:18px" id="addModalSub"></div>
+<div class="modal-overlay" id="addModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('addModal')">✕</button>
+    <div class="modal-title">Добавить бронирование</div>
+    <div class="modal-sub" id="addModalSub"></div>
     <form id="addBookingForm">
       {% csrf_token %}
       <input type="hidden" name="room_id" id="abRoomId">
@@ -188,7 +358,7 @@ bookings.forEach(b => {
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
         <div>
-          <label class="db-label">Телефон *</label>
+          <label class="db-label">Телефон</label>
           <input class="db-input" name="phone" type="tel" placeholder="+996...">
         </div>
         <div>
@@ -200,30 +370,88 @@ bookings.forEach(b => {
         <label class="db-label">Примечание</label>
         <input class="db-input" name="notes" placeholder="Пожелания...">
       </div>
-      <button type="button" onclick="submitAddBooking()" class="db-btn db-btn-primary" style="width:100%">✅ Добавить</button>
+      <button type="button" onclick="submitAddBooking()" class="db-btn db-btn-primary" style="width:100%;padding:13px">
+        ✅ Добавить бронирование
+      </button>
     </form>
   </div>
 </div>
 
+<!-- BOOKING DETAIL MODAL -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('detailModal')">✕</button>
+    <div class="modal-title" id="detailTitle">Бронирование</div>
+    <div id="detailBody" style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:20px"></div>
+    <div style="display:flex;gap:10px">
+      <select id="detailStatus" class="db-input" style="flex:1;padding:10px">
+        <option value="pending">Ожидает</option>
+        <option value="confirmed">Подтверждено</option>
+        <option value="completed">Завершено</option>
+        <option value="cancelled">Отменено</option>
+      </select>
+      <button onclick="saveDetailStatus()" class="db-btn db-btn-primary db-btn-sm">Сохранить</button>
+    </div>
+  </div>
+</div>
+
 <script>
+const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+let detailBookingId = null;
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove("open");
+}
+// Close on overlay click
+document.querySelectorAll(".modal-overlay").forEach(el => {
+  el.addEventListener("click", e => { if (e.target === el) el.classList.remove("open"); });
+});
+
+function toggleDateJump() {
+  const f = document.getElementById("dateJumpForm");
+  f.style.display = f.style.display === "none" ? "flex" : "none";
+}
+
 function openAddBooking(roomId, roomName, date, slot) {
   document.getElementById("abRoomId").value = roomId;
   document.getElementById("abDate").value = date;
   document.getElementById("abStart").value = slot;
-  document.getElementById("abEnd").value = slot.replace(/^\d+/, h => String((parseInt(h)+2)%24).padStart(2,"0"));
-  document.getElementById("addModalSub").textContent = `🚪 ${roomName} · ${date} с ${slot}`;
-  document.getElementById("addModal").style.display = "flex";
-}
-function openBookingDetail(b) {
-  alert(`Бронирование #${b.id}\n${b.name} · ${b.phone}\n${b.start}–${b.end}\nСтатус: ${b.status}`);
+  const endH = String((parseInt(slot) + 2) % 24).padStart(2, "0");
+  document.getElementById("abEnd").value = endH + ":00";
+  document.getElementById("addModalSub").textContent = `🚪 ${roomName} · с ${slot}`;
+  document.getElementById("addModal").classList.add("open");
+  // focus name field
+  setTimeout(() => document.querySelector("#addBookingForm [name=name]")?.focus(), 100);
 }
 
-const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+function openBookingDetail(b) {
+  detailBookingId = b.id;
+  const statusMap = {pending:"Ожидает", confirmed:"Подтверждено", completed:"Завершено", cancelled:"Отменено"};
+  document.getElementById("detailTitle").textContent = `Бронирование #${b.id}`;
+  document.getElementById("detailBody").innerHTML =
+    `👤 <b>${b.name}</b><br>` +
+    (b.phone ? `📞 ${b.phone}<br>` : "") +
+    `🕐 ${b.start} – ${b.end}`;
+  document.getElementById("detailStatus").value = b.status;
+  document.getElementById("detailModal").classList.add("open");
+}
+
+async function saveDetailStatus() {
+  if (!detailBookingId) return;
+  const status = document.getElementById("detailStatus").value;
+  const fd = new FormData(); fd.append("status", status);
+  await fetch(`{% url 'dashboard:karaoke_booking_status' 0 %}`.replace("/0/", `/${detailBookingId}/`),
+    {method:"POST", body:fd, headers:{"X-CSRFToken":csrf}});
+  closeModal("detailModal");
+  location.reload();
+}
 
 async function submitAddBooking() {
   const form = document.getElementById("addBookingForm");
   const data = new FormData(form);
-  const r = await fetch("{% url 'dashboard:karaoke_booking_add' venue.id %}", {method:"POST", body:data, headers:{"X-CSRFToken":csrf}});
+  const r = await fetch("{% url 'dashboard:karaoke_booking_add' venue.id %}",
+    {method:"POST", body:data, headers:{"X-CSRFToken":csrf}});
   const d = await r.json();
   if (d.ok) { location.reload(); }
   else { alert(d.error || "Ошибка"); }
@@ -231,14 +459,16 @@ async function submitAddBooking() {
 
 async function updateStatus(id, status) {
   const fd = new FormData(); fd.append("status", status);
-  await fetch(`{% url 'dashboard:karaoke_booking_status' 0 %}`.replace("/0/",`/${id}/`), {method:"POST",body:fd,headers:{"X-CSRFToken":csrf}});
+  await fetch(`{% url 'dashboard:karaoke_booking_status' 0 %}`.replace("/0/", `/${id}/`),
+    {method:"POST", body:fd, headers:{"X-CSRFToken":csrf}});
 }
 
 async function deleteBooking(id) {
   if (!confirm("Удалить бронирование?")) return;
-  const r = await fetch(`{% url 'dashboard:karaoke_booking_delete' 0 %}`.replace("/0/",`/${id}/`), {method:"POST",headers:{"X-CSRFToken":csrf}});
+  const r = await fetch(`{% url 'dashboard:karaoke_booking_delete' 0 %}`.replace("/0/", `/${id}/`),
+    {method:"POST", headers:{"X-CSRFToken":csrf}});
   const d = await r.json();
-  if (d.ok) { document.getElementById(`brow-${id}`)?.remove(); location.reload(); }
+  if (d.ok) { document.getElementById(`brow-${id}`)?.remove(); }
 }
 </script>
 
