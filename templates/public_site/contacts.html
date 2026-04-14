@@ -1,128 +1,338 @@
 {% extends "base.html" %}
 {% load i18n i18n_attrs static %}
 
-{% block title %}{% trans "Контакты" %} — Санжи{% endblock %}
+{% block title %}{% trans "Контакты" %} — {{ restaurants.0.name_ru|default:"Санжи" }}{% endblock %}
+
 {% block img %}
   <link rel="icon" type="image/jpg" sizes="32x32" href="{% static 'mini_logo.jpg' %}">
   <link rel="icon" type="image/jpg" sizes="16x16" href="{% static 'mini_logo.jpg' %}">
-  <link rel="apple-touch-icon" href="{{ branch.cover_photo.url }}' %}">
-  <link rel="shortcut icon" href="{{ branch.cover_photo.url }}">
 {% endblock img %}
-{% block content %}
-<div class="max-w-6xl mx-auto px-4 py-6">
 
-  <div class="flex items-start justify-between gap-4">
-    <div>
-      <h1 class="text-2xl md:text-3xl font-extrabold">{% trans "Контакты сети" %}</h1>
-      <p class="mt-2 text-stone-600">
-        {% trans "Выберите ресторан и филиал — звонок, WhatsApp, меню и бронирование." %}
-      </p>
-    </div>
-    <a href="{% url 'public_site:home' %}"
-       class="px-4 py-2 rounded-xl ring-1 ring-stone-200 hover:bg-stone-50">
-      ← {% trans "На главную" %}
-    </a>
+{% block head_extra %}
+<style>
+/* ── PAGE ── */
+.ct-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 88px 20px 64px;
+}
+
+/* ── HERO ── */
+.ct-hero {
+  text-align: center;
+  margin-bottom: 40px;
+}
+.ct-hero-title {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900; font-size: clamp(22px, 5vw, 36px);
+  letter-spacing: -.5px; color: var(--text);
+  margin-bottom: 10px;
+}
+.ct-hero-sub {
+  font-size: 15px; color: var(--muted); font-weight: 400; line-height: 1.6;
+  max-width: 480px; margin: 0 auto;
+}
+
+/* ── RESTAURANT BLOCK ── */
+.ct-restaurant {
+  margin-bottom: 36px;
+}
+.ct-rest-header {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 18px; padding: 0 4px;
+}
+.ct-rest-logo {
+  width: 52px; height: 52px; border-radius: 16px;
+  background: var(--card2); border: 1px solid var(--border);
+  overflow: hidden; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.ct-rest-logo img { width: 100%; height: 100%; object-fit: cover; }
+.ct-rest-logo-letter {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900; font-size: 20px; color: var(--muted);
+}
+.ct-rest-name {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 800; font-size: 17px; color: var(--text);
+}
+.ct-rest-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+/* ── BRANCHES GRID ── */
+.ct-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 620px) {
+  .ct-grid { grid-template-columns: 1fr; }
+}
+
+/* ── BRANCH CARD ── */
+.ct-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px var(--shadow);
+  display: flex; flex-direction: column;
+  transition: box-shadow .2s, transform .2s;
+}
+.ct-card:hover {
+  box-shadow: 0 8px 28px rgba(0,0,0,.09);
+  transform: translateY(-2px);
+}
+
+/* Cover photo */
+.ct-card-cover {
+  height: 130px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  position: relative; overflow: hidden; flex-shrink: 0;
+}
+.ct-card-cover img {
+  width: 100%; height: 100%; object-fit: cover; opacity: .9;
+}
+.ct-card-cover-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0) 40%, rgba(0,0,0,.45));
+}
+.ct-status-badge {
+  position: absolute; bottom: 10px; left: 12px;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 100px;
+  font-size: 11px; font-weight: 700;
+  backdrop-filter: blur(8px);
+}
+.ct-status-badge.open  { background: rgba(0,184,150,.85); color: #fff; }
+.ct-status-badge.closed{ background: rgba(0,0,0,.45); color: rgba(255,255,255,.8); }
+.ct-status-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor; opacity: .9;
+}
+
+/* Body */
+.ct-card-body { padding: 16px 18px 18px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+
+.ct-branch-name {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 800; font-size: 13px; color: var(--text);
+  line-height: 1.3;
+}
+
+.ct-info-list { display: flex; flex-direction: column; gap: 6px; }
+.ct-info-row {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 13px; color: var(--text2); line-height: 1.4;
+}
+.ct-info-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; opacity: .75; }
+
+/* Hours */
+.ct-hours {
+  font-size: 12px; color: var(--muted);
+  display: flex; align-items: center; gap: 5px;
+}
+
+/* Action buttons */
+.ct-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+
+.ct-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 8px 14px; border-radius: 12px;
+  font-size: 12px; font-weight: 700;
+  text-decoration: none; transition: all .15s;
+  border: 1.5px solid transparent;
+  white-space: nowrap;
+}
+.ct-btn-call {
+  background: var(--text); color: #fff;
+}
+.ct-btn-call:hover { background: #222; }
+
+.ct-btn-wa {
+  background: #25D366; color: #fff;
+}
+.ct-btn-wa:hover { background: #1ebe5a; }
+
+.ct-btn-map {
+  background: rgba(37,99,235,.08);
+  color: var(--blue);
+  border-color: rgba(37,99,235,.18);
+}
+.ct-btn-map:hover { background: rgba(37,99,235,.14); }
+
+.ct-btn-menu {
+  background: rgba(255,77,28,.08);
+  color: var(--accent);
+  border-color: rgba(255,77,28,.18);
+}
+.ct-btn-menu:hover { background: rgba(255,77,28,.14); }
+
+.ct-btn-book {
+  background: rgba(0,184,150,.08);
+  color: var(--teal);
+  border-color: rgba(0,184,150,.2);
+}
+.ct-btn-book:hover { background: rgba(0,184,150,.15); }
+
+/* ── DIVIDER ── */
+.ct-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 8px 0 20px;
+}
+.ct-divider-line { flex: 1; height: 1px; background: var(--border); }
+.ct-divider-label {
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .6px;
+}
+
+/* ── EMPTY ── */
+.ct-empty {
+  text-align: center; padding: 60px 24px;
+  background: var(--card); border-radius: 24px; border: 1px solid var(--border);
+}
+.ct-empty-icon { font-size: 40px; margin-bottom: 12px; }
+.ct-empty-title { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 16px; margin-bottom: 6px; }
+.ct-empty-sub { font-size: 14px; color: var(--muted); }
+
+/* ── BACK LINK ── */
+.ct-back {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--muted); text-decoration: none;
+  margin-bottom: 28px; transition: color .15s;
+}
+.ct-back:hover { color: var(--accent); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ct-page">
+
+  <a href="{% url 'public_site:home' %}" class="ct-back">← {% trans "На главную" %}</a>
+
+  <div class="ct-hero">
+    <div class="ct-hero-title">{% trans "Наши адреса и контакты" %}</div>
+    <div class="ct-hero-sub">{% trans "Выберите ближайший филиал — звоните, пишите в WhatsApp или сразу бронируйте столик." %}</div>
   </div>
 
-  <div class="mt-6 space-y-6">
-    {% for r in restaurants %}
-      <section class="rounded-3xl bg-white ring-1 ring-stone-200 p-5 shadow-sm">
-        <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-2xl bg-stone-100 ring-1 ring-stone-200 overflow-hidden flex items-center justify-center">
-            {% if r.logo %}
-              <img src="{{ r.logo.url }}" alt="" class="w-full h-full object-cover" loading="lazy" decoding="async">
-            {% else %}
-              <span class="font-extrabold text-stone-600">{{ r.name_ru|slice:":1" }}</span>
-            {% endif %}
-          </div>
-          <div class="min-w-0">
-            <div class="text-xl font-extrabold leading-tight">{% t r "name" %}</div>
-            <div class="text-sm text-stone-500">{% trans "Филиалов" %}: {{ r.branches.all|length }}</div>
+  {% for r in restaurants %}
+  <div class="ct-restaurant">
+
+    <div class="ct-rest-header">
+      <div class="ct-rest-logo">
+        {% if r.logo %}
+          <img src="{{ r.logo.url }}" alt="{{ r.name_ru }}" loading="lazy">
+        {% else %}
+          <span class="ct-rest-logo-letter">{{ r.name_ru|slice:":1" }}</span>
+        {% endif %}
+      </div>
+      <div>
+        <div class="ct-rest-name">{% t r "name" %}</div>
+        <div class="ct-rest-meta">
+          {{ r.branches.all|length }} {% trans "филиал" %}{% if r.branches.all|length != 1 %}{% trans "а" %}{% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% if r.branches.all %}
+    <div class="ct-grid">
+      {% for b in r.branches.all %}
+      <div class="ct-card">
+
+        <!-- Cover -->
+        <div class="ct-card-cover">
+          {% if b.cover_photo %}
+            <img src="{{ b.cover_photo.url }}" alt="{{ b.name_ru }}" loading="lazy">
+          {% elif b.promo_photo %}
+            <img src="{{ b.promo_photo.url }}" alt="{{ b.name_ru }}" loading="lazy">
+          {% endif %}
+          <div class="ct-card-cover-overlay"></div>
+          <div class="ct-status-badge {% if b.is_open_now %}open{% else %}closed{% endif %}">
+            <span class="ct-status-dot"></span>
+            {% if b.is_open_now %}{% trans "Открыто" %}{% else %}{% trans "Закрыто" %}{% endif %}
           </div>
         </div>
 
-        {% if r.branches.all %}
-          <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-            {% for b in r.branches.all %}
-              <div class="rounded-2xl ring-1 ring-stone-200 p-4 bg-white">
-                <div class="flex items-start justify-between gap-3">
-                  <div class="min-w-0">
-                    <div class="font-extrabold">{% t b "name" %}</div>
-                    <div class="text-sm text-stone-600 mt-1">
-                      {{ b.address|default:"" }}
-                    </div>
-                    <div class="text-sm mt-2">
-                      {% if b.is_open_now %}
-                        <span class="inline-flex px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
-                          {% trans "Открыто сейчас" %}
-                        </span>
-                      {% else %}
-                        <span class="inline-flex px-2 py-1 rounded-lg bg-stone-50 text-stone-600 ring-1 ring-stone-200">
-                          {% trans "Закрыто сейчас" %}
-                        </span>
-                      {% endif %}
-                    </div>
-                    {% if b.phone %}
-                      <div class="text-sm text-stone-700 mt-2">
-                        <span class="text-stone-500">{% trans "Тел." %}</span> {{ b.phone }}
-                      </div>
-                    {% endif %}
-                  </div>
+        <!-- Body -->
+        <div class="ct-card-body">
+          <div class="ct-branch-name">{% t b "name" %}</div>
 
-                  {% if b.cover_photo %}
-                    <img src="{{ b.cover_photo.url }}" alt=""
-                         class="w-20 h-20 rounded-2xl object-cover ring-1 ring-stone-200"
-                         loading="lazy" decoding="async">
-                  {% endif %}
-                </div>
+          <div class="ct-info-list">
+            {% if b.address %}
+            <div class="ct-info-row">
+              <span class="ct-info-icon">📍</span>
+              <span>{{ b.address }}</span>
+            </div>
+            {% endif %}
 
-                <div class="mt-3 flex flex-wrap gap-2">
-                  {% if b.phone %}
-                    <a href="tel:{{ b.phone }}"
-                       class="px-3 py-2 rounded-xl bg-stone-900 text-white text-sm font-semibold">
-                      {% trans "Позвонить" %}
-                    </a>
+            {% if b.phone %}
+            <div class="ct-info-row">
+              <span class="ct-info-icon">📞</span>
+              <a href="tel:{{ b.phone }}" style="color:var(--text2);text-decoration:none">{{ b.phone }}</a>
+            </div>
+            {% endif %}
 
-                    <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' ' }}"
-                       target="_blank"
-                       class="px-3 py-2 rounded-xl ring-1 ring-stone-200 hover:bg-stone-50 text-sm font-semibold">
-                      WhatsApp
-                    </a>
-                  {% endif %}
-                    {% if b.map_url %}
-  <a href="{{ branch.map_url }}" target="_blank" rel="noopener"
-     class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-stone-900 text-white font-semibold">
-    📍 Как добраться
-  </a>
-{% endif %}
-
-                  <a href="{% url 'public_site:branch_menu' b.id %}"
-                     class="px-3 py-2 rounded-xl ring-1 ring-stone-200 hover:bg-stone-50 text-sm font-semibold">
-                    {% trans "Меню" %}
-                  </a>
-
-                  <a href="{% url 'public_site:reservation' b.id %}"
-                     class="px-3 py-2 rounded-xl ring-1 ring-stone-200 hover:bg-stone-50 text-sm font-semibold">
-                    {% trans "Бронирование" %}
-                  </a>
-                </div>
-              </div>
-            {% endfor %}
+            {% if not b.is_open_24h and b.open_time and b.close_time %}
+            <div class="ct-info-row">
+              <span class="ct-info-icon">🕐</span>
+              <span>{{ b.open_time|time:"H:i" }} – {{ b.close_time|time:"H:i" }}</span>
+            </div>
+            {% elif b.is_open_24h %}
+            <div class="ct-info-row">
+              <span class="ct-info-icon">🌙</span>
+              <span>{% trans "Работаем 24/7" %}</span>
+            </div>
+            {% endif %}
           </div>
-        {% else %}
-          <div class="mt-4 text-stone-500">{% trans "Филиалы не добавлены." %}</div>
-        {% endif %}
-      </section>
-    {% empty %}
-      <div class="rounded-2xl bg-white ring-1 ring-stone-200 p-6 text-stone-600">
-        {% trans "Пока нет активных ресторанов." %}
+
+          <div class="ct-actions">
+            {% if b.phone %}
+            <a href="tel:{{ b.phone }}" class="ct-btn ct-btn-call">
+              📞 {% trans "Позвонить" %}
+            </a>
+            <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-' }}"
+               target="_blank" rel="noopener" class="ct-btn ct-btn-wa">
+              💬 WhatsApp
+            </a>
+            {% endif %}
+
+            {% if b.map_url %}
+            <a href="{{ b.map_url }}" target="_blank" rel="noopener" class="ct-btn ct-btn-map">
+              🗺️ {% trans "Как добраться" %}
+            </a>
+            {% endif %}
+
+            <a href="{% url 'public_site:branch_menu' b.id %}" class="ct-btn ct-btn-menu">
+              🍽️ {% trans "Меню" %}
+            </a>
+
+            <a href="{% url 'public_site:reservation' b.id %}" class="ct-btn ct-btn-book">
+              📅 {% trans "Бронирование" %}
+            </a>
+          </div>
+        </div>
+
       </div>
-    {% endfor %}
+      {% endfor %}
+    </div>
+
+    {% else %}
+    <div style="padding:16px;color:var(--muted);font-size:14px">
+      {% trans "Филиалы не добавлены." %}
+    </div>
+    {% endif %}
+
   </div>
+  {% empty %}
+  <div class="ct-empty">
+    <div class="ct-empty-icon">🏪</div>
+    <div class="ct-empty-title">{% trans "Пока нет ресторанов" %}</div>
+    <div class="ct-empty-sub">{% trans "Заходите позже." %}</div>
+  </div>
+  {% endfor %}
+
 </div>
 {% endblock %}
 
 {% block footer %}
-     <a href="{% url 'public_site:home' %}">Разработка Amantur agency
-</a>
+<a href="{% url 'public_site:home' %}">Разработка Amantur agency</a>
 {% endblock footer %}
