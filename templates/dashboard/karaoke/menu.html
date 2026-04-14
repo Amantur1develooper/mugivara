@@ -9,6 +9,12 @@
   .kmi-photo img{width:100%;height:100%;object-fit:cover;}
   .kmi-add-form{background:var(--bg);border:1.5px dashed var(--border);border-radius:12px;padding:14px;margin-top:10px;display:none;}
   .kmi-add-form.open{display:block;}
+  .kmi-price-inline{display:inline-flex;align-items:center;gap:4px;cursor:pointer;}
+  .kmi-price-inline input{width:70px;padding:2px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--bg);color:var(--text);text-align:right;}
+  .kmi-margin{font-size:11px;padding:2px 7px;border-radius:100px;font-weight:600;margin-left:4px;}
+  .kmi-margin.pos{background:rgba(0,184,150,.1);color:#00b896;}
+  .kmi-margin.neg{background:rgba(255,59,48,.1);color:#ff3b30;}
+  .kmi-margin.zero{background:rgba(0,0,0,.05);color:var(--muted);}
 </style>
 {% endblock %}
 {% block content %}
@@ -44,7 +50,27 @@
     </div>
     <div style="flex:1;min-width:0">
       <div style="font-weight:600;font-size:13px;color:var(--text)">{{ item.name }}</div>
-      <div style="font-size:12px;color:var(--muted)">{{ item.price|floatformat:0 }} сом</div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:3px">
+        <span style="font-size:11px;color:var(--muted)">Цена:</span>
+        <span class="kmi-price-inline">
+          <input type="number" min="0" value="{{ item.price|floatformat:0 }}"
+                 data-field="price" data-id="{{ item.id }}"
+                 onblur="saveField({{ item.id }}, 'price', this)"
+                 onkeydown="if(event.key==='Enter'){this.blur()}"
+                 style="width:70px">
+          <span style="font-size:11px;color:var(--muted)">сом</span>
+        </span>
+        <span style="font-size:11px;color:var(--muted)">Себест.:</span>
+        <span class="kmi-price-inline">
+          <input type="number" min="0" value="{{ item.cost_price|floatformat:0 }}"
+                 data-field="cost_price" data-id="{{ item.id }}"
+                 onblur="saveField({{ item.id }}, 'cost_price', this)"
+                 onkeydown="if(event.key==='Enter'){this.blur()}"
+                 style="width:70px">
+          <span style="font-size:11px;color:var(--muted)">сом</span>
+        </span>
+        <span class="kmi-margin zero" id="kmi-margin-{{ item.id }}">—</span>
+      </div>
     </div>
     <button onclick="toggleItem({{ item.id }}, this)" class="db-btn db-btn-ghost db-btn-sm">{% if item.is_active %}👁{% else %}🚫{% endif %}</button>
     <button onclick="deleteItem({{ item.id }})" class="db-btn db-btn-ghost db-btn-sm" style="color:#ff3b30">🗑</button>
@@ -55,7 +81,7 @@
 
   <!-- Форма добавления -->
   <div class="kmi-add-form" id="addform-{{ cat.id }}">
-    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end">
       <div>
         <label class="db-label">Название *</label>
         <input class="db-input" id="iname-{{ cat.id }}" placeholder="Шашлык">
@@ -63,6 +89,10 @@
       <div>
         <label class="db-label">Цена (сом)</label>
         <input class="db-input" id="iprice-{{ cat.id }}" type="number" min="0" value="0">
+      </div>
+      <div>
+        <label class="db-label">Себестоимость (сом)</label>
+        <input class="db-input" id="icost-{{ cat.id }}" type="number" min="0" value="0">
       </div>
       <div>
         <label class="db-label">Фото</label>
@@ -84,10 +114,45 @@
 
 <script>
 const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1]||"";
+const UPDATE_URL = `{% url 'dashboard:karaoke_menu_item_update' 0 %}`;
+const DELETE_URL = `{% url 'dashboard:karaoke_menu_item_delete' 0 %}`;
+const TOGGLE_URL = `{% url 'dashboard:karaoke_menu_item_toggle' 0 %}`;
+
+function iUrl(tmpl, id) { return tmpl.replace("/0/", `/${id}/`); }
+
+function renderMargin(id, margin, pct) {
+  const el = document.getElementById(`kmi-margin-${id}`);
+  if (!el) return;
+  el.className = "kmi-margin " + (margin > 0 ? "pos" : margin < 0 ? "neg" : "zero");
+  el.textContent = margin > 0 ? `+${margin} сом (${pct}%)` : margin < 0 ? `${margin} сом` : "0 сом";
+}
+
+// Compute margin from current inputs on page load
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("[data-field='price']").forEach(inp => {
+    const id = inp.dataset.id;
+    const cp = document.querySelector(`[data-field='cost_price'][data-id='${id}']`);
+    if (!cp) return;
+    const price = parseInt(inp.value) || 0;
+    const cost = parseInt(cp.value) || 0;
+    const margin = price - cost;
+    const pct = price ? Math.round(margin / price * 100) : 0;
+    renderMargin(id, margin, pct);
+  });
+});
+
+async function saveField(id, field, inp) {
+  const fd = new FormData();
+  fd.append(field, inp.value || 0);
+  const r = await fetch(iUrl(UPDATE_URL, id), {method:"POST",body:fd,headers:{"X-CSRFToken":csrf}});
+  const d = await r.json();
+  if (d.ok) {
+    renderMargin(id, d.margin, d.margin_pct);
+  }
+}
 
 function toggleAddForm(catId) {
-  const el = document.getElementById(`addform-${catId}`);
-  el.classList.toggle("open");
+  document.getElementById(`addform-${catId}`).classList.toggle("open");
 }
 
 async function addCat() {
@@ -102,10 +167,11 @@ async function addCat() {
 async function addItem(catId) {
   const name = document.getElementById(`iname-${catId}`).value.trim();
   const price = document.getElementById(`iprice-${catId}`).value;
+  const cost = document.getElementById(`icost-${catId}`).value;
   const photoInput = document.getElementById(`iphoto-${catId}`);
   if (!name) { alert("Введите название"); return; }
   const fd = new FormData();
-  fd.append("name", name); fd.append("price", price); fd.append("cat_id", catId);
+  fd.append("name", name); fd.append("price", price); fd.append("cost_price", cost); fd.append("cat_id", catId);
   if (photoInput.files[0]) fd.append("photo", photoInput.files[0]);
   const r = await fetch("{% url 'dashboard:karaoke_menu_item_add' venue.id %}", {method:"POST",body:fd,headers:{"X-CSRFToken":csrf}});
   const d = await r.json();
@@ -115,13 +181,13 @@ async function addItem(catId) {
 
 async function deleteItem(id) {
   if (!confirm("Удалить позицию?")) return;
-  const r = await fetch(`{% url 'dashboard:karaoke_menu_item_delete' 0 %}`.replace("/0/",`/${id}/`), {method:"POST",headers:{"X-CSRFToken":csrf}});
+  const r = await fetch(iUrl(DELETE_URL, id), {method:"POST",headers:{"X-CSRFToken":csrf}});
   const d = await r.json();
   if (d.ok) document.getElementById(`kmi-${id}`)?.remove();
 }
 
 async function toggleItem(id, btn) {
-  const r = await fetch(`{% url 'dashboard:karaoke_menu_item_toggle' 0 %}`.replace("/0/",`/${id}/`), {method:"POST",headers:{"X-CSRFToken":csrf}});
+  const r = await fetch(iUrl(TOGGLE_URL, id), {method:"POST",headers:{"X-CSRFToken":csrf}});
   const d = await r.json();
   if (d.ok) {
     const row = document.getElementById(`kmi-${id}`);

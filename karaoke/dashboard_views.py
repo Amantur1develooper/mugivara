@@ -341,6 +341,7 @@ def karaoke_menu_item_add(request, venue_id):
     item = KaraokeMenuItem(venue=venue)
     item.name = (request.POST.get("name") or "").strip()
     item.price = request.POST.get("price") or 0
+    item.cost_price = request.POST.get("cost_price") or 0
     cat_id = request.POST.get("cat_id")
     item.category_id = int(cat_id) if cat_id and cat_id.isdigit() else None
     if "photo" in request.FILES:
@@ -350,7 +351,8 @@ def karaoke_menu_item_add(request, venue_id):
     item.save()
     photo_url = item.photo.url if item.photo else ""
     return JsonResponse({"ok": True, "id": item.id, "name": item.name,
-                         "price": str(item.price), "photo": photo_url})
+                         "price": str(item.price), "cost_price": str(item.cost_price),
+                         "photo": photo_url})
 
 
 @require_POST
@@ -372,3 +374,39 @@ def karaoke_menu_item_toggle(request, item_id):
     item.is_active = not item.is_active
     item.save(update_fields=["is_active"])
     return JsonResponse({"ok": True, "is_active": item.is_active})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def karaoke_menu_item_update(request, item_id):
+    """Update price and/or cost_price inline."""
+    item = get_object_or_404(KaraokeMenuItem, id=item_id)
+    if not _check_access(request.user, item.venue):
+        return JsonResponse({"ok": False}, status=403)
+
+    fields = []
+    if "price" in request.POST:
+        try:
+            item.price = int(request.POST["price"] or 0)
+            fields.append("price")
+        except (ValueError, TypeError):
+            pass
+    if "cost_price" in request.POST:
+        try:
+            item.cost_price = int(request.POST["cost_price"] or 0)
+            fields.append("cost_price")
+        except (ValueError, TypeError):
+            pass
+
+    if fields:
+        item.save(update_fields=fields)
+
+    margin = int(item.price) - int(item.cost_price)
+    pct = round(margin / int(item.price) * 100) if item.price else 0
+    return JsonResponse({
+        "ok": True,
+        "price": str(item.price),
+        "cost_price": str(item.cost_price),
+        "margin": margin,
+        "margin_pct": pct,
+    })

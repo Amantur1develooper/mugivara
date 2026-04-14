@@ -152,6 +152,7 @@ class KaraokeMenuItem(TimeStampedModel):
     description = models.TextField("Описание", blank=True, default="")
     photo       = models.ImageField("Фото", upload_to="karaoke/menu/", blank=True, null=True)
     price       = models.DecimalField("Цена (сом)", max_digits=10, decimal_places=0, default=0)
+    cost_price  = models.DecimalField("Себестоимость (сом)", max_digits=10, decimal_places=0, default=0)
     is_active   = models.BooleanField("Активно", default=True)
     sort_order  = models.PositiveSmallIntegerField("Порядок", default=0)
 

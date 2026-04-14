@@ -95,6 +95,18 @@
         </div>
 
         <div class="db-form-group">
+          <label class="db-label" for="branch_category_id">Категория</label>
+          <select class="db-input" id="branch_category_id" name="branch_category_id">
+            <option value="">— Без категории —</option>
+            {% for bc in branch_categories %}
+            <option value="{{ bc.id }}" {% if bc.id == current_cat_id %}selected{% endif %}>
+              {{ bc.category.name_ru }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="db-form-group">
           <label class="db-label">Описание</label>
           <div class="lang-tabs">
             <div class="lang-tab active" onclick="switchLang('desc','ru',this)">RU</div>

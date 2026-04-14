@@ -57,6 +57,26 @@
   .empty-state h3{font-family:'Unbounded',sans-serif;font-size:17px;font-weight:800;color:var(--text);margin-bottom:8px}
   .empty-state p{font-size:14px;color:var(--muted)}
 
+  /* ── ВЫРУЧКА ── */
+  .rev-widget {
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:16px 20px; margin-bottom:18px;
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  }
+  .rev-label { font-size:12px; font-weight:700; color:var(--muted); margin-right:4px; }
+  .rev-tabs { display:flex; gap:6px; flex-wrap:wrap; }
+  .rev-tab {
+    padding:5px 12px; border-radius:100px; font-size:12px; font-weight:600;
+    border:1px solid var(--border); background:var(--bg); color:var(--text2);
+    cursor:pointer; transition:all .15s;
+  }
+  .rev-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .rev-val {
+    font-family:'Unbounded',sans-serif; font-size:16px; font-weight:800; color:var(--text);
+    margin-left:auto;
+  }
+  .rev-cnt { font-size:11px; color:var(--muted); margin-left:6px; }
+
   /* ── РАЗВЛЕЧЕНИЯ ── */
   .ent-section { margin-top:40px; }
   .ent-section-head {
@@ -126,6 +146,33 @@
         </a>
       </div>
     </div>
+
+    <!-- Выручка -->
+    <div class="rev-widget" id="rev-{{ item.restaurant.id }}">
+      <span class="rev-label">💰 Выручка:</span>
+      <div class="rev-tabs">
+        <span class="rev-tab active" onclick="switchRev('{{ item.restaurant.id }}','today',this)">Сегодня</span>
+        <span class="rev-tab" onclick="switchRev('{{ item.restaurant.id }}','week',this)">Неделя</span>
+        <span class="rev-tab" onclick="switchRev('{{ item.restaurant.id }}','month',this)">Месяц</span>
+      </div>
+      <div class="rev-val" id="rev-val-{{ item.restaurant.id }}">
+        {{ item.rev.today|floatformat:0 }} сом
+      </div>
+      <span class="rev-cnt" id="rev-cnt-{{ item.restaurant.id }}">
+        {{ item.rev.today_cnt }} заказ
+      </span>
+    </div>
+    <script>
+    (function(){
+      const data = {
+        today: { sum: {{ item.rev.today|floatformat:0 }}, cnt: {{ item.rev.today_cnt }} },
+        week:  { sum: {{ item.rev.week|floatformat:0 }},  cnt: {{ item.rev.week_cnt }} },
+        month: { sum: {{ item.rev.month|floatformat:0 }}, cnt: {{ item.rev.month_cnt }} },
+      };
+      window._revData = window._revData || {};
+      window._revData['{{ item.restaurant.id }}'] = data;
+    })();
+    </script>
 
     {% if item.branches %}
     <div class="branch-grid">
@@ -207,5 +254,18 @@
   </div>
 </div>
 {% endif %}
+
+<script>
+function switchRev(restId, period, btn) {
+  const data = (window._revData || {})[restId];
+  if (!data) return;
+  document.querySelectorAll(`#rev-${restId} .rev-tab`).forEach(t => t.classList.remove("active"));
+  btn.classList.add("active");
+  const d = data[period];
+  const fmt = n => Number(n).toLocaleString("ru-RU");
+  document.getElementById(`rev-val-${restId}`).textContent = fmt(d.sum) + " сом";
+  document.getElementById(`rev-cnt-${restId}`).textContent = d.cnt + " заказ";
+}
+</script>
 
 {% endblock %}

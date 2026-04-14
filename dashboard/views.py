@@ -7,12 +7,12 @@ from django.contrib import messages
 from decimal import Decimal, InvalidOperation
 
 from django.utils import timezone
-from django.db.models import Count, Max
+from django.db.models import Count, Max, Sum, Q
 from datetime import timedelta
 from core.models import Restaurant, Branch, Membership, PromoCode, PageView
 from catalog.models import (
     BranchItem, BranchCategory, BranchCategoryItem,
-    Item, ItemCategory, Category, MenuSet,
+    Item, ItemCategory, Category, MenuSet, BranchMenuSet,
 )
 from catalog.services import ensure_links_for_branch_item
 from reservations.models import Floor, Place
@@ -56,11 +56,34 @@ def logout_view(request):
 
 @login_required(login_url="dashboard:login")
 def home(request):
+    from orders.models import Order
+
     restaurants = _user_restaurants(request.user).prefetch_related("branches")
+
+    now = timezone.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start  = today_start - timedelta(days=today_start.weekday())
+    month_start = today_start.replace(day=1)
+
     data = []
     for r in restaurants:
         branches = list(r.branches.filter(is_active=True).order_by("name_ru"))
-        data.append({"restaurant": r, "branches": branches})
+        branch_ids = [b.id for b in branches]
+
+        def _sum(qs):
+            return qs.aggregate(s=Sum("total_amount"))["s"] or 0
+
+        base = Order.objects.filter(branch_id__in=branch_ids).exclude(status=Order.Status.CANCELLED)
+        rev = {
+            "today":  _sum(base.filter(created_at__gte=today_start)),
+            "week":   _sum(base.filter(created_at__gte=week_start)),
+            "month":  _sum(base.filter(created_at__gte=month_start)),
+            "today_cnt":  base.filter(created_at__gte=today_start).count(),
+            "week_cnt":   base.filter(created_at__gte=week_start).count(),
+            "month_cnt":  base.filter(created_at__gte=month_start).count(),
+        }
+        data.append({"restaurant": r, "branches": branches, "rev": rev})
+
     from karaoke.models import KaraokeVenue, KaraokeMembership
     user = request.user
     if user.is_staff or user.is_superuser:
@@ -259,7 +282,9 @@ def item_add(request, branch_id):
                 # Ищем или создаём глобальную Category в MenuSet ресторана
                 menu_set = MenuSet.objects.filter(restaurant=restaurant).first()
                 if not menu_set:
-                    menu_set = MenuSet.objects.create(restaurant=restaurant, name_ru="Меню")
+                    menu_set = MenuSet.objects.create(restaurant=restaurant, name="Меню")
+                # Привязываем MenuSet к филиалу если ещё не привязан
+                BranchMenuSet.objects.get_or_create(branch=branch, menu_set=menu_set)
                 cat, _ = Category.objects.get_or_create(
                     menu_set=menu_set,
                     name_ru=new_cat_ru,
@@ -313,6 +338,16 @@ def item_edit(request, branch_item_id):
         return redirect("dashboard:home")
 
     item = bi.item
+    branch = bi.branch
+
+    branch_categories = (
+        BranchCategory.objects
+        .filter(branch=branch, is_active=True)
+        .select_related("category")
+        .order_by("sort_order", "id")
+    )
+    current_bci = bi.categories_in_branch.select_related("branch_category").first()
+    current_cat_id = current_bci.branch_category_id if current_bci else None
 
     if request.method == "POST":
         name = request.POST.get("name_ru", "").strip()
@@ -337,6 +372,20 @@ def item_edit(request, branch_item_id):
         item.save()
         bi.save(update_fields=["price", "is_available", "updated_at"])
 
+        # Update category assignment
+        new_cat_id = request.POST.get("branch_category_id", "").strip()
+        if new_cat_id:
+            try:
+                new_bc = BranchCategory.objects.get(id=int(new_cat_id), branch=branch)
+                # Remove from all other categories in this branch, assign to new one
+                bi.categories_in_branch.exclude(branch_category=new_bc).delete()
+                BranchCategoryItem.objects.get_or_create(branch_category=new_bc, branch_item=bi)
+            except (BranchCategory.DoesNotExist, ValueError):
+                pass
+        else:
+            # "Без категории" — remove all category assignments
+            bi.categories_in_branch.all().delete()
+
         c = item.photo_compression
         if c:
             photo_msg = (
@@ -348,7 +397,12 @@ def item_edit(request, branch_item_id):
             messages.success(request, "Блюдо обновлено")
         return redirect("dashboard:branch_items", branch_id=bi.branch_id)
 
-    return render(request, "dashboard/item_edit.html", {"bi": bi, "item": item})
+    return render(request, "dashboard/item_edit.html", {
+        "bi": bi,
+        "item": item,
+        "branch_categories": branch_categories,
+        "current_cat_id": current_cat_id,
+    })
 
 
 # ── AJAX: update price ────────────────────────────────────────────────────────

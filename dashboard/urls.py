@@ -95,8 +95,9 @@ urlpatterns = [
     path("karaoke/<int:venue_id>/menu/",                     kv.karaoke_menu_manage,    name="karaoke_menu_manage"),
     path("karaoke/<int:venue_id>/menu/cat/add/",             kv.karaoke_menu_cat_add,   name="karaoke_menu_cat_add"),
     path("karaoke/<int:venue_id>/menu/item/add/",            kv.karaoke_menu_item_add,  name="karaoke_menu_item_add"),
-    path("karaoke/menu/item/<int:item_id>/delete/",          kv.karaoke_menu_item_delete, name="karaoke_menu_item_delete"),
-    path("karaoke/menu/item/<int:item_id>/toggle/",          kv.karaoke_menu_item_toggle, name="karaoke_menu_item_toggle"),
+    path("karaoke/menu/item/<int:item_id>/delete/",          kv.karaoke_menu_item_delete,  name="karaoke_menu_item_delete"),
+    path("karaoke/menu/item/<int:item_id>/toggle/",          kv.karaoke_menu_item_toggle,  name="karaoke_menu_item_toggle"),
+    path("karaoke/menu/item/<int:item_id>/update/",          kv.karaoke_menu_item_update,  name="karaoke_menu_item_update"),
 
     # ── HOTELS ──────────────────────────────────────────────────────────────
     path("hotels/",                                       hv.hotel_home,          name="hotel_home"),
