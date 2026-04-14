@@ -80,6 +80,7 @@ def shop_store_edit(request, store_id):
         if name:
             store.name_ru = name
         store.about_ru = request.POST.get("about_ru", "").strip()
+        store.youtube_url = request.POST.get("youtube_url", "").strip()
         store.is_active = request.POST.get("is_active") == "on"
         if request.FILES.get("logo"):
             store.logo = request.FILES["logo"]
@@ -102,6 +103,7 @@ def shop_branch_edit(request, branch_id):
         branch.name_ru          = request.POST.get("name_ru", branch.name_ru).strip()
         branch.address          = request.POST.get("address", "").strip()
         branch.phone            = request.POST.get("phone", "").strip()
+        branch.phone2           = request.POST.get("phone2", "").strip()
         branch.map_url          = request.POST.get("map_url", "").strip()
         branch.is_active        = request.POST.get("is_active") == "on"
         branch.delivery_enabled = request.POST.get("delivery_enabled") == "on"

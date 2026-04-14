@@ -20,13 +20,14 @@ class StoreAdmin(admin.ModelAdmin):
     list_display = ("name_ru", "slug", "is_active")
     search_fields = ("name_ru", "name_ky", "name_en", "slug")
     prepopulated_fields = {"slug": ("name_ru",)}
+    fields = ("name_ru", "name_ky", "name_en", "slug", "logo", "about_ru", "youtube_url", "is_active")
 
 
 @admin.register(StoreBranch)
 class StoreBranchAdmin(admin.ModelAdmin):
-    list_display = ("store", "name_ru", "phone", "is_active")
+    list_display = ("store", "name_ru", "phone", "phone2", "is_active")
     list_filter = ("store", "is_active")
-    search_fields = ("name_ru", "address", "phone")
+    search_fields = ("name_ru", "address", "phone", "phone2")
     change_form_template = "admin/shops/storebranch/change_form.html"
 
     def get_urls(self):
@@ -61,8 +62,10 @@ class StoreBranchAdmin(admin.ModelAdmin):
                                        required=False, initial=original.name_en)
             address  = forms.CharField(label="Адрес", max_length=255,
                                        required=False, initial=original.address)
-            phone    = forms.CharField(label="Телефон", max_length=32,
+            phone    = forms.CharField(label="WhatsApp (основной)", max_length=32,
                                        required=False, initial=original.phone)
+            phone2   = forms.CharField(label="WhatsApp 2 (дополнительный)", max_length=32,
+                                       required=False, initial=original.phone2)
             map_url  = forms.URLField(label="Ссылка на карту", required=False,
                                       initial=original.map_url)
             copy_stock = forms.BooleanField(
@@ -82,6 +85,7 @@ class StoreBranchAdmin(admin.ModelAdmin):
                         name_en=d["name_en"],
                         address=d["address"],
                         phone=d["phone"],
+                        phone2=d["phone2"],
                         map_url=d["map_url"],
                         cover_photo=original.cover_photo,
                         delivery_enabled=original.delivery_enabled,

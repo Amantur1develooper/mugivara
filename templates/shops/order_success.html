@@ -18,12 +18,20 @@
       </div>
     </div>
 
-    {% if wa_url %}
-      <a href="{{ wa_url }}" class="mt-5 w-full block text-center px-4 py-3 rounded-2xl font-extrabold text-white"
-         style="background:#25D366;">
-        WhatsApp (открыть чат)
-      </a>
-    {% endif %}
+    <div class="mt-5 flex flex-col gap-2">
+      {% if wa_url %}
+        <a href="{{ wa_url }}" class="w-full block text-center px-4 py-3 rounded-2xl font-extrabold text-white"
+           style="background:#25D366;">
+          📲 WhatsApp (основной)
+        </a>
+      {% endif %}
+      {% if wa_url2 %}
+        <a href="{{ wa_url2 }}" class="w-full block text-center px-4 py-3 rounded-2xl font-extrabold text-white"
+           style="background:#128C7E;">
+          📲 WhatsApp 2
+        </a>
+      {% endif %}
+    </div>
 
     <div class="mt-5">
       <div class="text-sm font-semibold">Если WhatsApp не открылся — скопируй текст:</div>

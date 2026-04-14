@@ -36,6 +36,11 @@
     </div>
 
     <div class="db-form-group">
+      <label class="db-label">YouTube канал (ссылка)</label>
+      <input class="db-input" type="url" name="youtube_url" value="{{ store.youtube_url }}" placeholder="https://youtube.com/@...">
+    </div>
+
+    <div class="db-form-group">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
         <input type="checkbox" name="is_active" {% if store.is_active %}checked{% endif %}
                style="width:16px;height:16px;accent-color:var(--accent)">

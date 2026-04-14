@@ -21,6 +21,7 @@ class Store(models.Model):
     about_ru = models.TextField(blank=True, default="")
     about_ky = models.TextField(blank=True, default="")
     about_en = models.TextField(blank=True, default="")
+    youtube_url = models.URLField("YouTube канал", blank=True, default="")
     is_active = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):
@@ -49,7 +50,7 @@ class StoreBranch(TimeStampedModel):
     tg_group_chat_id = models.BigIntegerField(null=True, blank=True)   # группа
     tg_thread_id     = models.IntegerField(null=True, blank=True)      # если форум-топик
     tg_manager_chat_id = models.BigIntegerField(null=True, blank=True) # личка менеджера
-    phone = models.CharField(max_length=32, blank=True, default="")
+    phone2 = models.CharField("WhatsApp 2", max_length=32, blank=True, default="")
 
 
     is_active = models.BooleanField(default=True)

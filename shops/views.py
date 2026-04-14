@@ -449,11 +449,12 @@ def order_success(request, branch_id, order_id):
 
     # wa number
     phone_digits = "".join(ch for ch in (branch.phone or "") if ch.isdigit())
-    # если хранится +996..., то получится 996...
     wa_phone = phone_digits
     wa_url = ""
     if wa_phone:
         wa_url = "https://wa.me/{}?text={}".format(wa_phone, urllib.parse.quote(text))
+    phone_digits2 = "".join(ch for ch in (branch.phone2 or "") if ch.isdigit())
+    wa_url2 = "https://wa.me/{}?text={}".format(phone_digits2, urllib.parse.quote(text)) if phone_digits2 else ""
 
     # 1–2 строки состава
     items = list(order.items.select_related("product").all()[:2])
@@ -465,6 +466,7 @@ def order_success(request, branch_id, order_id):
         "branch": branch,
         "order": order,
         "wa_url": wa_url,
+        "wa_url2": wa_url2,
         "order_text": text,
         "short_lines": short,
     })
@@ -485,11 +487,15 @@ def checkout_success(request, branch_id, order_id):
     wa_phone = _wa_digits(order.branch.phone)
     wa_url = f"https://wa.me/{wa_phone}?text={quote(order_text)}" if wa_phone else ""
 
+    wa_phone2 = _wa_digits(order.branch.phone2)
+    wa_url2 = f"https://wa.me/{wa_phone2}?text={quote(order_text)}" if wa_phone2 else ""
+
     preview_items = list(order.items.all()[:2])
 
     return render(request, "shops/checkout_success.html", {
         "order": order,
         "wa_url": wa_url,
+        "wa_url2": wa_url2,
         "order_text": order_text,
         "preview_items": preview_items,
     })
