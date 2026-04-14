@@ -382,7 +382,7 @@ def karaoke_menu_item_toggle(request, item_id):
 @require_POST
 @login_required(login_url=LOGIN_URL)
 def karaoke_menu_item_update(request, item_id):
-    """Update price and/or cost_price inline."""
+    """Update price, cost_price and/or photo inline."""
     item = get_object_or_404(KaraokeMenuItem, id=item_id)
     if not _check_access(request.user, item.venue):
         return JsonResponse({"ok": False}, status=403)
@@ -400,6 +400,13 @@ def karaoke_menu_item_update(request, item_id):
             fields.append("cost_price")
         except (ValueError, TypeError):
             pass
+    if "photo" in request.FILES:
+        item.photo = request.FILES["photo"]
+        fields.append("photo")
+    if request.POST.get("remove_photo") == "1" and item.photo:
+        item.photo.delete(save=False)
+        item.photo = None
+        fields.append("photo")
 
     if fields:
         item.save(update_fields=fields)
@@ -412,6 +419,7 @@ def karaoke_menu_item_update(request, item_id):
         "cost_price": str(item.cost_price),
         "margin": margin,
         "margin_pct": pct,
+        "photo_url": item.photo.url if item.photo else "",
     })
 
 
