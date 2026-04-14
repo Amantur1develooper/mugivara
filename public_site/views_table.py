@@ -181,13 +181,6 @@ def table_checkout(request, token):
         # увеличиваем рейтинг ресторана
         Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
 
-        # ✅ уведомление в Telegram
-        try:
-            from integrations.tasks import notify_new_order
-            notify_new_order.delay(order.id)
-        except Exception:
-            pass
-
         return redirect("table_success", token=token, order_id=order.id)
 
     return render(request, "public_site/table_checkout.html", {
@@ -357,13 +350,6 @@ def table_create_order(request, token):
 
     # увеличиваем рейтинг ресторана
     Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
-
-    # ✅ уведомление в Telegram
-    try:
-        from integrations.tasks import notify_new_order
-        notify_new_order.delay(order.id)
-    except Exception:
-        pass
 
     # ✅ редирект на страницу "успех"
     return redirect("table_success", token=token, order_id=order.id)
