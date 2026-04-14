@@ -1,5 +1,5 @@
 {% load i18n %}
-{% with qty=stock.qty|floatformat:0 active=stock.product.is_active %}
+{% with qty=stock.qty|floatformat:"-3" active=stock.product.is_active %}
 <div class="pl-product" id="stock-row-{{ stock.id }}">
   <div class="pl-product-row">
 
@@ -24,7 +24,7 @@
 
     <div class="pl-field-wrap">
       <input class="pl-input" type="number" min="0" step="1"
-             value="{{ stock.qty|floatformat:0 }}"
+             value="{{ stock.qty|floatformat:"-3" }}"
              id="qty-{{ stock.id }}" data-stock="{{ stock.id }}">
       <button class="pl-save-btn" id="qty-btn-{{ stock.id }}"
               onclick="saveQty({{ stock.id }})">✓</button>
@@ -87,7 +87,7 @@
                value="{{ stock.product.price|floatformat:0 }}">
         <label class="pl-edit-label" style="margin-top:4px">Остаток</label>
         <input class="pl-edit-input" id="edit-qty-{{ stock.id }}" type="number" min="0"
-               value="{{ stock.qty|floatformat:0 }}">
+               value="{{ stock.qty|floatformat:"-3" }}">
       </div>
     </div>
     <div class="pl-edit-actions">

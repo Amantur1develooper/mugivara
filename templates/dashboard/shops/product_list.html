@@ -584,7 +584,7 @@ function productRowHTML(p) {
       </div>
       <div class="pl-field-wrap">
         <input class="pl-input" type="number" min="0" step="1"
-               value="${p.qty}"
+               value="${fmtQty(p.qty)}"
                id="qty-${p.stock_id}" data-stock="${p.stock_id}">
         <button class="pl-save-btn" id="qty-btn-${p.stock_id}"
                 onclick="saveQty(${p.stock_id})">✓</button>
@@ -639,7 +639,7 @@ function editPanelHTML(p) {
              value="${p.price}">
       <label class="pl-edit-label" style="margin-top:4px">Остаток</label>
       <input class="pl-edit-input" id="edit-qty-${p.stock_id}" type="number" min="0"
-             value="${p.qty}">
+             value="${fmtQty(p.qty)}">
     </div>
   </div>
   <div class="pl-edit-actions">
@@ -701,7 +701,7 @@ async function saveEditProduct(stockId) {
   if (nameEl) nameEl.textContent = d.name_ru;
   if (unitEl) unitEl.textContent = d.unit_display;
   if (priceEl) priceEl.value = parseFloat(d.price).toFixed(0);
-  if (qtyEl) qtyEl.value = parseFloat(d.qty).toFixed(0);
+  if (qtyEl) qtyEl.value = fmtQty(d.qty);
 
   const photoRow = document.querySelector(`#stock-row-${stockId} .pl-product-row`);
   if (photoRow && d.photo_url) {
@@ -800,6 +800,12 @@ function updateCatCount(catId, delta) {
   if (!el) return;
   const cur = parseInt(el.textContent) || 0;
   el.textContent = `${Math.max(0, cur + delta)} тов.`;
+}
+function fmtQty(v) {
+  const n = parseFloat(v);
+  if (isNaN(n)) return v;
+  // remove trailing zeros: 1.000 → 1, 0.500 → 0.5
+  return n % 1 === 0 ? String(n) : n.toPrecision(4).replace(/\.?0+$/, '');
 }
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');

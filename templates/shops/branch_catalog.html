@@ -769,7 +769,7 @@
                     {% endif %}
                     <div class="sc-media-grad"></div>
                     <span class="sc-stock-badge {% if s.qty <= 0 %}out{% endif %}">
-                      {% if s.qty > 0 %}{% trans "Есть" %}: {{ s.qty }}{% else %}{% trans "Нет в наличии" %}{% endif %}
+                      {% if s.qty > 0 %}{% trans "Есть" %}: {{ s.qty|floatformat:"-3" }}{% else %}{% trans "Нет в наличии" %}{% endif %}
                     </span>
                     <span class="sc-price-badge">{{ s.product.price|floatformat:"0" }} {% trans "сом" %}</span>
                   </div>
@@ -790,7 +790,7 @@
                       <div class="sc-price-wrap">
                         <div class="sc-price-label">{% trans "Цена" %}</div>
                         <div class="sc-price-value">{{ s.product.price|floatformat:"0" }} {% trans "сом" %}</div>
-                        <div class="sc-stock-note">{% trans "В наличии" %}: <b>{{ s.qty }}</b>{% if s.product.unit %} {{ s.product.unit }}{% endif %}</div>
+                        <div class="sc-stock-note">{% trans "В наличии" %}: <b>{{ s.qty|floatformat:"-3" }}</b>{% if s.product.unit %} {{ s.product.unit }}{% endif %}</div>
                       </div>
 
                       {% if s.qty > 0 %}
