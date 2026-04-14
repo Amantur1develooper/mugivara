@@ -249,6 +249,13 @@
 <div id="pl-urls" style="display:none"
   data-add-product="{% url 'dashboard:shop_product_add' branch.id %}"
   data-add-category="{% url 'dashboard:shop_category_add' branch.id %}"
+  data-stock-qty="{% url 'dashboard:shop_stock_update' 0 %}"
+  data-stock-price="{% url 'dashboard:shop_price_update' 0 %}"
+  data-stock-edit="{% url 'dashboard:shop_product_edit' 0 %}"
+  data-stock-delete="{% url 'dashboard:shop_product_delete' 0 %}"
+  data-stock-toggle="{% url 'dashboard:shop_product_toggle' 0 %}"
+  data-cat-rename="{% url 'dashboard:shop_category_rename' 0 %}"
+  data-cat-delete="{% url 'dashboard:shop_category_delete' 0 %}"
 ></div>
 
 <div class="pl-wrap" id="plWrap">
@@ -330,6 +337,8 @@
 <script>
 const CSRF = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
 const URLS = document.getElementById('pl-urls').dataset;
+// Replace placeholder /0/ with real id — handles i18n prefix automatically
+const sUrl = (tmpl, id) => tmpl.replace('/0/', `/${id}/`);
 
 function postFD(url, data, files) {
   const fd = new FormData();
@@ -356,14 +365,14 @@ function cancelRenameCat(id) {
 async function saveRenameCat(id) {
   const name = document.getElementById(`cat-input-${id}`).value.trim();
   if (!name) return;
-  const d = await postFD(`/cabinet/shops/category/${id}/rename/`, {name_ru: name});
+  const d = await postFD(sUrl(URLS.catRename, id), {name_ru: name});
   if (!d.ok) { alert(d.error || 'Ошибка'); return; }
   document.getElementById(`cat-name-${id}`).textContent = d.name_ru;
   cancelRenameCat(id);
 }
 async function deleteCat(id, name) {
   if (!confirm(`Удалить категорию «${name}»? Товары останутся (без категории).`)) return;
-  const d = await postFD(`/cabinet/shops/category/${id}/delete/`, {});
+  const d = await postFD(sUrl(URLS.catDelete, id), {});
   if (!d.ok) { alert(d.error || 'Ошибка'); return; }
   // move products to uncategorized section or just remove header
   const section = document.getElementById(`cat-section-${id}`);
@@ -682,7 +691,7 @@ async function saveEditProduct(stockId) {
   const photoInput = document.querySelector(`#edit-panel-${stockId} input[type=file]`);
   const files = photoInput?.files[0] ? { photo: photoInput.files[0] } : {};
 
-  const d = await postFD(`/cabinet/shops/stock/${stockId}/edit/`, {
+  const d = await postFD(sUrl(URLS.stockEdit, stockId), {
     name_ru: ru,
     name_ky: document.getElementById(`edit-ky-${stockId}`)?.value.trim() || '',
     name_en: document.getElementById(`edit-en-${stockId}`)?.value.trim() || '',
@@ -719,7 +728,7 @@ async function saveEditProduct(stockId) {
 /* ── Delete product ── */
 async function deleteProduct(stockId, name) {
   if (!confirm(`Удалить товар «${name}»?`)) return;
-  const d = await postFD(`/cabinet/shops/stock/${stockId}/delete/`, {});
+  const d = await postFD(sUrl(URLS.stockDelete, stockId), {});
   if (!d.ok) { alert(d.error || 'Ошибка'); return; }
   const row = document.getElementById(`stock-row-${stockId}`);
   const section = row?.closest('.pl-cat');
@@ -730,7 +739,7 @@ async function deleteProduct(stockId, name) {
 
 /* ── Toggle product visibility ── */
 async function toggleProduct(stockId) {
-  const d = await postFD(`/cabinet/shops/stock/${stockId}/toggle/`, {});
+  const d = await postFD(sUrl(URLS.stockToggle, stockId), {});
   if (!d.ok) return;
   const btn = document.getElementById(`toggle-btn-${stockId}`);
   if (btn) {
@@ -752,7 +761,7 @@ async function saveQty(id) {
   const qty = document.getElementById(`qty-${id}`).value;
   const btn = document.getElementById(`qty-btn-${id}`);
   btn.disabled = true;
-  const res = await fetch(`/cabinet/shops/stock/${id}/qty/`, {
+  const res = await fetch(sUrl(URLS.stockQty, id), {
     method:'POST',
     headers:{'X-CSRFToken':CSRF,'Content-Type':'application/x-www-form-urlencoded'},
     body:`qty=${qty}`
@@ -769,7 +778,7 @@ async function savePrice(id) {
   const price = document.getElementById(`price-${id}`).value;
   const btn = document.getElementById(`price-btn-${id}`);
   btn.disabled = true;
-  const res = await fetch(`/cabinet/shops/stock/${id}/price/`, {
+  const res = await fetch(sUrl(URLS.stockPrice, id), {
     method:'POST',
     headers:{'X-CSRFToken':CSRF,'Content-Type':'application/x-www-form-urlencoded'},
     body:`price=${price}`
