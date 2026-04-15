@@ -44,22 +44,6 @@
     gap: 28px;
     flex-wrap: wrap;
   }
-  .sb-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 14px;
-    border-radius: 999px;
-    background: rgba(255,255,255,.08);
-    border: 1px solid rgba(255,255,255,.10);
-    color: rgba(255,255,255,.86);
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    margin-bottom: 16px;
-    backdrop-filter: blur(10px);
-  }
   .sb-title-row {
     display: flex;
     align-items: center;
@@ -100,19 +84,12 @@
     color: #fff;
     font-weight: 900;
   }
-  .sb-sub {
-    margin-top: 10px;
-    font-size: 15px;
-    line-height: 1.6;
-    color: rgba(255,255,255,.76);
-    max-width: 760px;
-  }
   .sb-counts {
     display: flex;
     align-items: center;
     gap: 10px;
     flex-wrap: wrap;
-    margin-top: 18px;
+    margin-top: 22px;
   }
   .sb-count,
   .sb-back {
@@ -151,6 +128,28 @@
   .sb-back:hover {
     transform: translateY(-1px);
     box-shadow: 0 16px 30px rgba(0,0,0,.18);
+  }
+  .sb-yt-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 46px;
+    padding: 0 20px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 800;
+    text-decoration: none;
+    white-space: nowrap;
+    background: #FF0000;
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(255,0,0,.35);
+    transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+    letter-spacing: .2px;
+  }
+  .sb-yt-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 32px rgba(255,0,0,.45);
+    filter: brightness(1.07);
   }
 
   .sb-grid {
@@ -306,146 +305,90 @@
   }
 
   .bc-body {
-    padding: 20px;
+    padding: 16px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
     flex: 1;
   }
-  .bc-pills {
+
+  /* Address row */
+  .bc-addr-row {
     display: flex;
-    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 7px;
+    font-size: 13px;
+    color: var(--text2, #44403c);
+    line-height: 1.45;
+  }
+  .bc-addr-icon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+  .bc-addr-text { flex: 1; }
+
+  /* Order buttons */
+  .bc-order-btns {
+    display: flex;
+    flex-direction: column;
     gap: 8px;
   }
-  .bc-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 14px;
-    border-radius: 999px;
-    border: 1.5px solid var(--border, rgba(15,23,42,.08));
-    background: var(--bg, #fafaf9);
-    color: var(--text2, #44403c);
-    font-size: 11px;
-    font-weight: 700;
-    white-space: nowrap;
-  }
-  .bc-pill.phone {
-    color: #1f2937;
-    background: rgba(255,255,255,1);
-  }
-  .bc-pill.mode {
-    color: #b45309;
-    background: rgba(251,191,36,.12);
-    border-color: rgba(251,191,36,.24);
-  }
-
-  .bc-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-  .bc-main {
-    min-height: 86px;
-    border-radius: 22px;
-    padding: 16px 16px 15px;
-    position: relative;
-    overflow: hidden;
-    text-decoration: none;
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 12px;
-    transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
-  }
-  .bc-main:hover {
-    transform: translateY(-1px);
-    filter: brightness(1.02);
-  }
-  .bc-main.delivery {
-    color: #fff;
-    background: linear-gradient(135deg, #1c1917 0%, #292524 100%);
-    box-shadow: 0 14px 28px rgba(28,25,23,.18);
-  }
-  .bc-main.pickup {
-    color: #1c1917;
-    background: #fff;
-    border: 1.5px solid rgba(15,23,42,.08);
-    box-shadow: 0 12px 24px rgba(15,23,42,.08);
-  }
-  .bc-main-kicker {
-    display: block;
-    font-size: 11px;
-    font-weight: 700;
-    opacity: .68;
-    margin-bottom: 6px;
-  }
-  .bc-main-title {
-    display: block;
-    font-size: 18px;
-    line-height: 1.1;
-    font-weight: 900;
-    letter-spacing: -.4px;
-  }
-  .bc-main-sub {
-    display: block;
-    font-size: 11px;
-    line-height: 1.4;
-    opacity: .72;
-    margin-top: 7px;
-  }
-  .bc-main-arrow {
-    font-size: 20px;
-    font-weight: 900;
-    flex-shrink: 0;
-    opacity: .94;
-  }
-
-  .bc-footer {
-    margin-top: auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding-top: 16px;
-    border-top: 1px solid var(--border, rgba(15,23,42,.08));
-    flex-wrap: wrap;
-  }
-  .bc-note {
-    font-size: 12px;
-    color: var(--muted, #78716c);
-    line-height: 1.5;
-    flex: 1 1 240px;
-  }
-  .bc-mini-actions {
+  .bc-order-btn {
     display: flex;
     align-items: center;
     gap: 10px;
-    flex-wrap: wrap;
-  }
-  .bc-mini-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 40px;
-    padding: 0 15px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 800;
+    padding: 13px 16px;
+    border-radius: 16px;
     text-decoration: none;
-    border: 1.5px solid var(--border, rgba(15,23,42,.08));
+    font-weight: 800;
+    font-size: 14px;
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .bc-order-btn:hover { transform: translateY(-1px); }
+  .bc-order-icon { font-size: 18px; flex-shrink: 0; }
+  .bc-order-label { flex: 1; }
+  .bc-order-arrow { font-size: 16px; opacity: .7; }
+  .bc-order-delivery {
+    background: #1c1917;
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(28,25,23,.20);
+  }
+  .bc-order-delivery:hover { box-shadow: 0 10px 24px rgba(28,25,23,.30); }
+  .bc-order-pickup {
     background: var(--bg, #fafaf9);
     color: var(--text, #1c1917);
-    transition: transform .2s ease, border-color .2s ease;
+    border: 1.5px solid var(--border, rgba(15,23,42,.10));
+    box-shadow: 0 4px 12px rgba(15,23,42,.07);
   }
-  .bc-mini-link:hover {
-    transform: translateY(-1px);
-    border-color: rgba(251,146,60,.25);
+  .bc-order-pickup:hover { border-color: rgba(251,146,60,.3); box-shadow: 0 8px 20px rgba(15,23,42,.12); }
+
+  /* Contact row */
+  .bc-contact-row {
+    display: flex;
+    gap: 8px;
   }
-  .bc-mini-link.wa {
+  .bc-contact-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 42px;
+    padding: 0 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform .15s ease, filter .15s ease;
+    white-space: nowrap;
+  }
+  .bc-contact-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+  .bc-contact-call {
+    background: var(--bg, #fafaf9);
+    color: var(--text, #1c1917);
+    border: 1.5px solid var(--border, rgba(15,23,42,.10));
+  }
+  .bc-contact-wa {
     background: #25D366;
     color: #fff;
-    border-color: rgba(37,211,102,.7);
+    box-shadow: 0 4px 14px rgba(37,211,102,.30);
   }
 
   .sb-empty {
@@ -516,10 +459,6 @@
     .sb-title {
       letter-spacing: -1px;
     }
-    .sb-sub {
-      font-size: 12px;
-      margin-top: 6px;
-    }
     .sb-counts {
       margin-top: 12px;
       gap: 6px;
@@ -575,55 +514,28 @@
       padding: 10px;
       gap: 8px;
     }
-    .bc-pills {
-      gap: 4px;
-    }
-    .bc-pill {
-      padding: 4px 8px;
-      font-size: 9px;
-      gap: 4px;
-    }
-    .bc-actions {
-      grid-template-columns: 1fr;
-      gap: 6px;
-    }
-    .bc-main {
-      min-height: 58px;
-      border-radius: 12px;
-      padding: 10px 10px 9px;
-    }
-    .bc-main-kicker {
-      font-size: 9px;
-      margin-bottom: 3px;
-    }
-    .bc-main-title {
-      font-size: 13px;
-    }
-    .bc-main-sub {
-      font-size: 9px;
-      margin-top: 4px;
-    }
-    .bc-main-arrow {
-      font-size: 14px;
-    }
-    .bc-footer {
-      padding-top: 10px;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .bc-note {
-      font-size: 10px;
-    }
-    .bc-mini-actions {
-      width: 100%;
-      gap: 6px;
-    }
-    .bc-mini-link {
-      flex: 1 1 auto;
-      justify-content: center;
-      min-height: 34px;
+    .bc-addr-row {
       font-size: 11px;
-      padding: 0 10px;
+    }
+    .bc-order-btn {
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      gap: 7px;
+    }
+    .bc-order-icon { font-size: 14px; }
+    .bc-order-arrow { font-size: 12px; }
+    .bc-contact-btn {
+      min-height: 36px;
+      font-size: 11px;
+      padding: 0 8px;
+      border-radius: 10px;
+      gap: 4px;
+    }
+    .sb-yt-btn {
+      min-height: 38px;
+      padding: 0 14px;
+      font-size: 12px;
     }
   }
 </style>
@@ -637,8 +549,6 @@
   <section class="sb-hero">
     <div class="sb-hero-inner">
       <div>
-        <div class="sb-eyebrow">🛍️ {% trans "Магазин в Санжи" %}</div>
-
         <div class="sb-title-row">
           <div class="sb-logo">
             {% if store.logo %}
@@ -651,9 +561,6 @@
 
           <div class="min-w-0">
             <h1 class="sb-title">{% t store "name" %}</h1>
-            <div class="sb-sub">
-              {% trans "Выберите филиал и формат заказа. Страница собрана в более чистом и понятном стиле — с крупными фото, статусом точки и быстрыми действиями." %}
-            </div>
           </div>
         </div>
 
@@ -662,11 +569,10 @@
             <span class="sb-count-dot"></span>
             {{ branches|length }} {% trans "филиал(ов)" %}
           </div>
-          <div class="sb-count">🚚 {% trans "Доставка от магазина" %}</div>
-          <div class="sb-count">🏬 {% trans "Самовывоз / выдача" %}</div>
           {% if store.youtube_url %}
-          <a href="{{ store.youtube_url }}" target="_blank" rel="noopener" class="sb-count" style="background:rgba(255,0,0,.18);border-color:rgba(255,0,0,.28);color:#fff;text-decoration:none">
-            ▶ YouTube
+          <a href="{{ store.youtube_url }}" target="_blank" rel="noopener" class="sb-yt-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.5 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg>
+            YouTube
           </a>
           {% endif %}
         </div>
@@ -712,44 +618,39 @@
         </div>
 
         <div class="bc-body">
-          <div class="bc-pills">
-            <span class="bc-pill mode">🚚 {% trans "Доставка" %}</span>
-            <span class="bc-pill mode">🏬 {% trans "В магазине" %}</span>
-            {% if b.phone %}
-              <span class="bc-pill phone">📞 {{ b.phone }}</span>
-            {% endif %}
+
+          {% if b.address %}
+          <div class="bc-addr-row">
+            <span class="bc-addr-icon">📍</span>
+            <span class="bc-addr-text">{{ b.address }}</span>
           </div>
+          {% endif %}
 
-          <div class="bc-actions">
-            <a href="{% url 'shops:branch_catalog_delivery' b.id %}" class="bc-main delivery">
-              <span>
-                <span class="bc-main-kicker">{% trans "Заказ" %}</span>
-                <span class="bc-main-title">{% trans "Доставка" %}</span>
-                <span class="bc-main-sub">{% trans "Доставляет сам магазин" %}</span>
-              </span>
-              <span class="bc-main-arrow">→</span>
+          <div class="bc-order-btns">
+            <a href="{% url 'shops:branch_catalog_delivery' b.id %}" class="bc-order-btn bc-order-delivery">
+              <span class="bc-order-icon">🚚</span>
+              <span class="bc-order-label">{% trans "Доставка" %}</span>
+              <span class="bc-order-arrow">→</span>
             </a>
-
-            <a href="{% url 'shops:branch_catalog_pickup' b.id %}" class="bc-main pickup">
-              <span>
-                <span class="bc-main-kicker">{% trans "Заказ" %}</span>
-                <span class="bc-main-title">{% trans "В магазине" %}</span>
-                <span class="bc-main-sub">{% trans "Самовывоз / выдача" %}</span>
-              </span>
-              <span class="bc-main-arrow">→</span>
+            <a href="{% url 'shops:branch_catalog_pickup' b.id %}" class="bc-order-btn bc-order-pickup">
+              <span class="bc-order-icon">🏬</span>
+              <span class="bc-order-label">{% trans "В магазине" %}</span>
+              <span class="bc-order-arrow">→</span>
             </a>
           </div>
 
-          <div class="bc-footer">
-            <div class="bc-note">{% trans "Санжи — платформа по подписке. Без комиссии с заказов." %}</div>
-
-            <div class="bc-mini-actions">
-              {% if b.phone %}
-                <a href="tel:{{ b.phone }}" class="bc-mini-link">📞 {% trans "Позвонить" %}</a>
-                <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" class="bc-mini-link wa">WhatsApp</a>
-              {% endif %}
-            </div>
+          {% if b.phone %}
+          <div class="bc-contact-row">
+            <a href="tel:{{ b.phone }}" class="bc-contact-btn bc-contact-call">
+              📞 {{ b.phone }}
+            </a>
+            <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" rel="noopener" class="bc-contact-btn bc-contact-wa">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-1-.3-.1-.5-.1-.7.1s-.8 1-.9 1.2-.3.2-.6 0c-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5s0-.4 0-.5c0-.2-.7-1.7-1-2.3C9.3 8.1 9 8.1 8.8 8.1H8.3c-.2 0-.5.1-.8.4C7.2 8.8 6.3 9.6 6.3 11.3s1.2 3.5 1.4 3.7c.2.2 2.4 3.7 5.9 5.2 2.3 1 3.2 1.1 4.3.9.7-.1 2.2-.9 2.5-1.7.3-.8.3-1.5.2-1.7-.1-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.9.5 3.7 1.4 5.3L2 22l4.9-1.3C8.3 21.5 10.1 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>
+              WhatsApp
+            </a>
           </div>
+          {% endif %}
+
         </div>
       </article>
     {% empty %}
