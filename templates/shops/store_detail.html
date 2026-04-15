@@ -5,506 +5,265 @@
 
 {% block head_extra %}
 <style>
-  .sb-wrap {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 48px 40px 84px;
-  }
+/* ── WRAP ── */
+.sb-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 32px 80px;
+}
 
-  .sb-hero {
-    position: relative;
-    overflow: hidden;
-    border-radius: 34px;
-    background:
-      radial-gradient(circle at 14% 18%, rgba(255,255,255,.14), transparent 36%),
-      radial-gradient(circle at 84% 12%, rgba(255,166,0,.14), transparent 30%),
-      linear-gradient(135deg, #171717 0%, #292524 52%, #1c1917 100%);
-    box-shadow: 0 26px 80px rgba(28,25,23,.22);
-    border: 1px solid rgba(255,255,255,.08);
-    padding: 34px;
-    margin-bottom: 34px;
-    isolation: isolate;
-  }
-  .sb-hero::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-      linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)),
-      radial-gradient(circle at 75% 78%, rgba(255,255,255,.06), transparent 28%);
-    pointer-events: none;
-    z-index: 0;
-  }
-  .sb-hero-inner {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 28px;
-    flex-wrap: wrap;
-  }
-  .sb-title-row {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    min-width: 0;
-  }
-  .sb-logo {
-    width: 72px;
-    height: 72px;
-    border-radius: 24px;
-    overflow: hidden;
-    background: rgba(255,255,255,.92);
-    border: 1px solid rgba(255,255,255,.24);
-    box-shadow: 0 12px 24px rgba(0,0,0,.16);
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .sb-logo img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-  }
-  .sb-logo-letter {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 30px;
-    font-weight: 900;
-    color: #292524;
-  }
-  .sb-title {
-    margin: 0;
-    font-family: 'Unbounded', sans-serif;
-    font-size: clamp(28px, 4vw, 52px);
-    line-height: .98;
-    letter-spacing: -2px;
-    color: #fff;
-    font-weight: 900;
-  }
-  .sb-counts {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-top: 22px;
-  }
-  .sb-count,
-  .sb-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 9px;
-    min-height: 46px;
-    padding: 0 18px;
-    border-radius: 999px;
-    font-size: 13px;
-    font-weight: 700;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-  .sb-count {
-    background: rgba(255,255,255,.08);
-    border: 1px solid rgba(255,255,255,.12);
-    color: rgba(255,255,255,.92);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
-  }
-  .sb-count-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #fb923c, #f59e0b);
-    box-shadow: 0 0 0 5px rgba(251,146,60,.18);
-    flex-shrink: 0;
-  }
-  .sb-back {
-    background: #fff;
-    color: #1c1917;
-    border: 1px solid rgba(255,255,255,.9);
-    box-shadow: 0 10px 24px rgba(0,0,0,.12);
-    transition: transform .2s ease, box-shadow .2s ease;
-  }
-  .sb-back:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 16px 30px rgba(0,0,0,.18);
-  }
-  .sb-yt-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 9px;
-    min-height: 46px;
-    padding: 0 20px;
-    border-radius: 999px;
-    font-size: 14px;
-    font-weight: 800;
-    text-decoration: none;
-    white-space: nowrap;
-    background: #FF0000;
-    color: #fff;
-    box-shadow: 0 8px 24px rgba(255,0,0,.35);
-    transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
-    letter-spacing: .2px;
-  }
-  .sb-yt-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 14px 32px rgba(255,0,0,.45);
-    filter: brightness(1.07);
-  }
+/* ── HEADER ── */
+.sb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 36px;
+  flex-wrap: wrap;
+}
+.sb-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.sb-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sb-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sb-logo-letter {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--muted);
+}
+.sb-title {
+  margin: 0;
+  font-family: 'Unbounded', sans-serif;
+  font-size: clamp(20px, 3vw, 34px);
+  letter-spacing: -1.5px;
+  color: var(--text);
+  font-weight: 900;
+  line-height: 1;
+}
+.sb-meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.sb-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.sb-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--text2);
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  transition: border-color .15s;
+}
+.sb-back:hover { border-color: var(--text); }
+.sb-yt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  background: #FF0000;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(255,0,0,.28);
+  transition: box-shadow .18s, filter .18s;
+}
+.sb-yt-btn:hover { box-shadow: 0 8px 24px rgba(255,0,0,.40); filter: brightness(1.06); }
 
-  .sb-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 24px;
-  }
+/* ── GRID ── */
+.sb-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
 
-  .bc {
-    background: var(--card, #fff);
-    border-radius: 28px;
-    overflow: hidden;
-    border: 1.5px solid var(--border, rgba(15,23,42,.08));
-    box-shadow: 0 8px 28px rgba(15,23,42,.08);
-    text-decoration: none;
-    color: inherit;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
-    animation: branchIn .5s ease both;
-  }
-  .bc:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 30px 70px rgba(15,23,42,.15);
-    border-color: rgba(251,146,60,.22);
-  }
-  .bc:nth-child(1) { animation-delay: 0s; }
-  .bc:nth-child(2) { animation-delay: .06s; }
-  .bc:nth-child(3) { animation-delay: .12s; }
-  .bc:nth-child(4) { animation-delay: .18s; }
-  .bc:nth-child(5) { animation-delay: .24s; }
-  .bc:nth-child(6) { animation-delay: .30s; }
-  .bc:nth-child(n+7) { animation-delay: .36s; }
+/* ── CARD ── */
+.bc {
+  background: var(--card);
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transition: transform .25s ease, box-shadow .25s ease;
+  animation: bcIn .4s ease both;
+}
+.bc:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(0,0,0,.10);
+}
+.bc:nth-child(1){animation-delay:.00s} .bc:nth-child(2){animation-delay:.05s}
+.bc:nth-child(3){animation-delay:.10s} .bc:nth-child(4){animation-delay:.15s}
+.bc:nth-child(n+5){animation-delay:.20s}
+@keyframes bcIn { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
 
-  .bc-media {
-    position: relative;
-    height: 250px;
-    overflow: hidden;
-    background: linear-gradient(135deg, #e7e5e4 0%, #f5f5f4 100%);
-    flex-shrink: 0;
-  }
-  .bc-media img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: transform .55s ease;
-  }
-  .bc:hover .bc-media img {
-    transform: scale(1.06);
-  }
-  .bc-empty {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background:
-      radial-gradient(circle at 25% 25%, rgba(255,255,255,.6), transparent 35%),
-      linear-gradient(135deg, #e7e5e4 0%, #f5f5f4 100%);
-  }
-  .bc-empty span {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 70px;
-    line-height: 1;
-    font-weight: 900;
-    color: rgba(41,37,36,.42);
-  }
-  .bc-media::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to top, rgba(0,0,0,.78) 0%, rgba(0,0,0,.36) 32%, rgba(0,0,0,.06) 58%, transparent 100%);
-  }
-  .bc-topline {
-    position: absolute;
-    top: 16px;
-    left: 16px;
-    right: 16px;
-    z-index: 2;
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 10px;
-  }
-  .bc-status,
-  .bc-map-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    min-height: 34px;
-    padding: 0 12px;
-    border-radius: 999px;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: .2px;
-    backdrop-filter: blur(12px);
-    border: 1px solid transparent;
-  }
-  .bc-status.open {
-    color: #fff;
-    background: rgba(16,185,129,.88);
-    border-color: rgba(255,255,255,.14);
-  }
-  .bc-status.closed {
-    color: rgba(255,255,255,.88);
-    background: rgba(28,25,23,.56);
-    border-color: rgba(255,255,255,.14);
-  }
-  .bc-status-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: currentColor;
-    opacity: .95;
-    flex-shrink: 0;
-  }
-  .bc-map-chip {
-    color: #fff;
-    background: rgba(255,255,255,.12);
-    border-color: rgba(255,255,255,.12);
-    text-decoration: none;
-  }
-  .bc-map-chip:hover {
-    background: rgba(255,255,255,.18);
-  }
-  .bc-photo-info {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 2;
-    padding: 22px 20px 18px;
-  }
-  .bc-name {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 20px;
-    line-height: 1.16;
-    font-weight: 800;
-    color: #fff;
-    letter-spacing: -.7px;
-    text-shadow: 0 2px 10px rgba(0,0,0,.28);
-  }
-  .bc-address {
-    margin-top: 8px;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: rgba(255,255,255,.78);
-    font-size: 13px;
-    line-height: 1.5;
-  }
+/* Photo */
+.bc-media {
+  position: relative;
+  height: 220px;
+  overflow: hidden;
+  background: var(--card2);
+  flex-shrink: 0;
+}
+.bc-media img {
+  width: 100%; height: 100%;
+  object-fit: cover; display: block;
+  transition: transform .5s ease;
+}
+.bc:hover .bc-media img { transform: scale(1.05); }
+.bc-empty {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--card2);
+}
+.bc-empty span {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 60px; font-weight: 900; color: var(--border);
+}
+.bc-media-grad {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,.70) 0%, rgba(0,0,0,.18) 40%, transparent 68%);
+}
+.bc-topline {
+  position: absolute; top: 12px; left: 12px; right: 12px;
+  z-index: 2; display: flex; justify-content: space-between; gap: 8px;
+}
+.bc-status {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 100px;
+  font-size: 10px; font-weight: 700;
+  backdrop-filter: blur(10px);
+}
+.bc-status.open  { background: rgba(16,185,129,.85); color: #fff; }
+.bc-status.closed{ background: rgba(0,0,0,.45); color: rgba(255,255,255,.82); }
+.bc-status-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink:0; }
+.bc-map-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 100px;
+  font-size: 10px; font-weight: 700;
+  background: rgba(255,255,255,.14); color: #fff;
+  text-decoration: none; backdrop-filter: blur(10px);
+}
+.bc-photo-name {
+  position: absolute; bottom: 14px; left: 14px; right: 14px; z-index: 2;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 16px; font-weight: 800; color: #fff; letter-spacing: -.4px; line-height: 1.2;
+}
 
-  .bc-body {
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    flex: 1;
-  }
+/* Body */
+.bc-body {
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 10px; flex: 1;
+}
+.bc-addr-row {
+  display: flex; align-items: flex-start; gap: 6px;
+  font-size: 12px; color: var(--text2); line-height: 1.4;
+}
+.bc-addr-icon { flex-shrink: 0; font-size: 12px; margin-top: 1px; opacity: .7; }
+.bc-addr-text { flex: 1; }
 
-  /* Address row */
-  .bc-addr-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 7px;
-    font-size: 13px;
-    color: var(--text2, #44403c);
-    line-height: 1.45;
-  }
-  .bc-addr-icon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
-  .bc-addr-text { flex: 1; }
+/* Order buttons */
+.bc-order-btns { display: flex; flex-direction: column; gap: 6px; }
+.bc-order-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 11px 14px; border-radius: 12px;
+  text-decoration: none; font-weight: 700; font-size: 13px;
+  transition: opacity .15s;
+}
+.bc-order-btn:hover { opacity: .88; }
+.bc-order-icon { font-size: 15px; flex-shrink: 0; }
+.bc-order-label { flex: 1; }
+.bc-order-arrow { font-size: 13px; opacity: .6; }
+.bc-order-delivery { background: var(--text); color: #fff; }
+.bc-order-pickup {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
 
-  /* Order buttons */
-  .bc-order-btns {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .bc-order-btn {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 13px 16px;
-    border-radius: 16px;
-    text-decoration: none;
-    font-weight: 800;
-    font-size: 14px;
-    transition: transform .18s ease, box-shadow .18s ease;
-  }
-  .bc-order-btn:hover { transform: translateY(-1px); }
-  .bc-order-icon { font-size: 18px; flex-shrink: 0; }
-  .bc-order-label { flex: 1; }
-  .bc-order-arrow { font-size: 16px; opacity: .7; }
-  .bc-order-delivery {
-    background: #1c1917;
-    color: #fff;
-    box-shadow: 0 6px 18px rgba(28,25,23,.20);
-  }
-  .bc-order-delivery:hover { box-shadow: 0 10px 24px rgba(28,25,23,.30); }
-  .bc-order-pickup {
-    background: var(--bg, #fafaf9);
-    color: var(--text, #1c1917);
-    border: 1.5px solid var(--border, rgba(15,23,42,.10));
-    box-shadow: 0 4px 12px rgba(15,23,42,.07);
-  }
-  .bc-order-pickup:hover { border-color: rgba(251,146,60,.3); box-shadow: 0 8px 20px rgba(15,23,42,.12); }
+/* Contact */
+.bc-contact-row { display: flex; gap: 6px; }
+.bc-contact-btn {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  min-height: 38px; padding: 0 10px; border-radius: 10px;
+  font-size: 11px; font-weight: 700; text-decoration: none;
+  transition: opacity .15s; white-space: nowrap;
+}
+.bc-contact-btn:hover { opacity: .88; }
+.bc-contact-call {
+  background: var(--bg); color: var(--text2);
+  border: 1px solid var(--border);
+}
+.bc-contact-wa { background: #25D366; color: #fff; }
 
-  /* Contact row */
-  .bc-contact-row {
-    display: flex;
-    gap: 8px;
-  }
-  .bc-contact-btn {
-    flex: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    min-height: 42px;
-    padding: 0 12px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 700;
-    text-decoration: none;
-    transition: transform .15s ease, filter .15s ease;
-    white-space: nowrap;
-  }
-  .bc-contact-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
-  .bc-contact-call {
-    background: var(--bg, #fafaf9);
-    color: var(--text, #1c1917);
-    border: 1.5px solid var(--border, rgba(15,23,42,.10));
-  }
-  .bc-contact-wa {
-    background: #25D366;
-    color: #fff;
-    box-shadow: 0 4px 14px rgba(37,211,102,.30);
-  }
+/* Empty */
+.sb-empty {
+  grid-column: 1 / -1;
+  text-align: center; padding: 64px 24px;
+  background: var(--card); border-radius: 20px; border: 1px solid var(--border);
+}
+.sb-empty-icon { font-size: 44px; margin-bottom: 12px; }
+.sb-empty h3 {
+  margin: 0 0 6px;
+  font-family: 'Unbounded', sans-serif; font-size: 16px; font-weight: 800; color: var(--text);
+}
+.sb-empty p { margin: 0; color: var(--muted); font-size: 13px; }
 
-  .sb-empty {
-    border-radius: 28px;
-    background: var(--card, #fff);
-    border: 1.5px solid var(--border, rgba(15,23,42,.08));
-    padding: 72px 28px;
-    text-align: center;
-    box-shadow: 0 8px 28px rgba(15,23,42,.06);
-    grid-column: 1 / -1;
-  }
-  .sb-empty-icon {
-    font-size: 58px;
-    margin-bottom: 14px;
-  }
-  .sb-empty h3 {
-    margin: 0 0 8px;
-    font-family: 'Unbounded', sans-serif;
-    font-size: 19px;
-    letter-spacing: -.5px;
-    color: var(--text, #1c1917);
-  }
-  .sb-empty p {
-    margin: 0;
-    color: var(--muted, #78716c);
-    font-size: 14px;
-  }
+/* ── RESPONSIVE ── */
+@media (max-width: 860px) {
+  .sb-wrap { padding: 32px 20px 64px; }
+}
 
-  @keyframes branchIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+@media (max-width: 600px) {
+  .sb-wrap { padding: 20px 12px 56px; }
+  .sb-header { margin-bottom: 20px; }
+  .sb-logo { width: 44px; height: 44px; border-radius: 12px; }
+  .sb-logo-letter { font-size: 18px; }
+  .sb-title { letter-spacing: -.8px; }
+  .sb-back { padding: 7px 14px; font-size: 12px; }
+  .sb-yt-btn { padding: 7px 14px; font-size: 12px; }
 
-  @media (max-width: 980px) {
-    .sb-wrap {
-      padding: 28px 20px 68px;
-    }
-    .sb-hero {
-      padding: 26px;
-      border-radius: 30px;
-    }
-    .sb-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (max-width: 700px) {
-    .sb-wrap {
-      padding: 20px 12px 60px;
-    }
-    .sb-hero {
-      padding: 18px 14px;
-      border-radius: 22px;
-      margin-bottom: 16px;
-    }
-    .sb-title-row {
-      align-items: flex-start;
-      gap: 10px;
-    }
-    .sb-logo {
-      width: 48px;
-      height: 48px;
-      border-radius: 14px;
-    }
-    .sb-logo-letter {
-      font-size: 20px;
-    }
-    .sb-title {
-      letter-spacing: -1px;
-    }
-    .sb-counts {
-      margin-top: 12px;
-      gap: 6px;
-    }
-    .sb-count,
-    .sb-back {
-      min-height: 36px;
-      padding: 0 12px;
-      font-size: 11px;
-    }
-    .sb-back {
-      width: 100%;
-      justify-content: center;
-    }
-    .sb-grid {
-      grid-template-columns: 1fr;
-      gap: 14px;
-    }
-    .bc {
-      border-radius: 16px;
-    }
-    .bc-media {
-      height: 200px;
-    }
-    .bc-name {
-      font-size: 17px;
-    }
-    .bc-body {
-      padding: 16px;
-      gap: 12px;
-    }
-    .bc-order-btn {
-      padding: 13px 16px;
-      border-radius: 14px;
-      font-size: 14px;
-    }
-    .bc-contact-btn {
-      min-height: 42px;
-      font-size: 13px;
-    }
-    .sb-yt-btn {
-      min-height: 38px;
-      padding: 0 14px;
-      font-size: 12px;
-    }
-  }
+  .sb-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .bc { border-radius: 14px; }
+  .bc-media { height: 140px; }
+  .bc-topline { top: 8px; left: 8px; right: 8px; }
+  .bc-status { padding: 3px 7px; font-size: 9px; }
+  .bc-map-chip { padding: 3px 7px; font-size: 9px; }
+  .bc-photo-name { font-size: 11px; bottom: 10px; left: 10px; right: 10px; }
+  .bc-body { padding: 10px; gap: 8px; }
+  .bc-addr-row { font-size: 10px; }
+  .bc-order-btn { padding: 9px 10px; font-size: 11px; gap: 5px; border-radius: 10px; }
+  .bc-order-icon { font-size: 12px; }
+  .bc-order-arrow { font-size: 10px; }
+  .bc-contact-btn { min-height: 32px; font-size: 10px; border-radius: 8px; }
+}
 </style>
 {% endblock %}
 
@@ -513,119 +272,98 @@
 {% block content %}
 <div class="sb-wrap">
 
-  <section class="sb-hero">
-    <div class="sb-hero-inner">
-      <div>
-        <div class="sb-title-row">
-          <div class="sb-logo">
-            {% if store.logo %}
-              <img src="{{ store.logo.url }}" alt="{% t store 'name' %}" loading="lazy" decoding="async">
-            {% else %}
-              {% t store "name" as sn %}
-              <span class="sb-logo-letter">{{ sn|slice:":1" }}</span>
-            {% endif %}
-          </div>
-
-          <div class="min-w-0">
-            <h1 class="sb-title">{% t store "name" %}</h1>
-          </div>
-        </div>
-
-        <div class="sb-counts">
-          <div class="sb-count">
-            <span class="sb-count-dot"></span>
-            {{ branches|length }} {% trans "филиал(ов)" %}
-          </div>
-          {% if store.youtube_url %}
-          <a href="{{ store.youtube_url }}" target="_blank" rel="noopener" class="sb-yt-btn">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.5 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg>
-            YouTube
-          </a>
-          {% endif %}
-        </div>
+  <div class="sb-header">
+    <div class="sb-header-left">
+      <div class="sb-logo">
+        {% if store.logo %}
+          <img src="{{ store.logo.url }}" alt="{% t store 'name' %}" loading="lazy">
+        {% else %}
+          {% t store "name" as sn %}
+          <span class="sb-logo-letter">{{ sn|slice:":1" }}</span>
+        {% endif %}
       </div>
-
-      <a href="{% url 'shops:store_list' %}" class="sb-back">← {% trans "Назад к магазинам" %}</a>
+      <div>
+        <h1 class="sb-title">{% t store "name" %}</h1>
+        <div class="sb-meta">{{ branches|length }} {% trans "филиал(ов)" %}</div>
+      </div>
     </div>
-  </section>
+
+    <div class="sb-header-right">
+      {% if store.youtube_url %}
+      <a href="{{ store.youtube_url }}" target="_blank" rel="noopener" class="sb-yt-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.5 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg>
+        YouTube
+      </a>
+      {% endif %}
+      <a href="{% url 'shops:store_list' %}" class="sb-back">← {% trans "Назад" %}</a>
+    </div>
+  </div>
 
   <section class="sb-grid">
     {% for b in branches %}
-      <article class="bc">
-        <div class="bc-media">
-          {% if b.cover_photo %}
-            <img src="{{ b.cover_photo.url }}" alt="{% t b 'name' %}" loading="lazy" decoding="async">
+    <article class="bc">
+      <div class="bc-media">
+        {% if b.cover_photo %}
+          <img src="{{ b.cover_photo.url }}" alt="{% t b 'name' %}" loading="lazy">
+        {% else %}
+          {% t b "name" as bn %}
+          <div class="bc-empty"><span>{{ bn|slice:":1" }}</span></div>
+        {% endif %}
+        <div class="bc-media-grad"></div>
+
+        <div class="bc-topline">
+          {% if b.is_open_now %}
+            <div class="bc-status open"><span class="bc-status-dot"></span>{% trans "Открыто" %}</div>
           {% else %}
-            {% t b "name" as bn %}
-            <div class="bc-empty"><span>{{ bn|slice:":1" }}</span></div>
+            <div class="bc-status closed"><span class="bc-status-dot"></span>{% trans "Закрыто" %}</div>
           {% endif %}
-
-          <div class="bc-topline">
-            {% if b.is_open_now %}
-              <div class="bc-status open">
-                <span class="bc-status-dot"></span>
-                {% trans "Открыто" %}
-              </div>
-            {% else %}
-              <div class="bc-status closed">
-                <span class="bc-status-dot"></span>
-                {% trans "Закрыто" %}
-              </div>
-            {% endif %}
-
-            {% if b.map_url %}
-              <a href="{{ b.map_url }}" target="_blank" class="bc-map-chip">📍 {% trans "Карта" %}</a>
-            {% endif %}
-          </div>
-
-          <div class="bc-photo-info">
-            <div class="bc-name">{% t b "name" %}</div>
-            
-          </div>
+          {% if b.map_url %}
+            <a href="{{ b.map_url }}" target="_blank" class="bc-map-chip">📍 {% trans "Карта" %}</a>
+          {% endif %}
         </div>
 
-        <div class="bc-body">
-
-          {% if b.address %}
-          <div class="bc-addr-row">
-            <span class="bc-addr-icon">📍</span>
-            <span class="bc-addr-text">{{ b.address }}</span>
-          </div>
-          {% endif %}
-
-          <div class="bc-order-btns">
-            <a href="{% url 'shops:branch_catalog_delivery' b.id %}" class="bc-order-btn bc-order-delivery">
-              <span class="bc-order-icon">🚚</span>
-              <span class="bc-order-label">{% trans "Доставка" %}</span>
-              <span class="bc-order-arrow">→</span>
-            </a>
-            <a href="{% url 'shops:branch_catalog_pickup' b.id %}" class="bc-order-btn bc-order-pickup">
-              <span class="bc-order-icon">🏬</span>
-              <span class="bc-order-label">{% trans "В магазине" %}</span>
-              <span class="bc-order-arrow">→</span>
-            </a>
-          </div>
-
-          {% if b.phone %}
-          <div class="bc-contact-row">
-            <a href="tel:{{ b.phone }}" class="bc-contact-btn bc-contact-call">
-              📞 {{ b.phone }}
-            </a>
-            <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" rel="noopener" class="bc-contact-btn bc-contact-wa">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-1-.3-.1-.5-.1-.7.1s-.8 1-.9 1.2-.3.2-.6 0c-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5s0-.4 0-.5c0-.2-.7-1.7-1-2.3C9.3 8.1 9 8.1 8.8 8.1H8.3c-.2 0-.5.1-.8.4C7.2 8.8 6.3 9.6 6.3 11.3s1.2 3.5 1.4 3.7c.2.2 2.4 3.7 5.9 5.2 2.3 1 3.2 1.1 4.3.9.7-.1 2.2-.9 2.5-1.7.3-.8.3-1.5.2-1.7-.1-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.9.5 3.7 1.4 5.3L2 22l4.9-1.3C8.3 21.5 10.1 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>
-              WhatsApp
-            </a>
-          </div>
-          {% endif %}
-
-        </div>
-      </article>
-    {% empty %}
-      <div class="sb-empty">
-        <div class="sb-empty-icon">🛍️</div>
-        <h3>{% trans "Филиалы пока не добавлены" %}</h3>
-        <p>{% trans "Когда точки появятся, здесь будет адаптивная витрина с фото, адресом и быстрым переходом к заказу." %}</p>
+        <div class="bc-photo-name">{% t b "name" %}</div>
       </div>
+
+      <div class="bc-body">
+        {% if b.address %}
+        <div class="bc-addr-row">
+          <span class="bc-addr-icon">📍</span>
+          <span class="bc-addr-text">{{ b.address }}</span>
+        </div>
+        {% endif %}
+
+        <div class="bc-order-btns">
+          <a href="{% url 'shops:branch_catalog_delivery' b.id %}" class="bc-order-btn bc-order-delivery">
+            <span class="bc-order-icon">🚚</span>
+            <span class="bc-order-label">{% trans "Доставка" %}</span>
+            <span class="bc-order-arrow">→</span>
+          </a>
+          <a href="{% url 'shops:branch_catalog_pickup' b.id %}" class="bc-order-btn bc-order-pickup">
+            <span class="bc-order-icon">🏬</span>
+            <span class="bc-order-label">{% trans "В магазине" %}</span>
+            <span class="bc-order-arrow">→</span>
+          </a>
+        </div>
+
+        {% if b.phone %}
+        <div class="bc-contact-row">
+          <a href="tel:{{ b.phone }}" class="bc-contact-btn bc-contact-call">📞 {{ b.phone }}</a>
+          <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}"
+             target="_blank" rel="noopener" class="bc-contact-btn bc-contact-wa">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-1-.3-.1-.5-.1-.7.1s-.8 1-.9 1.2-.3.2-.6 0c-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5s0-.4 0-.5c0-.2-.7-1.7-1-2.3C9.3 8.1 9 8.1 8.8 8.1H8.3c-.2 0-.5.1-.8.4C7.2 8.8 6.3 9.6 6.3 11.3s1.2 3.5 1.4 3.7c.2.2 2.4 3.7 5.9 5.2 2.3 1 3.2 1.1 4.3.9.7-.1 2.2-.9 2.5-1.7.3-.8.3-1.5.2-1.7-.1-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.9.5 3.7 1.4 5.3L2 22l4.9-1.3C8.3 21.5 10.1 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>
+            WhatsApp
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </article>
+    {% empty %}
+    <div class="sb-empty">
+      <div class="sb-empty-icon">🛍️</div>
+      <h3>{% trans "Филиалы пока не добавлены" %}</h3>
+      <p>{% trans "Заходите позже." %}</p>
+    </div>
     {% endfor %}
   </section>
 

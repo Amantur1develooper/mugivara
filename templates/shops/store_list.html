@@ -1,443 +1,235 @@
 {% extends "base.html" %}
 {% load i18n static i18n_attrs %}
 
-{% block title %}{% trans "Санжи — магазины" %}{% endblock %}
+{% block title %}{% trans "Магазины" %}{% endblock %}
 
 {% block head_extra %}
 <style>
-  /* ── PAGE ── */
-  .sl-wrap {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 48px 40px 80px;
-  }
+/* ── WRAP ── */
+.sl-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 64px 32px 80px;
+}
 
-  /* ── HERO ── */
-  .sl-hero {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 24px;
-    margin-bottom: 40px;
-    flex-wrap: wrap;
-  }
-  .sl-eyebrow {
-    font-size: 11px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--accent);
-    font-weight: 600;
-    margin-bottom: 10px;
-  }
-  .sl-title {
-    font-family: 'Unbounded', sans-serif;
-    font-weight: 900;
-    font-size: clamp(28px, 4vw, 52px);
-    letter-spacing: -2.5px;
-    color: var(--text);
-    line-height: 0.97;
-  }
-  .sl-subtitle {
-    max-width: 720px;
-    margin-top: 14px;
-    font-size: 15px;
-    line-height: 1.65;
-    color: var(--muted);
-  }
-  .sl-count {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 18px;
-    padding: 6px 16px;
-    border-radius: 100px;
-    background: rgba(255,77,28,0.08);
-    border: 1px solid rgba(255,77,28,0.15);
-    font-size: 13px;
-    color: var(--accent);
-    font-weight: 600;
-  }
+/* ── HEADER ── */
+.sl-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 40px;
+  flex-wrap: wrap;
+}
+.sl-title {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  font-size: clamp(24px, 3.5vw, 44px);
+  letter-spacing: -2px;
+  color: var(--text);
+  line-height: 1;
+  margin: 0 0 6px;
+}
+.sl-meta {
+  font-size: 13px;
+  color: var(--muted);
+}
 
-  /* ── FILTERS ── */
-  .sl-filters {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-  .sl-search-wrap {
-    position: relative;
-    flex: 1;
-    min-width: 240px;
-    max-width: 420px;
-  }
-  .sl-search-wrap svg {
-    position: absolute;
-    left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 17px;
-    height: 17px;
-    color: var(--muted);
-    pointer-events: none;
-  }
-  .sl-search {
-    width: 100%;
-    padding: 12px 16px 12px 44px;
-    border-radius: 100px;
-    border: 1.5px solid var(--border);
-    background: var(--card);
-    font-family: 'Geologica', sans-serif;
-    font-size: 14px;
-    color: var(--text);
-    outline: none;
-    box-shadow: 0 2px 10px var(--shadow);
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  .sl-search:focus {
-    border-color: rgba(255,77,28,0.4);
-    box-shadow: 0 0 0 4px rgba(255,77,28,0.08);
-  }
-  .sl-search::placeholder { color: var(--muted); }
+/* Search */
+.sl-search-wrap {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.sl-search-wrap svg {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 15px;
+  height: 15px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.sl-search {
+  padding: 10px 14px 10px 40px;
+  border-radius: 100px;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  font-family: 'Geologica', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  outline: none;
+  width: 220px;
+  transition: border-color .2s, box-shadow .2s;
+}
+.sl-search:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255,77,28,.08);
+}
+.sl-search::placeholder { color: var(--muted); }
+.sl-submit {
+  padding: 10px 20px;
+  border-radius: 100px;
+  background: var(--text);
+  color: #fff;
+  border: none;
+  font-family: 'Geologica', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.sl-submit:hover { opacity: .85; }
 
-  .sl-submit {
-    padding: 12px 24px;
-    border-radius: 100px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: white;
-    border: none;
-    font-family: 'Geologica', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 4px 16px var(--glow);
-    transition: transform 0.2s, box-shadow 0.2s;
-    white-space: nowrap;
-  }
-  .sl-submit:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 24px var(--glow);
-  }
+/* ── GRID ── */
+.sl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
 
-  /* ── GRID ── */
+/* ── CARD ── */
+.sc {
+  background: var(--card);
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.sc:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 50px rgba(0,0,0,.10);
+}
+
+/* Photo */
+.sc-photo {
+  position: relative;
+  height: 200px;
+  background: var(--card2);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.sc-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform .5s ease;
+}
+.sc:hover .sc-photo img { transform: scale(1.05); }
+.sc-photo-empty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card2);
+}
+.sc-photo-empty-letter {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  font-size: 60px;
+  color: var(--border);
+}
+.sc-photo-grad {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,.72) 0%, rgba(0,0,0,.2) 40%, transparent 70%);
+}
+.sc-photo-name {
+  position: absolute;
+  bottom: 14px;
+  left: 16px;
+  right: 16px;
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  color: #fff;
+  letter-spacing: -.4px;
+  line-height: 1.2;
+}
+
+/* Body */
+.sc-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.sc-branches {
+  font-size: 12px;
+  color: var(--muted);
+}
+.sc-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 16px;
+  border-radius: 100px;
+  background: var(--text);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: opacity .15s;
+}
+.sc:hover .sc-cta { opacity: .85; }
+
+/* ── EMPTY ── */
+.sl-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 72px 24px;
+  background: var(--card);
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+.sl-empty-icon { font-size: 44px; margin-bottom: 12px; }
+.sl-empty h3 {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 0 6px;
+}
+.sl-empty p { font-size: 13px; color: var(--muted); margin: 0; }
+
+/* ── ANIMATION ── */
+.sc { animation: scIn .4s ease both; }
+@keyframes scIn { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+.sc:nth-child(1){animation-delay:.00s} .sc:nth-child(2){animation-delay:.05s}
+.sc:nth-child(3){animation-delay:.10s} .sc:nth-child(4){animation-delay:.15s}
+.sc:nth-child(5){animation-delay:.20s} .sc:nth-child(6){animation-delay:.25s}
+.sc:nth-child(n+7){animation-delay:.30s}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 860px) {
+  .sl-wrap { padding: 40px 20px 60px; }
+  .sl-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .sl-search-wrap { width: 100%; }
+  .sl-search { width: 100%; flex: 1; }
+}
+
+@media (max-width: 600px) {
+  .sl-wrap { padding: 24px 12px 56px; }
   .sl-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
-
-  /* ── CARD ── */
-  .sc-card {
-    background: var(--card);
-    border-radius: 26px;
-    overflow: hidden;
-    border: 1.5px solid var(--border);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-    text-decoration: none;
-    color: inherit;
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s;
-    position: relative;
-  }
-  .sc-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 28px 64px rgba(0,0,0,0.14);
-    border-color: rgba(0,0,0,0.12);
-  }
-
-  /* ── PHOTO ── */
-  .sc-photo {
-    position: relative;
-    height: 250px;
-    background: var(--card2);
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-  .sc-photo img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    transition: transform 0.5s ease;
-  }
-  .sc-card:hover .sc-photo img { transform: scale(1.07); }
-
-  .sc-photo-empty {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #FFF1EB 0%, #FFE4D6 50%, #FFDDD0 100%);
-    position: relative;
-    overflow: hidden;
-  }
-  .sc-photo-empty::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(ellipse 60% 50% at 30% 30%, rgba(255,77,28,0.12), transparent),
-      radial-gradient(ellipse 50% 50% at 80% 80%, rgba(255,138,0,0.08), transparent);
-  }
-  .sc-photo-empty-letter {
-    font-family: 'Unbounded', sans-serif;
-    font-weight: 900;
-    font-size: 72px;
-    line-height: 1;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    position: relative;
-    z-index: 1;
-    opacity: 0.38;
-  }
-
-  .sc-photo-overlay {
-    position: absolute;
-    inset: 0;
-    background:
-      linear-gradient(to top,
-        rgba(0,0,0,0.78) 0%,
-        rgba(0,0,0,0.34) 34%,
-        rgba(0,0,0,0.06) 62%,
-        transparent 100%);
-  }
-
-  .sc-type-badge,
-  .sc-branches-badge {
-    position: absolute;
-    top: 16px;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 6px 14px;
-    border-radius: 100px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.3px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-  }
-  .sc-type-badge {
-    left: 16px;
-    background: rgba(255,255,255,0.92);
-    border: 1px solid rgba(255,255,255,0.74);
-    color: #111827;
-  }
-  .sc-branches-badge {
-    right: 16px;
-    background: rgba(0,0,0,0.4);
-    border: 1px solid rgba(255,255,255,0.15);
-    color: rgba(255,255,255,0.92);
-  }
-
-  .sc-photo-info {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 22px 20px 18px;
-  }
-  .sc-photo-name {
-    font-family: 'Unbounded', sans-serif;
-    font-weight: 800;
-    font-size: 19px;
-    color: white;
-    letter-spacing: -0.5px;
-    line-height: 1.18;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    margin-bottom: 6px;
-  }
-  .sc-photo-sub {
-    font-size: 12px;
-    color: rgba(255,255,255,0.76);
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .sc-photo-sub-dot {
-    width: 3px;
-    height: 3px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.4);
-  }
-
-  /* ── BODY ── */
-  .sc-body {
-    padding: 18px 20px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    flex: 1;
-  }
-
-  .sc-pills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 7px;
-  }
-  .sc-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    border-radius: 100px;
-    font-size: 11px;
-    font-weight: 600;
-    border: 1.5px solid var(--border);
-    background: var(--bg);
-    color: var(--text2);
-    white-space: nowrap;
-  }
-  .sc-pill-accent {
-    background: rgba(255,138,0,0.08);
-    border-color: rgba(255,138,0,0.25);
-    color: #C27D00;
-  }
-  .sc-pill-blue {
-    background: rgba(37,99,235,0.07);
-    border-color: rgba(37,99,235,0.2);
-    color: #1D4ED8;
-  }
-  .sc-pill-green {
-    background: rgba(0,184,150,0.08);
-    border-color: rgba(0,184,150,0.25);
-    color: var(--teal);
-  }
-
-  .sc-desc {
-    font-size: 13px;
-    line-height: 1.65;
-    color: var(--muted);
-  }
-
-  .sc-footer {
-    margin-top: auto;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding-top: 4px;
-    border-top: 1px solid var(--border);
-  }
-  .sc-footer-hint {
-    font-size: 12px;
-    color: var(--muted);
-  }
-  .sc-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 9px 20px;
-    border-radius: 100px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    color: white;
-    font-size: 12px;
-    font-weight: 700;
-    font-family: 'Unbounded', sans-serif;
-    letter-spacing: -0.2px;
-    box-shadow: 0 4px 16px var(--glow);
-    white-space: nowrap;
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-  .sc-card:hover .sc-btn {
-    transform: translateX(2px);
-    box-shadow: 0 8px 24px var(--glow);
-  }
-
-  /* ── EMPTY ── */
-  .sl-empty {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 80px 40px;
-    background: var(--card);
-    border-radius: 26px;
-    border: 1.5px solid var(--border);
-  }
-  .sl-empty-icon { font-size: 56px; margin-bottom: 16px; }
-  .sl-empty h3 {
-    font-family: 'Unbounded', sans-serif;
-    font-size: 18px;
-    font-weight: 800;
-    color: var(--text);
-    margin-bottom: 8px;
-    letter-spacing: -0.5px;
-  }
-  .sl-empty p {
-    font-size: 14px;
-    color: var(--muted);
-  }
-
-  /* ── ANIMATION ── */
-  .sc-card {
-    animation: storeCardIn 0.5s ease both;
-  }
-  @keyframes storeCardIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  .sc-card:nth-child(1) { animation-delay: 0.00s; }
-  .sc-card:nth-child(2) { animation-delay: 0.06s; }
-  .sc-card:nth-child(3) { animation-delay: 0.12s; }
-  .sc-card:nth-child(4) { animation-delay: 0.18s; }
-  .sc-card:nth-child(5) { animation-delay: 0.24s; }
-  .sc-card:nth-child(6) { animation-delay: 0.30s; }
-  .sc-card:nth-child(7) { animation-delay: 0.36s; }
-  .sc-card:nth-child(8) { animation-delay: 0.42s; }
-  .sc-card:nth-child(n+9) { animation-delay: 0.48s; }
-
-  @media (max-width: 920px) {
-    .sl-hero {
-      align-items: stretch;
-    }
-    .sl-filters {
-      width: 100%;
-    }
-    .sl-search-wrap {
-      max-width: none;
-      min-width: 100%;
-    }
-  }
-
-  @media (max-width: 700px) {
-    .sl-wrap {
-      padding: 24px 16px 60px;
-    }
-    .sl-grid {
-      grid-template-columns: 1fr;
-      gap: 16px;
-    }
-    .sl-subtitle {
-      font-size: 14px;
-    }
-    .sl-filters {
-      gap: 12px;
-    }
-    .sl-submit {
-      width: 100%;
-      justify-content: center;
-    }
-    .sc-photo {
-      height: 210px;
-    }
-    .sc-photo-name {
-      font-size: 17px;
-    }
-    .sc-footer {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    .sc-btn {
-      width: 100%;
-      justify-content: center;
-    }
-    .sl-empty {
-      padding: 56px 24px;
-    }
-  }
+  .sc { border-radius: 14px; }
+  .sc-photo { height: 130px; }
+  .sc-photo-name { font-size: 12px; bottom: 10px; left: 10px; right: 10px; }
+  .sc-body { padding: 10px 10px 12px; flex-direction: column; align-items: flex-start; gap: 6px; }
+  .sc-cta { width: 100%; justify-content: center; padding: 7px 12px; font-size: 11px; }
+  .sl-title { letter-spacing: -1px; }
+}
 </style>
 {% endblock %}
 
@@ -446,110 +238,49 @@
 {% block content %}
 <div class="sl-wrap">
 
-  <div class="sl-hero">
+  <div class="sl-header">
     <div>
-      <div class="sl-eyebrow">{% trans "Экосистема Sanji" %}</div>
-      <h1 class="sl-title">{% trans "Магазины" %}<br>{% trans "Кыргызстана" %}</h1>
-      <p class="sl-subtitle">
-        {% trans "Выберите магазин, откройте каталог и оформите заказ в понятном минималистичном интерфейсе. Дизайн сделан в едином ритме со страницей ресторанов." %}
-      </p>
-      <div class="sl-count">
-        <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);"></span>
-        {{ stores|length }} {% trans "магазинов в витрине" %}
-      </div>
+      <h1 class="sl-title">{% trans "Магазины" %}</h1>
+      <div class="sl-meta">{{ stores|length }} {% trans "магазинов в витрине" %}</div>
     </div>
 
-    <form method="get" class="sl-filters">
-      <div class="sl-search-wrap">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/>
-        </svg>
-        <input class="sl-search"
-               name="q"
-               value="{{ q }}"
-               placeholder="{% trans 'Поиск магазина...' %}"
-               autocomplete="off">
-      </div>
-
+    <form method="get" class="sl-search-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/>
+      </svg>
+      <input class="sl-search" name="q" value="{{ q }}" placeholder="{% trans 'Поиск...' %}" autocomplete="off">
       <button class="sl-submit" type="submit">{% trans "Найти" %}</button>
     </form>
   </div>
 
   <div class="sl-grid">
     {% for c in stores %}
-    <a class="sc-card" href="{% url 'shops:store_detail' c.slug %}">
+    <a class="sc" href="{% url 'shops:store_detail' c.slug %}">
       <div class="sc-photo">
         {% if c.logo %}
-          <img src="{{ c.logo.url }}"
-               alt="{% t c.name_ru 'name_ru' %}"
-               loading="lazy"
-               decoding="async"
-               width="400"
-               height="250">
+          <img src="{{ c.logo.url }}" alt="{{ c.name_ru }}" loading="lazy" decoding="async">
         {% else %}
           <div class="sc-photo-empty">
-            <div class="sc-photo-empty-letter">
-              {% t c.name_ru "name_ru" as sn %}{{ sn|slice:":1" }}
-            </div>
+            <div class="sc-photo-empty-letter">{{ c.name_ru|slice:":1" }}</div>
           </div>
         {% endif %}
-
-        <div class="sc-photo-overlay"></div>
-
-        <div class="sc-type-badge">🛍️ {% trans "Магазин" %}</div>
-
-        <div class="sc-branches-badge">
-          {{ c.all.branches__count|default:0 }} {% trans "точек" %}
-        </div>
-
-        <div class="sc-photo-info">
-          <div class="sc-photo-name">{% t c.name_ru "name_ru" %}</div>
-          <div class="sc-photo-sub">
-            <span>{% trans "Каталог и быстрый заказ" %}</span>
-            <span class="sc-photo-sub-dot"></span>
-            <span>{{ c.all.branches__count|default:0 }} {% trans "филиалов" %}</span>
-          </div>
-        </div>
+        <div class="sc-photo-grad"></div>
+        <div class="sc-photo-name">{{ c.name_ru }}</div>
       </div>
 
       <div class="sc-body">
-        <div class="sc-pills">
-          <span class="sc-pill sc-pill-accent">🧺 {% trans "Корзина" %}</span>
-          <span class="sc-pill sc-pill-blue">📦 {% trans "Каталог" %}</span>
-          <span class="sc-pill sc-pill-green">⚡ {% trans "Быстрый заказ" %}</span>
-          {% if c.tags %}
-            <span class="sc-pill"># {{ c.tags }}</span>
-          {% endif %}
-        </div>
-
-        <div class="sc-desc">
-          {% if c.tags %}
-            {{ c.tags }}
-          {% else %}
-            {% trans "Откройте магазин, посмотрите ассортимент и оформите заказ за пару касаний." %}
-          {% endif %}
-        </div>
-
-        <div class="sc-footer">
-          <span class="sc-footer-hint">{% trans "Витрина, каталог, оформление" %}</span>
-          <span class="sc-btn">
-            {% trans "Открыть" %}
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-              <path d="M2 11L11 2M11 2H5M11 2V8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </span>
-        </div>
+        <span class="sc-branches">{{ c.all.branches__count|default:0 }} {% trans "филиалов" %}</span>
+        <span class="sc-cta">{% trans "Открыть" %} →</span>
       </div>
     </a>
     {% empty %}
-
     <div class="sl-empty">
       <div class="sl-empty-icon">🔍</div>
       <h3>{% trans "Ничего не найдено" %}</h3>
-      <p>{% trans "Попробуйте другой запрос и откройте витрину ещё раз." %}</p>
+      <p>{% trans "Попробуйте другой запрос." %}</p>
     </div>
-
     {% endfor %}
   </div>
+
 </div>
 {% endblock %}
