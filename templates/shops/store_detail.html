@@ -155,7 +155,7 @@
 
   .sb-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 24px;
   }
 
@@ -488,83 +488,142 @@
       border-radius: 30px;
     }
     .sb-grid {
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      grid-template-columns: repeat(2, 1fr);
     }
   }
 
   @media (max-width: 700px) {
     .sb-wrap {
-      padding: 20px 16px 60px;
+      padding: 20px 12px 60px;
     }
     .sb-hero {
-      padding: 22px 18px;
-      border-radius: 26px;
-      margin-bottom: 22px;
+      padding: 18px 14px;
+      border-radius: 22px;
+      margin-bottom: 16px;
     }
     .sb-title-row {
       align-items: flex-start;
+      gap: 10px;
     }
     .sb-logo {
-      width: 62px;
-      height: 62px;
-      border-radius: 20px;
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+    }
+    .sb-logo-letter {
+      font-size: 20px;
     }
     .sb-title {
-      letter-spacing: -1.4px;
+      letter-spacing: -1px;
     }
     .sb-sub {
-      font-size: 14px;
-      margin-top: 8px;
+      font-size: 12px;
+      margin-top: 6px;
     }
     .sb-counts {
-      margin-top: 16px;
+      margin-top: 12px;
+      gap: 6px;
     }
     .sb-count,
+    .sb-back {
+      min-height: 36px;
+      padding: 0 12px;
+      font-size: 11px;
+    }
     .sb-back {
       width: 100%;
       justify-content: center;
     }
     .sb-grid {
-      grid-template-columns: 1fr;
-      gap: 16px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
     }
     .bc {
-      border-radius: 24px;
+      border-radius: 16px;
     }
     .bc-media {
-      height: 220px;
+      height: 130px;
+    }
+    .bc-topline {
+      top: 8px;
+      left: 8px;
+      right: 8px;
+    }
+    .bc-status,
+    .bc-map-chip {
+      min-height: 24px;
+      padding: 0 8px;
+      font-size: 9px;
+    }
+    .bc-status-dot {
+      width: 5px;
+      height: 5px;
     }
     .bc-photo-info {
-      padding: 18px 16px 15px;
+      padding: 10px 10px 8px;
     }
     .bc-name {
-      font-size: 18px;
+      font-size: 12px;
+      letter-spacing: -.3px;
     }
     .bc-address {
-      font-size: 12px;
+      font-size: 10px;
+      margin-top: 4px;
+      gap: 4px;
     }
     .bc-body {
-      padding: 16px;
-      gap: 14px;
+      padding: 10px;
+      gap: 8px;
+    }
+    .bc-pills {
+      gap: 4px;
+    }
+    .bc-pill {
+      padding: 4px 8px;
+      font-size: 9px;
+      gap: 4px;
     }
     .bc-actions {
       grid-template-columns: 1fr;
+      gap: 6px;
     }
     .bc-main {
-      min-height: 78px;
-      border-radius: 18px;
-      padding: 14px 14px 13px;
+      min-height: 58px;
+      border-radius: 12px;
+      padding: 10px 10px 9px;
+    }
+    .bc-main-kicker {
+      font-size: 9px;
+      margin-bottom: 3px;
+    }
+    .bc-main-title {
+      font-size: 13px;
+    }
+    .bc-main-sub {
+      font-size: 9px;
+      margin-top: 4px;
+    }
+    .bc-main-arrow {
+      font-size: 14px;
     }
     .bc-footer {
-      padding-top: 14px;
-      align-items: stretch;
+      padding-top: 10px;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .bc-note {
+      font-size: 10px;
     }
     .bc-mini-actions {
       width: 100%;
+      gap: 6px;
     }
     .bc-mini-link {
       flex: 1 1 auto;
       justify-content: center;
+      min-height: 34px;
+      font-size: 11px;
+      padding: 0 10px;
     }
   }
 </style>
@@ -605,6 +664,11 @@
           </div>
           <div class="sb-count">🚚 {% trans "Доставка от магазина" %}</div>
           <div class="sb-count">🏬 {% trans "Самовывоз / выдача" %}</div>
+          {% if store.youtube_url %}
+          <a href="{{ store.youtube_url }}" target="_blank" rel="noopener" class="sb-count" style="background:rgba(255,0,0,.18);border-color:rgba(255,0,0,.28);color:#fff;text-decoration:none">
+            ▶ YouTube
+          </a>
+          {% endif %}
         </div>
       </div>
 
