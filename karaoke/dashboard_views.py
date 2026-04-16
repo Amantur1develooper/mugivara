@@ -1,8 +1,11 @@
 import json
+import requests
 from datetime import date, datetime, timedelta
 from decimal import Decimal
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.html import escape
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.contrib import messages
@@ -11,6 +14,24 @@ from django.db.models import Sum, Count
 from .models import (KaraokeVenue, RoomCategory, KaraokeRoom, KaraokeRoomPhoto,
                      KaraokeBooking, KaraokeMenuCategory, KaraokeMenuItem, KaraokeMembership,
                      KaraokeOrder, KaraokeOrderItem)
+
+
+def _tg_send(venue, text):
+    """Отправить сообщение в TG-группу заведения. Тихо глотает ошибки."""
+    token = (getattr(settings, "TG_BOT_TOKEN", "") or
+             getattr(settings, "TELEGRAM_BOT_TOKEN", "") or "").strip()
+    chat_id = venue.tg_chat_id.strip() if venue.tg_chat_id else ""
+    if not token or not chat_id:
+        return
+    payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML",
+               "disable_web_page_preview": True}
+    if venue.tg_thread_id:
+        payload["message_thread_id"] = venue.tg_thread_id
+    try:
+        requests.post(f"https://api.telegram.org/bot{token}/sendMessage",
+                      json=payload, timeout=8)
+    except Exception as e:
+        print("Karaoke TG error:", e)
 
 LOGIN_URL = "dashboard:login"
 
@@ -284,6 +305,24 @@ def karaoke_booking_add(request, venue_id):
         booking_date=bd, start_time=st, end_time=et,
         guests=int(guests), notes=notes, status="confirmed",
     )
+
+    lines = [
+        "🎤 <b>НОВОЕ БРОНИРОВАНИЕ — Karaoke</b>  (из дашборда)",
+        "",
+        f"🏢 <b>{escape(venue.name)}</b>",
+        f"🚪 Кабинка: <b>{escape(room.name)}</b>",
+        "",
+        f"📅 Дата: <b>{bd.strftime('%d.%m.%Y')}</b>",
+        f"⏰ Время: <b>{start_time} – {end_time}</b>",
+        f"👥 Гостей: <b>{guests}</b>",
+        "",
+        f"👤 Имя: <b>{escape(customer_name)}</b>",
+        f"📞 Телефон: {escape(customer_phone)}",
+    ]
+    if notes:
+        lines += ["", f"💬 Примечание: {escape(notes)}"]
+    _tg_send(venue, "\n".join(lines))
+
     return JsonResponse({"ok": True, "id": b.id})
 
 
@@ -591,6 +630,26 @@ def karaoke_order_add(request, venue_id):
 
     order.total_amount = total
     order.save(update_fields=["total_amount"])
+
+    # ── Telegram уведомление ───────────────────────────────────────────────────
+    item_lines = []
+    for oi in order.items.select_related("menu_item").all():
+        item_lines.append(f"  • {escape(oi.menu_item.name)} × {oi.qty} = {int(oi.line_total)} сом")
+    lines = [
+        "🍽️ <b>НОВЫЙ ЗАКАЗ ЕДЫ — Karaoke</b>",
+        "",
+        f"🏢 <b>{escape(venue.name)}</b>",
+    ]
+    if room:
+        lines.append(f"🚪 Кабинка: <b>{escape(room.name)}</b>")
+    if booking:
+        lines.append(f"📋 Бронь #{booking.id} — {escape(booking.customer_name)}")
+    lines += ["", f"📅 Дата: <b>{order_date.strftime('%d.%m.%Y')}</b>", ""]
+    lines += item_lines
+    lines += ["", f"💰 Итого: <b>{int(total)} сом</b>"]
+    if comment:
+        lines += ["", f"💬 {escape(comment)}"]
+    _tg_send(venue, "\n".join(lines))
 
     return JsonResponse({"ok": True, "id": order.id, "total": str(total)})
 
