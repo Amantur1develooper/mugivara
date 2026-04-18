@@ -232,6 +232,7 @@ def shop_product_add(request, branch_id):
         name_en=request.POST.get("name_en", "").strip(),
         price=_dec(request.POST.get("price", "0")),
         unit=request.POST.get("unit", "pcs"),
+        barcode=request.POST.get("barcode", "").strip(),
         is_active=True,
     )
     if request.FILES.get("photo"):
@@ -255,6 +256,7 @@ def shop_product_add(request, branch_id):
         "photo_url": product.photo.url if product.photo else "",
         "is_active": product.is_active,
         "category_id": category.id if category else 0,
+        "barcode": product.barcode,
     })
 
 
@@ -283,6 +285,7 @@ def shop_product_edit(request, stock_id):
     else:
         product.category = None
 
+    product.barcode = request.POST.get("barcode", "").strip()
     if request.FILES.get("photo"):
         product.photo = request.FILES["photo"]
     product.save()
@@ -300,6 +303,7 @@ def shop_product_edit(request, stock_id):
         "unit_display": product.get_unit_display(),
         "photo_url": product.photo.url if product.photo else "",
         "category_id": product.category_id or 0,
+        "barcode": product.barcode,
     })
 
 
@@ -407,3 +411,37 @@ def shop_order_status(request, order_id):
         order.status = new_status
         order.save(update_fields=["status"])
     return redirect("dashboard:shop_orders", branch_id=order.branch_id)
+
+
+# ── BARCODE LOOKUP ────────────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def shop_barcode_lookup(request, branch_id):
+    """GET ?barcode=XXX — ищет товар в магазине по штрих-коду."""
+    branch = get_object_or_404(StoreBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return JsonResponse({"ok": False}, status=403)
+
+    code = request.GET.get("barcode", "").strip()
+    if not code:
+        return JsonResponse({"ok": False, "error": "empty"})
+
+    try:
+        stock = StoreStock.objects.select_related("product").get(
+            branch=branch, product__barcode=code
+        )
+        p = stock.product
+        return JsonResponse({
+            "ok": True,
+            "found": True,
+            "stock_id": stock.id,
+            "product_id": p.id,
+            "name_ru": p.name_ru,
+            "price": _fmt(p.price),
+            "qty": _fmt(stock.qty),
+            "unit_display": p.get_unit_display(),
+            "photo_url": p.photo.url if p.photo else "",
+            "barcode": p.barcode,
+        })
+    except StoreStock.DoesNotExist:
+        return JsonResponse({"ok": True, "found": False, "barcode": code})

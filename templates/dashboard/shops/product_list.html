@@ -230,6 +230,81 @@
   padding:10px 18px; background:var(--bg); border-bottom:1px solid var(--border);
   font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px;
 }
+
+/* ── barcode badge ── */
+.pl-barcode-badge {
+  display:inline-flex; align-items:center; gap:3px;
+  font-size:10px; color:var(--muted); margin-top:2px;
+  font-family:monospace; letter-spacing:.4px;
+}
+.bc-scan-btn {
+  padding:0 4px; border:none; background:none;
+  color:var(--accent); cursor:pointer; font-size:14px;
+  vertical-align:middle; line-height:1; flex-shrink:0;
+}
+.bc-scan-btn:hover { opacity:.75; }
+
+/* ── barcode search bar ── */
+.bc-search-bar {
+  display:flex; gap:8px; align-items:center;
+  background:var(--card); border:1.5px solid var(--border);
+  border-radius:12px; padding:10px 14px; margin-bottom:16px;
+}
+.bc-search-label {
+  font-size:11px; font-weight:700; color:var(--muted);
+  white-space:nowrap; flex-shrink:0;
+}
+.bc-search-input {
+  flex:1; padding:7px 12px; border-radius:8px;
+  border:1.5px solid var(--border); background:var(--bg);
+  color:var(--text); font-size:13px; outline:none; font-family:monospace;
+  transition:border-color .2s;
+}
+.bc-search-input:focus { border-color:var(--accent); }
+.bc-search-result {
+  padding:8px 12px; border-radius:8px; font-size:12px;
+  background:var(--bg); display:none; margin-top:4px;
+}
+.bc-search-result.found { background:rgba(0,184,150,.1); color:var(--teal); display:block; }
+.bc-search-result.notfound { background:rgba(255,149,0,.1); color:#ff9500; display:block; }
+
+/* ── scanner overlay ── */
+.bc-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.88);
+  z-index:9999; display:none; flex-direction:column;
+  align-items:center; justify-content:center; padding:20px;
+}
+.bc-overlay.open { display:flex; }
+.bc-overlay-title { color:#fff; font-size:15px; font-weight:700; margin-bottom:14px; }
+.bc-video-wrap {
+  position:relative; width:min(90vw,360px); aspect-ratio:1;
+  border-radius:16px; overflow:hidden; background:#000;
+}
+.bc-video { width:100%; height:100%; object-fit:cover; display:block; }
+.bc-aim {
+  position:absolute; inset:22%;
+  border:2.5px solid var(--accent); border-radius:10px;
+  box-shadow:0 0 0 2000px rgba(0,0,0,.3);
+}
+.bc-aim-line {
+  position:absolute; top:50%; left:0; right:0;
+  height:2px; background:var(--accent); opacity:.8;
+  animation:bcScan 2s ease-in-out infinite;
+}
+@keyframes bcScan {
+  0%,100% { top:10%; } 50% { top:90%; }
+}
+.bc-overlay-hint { color:rgba(255,255,255,.55); font-size:12px; margin-top:12px; text-align:center; }
+.bc-overlay-close {
+  margin-top:18px; padding:10px 30px; border-radius:10px;
+  border:none; background:rgba(255,255,255,.15); color:#fff;
+  font-size:13px; font-weight:700; cursor:pointer; transition:background .15s;
+}
+.bc-overlay-close:hover { background:rgba(255,255,255,.25); }
+.bc-status {
+  margin-top:10px; font-size:13px; font-weight:700;
+  color:#fff; min-height:20px; text-align:center;
+}
 </style>
 {% endblock %}
 
@@ -256,7 +331,20 @@
   data-stock-toggle="{% url 'dashboard:shop_product_toggle' 0 %}"
   data-cat-rename="{% url 'dashboard:shop_category_rename' 0 %}"
   data-cat-delete="{% url 'dashboard:shop_category_delete' 0 %}"
+  data-barcode-lookup="{% url 'dashboard:shop_barcode_lookup' branch.id %}"
 ></div>
+
+{# ── Barcode search bar ── #}
+<div class="bc-search-bar">
+  <span class="bc-search-label">📦 Штрих-код:</span>
+  <input class="bc-search-input" id="bcSearchInput" placeholder="Введите или сканируйте..."
+         autocomplete="off" inputmode="numeric"
+         onkeydown="if(event.key==='Enter')barcodeSearch()"
+         oninput="clearBcResult()">
+  <button type="button" class="bc-scan-btn" style="font-size:20px" onclick="openScanner('bcSearchInput')" title="Сканировать камерой">📷</button>
+  <button type="button" onclick="barcodeSearch()" style="padding:7px 14px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(255,77,28,.08);color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Найти</button>
+</div>
+<div id="bcSearchResult" class="bc-search-result"></div>
 
 <div class="pl-wrap" id="plWrap">
 
@@ -538,13 +626,14 @@ async function submitAddProduct(catId) {
     price:       document.getElementById(`add-price-${catId}`)?.value || '0',
     qty:         document.getElementById(`add-qty-${catId}`)?.value || '0',
     unit:        document.getElementById(`add-unit-${catId}`)?.value || 'pcs',
+    barcode:     document.getElementById(`add-barcode-${catId}`)?.value.trim() || '',
     category_id: catId != '0' ? catId : '',
   }, files);
 
   if (!d.ok) { alert(d.error || 'Ошибка при добавлении товара'); return; }
 
   // Сброс формы
-  ['name','name-ky','name-en','price','qty'].forEach(f => {
+  ['name','name-ky','name-en','price','qty','barcode'].forEach(f => {
     const el = document.getElementById(`add-${f}-${catId}`);
     if (el) el.value = f === 'price' || f === 'qty' ? '0' : '';
   });
@@ -583,6 +672,7 @@ function productRowHTML(p) {
       <div class="pl-info">
         <div class="pl-name" id="pname-${p.stock_id}">${esc(p.name_ru)}</div>
         <div class="pl-unit" id="punit-${p.stock_id}">${esc(p.unit_display)}</div>
+        ${p.barcode ? `<div class="pl-barcode-badge" id="pbarcode-${p.stock_id}">▌▌▌ ${esc(p.barcode)}</div>` : `<div class="pl-barcode-badge" id="pbarcode-${p.stock_id}" style="display:none"></div>`}
       </div>
       <div class="pl-field-wrap">
         <input class="pl-input" type="number" min="0" step="10"
@@ -650,6 +740,14 @@ function editPanelHTML(p) {
       <input class="pl-edit-input" id="edit-qty-${p.stock_id}" type="number" min="0"
              value="${fmtQty(p.qty)}">
     </div>
+    <div class="pl-edit-col">
+      <label class="pl-edit-label">
+        Штрих-код
+        <button type="button" class="bc-scan-btn" onclick="openScanner('edit-barcode-${p.stock_id}')" title="Сканировать">📷</button>
+      </label>
+      <input class="pl-edit-input" id="edit-barcode-${p.stock_id}"
+             value="${esc(p.barcode||'')}" placeholder="Необязательно" autocomplete="off">
+    </div>
   </div>
   <div class="pl-edit-actions">
     <button class="pl-edit-save" onclick="saveEditProduct(${p.stock_id})">💾 Сохранить</button>
@@ -698,6 +796,7 @@ async function saveEditProduct(stockId) {
     price:   document.getElementById(`edit-price-${stockId}`)?.value || '0',
     qty:     document.getElementById(`edit-qty-${stockId}`)?.value || '0',
     unit:    document.getElementById(`edit-unit-${stockId}`)?.value || 'pcs',
+    barcode: document.getElementById(`edit-barcode-${stockId}`)?.value.trim() || '',
   }, files);
 
   if (!d.ok) { alert(d.error || 'Ошибка'); return; }
@@ -720,6 +819,12 @@ async function saveEditProduct(stockId) {
       img.src = d.photo_url; img.className = 'pl-photo';
       existImg.replaceWith(img);
     }
+  }
+  // update barcode badge
+  const bcEl = document.getElementById(`pbarcode-${stockId}`);
+  if (bcEl) {
+    if (d.barcode) { bcEl.textContent = '▌▌▌ ' + d.barcode; bcEl.style.display = ''; }
+    else { bcEl.textContent = ''; bcEl.style.display = 'none'; }
   }
   updateStatusBadge(stockId, parseFloat(d.qty));
   closeEditPanel(stockId);
@@ -820,6 +925,178 @@ function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function escJs(s) { return String(s||'').replace(/'/g,"\\'"); }
-function addPanelHTML(catId) { return ''; } // стабзаглушка, реальный HTML отдаётся сервером
+
+/* ── addPanelHTML (dynamic categories) ── */
+function addPanelHTML(catId) {
+  return `
+  <div style="display:grid;grid-template-columns:80px 1fr 1fr 1fr;gap:10px;align-items:end;margin-bottom:10px">
+    <div class="pl-add-field">
+      <div class="pl-add-photo-wrap">
+        <input type="file" accept="image/*" onchange="previewAddPhoto(this,'add-preview-${catId}','add-ph-${catId}')">
+        <div class="pl-add-photo-ph" id="add-ph-${catId}">📷</div>
+        <img class="pl-add-photo-preview" id="add-preview-${catId}" alt="">
+      </div>
+    </div>
+    <div class="pl-add-field">
+      <label class="pl-add-label">🇷🇺 Название *</label>
+      <input class="pl-add-input" id="add-name-${catId}" placeholder="Название (RU)" required>
+    </div>
+    <div class="pl-add-field">
+      <label class="pl-add-label">🇰🇬 Кыргызча</label>
+      <input class="pl-add-input" id="add-name-ky-${catId}" placeholder="Аты (KY)">
+    </div>
+    <div class="pl-add-field">
+      <label class="pl-add-label">🇬🇧 English</label>
+      <input class="pl-add-input" id="add-name-en-${catId}" placeholder="Name (EN)">
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end">
+    <div class="pl-add-field">
+      <label class="pl-add-label">Цена (сом)</label>
+      <input class="pl-add-input" id="add-price-${catId}" type="number" min="0" placeholder="0" value="0">
+    </div>
+    <div class="pl-add-field">
+      <label class="pl-add-label">Остаток</label>
+      <input class="pl-add-input" id="add-qty-${catId}" type="number" min="0" step="1" placeholder="0" value="0">
+    </div>
+    <div class="pl-add-field">
+      <label class="pl-add-label">Единица</label>
+      <select class="pl-add-select" id="add-unit-${catId}">
+        <option value="pcs">шт</option>
+        <option value="kg">кг</option>
+        <option value="l">л</option>
+      </select>
+    </div>
+    <div class="pl-add-field">
+      <label class="pl-add-label">Штрих-код
+        <button type="button" class="bc-scan-btn" onclick="openScanner('add-barcode-${catId}')" title="Сканировать">📷</button>
+      </label>
+      <input class="pl-add-input" id="add-barcode-${catId}" placeholder="Необязательно" autocomplete="off">
+    </div>
+    <div class="pl-add-field">
+      <label class="pl-add-label">&nbsp;</label>
+      <button class="pl-add-btn" onclick="submitAddProduct(${catId})">✅ Добавить</button>
+    </div>
+  </div>`;
+}
+
+/* ── Barcode search ── */
+async function barcodeSearch() {
+  const code = document.getElementById('bcSearchInput').value.trim();
+  if (!code) return;
+  const res = document.getElementById('bcSearchResult');
+  res.className = 'bc-search-result';
+  res.textContent = 'Поиск...';
+  res.style.display = 'block';
+  try {
+    const r = await fetch(URLS.barcodeLookup + '?barcode=' + encodeURIComponent(code));
+    const d = await r.json();
+    if (!d.ok) { res.className='bc-search-result notfound'; res.textContent='Ошибка запроса'; return; }
+    if (d.found) {
+      res.className = 'bc-search-result found';
+      res.textContent = `✓ Найден: ${d.name_ru} — ${d.price} сом, остаток: ${d.qty} ${d.unit_display}`;
+      // highlight row
+      const row = document.getElementById(`stock-row-${d.stock_id}`);
+      if (row) {
+        row.scrollIntoView({ behavior:'smooth', block:'center' });
+        row.style.boxShadow = '0 0 0 3px var(--accent)';
+        row.style.borderRadius = '12px';
+        setTimeout(() => { row.style.boxShadow = ''; row.style.borderRadius = ''; }, 2500);
+      }
+    } else {
+      res.className = 'bc-search-result notfound';
+      res.textContent = `Товар со штрих-кодом «${d.barcode}» не найден. Добавьте новый товар.`;
+    }
+  } catch(e) {
+    res.className = 'bc-search-result notfound'; res.textContent = 'Ошибка сети';
+  }
+}
+function clearBcResult() {
+  const res = document.getElementById('bcSearchResult');
+  res.className = 'bc-search-result'; res.style.display = 'none';
+}
+
+/* ── Barcode scanner ── */
+let _scannerTargetId = null;
+let _zxingReader = null;
+let _scanStream = null;
+
+async function openScanner(targetInputId) {
+  _scannerTargetId = targetInputId;
+  const overlay = document.getElementById('bcScanOverlay');
+  const status  = document.getElementById('bcScanStatus');
+  overlay.classList.add('open');
+  status.textContent = 'Запуск камеры...';
+
+  try {
+    // load ZXing lazily
+    if (!window.ZXing) {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js';
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+    _zxingReader = new ZXing.BrowserMultiFormatReader();
+    const video = document.getElementById('bcScanVideo');
+
+    // get stream
+    _scanStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    video.srcObject = _scanStream;
+    await video.play();
+    status.textContent = 'Наведите камеру на штрих-код';
+
+    // decode loop
+    const decodeLoop = async () => {
+      if (!overlay.classList.contains('open')) return;
+      try {
+        const result = await _zxingReader.decodeOnceFromStream(_scanStream, video);
+        if (result) {
+          const code = result.getText();
+          const inp = document.getElementById(_scannerTargetId);
+          if (inp) { inp.value = code; inp.dispatchEvent(new Event('input')); }
+          status.textContent = '✓ ' + code;
+          // if it's the search bar, auto-search
+          if (_scannerTargetId === 'bcSearchInput') {
+            setTimeout(() => { closeScanner(); barcodeSearch(); }, 600);
+          } else {
+            setTimeout(closeScanner, 800);
+          }
+          return;
+        }
+      } catch(e) { /* not found yet */ }
+      if (overlay.classList.contains('open')) requestAnimationFrame(decodeLoop);
+    };
+    decodeLoop();
+  } catch(e) {
+    status.textContent = 'Нет доступа к камере. Введите вручную.';
+    console.warn('Scanner error', e);
+  }
+}
+
+function closeScanner() {
+  const overlay = document.getElementById('bcScanOverlay');
+  overlay.classList.remove('open');
+  if (_scanStream) { _scanStream.getTracks().forEach(t => t.stop()); _scanStream = null; }
+  if (_zxingReader) { try { _zxingReader.reset(); } catch(e) {} _zxingReader = null; }
+  const video = document.getElementById('bcScanVideo');
+  if (video) { video.srcObject = null; }
+  _scannerTargetId = null;
+}
 </script>
+
+{# ── Scanner overlay modal ── #}
+<div class="bc-overlay" id="bcScanOverlay">
+  <div class="bc-overlay-title">📷 Сканирование штрих-кода</div>
+  <div class="bc-video-wrap">
+    <video class="bc-video" id="bcScanVideo" muted playsinline autoplay></video>
+    <div class="bc-aim"><div class="bc-aim-line"></div></div>
+  </div>
+  <div class="bc-status" id="bcScanStatus">Запуск...</div>
+  <div class="bc-overlay-hint">Держите штрих-код в рамке</div>
+  <button class="bc-overlay-close" onclick="closeScanner()">✕ Закрыть</button>
+</div>
 {% endblock %}

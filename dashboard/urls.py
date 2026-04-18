@@ -77,6 +77,7 @@ urlpatterns = [
     path("shops/category/<int:category_id>/delete/",        sv.shop_category_delete,  name="shop_category_delete"),
     path("shops/branch/<int:branch_id>/orders/",            sv.shop_orders,           name="shop_orders"),
     path("shops/order/<int:order_id>/status/",              sv.shop_order_status,     name="shop_order_status"),
+    path("shops/branch/<int:branch_id>/barcode/",           sv.shop_barcode_lookup,   name="shop_barcode_lookup"),
 
     # ── AGENCY ──────────────────────────────────────────────────────────────
     path("agency/",                                      av.agency_home,           name="agency_home"),

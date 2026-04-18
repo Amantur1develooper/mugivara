@@ -91,6 +91,7 @@ class StoreProduct(models.Model):
     photo = models.ImageField(upload_to="stores/products/", blank=True, null=True)
     unit = models.CharField(max_length=10, choices=Unit.choices, default=Unit.PCS)
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    barcode = models.CharField("Штрих-код", max_length=64, blank=True, default="")
 
     is_active = models.BooleanField(default=True)
 

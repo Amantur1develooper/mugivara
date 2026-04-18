@@ -12,6 +12,16 @@
     <div class="pl-info">
       <div class="pl-name" id="pname-{{ stock.id }}">{{ stock.product.name_ru }}</div>
       <div class="pl-unit" id="punit-{{ stock.id }}">{{ stock.product.get_unit_display }}</div>
+      {% if stock.product.barcode %}
+      <div class="pl-barcode-badge" id="pbarcode-{{ stock.id }}">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" style="opacity:.6">
+          <rect x="0" y="0" width="1" height="10"/><rect x="2" y="0" width="2" height="10"/>
+          <rect x="5" y="0" width="1" height="10"/><rect x="7" y="0" width="2" height="10"/>
+          <rect x="9.5" y="0" width="0.5" height="10"/>
+        </svg>
+        {{ stock.product.barcode }}
+      </div>
+      {% endif %}
     </div>
 
     <div class="pl-field-wrap">
@@ -88,6 +98,14 @@
         <label class="pl-edit-label" style="margin-top:4px">Остаток</label>
         <input class="pl-edit-input" id="edit-qty-{{ stock.id }}" type="number" min="0"
                value="{{ stock.qty|floatformat:"-3" }}">
+      </div>
+      <div class="pl-edit-col">
+        <label class="pl-edit-label">
+          Штрих-код
+          <button type="button" class="bc-scan-btn" onclick="openScanner('edit-barcode-{{ stock.id }}')" title="Сканировать">📷</button>
+        </label>
+        <input class="pl-edit-input" id="edit-barcode-{{ stock.id }}"
+               value="{{ stock.product.barcode }}" placeholder="Необязательно" autocomplete="off">
       </div>
     </div>
     <div class="pl-edit-actions">

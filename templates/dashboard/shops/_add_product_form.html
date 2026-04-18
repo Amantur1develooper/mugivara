@@ -21,7 +21,7 @@
     <input class="pl-add-input" id="add-name-en-{{ panel_id }}" placeholder="Name (EN)">
   </div>
 </div>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end">
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:10px;align-items:end">
   <div class="pl-add-field">
     <label class="pl-add-label">Цена (сом)</label>
     <input class="pl-add-input" id="add-price-{{ panel_id }}" type="number" min="0" placeholder="0" value="0">
@@ -37,6 +37,13 @@
       <option value="kg">кг</option>
       <option value="l">л</option>
     </select>
+  </div>
+  <div class="pl-add-field">
+    <label class="pl-add-label">
+      Штрих-код
+      <button type="button" class="bc-scan-btn" onclick="openScanner('add-barcode-{{ panel_id }}')" title="Сканировать">📷</button>
+    </label>
+    <input class="pl-add-input" id="add-barcode-{{ panel_id }}" placeholder="Необязательно" autocomplete="off">
   </div>
   <div class="pl-add-field">
     <label class="pl-add-label">&nbsp;</label>
