@@ -1,0 +1,384 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Отчёт — {{ branch.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+.rep-wrap {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 60px;
+}
+.rep-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.rep-title {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--text);
+  flex: 1;
+}
+.rep-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+/* Date filter */
+.rep-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  background: var(--card);
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+.rep-filter label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.rep-date-input {
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color .15s;
+}
+.rep-date-input:focus { border-color: var(--accent); }
+.rep-filter-btn {
+  padding: 8px 18px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.rep-filter-btn:hover { opacity: .85; }
+
+/* Quick presets */
+.rep-presets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.rep-preset {
+  padding: 5px 12px;
+  border-radius: 100px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text2);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .12s;
+}
+.rep-preset:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Stats grid */
+.rep-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.rep-stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 20px;
+}
+.rep-stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  margin-bottom: 6px;
+}
+.rep-stat-val {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1;
+}
+.rep-stat-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* Section title */
+.rep-section-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Table */
+.rep-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 28px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+.rep-table th {
+  padding: 10px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  white-space: nowrap;
+}
+.rep-table td {
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.rep-table tr:last-child td { border-bottom: none; }
+.rep-table td.num { font-weight: 700; text-align: right; }
+.rep-table td.rev { font-weight: 900; color: var(--accent); text-align: right; }
+.rep-table th.r  { text-align: right; }
+
+/* Bar mini chart for top items */
+.rep-bar-wrap { display: flex; align-items: center; gap: 8px; }
+.rep-bar {
+  height: 6px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 3px;
+  min-width: 4px;
+  transition: width .4s;
+}
+
+/* Type breakdown */
+.rep-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.rep-type-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+.rep-type-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text2);
+  margin-bottom: 4px;
+}
+.rep-type-rev {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--text);
+}
+.rep-type-cnt {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+@media print {
+  .rep-filter, .db-btn, .rep-preset { display: none !important; }
+  .rep-wrap { padding: 10px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rep-wrap">
+
+  <!-- Header -->
+  <div class="rep-header">
+    <div>
+      <div class="rep-title">📊 Отчёт по продажам</div>
+      <div class="rep-subtitle">{{ branch.restaurant.name_ru }} · {{ branch.name_ru }}</div>
+    </div>
+    <a href="{% url 'dashboard:pos' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">← Касса</a>
+    <button onclick="window.print()" class="db-btn db-btn-ghost db-btn-sm">🖨 Печать</button>
+  </div>
+
+  <!-- Date filter -->
+  <form method="get" class="rep-filter" id="repForm">
+    <label>С</label>
+    <input class="rep-date-input" type="date" name="from" value="{{ date_from|date:'Y-m-d' }}" max="{{ date_to|date:'Y-m-d' }}">
+    <label>По</label>
+    <input class="rep-date-input" type="date" name="to" value="{{ date_to|date:'Y-m-d' }}">
+    <button type="submit" class="rep-filter-btn">Показать</button>
+    <div class="rep-presets">
+      <button type="button" class="rep-preset" onclick="setPreset(0,0)">Сегодня</button>
+      <button type="button" class="rep-preset" onclick="setPreset(6,0)">7 дней</button>
+      <button type="button" class="rep-preset" onclick="setPreset(29,0)">30 дней</button>
+      <button type="button" class="rep-preset" onclick="setMonth()">Этот месяц</button>
+    </div>
+  </form>
+
+  <!-- Summary cards -->
+  <div class="rep-stats">
+    <div class="rep-stat-card">
+      <div class="rep-stat-label">Выручка</div>
+      <div class="rep-stat-val">{{ total_revenue|floatformat:0 }}</div>
+      <div class="rep-stat-sub">сом за период</div>
+    </div>
+    <div class="rep-stat-card">
+      <div class="rep-stat-label">Заказов</div>
+      <div class="rep-stat-val">{{ total_orders }}</div>
+      <div class="rep-stat-sub">закрытых</div>
+    </div>
+    <div class="rep-stat-card">
+      <div class="rep-stat-label">Наличные</div>
+      <div class="rep-stat-val">{{ pay_cash|floatformat:0 }}</div>
+      <div class="rep-stat-sub">сом</div>
+    </div>
+    <div class="rep-stat-card">
+      <div class="rep-stat-label">Безналичные</div>
+      <div class="rep-stat-val">{{ pay_online|floatformat:0 }}</div>
+      <div class="rep-stat-sub">сом</div>
+    </div>
+    {% if total_orders > 0 %}
+    <div class="rep-stat-card">
+      <div class="rep-stat-label">Средний чек</div>
+      <div class="rep-stat-val">{% widthratio total_revenue total_orders 1 %}</div>
+      <div class="rep-stat-sub">сом</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- By type -->
+  <div class="rep-section-title">📦 По типу заказа</div>
+  <div class="rep-type-grid">
+    {% for type_key, ts in type_stats.items %}
+    {% if ts.count > 0 %}
+    <div class="rep-type-card">
+      <div class="rep-type-name">{{ ts.label }}</div>
+      <div class="rep-type-rev">{{ ts.revenue|floatformat:0 }} сом</div>
+      <div class="rep-type-cnt">{{ ts.count }} заказ(ов)</div>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+
+  <!-- Top items -->
+  {% if item_totals %}
+  <div class="rep-section-title">🏆 Топ блюд</div>
+  <table class="rep-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Блюдо</th>
+        <th class="r">Порций</th>
+        <th class="r">Выручка</th>
+        <th style="width:120px"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in item_totals %}
+      <tr>
+        <td style="color:var(--muted);font-size:11px;font-weight:700">{{ forloop.counter }}</td>
+        <td>{{ it.item__name_ru }}</td>
+        <td class="num">{{ it.total_qty }}</td>
+        <td class="rev">{{ it.total_rev|floatformat:0 }} сом</td>
+        <td>
+          <div class="rep-bar-wrap">
+            <div class="rep-bar" style="width:{{ it.total_rev|floatformat:0 }}px" data-rev="{{ it.total_rev }}"></div>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <!-- Daily breakdown -->
+  {% if daily %}
+  <div class="rep-section-title">📅 По дням</div>
+  <table class="rep-table">
+    <thead>
+      <tr>
+        <th>Дата</th>
+        <th class="r">Заказов</th>
+        <th class="r">Выручка</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in daily %}
+      <tr>
+        <td style="font-weight:600">{{ row.day|date:"d.m.Y, l" }}</td>
+        <td class="num">{{ row.cnt }}</td>
+        <td class="rev">{{ row.rev|floatformat:0 }} сом</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if total_orders == 0 %}
+  <div style="text-align:center;padding:60px;color:var(--muted);font-size:14px">
+    За выбранный период закрытых заказов нет
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+function setPreset(daysBack, daysForward) {
+  const form = document.getElementById("repForm");
+  const to = new Date();
+  to.setDate(to.getDate() + daysForward);
+  const from = new Date();
+  from.setDate(from.getDate() - daysBack);
+  form.querySelector('[name="from"]').value = from.toISOString().slice(0,10);
+  form.querySelector('[name="to"]').value   = to.toISOString().slice(0,10);
+  form.submit();
+}
+function setMonth() {
+  const form = document.getElementById("repForm");
+  const now = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth(), 1);
+  const to   = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  form.querySelector('[name="from"]').value = from.toISOString().slice(0,10);
+  form.querySelector('[name="to"]').value   = to.toISOString().slice(0,10);
+  form.submit();
+}
+
+// Scale bars relative to max revenue
+(function(){
+  const bars = document.querySelectorAll(".rep-bar");
+  let maxRev = 0;
+  bars.forEach(b => { const v = parseFloat(b.dataset.rev)||0; if(v>maxRev) maxRev=v; });
+  if (!maxRev) return;
+  bars.forEach(b => {
+    const v = parseFloat(b.dataset.rev)||0;
+    b.style.width = Math.max(4, Math.round(v / maxRev * 100)) + "px";
+  });
+})();
+</script>
+{% endblock %}

@@ -48,8 +48,17 @@ urlpatterns = [
     path("floor/<int:floor_id>/table/add/",          views.table_add,    name="table_add"),
     path("table/<int:table_id>/delete/",             views.table_delete, name="table_delete"),
 
-    path("analytics/", views.analytics, name="analytics"),
+    path("analytics/", views.analytics,        name="analytics"),
     path("orders/",    views.orders_analytics, name="orders"),
+
+    # ── POS (Касса) ─────────────────────────────────────────────────────────
+    path("pos/<int:branch_id>/",              views.pos,               name="pos"),
+    path("pos/<int:branch_id>/order/",        views.pos_order_create,  name="pos_order_create"),
+    path("pos/<int:branch_id>/live/",         views.pos_live_orders,   name="pos_live_orders"),
+    path("pos/order/<int:order_id>/status/",  views.pos_order_status,  name="pos_order_status"),
+    path("pos/receipt/<int:order_id>/",       views.pos_receipt,       name="pos_receipt"),
+    path("pos/<int:branch_id>/inventory/",    views.pos_inventory,     name="pos_inventory"),
+    path("pos/<int:branch_id>/report/",       views.pos_report,        name="pos_report"),
 
     # ── SHOPS ───────────────────────────────────────────────────────────────
     path("shops/",                                          sv.shop_home,          name="shop_home"),

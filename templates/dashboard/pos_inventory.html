@@ -1,0 +1,325 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Инвентаризация — {{ branch.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+.inv-wrap {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+.inv-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.inv-title {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--text);
+  flex: 1;
+}
+.inv-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.inv-save-btn {
+  padding: 10px 24px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  border: none;
+  font-size: 13px;
+  font-weight: 800;
+  font-family: 'Unbounded', sans-serif;
+  cursor: pointer;
+  box-shadow: 0 4px 14px var(--glow);
+  transition: opacity .15s;
+  white-space: nowrap;
+}
+.inv-save-btn:hover { opacity: .88; }
+.inv-save-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.inv-cat {
+  margin-bottom: 20px;
+}
+.inv-cat-name {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--muted);
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.inv-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+.inv-table th {
+  padding: 10px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: left;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+}
+.inv-table td {
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.inv-table tr:last-child td { border-bottom: none; }
+
+.inv-item-name {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.inv-item-photo {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--card2);
+}
+.inv-item-photo-empty {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--card2);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.inv-price {
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.inv-avail {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.inv-avail.yes { background: rgba(0,184,150,.12); color: var(--teal); }
+.inv-avail.no  { background: rgba(255,59,48,.10);  color: #ff3b30; }
+
+.inv-stock-input {
+  width: 80px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+  transition: border-color .15s;
+}
+.inv-stock-input:focus { border-color: var(--accent); }
+
+.inv-reset-btn {
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: none;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .12s;
+}
+.inv-reset-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+.inv-hint {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: var(--card);
+  border-radius: 12px;
+  border-left: 3px solid var(--accent);
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.inv-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--teal);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 4px 20px rgba(0,0,0,.2);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all .3s;
+  pointer-events: none;
+  z-index: 9999;
+}
+.inv-toast.show { opacity: 1; transform: translateY(0); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="inv-wrap">
+
+  <div class="inv-header">
+    <div>
+      <div class="inv-title">📦 Инвентаризация</div>
+      <div class="inv-subtitle">{{ branch.restaurant.name_ru }} · {{ branch.name_ru }}</div>
+    </div>
+    <a href="{% url 'dashboard:pos' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">← Касса</a>
+    <button class="inv-save-btn" id="saveBtn" onclick="saveAll()">Сохранить</button>
+  </div>
+
+  <div class="inv-hint">
+    <b>Как работает:</b> Укажите количество порций в наличии. Пустое поле = неограниченно.
+    Когда через кассу продаётся блюдо — остаток уменьшается автоматически.
+    При достижении 0 блюдо помечается как «Нет в наличии» и скрывается из меню.
+  </div>
+
+  {% for bc in categories %}
+  <div class="inv-cat" style="margin-top:24px">
+    <div class="inv-cat-name">{{ bc.category.name_ru }}</div>
+    <table class="inv-table">
+      <thead>
+        <tr>
+          <th>Блюдо</th>
+          <th>Цена</th>
+          <th>Статус</th>
+          <th>Остаток (шт)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for bci in bc.items_in_category.all %}
+        {% with bi=bci.branch_item item=bci.branch_item.item %}
+        <tr>
+          <td>
+            <div class="inv-item-name">
+              {% if item.photo %}
+                <img class="inv-item-photo" src="{{ item.photo.url }}" alt="">
+              {% else %}
+                <div class="inv-item-photo-empty">🍽️</div>
+              {% endif %}
+              {{ item.name_ru }}
+            </div>
+          </td>
+          <td class="inv-price">{{ bi.price|floatformat:0 }} сом</td>
+          <td>
+            <span class="inv-avail {% if bi.is_available %}yes{% else %}no{% endif %}" id="avail-{{ bi.id }}">
+              {% if bi.is_available %}✓ В наличии{% else %}✗ Нет{% endif %}
+            </span>
+          </td>
+          <td>
+            <input class="inv-stock-input"
+                   type="number"
+                   min="0"
+                   id="stock-{{ bi.id }}"
+                   data-bi="{{ bi.id }}"
+                   value="{% if bi.stock is not None %}{{ bi.stock }}{% endif %}"
+                   placeholder="∞">
+          </td>
+          <td>
+            <button class="inv-reset-btn" onclick="resetItem({{ bi.id }})">∞ Без лимита</button>
+          </td>
+        </tr>
+        {% endwith %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% empty %}
+  <div style="text-align:center;padding:48px;color:var(--muted);font-size:14px">Нет категорий</div>
+  {% endfor %}
+
+</div>
+
+<div class="inv-toast" id="invToast">✓ Сохранено</div>
+
+<script>
+const SAVE_URL = "{% url 'dashboard:pos_inventory' branch.id %}";
+const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+
+function resetItem(biId) {
+  const inp = document.getElementById("stock-" + biId);
+  inp.value = "";
+}
+
+async function saveAll() {
+  const btn = document.getElementById("saveBtn");
+  btn.disabled = true;
+  btn.textContent = "Сохранение...";
+
+  const inputs = document.querySelectorAll(".inv-stock-input");
+  const updates = Array.from(inputs).map(inp => ({
+    bi_id: inp.dataset.bi,
+    stock: inp.value.trim(),
+  }));
+
+  try {
+    const r = await fetch(SAVE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF() },
+      body: JSON.stringify(updates),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      showToast("✓ Сохранено");
+      // Update availability badges
+      inputs.forEach(inp => {
+        const biId = inp.dataset.bi;
+        const val  = inp.value.trim();
+        const badge = document.getElementById("avail-" + biId);
+        if (!badge) return;
+        const isAvail = (val === "" || parseInt(val) > 0);
+        badge.className = "inv-avail " + (isAvail ? "yes" : "no");
+        badge.textContent = isAvail ? "✓ В наличии" : "✗ Нет";
+      });
+    } else {
+      alert("Ошибка сохранения");
+    }
+  } catch(e) {
+    alert("Ошибка сети");
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Сохранить";
+}
+
+function showToast(msg) {
+  const t = document.getElementById("invToast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2500);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,866 @@
+{% extends "dashboard/base.html" %}
+{% load i18n %}
+
+{% block title %}Касса — {{ branch.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+/* ── LAYOUT ── */
+.pos-wrap {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  grid-template-rows: auto 1fr auto;
+  height: calc(100vh - 56px);
+  gap: 0;
+  overflow: hidden;
+}
+
+/* ── TOPBAR ── */
+.pos-topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.pos-branch-name {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  font-size: 14px;
+  color: var(--text);
+}
+.pos-clock {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .5px;
+}
+.pos-topbar-btns {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── LEFT: MENU ── */
+.pos-menu {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+  background: var(--bg);
+}
+
+/* Category tabs */
+.pos-cats {
+  display: flex;
+  gap: 6px;
+  padding: 12px 16px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  scrollbar-width: none;
+}
+.pos-cats::-webkit-scrollbar { display: none; }
+.pos-cat-tab {
+  padding: 7px 16px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  color: var(--text2);
+  transition: all .15s;
+}
+.pos-cat-tab.active {
+  background: var(--text);
+  color: #fff;
+  border-color: var(--text);
+}
+
+/* Items grid */
+.pos-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  align-content: start;
+}
+.pos-item {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  cursor: pointer;
+  transition: border-color .15s, transform .12s;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  user-select: none;
+}
+.pos-item:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.pos-item:active { transform: scale(.97); }
+.pos-item-photo {
+  width: 100%;
+  height: 90px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--card2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  flex-shrink: 0;
+}
+.pos-item-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pos-item-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+.pos-item-price {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--accent);
+}
+
+/* ── RIGHT: CART ── */
+.pos-cart {
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  overflow: hidden;
+}
+.pos-cart-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pos-cart-title {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--text);
+}
+.pos-cart-clear {
+  font-size: 11px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: none;
+  background: none;
+}
+.pos-cart-clear:hover { color: #ff3b30; background: rgba(255,59,48,.08); }
+
+.pos-cart-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px;
+}
+.pos-cart-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.pos-cart-row:last-child { border-bottom: none; }
+.pos-cart-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+.pos-cart-qty-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.pos-qty-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  transition: all .12s;
+}
+.pos-qty-btn:hover { border-color: var(--accent); color: var(--accent); }
+.pos-cart-qty-val {
+  font-size: 13px;
+  font-weight: 800;
+  min-width: 22px;
+  text-align: center;
+  color: var(--text);
+}
+.pos-cart-line {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text2);
+  min-width: 64px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.pos-cart-del {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color .12s;
+}
+.pos-cart-del:hover { color: #ff3b30; }
+
+.pos-cart-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.pos-cart-empty-icon { font-size: 36px; opacity: .3; }
+
+/* Cart footer */
+.pos-cart-footer {
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pos-total-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.pos-total-label {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.pos-total-val {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 22px;
+  font-weight: 900;
+  color: var(--text);
+}
+
+/* Payment toggle */
+.pos-payment-row {
+  display: flex;
+  gap: 6px;
+}
+.pos-pay-btn {
+  flex: 1;
+  padding: 9px 8px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+  text-align: center;
+}
+.pos-pay-btn.active {
+  background: var(--text);
+  color: #fff;
+  border-color: var(--text);
+}
+
+/* Type select */
+.pos-type-row {
+  display: flex;
+  gap: 6px;
+}
+.pos-type-btn {
+  flex: 1;
+  padding: 7px 4px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text2);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .15s;
+  text-align: center;
+}
+.pos-type-btn.active {
+  background: rgba(255,77,28,.10);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Comment */
+.pos-comment {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  font-family: 'Geologica', sans-serif;
+  resize: none;
+  outline: none;
+  box-sizing: border-box;
+}
+.pos-comment:focus { border-color: var(--accent); }
+
+/* Confirm btn */
+.pos-confirm-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  font-weight: 900;
+  font-family: 'Unbounded', sans-serif;
+  cursor: pointer;
+  box-shadow: 0 4px 16px var(--glow);
+  transition: opacity .15s;
+}
+.pos-confirm-btn:hover { opacity: .9; }
+.pos-confirm-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── BOTTOM: ONLINE ORDERS ── */
+.pos-queue {
+  grid-column: 1 / -1;
+  background: var(--card);
+  border-top: 2px solid var(--border);
+  max-height: 240px;
+  overflow-y: auto;
+}
+.pos-queue-header {
+  padding: 10px 20px 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: sticky;
+  top: 0;
+  background: var(--card);
+  z-index: 2;
+  border-bottom: 1px solid var(--border);
+}
+.pos-queue-title {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--text);
+}
+.pos-queue-badge {
+  background: #ff3b30;
+  color: #fff;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  min-width: 20px;
+  text-align: center;
+}
+.pos-queue-empty {
+  padding: 14px 20px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Order row */
+.pos-orow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.pos-orow:last-child { border-bottom: none; }
+.pos-orow-id {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--muted);
+  flex-shrink: 0;
+  min-width: 40px;
+}
+.pos-orow-info { flex: 1; min-width: 200px; }
+.pos-orow-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.pos-orow-type {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+.pos-orow-customer {
+  font-size: 12px;
+  color: var(--text2);
+}
+.pos-orow-items {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 400px;
+}
+.pos-orow-total {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--text);
+  flex-shrink: 0;
+  min-width: 80px;
+  text-align: right;
+}
+.pos-orow-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+/* Status badge */
+.pos-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.pos-status.new      { background: rgba(255,149,0,.12);  color: #ff9500; }
+.pos-status.accepted { background: rgba(0,122,255,.10);  color: #007aff; }
+.pos-status.cooking  { background: rgba(255,77,28,.10);  color: var(--accent); }
+.pos-status.ready    { background: rgba(0,184,150,.10);  color: var(--teal); }
+
+/* Action buttons */
+.pos-act-btn {
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text2);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .12s;
+}
+.pos-act-btn:hover { border-color: var(--accent); color: var(--accent); }
+.pos-act-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pos-act-btn.primary:hover { opacity: .88; }
+.pos-act-btn.green  { background: var(--teal); color: #fff; border-color: var(--teal); }
+.pos-act-btn.danger { color: #ff3b30; border-color: rgba(255,59,48,.3); }
+.pos-act-btn.danger:hover { background: rgba(255,59,48,.08); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .pos-wrap {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    height: auto;
+    overflow: visible;
+  }
+  .pos-menu { max-height: 55vh; overflow: hidden; }
+  .pos-items { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .pos-cart { border-right: none; border-top: 2px solid var(--border); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pos-wrap">
+
+  <!-- TOPBAR -->
+  <div class="pos-topbar">
+    <div>
+      <div class="pos-branch-name">🖥 Касса — {{ branch.name_ru }}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">{{ branch.restaurant.name_ru }}</div>
+    </div>
+    <div class="pos-clock" id="posClock">--:--</div>
+    <div class="pos-topbar-btns">
+      <a href="{% url 'dashboard:pos_inventory' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📦 Инвентаризация</a>
+      <a href="{% url 'dashboard:pos_report' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📊 Отчёт</a>
+      <a href="{% url 'dashboard:orders' %}" class="db-btn db-btn-ghost db-btn-sm">📋 Заказы</a>
+      <a href="{% url 'dashboard:home' %}" class="db-btn db-btn-ghost db-btn-sm">← Дашборд</a>
+    </div>
+  </div>
+
+  <!-- MENU -->
+  <div class="pos-menu">
+    <div class="pos-cats" id="posCats">
+      {% for bc in categories %}
+      <div class="pos-cat-tab {% if forloop.first %}active{% endif %}"
+           onclick="switchCat({{ bc.id }}, this)"
+           data-cat="{{ bc.id }}">
+        {{ bc.category.name_ru }}
+      </div>
+      {% empty %}
+      <div style="font-size:12px;color:var(--muted);padding:4px 0">Нет категорий</div>
+      {% endfor %}
+    </div>
+
+    <div class="pos-items" id="posItems">
+      {% for bc in categories %}
+      {% for bci in bc.items_in_category.all %}
+      {% with bi=bci.branch_item item=bci.branch_item.item %}
+      {% if bi.is_available %}
+      <div class="pos-item" data-cat="{{ bc.id }}"
+           onclick="addToCart({{ bi.id }}, '{{ item.name_ru|escapejs }}', {{ bi.price|floatformat:0 }})"
+           title="{{ item.name_ru }}">
+        <div class="pos-item-photo">
+          {% if item.photo %}
+            <img src="{{ item.photo.url }}" alt="{{ item.name_ru }}" loading="lazy">
+          {% else %}🍽️{% endif %}
+        </div>
+        <div class="pos-item-name">{{ item.name_ru }}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+          <div class="pos-item-price">{{ bi.price|floatformat:0 }} сом</div>
+          {% if bi.stock is not None %}
+          <div style="font-size:10px;font-weight:700;color:{% if bi.stock <= 3 %}#ff9500{% else %}var(--teal){% endif %};background:{% if bi.stock <= 3 %}rgba(255,149,0,.12){% else %}rgba(0,184,150,.10){% endif %};padding:2px 6px;border-radius:6px">{{ bi.stock }} шт</div>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="pos-item" data-cat="{{ bc.id }}" style="opacity:.4;cursor:not-allowed" title="Нет в наличии">
+        <div class="pos-item-photo">
+          {% if item.photo %}
+            <img src="{{ item.photo.url }}" alt="{{ item.name_ru }}" loading="lazy" style="filter:grayscale(1)">
+          {% else %}🍽️{% endif %}
+        </div>
+        <div class="pos-item-name">{{ item.name_ru }}</div>
+        <div style="font-size:11px;color:var(--muted);font-weight:700">Нет в наличии</div>
+      </div>
+      {% endif %}
+      {% endwith %}
+      {% empty %}{% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- CART -->
+  <div class="pos-cart">
+    <div class="pos-cart-header">
+      <div class="pos-cart-title">🛒 Заказ</div>
+      <button class="pos-cart-clear" onclick="clearCart()">Очистить</button>
+    </div>
+
+    <div id="posCartItems" class="pos-cart-items">
+      <div class="pos-cart-empty" id="posCartEmpty">
+        <div class="pos-cart-empty-icon">🛒</div>
+        <div>Выберите блюда из меню</div>
+      </div>
+    </div>
+
+    <div class="pos-cart-footer">
+      <div class="pos-total-row">
+        <span class="pos-total-label">Итого</span>
+        <span class="pos-total-val" id="posTotal">0 сом</span>
+      </div>
+
+      <!-- Тип заказа -->
+      <div class="pos-type-row">
+        <button class="pos-type-btn active" data-type="dine_in"   onclick="setType(this)">🪑 Зал</button>
+        <button class="pos-type-btn"        data-type="pickup"    onclick="setType(this)">🏃 Самовывоз</button>
+        <button class="pos-type-btn"        data-type="delivery"  onclick="setType(this)">🚚 Доставка</button>
+      </div>
+
+      <!-- Оплата -->
+      <div class="pos-payment-row">
+        <button class="pos-pay-btn active" data-pay="cash"   onclick="setPay(this)">💵 Наличные</button>
+        <button class="pos-pay-btn"        data-pay="online" onclick="setPay(this)">💳 Безналичные</button>
+      </div>
+
+      <textarea class="pos-comment" id="posComment" rows="2" placeholder="Комментарий (необязательно)"></textarea>
+
+      <button class="pos-confirm-btn" id="posConfirmBtn" onclick="submitOrder()">
+        ✓ Оформить заказ
+      </button>
+    </div>
+  </div>
+
+  <!-- ONLINE ORDERS QUEUE -->
+  <div class="pos-queue">
+    <div class="pos-queue-header">
+      <div class="pos-queue-title">🔔 Онлайн-заказы</div>
+      <div class="pos-queue-badge" id="queueBadge">0</div>
+      <div style="flex:1"></div>
+      <div style="font-size:11px;color:var(--muted)" id="queueLastUpdate"></div>
+    </div>
+    <div id="posQueue">
+      <div class="pos-queue-empty">Загрузка...</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const BRANCH_ID   = {{ branch.id }};
+const ORDER_URL   = "{% url 'dashboard:pos_order_create' branch.id %}";
+const LIVE_URL    = "{% url 'dashboard:pos_live_orders' branch.id %}";
+const STATUS_URL  = "{% url 'dashboard:pos_order_status' 0 %}".replace("/0/", "/{id}/");
+const RECEIPT_URL = "{% url 'dashboard:pos_receipt' 0 %}".replace("/0/", "/{id}/");
+const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+
+// ── Clock ─────────────────────────────────────────────────────────────────
+function tick() {
+  const now = new Date();
+  document.getElementById("posClock").textContent =
+    String(now.getHours()).padStart(2,"0") + ":" + String(now.getMinutes()).padStart(2,"0") + ":" + String(now.getSeconds()).padStart(2,"0");
+}
+tick(); setInterval(tick, 1000);
+
+// ── Category filter ────────────────────────────────────────────────────────
+function switchCat(catId, btn) {
+  document.querySelectorAll(".pos-cat-tab").forEach(t => t.classList.remove("active"));
+  btn.classList.add("active");
+  document.querySelectorAll(".pos-item").forEach(el => {
+    el.style.display = (String(el.dataset.cat) === String(catId)) ? "" : "none";
+  });
+}
+// Show first cat on load
+(function() {
+  const first = document.querySelector(".pos-cat-tab.active");
+  if (first) switchCat(first.dataset.cat, first);
+})();
+
+// ── Cart state ─────────────────────────────────────────────────────────────
+const cart = {};  // { bi_id: { name, price, qty } }
+let selectedType = "dine_in";
+let selectedPay  = "cash";
+
+function addToCart(biId, name, price) {
+  if (cart[biId]) {
+    cart[biId].qty++;
+  } else {
+    cart[biId] = { name, price, qty: 1 };
+  }
+  renderCart();
+}
+
+function setQty(biId, qty) {
+  if (qty <= 0) { delete cart[biId]; }
+  else { cart[biId].qty = qty; }
+  renderCart();
+}
+
+function clearCart() {
+  Object.keys(cart).forEach(k => delete cart[k]);
+  document.getElementById("posComment").value = "";
+  renderCart();
+}
+
+function renderCart() {
+  const container = document.getElementById("posCartItems");
+  const empty     = document.getElementById("posCartEmpty");
+  const keys = Object.keys(cart);
+
+  if (!keys.length) {
+    empty.style.display = "flex";
+    container.innerHTML = "";
+    container.appendChild(empty);
+    document.getElementById("posTotal").textContent = "0 сом";
+    return;
+  }
+  empty.style.display = "none";
+
+  let total = 0;
+  let html = "";
+  keys.forEach(id => {
+    const it = cart[id];
+    const line = it.price * it.qty;
+    total += line;
+    html += `
+      <div class="pos-cart-row">
+        <div class="pos-cart-name">${it.name}</div>
+        <div class="pos-cart-qty-wrap">
+          <button class="pos-qty-btn" onclick="setQty(${id}, ${it.qty - 1})">−</button>
+          <div class="pos-cart-qty-val">${it.qty}</div>
+          <button class="pos-qty-btn" onclick="setQty(${id}, ${it.qty + 1})">+</button>
+        </div>
+        <div class="pos-cart-line">${line.toLocaleString()} сом</div>
+        <button class="pos-cart-del" onclick="setQty(${id}, 0)" title="Удалить">✕</button>
+      </div>`;
+  });
+
+  container.innerHTML = html;
+  document.getElementById("posTotal").textContent = total.toLocaleString() + " сом";
+}
+
+function setType(btn) {
+  document.querySelectorAll(".pos-type-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  selectedType = btn.dataset.type;
+}
+function setPay(btn) {
+  document.querySelectorAll(".pos-pay-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  selectedPay = btn.dataset.pay;
+}
+
+// ── Submit order ───────────────────────────────────────────────────────────
+async function submitOrder() {
+  const keys = Object.keys(cart);
+  if (!keys.length) { alert("Добавьте блюда в заказ"); return; }
+
+  const btn = document.getElementById("posConfirmBtn");
+  btn.disabled = true;
+  btn.textContent = "Оформляем...";
+
+  const items = keys.map(id => ({ bi_id: parseInt(id), qty: cart[id].qty }));
+  const comment = document.getElementById("posComment").value.trim();
+
+  try {
+    const r = await fetch(ORDER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF() },
+      body: JSON.stringify({ items, type: selectedType, payment: selectedPay, comment }),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      // Открыть чек
+      window.open(RECEIPT_URL.replace("{id}", d.order_id), "_blank");
+      clearCart();
+    } else {
+      alert(d.error || "Ошибка оформления");
+    }
+  } catch(e) {
+    alert("Ошибка сети");
+  }
+
+  btn.disabled = false;
+  btn.textContent = "✓ Оформить заказ";
+}
+
+// ── Live queue ─────────────────────────────────────────────────────────────
+const STATUS_NEXT = {
+  new:      { label: "✓ Принять",    status: "accepted", cls: "primary" },
+  accepted: { label: "🍳 Готовится", status: "cooking",  cls: "primary" },
+  cooking:  { label: "✅ Готов",     status: "ready",    cls: "green"   },
+  ready:    { label: "🔒 Закрыть",   status: "closed",   cls: "green"   },
+};
+const STATUS_LABEL = { new:"Новый", accepted:"Принят", cooking:"Готовится", ready:"Готов" };
+
+async function setOrderStatus(orderId, status) {
+  const fd = new FormData();
+  fd.append("status", status);
+  if (status === "closed") fd.append("payment_status", "paid");
+  await fetch(STATUS_URL.replace("{id}", orderId), { method:"POST", body:fd, headers:{"X-CSRFToken":CSRF()} });
+  loadQueue();
+}
+
+async function cancelOrder(orderId) {
+  if (!confirm("Отменить заказ #" + orderId + "?")) return;
+  const fd = new FormData(); fd.append("status", "cancelled");
+  await fetch(STATUS_URL.replace("{id}", orderId), { method:"POST", body:fd, headers:{"X-CSRFToken":CSRF()} });
+  loadQueue();
+}
+
+function printReceipt(orderId) {
+  window.open(RECEIPT_URL.replace("{id}", orderId), "_blank");
+}
+
+async function loadQueue() {
+  try {
+    const r = await fetch(LIVE_URL);
+    const d = await r.json();
+    if (!d.ok) return;
+
+    const container = document.getElementById("posQueue");
+    const badge     = document.getElementById("queueBadge");
+    const lastUpd   = document.getElementById("queueLastUpdate");
+
+    badge.textContent = d.orders.length;
+    badge.style.background = d.orders.some(o => o.status === "new") ? "#ff3b30" : "#8e8e93";
+    const now = new Date();
+    lastUpd.textContent = "обновлено " + String(now.getHours()).padStart(2,"0") + ":" + String(now.getMinutes()).padStart(2,"0");
+
+    if (!d.orders.length) {
+      container.innerHTML = '<div class="pos-queue-empty">Нет активных заказов</div>';
+      return;
+    }
+
+    let html = "";
+    d.orders.forEach(o => {
+      const itemsList = o.items.map(i => `${i.name} ×${i.qty}`).join(", ");
+      const next = STATUS_NEXT[o.status];
+      let info = "";
+      if (o.customer) info += o.customer;
+      if (o.phone)    info += info ? " · " + o.phone : o.phone;
+      if (o.address)  info += info ? " · " + o.address : o.address;
+
+      html += `
+        <div class="pos-orow" id="orow-${o.id}">
+          <div class="pos-orow-id">#${o.id}</div>
+          <div class="pos-orow-info">
+            <div class="pos-orow-top">
+              <span class="pos-status ${o.status}">${STATUS_LABEL[o.status]}</span>
+              <span class="pos-orow-type">${o.type_label}</span>
+              ${info ? `<span class="pos-orow-customer">${info}</span>` : ""}
+              <span style="font-size:10px;color:var(--muted)">${o.created}</span>
+            </div>
+            <div class="pos-orow-items">${itemsList}</div>
+            ${o.comment ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">💬 ${o.comment}</div>` : ""}
+          </div>
+          <div class="pos-orow-total">${parseInt(o.total).toLocaleString()} сом</div>
+          <div class="pos-orow-actions">
+            ${next ? `<button class="pos-act-btn ${next.cls}" onclick="setOrderStatus(${o.id},'${next.status}')">${next.label}</button>` : ""}
+            <button class="pos-act-btn" onclick="printReceipt(${o.id})">🖨 Чек</button>
+            <button class="pos-act-btn danger" onclick="cancelOrder(${o.id})">✕</button>
+          </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+  } catch(e) {
+    console.warn("Queue error", e);
+  }
+}
+
+loadQueue();
+setInterval(loadQueue, 15000);  // обновляем каждые 15 сек
+</script>
+{% endblock %}

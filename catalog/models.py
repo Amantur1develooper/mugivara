@@ -132,6 +132,7 @@ class BranchItem(TimeStampedModel):
     is_available = models.BooleanField(default=True)
     sort_order = models.PositiveIntegerField(default=0)  # нумерация блюда в филиале
     delivery_available = models.BooleanField(default=True)
+    stock = models.IntegerField(null=True, blank=True, default=None)  # None=∞, 0=нет, N=остаток
     
     class Meta:
         verbose_name = "Блюдо Филиал"

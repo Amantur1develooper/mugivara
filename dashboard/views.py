@@ -1036,3 +1036,337 @@ def table_delete(request, table_id):
         return JsonResponse({"ok": False}, status=403)
     place.delete()
     return JsonResponse({"ok": True})
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# POS — КАССА
+# ══════════════════════════════════════════════════════════════════════════════
+
+import json as _json
+from orders.models import Order, OrderItem
+from django.db.models import Prefetch as _Prefetch
+
+
+@login_required(login_url="dashboard:login")
+def pos(request, branch_id):
+    branch = get_object_or_404(Branch, id=branch_id)
+    if not (request.user.is_staff or request.user.is_superuser or _has_branch_access(request.user, branch)):
+        return redirect("dashboard:home")
+
+    categories = (
+        BranchCategory.objects
+        .filter(branch=branch, is_active=True)
+        .select_related("category")
+        .prefetch_related(
+            _Prefetch(
+                "items_in_category",
+                queryset=(
+                    BranchCategoryItem.objects
+                    .select_related("branch_item__item")
+                    .filter(branch_item__is_available=True)
+                    .order_by("sort_order")
+                ),
+            )
+        )
+        .order_by("sort_order")
+    )
+
+    live_orders = (
+        Order.objects
+        .filter(branch=branch, status__in=[
+            Order.Status.NEW, Order.Status.ACCEPTED,
+            Order.Status.COOKING, Order.Status.READY,
+        ])
+        .prefetch_related("items__item")
+        .order_by("created_at")
+    )
+
+    return render(request, "dashboard/pos.html", {
+        "branch": branch,
+        "categories": categories,
+        "live_orders": live_orders,
+    })
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def pos_order_create(request, branch_id):
+    branch = get_object_or_404(Branch, id=branch_id)
+    if not (request.user.is_staff or request.user.is_superuser or _has_branch_access(request.user, branch)):
+        return JsonResponse({"ok": False}, status=403)
+
+    try:
+        data = _json.loads(request.body)
+    except Exception:
+        return JsonResponse({"ok": False, "error": "bad json"}, status=400)
+
+    items_data      = data.get("items", [])
+    order_type      = data.get("type", Order.Type.DINE_IN)
+    payment_method  = data.get("payment", Order.PaymentMethod.CASH)
+    customer_name   = (data.get("name") or "").strip()
+    comment         = (data.get("comment") or "").strip()
+
+    if not items_data:
+        return JsonResponse({"ok": False, "error": "Нет позиций"}, status=400)
+
+    order = Order.objects.create(
+        branch=branch,
+        type=order_type,
+        status=Order.Status.NEW,
+        payment_method=payment_method,
+        customer_name=customer_name,
+        comment=comment,
+    )
+
+    total = Decimal("0")
+    for it in items_data:
+        try:
+            bi  = BranchItem.objects.select_related("item").get(
+                id=int(it["bi_id"]), branch=branch, is_available=True
+            )
+            qty = max(1, int(it.get("qty", 1)))
+            line = bi.price * qty
+            OrderItem.objects.create(
+                order=order, item=bi.item,
+                qty=qty, price_snapshot=bi.price, line_total=line,
+            )
+            total += line
+            # Decrement stock if tracked
+            if bi.stock is not None:
+                bi.stock = max(0, bi.stock - qty)
+                if bi.stock == 0:
+                    bi.is_available = False
+                bi.save(update_fields=["stock", "is_available"])
+        except (BranchItem.DoesNotExist, ValueError, KeyError):
+            continue
+
+    order.total_amount = total
+    order.status = Order.Status.CLOSED
+    order.payment_status = Order.PaymentStatus.PAID
+    order.save(update_fields=["total_amount", "status", "payment_status"])
+
+    return JsonResponse({"ok": True, "order_id": order.id, "total": str(total)})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def pos_order_status(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    if not (request.user.is_staff or request.user.is_superuser or _has_branch_access(request.user, order.branch)):
+        return JsonResponse({"ok": False}, status=403)
+
+    new_status  = request.POST.get("status")
+    new_payment = request.POST.get("payment_status")
+
+    fields = []
+    if new_status and new_status in Order.Status.values:
+        order.status = new_status
+        fields.append("status")
+    if new_payment and new_payment in Order.PaymentStatus.values:
+        order.payment_status = new_payment
+        fields.append("payment_status")
+    if fields:
+        fields.append("updated_at")
+        order.save(update_fields=fields)
+
+    return JsonResponse({
+        "ok": True,
+        "status": order.status,
+        "payment_status": order.payment_status,
+    })
+
+
+@login_required(login_url="dashboard:login")
+def pos_live_orders(request, branch_id):
+    branch = get_object_or_404(Branch, id=branch_id)
+    if not (request.user.is_staff or request.user.is_superuser or _has_branch_access(request.user, branch)):
+        return JsonResponse({"ok": False}, status=403)
+
+    orders = (
+        Order.objects
+        .filter(branch=branch, status__in=[
+            Order.Status.NEW, Order.Status.ACCEPTED,
+            Order.Status.COOKING, Order.Status.READY,
+        ])
+        .prefetch_related("items__item")
+        .order_by("created_at")
+    )
+
+    result = []
+    for o in orders:
+        result.append({
+            "id":             o.id,
+            "type":           o.type,
+            "type_label":     o.get_type_display(),
+            "status":         o.status,
+            "status_label":   o.get_status_display(),
+            "customer":       o.customer_name,
+            "phone":          o.customer_phone,
+            "address":        o.delivery_address,
+            "total":          str(o.total_amount),
+            "payment":        o.payment_method,
+            "payment_status": o.payment_status,
+            "comment":        o.comment,
+            "created":        o.created_at.strftime("%H:%M"),
+            "items": [
+                {
+                    "name": oi.item.name_ru,
+                    "qty":  oi.qty,
+                    "line": str(oi.line_total),
+                }
+                for oi in o.items.all()
+            ],
+        })
+
+    return JsonResponse({"ok": True, "orders": result})
+
+
+@login_required(login_url="dashboard:login")
+def pos_receipt(request, order_id):
+    order = get_object_or_404(
+        Order.objects.prefetch_related("items__item").select_related("branch__restaurant"),
+        id=order_id,
+    )
+    if not (request.user.is_staff or request.user.is_superuser or _has_branch_access(request.user, order.branch)):
+        return redirect("dashboard:home")
+    return render(request, "dashboard/receipt.html", {"order": order})
+
+
+# ── POS Inventory ────────────────────────────────────────────────────────────
+
+@login_required(login_url="dashboard:login")
+def pos_inventory(request, branch_id):
+    branch = get_object_or_404(Branch, id=branch_id)
+    if not (request.user.is_staff or request.user.is_superuser or _has_branch_access(request.user, branch)):
+        return redirect("dashboard:home")
+
+    if request.method == "POST":
+        # AJAX bulk update: [{bi_id, stock}, ...]
+        import json as _json2
+        try:
+            updates = _json2.loads(request.body)
+        except Exception:
+            return JsonResponse({"ok": False, "error": "bad json"}, status=400)
+        for u in updates:
+            try:
+                bi = BranchItem.objects.get(id=int(u["bi_id"]), branch=branch)
+                raw = u.get("stock")
+                if raw == "" or raw is None:
+                    bi.stock = None         # unlimited
+                    bi.is_available = True
+                else:
+                    val = int(raw)
+                    bi.stock = max(0, val)
+                    bi.is_available = (bi.stock > 0)
+                bi.save(update_fields=["stock", "is_available"])
+            except Exception:
+                continue
+        return JsonResponse({"ok": True})
+
+    # GET — load all branch items grouped by category
+    categories = (
+        BranchCategory.objects
+        .filter(branch=branch, is_active=True)
+        .select_related("category")
+        .prefetch_related(
+            _Prefetch(
+                "items_in_category",
+                queryset=BranchCategoryItem.objects.select_related(
+                    "branch_item__item"
+                ).order_by("sort_order"),
+            )
+        )
+        .order_by("sort_order")
+    )
+    return render(request, "dashboard/pos_inventory.html", {
+        "branch": branch,
+        "categories": categories,
+    })
+
+
+# ── POS Report ───────────────────────────────────────────────────────────────
+
+@login_required(login_url="dashboard:login")
+def pos_report(request, branch_id):
+    from datetime import date as _date
+    branch = get_object_or_404(Branch, id=branch_id)
+    if not (request.user.is_staff or request.user.is_superuser or _has_branch_access(request.user, branch)):
+        return redirect("dashboard:home")
+
+    today = _date.today()
+    date_from_str = request.GET.get("from", str(today))
+    date_to_str   = request.GET.get("to",   str(today))
+
+    try:
+        from datetime import datetime as _dt
+        date_from = _dt.strptime(date_from_str, "%Y-%m-%d").date()
+        date_to   = _dt.strptime(date_to_str,   "%Y-%m-%d").date()
+    except ValueError:
+        date_from = date_to = today
+
+    if date_from > date_to:
+        date_from, date_to = date_to, date_from
+
+    orders = (
+        Order.objects
+        .filter(
+            branch=branch,
+            status__in=[Order.Status.CLOSED],
+            created_at__date__gte=date_from,
+            created_at__date__lte=date_to,
+        )
+        .prefetch_related("items__item")
+        .order_by("created_at")
+    )
+
+    # ── Aggregates ──
+    total_revenue  = orders.aggregate(s=Sum("total_amount"))["s"] or Decimal("0")
+    total_orders   = orders.count()
+
+    # By payment method
+    from django.db.models import Sum as _Sum
+    pay_cash   = orders.filter(payment_method="cash").aggregate(s=_Sum("total_amount"))["s"] or Decimal("0")
+    pay_online = orders.filter(payment_method="online").aggregate(s=_Sum("total_amount"))["s"] or Decimal("0")
+
+    # By type
+    type_stats = {}
+    for t in Order.Type.values:
+        qs = orders.filter(type=t)
+        type_stats[t] = {
+            "label": dict(Order.Type.choices).get(t, t),
+            "count": qs.count(),
+            "revenue": qs.aggregate(s=_Sum("total_amount"))["s"] or Decimal("0"),
+        }
+
+    # Top items
+    from django.db.models import Sum as _Sum2
+    item_totals = (
+        OrderItem.objects
+        .filter(order__in=orders)
+        .values("item__name_ru")
+        .annotate(total_qty=_Sum2("qty"), total_rev=_Sum2("line_total"))
+        .order_by("-total_rev")[:20]
+    )
+
+    # Daily breakdown
+    from django.db.models.functions import TruncDate
+    daily = (
+        orders
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(cnt=Count("id"), rev=_Sum("total_amount"))
+        .order_by("day")
+    )
+
+    return render(request, "dashboard/pos_report.html", {
+        "branch":        branch,
+        "date_from":     date_from,
+        "date_to":       date_to,
+        "total_revenue": total_revenue,
+        "total_orders":  total_orders,
+        "pay_cash":      pay_cash,
+        "pay_online":    pay_online,
+        "type_stats":    type_stats,
+        "item_totals":   item_totals,
+        "daily":         daily,
+    })

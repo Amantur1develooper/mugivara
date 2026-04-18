@@ -203,6 +203,9 @@
           <a href="{% url 'dashboard:branch_tables' branch.id %}" class="btn-settings">🪑 Столики</a>
           <a href="{% url 'dashboard:promo_list' branch.id %}" class="btn-settings">🎟 Промокоды</a>
         </div>
+        <div class="branch-btns" style="margin-top:-6px">
+          <a href="{% url 'dashboard:pos' branch.id %}" class="btn-menu" style="background:linear-gradient(135deg,#1a7a4a,#0f5c34)">🖥️ Касса (POS)</a>
+        </div>
       </div>
       {% endfor %}
     </div>
