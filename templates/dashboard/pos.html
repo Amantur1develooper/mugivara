@@ -590,7 +590,7 @@
     </div>
 
     <div id="posCartItems" class="pos-cart-items">
-      <div class="pos-cart-empty" id="posCartEmpty">
+      <div class="pos-cart-empty" style="display:flex">
         <div class="pos-cart-empty-icon">🛒</div>
         <div>Выберите блюда из меню</div>
       </div>
@@ -696,17 +696,17 @@ function clearCart() {
 
 function renderCart() {
   const container = document.getElementById("posCartItems");
-  const empty     = document.getElementById("posCartEmpty");
   const keys = Object.keys(cart);
 
   if (!keys.length) {
-    empty.style.display = "flex";
-    container.innerHTML = "";
-    container.appendChild(empty);
+    container.innerHTML = `
+      <div class="pos-cart-empty" style="display:flex">
+        <div class="pos-cart-empty-icon">🛒</div>
+        <div>Выберите блюда из меню</div>
+      </div>`;
     document.getElementById("posTotal").textContent = "0 сом";
     return;
   }
-  empty.style.display = "none";
 
   let total = 0;
   let html = "";
