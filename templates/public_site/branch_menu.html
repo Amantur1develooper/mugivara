@@ -1352,11 +1352,17 @@ document.addEventListener('submit', async (e) => {
           <textarea name="comment" rows="2" placeholder="Комментарий (необязательно)"
                     class="cm-field" style="resize:vertical"></textarea>
 
+          {% if branch.pay_cash_enabled and branch.pay_online_enabled %}
           <label style="font-size:12px;font-weight:600;color:var(--text2,#555);display:block;margin-bottom:8px">Способ оплаты</label>
           <div class="cm-radio-group">
             <label class="cm-radio-opt"><input type="radio" name="payment_method" value="cash" checked><span>💵 Наличные</span></label>
             <label class="cm-radio-opt"><input type="radio" name="payment_method" value="online"><span>💳 Онлайн</span></label>
           </div>
+          {% elif branch.pay_cash_enabled %}
+          <input type="hidden" name="payment_method" value="cash">
+          {% elif branch.pay_online_enabled %}
+          <input type="hidden" name="payment_method" value="online">
+          {% endif %}
 
           <button type="submit" class="cm-submit" id="cmSubmitBtn">
             Оформить заказ →
