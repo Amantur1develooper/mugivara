@@ -27,5 +27,6 @@
     <div style="font-size:12px;color:var(--kr-muted);margin-top:6px;line-height:1.5;">{{ room.description|truncatechars:80 }}</div>
     {% endif %}
     <span class="kr-room-book-btn">🗓 Забронировать</span>
+    <a class="kr-room-menu-btn" href="{% url 'karaoke:karaoke_room_menu' venue.slug room.id %}" onclick="event.stopPropagation()">🍽️ Меню кабинки</a>
   </div>
 </div>

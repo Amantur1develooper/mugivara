@@ -39,6 +39,18 @@ def karaoke_menu(request, slug):
     return render(request, "karaoke/menu.html", {"venue": venue, "menu_cats": menu_cats})
 
 
+def karaoke_room_menu(request, slug, room_id):
+    """Меню для конкретной кабинки — room name подставляется автоматически."""
+    venue = get_object_or_404(KaraokeVenue, slug=slug, is_active=True)
+    room = get_object_or_404(KaraokeRoom, id=room_id, venue=venue, is_active=True)
+    menu_cats = venue.menu_categories.prefetch_related("items").all()
+    return render(request, "karaoke/menu.html", {
+        "venue": venue,
+        "menu_cats": menu_cats,
+        "room": room,
+    })
+
+
 def karaoke_slots(request, slug):
     """AJAX: возвращает занятые слоты для комнаты на дату."""
     venue = get_object_or_404(KaraokeVenue, slug=slug, is_active=True)

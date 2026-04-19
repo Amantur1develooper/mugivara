@@ -4,54 +4,73 @@
 {% block cta %}{% endblock %}
 {% block head_extra %}
 <style>
-  :root{--kr-bg:#0a050f;--kr-card:#100a18;--kr-border:rgba(168,85,247,.13);--kr-text:#f5f0ff;--kr-muted:rgba(245,240,255,.5);--kr-purple:#a855f7;--kr-pink:#ec4899;--kr-grad:linear-gradient(135deg,#a855f7,#ec4899);}
+  :root{--kr-bg:#1a1030;--kr-card:#241840;--kr-border:rgba(168,85,247,.22);--kr-text:#f5f0ff;--kr-muted:rgba(245,240,255,.65);--kr-purple:#a855f7;--kr-pink:#ec4899;--kr-grad:linear-gradient(135deg,#a855f7,#ec4899);}
   body{background:var(--kr-bg);color:var(--kr-text);}
-  .km-page{max-width:700px;margin:0 auto;padding:0 16px 100px;}
+  .km-page{max-width:700px;margin:0 auto;padding:0 16px 220px;}
   .km-header{text-align:center;padding:36px 16px 24px;}
   .km-logo{width:64px;height:64px;border-radius:18px;overflow:hidden;border:2px solid rgba(168,85,247,.3);background:#1a0a2e;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px;}
   .km-logo img{width:100%;height:100%;object-fit:cover;}
   .km-title{font-family:'Unbounded',sans-serif;font-size:20px;font-weight:900;color:var(--kr-text);letter-spacing:-.5px;}
   .km-sub{font-size:13px;color:var(--kr-muted);margin-top:4px;}
   .km-back{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;font-size:12px;font-weight:600;background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.2);color:var(--kr-purple);text-decoration:none;margin-bottom:20px;}
+  {% if room %}
+  .km-room-badge{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:14px;background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.3);color:var(--kr-text);font-size:14px;font-weight:700;margin-bottom:24px;}
+  .km-room-badge span{color:var(--kr-muted);font-weight:400;font-size:12px;}
+  {% endif %}
   .km-cat{margin-bottom:32px;}
   .km-cat-title{font-family:'Unbounded',sans-serif;font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:rgba(168,85,247,.7);margin-bottom:16px;display:flex;align-items:center;gap:10px;}
   .km-cat-title::after{content:'';flex:1;height:1px;background:var(--kr-border);}
   .km-items{display:flex;flex-direction:column;gap:10px;}
-  .km-item{background:var(--kr-card);border:1px solid var(--kr-border);border-radius:16px;display:flex;align-items:center;gap:14px;padding:12px 16px;cursor:pointer;transition:border-color .2s;}
-  .km-item:hover{border-color:rgba(168,85,247,.28);}
-  .km-item-photo{width:56px;height:56px;border-radius:12px;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#1a0a2e,#0d0818);display:flex;align-items:center;justify-content:center;font-size:22px;}
+  .km-item{background:var(--kr-card);border:1px solid var(--kr-border);border-radius:16px;display:flex;align-items:center;gap:14px;padding:12px 16px;transition:border-color .2s;}
+  .km-item-photo{width:60px;height:60px;border-radius:12px;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#1a0a2e,#0d0818);display:flex;align-items:center;justify-content:center;font-size:22px;}
   .km-item-photo img{width:100%;height:100%;object-fit:cover;}
   .km-item-info{flex:1;min-width:0;}
   .km-item-name{font-weight:700;font-size:14px;color:var(--kr-text);}
   .km-item-desc{font-size:12px;color:var(--kr-muted);margin-top:2px;}
   .km-item-price{font-family:'Unbounded',sans-serif;font-size:13px;font-weight:800;background:var(--kr-grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap;}
-  .km-item-add{width:32px;height:32px;border-radius:50%;background:rgba(168,85,247,.12);border:1.5px solid rgba(168,85,247,.25);color:var(--kr-purple);font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .15s;}
-  .km-item-add:hover{background:rgba(168,85,247,.22);}
-  .km-item-qty{display:none;align-items:center;gap:6px;}
-  .km-item-qty.show{display:flex;}
-  .km-qty-btn{width:28px;height:28px;border-radius:50%;background:rgba(168,85,247,.12);border:1.5px solid rgba(168,85,247,.25);color:var(--kr-purple);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
-  .km-qty-val{font-weight:800;font-size:14px;color:var(--kr-text);min-width:18px;text-align:center;}
+  .km-item-ctrl{display:flex;align-items:center;gap:0;flex-shrink:0;}
+  .km-qty-btn{width:34px;height:34px;border-radius:50%;background:rgba(168,85,247,.12);border:1.5px solid rgba(168,85,247,.25);color:var(--kr-purple);font-size:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;user-select:none;}
+  .km-qty-btn:hover{background:rgba(168,85,247,.22);}
+  .km-qty-val{font-weight:800;font-size:15px;color:var(--kr-text);min-width:28px;text-align:center;}
+  .km-add-btn{width:34px;height:34px;border-radius:50%;background:rgba(168,85,247,.12);border:1.5px solid rgba(168,85,247,.25);color:var(--kr-purple);font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
+  .km-add-btn:hover{background:rgba(168,85,247,.22);}
 
-  /* CART BAR */
-  .km-cart-bar{position:fixed;bottom:0;left:0;right:0;padding:12px 16px 24px;background:linear-gradient(to top,var(--kr-bg),rgba(10,5,15,.95));border-top:1px solid var(--kr-border);display:none;z-index:100;}
-  .km-cart-bar.show{display:block;}
-  .km-cart-btn{width:100%;max-width:500px;display:flex;align-items:center;justify-content:space-between;margin:0 auto;padding:16px 20px;border-radius:16px;background:var(--kr-grad);border:none;color:#fff;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 6px 24px rgba(168,85,247,.4);}
+  /* ── CART SHEET (sticky bottom) ── */
+  .km-cart{position:fixed;bottom:0;left:0;right:0;z-index:200;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
+  .km-cart.visible{transform:translateY(0);}
+  .km-cart-inner{max-width:700px;margin:0 auto;background:#160e28;border-top:1px solid rgba(168,85,247,.3);border-radius:24px 24px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,.6);}
+  .km-cart-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 10px;border-bottom:1px solid rgba(168,85,247,.12);}
+  .km-cart-header-title{font-family:'Unbounded',sans-serif;font-size:13px;font-weight:900;color:var(--kr-text);}
+  .km-cart-count{font-size:12px;color:var(--kr-muted);}
+  .km-cart-items{max-height:240px;overflow-y:auto;padding:8px 16px;}
+  .km-cart-items::-webkit-scrollbar{width:3px;}
+  .km-cart-items::-webkit-scrollbar-track{background:transparent;}
+  .km-cart-items::-webkit-scrollbar-thumb{background:rgba(168,85,247,.3);border-radius:2px;}
+  .km-ci{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(168,85,247,.08);}
+  .km-ci:last-child{border-bottom:none;}
+  .km-ci-name{flex:1;font-size:13px;font-weight:600;color:var(--kr-text);}
+  .km-ci-line{font-size:12px;color:var(--kr-muted);margin-top:2px;}
+  .km-ci-ctrl{display:flex;align-items:center;gap:4px;}
+  .km-ci-btn{width:28px;height:28px;border-radius:50%;background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.2);color:var(--kr-purple);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .km-ci-val{font-weight:800;font-size:13px;color:var(--kr-text);min-width:22px;text-align:center;}
+  .km-cart-footer{padding:12px 16px 24px;}
+  .km-cart-total{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px;}
+  .km-cart-total-lbl{font-size:13px;color:var(--kr-muted);}
+  .km-cart-total-val{font-family:'Unbounded',sans-serif;font-size:16px;font-weight:900;background:var(--kr-grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
 
-  /* ORDER MODAL */
-  .km-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:flex-end;justify-content:center;}
-  .km-overlay.show{display:flex;}
-  .km-modal{background:#130d1f;border:1px solid rgba(168,85,247,.2);border-radius:24px 24px 0 0;padding:28px 20px 36px;width:100%;max-width:520px;}
-  .km-modal-title{font-family:'Unbounded',sans-serif;font-size:15px;font-weight:900;color:var(--kr-text);margin-bottom:20px;}
-  .km-field{margin-bottom:14px;}
-  .km-label{display:block;font-size:11px;font-weight:700;color:var(--kr-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
-  .km-input{width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid rgba(168,85,247,.2);background:rgba(168,85,247,.06);color:var(--kr-text);font-size:15px;font-family:'Geologica',sans-serif;outline:none;box-sizing:border-box;}
-  .km-input:focus{border-color:rgba(168,85,247,.5);}
-  .km-input::placeholder{color:rgba(245,240,255,.25);}
-  .km-order-summary{background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.12);border-radius:12px;padding:12px 14px;margin-bottom:18px;font-size:13px;color:var(--kr-muted);line-height:1.7;}
-  .km-order-summary strong{color:var(--kr-text);}
-  .km-confirm-btn{width:100%;padding:16px;border-radius:16px;background:var(--kr-grad);border:none;color:#fff;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 6px 24px rgba(168,85,247,.4);margin-top:4px;}
-  .km-confirm-btn:disabled{opacity:.5;cursor:not-allowed;}
-  .km-cancel{display:block;text-align:center;margin-top:12px;font-size:13px;color:var(--kr-muted);cursor:pointer;}
+  /* Phone row in cart footer */
+  .km-phone-row{display:flex;gap:10px;margin-bottom:12px;}
+  .km-phone-input{flex:1;padding:12px 14px;border-radius:12px;border:1.5px solid rgba(168,85,247,.2);background:rgba(168,85,247,.06);color:var(--kr-text);font-size:14px;font-family:'Geologica',sans-serif;outline:none;box-sizing:border-box;}
+  .km-phone-input:focus{border-color:rgba(168,85,247,.5);}
+  .km-phone-input::placeholder{color:rgba(245,240,255,.3);}
+  {% if not room %}
+  .km-room-row{margin-bottom:12px;}
+  .km-room-input{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid rgba(168,85,247,.2);background:rgba(168,85,247,.06);color:var(--kr-text);font-size:14px;font-family:'Geologica',sans-serif;outline:none;box-sizing:border-box;}
+  .km-room-input:focus{border-color:rgba(168,85,247,.5);}
+  .km-room-input::placeholder{color:rgba(245,240,255,.3);}
+  {% endif %}
+  .km-order-btn{width:100%;padding:15px;border-radius:14px;background:var(--kr-grad);border:none;color:#fff;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 6px 24px rgba(168,85,247,.4);}
+  .km-order-btn:disabled{opacity:.5;cursor:not-allowed;}
 </style>
 {% endblock %}
 {% block content %}
@@ -64,8 +83,13 @@
   </div>
   <a href="{% url 'karaoke:karaoke_detail' venue.slug %}" class="km-back">← Назад к заведению</a>
 
+  {% if room %}
+  <div style="text-align:center;margin-bottom:24px;">
+    <div class="km-room-badge">🚪 {{ room.name }} <span>— ваша кабинка</span></div>
+  </div>
+  {% endif %}
+
   {% for cat in menu_cats %}
-  {% if cat.items.filter %}
   <div class="km-cat">
     <div class="km-cat-title">{{ cat.name }}</div>
     <div class="km-items">
@@ -79,123 +103,139 @@
           {% if item.description %}<div class="km-item-desc">{{ item.description|truncatechars:60 }}</div>{% endif %}
           <div class="km-item-price">{{ item.price|floatformat:0 }} сом</div>
         </div>
-        <div class="km-item-qty" id="qty-{{ item.id }}">
-          <div class="km-qty-btn" onclick="changeQty({{ item.id }}, -1)">−</div>
-          <div class="km-qty-val" id="qval-{{ item.id }}">1</div>
-          <div class="km-qty-btn" onclick="changeQty({{ item.id }}, 1)">+</div>
+        <div class="km-item-ctrl" id="ctrl-{{ item.id }}">
+          <div class="km-add-btn" onclick="addItem({{ item.id }})">+</div>
         </div>
-        <div class="km-item-add" id="add-{{ item.id }}" onclick="addItem({{ item.id }})">+</div>
       </div>
       {% endif %}{% endfor %}
     </div>
   </div>
-  {% endif %}
   {% endfor %}
 </div>
 </div>
 
-<div class="km-cart-bar" id="cartBar">
-  <button class="km-cart-btn" onclick="openOrderModal()">
-    <span id="cartCount">🛒 0 позиций</span>
-    <span id="cartTotal">0 сом →</span>
-  </button>
-</div>
-
-<!-- ORDER MODAL -->
-<div class="km-overlay" id="orderOverlay">
-  <div class="km-modal">
-    <div class="km-modal-title">🛒 Оформление заказа</div>
-
-    <div class="km-order-summary" id="orderSummary"></div>
-
-    <div class="km-field">
-      <label class="km-label" for="kmRoom">Кабинка / Стол *</label>
-      <input class="km-input" id="kmRoom" placeholder="Например: VIP 1, Стол 3" autocomplete="off">
+<!-- ── CART SHEET ── -->
+<div class="km-cart" id="kmCart">
+  <div class="km-cart-inner">
+    <div class="km-cart-header">
+      <div>
+        <div class="km-cart-header-title">🛒 Ваш заказ</div>
+        <div class="km-cart-count" id="kmCartCount"></div>
+      </div>
     </div>
-    <div class="km-field">
-      <label class="km-label" for="kmPhone">Номер телефона *</label>
-      <input class="km-input" id="kmPhone" type="tel" placeholder="+996 700 000 000" autocomplete="tel">
+    <div class="km-cart-items" id="kmCartItems"></div>
+    <div class="km-cart-footer">
+      <div class="km-cart-total">
+        <span class="km-cart-total-lbl">Итого</span>
+        <span class="km-cart-total-val" id="kmCartTotal">0 сом</span>
+      </div>
+      {% if not room %}
+      <div class="km-room-row">
+        <input class="km-room-input" id="kmRoom" placeholder="Кабинка / Стол (например: VIP 1)" autocomplete="off">
+      </div>
+      {% endif %}
+      <div class="km-phone-row">
+        <input class="km-phone-input" id="kmPhone" type="tel" placeholder="Телефон: +996 700 000 000" autocomplete="tel">
+      </div>
+      <button class="km-order-btn" id="kmOrderBtn" onclick="confirmOrder()">Подтвердить заказ</button>
     </div>
-
-    <button class="km-confirm-btn" id="confirmBtn" onclick="confirmOrder()">
-      Подтвердить заказ
-    </button>
-    <span class="km-cancel" onclick="closeOrderModal()">Отмена</span>
   </div>
 </div>
 
 <script>
 const cart = {};
+const ROOM_NAME = "{{ room.name|escapejs|default:'' }}";
+const VENUE_NAME = "{{ venue.name|escapejs }}";
+const VENUE_WA = "{{ venue.whatsapp }}";
+const ORDER_URL = "{% url 'karaoke:karaoke_menu_order' venue.slug %}";
+
 function addItem(id) {
+  if (cart[id]) {
+    changeQty(id, 1);
+    return;
+  }
   const el = document.querySelector(`.km-item[data-id="${id}"]`);
   const name = el.dataset.name, price = parseInt(el.dataset.price);
   cart[id] = { name, price, qty: 1 };
-  document.getElementById(`add-${id}`).style.display = "none";
-  document.getElementById(`qty-${id}`).classList.add("show");
-  updateCartBar();
+  renderItemCtrl(id);
+  renderCart();
 }
+
 function changeQty(id, delta) {
   if (!cart[id]) return;
   cart[id].qty += delta;
   if (cart[id].qty <= 0) {
     delete cart[id];
-    document.getElementById(`add-${id}`).style.display = "flex";
-    document.getElementById(`qty-${id}`).classList.remove("show");
-  } else {
-    document.getElementById(`qval-${id}`).textContent = cart[id].qty;
   }
-  updateCartBar();
+  renderItemCtrl(id);
+  renderCart();
 }
-function updateCartBar() {
-  const ids = Object.keys(cart);
-  const bar = document.getElementById("cartBar");
-  if (!ids.length) { bar.classList.remove("show"); return; }
-  bar.classList.add("show");
-  let total = 0, count = 0;
-  ids.forEach(id => { total += cart[id].price * cart[id].qty; count += cart[id].qty; });
-  document.getElementById("cartCount").textContent = `🛒 ${count} позиций`;
-  document.getElementById("cartTotal").textContent = `${total} сом →`;
-}
-function openOrderModal() {
-  const ids = Object.keys(cart);
-  if (!ids.length) return;
 
-  // Заполняем summary
-  let total = 0, lines = [];
-  ids.forEach(id => {
+function renderItemCtrl(id) {
+  const ctrl = document.getElementById(`ctrl-${id}`);
+  if (!ctrl) return;
+  if (cart[id]) {
+    ctrl.innerHTML = `
+      <div class="km-qty-btn" onclick="changeQty(${id}, -1)">−</div>
+      <div class="km-qty-val">${cart[id].qty}</div>
+      <div class="km-qty-btn" onclick="changeQty(${id}, 1)">+</div>`;
+  } else {
+    ctrl.innerHTML = `<div class="km-add-btn" onclick="addItem(${id})">+</div>`;
+  }
+}
+
+function renderCart() {
+  const keys = Object.keys(cart);
+  const cartEl = document.getElementById("kmCart");
+  const itemsEl = document.getElementById("kmCartItems");
+  const countEl = document.getElementById("kmCartCount");
+  const totalEl = document.getElementById("kmCartTotal");
+
+  if (!keys.length) {
+    cartEl.classList.remove("visible");
+    return;
+  }
+  cartEl.classList.add("visible");
+
+  let total = 0, count = 0, html = "";
+  keys.forEach(id => {
     const it = cart[id];
-    lines.push(`<strong>${it.name}</strong> × ${it.qty} — ${it.price * it.qty} сом`);
-    total += it.price * it.qty;
+    const line = it.price * it.qty;
+    total += line; count += it.qty;
+    html += `
+      <div class="km-ci">
+        <div style="flex:1">
+          <div class="km-ci-name">${it.name}</div>
+          <div class="km-ci-line">${it.price} × ${it.qty} = ${line} сом</div>
+        </div>
+        <div class="km-ci-ctrl">
+          <div class="km-ci-btn" onclick="changeQty(${id}, -1)">−</div>
+          <div class="km-ci-val">${it.qty}</div>
+          <div class="km-ci-btn" onclick="changeQty(${id}, 1)">+</div>
+        </div>
+      </div>`;
   });
-  lines.push(`<strong>Итого: ${total} сом</strong>`);
-  document.getElementById("orderSummary").innerHTML = lines.join("<br>");
-
-  document.getElementById("orderOverlay").classList.add("show");
-  document.getElementById("kmRoom").focus();
+  itemsEl.innerHTML = html;
+  countEl.textContent = `${count} позиций`;
+  totalEl.textContent = `${total.toLocaleString()} сом`;
 }
-
-function closeOrderModal() {
-  document.getElementById("orderOverlay").classList.remove("show");
-}
-
-// Закрыть при клике на фон
-document.getElementById("orderOverlay").addEventListener("click", function(e) {
-  if (e.target === this) closeOrderModal();
-});
 
 async function confirmOrder() {
-  const room  = document.getElementById("kmRoom").value.trim();
   const phone = document.getElementById("kmPhone").value.trim();
-
-  if (!room)  { document.getElementById("kmRoom").focus();  return; }
+  {% if room %}
+  const room = ROOM_NAME;
+  {% else %}
+  const room = document.getElementById("kmRoom").value.trim();
+  if (!room) { document.getElementById("kmRoom").focus(); return; }
+  {% endif %}
   if (!phone) { document.getElementById("kmPhone").focus(); return; }
 
-  const btn = document.getElementById("confirmBtn");
+  const btn = document.getElementById("kmOrderBtn");
   btn.disabled = true;
   btn.textContent = "Отправляем...";
 
-  const ids = Object.keys(cart);
-  const items = ids.map(id => ({
+  const keys = Object.keys(cart);
+  const items = keys.map(id => ({
     id: parseInt(id),
     name: cart[id].name,
     price: cart[id].price,
@@ -203,22 +243,21 @@ async function confirmOrder() {
   }));
   const total = items.reduce((s, it) => s + it.price * it.qty, 0);
 
-  // Отправляем на сервер (TG + сохраняем заказ)
+  // POST to server (TG)
   try {
     const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
-    await fetch("{% url 'karaoke:karaoke_menu_order' venue.slug %}", {
+    await fetch(ORDER_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-CSRFToken": csrf },
       body: JSON.stringify({ items, room, phone }),
     });
-  } catch(e) { console.warn("TG send error", e); }
+  } catch(e) { console.warn("order send error", e); }
 
-  // Открываем WhatsApp
-  const wa = "{{ venue.whatsapp }}";
-  if (wa) {
+  // WhatsApp
+  if (VENUE_WA) {
     let waLines = [
       "🎤 *Заказ из меню*", "",
-      `*{{ venue.name|escapejs }}*`,
+      `*${VENUE_NAME}*`,
       `Кабинка: ${room}`,
       `Телефон: ${phone}`, "",
     ];
@@ -226,10 +265,19 @@ async function confirmOrder() {
       waLines.push(`• ${it.name} × ${it.qty} = ${it.price * it.qty} сом`);
     });
     waLines.push("", `*Итого: ${total} сом*`);
-    window.open(`https://wa.me/${wa}?text=${encodeURIComponent(waLines.join("\n"))}`, "_blank");
+    window.open(`https://wa.me/${VENUE_WA}?text=${encodeURIComponent(waLines.join("\n"))}`, "_blank");
   }
 
-  closeOrderModal();
+  // Reset
+  keys.forEach(id => {
+    delete cart[id];
+    renderItemCtrl(id);
+  });
+  renderCart();
+  document.getElementById("kmPhone").value = "";
+  {% if not room %}
+  document.getElementById("kmRoom").value = "";
+  {% endif %}
   btn.disabled = false;
   btn.textContent = "Подтвердить заказ";
 }
