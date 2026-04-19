@@ -413,6 +413,151 @@ def shop_order_status(request, order_id):
     return redirect("dashboard:shop_orders", branch_id=order.branch_id)
 
 
+# ── POS ───────────────────────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def shop_pos(request, branch_id):
+    branch = get_object_or_404(StoreBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:shop_home")
+
+    categories = list(branch.store.categories.filter(is_active=True).order_by("sort_order", "id"))
+    stocks = (
+        StoreStock.objects
+        .filter(branch=branch, product__is_active=True)
+        .select_related("product", "product__category")
+        .order_by("product__category__sort_order", "product__id")
+    )
+    # Live online orders (NEW / CONFIRMED)
+    live_orders = (
+        StoreOrder.objects
+        .filter(branch=branch, status__in=[StoreOrder.Status.NEW, StoreOrder.Status.CONFIRMED])
+        .prefetch_related("items__product")
+        .order_by("created_at")
+    )
+    return render(request, "dashboard/shops/pos.html", {
+        "branch":      branch,
+        "store":       branch.store,
+        "categories":  categories,
+        "stocks":      stocks,
+        "live_orders": live_orders,
+    })
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_pos_order_create(request, branch_id):
+    import json as _j
+    branch = get_object_or_404(StoreBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return JsonResponse({"ok": False}, status=403)
+
+    try:
+        data = _j.loads(request.body)
+    except Exception:
+        return JsonResponse({"ok": False, "error": "bad json"}, status=400)
+
+    items_data     = data.get("items", [])
+    payment_method = data.get("payment", "cash")
+    comment        = (data.get("comment") or "").strip()
+
+    if not items_data:
+        return JsonResponse({"ok": False, "error": "Нет позиций"}, status=400)
+
+    order = StoreOrder.objects.create(
+        branch=branch,
+        order_type=StoreOrder.Type.PICKUP,
+        mode=StoreOrder.Mode.IN_STORE,
+        status=StoreOrder.Status.DONE,
+        payment_method=payment_method,
+        comment=comment,
+        phone="-",
+    )
+
+    subtotal = Decimal("0")
+    for it in items_data:
+        try:
+            stock = StoreStock.objects.select_related("product").get(
+                id=int(it["stock_id"]), branch=branch, product__is_active=True
+            )
+            qty = max(Decimal("1"), Decimal(str(it.get("qty", 1))))
+            price = stock.product.price
+            line = price * qty
+            StoreOrderItem.objects.create(
+                order=order, product=stock.product,
+                qty=qty, unit=stock.product.unit, price=price, line_total=line,
+            )
+            subtotal += line
+            # Decrement stock (don't go below 0)
+            stock.qty = max(Decimal("0"), stock.qty - qty)
+            stock.save(update_fields=["qty"])
+        except Exception:
+            continue
+
+    order.subtotal = subtotal
+    order.total    = subtotal
+    order.save(update_fields=["subtotal", "total"])
+
+    return JsonResponse({"ok": True, "order_id": order.id, "total": str(subtotal)})
+
+
+@login_required(login_url=LOGIN_URL)
+def shop_pos_live_orders(request, branch_id):
+    branch = get_object_or_404(StoreBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return JsonResponse({"ok": False}, status=403)
+
+    orders = (
+        StoreOrder.objects
+        .filter(branch=branch, status__in=[StoreOrder.Status.NEW, StoreOrder.Status.CONFIRMED])
+        .prefetch_related("items__product")
+        .order_by("created_at")
+    )
+    result = []
+    for o in orders:
+        result.append({
+            "id":      o.id,
+            "status":  o.status,
+            "type":    o.order_type,
+            "name":    o.name,
+            "phone":   o.phone,
+            "address": o.address,
+            "total":   str(o.total),
+            "payment": o.payment_method,
+            "comment": o.comment,
+            "created": o.created_at.strftime("%H:%M"),
+            "items": [
+                {"name": oi.product.name_ru, "qty": str(oi.qty), "line": str(oi.line_total)}
+                for oi in o.items.all()
+            ],
+        })
+    return JsonResponse({"ok": True, "orders": result})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_pos_order_status(request, order_id):
+    order = get_object_or_404(StoreOrder, id=order_id)
+    if not _has_branch_access(request.user, order.branch):
+        return JsonResponse({"ok": False}, status=403)
+    new_status = request.POST.get("status")
+    if new_status in dict(StoreOrder.Status.choices):
+        order.status = new_status
+        order.save(update_fields=["status"])
+    return JsonResponse({"ok": True, "status": order.status})
+
+
+@login_required(login_url=LOGIN_URL)
+def shop_pos_receipt(request, order_id):
+    order = get_object_or_404(
+        StoreOrder.objects.prefetch_related("items__product").select_related("branch__store"),
+        id=order_id,
+    )
+    if not _has_branch_access(request.user, order.branch):
+        return redirect("dashboard:shop_home")
+    return render(request, "dashboard/shops/receipt.html", {"order": order})
+
+
 # ── BARCODE LOOKUP ────────────────────────────────────────────────────────────
 
 @login_required(login_url=LOGIN_URL)

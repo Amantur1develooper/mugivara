@@ -106,6 +106,9 @@
           </a>
           <a href="{% url 'shops:branch_catalog_delivery' branch.id %}" target="_blank" class="btn-s">👁 Витрина</a>
         </div>
+        <div class="sh-btns">
+          <a href="{% url 'dashboard:shop_pos' branch.id %}" style="background:linear-gradient(135deg,#1a7a4a,#0f5c34);color:#fff;box-shadow:0 3px 10px rgba(26,122,74,.25)">🖥️ Касса (POS)</a>
+        </div>
       </div>
       {% endfor %}
     </div>

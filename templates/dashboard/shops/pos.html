@@ -1,0 +1,837 @@
+{% extends "dashboard/base.html" %}
+{% load i18n %}
+
+{% block title %}Касса — {{ branch.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+/* ── LAYOUT ── */
+.pos-wrap {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  grid-template-rows: auto 1fr auto;
+  height: calc(100vh - 56px);
+  gap: 0;
+  overflow: hidden;
+}
+
+/* ── TOPBAR ── */
+.pos-topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.pos-branch-name {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  font-size: 14px;
+  color: var(--text);
+}
+.pos-clock {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .5px;
+}
+.pos-topbar-btns { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* ── LEFT: CATALOG ── */
+.pos-menu {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+  background: var(--bg);
+}
+
+/* ── BARCODE BAR ── */
+.pos-bc-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.pos-bc-input {
+  flex: 1;
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 2px solid var(--accent);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  font-family: monospace;
+  font-weight: 700;
+  outline: none;
+  letter-spacing: 1px;
+  transition: box-shadow .15s;
+}
+.pos-bc-input:focus { box-shadow: 0 0 0 3px var(--glow); }
+.pos-bc-btn {
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity .15s;
+}
+.pos-bc-btn:hover { opacity: .85; }
+.pos-bc-status {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 100px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: none;
+}
+.pos-bc-status.found    { background: rgba(0,184,150,.12); color: var(--teal); display: inline-flex; }
+.pos-bc-status.notfound { background: rgba(255,59,48,.10);  color: #ff3b30;    display: inline-flex; }
+
+/* Category tabs */
+.pos-cats {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  overflow-x: auto;
+  flex-shrink: 0;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  scrollbar-width: none;
+}
+.pos-cats::-webkit-scrollbar { display: none; }
+.pos-cat-tab {
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  color: var(--text2);
+  transition: all .15s;
+}
+.pos-cat-tab.active {
+  background: var(--text);
+  color: #fff;
+  border-color: var(--text);
+}
+
+/* Items grid */
+.pos-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  align-content: start;
+}
+.pos-item {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  cursor: pointer;
+  transition: border-color .15s, transform .12s;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  user-select: none;
+  position: relative;
+}
+.pos-item:hover  { border-color: var(--accent); transform: translateY(-1px); }
+.pos-item:active { transform: scale(.97); }
+.pos-item.out    { opacity: .4; cursor: not-allowed; }
+.pos-item.highlight {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--glow);
+  animation: bcPulse .5s ease;
+}
+@keyframes bcPulse {
+  0%,100% { transform: scale(1); }
+  50%      { transform: scale(1.04); }
+}
+.pos-item-photo {
+  width: 100%;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--card2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  flex-shrink: 0;
+}
+.pos-item-photo img { width: 100%; height: 100%; object-fit: cover; }
+.pos-item-name  { font-size: 12px; font-weight: 700; color: var(--text); line-height: 1.3; }
+.pos-item-price { font-size: 13px; font-weight: 900; color: var(--accent); }
+.pos-item-stock {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  display: inline-block;
+  align-self: flex-start;
+}
+.pos-item-stock.ok  { background: rgba(0,184,150,.10); color: var(--teal); }
+.pos-item-stock.low { background: rgba(255,149,0,.12); color: #ff9500; }
+.pos-item-stock.out { background: rgba(255,59,48,.10);  color: #ff3b30; }
+.pos-item-barcode { font-size: 9px; color: var(--muted); font-family: monospace; }
+
+/* ── RIGHT: CART ── */
+.pos-cart {
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  overflow: hidden;
+}
+.pos-cart-header {
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pos-cart-title {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--text);
+}
+.pos-cart-clear {
+  font-size: 11px; color: var(--muted); cursor: pointer;
+  padding: 4px 8px; border-radius: 6px; border: none; background: none;
+}
+.pos-cart-clear:hover { color: #ff3b30; background: rgba(255,59,48,.08); }
+.pos-cart-items { flex: 1; overflow-y: auto; padding: 8px 12px; }
+.pos-cart-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 4px; border-bottom: 1px solid var(--border);
+}
+.pos-cart-row:last-child { border-bottom: none; }
+.pos-cart-name  { flex: 1; font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; }
+.pos-cart-qty-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.pos-qty-btn {
+  width: 24px; height: 24px; border-radius: 6px;
+  border: 1.5px solid var(--border); background: var(--bg); color: var(--text);
+  font-size: 14px; cursor: pointer; display: flex; align-items: center;
+  justify-content: center; font-weight: 700; transition: all .12s;
+}
+.pos-qty-btn:hover { border-color: var(--accent); color: var(--accent); }
+.pos-cart-qty-val { font-size: 13px; font-weight: 800; min-width: 22px; text-align: center; color: var(--text); }
+.pos-cart-line  { font-size: 12px; font-weight: 700; color: var(--text2); min-width: 70px; text-align: right; flex-shrink: 0; }
+.pos-cart-del {
+  width: 22px; height: 22px; border-radius: 6px; border: none; background: none;
+  color: var(--muted); cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center; transition: color .12s;
+}
+.pos-cart-del:hover { color: #ff3b30; }
+.pos-cart-empty {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 8px; color: var(--muted); font-size: 13px;
+}
+.pos-cart-empty-icon { font-size: 36px; opacity: .3; }
+
+/* Cart footer */
+.pos-cart-footer {
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.pos-total-row { display: flex; align-items: baseline; justify-content: space-between; }
+.pos-total-label { font-size: 13px; color: var(--muted); font-weight: 600; }
+.pos-total-val {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 22px; font-weight: 900; color: var(--text);
+}
+.pos-payment-row { display: flex; gap: 6px; }
+.pos-pay-btn {
+  flex: 1; padding: 9px 8px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: var(--bg);
+  color: var(--text2); font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all .15s; text-align: center;
+}
+.pos-pay-btn.active { background: var(--text); color: #fff; border-color: var(--text); }
+.pos-comment {
+  width: 100%; padding: 8px 10px; border-radius: 8px;
+  border: 1.5px solid var(--border); background: var(--bg); color: var(--text);
+  font-size: 12px; font-family: 'Geologica', sans-serif;
+  resize: none; outline: none; box-sizing: border-box;
+}
+.pos-comment:focus { border-color: var(--accent); }
+.pos-confirm-btn {
+  width: 100%; padding: 14px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; border: none; font-size: 14px; font-weight: 900;
+  font-family: 'Unbounded', sans-serif; cursor: pointer;
+  box-shadow: 0 4px 16px var(--glow); transition: opacity .15s;
+}
+.pos-confirm-btn:hover { opacity: .9; }
+.pos-confirm-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── BOTTOM: ONLINE ORDERS ── */
+.pos-queue {
+  grid-column: 1 / -1;
+  background: var(--card);
+  border-top: 2px solid var(--border);
+  max-height: 220px;
+  overflow-y: auto;
+}
+.pos-queue-header {
+  padding: 8px 20px 6px;
+  display: flex; align-items: center; gap: 10px;
+  position: sticky; top: 0;
+  background: var(--card); z-index: 2;
+  border-bottom: 1px solid var(--border);
+}
+.pos-queue-title { font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 900; color: var(--text); }
+.pos-queue-badge {
+  background: #ff3b30; color: #fff; border-radius: 100px;
+  font-size: 10px; font-weight: 800; padding: 2px 8px;
+}
+.pos-queue-empty { padding: 12px 20px; font-size: 12px; color: var(--muted); }
+.pos-orow {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap;
+}
+.pos-orow:last-child { border-bottom: none; }
+.pos-orow-id   { font-size: 11px; font-weight: 900; color: var(--muted); flex-shrink: 0; min-width: 40px; }
+.pos-orow-info { flex: 1; min-width: 180px; }
+.pos-orow-name { font-size: 12px; font-weight: 700; color: var(--text); }
+.pos-orow-items { font-size: 11px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 380px; }
+.pos-orow-total { font-size: 14px; font-weight: 900; color: var(--text); flex-shrink: 0; min-width: 80px; text-align: right; }
+.pos-orow-actions { display: flex; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
+.pos-status {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 100px; font-size: 10px; font-weight: 700;
+}
+.pos-status.new       { background: rgba(255,149,0,.12); color: #ff9500; }
+.pos-status.confirmed { background: rgba(0,122,255,.10);  color: #007aff; }
+.pos-act-btn {
+  padding: 5px 12px; border-radius: 8px; font-size: 11px; font-weight: 700;
+  border: 1.5px solid var(--border); background: var(--bg); color: var(--text2);
+  cursor: pointer; white-space: nowrap; transition: all .12s;
+}
+.pos-act-btn:hover  { border-color: var(--accent); color: var(--accent); }
+.pos-act-btn.green  { background: var(--teal); color: #fff; border-color: var(--teal); }
+.pos-act-btn.danger { color: #ff3b30; border-color: rgba(255,59,48,.3); }
+.pos-act-btn.danger:hover { background: rgba(255,59,48,.08); }
+
+/* ── SCANNER OVERLAY ── */
+.bc-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.88);
+  z-index: 9999; display: none; flex-direction: column;
+  align-items: center; justify-content: center; padding: 20px;
+}
+.bc-overlay.open { display: flex; }
+.bc-overlay-title { color: #fff; font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+.bc-video-wrap {
+  position: relative; width: min(90vw, 360px); aspect-ratio: 1;
+  border-radius: 16px; overflow: hidden; background: #000;
+}
+.bc-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bc-aim {
+  position: absolute; inset: 22%;
+  border: 2.5px solid var(--accent); border-radius: 10px;
+  box-shadow: 0 0 0 2000px rgba(0,0,0,.3);
+}
+.bc-aim-line {
+  position: absolute; top: 50%; left: 0; right: 0;
+  height: 2px; background: var(--accent); opacity: .8;
+  animation: bcScan 2s ease-in-out infinite;
+}
+@keyframes bcScan { 0%,100% { top: 10%; } 50% { top: 90%; } }
+.bc-status-txt { margin-top: 10px; font-size: 13px; font-weight: 700; color: #fff; min-height: 20px; text-align: center; }
+.bc-overlay-close {
+  margin-top: 16px; padding: 10px 30px; border-radius: 10px;
+  border: none; background: rgba(255,255,255,.15); color: #fff;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.bc-overlay-close:hover { background: rgba(255,255,255,.25); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .pos-wrap {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+    height: auto;
+    overflow: visible;
+  }
+  .pos-menu  { max-height: 55vh; overflow: hidden; }
+  .pos-items { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+  .pos-cart  { border-right: none; border-top: 2px solid var(--border); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pos-wrap">
+
+  <!-- TOPBAR -->
+  <div class="pos-topbar">
+    <div>
+      <div class="pos-branch-name">🖥 Касса — {{ branch.name_ru }}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">{{ store.name_ru }}</div>
+    </div>
+    <div class="pos-clock" id="posClock">--:--</div>
+    <div class="pos-topbar-btns">
+      <a href="{% url 'dashboard:shop_orders' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📋 Заказы</a>
+      <a href="{% url 'dashboard:shop_product_list' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📦 Товары</a>
+      <a href="{% url 'dashboard:shop_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Магазины</a>
+    </div>
+  </div>
+
+  <!-- CATALOG (LEFT) -->
+  <div class="pos-menu">
+
+    <!-- Barcode bar -->
+    <div class="pos-bc-bar">
+      <input class="pos-bc-input" id="bcInput" type="text"
+             placeholder="📦 Штрих-код..." autocomplete="off" inputmode="numeric"
+             onkeydown="if(event.key==='Enter')bcSearch()">
+      <button class="pos-bc-btn" onclick="openScanner()" title="Камера">📷</button>
+      <span class="pos-bc-status" id="bcStatus"></span>
+    </div>
+
+    <!-- Category tabs -->
+    <div class="pos-cats" id="posCats">
+      <div class="pos-cat-tab active" data-cat="all" onclick="switchCat('all', this)">Все</div>
+      {% for cat in categories %}
+      <div class="pos-cat-tab" data-cat="{{ cat.id }}" onclick="switchCat('{{ cat.id }}', this)">
+        {{ cat.name_ru }}
+      </div>
+      {% endfor %}
+      <div class="pos-cat-tab" data-cat="0" onclick="switchCat('0', this)">Без кат.</div>
+    </div>
+
+    <!-- Items -->
+    <div class="pos-items" id="posItems">
+      {% for stock in stocks %}
+      {% with p=stock.product %}
+      {% if p.qty > 0 or stock.qty > 0 %}
+      <div class="pos-item {% if stock.qty == 0 %}out{% endif %}"
+           id="pos-stock-{{ stock.id }}"
+           data-cat="{% if p.category_id %}{{ p.category_id }}{% else %}0{% endif %}"
+           data-stock="{{ stock.id }}"
+           data-name="{{ p.name_ru|escapejs }}"
+           data-price="{{ p.price|floatformat:0 }}"
+           data-qty="{{ stock.qty|floatformat:0 }}"
+           data-barcode="{{ p.barcode }}"
+           {% if stock.qty > 0 %}onclick="addToCart({{ stock.id }}, '{{ p.name_ru|escapejs }}', {{ p.price|floatformat:0 }}, {{ stock.qty|floatformat:0 }})"{% endif %}
+           title="{{ p.name_ru }}">
+        <div class="pos-item-photo">
+          {% if p.photo %}<img src="{{ p.photo.url }}" alt="" loading="lazy">{% else %}📦{% endif %}
+        </div>
+        <div class="pos-item-name">{{ p.name_ru }}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+          <div class="pos-item-price">{{ p.price|floatformat:0 }} сом</div>
+          {% if stock.qty == 0 %}
+            <span class="pos-item-stock out">Нет</span>
+          {% elif stock.qty <= 3 %}
+            <span class="pos-item-stock low">{{ stock.qty|floatformat:0 }} шт</span>
+          {% else %}
+            <span class="pos-item-stock ok">{{ stock.qty|floatformat:0 }} шт</span>
+          {% endif %}
+        </div>
+        {% if p.barcode %}
+        <div class="pos-item-barcode">{{ p.barcode }}</div>
+        {% endif %}
+      </div>
+      {% endif %}
+      {% endwith %}
+      {% empty %}
+      <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted);font-size:13px">Нет товаров</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- CART (RIGHT) -->
+  <div class="pos-cart">
+    <div class="pos-cart-header">
+      <div class="pos-cart-title">🛒 Заказ</div>
+      <button class="pos-cart-clear" onclick="clearCart()">Очистить</button>
+    </div>
+
+    <div id="posCartItems" class="pos-cart-items">
+      <div class="pos-cart-empty" id="posCartEmpty">
+        <div class="pos-cart-empty-icon">🛒</div>
+        <div>Добавьте товары из каталога<br>или сканируйте штрих-код</div>
+      </div>
+    </div>
+
+    <div class="pos-cart-footer">
+      <div class="pos-total-row">
+        <span class="pos-total-label">Итого</span>
+        <span class="pos-total-val" id="posTotal">0 сом</span>
+      </div>
+
+      <div class="pos-payment-row">
+        <button class="pos-pay-btn active" data-pay="cash"   onclick="setPay(this)">💵 Наличные</button>
+        <button class="pos-pay-btn"        data-pay="online" onclick="setPay(this)">💳 Безналичные</button>
+      </div>
+
+      <textarea class="pos-comment" id="posComment" rows="2" placeholder="Комментарий (необязательно)"></textarea>
+
+      <button class="pos-confirm-btn" id="posConfirmBtn" onclick="submitOrder()">
+        ✓ Оформить и распечатать чек
+      </button>
+    </div>
+  </div>
+
+  <!-- ONLINE ORDERS QUEUE -->
+  <div class="pos-queue">
+    <div class="pos-queue-header">
+      <div class="pos-queue-title">🔔 Онлайн-заказы</div>
+      <div class="pos-queue-badge" id="queueBadge">0</div>
+      <div style="flex:1"></div>
+      <div style="font-size:11px;color:var(--muted)" id="queueLastUpd"></div>
+    </div>
+    <div id="posQueue">
+      <div class="pos-queue-empty">Загрузка...</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SCANNER OVERLAY -->
+<div class="bc-overlay" id="bcOverlay">
+  <div class="bc-overlay-title">📷 Сканирование штрих-кода</div>
+  <div class="bc-video-wrap">
+    <video class="bc-video" id="bcVideo" muted playsinline autoplay></video>
+    <div class="bc-aim"><div class="bc-aim-line"></div></div>
+  </div>
+  <div class="bc-status-txt" id="bcStatusTxt">Запуск камеры...</div>
+  <button class="bc-overlay-close" onclick="closeScanner()">✕ Закрыть</button>
+</div>
+
+<script>
+const BRANCH_ID   = {{ branch.id }};
+const ORDER_URL   = "{% url 'dashboard:shop_pos_order_create' branch.id %}";
+const LIVE_URL    = "{% url 'dashboard:shop_pos_live_orders' branch.id %}";
+const STATUS_URL  = "/dashboard/shops/branch/{{ branch.id }}/pos/status/{id}/";
+const RECEIPT_URL = "{% url 'dashboard:shop_pos_receipt' 0 %}".replace("/0/", "/{id}/");
+const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+
+// Build barcode → stock element map from DOM
+const barcodeMap = {};
+document.querySelectorAll(".pos-item[data-barcode]").forEach(el => {
+  const bc = el.dataset.barcode.trim();
+  if (bc) barcodeMap[bc] = el;
+});
+
+// ── Clock ─────────────────────────────────────────────────────────────────────
+function tick() {
+  const n = new Date();
+  document.getElementById("posClock").textContent =
+    String(n.getHours()).padStart(2,"0") + ":" +
+    String(n.getMinutes()).padStart(2,"0") + ":" +
+    String(n.getSeconds()).padStart(2,"0");
+}
+tick(); setInterval(tick, 1000);
+
+// ── Category filter ────────────────────────────────────────────────────────────
+function switchCat(catId, btn) {
+  document.querySelectorAll(".pos-cat-tab").forEach(t => t.classList.remove("active"));
+  btn.classList.add("active");
+  document.querySelectorAll(".pos-item").forEach(el => {
+    el.style.display = (catId === "all" || String(el.dataset.cat) === String(catId)) ? "" : "none";
+  });
+}
+
+// ── Barcode search (client-side) ──────────────────────────────────────────────
+function bcSearch() {
+  const inp = document.getElementById("bcInput");
+  const code = inp.value.trim();
+  const st   = document.getElementById("bcStatus");
+
+  if (!code) return;
+
+  const el = barcodeMap[code];
+  if (el) {
+    const qty = parseInt(el.dataset.qty) || 0;
+    if (qty === 0) {
+      showBcStatus("Нет в наличии", "notfound");
+    } else {
+      addToCart(parseInt(el.dataset.stock), el.dataset.name, parseFloat(el.dataset.price), qty);
+      // show & highlight
+      el.classList.add("highlight");
+      el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      setTimeout(() => el.classList.remove("highlight"), 1200);
+      showBcStatus("+ " + el.dataset.name, "found");
+      // switch to "all" so item is visible
+      const allTab = document.querySelector('.pos-cat-tab[data-cat="all"]');
+      if (allTab) switchCat("all", allTab);
+    }
+  } else {
+    showBcStatus("Штрих-код не найден", "notfound");
+  }
+
+  inp.value = "";
+  inp.focus();
+  setTimeout(() => { st.className = "pos-bc-status"; st.style.display = "none"; }, 2000);
+}
+
+function showBcStatus(msg, cls) {
+  const st = document.getElementById("bcStatus");
+  st.textContent = msg;
+  st.className = "pos-bc-status " + cls;
+}
+
+// ── Cart state ─────────────────────────────────────────────────────────────────
+const cart = {};  // { stock_id: { name, price, qty, maxQty } }
+let selectedPay = "cash";
+
+function addToCart(stockId, name, price, maxQty) {
+  if (cart[stockId]) {
+    if (cart[stockId].qty < maxQty) cart[stockId].qty++;
+  } else {
+    cart[stockId] = { name, price, qty: 1, maxQty };
+  }
+  renderCart();
+}
+
+function setQty(stockId, qty) {
+  if (qty <= 0) { delete cart[stockId]; }
+  else {
+    const max = cart[stockId]?.maxQty ?? 999;
+    cart[stockId].qty = Math.min(qty, max);
+  }
+  renderCart();
+}
+
+function clearCart() {
+  Object.keys(cart).forEach(k => delete cart[k]);
+  document.getElementById("posComment").value = "";
+  renderCart();
+}
+
+function renderCart() {
+  const container = document.getElementById("posCartItems");
+  const empty     = document.getElementById("posCartEmpty");
+  const keys = Object.keys(cart);
+
+  if (!keys.length) {
+    empty.style.display = "flex";
+    container.innerHTML = "";
+    container.appendChild(empty);
+    document.getElementById("posTotal").textContent = "0 сом";
+    return;
+  }
+  empty.style.display = "none";
+
+  let total = 0, html = "";
+  keys.forEach(id => {
+    const it = cart[id];
+    const line = it.price * it.qty;
+    total += line;
+    html += `
+      <div class="pos-cart-row">
+        <div class="pos-cart-name">${esc(it.name)}</div>
+        <div class="pos-cart-qty-wrap">
+          <button class="pos-qty-btn" onclick="setQty(${id}, ${it.qty - 1})">−</button>
+          <div class="pos-cart-qty-val">${it.qty}</div>
+          <button class="pos-qty-btn" onclick="setQty(${id}, ${it.qty + 1})">+</button>
+        </div>
+        <div class="pos-cart-line">${line.toLocaleString()} сом</div>
+        <button class="pos-cart-del" onclick="setQty(${id}, 0)">✕</button>
+      </div>`;
+  });
+
+  container.innerHTML = html;
+  document.getElementById("posTotal").textContent = total.toLocaleString() + " сом";
+}
+
+function setPay(btn) {
+  document.querySelectorAll(".pos-pay-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  selectedPay = btn.dataset.pay;
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Submit order ───────────────────────────────────────────────────────────────
+async function submitOrder() {
+  const keys = Object.keys(cart);
+  if (!keys.length) { alert("Добавьте товары в заказ"); return; }
+
+  const btn = document.getElementById("posConfirmBtn");
+  btn.disabled = true; btn.textContent = "Оформляем...";
+
+  const items = keys.map(id => ({ stock_id: parseInt(id), qty: cart[id].qty }));
+  const comment = document.getElementById("posComment").value.trim();
+
+  try {
+    const r = await fetch(ORDER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF() },
+      body: JSON.stringify({ items, payment: selectedPay, comment }),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      window.open(RECEIPT_URL.replace("{id}", d.order_id), "_blank");
+      // Update stock quantities in DOM
+      keys.forEach(id => {
+        const el = document.getElementById("pos-stock-" + id);
+        if (!el) return;
+        const newQty = Math.max(0, (parseInt(el.dataset.qty)||0) - cart[id].qty);
+        el.dataset.qty = newQty;
+        updateStockBadge(el, newQty);
+        if (newQty === 0) { el.classList.add("out"); el.onclick = null; }
+      });
+      clearCart();
+    } else {
+      alert(d.error || "Ошибка оформления");
+    }
+  } catch(e) { alert("Ошибка сети"); }
+
+  btn.disabled = false; btn.textContent = "✓ Оформить и распечатать чек";
+}
+
+function updateStockBadge(el, qty) {
+  const badge = el.querySelector(".pos-item-stock");
+  if (!badge) return;
+  if (qty === 0)     { badge.className="pos-item-stock out"; badge.textContent="Нет"; }
+  else if (qty <= 3) { badge.className="pos-item-stock low"; badge.textContent=qty+" шт"; }
+  else               { badge.className="pos-item-stock ok";  badge.textContent=qty+" шт"; }
+}
+
+// ── Live online orders queue ────────────────────────────────────────────────────
+async function loadQueue() {
+  try {
+    const r = await fetch(LIVE_URL);
+    const d = await r.json();
+    if (!d.ok) return;
+
+    const container = document.getElementById("posQueue");
+    const badge     = document.getElementById("queueBadge");
+    const upd       = document.getElementById("queueLastUpd");
+    badge.textContent = d.orders.length;
+    badge.style.background = d.orders.some(o => o.status === "new") ? "#ff3b30" : "#8e8e93";
+    const now = new Date();
+    upd.textContent = "обновлено " + String(now.getHours()).padStart(2,"0") + ":" + String(now.getMinutes()).padStart(2,"0");
+
+    if (!d.orders.length) {
+      container.innerHTML = '<div class="pos-queue-empty">Нет активных онлайн-заказов</div>';
+      return;
+    }
+    let html = "";
+    d.orders.forEach(o => {
+      const itemsList = o.items.map(i => `${i.name} ×${i.qty}`).join(", ");
+      const statusCls = o.status === "new" ? "new" : "confirmed";
+      const statusLbl = o.status === "new" ? "Новый" : "Подтверждён";
+      html += `
+        <div class="pos-orow">
+          <div class="pos-orow-id">#${o.id}</div>
+          <div class="pos-orow-info">
+            <div class="pos-orow-name">
+              <span class="pos-status ${statusCls}">${statusLbl}</span>
+              ${o.name ? ' · '+esc(o.name) : ''}
+              ${o.phone && o.phone !== '-' ? ' · '+esc(o.phone) : ''}
+              <span style="font-size:10px;color:var(--muted);margin-left:4px">${o.created}</span>
+            </div>
+            <div class="pos-orow-items">${itemsList}</div>
+            ${o.comment ? `<div style="font-size:10px;color:var(--muted)">💬 ${esc(o.comment)}</div>` : ''}
+          </div>
+          <div class="pos-orow-total">${parseInt(o.total).toLocaleString()} сом</div>
+          <div class="pos-orow-actions">
+            ${o.status === "new"
+              ? `<button class="pos-act-btn green" onclick="setOrderStatus(${o.id},'confirmed')">✓ Принять</button>`
+              : `<button class="pos-act-btn green" onclick="setOrderStatus(${o.id},'done')">🔒 Завершить</button>`}
+            <button class="pos-act-btn" onclick="printReceipt(${o.id})">🖨 Чек</button>
+            <button class="pos-act-btn danger" onclick="setOrderStatus(${o.id},'canceled')">✕</button>
+          </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+  } catch(e) { console.warn("Queue error", e); }
+}
+
+async function setOrderStatus(orderId, status) {
+  const fd = new FormData();
+  fd.append("status", status);
+  await fetch(STATUS_URL.replace("{id}", orderId), { method:"POST", body:fd, headers:{"X-CSRFToken":CSRF()} });
+  loadQueue();
+}
+
+function printReceipt(orderId) {
+  window.open(RECEIPT_URL.replace("{id}", orderId), "_blank");
+}
+
+loadQueue();
+setInterval(loadQueue, 15000);
+
+// ── Barcode scanner ────────────────────────────────────────────────────────────
+let _scanStream = null;
+let _zxingReader = null;
+
+async function openScanner() {
+  const overlay = document.getElementById("bcOverlay");
+  const status  = document.getElementById("bcStatusTxt");
+  overlay.classList.add("open");
+  status.textContent = "Запуск камеры...";
+
+  try {
+    if (!window.ZXing) {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = "https://unpkg.com/@zxing/library@0.18.6/umd/index.min.js";
+        s.onload = resolve; s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+    _zxingReader = new ZXing.BrowserMultiFormatReader();
+    const video = document.getElementById("bcVideo");
+    _scanStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
+    });
+    video.srcObject = _scanStream;
+    await video.play();
+    status.textContent = "Наведите на штрих-код";
+
+    const loop = async () => {
+      if (!overlay.classList.contains("open")) return;
+      try {
+        const result = await _zxingReader.decodeOnceFromStream(_scanStream, video);
+        if (result) {
+          const code = result.getText();
+          document.getElementById("bcInput").value = code;
+          status.textContent = "✓ " + code;
+          setTimeout(() => { closeScanner(); bcSearch(); }, 500);
+          return;
+        }
+      } catch(e) {}
+      if (overlay.classList.contains("open")) requestAnimationFrame(loop);
+    };
+    loop();
+  } catch(e) {
+    status.textContent = "Нет доступа к камере — введите вручную";
+    console.warn("Scanner:", e);
+  }
+}
+
+function closeScanner() {
+  document.getElementById("bcOverlay").classList.remove("open");
+  if (_scanStream) { _scanStream.getTracks().forEach(t => t.stop()); _scanStream = null; }
+  if (_zxingReader) { try { _zxingReader.reset(); } catch(e) {} _zxingReader = null; }
+  const v = document.getElementById("bcVideo");
+  if (v) v.srcObject = null;
+}
+</script>
+{% endblock %}
