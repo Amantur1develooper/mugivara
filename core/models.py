@@ -83,6 +83,9 @@ class Branch(TimeStampedModel):
         help_text="Если заполнено — кнопка «Открыть меню» будет вести на этот адрес"
     )
 
+    pay_cash_enabled   = models.BooleanField("Наличные (касса)", default=True)
+    pay_online_enabled = models.BooleanField("Онлайн / карта (касса)", default=True)
+
     def save(self, *args, **kwargs):
         self.photo_compression = None
         if self.promo_photo and hasattr(self.promo_photo, 'file'):

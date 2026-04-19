@@ -142,11 +142,13 @@ def branch_edit(request, branch_id):
             except InvalidOperation:
                 return Decimal(default)
 
-        branch.delivery_enabled   = request.POST.get("delivery_enabled") == "on"
-        branch.min_order_amount   = dec("min_order_amount")
-        branch.delivery_fee       = dec("delivery_fee")
-        branch.free_delivery_from = dec("free_delivery_from")
-        branch.is_open_24h        = request.POST.get("is_open_24h") == "on"
+        branch.delivery_enabled    = request.POST.get("delivery_enabled") == "on"
+        branch.min_order_amount    = dec("min_order_amount")
+        branch.delivery_fee        = dec("delivery_fee")
+        branch.free_delivery_from  = dec("free_delivery_from")
+        branch.is_open_24h         = request.POST.get("is_open_24h") == "on"
+        branch.pay_cash_enabled    = request.POST.get("pay_cash_enabled") == "on"
+        branch.pay_online_enabled  = request.POST.get("pay_online_enabled") == "on"
 
         ot = request.POST.get("open_time", "").strip()
         ct = request.POST.get("close_time", "").strip()

@@ -259,14 +259,21 @@
   font-family: 'Unbounded', sans-serif;
   font-size: 22px; font-weight: 900; color: var(--text);
 }
-.pos-payment-row { display: flex; gap: 6px; }
-.pos-pay-btn {
-  flex: 1; padding: 9px 8px; border-radius: 10px;
-  border: 1.5px solid var(--border); background: var(--bg);
-  color: var(--text2); font-size: 12px; font-weight: 700;
-  cursor: pointer; transition: all .15s; text-align: center;
+.pos-payment-row {
+  display: flex; gap: 0;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 12px; overflow: hidden;
 }
-.pos-pay-btn.active { background: var(--text); color: #fff; border-color: var(--text); }
+.pos-pay-btn {
+  flex: 1; padding: 10px 8px; border: none;
+  background: transparent; color: var(--text2);
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: all .18s; text-align: center;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.pos-pay-btn + .pos-pay-btn { border-left: 1.5px solid var(--border); }
+.pos-pay-btn.active[data-pay="cash"]   { background: #166534; color: #bbf7d0; }
+.pos-pay-btn.active[data-pay="online"] { background: #1e3a8a; color: #bfdbfe; }
 .pos-comment {
   width: 100%; padding: 8px 10px; border-radius: 8px;
   border: 1.5px solid var(--border); background: var(--bg); color: var(--text);
@@ -482,7 +489,7 @@
 
       <div class="pos-payment-row">
         <button class="pos-pay-btn active" data-pay="cash"   onclick="setPay(this)">💵 Наличные</button>
-        <button class="pos-pay-btn"        data-pay="online" onclick="setPay(this)">💳 Безналичные</button>
+        <button class="pos-pay-btn"        data-pay="online" onclick="setPay(this)">💳 Онлайн</button>
       </div>
 
       <textarea class="pos-comment" id="posComment" rows="2" placeholder="Комментарий (необязательно)"></textarea>

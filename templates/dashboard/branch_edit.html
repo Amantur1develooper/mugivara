@@ -129,6 +129,38 @@
     </div>
   </div>
 
+  {# ── СПОСОБЫ ОПЛАТЫ В КАССЕ ── #}
+  <div class="db-card">
+    <div class="db-card-title">💳 Способы оплаты (Касса / POS)</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px">
+      Выберите какие способы оплаты доступны кассиру. Если включён только один — переключатель в кассе не будет показан.
+    </div>
+
+    <div class="db-toggle-row">
+      <div>
+        <div class="db-toggle-label">💵 Наличные</div>
+        <div class="db-toggle-desc">Оплата наличными деньгами</div>
+      </div>
+      <label class="db-switch">
+        <input type="checkbox" name="pay_cash_enabled" {% if branch.pay_cash_enabled %}checked{% endif %}>
+        <span class="db-switch-slider"></span>
+      </label>
+    </div>
+
+    <div style="height:12px"></div>
+
+    <div class="db-toggle-row">
+      <div>
+        <div class="db-toggle-label">💳 Онлайн / карта</div>
+        <div class="db-toggle-desc">Безналичная оплата, перевод на карту</div>
+      </div>
+      <label class="db-switch">
+        <input type="checkbox" name="pay_online_enabled" {% if branch.pay_online_enabled %}checked{% endif %}>
+        <span class="db-switch-slider"></span>
+      </label>
+    </div>
+  </div>
+
   {# ── ВНЕШНИЙ САЙТ ── #}
   <div class="db-card">
     <div class="db-card-title">🌐 Внешний сайт / приложение</div>
