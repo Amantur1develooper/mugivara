@@ -4,6 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.contrib import messages
+from django.db import transaction
 from decimal import Decimal, InvalidOperation
 
 from django.utils import timezone
@@ -1080,7 +1081,7 @@ def pos(request, branch_id):
             Order.Status.COOKING, Order.Status.READY,
         ])
         .prefetch_related("items__item")
-        .order_by("created_at")
+        .order_by("-created_at")
     )
 
     return render(request, "dashboard/pos.html", {
@@ -1092,6 +1093,7 @@ def pos(request, branch_id):
 
 @require_POST
 @login_required(login_url="dashboard:login")
+@transaction.atomic
 def pos_order_create(request, branch_id):
     branch = get_object_or_404(Branch, id=branch_id)
     if not (request.user.is_staff or request.user.is_superuser or _has_branch_access(request.user, branch)):
@@ -1162,6 +1164,17 @@ def pos_order_status(request, order_id):
 
     fields = []
     if new_status and new_status in Order.Status.values:
+        # Restore stock when cancelling a closed POS order
+        if new_status == Order.Status.CANCELLED and order.status == Order.Status.CLOSED:
+            for oi in order.items.select_related("item").all():
+                try:
+                    bi = BranchItem.objects.get(branch=order.branch, item=oi.item)
+                    if bi.stock is not None:
+                        bi.stock += oi.qty
+                        bi.is_available = True
+                        bi.save(update_fields=["stock", "is_available"])
+                except BranchItem.DoesNotExist:
+                    pass
         order.status = new_status
         fields.append("status")
     if new_payment and new_payment in Order.PaymentStatus.values:
@@ -1191,7 +1204,7 @@ def pos_live_orders(request, branch_id):
             Order.Status.COOKING, Order.Status.READY,
         ])
         .prefetch_related("items__item")
-        .order_by("created_at")
+        .order_by("-created_at")
     )
 
     result = []

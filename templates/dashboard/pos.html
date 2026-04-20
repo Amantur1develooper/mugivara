@@ -377,6 +377,47 @@
 .pos-confirm-btn:hover { opacity: .9; }
 .pos-confirm-btn:disabled { opacity: .5; cursor: not-allowed; }
 
+/* ── CANCEL TOAST ── */
+.pos-cancel-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  z-index: 500;
+  background: #1c1c1e;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 16px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  transition: transform .3s cubic-bezier(.4,0,.2,1);
+  white-space: nowrap;
+}
+.pos-cancel-toast.show { transform: translateX(-50%) translateY(0); }
+.pos-cancel-toast-text { font-size: 13px; font-weight: 600; color: #fff; }
+.pos-cancel-toast-id { font-size: 13px; color: rgba(255,255,255,.5); }
+.pos-cancel-btn {
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: #ff3b30;
+  border: none;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pos-cancel-toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: rgba(255,59,48,.6);
+  border-radius: 0 0 16px 16px;
+  transition: width linear;
+}
+
 /* ── BOTTOM: ONLINE ORDERS ── */
 .pos-queue {
   grid-column: 1 / -1;
@@ -661,6 +702,16 @@
 
 </div>
 
+<!-- CANCEL TOAST -->
+<div class="pos-cancel-toast" id="cancelToast">
+  <div>
+    <div class="pos-cancel-toast-text">Заказ оформлен</div>
+    <div class="pos-cancel-toast-id" id="cancelToastId"></div>
+  </div>
+  <button class="pos-cancel-btn" onclick="cancelLastOrder()">✕ Отменить</button>
+  <div class="pos-cancel-toast-progress" id="cancelProgress" style="width:100%"></div>
+</div>
+
 <script>
 const BRANCH_ID   = {{ branch.id }};
 const ORDER_URL   = "{% url 'dashboard:pos_order_create' branch.id %}";
@@ -794,6 +845,7 @@ async function submitOrder() {
       // Открыть чек
       window.open(RECEIPT_URL.replace("{id}", d.order_id), "_blank");
       clearCart();
+      showCancelToast(d.order_id);
     } else {
       alert(d.error || "Ошибка оформления");
     }
@@ -803,6 +855,58 @@ async function submitOrder() {
 
   btn.disabled = false;
   btn.textContent = "✓ Оформить заказ";
+}
+
+// ── Cancel toast ──────────────────────────────────────────────────────────
+let cancelToastTimer = null;
+let lastOrderId = null;
+
+function showCancelToast(orderId) {
+  lastOrderId = orderId;
+  const toast = document.getElementById("cancelToast");
+  const prog  = document.getElementById("cancelProgress");
+  document.getElementById("cancelToastId").textContent = "Заказ #" + orderId;
+
+  // Clear any existing timer
+  if (cancelToastTimer) clearTimeout(cancelToastTimer);
+
+  // Show toast
+  toast.classList.add("show");
+
+  // Progress bar countdown (60 seconds)
+  prog.style.transition = "none";
+  prog.style.width = "100%";
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      prog.style.transition = "width 60s linear";
+      prog.style.width = "0%";
+    });
+  });
+
+  cancelToastTimer = setTimeout(() => {
+    toast.classList.remove("show");
+    lastOrderId = null;
+  }, 60000);
+}
+
+async function cancelLastOrder() {
+  if (!lastOrderId) return;
+  const orderId = lastOrderId;
+
+  // Hide toast immediately
+  clearTimeout(cancelToastTimer);
+  document.getElementById("cancelToast").classList.remove("show");
+  lastOrderId = null;
+
+  const fd = new FormData();
+  fd.append("status", "cancelled");
+  fd.append("payment_status", "refunded");
+  try {
+    await fetch(STATUS_URL.replace("{id}", orderId), {
+      method: "POST", body: fd, headers: { "X-CSRFToken": CSRF() }
+    });
+  } catch(e) { console.warn("cancel error", e); }
+  loadQueue();
 }
 
 // ── Live queue ─────────────────────────────────────────────────────────────
