@@ -13,6 +13,9 @@
 <a href="{% url 'dashboard:branch_categories' branch.id %}">
   <span class="db-nav-icon">📂</span> Категории
 </a>
+<a href="{% url 'dashboard:constructor_list' branch.id %}">
+  <span class="db-nav-icon">🧩</span> Конструктор блюд
+</a>
 {% endblock %}
 
 {% block head_extra %}

@@ -1,30 +1,21 @@
 
-# public_site/views.py
+# public_site/views_table.py
+import json
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from django.contrib import messages
 from django.utils.translation import gettext as _
 from decimal import Decimal
-
-from reservations.models import Place
-from core.models import Branch
-from catalog.models import BranchCategory, BranchCategoryItem, BranchItem
-from orders.models import Order, OrderItem
-from .cart import get_cart, cart_details, clear_cart
-from public_site.cart import get_table_cart, set_table_cart, clear_table_cart, table_cart_totals
-from decimal import Decimal
-from django.http import JsonResponse, Http404
-from django.shortcuts import render, redirect, get_object_or_404
-from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.db.models import F
-from decimal import Decimal
 
 from reservations.models import Place
-from core.models import Restaurant
-from catalog.models import BranchCategory, BranchItem, ItemCategory  # если у тебя ItemCategory называется иначе — поправь
-from orders.models import Order, OrderItem
+from core.models import Branch, Restaurant
+from catalog.models import BranchCategory, BranchCategoryItem, BranchItem, ItemCategory, DishConstructor
+from orders.models import Order, OrderItem, ConstructorOrderItem
+from .cart import get_cart, cart_details, clear_cart
+from public_site.cart import get_table_cart, set_table_cart, clear_table_cart, table_cart_totals
 
 
 def _table_cart_key(token: str) -> str:
@@ -41,9 +32,7 @@ def _save_cart(request, token: str, cart: dict):
 
 
 def _cart_calc(branch, cart: dict):
-    """
-    cart: {"branch_item_id": qty}
-    """
+    """cart: {"branch_item_id": qty}"""
     ids = [int(k) for k in cart.keys()] if cart else []
     items = (BranchItem.objects
              .filter(branch=branch, id__in=ids)
@@ -67,6 +56,34 @@ def _cart_calc(branch, cart: dict):
         total_sum += Decimal(str(line))
 
     return rows, total_qty, total_sum
+
+
+# ── КОНСТРУКТОР КОРЗИНА (table QR flow) ──────────────────────────────────────
+
+def _table_cx_key(token: str) -> str:
+    return f"table_cx_{token}"
+
+
+def _get_cx_cart(request, token: str) -> list:
+    return request.session.get(_table_cx_key(token), [])
+
+
+def _save_cx_cart(request, token: str, cart: list):
+    request.session[_table_cx_key(token)] = cart
+    request.session.modified = True
+
+
+def _cx_cart_totals(cx_cart: list):
+    """Returns (total_qty, total_sum) for constructor cart."""
+    total_qty = 0
+    total_sum = Decimal("0")
+    for item in cx_cart:
+        q = int(item.get("qty", 0))
+        if q <= 0:
+            continue
+        total_qty += q
+        total_sum += Decimal(str(item["unit_price"])) * q
+    return total_qty, total_sum
 
 
 def _build_branch_menu(branch):
@@ -113,8 +130,113 @@ def table_add_to_cart(request, token, branch_item_id: int):
     cart[k] = int(cart.get(k, 0)) + qty
     _save_cart(request, token, cart)
 
-    _rows, cart_qty, cart_total = _cart_calc(branch, cart)
-    return JsonResponse({"ok": True, "qty": cart_qty, "total": float(cart_total)})
+    _, reg_qty, reg_total = _cart_calc(branch, cart)
+    cx_qty, cx_total = _cx_cart_totals(_get_cx_cart(request, token))
+    return JsonResponse({"ok": True, "qty": reg_qty + cx_qty, "total": float(reg_total + cx_total)})
+
+
+@require_POST
+def table_add_constructor(request, token: str, cx_id: int):
+    """Add a constructor dish to the table cart."""
+    place = get_object_or_404(Place, token=token, is_active=True)
+    branch = place.floor.branch
+    cx = get_object_or_404(DishConstructor, id=cx_id, branch=branch, is_active=True)
+
+    try:
+        selections_raw = json.loads(request.POST.get("selections", "{}"))
+    except Exception:
+        return JsonResponse({"ok": False, "error": "Неверные данные"}, status=400)
+
+    groups = cx.groups.prefetch_related("ingredients").order_by("sort_order", "id")
+    selections = []
+    total_price = Decimal("0")
+
+    for g in groups:
+        chosen_ids = selections_raw.get(str(g.id), [])
+        if not isinstance(chosen_ids, list):
+            chosen_ids = [chosen_ids]
+        chosen_ids = [int(i) for i in chosen_ids if i]
+
+        if g.min_select and len(chosen_ids) < g.min_select:
+            return JsonResponse({"ok": False, "error": f"Выберите минимум {g.min_select} в «{g.name}»"}, status=400)
+        if g.max_select > 0 and len(chosen_ids) > g.max_select:
+            return JsonResponse({"ok": False, "error": f"Максимум {g.max_select} в «{g.name}»"}, status=400)
+
+        ings_data = []
+        for ing in g.ingredients.select_related("branch_item__item").filter(is_active=True, id__in=chosen_ids):
+            ings_data.append({"id": ing.id, "name": ing.display_name, "price": str(ing.display_price)})
+            total_price += ing.display_price
+
+        if ings_data:
+            selections.append({"gid": g.id, "gname": g.name, "ings": ings_data})
+
+    unit_price = total_price
+
+    cx_cart = _get_cx_cart(request, token)
+    idx = max((item["idx"] for item in cx_cart), default=-1) + 1
+    cx_cart.append({
+        "idx": idx,
+        "cx_id": cx.id,
+        "cx_name": cx.name,
+        "base_price": str(cx.base_price),
+        "selections": selections,
+        "unit_price": str(unit_price),
+        "qty": 1,
+        "line_total": str(unit_price),
+    })
+    _save_cx_cart(request, token, cx_cart)
+
+    cart = _get_cart(request, token)
+    _, reg_qty, reg_total = _cart_calc(branch, cart)
+    cx_qty, cx_total = _cx_cart_totals(cx_cart)
+    return JsonResponse({"ok": True, "qty": reg_qty + cx_qty, "total": float(reg_total + cx_total)})
+
+
+@require_POST
+def table_cx_update(request, token: str):
+    """Update qty or remove a constructor cart item."""
+    place = get_object_or_404(Place, token=token, is_active=True)
+    branch = place.floor.branch
+
+    idx = int(request.POST.get("idx") or -1)
+    action = (request.POST.get("action") or "").strip()
+
+    cx_cart = _get_cx_cart(request, token)
+    item = next((x for x in cx_cart if x["idx"] == idx), None)
+    if not item:
+        return JsonResponse({"ok": False}, status=404)
+
+    unit_price = Decimal(str(item["unit_price"]))
+
+    if action == "inc":
+        item["qty"] = int(item["qty"]) + 1
+    elif action == "dec":
+        item["qty"] = int(item["qty"]) - 1
+    elif action == "remove":
+        item["qty"] = 0
+
+    new_qty = int(item["qty"])
+    if new_qty <= 0:
+        cx_cart = [x for x in cx_cart if x["idx"] != idx]
+        new_line = Decimal("0")
+        new_qty = 0
+    else:
+        new_line = unit_price * new_qty
+        item["line_total"] = str(new_line)
+
+    _save_cx_cart(request, token, cx_cart)
+
+    cart = _get_cart(request, token)
+    _, reg_qty, reg_total = _cart_calc(branch, cart)
+    cx_qty, cx_total = _cx_cart_totals(cx_cart)
+
+    return JsonResponse({
+        "ok": True,
+        "item_qty": new_qty,
+        "line_total": str(new_line),
+        "qty": reg_qty + cx_qty,
+        "total": str(reg_total + cx_total),
+    })
 
 
 def table_cart(request, token):
@@ -122,16 +244,20 @@ def table_cart(request, token):
     branch = place.floor.branch
 
     cart = _get_cart(request, token)
-    rows, cart_qty, cart_total = _cart_calc(branch, cart)
+    rows, reg_qty, reg_total = _cart_calc(branch, cart)
+
+    cx_cart = _get_cx_cart(request, token)
+    cx_qty, cx_total = _cx_cart_totals(cx_cart)
 
     return render(request, "public_site/table_cart.html", {
         "token": token,
         "place": place,
         "branch": branch,
         "rows": rows,
-        "cart_qty": cart_qty,
-        "cart_total": cart_total,
-        'table':True
+        "cx_rows": cx_cart,
+        "cart_qty": reg_qty + cx_qty,
+        "cart_total": reg_total + cx_total,
+        "table": True,
     })
 
 
@@ -214,22 +340,37 @@ def table_menu(request, token: str):
     for bc in categories:
         rows = BranchCategoryItem.objects.select_related("branch_item__item").filter(
             branch_category=bc,
-            branch_item__is_available=True,  # ✅ в зале показываем всё доступное
+            branch_item__is_available=True,
         ).order_by("sort_order", "id")
 
         menu.append({"branch_category": bc, "items": rows})
 
-    cart = get_table_cart(request, token)
-    _, subtotal, qty_total = table_cart_totals(branch, cart)
+    # Конструкторы — показываем только если есть хотя бы один активный
+    constructors_qs = (
+        DishConstructor.objects
+        .filter(branch=branch, is_active=True)
+        .prefetch_related("groups__ingredients")
+        .order_by("sort_order", "id")
+    )
+    constructors = [
+        cx for cx in constructors_qs
+        if any(g.ingredients.filter(is_active=True).exists() for g in cx.groups.all())
+    ]
+
+    cart = _get_cart(request, token)
+    _, reg_qty, reg_total = _cart_calc(branch, cart)
+    cx_cart = _get_cx_cart(request, token)
+    cx_qty, cx_total = _cx_cart_totals(cx_cart)
 
     return render(request, "public_site/table_menu.html", {
         "branch": branch,
         "place": place,
         "menu": menu,
+        "constructors": constructors,
         "token": token,
-        "cart_qty": qty_total,
-        "cart_total": subtotal,
-        'table':True,
+        "cart_qty": reg_qty + cx_qty,
+        "cart_total": reg_total + cx_total,
+        "table": True,
     })
     
     
@@ -265,7 +406,8 @@ def table_cart_update(request, token):
         cart[k] = new_qty
 
     _save_cart(request, token, cart)
-    rows, cart_qty, cart_total = _cart_calc(branch, cart)
+    rows, reg_qty, reg_total = _cart_calc(branch, cart)
+    cx_qty, cx_total = _cx_cart_totals(_get_cx_cart(request, token))
 
     line_total = "0"
     for r in rows:
@@ -277,8 +419,8 @@ def table_cart_update(request, token):
         "ok": True,
         "item_qty": new_qty,
         "line_total": line_total,
-        "qty": cart_qty,
-        "total": str(cart_total),
+        "qty": reg_qty + cx_qty,
+        "total": str(reg_total + cx_total),
     })
 
 
@@ -313,14 +455,16 @@ def table_create_order(request, token):
     customer_name = (request.POST.get("customer_name") or "").strip()[:120]
     comment = (request.POST.get("comment") or "").strip()
 
-    cart = _get_cart(request, token)  # твоя корзина из session
-    if not cart:
+    cart = _get_cart(request, token)
+    cx_cart = _get_cx_cart(request, token)
+
+    if not cart and not cx_cart:
         return redirect("table_cart", token=token)
 
     order = Order.objects.create(
         branch=branch,
-        type=Order.Type.DINE_IN,        # ✅ заказ в заведении
-        table_place=place,              # ✅ какой стол/кабинка
+        type=Order.Type.DINE_IN,
+        table_place=place,
         status=Order.Status.NEW,
         customer_name=customer_name,
         comment=comment,
@@ -328,7 +472,8 @@ def table_create_order(request, token):
         payment_status=Order.PaymentStatus.UNPAID,
     )
 
-    total = 0
+    total = Decimal("0")
+
     for bi_id, qty in cart.items():
         bi = get_object_or_404(BranchItem, id=int(bi_id), branch=branch)
         qty = int(qty)
@@ -338,20 +483,34 @@ def table_create_order(request, token):
             item=bi.item,
             qty=qty,
             price_snapshot=bi.price,
-            line_total=line_total
+            line_total=line_total,
+        )
+        total += line_total
+
+    for cx_item in cx_cart:
+        qty = int(cx_item.get("qty", 1))
+        unit_price = Decimal(str(cx_item["unit_price"]))
+        line_total = unit_price * qty
+        cx = get_object_or_404(DishConstructor, id=cx_item["cx_id"])
+        ConstructorOrderItem.objects.create(
+            order=order,
+            constructor=cx,
+            constructor_name_snapshot=cx_item["cx_name"],
+            qty=qty,
+            unit_price=unit_price,
+            line_total=line_total,
+            ingredients_snapshot=cx_item.get("selections", []),
         )
         total += line_total
 
     order.total_amount = total
     order.save(update_fields=["total_amount"])
 
-    # ✅ очищаем корзину
     _save_cart(request, token, {})
+    _save_cx_cart(request, token, [])
 
-    # увеличиваем рейтинг ресторана
     Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
 
-    # ✅ редирект на страницу "успех"
     return redirect("table_success", token=token, order_id=order.id)
 
 

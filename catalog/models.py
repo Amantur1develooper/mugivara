@@ -153,3 +153,91 @@ class BranchCategoryItem(TimeStampedModel):
         ordering = ("sort_order", "id")
         verbose_name = "Порядок блюд внутри конкретной категории филиала."
         verbose_name_plural = "Порядок блюд внутри конкретной категории филиала."
+
+
+# ── КОНСТРУКТОР БЛЮД ──────────────────────────────────────────────────────────
+
+class DishConstructor(TimeStampedModel):
+    """Конструктор: «Собери свой бургер», «Собери свою пиццу» и т.п."""
+    branch      = models.ForeignKey("core.Branch", on_delete=models.CASCADE, related_name="dish_constructors")
+    name        = models.CharField("Название", max_length=200)
+    description = models.TextField("Описание", blank=True, default="")
+    photo       = models.ImageField("Фото", upload_to="constructors/", blank=True, null=True)
+    base_price  = models.DecimalField("Базовая цена (сом)", max_digits=10, decimal_places=0, default=0,
+                                      help_text="Цена без учёта доп. ингредиентов")
+    is_active   = models.BooleanField("Активен", default=True)
+    sort_order  = models.PositiveSmallIntegerField("Порядок", default=0)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+        verbose_name = "Конструктор блюда"
+        verbose_name_plural = "Конструкторы блюд"
+
+    def __str__(self):
+        return f"{self.branch} / {self.name}"
+
+
+class ConstructorGroup(TimeStampedModel):
+    """Шаг конструктора: «Булочка», «Котлета», «Соус»."""
+    constructor = models.ForeignKey(DishConstructor, on_delete=models.CASCADE, related_name="groups")
+    name        = models.CharField("Название шага", max_length=200)
+    min_select  = models.PositiveSmallIntegerField("Минимум выбора", default=1)
+    max_select  = models.PositiveSmallIntegerField("Максимум выбора", default=1,
+                                                    help_text="0 = без лимита")
+    sort_order  = models.PositiveSmallIntegerField("Порядок", default=0)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+        verbose_name = "Группа конструктора"
+        verbose_name_plural = "Группы конструктора"
+
+    def __str__(self):
+        return f"{self.constructor.name} / {self.name}"
+
+
+class ConstructorIngredient(TimeStampedModel):
+    """Позиция внутри категории конструктора. Может ссылаться на блюдо из меню."""
+    group       = models.ForeignKey(ConstructorGroup, on_delete=models.CASCADE, related_name="ingredients")
+    # Привязка к блюду из меню (если задана — имя/фото/цена берутся оттуда)
+    branch_item = models.ForeignKey(
+        "catalog.BranchItem", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="+", verbose_name="Блюдо из меню"
+    )
+    # Ручные поля (используются когда branch_item не задан)
+    name        = models.CharField("Название", max_length=200, blank=True, default="")
+    description = models.CharField("Описание", max_length=400, blank=True, default="")
+    price       = models.DecimalField("Цена (сом)", max_digits=10, decimal_places=0, default=0)
+    photo       = models.ImageField("Фото", upload_to="constructors/ingredients/", blank=True, null=True)
+    is_active   = models.BooleanField("Активен", default=True)
+    sort_order  = models.PositiveSmallIntegerField("Порядок", default=0)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+        verbose_name = "Позиция конструктора"
+        verbose_name_plural = "Позиции конструктора"
+
+    def __str__(self):
+        return f"{self.group.name} / {self.display_name}"
+
+    @property
+    def display_name(self):
+        if self.branch_item_id:
+            return self.branch_item.item.name_ru
+        return self.name
+
+    @property
+    def display_description(self):
+        if self.branch_item_id:
+            return self.branch_item.item.description_ru or ""
+        return self.description
+
+    @property
+    def display_price(self):
+        if self.branch_item_id:
+            return self.branch_item.price
+        return self.price
+
+    @property
+    def display_photo_url(self):
+        photo = self.branch_item.item.photo if self.branch_item_id else self.photo
+        return photo.url if photo else ""

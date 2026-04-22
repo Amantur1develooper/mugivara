@@ -4,11 +4,14 @@ from .views import (
     about, booking_set_status, contacts, hall_plan, home, place_move, reservation, restaurant_about, restaurant_contacts, restaurant_detail, branch_menu, restaurant_branch_menu,
     add_to_cart, cart_detail, cart_json, cart_update, cart_remove,
     checkout, checkout_success, restaurants_list, validate_promo, banner_click,
+    constructor_add_to_cart, constructor_remove_from_cart, constructor_cx_update,
+    constructor_build_page,
 )
 from reservations import views as r
 from public_site.views_table import (
     table_cart, table_create_order, table_cart_update,
     table_call_waiter, table_menu, table_add_to_cart,
+    table_add_constructor, table_cx_update,
     branch_tables_page,
 )
 
@@ -25,6 +28,8 @@ urlpatterns = [
     path("t/<str:token>/cart/", table_cart, name="table_cart"),
     path("t/<str:token>/cart/add/<int:branch_item_id>/", table_add_to_cart, name="table_add_to_cart"),
     path("t/<str:token>/cart/update/", table_cart_update, name="table_cart_update"),
+    path("t/<str:token>/constructor/<int:cx_id>/add/", table_add_constructor, name="table_add_constructor"),
+    path("t/<str:token>/constructor/update/", table_cx_update, name="table_cx_update"),
     path("t/<str:token>/order/create/", table_create_order, name="table_create_order"),
     path("t/<str:token>/call-waiter/", table_call_waiter, name="table_call_waiter"),
     path("<int:branch_id>/tables/", branch_tables_page, name="branch_tables"),
@@ -39,6 +44,12 @@ urlpatterns = [
 
     # add to cart (AJAX)
     path("b/add/<int:branch_item_id>/", add_to_cart, name="add_to_cart"),
+
+    # конструктор блюд
+    path("b/<int:branch_id>/constructor/add/", constructor_add_to_cart, name="constructor_add_to_cart"),
+    path("b/<int:branch_id>/constructor/update/", constructor_cx_update, name="constructor_cx_update"),
+    path("b/<int:branch_id>/constructor/remove/<int:cx_index>/", constructor_remove_from_cart, name="constructor_remove_from_cart"),
+    path("<int:branch_id>/constructor/<int:cx_id>/build/", constructor_build_page, name="constructor_build"),
 
     # checkout
     path("b/<int:branch_id>/checkout/", checkout, name="checkout"),

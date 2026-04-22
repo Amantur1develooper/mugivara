@@ -1,0 +1,447 @@
+{% extends "dashboard/base.html" %}
+{% load i18n %}
+
+{% block title %}Конструктор — {{ branch.name_ru }}{% endblock %}
+
+{% block sidebar_extra %}
+<div class="db-nav-label">Филиал</div>
+<a href="{% url 'dashboard:branch_edit' branch.id %}"><span class="db-nav-icon">⚙️</span> Настройки</a>
+<a href="{% url 'dashboard:branch_items' branch.id %}"><span class="db-nav-icon">🍽</span> Меню и цены</a>
+<a href="{% url 'dashboard:branch_categories' branch.id %}"><span class="db-nav-icon">📂</span> Категории</a>
+<a href="{% url 'dashboard:constructor_list' branch.id %}" class="active"><span class="db-nav-icon">🧩</span> Конструктор блюд</a>
+{% endblock %}
+
+{% block head_extra %}
+<style>
+.cx-wrap { max-width: 1100px; }
+
+/* ── Конструктор карточка ── */
+.cx-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 18px; margin-bottom: 20px;
+}
+.cx-card-head {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 20px; cursor: pointer; border-radius: 18px;
+  transition: background .15s;
+}
+.cx-card-head:hover { background: var(--bg); }
+.cx-card-title { font-weight: 800; font-size: 15px; color: var(--text); flex: 1; }
+.cx-badge { padding: 4px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; }
+.cx-badge.on  { background: rgba(16,185,129,.12); color: #10b981; border: 1px solid rgba(16,185,129,.2); }
+.cx-badge.off { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+.cx-btn { padding: 7px 14px; border-radius: 9px; font-size: 12px; font-weight: 700; border: 1px solid var(--border); background: var(--bg); color: var(--text2); cursor: pointer; transition: all .15s; }
+.cx-btn:hover { border-color: var(--text); color: var(--text); }
+.cx-btn.danger:hover { border-color: #ef4444; color: #ef4444; }
+
+/* ── Тело: сетка ── */
+.cx-body { padding: 0 20px 20px; }
+.cx-editor {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+  margin-top: 4px;
+}
+@media (max-width: 860px) { .cx-editor { grid-template-columns: 1fr; } }
+
+/* ── Левая колонка: категории ── */
+.cx-groups-col {}
+.cx-group {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 14px; margin-bottom: 12px; overflow: hidden;
+}
+.cx-group-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+  background: var(--card);
+}
+.cx-group-title { font-weight: 700; font-size: 13px; color: var(--text); flex: 1; }
+.cx-group-meta { font-size: 11px; color: var(--muted); }
+.cx-group-select-btn {
+  padding: 5px 12px; border-radius: 8px; font-size: 11px; font-weight: 700;
+  border: 1.5px solid var(--border); background: var(--bg); color: var(--text2); cursor: pointer;
+  transition: all .15s;
+}
+.cx-group-select-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Позиции в категории */
+.cx-items-row {
+  display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 14px;
+}
+.cx-item-chip {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 5px 8px 5px 5px;
+  font-size: 12px;
+}
+.cx-item-chip-img { width: 28px; height: 28px; border-radius: 7px; object-fit: cover; flex-shrink: 0; }
+.cx-item-chip-placeholder { width: 28px; height: 28px; border-radius: 7px; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.cx-item-chip-name { font-weight: 600; color: var(--text); }
+.cx-item-chip-price { color: var(--accent); font-weight: 700; font-size: 11px; }
+.cx-item-chip-del { color: var(--muted); cursor: pointer; font-size: 13px; margin-left: 4px; line-height: 1; }
+.cx-item-chip-del:hover { color: #ef4444; }
+.cx-items-empty { padding: 10px 14px; font-size: 12px; color: var(--muted); font-style: italic; }
+
+/* Форма добавления категории */
+.cx-add-group-row {
+  display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap;
+  padding: 12px 14px; background: var(--card2);
+  border-radius: 12px; margin-top: 10px;
+  border: 1.5px dashed var(--border);
+}
+.cx-field { display: flex; flex-direction: column; gap: 5px; }
+.cx-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+.cx-input { padding: 8px 12px; border-radius: 9px; border: 1.5px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; outline: none; transition: border-color .15s; }
+.cx-input:focus { border-color: var(--accent); }
+.cx-input-sm { width: 80px; }
+
+/* ── Правая колонка: меню ── */
+.cx-menu-col {}
+.cx-menu-panel {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden;
+  position: sticky; top: 70px;
+}
+.cx-menu-panel-head {
+  padding: 12px 14px; background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px; font-weight: 700; color: var(--text2);
+}
+.cx-menu-hint {
+  padding: 8px 14px; font-size: 11px; color: var(--muted);
+  background: rgba(255,77,28,.04); border-bottom: 1px solid var(--border);
+}
+.cx-menu-search {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+}
+.cx-menu-search input {
+  width: 100%; padding: 7px 12px; border-radius: 8px;
+  border: 1.5px solid var(--border); font-size: 12px;
+  background: var(--bg); color: var(--text); outline: none;
+}
+.cx-menu-search input:focus { border-color: var(--accent); }
+.cx-menu-list { max-height: 420px; overflow-y: auto; }
+.cx-menu-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px; cursor: pointer;
+  transition: background .12s; border-bottom: 1px solid var(--border);
+}
+.cx-menu-item:last-child { border-bottom: none; }
+.cx-menu-item:hover { background: var(--bg); }
+.cx-menu-item.added { opacity: .45; pointer-events: none; }
+.cx-menu-item-img { width: 36px; height: 36px; border-radius: 9px; object-fit: cover; flex-shrink: 0; }
+.cx-menu-item-placeholder { width: 36px; height: 36px; border-radius: 9px; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.cx-menu-item-info { flex: 1; min-width: 0; }
+.cx-menu-item-name { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cx-menu-item-price { font-size: 11px; color: var(--muted); }
+.cx-menu-item-add { padding: 5px 10px; border-radius: 7px; font-size: 11px; font-weight: 700; background: var(--accent); color: #fff; border: none; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+.cx-menu-no-group { padding: 16px 14px; font-size: 12px; color: var(--muted); text-align: center; }
+
+/* ── Новый конструктор ── */
+.cx-new-block {
+  background: var(--card); border: 1.5px dashed var(--border);
+  border-radius: 18px; padding: 20px; margin-bottom: 20px;
+}
+.cx-new-title { font-weight: 800; font-size: 14px; color: var(--text); margin-bottom: 14px; }
+.cx-new-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.cx-submit { padding: 9px 20px; border-radius: 10px; background: var(--text); color: #fff; border: none; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity .15s; }
+.cx-submit:hover { opacity: .85; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">🧩 Конструктор блюд</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:home' %}">Заведения</a> /
+      {{ branch.restaurant.name_ru }} / {{ branch.name_ru }}
+    </div>
+  </div>
+</div>
+
+<div class="cx-wrap">
+  <div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6">
+    Создайте конструктор → добавьте категории → выбирайте блюда из меню одним кликом. Секция «Собери сам» появится на публичном меню автоматически.
+  </div>
+
+  {# ── Создать конструктор ── #}
+  <div class="cx-new-block">
+    <div class="cx-new-title">➕ Новый конструктор</div>
+    <div class="cx-new-row">
+      <div class="cx-field">
+        <label class="cx-label">Название *</label>
+        <input class="cx-input" id="newCxName" placeholder="Собери свой бургер" style="width:200px">
+      </div>
+      <div class="cx-field">
+        <label class="cx-label">Описание</label>
+        <input class="cx-input" id="newCxDesc" placeholder="Собери сам" style="width:200px">
+      </div>
+      <button class="cx-submit" onclick="addConstructor()">Создать</button>
+    </div>
+  </div>
+
+  {# ── Список конструкторов ── #}
+  <div id="cxList">
+    {% for cx in constructors %}
+    <div class="cx-card" id="cx-{{ cx.id }}">
+      <div class="cx-card-head" onclick="toggleBody({{ cx.id }})">
+        <span style="font-size:20px">🧩</span>
+        <div class="cx-card-title">{{ cx.name }}{% if cx.description %} <span style="font-size:12px;font-weight:500;color:var(--muted)">— {{ cx.description }}</span>{% endif %}</div>
+        <span class="cx-badge {% if cx.is_active %}on{% else %}off{% endif %}" id="cx-badge-{{ cx.id }}">
+          {% if cx.is_active %}Активен{% else %}Выкл{% endif %}
+        </span>
+        <div onclick="event.stopPropagation()" style="display:flex;gap:8px">
+          <button class="cx-btn" onclick="toggleCx({{ cx.id }})">Вкл/Выкл</button>
+          <button class="cx-btn danger" onclick="deleteCx({{ cx.id }})">Удалить</button>
+        </div>
+      </div>
+
+      <div class="cx-body" id="cx-body-{{ cx.id }}" style="display:none">
+        <div class="cx-editor">
+
+          {# Левая: категории #}
+          <div class="cx-groups-col">
+            <div id="cx-groups-{{ cx.id }}">
+              {% for g in cx.groups.all %}
+              <div class="cx-group" id="cxg-{{ g.id }}">
+                <div class="cx-group-head">
+                  <div class="cx-group-title">{{ g.name }}</div>
+                  <div class="cx-group-meta">мин {{ g.min_select }} / макс {% if g.max_select == 0 %}∞{% else %}{{ g.max_select }}{% endif %}</div>
+                  <button class="cx-group-select-btn" id="sel-btn-{{ g.id }}" onclick="selectGroup({{ cx.id }}, {{ g.id }}, this)">Выбрать</button>
+                  <button class="cx-btn danger" style="padding:4px 8px;font-size:11px" onclick="deleteGroup({{ g.id }})">✕</button>
+                </div>
+                <div class="cx-items-row" id="cx-items-{{ g.id }}">
+                  {% for ing in g.ingredients.all %}
+                  <div class="cx-item-chip" id="cxi-{{ ing.id }}">
+                    {% if ing.display_photo_url %}
+                      <img class="cx-item-chip-img" src="{{ ing.display_photo_url }}" alt="">
+                    {% else %}
+                      <div class="cx-item-chip-placeholder">🍽</div>
+                    {% endif %}
+                    <span class="cx-item-chip-name">{{ ing.display_name }}</span>
+                    <span class="cx-item-chip-price">{{ ing.display_price|floatformat:0 }} с</span>
+                    <span class="cx-item-chip-del" onclick="deleteIngredient({{ ing.id }}, {{ g.id }}, '{{ ing.branch_item_id|default:'null' }}')">✕</span>
+                  </div>
+                  {% empty %}
+                  <div class="cx-items-empty" id="cx-empty-{{ g.id }}">Нет позиций — выберите из меню →</div>
+                  {% endfor %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+
+            {# Добавить категорию #}
+            <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;margin-top:4px">Новая категория</div>
+            <div class="cx-add-group-row">
+              <div class="cx-field">
+                <label class="cx-label">Название *</label>
+                <input class="cx-input" id="grp-name-{{ cx.id }}" placeholder="Котлета" style="width:150px">
+              </div>
+              <div class="cx-field">
+                <label class="cx-label">Мин</label>
+                <input class="cx-input cx-input-sm" id="grp-min-{{ cx.id }}" type="number" min="0" value="1">
+              </div>
+              <div class="cx-field">
+                <label class="cx-label">Макс (0=∞)</label>
+                <input class="cx-input cx-input-sm" id="grp-max-{{ cx.id }}" type="number" min="0" value="1">
+              </div>
+              <button class="cx-submit" onclick="addGroup({{ cx.id }})">+ Категория</button>
+            </div>
+          </div>
+
+          {# Правая: меню ветки #}
+          <div class="cx-menu-col">
+            <div class="cx-menu-panel" id="menu-panel-{{ cx.id }}">
+              <div class="cx-menu-panel-head">🍽 Блюда из вашего меню</div>
+              <div class="cx-menu-hint" id="menu-hint-{{ cx.id }}">Нажмите «Выбрать» у категории, затем кликните на блюдо</div>
+              <div class="cx-menu-search">
+                <input type="text" placeholder="Поиск..." oninput="filterMenu({{ cx.id }}, this.value)">
+              </div>
+              <div class="cx-menu-list" id="menu-list-{{ cx.id }}">
+                {% for bi in branch_items %}
+                <div class="cx-menu-item" id="menu-bi-{{ cx.id }}-{{ bi.id }}"
+                     data-name="{{ bi.item.name_ru|lower }}"
+                     onclick="addFromMenu({{ cx.id }}, {{ bi.id }})">
+                  {% if bi.item.photo %}
+                    <img class="cx-menu-item-img" src="{{ bi.item.photo.url }}" alt="{{ bi.item.name_ru }}">
+                  {% else %}
+                    <div class="cx-menu-item-placeholder">🍽</div>
+                  {% endif %}
+                  <div class="cx-menu-item-info">
+                    <div class="cx-menu-item-name">{{ bi.item.name_ru }}</div>
+                    <div class="cx-menu-item-price">{{ bi.price|floatformat:0 }} сом</div>
+                  </div>
+                  <button class="cx-menu-item-add" type="button">+ Добавить</button>
+                </div>
+                {% empty %}
+                <div style="padding:20px;text-align:center;font-size:12px;color:var(--muted)">В меню нет блюд</div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div id="cxEmpty" style="text-align:center;padding:60px;color:var(--muted);background:var(--card);border-radius:18px;border:1px solid var(--border)">
+      <div style="font-size:40px;margin-bottom:12px">🧩</div>
+      <div style="font-weight:700;font-size:15px;margin-bottom:6px">Нет конструкторов</div>
+      <div>Создайте первый выше</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+const URLS = {
+  add:        "{% url 'dashboard:constructor_add' branch.id %}",
+  del:        id => `/dashboard/constructor/${id}/delete/`,
+  toggle:     id => `/dashboard/constructor/${id}/toggle/`,
+  grpAdd:     id => `/dashboard/constructor/${id}/group/add/`,
+  grpDel:     id => `/dashboard/constructor/group/${id}/delete/`,
+  ingFromMenu: id => `/dashboard/constructor/group/${id}/ingredient/from-menu/`,
+  ingDel:     id => `/dashboard/constructor/ingredient/${id}/delete/`,
+};
+
+// activeGroup: {cxId: groupId}
+const activeGroup = {};
+
+function toggleBody(id) {
+  const b = document.getElementById(`cx-body-${id}`);
+  b.style.display = b.style.display === "none" ? "block" : "none";
+}
+
+function selectGroup(cxId, groupId, btn) {
+  // снять выделение со всех кнопок этого конструктора
+  document.querySelectorAll(`#cx-groups-${cxId} .cx-group-select-btn`).forEach(b => b.classList.remove('active'));
+  if (activeGroup[cxId] === groupId) {
+    activeGroup[cxId] = null;
+    document.getElementById(`menu-hint-${cxId}`).textContent = 'Нажмите «Выбрать» у категории, затем кликните на блюдо';
+  } else {
+    activeGroup[cxId] = groupId;
+    btn.classList.add('active');
+    const gName = btn.closest('.cx-group').querySelector('.cx-group-title').textContent;
+    document.getElementById(`menu-hint-${cxId}`).textContent = `Добавляем в: ${gName}`;
+  }
+}
+
+async function addFromMenu(cxId, biId) {
+  const gId = activeGroup[cxId];
+  if (!gId) {
+    alert('Сначала нажмите «Выбрать» у нужной категории слева');
+    return;
+  }
+  const fd = new FormData(); fd.append('branch_item_id', biId);
+  const r = await fetch(URLS.ingFromMenu(gId), { method: 'POST', body: fd, headers: { 'X-CSRFToken': CSRF() } });
+  const d = await r.json();
+  if (!d.ok) { alert(d.error || 'Ошибка'); return; }
+
+  // убрать заглушку "нет позиций"
+  const emptyEl = document.getElementById(`cx-empty-${gId}`);
+  if (emptyEl) emptyEl.remove();
+
+  // добавить чип
+  const photoHtml = d.photo_url
+    ? `<img class="cx-item-chip-img" src="${d.photo_url}" alt="">`
+    : `<div class="cx-item-chip-placeholder">🍽</div>`;
+  const html = `
+    <div class="cx-item-chip" id="cxi-${d.id}">
+      ${photoHtml}
+      <span class="cx-item-chip-name">${d.name}</span>
+      <span class="cx-item-chip-price">${d.price} с</span>
+      <span class="cx-item-chip-del" onclick="deleteIngredient(${d.id}, ${gId}, ${biId})">✕</span>
+    </div>`;
+  document.getElementById(`cx-items-${gId}`).insertAdjacentHTML('beforeend', html);
+
+  // отметить блюдо как добавленное
+  document.getElementById(`menu-bi-${cxId}-${biId}`)?.classList.add('added');
+}
+
+async function addConstructor() {
+  const name = document.getElementById('newCxName').value.trim();
+  const desc = document.getElementById('newCxDesc').value.trim();
+  if (!name) { alert('Введите название'); return; }
+  const fd = new FormData(); fd.append('name', name); fd.append('description', desc); fd.append('base_price', '0');
+  const r = await fetch(URLS.add, { method: 'POST', body: fd, headers: { 'X-CSRFToken': CSRF() } });
+  const d = await r.json();
+  if (!d.ok) { alert(d.error || 'Ошибка'); return; }
+  document.getElementById('newCxName').value = '';
+  document.getElementById('newCxDesc').value = '';
+  document.getElementById('cxEmpty')?.remove();
+  // Обновить страницу чтобы получить полный HTML с branch_items
+  location.reload();
+}
+
+async function deleteCx(id) {
+  if (!confirm('Удалить конструктор?')) return;
+  const r = await fetch(URLS.del(id), { method: 'POST', headers: { 'X-CSRFToken': CSRF() } });
+  const d = await r.json();
+  if (d.ok) document.getElementById(`cx-${id}`).remove();
+}
+
+async function toggleCx(id) {
+  const r = await fetch(URLS.toggle(id), { method: 'POST', headers: { 'X-CSRFToken': CSRF() } });
+  const d = await r.json();
+  if (d.ok) {
+    const b = document.getElementById(`cx-badge-${id}`);
+    b.className = `cx-badge ${d.is_active ? 'on' : 'off'}`;
+    b.textContent = d.is_active ? 'Активен' : 'Выкл';
+  }
+}
+
+async function addGroup(cxId) {
+  const name = document.getElementById(`grp-name-${cxId}`).value.trim();
+  const min  = document.getElementById(`grp-min-${cxId}`).value || 1;
+  const max  = document.getElementById(`grp-max-${cxId}`).value || 1;
+  if (!name) { alert('Введите название категории'); return; }
+  const fd = new FormData(); fd.append('name', name); fd.append('min_select', min); fd.append('max_select', max);
+  const r = await fetch(URLS.grpAdd(cxId), { method: 'POST', body: fd, headers: { 'X-CSRFToken': CSRF() } });
+  const d = await r.json();
+  if (!d.ok) { alert(d.error || 'Ошибка'); return; }
+  document.getElementById(`grp-name-${cxId}`).value = '';
+  const maxLabel = d.max_select == 0 ? '∞' : d.max_select;
+  const html = `
+    <div class="cx-group" id="cxg-${d.id}">
+      <div class="cx-group-head">
+        <div class="cx-group-title">${d.name}</div>
+        <div class="cx-group-meta">мин ${d.min_select} / макс ${maxLabel}</div>
+        <button class="cx-group-select-btn" id="sel-btn-${d.id}" onclick="selectGroup(${cxId}, ${d.id}, this)">Выбрать</button>
+        <button class="cx-btn danger" style="padding:4px 8px;font-size:11px" onclick="deleteGroup(${d.id})">✕</button>
+      </div>
+      <div class="cx-items-row" id="cx-items-${d.id}">
+        <div class="cx-items-empty" id="cx-empty-${d.id}">Нет позиций — выберите из меню →</div>
+      </div>
+    </div>`;
+  document.getElementById(`cx-groups-${cxId}`).insertAdjacentHTML('beforeend', html);
+}
+
+async function deleteGroup(id) {
+  if (!confirm('Удалить категорию?')) return;
+  const r = await fetch(URLS.grpDel(id), { method: 'POST', headers: { 'X-CSRFToken': CSRF() } });
+  const d = await r.json();
+  if (d.ok) document.getElementById(`cxg-${id}`).remove();
+}
+
+async function deleteIngredient(ingId, groupId, biId) {
+  const r = await fetch(URLS.ingDel(ingId), { method: 'POST', headers: { 'X-CSRFToken': CSRF() } });
+  const d = await r.json();
+  if (d.ok) {
+    document.getElementById(`cxi-${ingId}`).remove();
+    // снять отметку "добавлено" с блюда в меню
+    if (biId && biId !== 'null') {
+      document.querySelectorAll(`[id^="menu-bi-"][id$="-${biId}"]`).forEach(el => el.classList.remove('added'));
+    }
+  }
+}
+
+function filterMenu(cxId, query) {
+  const q = query.toLowerCase();
+  document.querySelectorAll(`#menu-list-${cxId} .cx-menu-item`).forEach(el => {
+    el.style.display = el.dataset.name.includes(q) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

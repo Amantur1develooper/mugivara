@@ -2,7 +2,7 @@ from django.contrib import admin
 from django import forms
 from core.models import Branch
 from catalog.models import BranchMenuSet
-from .models import MenuSet, Category, Item, ItemCategory
+from .models import MenuSet, Category, Item, ItemCategory, DishConstructor, ConstructorGroup, ConstructorIngredient
 from core.models import Restaurant
 from django.contrib.admin.views.autocomplete import AutocompleteJsonView
 from django.db.models import Prefetch
@@ -100,3 +100,35 @@ class ItemAdmin(admin.ModelAdmin):
             qs = qs.none()
 
         return qs, use_distinct
+
+
+# ── КОНСТРУКТОР БЛЮД ──────────────────────────────────────────────────────────
+
+class ConstructorIngredientInline(admin.TabularInline):
+    model = ConstructorIngredient
+    extra = 1
+    fields = ("name", "description", "price", "photo", "is_active", "sort_order")
+
+
+class ConstructorGroupInline(admin.TabularInline):
+    model = ConstructorGroup
+    extra = 1
+    fields = ("name", "min_select", "max_select", "sort_order")
+    show_change_link = True
+
+
+@admin.register(DishConstructor)
+class DishConstructorAdmin(admin.ModelAdmin):
+    list_display = ("id", "branch", "name", "base_price", "is_active", "sort_order")
+    list_filter = ("branch__restaurant", "is_active")
+    search_fields = ("name", "branch__name_ru")
+    ordering = ("branch", "sort_order", "id")
+    inlines = (ConstructorGroupInline,)
+
+
+@admin.register(ConstructorGroup)
+class ConstructorGroupAdmin(admin.ModelAdmin):
+    list_display = ("id", "constructor", "name", "min_select", "max_select", "sort_order")
+    list_filter = ("constructor__branch__restaurant",)
+    search_fields = ("name", "constructor__name")
+    inlines = (ConstructorIngredientInline,)

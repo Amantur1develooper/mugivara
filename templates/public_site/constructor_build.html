@@ -1,0 +1,430 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{ cx.name }} — {{ branch.name_ru }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --accent: #ff4d1c;
+  --accent2: #ff7a00;
+  --bg: #f7f7f8;
+  --card: #ffffff;
+  --border: #e8e8ec;
+  --text: #111118;
+  --text2: #444450;
+  --muted: #888898;
+  --teal: #00b896;
+  --radius: 16px;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  padding-bottom: 120px;
+}
+
+/* ── Шапка ── */
+.cb-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.cb-back {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--bg); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; text-decoration: none; color: var(--text);
+  flex-shrink: 0;
+}
+.cb-header-title { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 15px; flex: 1; }
+.cb-header-branch { font-size: 11px; color: var(--muted); }
+
+/* ── Табы категорий ── */
+.cb-tabs {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  display: flex; gap: 0; overflow-x: auto;
+  scrollbar-width: none;
+}
+.cb-tabs::-webkit-scrollbar { display: none; }
+.cb-tab {
+  padding: 14px 16px;
+  font-size: 13px; font-weight: 600; color: var(--muted);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; cursor: pointer;
+  transition: all .15s; flex-shrink: 0;
+}
+.cb-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Контент ── */
+.cb-content { padding: 20px 16px 8px; max-width: 720px; margin: 0 auto; }
+.cb-group { display: none; }
+.cb-group.active { display: block; }
+
+.cb-group-header { margin-bottom: 16px; }
+.cb-group-name {
+  font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 16px;
+  color: var(--text); margin-bottom: 4px;
+}
+.cb-group-hint { font-size: 12px; color: var(--muted); }
+
+/* ── Сетка позиций ── */
+.cb-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+@media (max-width: 380px) {
+  .cb-items { grid-template-columns: repeat(2, 1fr); }
+}
+
+.cb-item {
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all .18s;
+  user-select: none;
+  position: relative;
+}
+.cb-item:active { transform: scale(.97); }
+.cb-item.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255,77,28,.12);
+}
+.cb-item-check {
+  position: absolute; top: 8px; right: 8px;
+  width: 26px; height: 26px; border-radius: 8px;
+  background: rgba(0,0,0,.35); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: transparent;
+  transition: all .15s;
+}
+.cb-item.selected .cb-item-check {
+  background: var(--accent);
+  color: white;
+}
+.cb-item-photo {
+  width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block;
+}
+.cb-item-photo-empty {
+  width: 100%; aspect-ratio: 4/3;
+  background: linear-gradient(135deg, #f0f0f4, #e4e4ea);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+}
+.cb-item-body { padding: 10px 12px 12px; }
+.cb-item-name { font-weight: 700; font-size: 13px; line-height: 1.3; margin-bottom: 3px; }
+.cb-item-desc { font-size: 11px; color: var(--muted); line-height: 1.4; margin-bottom: 6px; }
+.cb-item-price {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 800; font-size: 14px; color: var(--accent);
+}
+
+/* ── Навигация по шагам ── */
+.cb-nav {
+  display: flex; gap: 10px; margin-top: 20px;
+  max-width: 720px; margin-left: auto; margin-right: auto;
+  padding: 0 16px;
+}
+.cb-nav-btn {
+  flex: 1; padding: 14px; border-radius: 14px;
+  font-size: 14px; font-weight: 700; border: none; cursor: pointer;
+  transition: all .15s;
+}
+.cb-nav-prev {
+  background: var(--card); color: var(--text2);
+  border: 1.5px solid var(--border);
+}
+.cb-nav-next {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white;
+  box-shadow: 0 4px 14px rgba(255,77,28,.3);
+}
+.cb-nav-next:disabled { background: var(--border); color: var(--muted); box-shadow: none; }
+
+/* ── Итог (sticky bottom) ── */
+.cb-footer {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 32px rgba(0,0,0,.08);
+}
+.cb-footer-inner { max-width: 720px; margin: 0 auto; }
+.cb-summary {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;
+}
+.cb-summary-chip {
+  padding: 4px 10px; border-radius: 100px;
+  font-size: 11px; font-weight: 600;
+  background: rgba(255,77,28,.08); color: var(--accent);
+  border: 1px solid rgba(255,77,28,.2);
+  white-space: nowrap;
+}
+.cb-summary-chip.empty { background: var(--bg); color: var(--muted); border-color: var(--border); }
+.cb-footer-row { display: flex; align-items: center; gap: 12px; }
+.cb-total {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 800; font-size: 18px; color: var(--text);
+  flex: 1;
+}
+.cb-add-btn {
+  padding: 14px 24px; border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white; border: none; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: all .15s;
+  box-shadow: 0 4px 14px rgba(255,77,28,.3);
+  white-space: nowrap;
+}
+.cb-add-btn:hover { box-shadow: 0 6px 20px rgba(255,77,28,.4); }
+.cb-add-btn:disabled { background: var(--border); color: var(--muted); box-shadow: none; cursor: default; }
+
+.cb-error { font-size: 12px; color: #ef4444; margin-bottom: 6px; min-height: 16px; }
+
+/* ── Тост ── */
+.cb-toast {
+  position: fixed; bottom: 140px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: rgba(0,0,0,.8); color: white;
+  padding: 10px 18px; border-radius: 100px;
+  font-size: 13px; font-weight: 600;
+  pointer-events: none; opacity: 0; transition: all .25s;
+  white-space: nowrap; z-index: 300;
+}
+.cb-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+{# ── Шапка ── #}
+<header class="cb-header">
+  <a href="{% url 'public_site:branch_menu' branch.id %}" class="cb-back">←</a>
+  <div>
+    <div class="cb-header-title">{{ cx.name }}</div>
+    <div class="cb-header-branch">{{ branch.name_ru }}</div>
+  </div>
+</header>
+
+{# ── Табы категорий ── #}
+<div class="cb-tabs" id="cbTabs">
+  {% for g in groups %}
+  <div class="cb-tab {% if forloop.first %}active{% endif %}" data-group="{{ g.id }}" onclick="switchGroup({{ forloop.counter0 }})">
+    {{ g.name }}
+  </div>
+  {% endfor %}
+</div>
+
+{# ── Группы и позиции ── #}
+<div class="cb-content">
+  {% for g in groups %}
+  <div class="cb-group {% if forloop.first %}active{% endif %}" id="cbGroup{{ forloop.counter0 }}">
+    <div class="cb-group-header">
+      <div class="cb-group-name">{{ g.name }}</div>
+      <div class="cb-group-hint">
+        {% if g.min_select > 0 %}Обязательно: выберите мин {{ g.min_select }}{% if g.max_select > 1 %}, макс {{ g.max_select }}{% endif %}
+        {% else %}Необязательно{% if g.max_select > 0 %} (макс {{ g.max_select }}){% endif %}{% endif %}
+      </div>
+    </div>
+    <div class="cb-items">
+      {% for ing in g.ingredients.all %}{% if ing.is_active %}
+      <div class="cb-item" id="cbItem{{ ing.id }}"
+           data-group="{{ g.id }}"
+           data-id="{{ ing.id }}"
+           data-price="{{ ing.display_price }}"
+           data-name="{{ ing.display_name }}"
+           onclick="toggleItem(this, {{ g.id }}, {{ ing.id }}, {{ ing.display_price }}, '{{ ing.display_name|escapejs }}', {{ g.min_select }}, {{ g.max_select }})">
+        <div class="cb-item-check">✓</div>
+        {% if ing.display_photo_url %}
+          <img class="cb-item-photo" src="{{ ing.display_photo_url }}" alt="{{ ing.display_name }}" loading="lazy">
+        {% else %}
+          <div class="cb-item-photo-empty">🍽</div>
+        {% endif %}
+        <div class="cb-item-body">
+          <div class="cb-item-name">{{ ing.display_name }}</div>
+          {% if ing.display_description %}<div class="cb-item-desc">{{ ing.display_description }}</div>{% endif %}
+          <div class="cb-item-price">{{ ing.display_price|floatformat:0 }} сом</div>
+        </div>
+      </div>
+      {% endif %}{% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{# ── Навигация ── #}
+<div class="cb-nav" id="cbNav">
+  <button class="cb-nav-btn cb-nav-prev" id="cbPrevBtn" onclick="goPrev()" style="display:none">← Назад</button>
+  <button class="cb-nav-btn cb-nav-next" id="cbNextBtn" onclick="goNext()">Дальше →</button>
+</div>
+
+{# ── Sticky footer ── #}
+<div class="cb-footer">
+  <div class="cb-footer-inner">
+    <div class="cb-error" id="cbError"></div>
+    <div class="cb-summary" id="cbSummary">
+      {% for g in groups %}
+      <div class="cb-summary-chip empty" id="cbChip{{ g.id }}">{{ g.name }}: —</div>
+      {% endfor %}
+    </div>
+    <div class="cb-footer-row">
+      <div class="cb-total" id="cbTotal">0 сом</div>
+      <button class="cb-add-btn" id="cbAddBtn" onclick="addToCart()">
+        В корзину 🧩
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="cb-toast" id="cbToast"></div>
+
+<script>
+const GROUPS = [
+  {% for g in groups %}
+  { id: {{ g.id }}, name: "{{ g.name|escapejs }}", min: {{ g.min_select }}, max: {{ g.max_select }} },
+  {% endfor %}
+];
+const TOTAL_GROUPS = GROUPS.length;
+let currentStep = 0;
+// selMap: {group_id: [{id, price, name}]}
+const selMap = {};
+GROUPS.forEach(g => selMap[g.id] = []);
+
+const ADD_URL = "{% url 'public_site:constructor_add_to_cart' branch.id %}";
+const MENU_URL = "{% url 'public_site:branch_menu' branch.id %}";
+const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+
+function switchGroup(idx) {
+  document.querySelectorAll('.cb-group').forEach((el, i) => el.classList.toggle('active', i === idx));
+  document.querySelectorAll('.cb-tab').forEach((el, i) => el.classList.toggle('active', i === idx));
+  document.getElementById('cbPrevBtn').style.display = idx === 0 ? 'none' : '';
+  const isLast = idx === TOTAL_GROUPS - 1;
+  document.getElementById('cbNextBtn').textContent = isLast ? 'Готово ✓' : 'Дальше →';
+  // scroll tab into view
+  const tab = document.querySelectorAll('.cb-tab')[idx];
+  tab?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  currentStep = idx;
+  document.getElementById('cbError').textContent = '';
+}
+
+function goNext() {
+  const g = GROUPS[currentStep];
+  const sel = selMap[g.id] || [];
+  if (g.min > 0 && sel.length < g.min) {
+    showError(`Выберите минимум ${g.min} в «${g.name}»`);
+    return;
+  }
+  if (currentStep < TOTAL_GROUPS - 1) {
+    switchGroup(currentStep + 1);
+  }
+}
+
+function goPrev() {
+  if (currentStep > 0) switchGroup(currentStep - 1);
+}
+
+function toggleItem(el, groupId, ingId, price, name, minSelect, maxSelect) {
+  const sel = selMap[groupId] || [];
+  const has = sel.some(s => s.id === ingId);
+  if (has) {
+    selMap[groupId] = sel.filter(s => s.id !== ingId);
+    el.classList.remove('selected');
+  } else if (maxSelect === 1) {
+    // radio
+    selMap[groupId] = [{ id: ingId, price, name }];
+    document.querySelectorAll(`.cb-item[data-group="${groupId}"]`).forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  } else if (maxSelect === 0 || sel.length < maxSelect) {
+    selMap[groupId] = [...sel, { id: ingId, price, name }];
+    el.classList.add('selected');
+  } else {
+    showToast(`Максимум ${maxSelect} в «${GROUPS.find(g=>g.id===groupId)?.name}»`);
+    return;
+  }
+  updateFooter();
+  document.getElementById('cbError').textContent = '';
+}
+
+function updateFooter() {
+  let total = 0;
+  GROUPS.forEach(g => {
+    const sel = selMap[g.id] || [];
+    const chip = document.getElementById(`cbChip${g.id}`);
+    if (sel.length) {
+      chip.classList.remove('empty');
+      chip.textContent = g.name + ': ' + sel.map(s => s.name).join(', ');
+      sel.forEach(s => total += Number(s.price));
+    } else {
+      chip.classList.add('empty');
+      chip.textContent = g.name + ': —';
+    }
+  });
+  document.getElementById('cbTotal').textContent = total + ' сом';
+}
+
+function showError(msg) {
+  document.getElementById('cbError').textContent = msg;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('cbToast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+async function addToCart() {
+  // проверить все обязательные группы
+  for (const g of GROUPS) {
+    if (g.min > 0 && (selMap[g.id] || []).length < g.min) {
+      // перейти на нужный шаг
+      const idx = GROUPS.indexOf(g);
+      switchGroup(idx);
+      showError(`Выберите минимум ${g.min} в «${g.name}»`);
+      return;
+    }
+  }
+
+  const btn = document.getElementById('cbAddBtn');
+  btn.disabled = true; btn.textContent = '...';
+
+  const selections = {};
+  GROUPS.forEach(g => {
+    selections[g.id] = (selMap[g.id] || []).map(s => s.id);
+  });
+
+  const fd = new FormData();
+  fd.append('cx_id', {{ cx.id }});
+  fd.append('selections', JSON.stringify(selections));
+
+  try {
+    const r = await fetch(ADD_URL, {
+      method: 'POST', body: fd,
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': CSRF() }
+    });
+    const d = await r.json();
+    if (d.ok) {
+      showToast('Добавлено в корзину ✓');
+      setTimeout(() => location.href = MENU_URL + '#cart', 1000);
+    } else {
+      showError(d.error || 'Ошибка');
+      btn.disabled = false; btn.textContent = 'В корзину 🧩';
+    }
+  } catch {
+    showError('Ошибка сети');
+    btn.disabled = false; btn.textContent = 'В корзину 🧩';
+  }
+}
+</script>
+</body>
+</html>

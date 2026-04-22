@@ -14,6 +14,7 @@ from core.models import Restaurant, Branch, Membership, PromoCode, PageView
 from catalog.models import (
     BranchItem, BranchCategory, BranchCategoryItem,
     Item, ItemCategory, Category, MenuSet, BranchMenuSet,
+    DishConstructor, ConstructorGroup, ConstructorIngredient,
 )
 from catalog.services import ensure_links_for_branch_item
 from reservations.models import Floor, Place
@@ -1203,12 +1204,27 @@ def pos_live_orders(request, branch_id):
             Order.Status.NEW, Order.Status.ACCEPTED,
             Order.Status.COOKING, Order.Status.READY,
         ])
-        .prefetch_related("items__item")
+        .prefetch_related("items__item", "constructor_items")
         .order_by("-created_at")
     )
 
     result = []
     for o in orders:
+        items = [
+            {"name": oi.item.name_ru, "qty": oi.qty, "line": str(oi.line_total)}
+            for oi in o.items.all()
+        ]
+        for ci in o.constructor_items.all():
+            ing_parts = []
+            for sel in (ci.ingredients_snapshot or []):
+                ing_names = ", ".join(i["name"] for i in sel.get("ings", []))
+                ing_parts.append(f"{sel['gname']}: {ing_names}")
+            detail = " · ".join(ing_parts)
+            items.append({
+                "name": f"🧩 {ci.constructor_name_snapshot}" + (f" ({detail})" if detail else ""),
+                "qty":  ci.qty,
+                "line": str(ci.line_total),
+            })
         result.append({
             "id":             o.id,
             "type":           o.type,
@@ -1223,14 +1239,7 @@ def pos_live_orders(request, branch_id):
             "payment_status": o.payment_status,
             "comment":        o.comment,
             "created":        o.created_at.strftime("%H:%M"),
-            "items": [
-                {
-                    "name": oi.item.name_ru,
-                    "qty":  oi.qty,
-                    "line": str(oi.line_total),
-                }
-                for oi in o.items.all()
-            ],
+            "items": items,
         })
 
     return JsonResponse({"ok": True, "orders": result})
@@ -1334,14 +1343,14 @@ def pos_report(request, branch_id):
         .order_by("created_at")
     )
 
-    # ── Aggregates ──
-    total_revenue  = orders.aggregate(s=Sum("total_amount"))["s"] or Decimal("0")
+    # ── Aggregates (без стоимости доставки — только позиции заказа) ──
+    from django.db.models import Sum as _Sum
+    total_revenue  = orders.aggregate(s=_Sum("items__line_total"))["s"] or Decimal("0")
     total_orders   = orders.count()
 
     # By payment method
-    from django.db.models import Sum as _Sum
-    pay_cash   = orders.filter(payment_method="cash").aggregate(s=_Sum("total_amount"))["s"] or Decimal("0")
-    pay_online = orders.filter(payment_method="online").aggregate(s=_Sum("total_amount"))["s"] or Decimal("0")
+    pay_cash   = orders.filter(payment_method="cash").aggregate(s=_Sum("items__line_total"))["s"] or Decimal("0")
+    pay_online = orders.filter(payment_method="online").aggregate(s=_Sum("items__line_total"))["s"] or Decimal("0")
 
     # By type
     type_stats = {}
@@ -1350,7 +1359,7 @@ def pos_report(request, branch_id):
         type_stats[t] = {
             "label": dict(Order.Type.choices).get(t, t),
             "count": qs.count(),
-            "revenue": qs.aggregate(s=_Sum("total_amount"))["s"] or Decimal("0"),
+            "revenue": qs.aggregate(s=_Sum("items__line_total"))["s"] or Decimal("0"),
         }
 
     # Top items
@@ -1369,7 +1378,7 @@ def pos_report(request, branch_id):
         orders
         .annotate(day=TruncDate("created_at"))
         .values("day")
-        .annotate(cnt=Count("id"), rev=_Sum("total_amount"))
+        .annotate(cnt=Count("id"), rev=_Sum("items__line_total"))
         .order_by("day")
     )
 
@@ -1385,3 +1394,151 @@ def pos_report(request, branch_id):
         "item_totals":   item_totals,
         "daily":         daily,
     })
+
+
+# ── КОНСТРУКТОР БЛЮД ──────────────────────────────────────────────────────────
+
+@login_required(login_url="dashboard:login")
+def constructor_list(request, branch_id):
+    from catalog.models import BranchItem
+    branch = get_object_or_404(Branch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:home")
+    constructors = branch.dish_constructors.prefetch_related(
+        "groups__ingredients__branch_item__item"
+    ).order_by("sort_order", "id")
+    branch_items = (
+        BranchItem.objects.select_related("item")
+        .filter(branch=branch, is_available=True)
+        .order_by("item__name_ru")
+    )
+    return render(request, "dashboard/constructor.html", {
+        "branch": branch,
+        "constructors": constructors,
+        "branch_items": branch_items,
+    })
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def constructor_add(request, branch_id):
+    branch = get_object_or_404(Branch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return JsonResponse({"ok": False}, status=403)
+    name       = request.POST.get("name", "").strip()
+    base_price = request.POST.get("base_price", "0").strip() or "0"
+    desc       = request.POST.get("description", "").strip()
+    if not name:
+        return JsonResponse({"ok": False, "error": "Введите название"})
+    from decimal import InvalidOperation
+    try:
+        bp = Decimal(base_price)
+    except InvalidOperation:
+        bp = Decimal("0")
+    cx = DishConstructor.objects.create(branch=branch, name=name, base_price=bp, description=desc)
+    return JsonResponse({"ok": True, "id": cx.id, "name": cx.name, "base_price": str(cx.base_price)})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def constructor_delete(request, cx_id):
+    cx = get_object_or_404(DishConstructor, id=cx_id)
+    if not _has_branch_access(request.user, cx.branch):
+        return JsonResponse({"ok": False}, status=403)
+    cx.delete()
+    return JsonResponse({"ok": True})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def constructor_toggle(request, cx_id):
+    cx = get_object_or_404(DishConstructor, id=cx_id)
+    if not _has_branch_access(request.user, cx.branch):
+        return JsonResponse({"ok": False}, status=403)
+    cx.is_active = not cx.is_active
+    cx.save(update_fields=["is_active"])
+    return JsonResponse({"ok": True, "is_active": cx.is_active})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def constructor_group_add(request, cx_id):
+    cx = get_object_or_404(DishConstructor, id=cx_id)
+    if not _has_branch_access(request.user, cx.branch):
+        return JsonResponse({"ok": False}, status=403)
+    name       = request.POST.get("name", "").strip()
+    min_select = int(request.POST.get("min_select", 1) or 1)
+    max_select = int(request.POST.get("max_select", 1) or 1)
+    if not name:
+        return JsonResponse({"ok": False, "error": "Введите название группы"})
+    g = ConstructorGroup.objects.create(constructor=cx, name=name, min_select=min_select, max_select=max_select)
+    return JsonResponse({"ok": True, "id": g.id, "name": g.name, "min_select": g.min_select, "max_select": g.max_select})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def constructor_group_delete(request, group_id):
+    g = get_object_or_404(ConstructorGroup, id=group_id)
+    if not _has_branch_access(request.user, g.constructor.branch):
+        return JsonResponse({"ok": False}, status=403)
+    g.delete()
+    return JsonResponse({"ok": True})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def constructor_ingredient_add(request, group_id):
+    g = get_object_or_404(ConstructorGroup, id=group_id)
+    if not _has_branch_access(request.user, g.constructor.branch):
+        return JsonResponse({"ok": False}, status=403)
+    name  = request.POST.get("name", "").strip()
+    desc  = request.POST.get("description", "").strip()
+    price_raw = request.POST.get("price", "0").strip() or "0"
+    if not name:
+        return JsonResponse({"ok": False, "error": "Введите название"})
+    from decimal import InvalidOperation
+    try:
+        price = Decimal(price_raw)
+    except InvalidOperation:
+        price = Decimal("0")
+    photo = request.FILES.get("photo")
+    ing = ConstructorIngredient(group=g, name=name, description=desc, price=price)
+    if photo:
+        ing.photo = photo
+    ing.save()
+    return JsonResponse({"ok": True, "id": ing.id, "name": ing.name, "description": ing.description,
+                         "price": str(ing.price), "photo_url": ing.photo.url if ing.photo else ""})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def constructor_ingredient_from_menu(request, group_id):
+    """Добавить позицию в категорию конструктора из существующего блюда меню."""
+    from catalog.models import BranchItem
+    g = get_object_or_404(ConstructorGroup, id=group_id)
+    if not _has_branch_access(request.user, g.constructor.branch):
+        return JsonResponse({"ok": False}, status=403)
+    bi_id = request.POST.get("branch_item_id")
+    bi = get_object_or_404(BranchItem, id=bi_id, branch=g.constructor.branch)
+    # Не добавлять дублей
+    if ConstructorIngredient.objects.filter(group=g, branch_item=bi).exists():
+        return JsonResponse({"ok": False, "error": "Уже добавлено"})
+    ing = ConstructorIngredient.objects.create(group=g, branch_item=bi)
+    return JsonResponse({
+        "ok": True,
+        "id": ing.id,
+        "name": ing.display_name,
+        "description": ing.display_description,
+        "price": str(ing.display_price),
+        "photo_url": ing.display_photo_url,
+    })
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def constructor_ingredient_delete(request, ing_id):
+    ing = get_object_or_404(ConstructorIngredient, id=ing_id)
+    if not _has_branch_access(request.user, ing.group.constructor.branch):
+        return JsonResponse({"ok": False}, status=403)
+    ing.delete()
+    return JsonResponse({"ok": True})

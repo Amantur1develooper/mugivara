@@ -407,6 +407,7 @@ def _calc_delivery(branch, subtotal: Decimal) -> Decimal:
 def _build_branch_menu_context(request, branch):
     """Shared logic for branch menu views."""
     from django.db.models import Prefetch
+    from catalog.models import DishConstructor
     rows_prefetch = Prefetch(
         "items_in_category",
         queryset=BranchCategoryItem.objects
@@ -426,9 +427,32 @@ def _build_branch_menu_context(request, branch):
         if bc.prefetched_items:
             menu.append({"branch_category": bc, "items": bc.prefetched_items})
 
+    # Конструкторы — только если есть активные с ингредиентами
+    constructors_qs = (
+        DishConstructor.objects
+        .filter(branch=branch, is_active=True)
+        .prefetch_related("groups__ingredients")
+        .order_by("sort_order", "id")
+    )
+    constructors = [
+        cx for cx in constructors_qs
+        if any(g.ingredients.filter(is_active=True).exists() for g in cx.groups.all())
+    ]
+
     cart = get_cart(request, branch.id)
-    _, total, qty_total = cart_details(branch, cart)
-    return {"branch": branch, "menu": menu, "cart_qty": qty_total, "cart_total": total}
+    _, subtotal, qty_total = cart_details(branch, cart)
+
+    cx_cart = _get_branch_cx_cart(request, branch.id)
+    cx_total = sum(Decimal(str(item["unit_price"])) * int(item["qty"]) for item in cx_cart)
+    cx_qty = sum(int(item["qty"]) for item in cx_cart)
+
+    return {
+        "branch": branch,
+        "menu": menu,
+        "constructors": constructors,
+        "cart_qty": qty_total + cx_qty,
+        "cart_total": subtotal + cx_total,
+    }
 
 
 def branch_menu(request, branch_id: int):
@@ -455,9 +479,6 @@ def cart_json(request, branch_id: int):
     branch = get_object_or_404(Branch, id=branch_id, is_active=True)
     cart = get_cart(request, branch.id)
     rows, subtotal, qty_total = cart_details(branch, cart)
-    delivery_fee = _calc_delivery(branch, subtotal)
-    total = subtotal + delivery_fee
-    free_from = branch.free_delivery_from or Decimal("0")
 
     from django.urls import reverse
     items = []
@@ -471,14 +492,45 @@ def cart_json(request, branch_id: int):
             "line_total":  str(r["line_total"]),
             "update_url":  reverse("public_site:cart_update", args=[branch_id, bi.id]),
         })
+
+    # Позиции из конструктора
+    cx_cart = _get_branch_cx_cart(request, branch_id)
+    cx_items = []
+    cx_total = Decimal("0")
+    cx_qty = 0
+    for item in cx_cart:
+        unit = Decimal(str(item["unit_price"]))
+        qty  = int(item["qty"])
+        line = unit * qty
+        cx_total += line
+        cx_qty   += qty
+        detail = " · ".join(
+            f"{s['gname']}: {', '.join(i['name'] for i in s.get('ings', []))}"
+            for s in item.get("selections", [])
+        )
+        cx_items.append({
+            "cx_idx":    item["idx"],
+            "name":      item["cx_name"],
+            "detail":    detail,
+            "price":     str(unit),
+            "qty":       qty,
+            "line_total": str(line),
+        })
+
+    total_subtotal = subtotal + cx_total
+    delivery_fee = _calc_delivery(branch, total_subtotal)
+    total = total_subtotal + delivery_fee
+    free_from = branch.free_delivery_from or Decimal("0")
+
     return JsonResponse({
         "ok":               True,
         "items":            items,
-        "subtotal":         str(subtotal),
+        "cx_items":         cx_items,
+        "subtotal":         str(total_subtotal),
         "delivery_fee":     str(delivery_fee),
         "delivery_enabled": branch.delivery_enabled,
         "total":            str(total),
-        "qty_total":        qty_total,
+        "qty_total":        qty_total + cx_qty,
         "min_order_amount": str(branch.min_order_amount),
         "free_from":        str(free_from),
         "free_delivery_reached": delivery_fee == 0 and free_from > 0 and branch.delivery_enabled,
@@ -595,11 +647,15 @@ from .cart import get_cart, cart_details, clear_cart
 @require_POST
 def checkout(request, branch_id: int):
     from django.db import transaction as db_transaction
+    from catalog.models import DishConstructor
+    from orders.models import ConstructorOrderItem
     branch = get_object_or_404(Branch, id=branch_id, is_active=True)
     cart = get_cart(request, branch.id)
     rows, subtotal, qty_total = cart_details(branch, cart)
+    cx_cart = _get_branch_cx_cart(request, branch_id)
+    cx_qty = sum(int(x["qty"]) for x in cx_cart)
 
-    if qty_total == 0:
+    if qty_total == 0 and cx_qty == 0:
         messages.error(request, _("Корзина пуста."))
         return redirect("public_site:cart_detail", branch_id=branch.id)
 
@@ -623,8 +679,12 @@ def checkout(request, branch_id: int):
     # если у филиала есть доставка — считаем как доставка, иначе самовывоз
     order_type = Order.Type.DELIVERY if branch.delivery_enabled else Order.Type.PICKUP
 
+    # полный подытог = обычные блюда + конструктор
+    cx_subtotal = sum(Decimal(str(x["unit_price"])) * int(x["qty"]) for x in cx_cart)
+    full_subtotal = subtotal + cx_subtotal
+
     # проверка минималки только для доставки
-    if order_type == Order.Type.DELIVERY and subtotal < branch.min_order_amount:
+    if order_type == Order.Type.DELIVERY and full_subtotal < branch.min_order_amount:
         messages.error(
             request,
             _("Минимальная сумма заказа для доставки: %(min)s") % {"min": branch.min_order_amount}
@@ -633,7 +693,7 @@ def checkout(request, branch_id: int):
 
     if order_type == Order.Type.DELIVERY:
         free_from = branch.free_delivery_from or Decimal("0")
-        if free_from > 0 and subtotal >= free_from:
+        if free_from > 0 and full_subtotal >= free_from:
             delivery_fee = Decimal("0")
         else:
             delivery_fee = branch.delivery_fee
@@ -655,20 +715,19 @@ def checkout(request, branch_id: int):
                     delivery_fee = Decimal("0")
                     promo_msg_line = f"Промокод {promo.code}: бесплатная доставка"
                 elif promo.discount_type == PromoCode.DiscountType.PERCENT:
-                    promo_discount = (subtotal * promo.discount_value / Decimal("100")).quantize(Decimal("1"))
+                    promo_discount = (full_subtotal * promo.discount_value / Decimal("100")).quantize(Decimal("1"))
                     promo_msg_line = f"Промокод {promo.code}: −{promo.discount_value}% (−{promo_discount} сом)"
                 elif promo.discount_type == PromoCode.DiscountType.FIXED:
-                    promo_discount = min(promo.discount_value, subtotal)
+                    promo_discount = min(promo.discount_value, full_subtotal)
                     promo_msg_line = f"Промокод {promo.code}: −{promo_discount} сом"
             else:
                 promo = None
         except PromoCode.DoesNotExist:
             promo = None
 
-    total = subtotal - promo_discount + delivery_fee
+    total = full_subtotal - promo_discount + delivery_fee
 
-    # Весь блок — одна транзакция, чтобы on_commit (TG-уведомление)
-    # сработал уже после того как все OrderItem-ы сохранены.
+    # Весь блок — одна транзакция
     with db_transaction.atomic():
         order = Order.objects.create(
             branch=branch,
@@ -690,26 +749,48 @@ def checkout(request, branch_id: int):
         if promo:
             PromoCode.objects.filter(pk=promo.pk).update(used_count=F("used_count") + 1)
 
-        # сохраняем позиции
+        # сохраняем обычные позиции
         lines = []
         for i, r in enumerate(rows, start=1):
             bi = r["branch_item"]
             qty = r["qty"]
             line_total = bi.price * qty
-
             OrderItem.objects.create(
                 order=order,
                 item=bi.item,
                 qty=qty,
                 price_snapshot=bi.price,
-                line_total=line_total
+                line_total=line_total,
             )
-
             item_name = getattr(bi.item, "name_ru", None) or str(bi.item)
             lines.append(f"{i}) {item_name} × {qty} = {line_total} сом")
 
-    # очищаем корзину (после коммита транзакции)
+        # сохраняем позиции конструктора
+        for cx_item in cx_cart:
+            qty = int(cx_item["qty"])
+            unit_price = Decimal(str(cx_item["unit_price"]))
+            line_total = unit_price * qty
+            cx_obj = DishConstructor.objects.filter(id=cx_item["cx_id"]).first()
+            if cx_obj:
+                ConstructorOrderItem.objects.create(
+                    order=order,
+                    constructor=cx_obj,
+                    constructor_name_snapshot=cx_item["cx_name"],
+                    qty=qty,
+                    unit_price=unit_price,
+                    line_total=line_total,
+                    ingredients_snapshot=cx_item.get("selections", []),
+                )
+            detail = " · ".join(
+                f"{s['gname']}: {', '.join(i['name'] for i in s.get('ings', []))}"
+                for s in cx_item.get("selections", [])
+            )
+            n = len(lines) + 1
+            lines.append(f"{n}) 🧩 {cx_item['cx_name']}{(' ('+detail+')') if detail else ''} × {qty} = {line_total} сом")
+
+    # очищаем обе корзины
     clear_cart(request, branch.id)
+    _save_branch_cx_cart(request, branch_id, [])
 
     # готовим сообщение
     type_text = "Доставка" if order_type == Order.Type.DELIVERY else "Самовывоз"
@@ -725,7 +806,7 @@ def checkout(request, branch_id: int):
         msg += f"Комментарий: {comment}\n"
 
     msg += "\nСостав:\n" + "\n".join(lines) + "\n"
-    msg += f"\nПодытог: {subtotal} сом"
+    msg += f"\nПодытог: {full_subtotal} сом"
     if promo_msg_line:
         msg += f"\n{promo_msg_line}"
     if order_type == Order.Type.DELIVERY:
@@ -981,4 +1062,160 @@ def banner_click(request, banner_id: int):
     if banner.link_url:
         return HttpResponseRedirect(banner.link_url)
     return HttpResponseRedirect("/")
+
+
+# ── КОНСТРУКТОР БЛЮД (ветка branch_menu) ──────────────────────────────────────
+
+def _cx_cart_key(branch_id: int) -> str:
+    return f"cx_cart_{branch_id}"
+
+
+def _get_branch_cx_cart(request, branch_id: int) -> list:
+    return request.session.get(_cx_cart_key(branch_id), [])
+
+
+def _save_branch_cx_cart(request, branch_id: int, cart: list):
+    request.session[_cx_cart_key(branch_id)] = cart
+    request.session.modified = True
+
+
+@require_POST
+def constructor_cx_update(request, branch_id: int):
+    """Inc/dec/remove constructor cart item for branch menu."""
+    idx    = int(request.POST.get("idx") or -1)
+    action = (request.POST.get("action") or "").strip()
+
+    cart = _get_branch_cx_cart(request, branch_id)
+    item = next((x for x in cart if x["idx"] == idx), None)
+    if not item:
+        return JsonResponse({"ok": False}, status=404)
+
+    unit_price = Decimal(str(item["unit_price"]))
+    if action == "inc":
+        item["qty"] = int(item["qty"]) + 1
+    elif action == "dec":
+        item["qty"] = int(item["qty"]) - 1
+    elif action == "remove":
+        item["qty"] = 0
+
+    new_qty = int(item["qty"])
+    if new_qty <= 0:
+        cart = [x for x in cart if x["idx"] != idx]
+        new_line = Decimal("0")
+        new_qty  = 0
+    else:
+        new_line = unit_price * new_qty
+        item["line_total"] = str(new_line)
+
+    _save_branch_cx_cart(request, branch_id, cart)
+
+    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    reg_cart = get_cart(request, branch_id)
+    _, reg_subtotal, reg_qty = cart_details(branch, reg_cart)
+    cx_total = sum(Decimal(str(x["unit_price"])) * int(x["qty"]) for x in cart)
+    cx_qty   = sum(int(x["qty"]) for x in cart)
+
+    total_sub = reg_subtotal + cx_total
+    delivery  = _calc_delivery(branch, total_sub)
+
+    return JsonResponse({
+        "ok":        True,
+        "item_qty":  new_qty,
+        "line_total": str(new_line),
+        "subtotal":  str(total_sub),
+        "total":     str(total_sub + delivery),
+        "qty_total": reg_qty + cx_qty,
+    })
+
+
+@require_POST
+def constructor_add_to_cart(request, branch_id: int):
+    import json
+    from catalog.models import DishConstructor
+
+    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    cx_id = request.POST.get("cx_id")
+    cx = get_object_or_404(DishConstructor, id=cx_id, branch=branch, is_active=True)
+
+    try:
+        selections_raw = json.loads(request.POST.get("selections", "{}"))
+    except Exception:
+        return JsonResponse({"ok": False, "error": "Неверные данные"}, status=400)
+
+    groups = cx.groups.prefetch_related("ingredients").order_by("sort_order", "id")
+    selections = []
+    total_price = Decimal("0")
+
+    for g in groups:
+        chosen_ids = selections_raw.get(str(g.id), [])
+        if not isinstance(chosen_ids, list):
+            chosen_ids = [chosen_ids]
+        chosen_ids = [int(i) for i in chosen_ids if i]
+
+        if g.min_select and len(chosen_ids) < g.min_select:
+            return JsonResponse({"ok": False, "error": f"Выберите минимум {g.min_select} в «{g.name}»"}, status=400)
+        if g.max_select > 0 and len(chosen_ids) > g.max_select:
+            return JsonResponse({"ok": False, "error": f"Максимум {g.max_select} в «{g.name}»"}, status=400)
+
+        ings_data = []
+        for ing in g.ingredients.select_related("branch_item__item").filter(is_active=True, id__in=chosen_ids):
+            ings_data.append({"id": ing.id, "name": ing.display_name, "price": str(ing.display_price)})
+            total_price += ing.display_price
+
+        if ings_data:
+            selections.append({"gid": g.id, "gname": g.name, "ings": ings_data})
+
+    unit_price = total_price
+
+    cart = _get_branch_cx_cart(request, branch_id)
+    idx = max((item["idx"] for item in cart), default=-1) + 1
+    cart.append({
+        "idx": idx,
+        "cx_id": cx.id,
+        "cx_name": cx.name,
+        "base_price": str(cx.base_price),
+        "selections": selections,
+        "unit_price": str(unit_price),
+        "qty": 1,
+        "line_total": str(unit_price),
+    })
+    _save_branch_cx_cart(request, branch_id, cart)
+
+    return JsonResponse({"ok": True})
+
+
+@require_POST
+def constructor_remove_from_cart(request, branch_id: int, cx_index: int):
+    cart = _get_branch_cx_cart(request, branch_id)
+    cart = [item for item in cart if item["idx"] != cx_index]
+    _save_branch_cx_cart(request, branch_id, cart)
+    return JsonResponse({"ok": True})
+
+
+def constructor_build_page(request, branch_id: int, cx_id: int):
+    """Отдельная страница для сборки блюда покупателем."""
+    from catalog.models import DishConstructor
+    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    cx = get_object_or_404(DishConstructor, id=cx_id, branch=branch, is_active=True)
+    groups = list(
+        cx.groups.prefetch_related("ingredients__branch_item__item")
+                 .order_by("sort_order", "id")
+    )
+    # фильтруем группы без активных позиций
+    groups = [g for g in groups if g.ingredients.filter(is_active=True).exists()]
+
+    cx_cart   = _get_branch_cx_cart(request, branch_id)
+    reg_cart  = get_cart(request, branch_id)
+    _, reg_sub, reg_qty = cart_details(branch, reg_cart)
+    cx_total  = sum(Decimal(str(i["unit_price"])) * int(i["qty"]) for i in cx_cart)
+    cx_qty    = sum(int(i["qty"]) for i in cx_cart)
+
+    return render(request, "public_site/constructor_build.html", {
+        "branch": branch,
+        "cx": cx,
+        "groups": groups,
+        "cart_qty":   reg_qty + cx_qty,
+        "cart_total": reg_sub + cx_total,
+        "add_url": f"/{ branch_id }/constructor/add/",
+    })
 

@@ -4,7 +4,7 @@ from reservations.models import Place
 from django.db import models
 from core.models import Branch, TimeStampedModel
 from tables.models import TableSession
-from catalog.models import Item
+from catalog.models import Item, DishConstructor
 
 class Order(TimeStampedModel):
     class Type(models.TextChoices):
@@ -65,5 +65,21 @@ class OrderItem(TimeStampedModel):
     price_snapshot = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     line_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+
+class ConstructorOrderItem(TimeStampedModel):
+    """Позиция заказа из конструктора блюд (собери сам)."""
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="constructor_items")
+    constructor = models.ForeignKey(DishConstructor, on_delete=models.PROTECT)
+    constructor_name_snapshot = models.CharField(max_length=200)
+    qty = models.PositiveIntegerField(default=1)
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    line_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    # [{group_name, ings: [{name, extra_price}]}]
+    ingredients_snapshot = models.JSONField(default=list)
+
+    class Meta:
+        verbose_name = "Позиция заказа (конструктор)"
+        verbose_name_plural = "Позиции заказа (конструктор)"
 
 

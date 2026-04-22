@@ -247,6 +247,106 @@
     background: var(--bg); color: var(--text2); font-size: 14px; font-weight: 600;
     cursor: pointer; margin-top: 8px; font-family: inherit;
   }
+
+  /* ── CONSTRUCTOR CARDS ── */
+  .tm-cx-card {
+    background: linear-gradient(135deg, #FFF8F5, #FFE8D8);
+    border: 2px solid rgba(255,77,28,.18); border-radius: 18px; overflow: hidden;
+    display: flex; flex-direction: column;
+    transition: transform .22s, box-shadow .22s;
+    box-shadow: 0 2px 10px rgba(255,77,28,.08);
+    cursor: pointer; position: relative;
+  }
+  .tm-cx-card:hover { transform: translateY(-4px); box-shadow: 0 14px 36px rgba(255,77,28,.15); }
+  .tm-cx-photo { position: relative; height: 140px; background: linear-gradient(145deg, #FFF8F5, #FFE8D8); overflow: hidden; }
+  .tm-cx-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s; }
+  .tm-cx-card:hover .tm-cx-photo img { transform: scale(1.06); }
+  .tm-cx-photo-empty {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    font-size: 42px; opacity: .5;
+  }
+  .tm-cx-badge {
+    position: absolute; top: 8px; left: 8px;
+    padding: 3px 9px; border-radius: 100px; font-size: 10px; font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white;
+  }
+  .tm-cx-price-badge {
+    position: absolute; bottom: 8px; right: 8px;
+    padding: 4px 10px; border-radius: 100px;
+    font-family: 'Unbounded', sans-serif; font-size: 12px; font-weight: 800;
+    background: rgba(0,0,0,.55); backdrop-filter: blur(6px);
+    color: white; border: 1px solid rgba(255,255,255,.15);
+  }
+  .tm-cx-body { padding: 12px 12px 14px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .tm-cx-name { font-family: 'Unbounded', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: -.2px; color: var(--text); line-height: 1.3; }
+  .tm-cx-desc { font-size: 11px; color: var(--muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .tm-cx-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 9px 14px; border-radius: 12px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white; font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 700;
+    box-shadow: 0 3px 10px var(--glow); transition: transform .18s; margin-top: auto;
+  }
+  .tm-cx-btn:hover { transform: scale(1.04); }
+
+  /* ── CONSTRUCTOR MODAL ── */
+  .tm-cx-modal-bg {
+    position: fixed; inset: 0; z-index: 10001;
+    background: rgba(0,0,0,.5); backdrop-filter: blur(4px);
+    display: flex; align-items: flex-end; justify-content: center; padding: 0;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .tm-cx-modal-bg.open { opacity: 1; pointer-events: auto; }
+  .tm-cx-modal {
+    background: var(--card); border-radius: 24px 24px 0 0;
+    padding: 0 0 0; width: 100%; max-width: 520px;
+    transform: translateY(100%); transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+    box-shadow: 0 -20px 60px rgba(0,0,0,.25); max-height: 92vh; display: flex; flex-direction: column;
+  }
+  .tm-cx-modal-bg.open .tm-cx-modal { transform: translateY(0); }
+  .tm-cx-modal-head {
+    padding: 16px 20px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .tm-cx-modal-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 14px; }
+  .tm-cx-modal-title { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 17px; color: var(--text); }
+  .tm-cx-modal-price { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .tm-cx-modal-body { overflow-y: auto; padding: 16px 20px; flex: 1; }
+  .tm-cx-modal-foot { padding: 14px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
+
+  /* Groups inside modal */
+  .cx-group-block { margin-bottom: 24px; }
+  .cx-group-title {
+    font-family: 'Unbounded', sans-serif; font-weight: 700; font-size: 13px; color: var(--text);
+    margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+  }
+  .cx-group-badge { font-family: inherit; font-size: 10px; font-weight: 600; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 100px; padding: 2px 8px; }
+  .cx-ing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+  .cx-ing-card { border: 2px solid var(--border); border-radius: 14px; overflow: hidden; cursor: pointer; transition: all .18s; user-select: none; position: relative; background: var(--bg); }
+  .cx-ing-card:hover { border-color: var(--accent); }
+  .cx-ing-card.selected { border-color: var(--accent); background: rgba(255,77,28,.05); }
+  .cx-ing-card-check { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 7px; border: 2px solid var(--border); background: var(--card); display: flex; align-items: center; justify-content: center; font-size: 12px; color: transparent; transition: all .15s; }
+  .cx-ing-card.selected .cx-ing-card-check { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .cx-ing-card-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
+  .cx-ing-card-img-placeholder { width: 100%; aspect-ratio: 4/3; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 28px; }
+  .cx-ing-card-body { padding: 8px 10px; }
+  .cx-ing-card-name { font-size: 12px; font-weight: 700; color: var(--text); line-height: 1.3; margin-bottom: 2px; }
+  .cx-ing-card-desc { font-size: 11px; color: var(--muted); line-height: 1.4; margin-bottom: 4px; }
+  .cx-ing-card-price { font-size: 13px; font-weight: 800; color: var(--accent); }
+
+  /* Total + add button */
+  .tm-cx-total-row { display: flex; align-items: center; gap: 12px; }
+  .tm-cx-total-label { flex: 1; font-size: 12px; color: var(--muted); }
+  .tm-cx-total-val { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 18px; color: var(--text); }
+  .tm-cx-add-btn {
+    width: 100%; padding: 14px; border-radius: 14px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white; font-family: 'Unbounded', sans-serif; font-size: 14px; font-weight: 700;
+    box-shadow: 0 6px 20px rgba(255,77,28,.3); transition: transform .15s, box-shadow .15s;
+    margin-top: 12px;
+  }
+  .tm-cx-add-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(255,77,28,.4); }
+  .tm-cx-add-btn:disabled { opacity: .6; pointer-events: none; }
+  .tm-cx-error { font-size: 12px; color: #EF4444; margin-top: 8px; text-align: center; min-height: 18px; }
 </style>
 {% endblock %}
 
@@ -288,6 +388,9 @@
       </button>
       {% endif %}
     {% endfor %}
+    {% if constructors %}
+    <button class="tm-cat-pill" data-cat="constructors" type="button">🧩 Собери сам</button>
+    {% endif %}
   </div>
 </div>
 
@@ -340,7 +443,238 @@
     </div>
     {% endif %}
   {% endfor %}
+
+  {# ── CONSTRUCTOR SECTION — показываем только если есть активные конструкторы ── #}
+  {% if constructors %}
+  <div class="tm-cat-section" id="cat-constructors">
+    <div class="tm-cat-header">
+      <div class="tm-cat-title">🧩 Собери сам</div>
+      <div class="tm-cat-line"></div>
+      <div class="tm-cat-count">{{ constructors|length }}</div>
+    </div>
+    <div class="tm-grid">
+      {% for cx in constructors %}
+      <div class="tm-cx-card" onclick="openCxModal({{ cx.id }})">
+        <div class="tm-cx-photo">
+          {% if cx.photo %}
+            <img src="{{ cx.photo.url }}" alt="{{ cx.name }}" loading="lazy">
+          {% else %}
+            <div class="tm-cx-photo-empty">🧩</div>
+          {% endif %}
+          <div class="tm-cx-badge">Собери сам</div>
+        </div>
+        <div class="tm-cx-body">
+          <div class="tm-cx-name">{{ cx.name }}</div>
+          {% if cx.description %}<div class="tm-cx-desc">{{ cx.description }}</div>{% endif %}
+          <button class="tm-cx-btn" type="button">🧩 Собрать</button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 </div>
+
+<!-- ── CONSTRUCTOR MODAL ── -->
+{% if constructors %}
+<div class="tm-cx-modal-bg" id="cxModalBg">
+  <div class="tm-cx-modal" id="cxModal">
+    <div class="tm-cx-modal-head">
+      <div class="tm-cx-modal-handle"></div>
+      <div class="tm-cx-modal-title" id="cxModalTitle">Собери сам</div>
+      <div class="tm-cx-modal-price" id="cxModalPriceLine">от 0 сом</div>
+    </div>
+    <div class="tm-cx-modal-body" id="cxModalBody">
+      <!-- groups rendered by JS -->
+    </div>
+    <div class="tm-cx-modal-foot">
+      <div class="tm-cx-total-row">
+        <div class="tm-cx-total-label">Итого:</div>
+        <div class="tm-cx-total-val" id="cxTotal">0 сом</div>
+      </div>
+      <div class="tm-cx-error" id="cxError"></div>
+      <button class="tm-cx-add-btn" id="cxAddBtn" type="button">🧩 Добавить в заказ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Constructor data from server
+const CX_DATA = {
+  {% for cx in constructors %}
+  {{ cx.id }}: {
+    id: {{ cx.id }},
+    name: "{{ cx.name|escapejs }}",
+    groups: [
+      {% for g in cx.groups.all %}
+      {
+        id: {{ g.id }},
+        name: "{{ g.name|escapejs }}",
+        min_select: {{ g.min_select }},
+        max_select: {{ g.max_select }},
+        ingredients: [
+          {% for ing in g.ingredients.all %}{% if ing.is_active %}
+          { id: {{ ing.id }}, name: "{{ ing.display_name|escapejs }}", description: "{{ ing.display_description|escapejs }}", price: {{ ing.display_price }}, photo: "{{ ing.display_photo_url }}" },
+          {% endif %}{% endfor %}
+        ]
+      },
+      {% endfor %}
+    ]
+  },
+  {% endfor %}
+};
+
+const ADD_CX_URL = "{% url 'public_site:table_add_constructor' token 0 %}".replace("/0/", "/{id}/");
+const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+
+let currentCxId = null;
+let selectedMap = {};  // {group_id: [ing_id, ...]}
+
+function openCxModal(cxId) {
+  const cx = CX_DATA[cxId];
+  if (!cx) return;
+
+  currentCxId = cxId;
+  selectedMap = {};
+
+  document.getElementById("cxModalTitle").textContent = cx.name;
+  renderCxGroups(cx);
+  updateCxTotal(cx);
+
+  document.getElementById("cxError").textContent = "";
+  document.getElementById("cxModalBg").classList.add("open");
+  document.getElementById("cxModal").scrollTop = 0;
+}
+
+function closeCxModal() {
+  document.getElementById("cxModalBg").classList.remove("open");
+  currentCxId = null;
+  selectedMap = {};
+}
+
+function renderCxGroups(cx) {
+  const body = document.getElementById("cxModalBody");
+  body.innerHTML = "";
+
+  for (const g of cx.groups) {
+    const hint = g.min_select > 0 ? `Обязательно: мин ${g.min_select}` : "Необязательно";
+    const block = document.createElement("div");
+    block.className = "cx-group-block";
+    block.innerHTML = `
+      <div class="cx-group-title">${g.name} <span class="cx-group-badge">${hint}</span></div>
+      <div class="cx-ing-grid" id="cxg-ings-${g.id}"></div>
+    `;
+    body.appendChild(block);
+
+    const grid = block.querySelector(`#cxg-ings-${g.id}`);
+    selectedMap[g.id] = [];
+    for (const ing of g.ingredients) {
+      const card = document.createElement("div");
+      card.className = "cx-ing-card";
+      card.dataset.gid = g.id;
+      card.dataset.ingId = ing.id;
+      card.innerHTML = `
+        <div class="cx-ing-card-check">✓</div>
+        ${ing.photo
+          ? `<img class="cx-ing-card-img" src="${ing.photo}" alt="${ing.name}" loading="lazy">`
+          : `<div class="cx-ing-card-img-placeholder">🍽</div>`}
+        <div class="cx-ing-card-body">
+          <div class="cx-ing-card-name">${ing.name}</div>
+          ${ing.description ? `<div class="cx-ing-card-desc">${ing.description}</div>` : ""}
+          <div class="cx-ing-card-price">${ing.price} сом</div>
+        </div>
+      `;
+      card.addEventListener("click", () => toggleIngredient(card, g, ing.id));
+      grid.appendChild(card);
+    }
+  }
+}
+
+function toggleIngredient(card, group, ingId) {
+  const gid = group.id;
+  const selected = selectedMap[gid] || [];
+  const alreadySelected = selected.includes(ingId);
+
+  if (alreadySelected) {
+    selectedMap[gid] = selected.filter(id => id !== ingId);
+    card.classList.remove("selected");
+  } else if (group.max_select === 1) {
+    selectedMap[gid] = [ingId];
+    document.querySelectorAll(`.cx-ing-card[data-gid="${gid}"]`).forEach(c => c.classList.remove("selected"));
+    card.classList.add("selected");
+  } else if (group.max_select === 0 || selected.length < group.max_select) {
+    selectedMap[gid] = [...selected, ingId];
+    card.classList.add("selected");
+  } else {
+    toast(`Максимум ${group.max_select} в «${group.name}»`, "#F59E0B");
+    return;
+  }
+
+  updateCxTotal(CX_DATA[currentCxId]);
+}
+
+function updateCxTotal(cx) {
+  let total = 0;
+  for (const g of cx.groups) {
+    for (const ing of g.ingredients) {
+      if ((selectedMap[g.id] || []).includes(ing.id)) total += Number(ing.price);
+    }
+  }
+  document.getElementById("cxTotal").textContent = total + " сом";
+  document.getElementById("cxModalPriceLine").textContent = "Выберите позиции";
+}
+
+document.getElementById("cxAddBtn").addEventListener("click", async () => {
+  if (!currentCxId) return;
+  const cx = CX_DATA[currentCxId];
+  const errEl = document.getElementById("cxError");
+  errEl.textContent = "";
+
+  // Validate
+  for (const g of cx.groups) {
+    const chosen = selectedMap[g.id] || [];
+    if (g.min_select > 0 && chosen.length < g.min_select) {
+      errEl.textContent = `Выберите минимум ${g.min_select} в «${g.name}»`;
+      return;
+    }
+  }
+
+  const btn = document.getElementById("cxAddBtn");
+  btn.disabled = true;
+  btn.textContent = "Добавляю...";
+
+  try {
+    const fd = new FormData();
+    fd.append("selections", JSON.stringify(selectedMap));
+
+    const url = ADD_CX_URL.replace("{id}", currentCxId);
+    const r = await fetch(url, {
+      method: "POST", body: fd,
+      headers: { "X-CSRFToken": CSRF() }
+    });
+    const d = await r.json();
+
+    if (!d.ok) {
+      errEl.textContent = d.error || "Ошибка";
+      return;
+    }
+
+    updateFab(d.qty, Math.round(d.total));
+    closeCxModal();
+    toast("🧩 Добавлено в заказ!");
+  } catch {
+    errEl.textContent = "Ошибка, попробуйте ещё";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "🧩 Добавить в заказ";
+  }
+});
+
+document.getElementById("cxModalBg").addEventListener("click", e => {
+  if (e.target === document.getElementById("cxModalBg")) closeCxModal();
+});
+</script>
+{% endif %}
 
 <!-- ── FLOATING CART FAB ── -->
 <a href="{% url 'public_site:table_cart' token %}" class="tm-fab hide" id="cartFab">

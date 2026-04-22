@@ -60,6 +60,17 @@ urlpatterns = [
     path("pos/<int:branch_id>/inventory/",    views.pos_inventory,     name="pos_inventory"),
     path("pos/<int:branch_id>/report/",       views.pos_report,        name="pos_report"),
 
+    # ── КОНСТРУКТОР БЛЮД ────────────────────────────────────────────────────
+    path("branch/<int:branch_id>/constructor/",                  views.constructor_list,             name="constructor_list"),
+    path("branch/<int:branch_id>/constructor/add/",              views.constructor_add,              name="constructor_add"),
+    path("constructor/<int:cx_id>/delete/",                      views.constructor_delete,           name="constructor_delete"),
+    path("constructor/<int:cx_id>/toggle/",                      views.constructor_toggle,           name="constructor_toggle"),
+    path("constructor/<int:cx_id>/group/add/",                   views.constructor_group_add,        name="constructor_group_add"),
+    path("constructor/group/<int:group_id>/delete/",             views.constructor_group_delete,     name="constructor_group_delete"),
+    path("constructor/group/<int:group_id>/ingredient/add/",         views.constructor_ingredient_add,        name="constructor_ingredient_add"),
+    path("constructor/group/<int:group_id>/ingredient/from-menu/",  views.constructor_ingredient_from_menu,  name="constructor_ingredient_from_menu"),
+    path("constructor/ingredient/<int:ing_id>/delete/",             views.constructor_ingredient_delete,     name="constructor_ingredient_delete"),
+
     # ── SHOPS ───────────────────────────────────────────────────────────────
     path("shops/",                                          sv.shop_home,          name="shop_home"),
     path("shops/<int:store_id>/edit/",                      sv.shop_store_edit,    name="shop_store_edit"),

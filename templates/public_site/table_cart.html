@@ -153,9 +153,10 @@
     </div>
   </button>
 
-  {% if rows %}
+  {% if rows or cx_rows %}
 
-    <!-- Items -->
+    <!-- Regular Items -->
+    {% if rows %}
     <div class="tc-items">
       {% for r in rows %}
       <div class="tc-row" data-row="{{ r.branch_item.id }}">
@@ -173,6 +174,32 @@
       </div>
       {% endfor %}
     </div>
+    {% endif %}
+
+    <!-- Constructor Items -->
+    {% if cx_rows %}
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 6px;">🧩 Собери сам</div>
+    <div class="tc-items">
+      {% for item in cx_rows %}
+      <div class="tc-row" data-cx-row="{{ item.idx }}">
+        <div style="flex:1;min-width:0;">
+          <div class="tc-row-name">{{ item.cx_name }}</div>
+          <div class="tc-row-price" style="font-size:11px;color:var(--muted);margin-top:3px;">
+            {% for sel in item.selections %}{{ sel.gname }}: {% for ing in sel.ings %}{{ ing.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if not forloop.last %} · {% endif %}{% endfor %}
+          </div>
+          <div class="tc-row-price">{{ item.unit_price }} сом / шт.</div>
+        </div>
+        <div class="tc-row-controls">
+          <button class="tc-qty-btn del" data-cx-act="remove" data-cx-idx="{{ item.idx }}" type="button">✕</button>
+          <button class="tc-qty-btn" data-cx-act="dec" data-cx-idx="{{ item.idx }}" type="button">−</button>
+          <span class="tc-qty-num" id="cx-qty-{{ item.idx }}">{{ item.qty }}</span>
+          <button class="tc-qty-btn" data-cx-act="inc" data-cx-idx="{{ item.idx }}" type="button">+</button>
+        </div>
+        <div class="tc-line-total"><span id="cx-line-{{ item.idx }}">{{ item.line_total }}</span> сом</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
 
     <!-- Total -->
     <div class="tc-totals">
@@ -216,6 +243,7 @@
 <script>
 const CSRF       = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
 const UPDATE_URL = "{% url 'public_site:table_cart_update' token %}";
+const CX_UPDATE_URL = "{% url 'public_site:table_cx_update' token %}";
 const WAITER_URL = "{% url 'public_site:table_call_waiter' token %}";
 
 function post(url, body) {
@@ -225,7 +253,11 @@ function post(url, body) {
   }).then(r => r.json());
 }
 
-/* ── CART CONTROLS ── */
+function hasAnyItems() {
+  return document.querySelectorAll("[data-row], [data-cx-row]").length > 0;
+}
+
+/* ── REGULAR CART CONTROLS ── */
 document.addEventListener("click", async e => {
   const btn = e.target.closest("button[data-act]");
   if (!btn) return;
@@ -247,10 +279,44 @@ document.addEventListener("click", async e => {
 
     if (data.item_qty <= 0) {
       row.remove();
-      if (document.querySelectorAll("[data-row]").length === 0) location.reload();
+      if (!hasAnyItems()) location.reload();
     } else {
       const qtyEl  = row.querySelector(`[data-qty="${biId}"]`);
       const lineEl = row.querySelector(`[data-line="${biId}"]`);
+      if (qtyEl)  qtyEl.textContent  = data.item_qty;
+      if (lineEl) lineEl.textContent = data.line_total;
+    }
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* ── CONSTRUCTOR CART CONTROLS ── */
+document.addEventListener("click", async e => {
+  const btn = e.target.closest("button[data-cx-act]");
+  if (!btn) return;
+  const action = btn.dataset.cxAct;
+  const idx    = btn.dataset.cxIdx;
+  btn.disabled = true;
+
+  try {
+    const fd = new FormData();
+    fd.append("idx", idx);
+    fd.append("action", action);
+    const data = await post(CX_UPDATE_URL, fd);
+    if (!data.ok) return;
+
+    document.getElementById("cartTotal").textContent = Math.round(parseFloat(data.total)) + " сом";
+
+    const row = document.querySelector(`[data-cx-row="${idx}"]`);
+    if (!row) return;
+
+    if (data.item_qty <= 0) {
+      row.remove();
+      if (!hasAnyItems()) location.reload();
+    } else {
+      const qtyEl  = document.getElementById(`cx-qty-${idx}`);
+      const lineEl = document.getElementById(`cx-line-${idx}`);
       if (qtyEl)  qtyEl.textContent  = data.item_qty;
       if (lineEl) lineEl.textContent = data.line_total;
     }
