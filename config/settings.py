@@ -38,6 +38,7 @@ DEBUG = False
 
 # Application definition
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -223,3 +224,146 @@ CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
 
 TELEGRAM_BOT_TOKEN = "8295438366:AAGtTtBkNYol92E10B4xxhSBEnz8HZWGykc"
 TELEGRAM_ADMIN_CHAT_ID = "PASTE_CHAT_ID_HERE"  # можно группу
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  JAZZMIN — красивый админ
+# ─────────────────────────────────────────────────────────────────────────────
+JAZZMIN_SETTINGS = {
+    # ── Шапка / брендинг ──────────────────────────────────────────────────────
+    # ── Кастомный CSS / JS ────────────────────────────────────────────────────
+    "custom_css": "css/admin_custom.css",
+    "custom_js":  None,
+    "use_google_fonts_cdn": False,   # не грузить шрифты с Google (производительность)
+
+    # ── Шапка / брендинг ──────────────────────────────────────────────────────
+    "site_title":        "Webordo Admin",
+    "site_header":       "Webordo",
+    "site_brand":        "Webordo",
+    "site_logo":         "mini_logo.jpg",
+    "site_logo_classes": "img-circle elevation-3",
+    "site_icon":         "mini_logo.jpg",
+    "welcome_sign":      "Добро пожаловать в Webordo",
+    "copyright":         "Webordo © 2025",
+
+    # ── Поиск по моделям ──────────────────────────────────────────────────────
+    "search_model": ["auth.user", "core.branch", "orders.order"],
+
+    # ── Кнопки в верхней панели ───────────────────────────────────────────────
+    "topmenu_links": [
+        {"name": "Главная", "url": "admin:index"},
+        {"name": "Меню (сайт)", "url": "/ru/", "new_window": True},
+        {"model": "auth.user"},
+    ],
+
+    # ── Иконки для приложений и моделей ──────────────────────────────────────
+    "icons": {
+        # apps
+        "auth":         "fas fa-users-cog",
+        "core":         "fas fa-store",
+        "catalog":      "fas fa-utensils",
+        "orders":       "fas fa-receipt",
+        "tables":       "fas fa-chair",
+        "integrations": "fas fa-plug",
+        "booking":      "fas fa-calendar-check",
+        "reservations": "fas fa-bookmark",
+        "karaoke":      "fas fa-microphone",
+        "hotels":       "fas fa-hotel",
+        "shops":        "fas fa-shopping-bag",
+        "pharmacy":     "fas fa-pills",
+        "markets":      "fas fa-store-alt",
+        "legal":        "fas fa-gavel",
+        "eco":          "fas fa-leaf",
+        "agency":       "fas fa-briefcase",
+        # models
+        "auth.user":                   "fas fa-user",
+        "auth.group":                  "fas fa-users",
+        "core.restaurant":             "fas fa-store",
+        "core.branch":                 "fas fa-map-marker-alt",
+        "core.membership":             "fas fa-id-badge",
+        "core.promocode":              "fas fa-tag",
+        "core.banner":                 "fas fa-image",
+        "catalog.menuset":             "fas fa-book-open",
+        "catalog.category":            "fas fa-folder",
+        "catalog.item":                "fas fa-hamburger",
+        "catalog.branchitem":          "fas fa-dollar-sign",
+        "catalog.dishconstructor":     "fas fa-puzzle-piece",
+        "catalog.constructorgroup":    "fas fa-layer-group",
+        "orders.order":                "fas fa-shopping-cart",
+        "orders.orderitem":            "fas fa-list",
+        "tables.table":                "fas fa-chair",
+        "karaoke.karaokeroom":         "fas fa-music",
+    },
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+
+    # ── Цвет кнопок Save/Delete (Bootstrap 5 theme color) ────────────────────
+    "related_modal_active": True,
+
+    # ── Боковое меню — скрываем малоиспользуемые приложения ──────────────────
+    "hide_apps":   [],
+    "hide_models": [],
+    "order_with_respect_to": [
+        "core", "catalog", "orders", "tables",
+        "integrations", "karaoke", "hotels", "booking",
+        "reservations", "shops", "pharmacy", "markets",
+        "auth", "legal", "eco", "agency",
+    ],
+
+    # ── Кастомные ссылки в сайдбаре (вверху каждого приложения) ──────────────
+    "custom_links": {
+        "orders": [{
+            "name":        "Новые заказы",
+            "url":         "admin:orders_order_changelist",
+            "icon":        "fas fa-fire",
+            "permissions": ["orders.view_order"],
+        }],
+    },
+
+    # ── Виджеты на главной странице ──────────────────────────────────────────
+    "show_ui_builder":   False,
+    "changeform_format": "horizontal_tabs",
+    "changeform_format_overrides": {
+        "auth.user":  "collapsible",
+        "auth.group": "vertical_tabs",
+    },
+
+    # ── Прочее ───────────────────────────────────────────────────────────────
+    "show_sidebar":          True,
+    "navigation_expanded":   True,
+    "hide_admin_in_sidebar": False,
+    "language_chooser":      False,
+}
+
+JAZZMIN_UI_TWEAKS = {
+    # тема цветовой палитры Bootstrap 5
+    "navbar_small_text":      False,
+    "footer_small_text":      False,
+    "body_small_text":        False,
+    "brand_small_text":       False,
+    "brand_colour":           "navbar-dark",
+    "accent":                 "accent-primary",
+    "navbar":                 "navbar-dark",
+    "no_navbar_border":       True,
+    "navbar_fixed":           True,    # липкий топбар на мобилке
+    "layout_boxed":           False,
+    "footer_fixed":           False,
+    "sidebar_fixed":          True,
+    "sidebar":                "sidebar-dark-primary",
+    "sidebar_nav_small_text": False,
+    "sidebar_disable_expand": False,
+    "sidebar_nav_child_indent":      True,
+    "sidebar_nav_compact_style":     True,   # компактный список на мобилке
+    "sidebar_nav_legacy_style":      False,
+    "sidebar_nav_flat_style":        False,
+    "theme":                  "flatly",      # чистая светлая тема (flatly/lumen/cosmo)
+    "dark_mode_theme":        "darkly",      # при нажатии 🌙 переключается
+    "button_classes": {
+        "primary":   "btn-primary",
+        "secondary": "btn-secondary",
+        "info":      "btn-info",
+        "warning":   "btn-warning",
+        "danger":    "btn-danger",
+        "success":   "btn-success",
+    },
+    "actions_sticky_top": True,   # фиксируем Actions bar при прокрутке
+}

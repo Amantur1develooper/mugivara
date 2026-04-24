@@ -1038,10 +1038,19 @@ document.getElementById("bmCxAddBtn").addEventListener("click", async () => {
 
 /* промокод */
 .cm-promo {
-  background: var(--bg, #f9f9f9); border: 1.5px solid var(--border, #eee);
-  border-radius: 14px; padding: 14px; margin-bottom: 12px;
+  border: 1.5px solid var(--border, #eee);
+  border-radius: 14px; margin-bottom: 12px; overflow: hidden;
 }
-.cm-promo-title { font-size: 13px; font-weight: 600; color: var(--text, #111); margin-bottom: 10px; }
+.cm-promo-toggle {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 14px; cursor: pointer; background: var(--bg, #f9f9f9);
+  user-select: none;
+}
+.cm-promo-toggle-label { font-size: 13px; font-weight: 600; color: var(--muted, #888); }
+.cm-promo-toggle-arrow { font-size: 11px; color: var(--muted, #888); transition: transform .2s; }
+.cm-promo.open .cm-promo-toggle-arrow { transform: rotate(180deg); }
+.cm-promo-body { display: none; padding: 12px 14px; background: var(--bg, #f9f9f9); border-top: 1px solid var(--border, #eee); }
+.cm-promo.open .cm-promo-body { display: block; }
 .cm-promo-row { display: flex; gap: 8px; }
 .cm-promo-input {
   flex: 1; padding: 10px 12px; border: 1.5px solid var(--border, #ddd);
@@ -1594,13 +1603,18 @@ document.addEventListener('submit', async (e) => {
         <div class="cm-total-row big"><span>Итого</span><span id="cmTotal">${d.total} сом</span></div>
       </div>
 
-      <div class="cm-promo">
-        <div class="cm-promo-title">🎟 Промокод</div>
-        <div class="cm-promo-row">
-          <input id="cmPromoInput" type="text" placeholder="Введите промокод" class="cm-promo-input" value="${promoCode}">
-          <button type="button" id="cmPromoBtn" class="cm-promo-btn">Применить</button>
+      <div class="cm-promo${promoCode ? ' open' : ''}" id="cmPromo">
+        <div class="cm-promo-toggle" onclick="document.getElementById('cmPromo').classList.toggle('open')">
+          <span class="cm-promo-toggle-label">🎟 Есть промокод?</span>
+          <span class="cm-promo-toggle-arrow">▼</span>
         </div>
-        <div id="cmPromoMsg" class="cm-promo-msg" style="display:none"></div>
+        <div class="cm-promo-body">
+          <div class="cm-promo-row">
+            <input id="cmPromoInput" type="text" placeholder="Введите промокод" class="cm-promo-input" value="${promoCode}">
+            <button type="button" id="cmPromoBtn" class="cm-promo-btn">${promoCode ? 'Убрать' : 'Применить'}</button>
+          </div>
+          <div id="cmPromoMsg" class="cm-promo-msg" style="display:none"></div>
+        </div>
       </div>
 
       <div style="background:var(--card,#fff);border:1.5px solid var(--border,#eee);border-radius:14px;padding:16px 18px">
@@ -1669,7 +1683,7 @@ document.addEventListener('submit', async (e) => {
     const promoMsg   = document.getElementById('cmPromoMsg');
     const promoHid   = document.getElementById('cmPromoHidden');
 
-    if (promoCode) { promoInput.readOnly = true; promoBtn.textContent = 'Убрать'; }
+    if (promoCode) { promoInput.readOnly = true; }
 
     promoBtn.addEventListener('click', async () => {
       if (promoInput.readOnly) {

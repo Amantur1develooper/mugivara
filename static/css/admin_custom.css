@@ -1,0 +1,167 @@
+/*
+ * Webordo — кастомный CSS поверх jazzmin/Bootstrap
+ * Брендовый оранжевый: #FF4D1C   Дополнительный: #FF6B3D
+ */
+
+/* ── Корневые переменные ─────────────────────────────────────────────────── */
+:root {
+  --brand:      #FF4D1C;
+  --brand-dark: #E03E12;
+  --brand-pale: rgba(255, 77, 28, .10);
+}
+
+/* ── Топбар / навбар ─────────────────────────────────────────────────────── */
+.main-header.navbar,
+.main-header {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
+  border-bottom: 2px solid var(--brand) !important;
+}
+.main-header .navbar-brand {
+  font-weight: 800;
+  letter-spacing: -.5px;
+  color: #fff !important;
+}
+.main-header .navbar-brand b { color: var(--brand) !important; }
+
+/* ── Боковое меню ─────────────────────────────────────────────────────────── */
+.main-sidebar,
+.main-sidebar .sidebar {
+  background: #111827 !important;
+}
+.nav-sidebar .nav-item > .nav-link.active,
+.nav-sidebar .nav-item > .nav-link:hover {
+  background: var(--brand-pale) !important;
+  color: #fff !important;
+  border-left: 3px solid var(--brand) !important;
+}
+.nav-sidebar .nav-item > .nav-link {
+  border-left: 3px solid transparent;
+  border-radius: 0 8px 8px 0;
+  transition: all .15s;
+}
+.brand-link {
+  background: #0d1117 !important;
+  border-bottom: 1px solid #2d2d3d !important;
+}
+.brand-link .brand-text { color: #fff !important; font-weight: 700; }
+
+/* ── Кнопки ──────────────────────────────────────────────────────────────── */
+.btn-primary,
+input[type="submit"].default {
+  background: linear-gradient(135deg, var(--brand), #FF6B3D) !important;
+  border-color: var(--brand) !important;
+  font-weight: 600;
+}
+.btn-primary:hover { background: var(--brand-dark) !important; }
+
+/* ── Ссылки ──────────────────────────────────────────────────────────────── */
+a:not(.btn):not(.nav-link):not(.navbar-brand) { color: var(--brand); }
+a:not(.btn):not(.nav-link):not(.navbar-brand):hover { color: var(--brand-dark); }
+
+/* ── Таблица списка объектов ─────────────────────────────────────────────── */
+#result_list th a,
+#result_list th {
+  background: #f8f8f8;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: #555;
+}
+#result_list tbody tr:hover {
+  background: var(--brand-pale) !important;
+}
+#result_list .selected {
+  background: rgba(255, 77, 28, .06) !important;
+}
+
+/* ── Форма изменения объекта ─────────────────────────────────────────────── */
+.change-form .card-header,
+.module h2, .module caption {
+  background: linear-gradient(135deg, var(--brand), #FF6B3D) !important;
+  color: #fff !important;
+  font-weight: 700;
+  border-radius: 6px 6px 0 0;
+}
+.submit-row input[type="submit"],
+.submit-row .closelink,
+.submit-row a {
+  border-radius: 8px !important;
+  padding: 8px 20px !important;
+  font-weight: 600 !important;
+}
+
+/* ── Фиксируем Actions bar при прокрутке ─────────────────────────────────── */
+.content-wrapper > .content > .container-fluid > form > .card:first-child {
+  position: sticky;
+  top: 57px;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
+
+/* ── Inline-таблицы ──────────────────────────────────────────────────────── */
+.inline-group .module h3 {
+  background: #f0f0f0;
+  color: #333;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE  ≤ 767 px
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 767.98px) {
+
+  /* таблица списка: горизонтальный скролл без обрезания */
+  #result_list {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    font-size: 13px;
+  }
+  #result_list th,
+  #result_list td {
+    white-space: nowrap;
+    padding: 8px 10px !important;
+  }
+
+  /* форма — убираем горизонтальные отступы */
+  .content-wrapper > .content {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  /* fieldsets стэком на мобилке */
+  .form-row {
+    flex-direction: column !important;
+  }
+  .form-row .field-box,
+  .form-row > .flex-container > div {
+    width: 100% !important;
+  }
+
+  /* inline-ряды не разъезжаются */
+  .tabular.inline-related .form-row {
+    flex-wrap: wrap;
+  }
+
+  /* кнопки сохранения — на всю ширину */
+  .submit-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .submit-row input, .submit-row a {
+    flex: 1 1 140px;
+    text-align: center;
+  }
+
+  /* боковое меню: скрывать текст при свёрнутом sidebar */
+  .sidebar-mini.sidebar-collapse .nav-sidebar .nav-link p { display: none; }
+
+  /* breadcrumb тоньше */
+  .breadcrumb { font-size: 12px; padding: 4px 0; }
+
+  /* пагинация — компактная */
+  .paginator { font-size: 13px; }
+}

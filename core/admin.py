@@ -8,13 +8,9 @@ from django.contrib.admin.widgets import AutocompleteSelect
 from django.db import transaction
 from .models import Restaurant, Branch, Membership, PromoCode, Banner
 from catalog.models import MenuSet, Item, BranchMenuSet, BranchItem
+from catalog.models import BranchItem as CatalogBranchItem
 from catalog.services import sync_branch_menu, ensure_links_for_branch_item
 from integrations.admin import BranchTelegramLinkInline
-from django.contrib.admin.widgets import AutocompleteSelect
-from catalog.models import BranchItem as CatalogBranchItem
-
-from django.contrib.admin.widgets import AutocompleteSelect
-from catalog.models import BranchItem as CatalogBranchItem
 
 class BranchItemItemSelect(AutocompleteSelect):
     def __init__(self, field, admin_site, branch_id, attrs=None):
@@ -113,11 +109,17 @@ def sync_menu_action(modeladmin, request, queryset):
     # остальное как у тебя
 @admin.register(Branch)
 class BranchAdmin(admin.ModelAdmin):
-    list_display = ("id", "restaurant", "name_ru", "is_active", "delivery_enabled", "min_order_amount", "delivery_fee", "free_delivery_from")
-    list_filter = ("restaurant", "is_active", "delivery_enabled")
-    search_fields = ("name_ru", "name_ky", "name_en", "address", "phone")
-    inlines = (BranchMenuSetInline, BranchTelegramLinkInline, BranchItemInline)
-    actions = (sync_menu_action,)
+    list_display = (
+        "id", "restaurant", "name_ru", "is_active",
+        "delivery_enabled", "min_order_amount", "delivery_fee",
+    )
+    list_filter         = ("restaurant", "is_active", "delivery_enabled")
+    list_select_related = ("restaurant",)
+    list_per_page       = 30
+    save_on_top         = True
+    search_fields       = ("name_ru", "name_ky", "name_en", "address", "phone")
+    inlines             = (BranchMenuSetInline, BranchTelegramLinkInline, BranchItemInline)
+    actions             = (sync_menu_action,)
   
     change_form_template = "admin/core/branch/change_form.html"
 
@@ -293,10 +295,12 @@ class RestaurantAdmin(admin.ModelAdmin):
 
 @admin.register(PromoCode)
 class PromoCodeAdmin(admin.ModelAdmin):
-    list_display = ("code", "branch", "discount_type", "discount_value", "valid_until", "is_active", "used_count", "max_uses")
-    list_filter  = ("discount_type", "is_active", "branch__restaurant")
-    search_fields = ("code", "branch__name_ru", "branch__restaurant__name_ru")
-    list_editable = ("is_active",)
+    list_display        = ("code", "branch", "discount_type", "discount_value", "valid_until", "is_active", "used_count", "max_uses")
+    list_filter         = ("discount_type", "is_active", "branch__restaurant")
+    list_select_related = ("branch", "branch__restaurant")
+    list_per_page       = 30
+    search_fields       = ("code", "branch__name_ru", "branch__restaurant__name_ru")
+    list_editable       = ("is_active",)
 
 
 @admin.register(Banner)
@@ -313,9 +317,11 @@ class BannerAdmin(admin.ModelAdmin):
 
 @admin.register(Membership)
 class MembershipAdmin(admin.ModelAdmin):
-    list_display = ("id", "user", "restaurant", "branch", "role", "created_at")
-    list_filter = ("role", "restaurant", "branch")
-    search_fields = ("user__username", "restaurant__name_ru", "branch__name_ru")
+    list_display        = ("id", "user", "restaurant", "branch", "role", "created_at")
+    list_filter         = ("role", "restaurant", "branch")
+    list_select_related = ("user", "restaurant", "branch")
+    list_per_page       = 30
+    search_fields       = ("user__username", "restaurant__name_ru", "branch__name_ru")
     autocomplete_fields = ("user", "restaurant", "branch")
 
 

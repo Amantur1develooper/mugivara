@@ -5,219 +5,224 @@
 
 {% block head_extra %}
 <style>
-  .rest-block{margin-bottom:36px}
-  .rest-header{
-    display:flex;align-items:center;justify-content:space-between;
-    gap:16px;margin-bottom:16px;flex-wrap:wrap;
-  }
-  .rest-name{
-    font-family:'Unbounded',sans-serif;font-weight:800;font-size:20px;
-    letter-spacing:-.5px;color:var(--text);
-  }
-  .rest-actions{display:flex;gap:10px;flex-wrap:wrap}
+/* ── Шапка страницы ── */
+.pg-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:12px; }
+.pg-title { font-family:'Unbounded',sans-serif; font-weight:900; font-size:22px; letter-spacing:-.8px; color:var(--text); }
+.pg-sub { font-size:13px; color:var(--muted); margin-top:4px; }
 
-  .branch-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
-    gap:16px;
-  }
-  .branch-card{
-    background:var(--card);border-radius:18px;
-    border:1px solid var(--border);
-    box-shadow:0 2px 10px rgba(0,0,0,0.04);
-    padding:20px;display:flex;flex-direction:column;gap:14px;
-  }
-  .branch-name{font-size:15px;font-weight:600;color:var(--text)}
-  .branch-meta{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px}
-  .branch-tag{
-    display:inline-flex;align-items:center;gap:5px;
-    padding:4px 10px;border-radius:100px;
-    font-size:11px;font-weight:600;
-    background:rgba(255,77,28,.08);
-    border:1px solid rgba(255,77,28,.15);
-    color:var(--accent);
-  }
-  .branch-tag.teal{background:rgba(0,184,150,.08);border-color:rgba(0,184,150,.2);color:var(--teal)}
-  .branch-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
-  .branch-btns a{
-    flex:1;text-align:center;padding:9px 12px;border-radius:10px;
-    font-size:12px;font-weight:600;text-decoration:none;
-    transition:background .15s,color .15s;
-  }
-  .btn-settings{background:var(--bg);color:var(--text2);border:1px solid var(--border)}
-  .btn-settings:hover{background:rgba(255,77,28,.06);color:var(--accent);border-color:rgba(255,77,28,.2)}
-  .btn-menu{background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;box-shadow:0 3px 10px rgba(255,77,28,.2)}
-  .btn-menu:hover{box-shadow:0 6px 18px rgba(255,77,28,.3)}
+/* ── Блок ресторана ── */
+.rest-block { margin-bottom:32px; }
+.rest-header { display:flex; align-items:center; gap:14px; margin-bottom:16px; flex-wrap:wrap; }
+.rest-name {
+  font-family:'Unbounded',sans-serif; font-weight:800; font-size:17px;
+  letter-spacing:-.4px; color:var(--text); flex:1;
+}
 
-  .empty-state{
-    text-align:center;padding:64px 40px;
-    background:var(--card);border-radius:20px;border:1px solid var(--border);
-  }
-  .empty-state-icon{font-size:48px;margin-bottom:16px}
-  .empty-state h3{font-family:'Unbounded',sans-serif;font-size:17px;font-weight:800;color:var(--text);margin-bottom:8px}
-  .empty-state p{font-size:14px;color:var(--muted)}
+/* ── Виджет выручки ── */
+.rev-widget {
+  background:var(--card); border:1px solid var(--border); border-radius:14px;
+  padding:14px 18px; margin-bottom:16px;
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+}
+.rev-label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+.rev-tabs { display:flex; gap:4px; }
+.rev-tab {
+  padding:5px 12px; border-radius:8px; font-size:12px; font-weight:600;
+  border:1px solid var(--border); background:var(--bg); color:var(--text2);
+  cursor:pointer; transition:all .13s;
+}
+.rev-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+.rev-val { font-family:'Unbounded',sans-serif; font-size:17px; font-weight:900; color:var(--text); margin-left:auto; }
+.rev-cnt { font-size:11px; color:var(--muted); }
 
-  /* ── ВЫРУЧКА ── */
-  .rev-widget {
-    background:var(--card); border:1px solid var(--border); border-radius:16px;
-    padding:16px 20px; margin-bottom:18px;
-    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
-  }
-  .rev-label { font-size:12px; font-weight:700; color:var(--muted); margin-right:4px; }
-  .rev-tabs { display:flex; gap:6px; flex-wrap:wrap; }
-  .rev-tab {
-    padding:5px 12px; border-radius:100px; font-size:12px; font-weight:600;
-    border:1px solid var(--border); background:var(--bg); color:var(--text2);
-    cursor:pointer; transition:all .15s;
-  }
-  .rev-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
-  .rev-val {
-    font-family:'Unbounded',sans-serif; font-size:16px; font-weight:800; color:var(--text);
-    margin-left:auto;
-  }
-  .rev-cnt { font-size:11px; color:var(--muted); margin-left:6px; }
+/* ── Сетка филиалов ── */
+.branch-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(260px,1fr));
+  gap:14px;
+}
+.branch-card {
+  background:var(--card); border-radius:16px;
+  border:1px solid var(--border);
+  box-shadow:0 1px 6px rgba(0,0,0,.04);
+  padding:18px; display:flex; flex-direction:column; gap:12px;
+  transition:box-shadow .15s, border-color .15s;
+}
+.branch-card:hover { box-shadow:0 4px 20px rgba(0,0,0,.08); border-color:rgba(255,77,28,.15); }
 
-  /* ── РАЗВЛЕЧЕНИЯ ── */
-  .ent-section { margin-top:40px; }
-  .ent-section-head {
-    display:flex; align-items:center; gap:12px; margin-bottom:18px;
-  }
-  .ent-section-title {
-    font-family:'Unbounded',sans-serif; font-weight:800; font-size:14px;
-    color:var(--text); letter-spacing:-.2px;
-  }
-  .ent-divider { flex:1; height:1px; background:var(--border); }
+.branch-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+.branch-name { font-size:14px; font-weight:700; color:var(--text); line-height:1.3; }
+.branch-addr { font-size:11px; color:var(--muted); margin-top:3px; }
 
-  .kr-grid {
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
-    gap:16px;
-  }
-  .kr-venue-card {
-    background:var(--card); border:1.5px solid var(--border); border-radius:18px;
-    overflow:hidden; display:flex; flex-direction:column;
-    transition:border-color .2s, box-shadow .2s;
-  }
-  .kr-venue-card:hover { border-color:rgba(168,85,247,.3); box-shadow:0 8px 24px rgba(168,85,247,.1); }
-  .kr-venue-cover {
-    height:90px; background:linear-gradient(135deg,#1a0a2e,#0d0514);
-    display:flex; align-items:center; justify-content:center; font-size:28px;
-    position:relative; overflow:hidden; flex-shrink:0;
-  }
-  .kr-venue-cover img { width:100%; height:100%; object-fit:cover; opacity:.7; }
-  .kr-venue-logo {
-    position:absolute; bottom:-14px; left:14px;
-    width:36px; height:36px; border-radius:10px; overflow:hidden;
-    border:2px solid var(--card); background:#1a0a2e;
-    display:flex; align-items:center; justify-content:center; font-size:16px;
-  }
-  .kr-venue-logo img { width:100%; height:100%; object-fit:cover; }
-  .kr-venue-body { padding:22px 16px 16px; flex:1; display:flex; flex-direction:column; gap:10px; }
-  .kr-venue-name { font-weight:800; font-size:14px; color:var(--text); }
-  .kr-venue-meta { font-size:12px; color:var(--muted); }
-  .kr-venue-btns { display:flex; gap:8px; margin-top:auto; }
-  .kr-venue-btns a {
-    flex:1; text-align:center; padding:8px 10px; border-radius:10px;
-    font-size:12px; font-weight:600; text-decoration:none; transition:all .15s;
-  }
-  .kr-btn-chess { background:linear-gradient(135deg,#a855f7,#ec4899); color:#fff; box-shadow:0 3px 10px rgba(168,85,247,.25); }
-  .kr-btn-chess:hover { box-shadow:0 6px 18px rgba(168,85,247,.4); }
-  .kr-btn-rooms { background:var(--bg); color:var(--text2); border:1px solid var(--border); }
-  .kr-btn-rooms:hover { background:rgba(168,85,247,.06); color:#a855f7; border-color:rgba(168,85,247,.2); }
+.branch-tags { display:flex; flex-wrap:wrap; gap:5px; }
+.branch-tag {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:3px 8px; border-radius:7px;
+  font-size:10px; font-weight:600;
+}
+.tag-delivery { background:rgba(255,77,28,.08); color:var(--accent); border:1px solid rgba(255,77,28,.15); }
+.tag-free     { background:rgba(0,184,150,.08); color:var(--teal);   border:1px solid rgba(0,184,150,.2); }
+.tag-24h      { background:rgba(124,58,237,.08); color:var(--purple); border:1px solid rgba(124,58,237,.2); }
+
+/* ── Быстрые действия ── */
+.branch-actions { display:flex; flex-direction:column; gap:6px; margin-top:auto; }
+.branch-actions-row { display:flex; gap:6px; }
+.ba {
+  flex:1; text-align:center; padding:8px 10px; border-radius:9px;
+  font-size:12px; font-weight:600; text-decoration:none;
+  transition:all .13s; border:1px solid var(--border);
+  color:var(--text2); background:var(--bg);
+}
+.ba:hover { border-color:rgba(255,77,28,.3); color:var(--accent); background:rgba(255,77,28,.04); }
+.ba-primary {
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:white; border-color:transparent;
+  box-shadow:0 2px 8px rgba(255,77,28,.2);
+}
+.ba-primary:hover { box-shadow:0 4px 14px rgba(255,77,28,.3); color:white; }
+.ba-pos {
+  background:linear-gradient(135deg,#1a7a4a,#0f5c34);
+  color:white; border-color:transparent;
+}
+.ba-pos:hover { box-shadow:0 4px 14px rgba(26,122,74,.3); color:white; }
+
+/* ── Пустое состояние ── */
+.empty-state {
+  text-align:center; padding:60px 40px;
+  background:var(--card); border-radius:18px; border:1px solid var(--border);
+}
+.empty-state-icon { font-size:44px; margin-bottom:12px; }
+.empty-state h3 { font-family:'Unbounded',sans-serif; font-size:16px; font-weight:800; margin-bottom:6px; }
+.empty-state p { font-size:13px; color:var(--muted); }
+
+/* ── Karaoke ── */
+.ent-section { margin-top:36px; }
+.ent-head { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+.ent-title { font-family:'Unbounded',sans-serif; font-weight:800; font-size:13px; color:var(--text); }
+.ent-divider { flex:1; height:1px; background:var(--border); }
+
+.kr-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; }
+.kr-card {
+  background:var(--card); border:1.5px solid var(--border); border-radius:16px;
+  overflow:hidden; display:flex; flex-direction:column; transition:border-color .2s;
+}
+.kr-card:hover { border-color:rgba(168,85,247,.3); }
+.kr-cover {
+  height:80px; background:linear-gradient(135deg,#1a0a2e,#0d0514);
+  display:flex; align-items:center; justify-content:center;
+  font-size:24px; position:relative; overflow:hidden;
+}
+.kr-cover img { width:100%; height:100%; object-fit:cover; opacity:.7; }
+.kr-logo {
+  position:absolute; bottom:-12px; left:12px;
+  width:32px; height:32px; border-radius:9px; overflow:hidden;
+  border:2px solid var(--card); background:#1a0a2e;
+  display:flex; align-items:center; justify-content:center; font-size:14px;
+}
+.kr-logo img { width:100%; height:100%; object-fit:cover; }
+.kr-body { padding:20px 14px 14px; flex:1; display:flex; flex-direction:column; gap:8px; }
+.kr-name { font-weight:800; font-size:13px; color:var(--text); }
+.kr-meta { font-size:11px; color:var(--muted); }
+.kr-btns { display:flex; gap:6px; margin-top:auto; }
+.kr-btns a {
+  flex:1; text-align:center; padding:7px 8px; border-radius:9px;
+  font-size:11px; font-weight:700; text-decoration:none;
+}
+.kr-chess { background:linear-gradient(135deg,#a855f7,#ec4899); color:#fff; }
+.kr-rooms { background:var(--bg); color:var(--text2); border:1px solid var(--border); }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="db-topbar">
+<div class="pg-header">
   <div>
-    <div class="db-page-title">Мои заведения</div>
-    <div class="db-breadcrumb">Управляйте меню, ценами и акциями</div>
+    <div class="pg-title">Мои заведения</div>
+    <div class="pg-sub">Управляйте меню, ценами и заказами</div>
   </div>
 </div>
 
 {% if data %}
   {% for item in data %}
   <div class="rest-block">
+
+    {# ── Шапка ресторана ── #}
     <div class="rest-header">
       <div class="rest-name">{{ item.restaurant.name_ru }}</div>
-      <div class="rest-actions">
-        <a href="{% url 'dashboard:restaurant_edit' item.restaurant.id %}" class="db-btn db-btn-ghost db-btn-sm">
-          ✏️ Описание ресторана
-        </a>
-      </div>
+      <a href="{% url 'dashboard:restaurant_edit' item.restaurant.id %}" class="db-btn db-btn-ghost db-btn-sm">
+        ✏️ Описание
+      </a>
     </div>
 
-    <!-- Выручка -->
+    {# ── Выручка ── #}
     <div class="rev-widget" id="rev-{{ item.restaurant.id }}">
-      <span class="rev-label">💰 Выручка:</span>
+      <span class="rev-label">💰 Выручка</span>
       <div class="rev-tabs">
         <span class="rev-tab active" onclick="switchRev('{{ item.restaurant.id }}','today',this)">Сегодня</span>
         <span class="rev-tab" onclick="switchRev('{{ item.restaurant.id }}','week',this)">Неделя</span>
         <span class="rev-tab" onclick="switchRev('{{ item.restaurant.id }}','month',this)">Месяц</span>
       </div>
-      <div class="rev-val" id="rev-val-{{ item.restaurant.id }}">
-        {{ item.rev.today|floatformat:0 }} сом
-      </div>
-      <span class="rev-cnt" id="rev-cnt-{{ item.restaurant.id }}">
-        {{ item.rev.today_cnt }} заказ
-      </span>
+      <div class="rev-val" id="rev-val-{{ item.restaurant.id }}">{{ item.rev.today|floatformat:0 }} сом</div>
+      <span class="rev-cnt" id="rev-cnt-{{ item.restaurant.id }}">{{ item.rev.today_cnt }} заказ</span>
     </div>
     <script>
     (function(){
-      const data = {
+      window._revData = window._revData || {};
+      window._revData['{{ item.restaurant.id }}'] = {
         today: { sum: {{ item.rev.today|floatformat:0 }}, cnt: {{ item.rev.today_cnt }} },
         week:  { sum: {{ item.rev.week|floatformat:0 }},  cnt: {{ item.rev.week_cnt }} },
         month: { sum: {{ item.rev.month|floatformat:0 }}, cnt: {{ item.rev.month_cnt }} },
       };
-      window._revData = window._revData || {};
-      window._revData['{{ item.restaurant.id }}'] = data;
     })();
     </script>
 
+    {# ── Филиалы ── #}
     {% if item.branches %}
     <div class="branch-grid">
       {% for branch in item.branches %}
       <div class="branch-card">
-        <div>
-          <div class="branch-name">{{ branch.name_ru }}</div>
-          {% if branch.address %}
-          <div class="branch-meta" style="margin-top:5px">📍 {{ branch.address }}</div>
-          {% endif %}
+        <div class="branch-card-top">
+          <div>
+            <div class="branch-name">{{ branch.name_ru }}</div>
+            {% if branch.address %}<div class="branch-addr">📍 {{ branch.address }}</div>{% endif %}
+          </div>
         </div>
-        <div class="branch-meta">
+
+        <div class="branch-tags">
           {% if branch.delivery_enabled %}
-            <span class="branch-tag">🚚 Доставка</span>
+            <span class="branch-tag tag-delivery">🚚 Доставка</span>
           {% endif %}
           {% if branch.free_delivery_from and branch.free_delivery_from > 0 %}
-            <span class="branch-tag teal">🎁 Бесплатно от {{ branch.free_delivery_from|floatformat:"0" }} сом</span>
+            <span class="branch-tag tag-free">🎁 от {{ branch.free_delivery_from|floatformat:"0" }} с</span>
           {% endif %}
           {% if branch.is_open_24h %}
-            <span class="branch-tag teal">🌙 24/7</span>
+            <span class="branch-tag tag-24h">🌙 24/7</span>
           {% endif %}
         </div>
-        <div class="branch-btns">
-          <a href="{% url 'dashboard:branch_edit' branch.id %}" class="btn-settings">⚙️ Настройки</a>
-          <a href="{% url 'dashboard:branch_items' branch.id %}" class="btn-menu">🍽 Меню и цены</a>
-        </div>
-        <div class="branch-btns" style="margin-top:-6px">
-          <a href="{% url 'dashboard:branch_categories' branch.id %}" class="btn-settings">📂 Категории</a>
-          <a href="{% url 'dashboard:constructor_list' branch.id %}" class="btn-settings">🧩 Конструктор</a>
-        </div>
-        <div class="branch-btns" style="margin-top:-6px">
-          <a href="{% url 'dashboard:branch_tables' branch.id %}" class="btn-settings">🪑 Столики</a>
-          <a href="{% url 'dashboard:promo_list' branch.id %}" class="btn-settings">🎟 Промокоды</a>
-        </div>
-        <div class="branch-btns" style="margin-top:-6px">
-          <a href="{% url 'dashboard:pos' branch.id %}" class="btn-menu" style="background:linear-gradient(135deg,#1a7a4a,#0f5c34)">🖥️ Касса (POS)</a>
+
+        <div class="branch-actions">
+          <div class="branch-actions-row">
+            <a href="{% url 'dashboard:branch_items' branch.id %}" class="ba ba-primary">🍽 Меню и цены</a>
+            <a href="{% url 'dashboard:pos' branch.id %}" class="ba ba-pos">🖥️ Касса</a>
+          </div>
+          <div class="branch-actions-row">
+            <a href="{% url 'dashboard:branch_edit' branch.id %}" class="ba">⚙️ Настройки</a>
+            <a href="{% url 'dashboard:branch_categories' branch.id %}" class="ba">📂 Категории</a>
+          </div>
+          <div class="branch-actions-row">
+            <a href="{% url 'dashboard:branch_tables' branch.id %}" class="ba">🪑 Столики</a>
+            <a href="{% url 'dashboard:constructor_list' branch.id %}" class="ba">🧩 Конструктор</a>
+            <a href="{% url 'dashboard:promo_list' branch.id %}" class="ba">🎟 Промо</a>
+          </div>
         </div>
       </div>
       {% endfor %}
     </div>
     {% else %}
-    <div class="db-card" style="text-align:center;padding:32px;color:var(--muted);font-size:14px">
+    <div class="db-card" style="text-align:center;padding:28px;color:var(--muted);font-size:13px">
       Нет активных филиалов
     </div>
     {% endif %}
+
   </div>
   {% endfor %}
 
@@ -231,32 +236,29 @@
 
 {% if karaoke_venues %}
 <div class="ent-section">
-  <div class="ent-section-head">
-    <div class="ent-section-title">🎤 Развлечения — Karaoke</div>
+  <div class="ent-head">
+    <div class="ent-title">🎤 Karaoke</div>
     <div class="ent-divider"></div>
-    <a href="{% url 'dashboard:karaoke_home' %}" class="db-btn db-btn-ghost db-btn-sm">Все заведения →</a>
+    <a href="{% url 'dashboard:karaoke_home' %}" class="db-btn db-btn-ghost db-btn-sm">Все →</a>
   </div>
   <div class="kr-grid">
     {% for venue in karaoke_venues %}
-    <div class="kr-venue-card">
-      <div class="kr-venue-cover">
-        {% if venue.cover %}<img src="{{ venue.cover.url }}" alt="{{ venue.name }}">{% else %}🎤{% endif %}
-        <div class="kr-venue-logo">
+    <div class="kr-card">
+      <div class="kr-cover">
+        {% if venue.cover %}<img src="{{ venue.cover.url }}" alt="">{% else %}🎤{% endif %}
+        <div class="kr-logo">
           {% if venue.logo %}<img src="{{ venue.logo.url }}" alt="">{% else %}🎤{% endif %}
         </div>
       </div>
-      <div class="kr-venue-body">
-        <div class="kr-venue-name">{{ venue.name }}</div>
-        <div class="kr-venue-meta">
-          🚪 {{ venue.rooms.count }} кабинок
-          {% if venue.working_hours %} · 🕐 {{ venue.working_hours }}{% endif %}
+      <div class="kr-body">
+        <div class="kr-name">{{ venue.name }}</div>
+        <div class="kr-meta">🚪 {{ venue.rooms.count }} кабинок{% if venue.working_hours %} · 🕐 {{ venue.working_hours }}{% endif %}</div>
+        <div class="kr-btns">
+          <a href="{% url 'dashboard:karaoke_chess' venue.id %}" class="kr-chess">♟️ Шахматка</a>
+          <a href="{% url 'dashboard:karaoke_rooms' venue.id %}" class="kr-rooms">🚪 Кабинки</a>
         </div>
-        <div class="kr-venue-btns">
-          <a href="{% url 'dashboard:karaoke_chess' venue.id %}" class="kr-btn-chess">♟️ Шахматка</a>
-          <a href="{% url 'dashboard:karaoke_rooms' venue.id %}" class="kr-btn-rooms">🚪 Кабинки</a>
-        </div>
-        <div class="kr-venue-btns" style="margin-top:6px">
-          <a href="{% url 'dashboard:karaoke_report' venue.id %}" class="kr-btn-rooms" style="text-align:center">📊 Отчёт</a>
+        <div class="kr-btns" style="margin-top:4px">
+          <a href="{% url 'dashboard:karaoke_report' venue.id %}" class="kr-rooms" style="text-align:center">📊 Отчёт</a>
         </div>
       </div>
     </div>
@@ -269,13 +271,12 @@
 function switchRev(restId, period, btn) {
   const data = (window._revData || {})[restId];
   if (!data) return;
-  document.querySelectorAll(`#rev-${restId} .rev-tab`).forEach(t => t.classList.remove("active"));
-  btn.classList.add("active");
+  document.querySelectorAll(`#rev-${restId} .rev-tab`).forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
   const d = data[period];
-  const fmt = n => Number(n).toLocaleString("ru-RU");
-  document.getElementById(`rev-val-${restId}`).textContent = fmt(d.sum) + " сом";
-  document.getElementById(`rev-cnt-${restId}`).textContent = d.cnt + " заказ";
+  const fmt = n => Number(n).toLocaleString('ru-RU');
+  document.getElementById(`rev-val-${restId}`).textContent = fmt(d.sum) + ' сом';
+  document.getElementById(`rev-cnt-${restId}`).textContent = d.cnt + ' заказ';
 }
 </script>
-
 {% endblock %}

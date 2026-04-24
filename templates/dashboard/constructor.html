@@ -3,12 +3,26 @@
 
 {% block title %}Конструктор — {{ branch.name_ru }}{% endblock %}
 
+{% block topbar_breadcrumb %}
+<a href="{% url 'dashboard:home' %}">Главная</a>
+<span class="sep">/</span>{{ branch.restaurant.name_ru }}
+<span class="sep">/</span>{{ branch.name_ru }}
+<span class="sep">/</span>Конструктор
+{% endblock %}
+
+{% block topbar_actions %}
+<a href="{% url 'dashboard:branch_items' branch.id %}" class="db-topbar-btn">🍽 <span>Меню</span></a>
+<a href="{% url 'dashboard:pos' branch.id %}" class="db-topbar-btn accent">🖥️ <span>Касса</span></a>
+{% endblock %}
+
 {% block sidebar_extra %}
-<div class="db-nav-label">Филиал</div>
+<div class="db-nav-label">{{ branch.name_ru }}</div>
 <a href="{% url 'dashboard:branch_edit' branch.id %}"><span class="db-nav-icon">⚙️</span> Настройки</a>
 <a href="{% url 'dashboard:branch_items' branch.id %}"><span class="db-nav-icon">🍽</span> Меню и цены</a>
 <a href="{% url 'dashboard:branch_categories' branch.id %}"><span class="db-nav-icon">📂</span> Категории</a>
-<a href="{% url 'dashboard:constructor_list' branch.id %}" class="active"><span class="db-nav-icon">🧩</span> Конструктор блюд</a>
+<a href="{% url 'dashboard:constructor_list' branch.id %}" class="active"><span class="db-nav-icon">🧩</span> Конструктор</a>
+<a href="{% url 'dashboard:promo_list' branch.id %}"><span class="db-nav-icon">🎟</span> Промокоды</a>
+<a href="{% url 'dashboard:branch_tables' branch.id %}"><span class="db-nav-icon">🪑</span> Столики</a>
 {% endblock %}
 
 {% block head_extra %}
