@@ -6,267 +6,398 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{{ cx.name }} — {{ branch.name_ru }}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
-  --accent: #ff4d1c;
+  --accent:  #ff4d1c;
   --accent2: #ff7a00;
-  --bg: #f7f7f8;
-  --card: #ffffff;
-  --border: #e8e8ec;
-  --text: #111118;
-  --text2: #444450;
-  --muted: #888898;
-  --teal: #00b896;
-  --radius: 16px;
+  --bg:      #f4f4f6;
+  --card:    #ffffff;
+  --border:  #e5e5ea;
+  --text:    #111118;
+  --text2:   #444450;
+  --muted:   #8e8e9a;
+  --teal:    #00b896;
+  --green:   #22c55e;
+  --radius:  18px;
+  --safe-b:  max(16px, env(safe-area-inset-bottom));
 }
-
+html { scroll-behavior: smooth; }
 body {
   font-family: 'Inter', sans-serif;
   background: var(--bg);
   color: var(--text);
   min-height: 100dvh;
-  padding-bottom: 120px;
+  padding-bottom: 160px;
+  overflow-x: hidden;
 }
 
-/* ── Шапка ── */
+/* ── ШАПКА ──────────────────────────────────────────────────────────────────── */
 .cb-header {
   position: sticky; top: 0; z-index: 100;
   background: var(--card);
   border-bottom: 1px solid var(--border);
-  padding: 14px 16px;
+  padding: 12px 16px;
   display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
 }
 .cb-back {
-  width: 36px; height: 36px; border-radius: 10px;
-  background: var(--bg); border: 1px solid var(--border);
+  width: 38px; height: 38px; border-radius: 12px;
+  background: var(--bg); border: 1.5px solid var(--border);
   display: flex; align-items: center; justify-content: center;
   font-size: 18px; text-decoration: none; color: var(--text);
-  flex-shrink: 0;
+  flex-shrink: 0; transition: background .15s;
 }
-.cb-header-title { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 15px; flex: 1; }
-.cb-header-branch { font-size: 11px; color: var(--muted); }
+.cb-back:hover { background: #ebebef; }
+.cb-header-info { flex: 1; min-width: 0; }
+.cb-header-title {
+  font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 14px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cb-header-branch { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.cb-cart-pill {
+  display: flex; align-items: center; gap: 7px;
+  padding: 8px 14px; border-radius: 100px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white; font-size: 12px; font-weight: 700;
+  text-decoration: none; flex-shrink: 0; white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(255,77,28,.25);
+}
+.cb-cart-pill-cnt { font-size: 13px; font-weight: 800; }
 
-/* ── Табы категорий ── */
+/* ── ПРОГРЕСС ────────────────────────────────────────────────────────────── */
+.cb-progress {
+  background: var(--card); padding: 14px 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+.cb-progress-label {
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .5px;
+  margin-bottom: 10px;
+}
+.cb-progress-dots {
+  display: flex; gap: 6px; margin-bottom: 14px;
+}
+.cb-dot {
+  height: 4px; flex: 1; border-radius: 2px;
+  background: var(--border); transition: background .3s;
+}
+.cb-dot.done    { background: var(--teal); }
+.cb-dot.current { background: var(--accent); }
+
+/* ── ТАБЫ ────────────────────────────────────────────────────────────────── */
 .cb-tabs {
   background: var(--card);
   border-bottom: 1px solid var(--border);
-  padding: 0 16px;
   display: flex; gap: 0; overflow-x: auto;
-  scrollbar-width: none;
+  scrollbar-width: none; padding: 0 16px;
 }
 .cb-tabs::-webkit-scrollbar { display: none; }
 .cb-tab {
-  padding: 14px 16px;
+  padding: 12px 16px;
   font-size: 13px; font-weight: 600; color: var(--muted);
-  border-bottom: 2px solid transparent;
-  white-space: nowrap; cursor: pointer;
-  transition: all .15s; flex-shrink: 0;
+  border-bottom: 2.5px solid transparent;
+  white-space: nowrap; cursor: pointer; flex-shrink: 0;
+  transition: all .15s; position: relative;
 }
-.cb-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.cb-tab.active  { color: var(--accent); border-bottom-color: var(--accent); }
+.cb-tab.done    { color: var(--teal); }
+.cb-tab-check {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--teal); color: white; font-size: 9px; font-weight: 800;
+  margin-left: 5px; vertical-align: middle;
+}
 
-/* ── Контент ── */
-.cb-content { padding: 20px 16px 8px; max-width: 720px; margin: 0 auto; }
-.cb-group { display: none; }
-.cb-group.active { display: block; }
+/* ── КОНТЕНТ ШАГА ────────────────────────────────────────────────────────── */
+.cb-step { display: none; padding: 20px 16px 8px; max-width: 720px; margin: 0 auto; }
+.cb-step.active { display: block; animation: fadeUp .22s ease; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
-.cb-group-header { margin-bottom: 16px; }
+.cb-group-header { margin-bottom: 18px; }
 .cb-group-name {
-  font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 16px;
-  color: var(--text); margin-bottom: 4px;
+  font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 18px;
+  color: var(--text); margin-bottom: 6px;
 }
-.cb-group-hint { font-size: 12px; color: var(--muted); }
+.cb-group-hint { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.cb-group-hint-badge {
+  display: inline-flex; padding: 2px 8px; border-radius: 100px;
+  font-size: 11px; font-weight: 700;
+  background: rgba(255,77,28,.08); color: var(--accent);
+  border: 1px solid rgba(255,77,28,.15);
+}
+.cb-group-hint-badge.optional {
+  background: rgba(0,184,150,.08); color: var(--teal);
+  border-color: rgba(0,184,150,.2);
+}
+.cb-group-qty-info {
+  font-size: 12px; color: var(--muted); margin-top: 4px;
+  min-height: 18px; transition: color .2s;
+}
+.cb-group-qty-info.satisfied { color: var(--teal); font-weight: 600; }
 
-/* ── Сетка позиций ── */
+/* ── СЕТКА ПОЗИЦИЙ ───────────────────────────────────────────────────────── */
 .cb-items {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
   gap: 12px;
 }
-@media (max-width: 380px) {
-  .cb-items { grid-template-columns: repeat(2, 1fr); }
-}
+@media (max-width: 360px) { .cb-items { grid-template-columns: repeat(2, 1fr); } }
 
+/* ── КАРТОЧКА ПОЗИЦИИ ────────────────────────────────────────────────────── */
 .cb-item {
   background: var(--card);
   border: 2px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
-  cursor: pointer;
-  transition: all .18s;
+  transition: border-color .18s, box-shadow .18s;
   user-select: none;
   position: relative;
 }
-.cb-item:active { transform: scale(.97); }
 .cb-item.selected {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(255,77,28,.12);
+  box-shadow: 0 0 0 3px rgba(255,77,28,.10);
 }
-.cb-item-check {
-  position: absolute; top: 8px; right: 8px;
-  width: 26px; height: 26px; border-radius: 8px;
-  background: rgba(0,0,0,.35); backdrop-filter: blur(4px);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; color: transparent;
-  transition: all .15s;
-}
-.cb-item.selected .cb-item-check {
-  background: var(--accent);
-  color: white;
-}
+.cb-item-photo-wrap { position: relative; }
 .cb-item-photo {
-  width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block;
+  width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block;
 }
 .cb-item-photo-empty {
-  width: 100%; aspect-ratio: 4/3;
-  background: linear-gradient(135deg, #f0f0f4, #e4e4ea);
+  width: 100%; aspect-ratio: 1/1;
+  background: linear-gradient(135deg, #f0eff5, #e8e7ef);
   display: flex; align-items: center; justify-content: center;
-  font-size: 36px;
+  font-size: 42px;
 }
-.cb-item-body { padding: 10px 12px 12px; }
-.cb-item-name { font-weight: 700; font-size: 13px; line-height: 1.3; margin-bottom: 3px; }
-.cb-item-desc { font-size: 11px; color: var(--muted); line-height: 1.4; margin-bottom: 6px; }
-.cb-item-price {
-  font-family: 'Unbounded', sans-serif;
-  font-weight: 800; font-size: 14px; color: var(--accent);
+/* Qty badge on photo */
+.cb-item-qty-badge {
+  position: absolute; bottom: 8px; right: 8px;
+  display: none;
+  background: var(--accent); color: white;
+  font-size: 13px; font-weight: 800;
+  width: 28px; height: 28px; border-radius: 50%;
+  align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(255,77,28,.4);
+  border: 2px solid white;
 }
+.cb-item.selected .cb-item-qty-badge { display: flex; }
 
-/* ── Навигация по шагам ── */
+.cb-item-body { padding: 10px 12px 12px; }
+.cb-item-name  { font-weight: 700; font-size: 13px; line-height: 1.3; margin-bottom: 2px; }
+.cb-item-desc  { font-size: 11px; color: var(--muted); line-height: 1.4; margin-bottom: 8px; }
+.cb-item-price {
+  font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 13px;
+  color: var(--accent); margin-bottom: 10px;
+}
+.cb-item-price.free { color: var(--teal); }
+
+/* ── QTY КОНТРОЛ ─────────────────────────────────────────────────────────── */
+.cb-qty-ctrl {
+  display: flex; align-items: center; gap: 0;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 10px; overflow: hidden;
+  height: 34px;
+}
+.cb-qty-btn {
+  width: 34px; height: 34px; border: none; background: transparent;
+  font-size: 18px; font-weight: 700; color: var(--text2);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .12s, color .12s; flex-shrink: 0;
+}
+.cb-qty-btn:hover { background: var(--border); color: var(--text); }
+.cb-qty-btn:active { transform: scale(.92); }
+.cb-qty-btn.minus { color: var(--muted); }
+.cb-qty-btn.minus:hover { color: #ef4444; background: rgba(239,68,68,.08); }
+.cb-qty-btn.plus:hover  { color: var(--accent); background: rgba(255,77,28,.08); }
+.cb-qty-val {
+  flex: 1; text-align: center; font-size: 14px; font-weight: 800;
+  color: var(--text); min-width: 28px;
+}
+.cb-qty-ctrl.active { border-color: var(--accent); background: rgba(255,77,28,.04); }
+.cb-qty-ctrl.active .cb-qty-val { color: var(--accent); }
+
+/* ── НАВИГАЦИЯ ───────────────────────────────────────────────────────────── */
 .cb-nav {
-  display: flex; gap: 10px; margin-top: 20px;
-  max-width: 720px; margin-left: auto; margin-right: auto;
-  padding: 0 16px;
+  display: flex; gap: 10px; padding: 20px 16px 0;
+  max-width: 720px; margin: 0 auto;
 }
 .cb-nav-btn {
   flex: 1; padding: 14px; border-radius: 14px;
   font-size: 14px; font-weight: 700; border: none; cursor: pointer;
-  transition: all .15s;
+  transition: all .15s; font-family: 'Inter', sans-serif;
 }
 .cb-nav-prev {
   background: var(--card); color: var(--text2);
   border: 1.5px solid var(--border);
 }
+.cb-nav-prev:hover { background: var(--bg); }
 .cb-nav-next {
   background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: white;
-  box-shadow: 0 4px 14px rgba(255,77,28,.3);
+  color: white; box-shadow: 0 4px 14px rgba(255,77,28,.3);
 }
-.cb-nav-next:disabled { background: var(--border); color: var(--muted); box-shadow: none; }
+.cb-nav-next:hover { box-shadow: 0 6px 20px rgba(255,77,28,.4); }
+.cb-nav-next:disabled { background: var(--border); color: var(--muted); box-shadow: none; cursor: default; }
 
-/* ── Итог (sticky bottom) ── */
+/* ── STICKY FOOTER ───────────────────────────────────────────────────────── */
 .cb-footer {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
   background: var(--card);
   border-top: 1px solid var(--border);
-  padding: 12px 16px max(12px, env(safe-area-inset-bottom));
-  box-shadow: 0 -8px 32px rgba(0,0,0,.08);
+  padding: 12px 16px var(--safe-b);
+  box-shadow: 0 -8px 32px rgba(0,0,0,.10);
 }
 .cb-footer-inner { max-width: 720px; margin: 0 auto; }
 .cb-summary {
   display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;
+  max-height: 52px; overflow: hidden;
 }
-.cb-summary-chip {
+.cb-chip {
   padding: 4px 10px; border-radius: 100px;
   font-size: 11px; font-weight: 600;
   background: rgba(255,77,28,.08); color: var(--accent);
-  border: 1px solid rgba(255,77,28,.2);
-  white-space: nowrap;
+  border: 1px solid rgba(255,77,28,.18);
+  white-space: nowrap; max-width: 180px;
+  overflow: hidden; text-overflow: ellipsis;
 }
-.cb-summary-chip.empty { background: var(--bg); color: var(--muted); border-color: var(--border); }
+.cb-chip.empty {
+  background: var(--bg); color: var(--muted); border-color: var(--border);
+}
 .cb-footer-row { display: flex; align-items: center; gap: 12px; }
 .cb-total {
-  font-family: 'Unbounded', sans-serif;
-  font-weight: 800; font-size: 18px; color: var(--text);
-  flex: 1;
+  font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 18px;
+  color: var(--text); flex: 1; white-space: nowrap;
 }
+.cb-total-label { font-size: 10px; color: var(--muted); font-weight: 500; display: block; font-family: 'Inter', sans-serif; }
 .cb-add-btn {
-  padding: 14px 24px; border-radius: 14px;
+  padding: 14px 22px; border-radius: 14px;
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   color: white; border: none; font-size: 14px; font-weight: 700;
   cursor: pointer; transition: all .15s;
   box-shadow: 0 4px 14px rgba(255,77,28,.3);
   white-space: nowrap;
+  font-family: 'Inter', sans-serif;
 }
-.cb-add-btn:hover { box-shadow: 0 6px 20px rgba(255,77,28,.4); }
+.cb-add-btn:hover  { box-shadow: 0 6px 20px rgba(255,77,28,.4); }
+.cb-add-btn:active { transform: scale(.97); }
 .cb-add-btn:disabled { background: var(--border); color: var(--muted); box-shadow: none; cursor: default; }
-
 .cb-error { font-size: 12px; color: #ef4444; margin-bottom: 6px; min-height: 16px; }
 
-/* ── Тост ── */
+/* ── ТОСТ ────────────────────────────────────────────────────────────────── */
 .cb-toast {
-  position: fixed; bottom: 140px; left: 50%; transform: translateX(-50%) translateY(20px);
-  background: rgba(0,0,0,.8); color: white;
-  padding: 10px 18px; border-radius: 100px;
+  position: fixed; bottom: 170px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(17,17,24,.88); color: white; backdrop-filter: blur(8px);
+  padding: 10px 20px; border-radius: 100px;
   font-size: 13px; font-weight: 600;
-  pointer-events: none; opacity: 0; transition: all .25s;
+  pointer-events: none; opacity: 0; transition: all .28s;
   white-space: nowrap; z-index: 300;
+  box-shadow: 0 8px 24px rgba(0,0,0,.2);
 }
 .cb-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.cb-toast.ok   { background: rgba(0,184,150,.92); }
+.cb-toast.err  { background: rgba(239,68,68,.92); }
 </style>
 </head>
 <body>
 
 {# ── Шапка ── #}
 <header class="cb-header">
-  <a href="{% url 'public_site:branch_menu' branch.id %}" class="cb-back">←</a>
-  <div>
+  <a href="{% url 'public_site:branch_menu' branch.id %}" class="cb-back" title="Назад">←</a>
+  <div class="cb-header-info">
     <div class="cb-header-title">{{ cx.name }}</div>
     <div class="cb-header-branch">{{ branch.name_ru }}</div>
   </div>
+  <a href="{% url 'public_site:branch_menu' branch.id %}#cart" class="cb-cart-pill" id="cbHeaderCart"
+     {% if cart_qty == 0 %}style="display:none"{% endif %}>
+    🛒 <span class="cb-cart-pill-cnt">{{ cart_qty }}</span>
+  </a>
 </header>
+
+{# ── Прогресс ── #}
+<div class="cb-progress">
+  <div class="cb-progress-label" id="cbProgressLabel">Шаг 1 из {{ groups|length }}</div>
+  <div class="cb-progress-dots" id="cbProgressDots">
+    {% for g in groups %}
+    <div class="cb-dot {% if forloop.first %}current{% endif %}" id="cbDot{{ forloop.counter0 }}"></div>
+    {% endfor %}
+  </div>
+</div>
 
 {# ── Табы категорий ── #}
 <div class="cb-tabs" id="cbTabs">
   {% for g in groups %}
-  <div class="cb-tab {% if forloop.first %}active{% endif %}" data-group="{{ g.id }}" onclick="switchGroup({{ forloop.counter0 }})">
+  <div class="cb-tab {% if forloop.first %}active{% endif %}"
+       id="cbTab{{ forloop.counter0 }}"
+       onclick="switchStep({{ forloop.counter0 }})">
     {{ g.name }}
   </div>
   {% endfor %}
 </div>
 
-{# ── Группы и позиции ── #}
-<div class="cb-content">
-  {% for g in groups %}
-  <div class="cb-group {% if forloop.first %}active{% endif %}" id="cbGroup{{ forloop.counter0 }}">
-    <div class="cb-group-header">
-      <div class="cb-group-name">{{ g.name }}</div>
-      <div class="cb-group-hint">
-        {% if g.min_select > 0 %}Обязательно: выберите мин {{ g.min_select }}{% if g.max_select > 1 %}, макс {{ g.max_select }}{% endif %}
-        {% else %}Необязательно{% if g.max_select > 0 %} (макс {{ g.max_select }}){% endif %}{% endif %}
-      </div>
+{# ── Шаги с позициями ── #}
+{% for g in groups %}
+<div class="cb-step {% if forloop.first %}active{% endif %}" id="cbStep{{ forloop.counter0 }}">
+  <div class="cb-group-header">
+    <div class="cb-group-name">{{ g.name }}</div>
+    <div class="cb-group-hint">
+      {% if g.min_select > 0 %}
+        <span class="cb-group-hint-badge">Обязательно</span>
+        мин {{ g.min_select }}{% if g.max_select > 0 %}, макс {{ g.max_select }}{% endif %}
+      {% else %}
+        <span class="cb-group-hint-badge optional">Необязательно</span>
+        {% if g.max_select > 0 %}макс {{ g.max_select }}{% else %}без ограничений{% endif %}
+      {% endif %}
     </div>
-    <div class="cb-items">
-      {% for ing in g.ingredients.all %}{% if ing.is_active %}
-      <div class="cb-item" id="cbItem{{ ing.id }}"
-           data-group="{{ g.id }}"
-           data-id="{{ ing.id }}"
-           data-price="{{ ing.display_price }}"
-           data-name="{{ ing.display_name }}"
-           onclick="toggleItem(this, {{ g.id }}, {{ ing.id }}, {{ ing.display_price }}, '{{ ing.display_name|escapejs }}', {{ g.min_select }}, {{ g.max_select }})">
-        <div class="cb-item-check">✓</div>
+    <div class="cb-group-qty-info" id="cbQtyInfo{{ g.id }}">Выбрано: 0{% if g.max_select > 0 %} / {{ g.max_select }}{% endif %}</div>
+  </div>
+
+  <div class="cb-items">
+    {% for ing in g.ingredients.all %}{% if ing.is_active %}
+    <div class="cb-item" id="cbCard{{ ing.id }}"
+         data-gid="{{ g.id }}"
+         data-iid="{{ ing.id }}"
+         data-price="{{ ing.display_price }}"
+         data-name="{{ ing.display_name|escapejs }}"
+         data-max="{{ g.max_select }}"
+         data-radio="{% if g.max_select == 1 %}1{% else %}0{% endif %}">
+
+      <div class="cb-item-photo-wrap">
         {% if ing.display_photo_url %}
           <img class="cb-item-photo" src="{{ ing.display_photo_url }}" alt="{{ ing.display_name }}" loading="lazy">
         {% else %}
           <div class="cb-item-photo-empty">🍽</div>
         {% endif %}
-        <div class="cb-item-body">
-          <div class="cb-item-name">{{ ing.display_name }}</div>
-          {% if ing.display_description %}<div class="cb-item-desc">{{ ing.display_description }}</div>{% endif %}
-          <div class="cb-item-price">{{ ing.display_price|floatformat:0 }} сом</div>
+        <div class="cb-item-qty-badge" id="cbBadge{{ ing.id }}">1</div>
+      </div>
+
+      <div class="cb-item-body">
+        <div class="cb-item-name">{{ ing.display_name }}</div>
+        {% if ing.display_description %}
+        <div class="cb-item-desc">{{ ing.display_description|truncatechars:55 }}</div>
+        {% endif %}
+        <div class="cb-item-price {% if ing.display_price == 0 %}free{% endif %}">
+          {% if ing.display_price == 0 %}Бесплатно{% else %}+{{ ing.display_price|floatformat:0 }} сом{% endif %}
+        </div>
+
+        <div class="cb-qty-ctrl" id="cbCtrl{{ ing.id }}">
+          <button class="cb-qty-btn minus" onclick="changeQty({{ g.id }}, {{ ing.id }}, -1, {{ g.max_select }}, {% if g.max_select == 1 %}true{% else %}false{% endif %})" type="button">−</button>
+          <div class="cb-qty-val" id="cbVal{{ ing.id }}">0</div>
+          <button class="cb-qty-btn plus"  onclick="changeQty({{ g.id }}, {{ ing.id }}, +1, {{ g.max_select }}, {% if g.max_select == 1 %}true{% else %}false{% endif %})" type="button">+</button>
         </div>
       </div>
-      {% endif %}{% endfor %}
     </div>
+    {% endif %}{% endfor %}
   </div>
-  {% endfor %}
 </div>
+{% endfor %}
 
 {# ── Навигация ── #}
 <div class="cb-nav" id="cbNav">
-  <button class="cb-nav-btn cb-nav-prev" id="cbPrevBtn" onclick="goPrev()" style="display:none">← Назад</button>
-  <button class="cb-nav-btn cb-nav-next" id="cbNextBtn" onclick="goNext()">Дальше →</button>
+  <button class="cb-nav-btn cb-nav-prev" id="cbPrevBtn" onclick="goPrev()" style="display:none" type="button">← Назад</button>
+  <button class="cb-nav-btn cb-nav-next" id="cbNextBtn" onclick="goNext()" type="button">Дальше →</button>
 </div>
 
 {# ── Sticky footer ── #}
@@ -275,12 +406,15 @@ body {
     <div class="cb-error" id="cbError"></div>
     <div class="cb-summary" id="cbSummary">
       {% for g in groups %}
-      <div class="cb-summary-chip empty" id="cbChip{{ g.id }}">{{ g.name }}: —</div>
+      <div class="cb-chip empty" id="cbChip{{ g.id }}">{{ g.name }}: —</div>
       {% endfor %}
     </div>
     <div class="cb-footer-row">
-      <div class="cb-total" id="cbTotal">0 сом</div>
-      <button class="cb-add-btn" id="cbAddBtn" onclick="addToCart()">
+      <div class="cb-total">
+        <span class="cb-total-label">Итого</span>
+        <span id="cbTotalVal">0 сом</span>
+      </div>
+      <button class="cb-add-btn" id="cbAddBtn" onclick="addToCart()" type="button">
         В корзину 🧩
       </button>
     </div>
@@ -290,107 +424,195 @@ body {
 <div class="cb-toast" id="cbToast"></div>
 
 <script>
-const GROUPS = [
-  {% for g in groups %}
-  { id: {{ g.id }}, name: "{{ g.name|escapejs }}", min: {{ g.min_select }}, max: {{ g.max_select }} },
-  {% endfor %}
+// ── Данные групп ──────────────────────────────────────────────────────────────
+const GROUPS = [{% for g in groups %}
+  { id:{{ g.id }}, name:"{{ g.name|escapejs }}", min:{{ g.min_select }}, max:{{ g.max_select }} },{% endfor %}
 ];
-const TOTAL_GROUPS = GROUPS.length;
-let currentStep = 0;
-// selMap: {group_id: [{id, price, name}]}
+const N = GROUPS.length;
+let step = 0;
+
+// selMap: {group_id: {ing_id: qty}}
 const selMap = {};
-GROUPS.forEach(g => selMap[g.id] = []);
+GROUPS.forEach(g => { selMap[g.id] = {}; });
 
-const ADD_URL = "{% url 'public_site:constructor_add_to_cart' branch.id %}";
+const ADD_URL  = "{% url 'public_site:constructor_add_to_cart' branch.id %}";
 const MENU_URL = "{% url 'public_site:branch_menu' branch.id %}";
-const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+const CSRF     = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
 
-function switchGroup(idx) {
-  document.querySelectorAll('.cb-group').forEach((el, i) => el.classList.toggle('active', i === idx));
-  document.querySelectorAll('.cb-tab').forEach((el, i) => el.classList.toggle('active', i === idx));
-  document.getElementById('cbPrevBtn').style.display = idx === 0 ? 'none' : '';
-  const isLast = idx === TOTAL_GROUPS - 1;
-  document.getElementById('cbNextBtn').textContent = isLast ? 'Готово ✓' : 'Дальше →';
-  // scroll tab into view
-  const tab = document.querySelectorAll('.cb-tab')[idx];
-  tab?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-  currentStep = idx;
-  document.getElementById('cbError').textContent = '';
+// ── Логика количества ─────────────────────────────────────────────────────────
+function getGroupTotal(gid) {
+  return Object.values(selMap[gid] || {}).reduce((a, b) => a + b, 0);
 }
 
-function goNext() {
-  const g = GROUPS[currentStep];
-  const sel = selMap[g.id] || [];
-  if (g.min > 0 && sel.length < g.min) {
-    showError(`Выберите минимум ${g.min} в «${g.name}»`);
-    return;
-  }
-  if (currentStep < TOTAL_GROUPS - 1) {
-    switchGroup(currentStep + 1);
-  }
-}
+function changeQty(gid, iid, delta, maxSelect, isRadio) {
+  const map    = selMap[gid];
+  const curQty = map[iid] || 0;
+  let newQty   = curQty + delta;
 
-function goPrev() {
-  if (currentStep > 0) switchGroup(currentStep - 1);
-}
+  if (newQty < 0) newQty = 0;
 
-function toggleItem(el, groupId, ingId, price, name, minSelect, maxSelect) {
-  const sel = selMap[groupId] || [];
-  const has = sel.some(s => s.id === ingId);
-  if (has) {
-    selMap[groupId] = sel.filter(s => s.id !== ingId);
-    el.classList.remove('selected');
-  } else if (maxSelect === 1) {
-    // radio
-    selMap[groupId] = [{ id: ingId, price, name }];
-    document.querySelectorAll(`.cb-item[data-group="${groupId}"]`).forEach(c => c.classList.remove('selected'));
-    el.classList.add('selected');
-  } else if (maxSelect === 0 || sel.length < maxSelect) {
-    selMap[groupId] = [...sel, { id: ingId, price, name }];
-    el.classList.add('selected');
+  if (isRadio) {
+    // radio — только 1 в группе, qty=1
+    if (delta > 0) {
+      // сбросить все другие
+      Object.keys(map).forEach(k => { delete map[k]; });
+      map[iid] = 1;
+    } else {
+      delete map[iid];
+    }
   } else {
-    showToast(`Максимум ${maxSelect} в «${GROUPS.find(g=>g.id===groupId)?.name}»`);
-    return;
+    if (newQty === 0) {
+      delete map[iid];
+    } else {
+      const groupTotalWithout = getGroupTotal(gid) - curQty;
+      if (maxSelect > 0 && groupTotalWithout + newQty > maxSelect) {
+        showToast(`Максимум ${maxSelect} в «${GROUPS.find(g=>g.id===gid)?.name}»`);
+        return;
+      }
+      map[iid] = newQty;
+    }
   }
+
+  updateCardUI(gid, iid);
+  updateGroupQtyInfo(gid);
   updateFooter();
-  document.getElementById('cbError').textContent = '';
+  clearError();
+
+  // Если radio — обновить все карточки группы (сброс старых)
+  if (isRadio) {
+    document.querySelectorAll(`.cb-item[data-gid="${gid}"]`).forEach(card => {
+      const cid = parseInt(card.dataset.iid);
+      updateCardUI(gid, cid);
+    });
+  }
+}
+
+function updateCardUI(gid, iid) {
+  const card  = document.getElementById(`cbCard${iid}`);
+  const valEl = document.getElementById(`cbVal${iid}`);
+  const bdg   = document.getElementById(`cbBadge${iid}`);
+  const ctrl  = document.getElementById(`cbCtrl${iid}`);
+  if (!card) return;
+  const qty = (selMap[gid] || {})[iid] || 0;
+
+  valEl.textContent = qty;
+  bdg.textContent   = qty;
+
+  if (qty > 0) {
+    card.classList.add('selected');
+    ctrl.classList.add('active');
+    bdg.style.display = 'flex';
+  } else {
+    card.classList.remove('selected');
+    ctrl.classList.remove('active');
+    bdg.style.display = 'none';
+  }
+}
+
+function updateGroupQtyInfo(gid) {
+  const g    = GROUPS.find(x => x.id === gid);
+  const info = document.getElementById(`cbQtyInfo${gid}`);
+  if (!g || !info) return;
+  const total = getGroupTotal(gid);
+  const maxTxt = g.max > 0 ? ` / ${g.max}` : '';
+  info.textContent = `Выбрано: ${total}${maxTxt}`;
+  const satisfied = g.min === 0 || total >= g.min;
+  info.classList.toggle('satisfied', satisfied && total > 0);
 }
 
 function updateFooter() {
   let total = 0;
   GROUPS.forEach(g => {
-    const sel = selMap[g.id] || [];
     const chip = document.getElementById(`cbChip${g.id}`);
-    if (sel.length) {
+    const map  = selMap[g.id] || {};
+    const entries = Object.entries(map).filter(([,q]) => q > 0);
+    if (entries.length > 0) {
       chip.classList.remove('empty');
-      chip.textContent = g.name + ': ' + sel.map(s => s.name).join(', ');
-      sel.forEach(s => total += Number(s.price));
+      // собрать названия с qty
+      const names = entries.map(([iid, qty]) => {
+        const el = document.getElementById(`cbCard${iid}`);
+        const nm = el ? el.dataset.name : iid;
+        return qty > 1 ? `${nm} ×${qty}` : nm;
+      }).join(', ');
+      chip.textContent = `${g.name}: ${names}`;
+      // считаем цену
+      entries.forEach(([iid, qty]) => {
+        const el = document.getElementById(`cbCard${iid}`);
+        if (el) total += Number(el.dataset.price) * qty;
+      });
     } else {
       chip.classList.add('empty');
-      chip.textContent = g.name + ': —';
+      chip.textContent = `${g.name}: —`;
     }
   });
-  document.getElementById('cbTotal').textContent = total + ' сом';
+  document.getElementById('cbTotalVal').textContent = total + ' сом';
 }
 
-function showError(msg) {
-  document.getElementById('cbError').textContent = msg;
-}
-
-function showToast(msg) {
-  const t = document.getElementById('cbToast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2200);
-}
-
-async function addToCart() {
-  // проверить все обязательные группы
-  for (const g of GROUPS) {
-    if (g.min > 0 && (selMap[g.id] || []).length < g.min) {
-      // перейти на нужный шаг
-      const idx = GROUPS.indexOf(g);
-      switchGroup(idx);
+// ── Навигация по шагам ────────────────────────────────────────────────────────
+function switchStep(idx, validate = false) {
+  if (validate) {
+    const g = GROUPS[step];
+    const total = getGroupTotal(g.id);
+    if (g.min > 0 && total < g.min) {
       showError(`Выберите минимум ${g.min} в «${g.name}»`);
+      shakeBtn();
+      return false;
+    }
+  }
+
+  // деактивировать текущий
+  document.getElementById(`cbStep${step}`).classList.remove('active');
+  document.getElementById(`cbTab${step}`).classList.remove('active');
+
+  step = idx;
+
+  // активировать новый
+  document.getElementById(`cbStep${step}`).classList.add('active');
+  const newTab = document.getElementById(`cbTab${step}`);
+  newTab.classList.add('active');
+  newTab.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'center' });
+
+  // обновить dot/tab статусы
+  GROUPS.forEach((g, i) => {
+    const dot = document.getElementById(`cbDot${i}`);
+    const tab = document.getElementById(`cbTab${i}`);
+    if (i < step) {
+      dot.className = 'cb-dot done';
+      if (i !== step) tab.classList.remove('active');
+    } else if (i === step) {
+      dot.className = 'cb-dot current';
+    } else {
+      dot.className = 'cb-dot';
+    }
+  });
+
+  // кнопки
+  document.getElementById('cbPrevBtn').style.display = step === 0 ? 'none' : '';
+  document.getElementById('cbNextBtn').textContent   = step === N - 1 ? 'Готово ✓' : 'Дальше →';
+
+  // обновить прогресс
+  document.getElementById('cbProgressLabel').textContent = `Шаг ${step + 1} из ${N}`;
+  clearError();
+  return true;
+}
+
+function goNext() {
+  if (step < N - 1) {
+    switchStep(step + 1, true);
+  }
+  // если последний шаг — не добавляем в корзину, кнопка "В корзину" в footer
+}
+function goPrev() { if (step > 0) switchStep(step - 1); }
+
+// ── Добавить в корзину ────────────────────────────────────────────────────────
+async function addToCart() {
+  // проверяем все обязательные группы
+  for (let i = 0; i < N; i++) {
+    const g = GROUPS[i];
+    if (g.min > 0 && getGroupTotal(g.id) < g.min) {
+      switchStep(i);
+      showError(`Выберите минимум ${g.min} в «${g.name}»`);
+      shakeBtn();
       return;
     }
   }
@@ -398,9 +620,10 @@ async function addToCart() {
   const btn = document.getElementById('cbAddBtn');
   btn.disabled = true; btn.textContent = '...';
 
+  // формат: {group_id: {ing_id: qty}}
   const selections = {};
   GROUPS.forEach(g => {
-    selections[g.id] = (selMap[g.id] || []).map(s => s.id);
+    selections[g.id] = selMap[g.id] || {};
   });
 
   const fd = new FormData();
@@ -414,8 +637,8 @@ async function addToCart() {
     });
     const d = await r.json();
     if (d.ok) {
-      showToast('Добавлено в корзину ✓');
-      setTimeout(() => location.href = MENU_URL + '#cart', 1000);
+      showToast('Добавлено в корзину ✓', 'ok');
+      setTimeout(() => location.href = MENU_URL + '#cart', 900);
     } else {
       showError(d.error || 'Ошибка');
       btn.disabled = false; btn.textContent = 'В корзину 🧩';
@@ -425,6 +648,28 @@ async function addToCart() {
     btn.disabled = false; btn.textContent = 'В корзину 🧩';
   }
 }
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function clearError() { document.getElementById('cbError').textContent = ''; }
+function showError(msg) { document.getElementById('cbError').textContent = msg; }
+
+function showToast(msg, type = '') {
+  const t = document.getElementById('cbToast');
+  t.textContent = msg;
+  t.className = `cb-toast show${type ? ' ' + type : ''}`;
+  setTimeout(() => t.className = 'cb-toast', 2200);
+}
+
+function shakeBtn() {
+  const btn = document.getElementById('cbNextBtn');
+  btn.style.transform = 'translateX(-4px)';
+  setTimeout(() => { btn.style.transform = 'translateX(4px)'; }, 100);
+  setTimeout(() => { btn.style.transform = ''; }, 200);
+}
+
+// ── Инициализация ────────────────────────────────────────────────────────────
+updateFooter();
+GROUPS.forEach(g => updateGroupQtyInfo(g.id));
 </script>
 </body>
 </html>

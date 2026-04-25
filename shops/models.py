@@ -21,7 +21,9 @@ class Store(models.Model):
     about_ru = models.TextField(blank=True, default="")
     about_ky = models.TextField(blank=True, default="")
     about_en = models.TextField(blank=True, default="")
-    youtube_url = models.URLField("YouTube канал", blank=True, default="")
+    youtube_url    = models.URLField("YouTube канал",    blank=True, default="")
+    instagram_url  = models.URLField("Instagram (1)",   blank=True, default="")
+    instagram_url_2 = models.URLField("Instagram (2)",  blank=True, default="")
     is_active = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):
@@ -34,7 +36,13 @@ class Store(models.Model):
 
 
 class StoreBranch(TimeStampedModel):
+    class City(models.TextChoices):
+        BISHKEK = "bishkek", "Бишкек"
+        OSH     = "osh",     "Ош"
+        OTHER   = "other",   "Другой город"
+
     store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name="branches")
+    city  = models.CharField("Город", max_length=20, choices=City.choices, default=City.OSH)
     name_ru = models.CharField(max_length=200)
     name_ky = models.CharField(max_length=200, blank=True, default="")
     name_en = models.CharField(max_length=200, blank=True, default="")

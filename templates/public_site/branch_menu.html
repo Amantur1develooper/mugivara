@@ -621,7 +621,7 @@
       </div>
     {% endif %}
 
-    {# ── СЕКЦИЯ КОНСТРУКТОРА — только если есть активные ── #}
+    {# ── СЕКЦИЯ КОНСТРУКТОРА ── #}
     {% if constructors %}
     <section class="bm-cat-section" id="cat-constructors" data-cat-section="cat-constructors">
       <div class="bm-cat-header">
@@ -630,30 +630,126 @@
         <span class="bm-cat-count">{{ constructors|length }}</span>
         <div class="bm-cat-line"></div>
       </div>
-      <div class="bm-grid">
+
+      <div class="cx-cards">
         {% for cx in constructors %}
-        <article class="dish-card" style="cursor:pointer" onclick="location.href='{% url 'public_site:constructor_build' branch.id cx.id %}'">
-          <div class="dish-photo">
+        <a href="{% url 'public_site:constructor_build' branch.id cx.id %}" class="cx-card">
+          {# фото или градиентный фон #}
+          <div class="cx-card-img">
             {% if cx.photo %}
-              <img src="{{ cx.photo.url }}" alt="{{ cx.name }}" loading="lazy" width="320" height="170">
+              <img src="{{ cx.photo.url }}" alt="{{ cx.name }}" loading="lazy">
             {% else %}
-              <div class="dish-photo-empty"><div class="dish-photo-empty-icon">🧩</div></div>
+              <div class="cx-card-img-placeholder">🧩</div>
             {% endif %}
-            <div class="dish-photo-grad"></div>
-            <div class="dish-hot-badge" style="background:linear-gradient(135deg,var(--accent),var(--accent2))">Собери сам</div>
+            <div class="cx-card-overlay"></div>
+            <div class="cx-card-label">Собери сам</div>
           </div>
-          <div class="dish-body">
-            <div class="dish-name">{{ cx.name }}</div>
-            {% if cx.description %}<div class="dish-desc">{{ cx.description }}</div>{% endif %}
-            <div class="dish-footer">
-              <div class="dish-price" style="font-size:12px;color:var(--muted)">Выбери состав</div>
-              <a href="{% url 'public_site:constructor_build' branch.id cx.id %}" class="dish-add-btn" onclick="event.stopPropagation()" style="display:flex;align-items:center;justify-content:center;text-decoration:none">🧩</a>
+
+          <div class="cx-card-body">
+            <div class="cx-card-name">{{ cx.name }}</div>
+            {% if cx.description %}
+            <div class="cx-card-desc">{{ cx.description|truncatechars:60 }}</div>
+            {% endif %}
+
+            {# шаги — названия групп #}
+            <div class="cx-card-steps">
+              {% for g in cx.groups.all %}
+              <span class="cx-card-step">{{ g.name }}</span>
+              {% if not forloop.last %}<span class="cx-card-step-sep">·</span>{% endif %}
+              {% endfor %}
+            </div>
+
+            <div class="cx-card-cta">
+              <span>Собрать →</span>
             </div>
           </div>
-        </article>
+        </a>
         {% endfor %}
       </div>
     </section>
+
+    <style>
+    .cx-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+      margin-bottom: 4px;
+    }
+    @media (max-width: 600px) { .cx-cards { grid-template-columns: 1fr; } }
+
+    .cx-card {
+      display: flex; flex-direction: column;
+      background: var(--card); border-radius: 20px;
+      border: 1.5px solid var(--border);
+      overflow: hidden; text-decoration: none; color: inherit;
+      transition: transform .18s, box-shadow .18s, border-color .18s;
+      box-shadow: 0 2px 10px rgba(0,0,0,.05);
+    }
+    .cx-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 28px rgba(255,77,28,.15);
+      border-color: rgba(255,77,28,.3);
+    }
+    .cx-card:active { transform: scale(.98); }
+
+    .cx-card-img {
+      position: relative; width: 100%; aspect-ratio: 16/7;
+      background: linear-gradient(135deg, #1a1a2e 0%, #2d1b3d 50%, #1a0a1e 100%);
+      overflow: hidden; flex-shrink: 0;
+    }
+    .cx-card-img img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform 5s ease;
+    }
+    .cx-card:hover .cx-card-img img { transform: scale(1.04); }
+    .cx-card-img-placeholder {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 52px; opacity: .6;
+    }
+    .cx-card-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,.7) 0%, rgba(0,0,0,.15) 60%, transparent 100%);
+    }
+    .cx-card-label {
+      position: absolute; top: 10px; left: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white; font-size: 11px; font-weight: 800;
+      padding: 3px 10px; border-radius: 100px;
+      letter-spacing: .3px;
+    }
+
+    .cx-card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 6px; }
+    .cx-card-name {
+      font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 15px;
+      color: var(--text); line-height: 1.25;
+    }
+    .cx-card-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    .cx-card-steps {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+      margin-top: 2px;
+    }
+    .cx-card-step {
+      font-size: 11px; font-weight: 600;
+      background: var(--bg); color: var(--text2);
+      border: 1px solid var(--border); border-radius: 100px;
+      padding: 2px 9px;
+    }
+    .cx-card-step-sep { font-size: 11px; color: var(--border); }
+
+    .cx-card-cta {
+      margin-top: 6px;
+      display: inline-flex; align-items: center;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white; font-size: 13px; font-weight: 700;
+      padding: 10px 18px; border-radius: 12px;
+      width: fit-content;
+      box-shadow: 0 4px 12px rgba(255,77,28,.25);
+      transition: box-shadow .15s;
+    }
+    .cx-card:hover .cx-card-cta { box-shadow: 0 6px 18px rgba(255,77,28,.35); }
+    </style>
     {% endif %}
 
   </div>

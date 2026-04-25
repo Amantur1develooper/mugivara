@@ -61,6 +61,17 @@
   transition: box-shadow .15s;
 }
 .sd-yt:hover { box-shadow: 0 6px 20px rgba(255,0,0,.38); }
+.sd-instagram {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 16px; border-radius: 100px;
+  font-size: 13px; font-weight: 700;
+  text-decoration: none;
+  background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(220,39,67,.28);
+  transition: box-shadow .15s;
+}
+.sd-instagram:hover { box-shadow: 0 6px 20px rgba(220,39,67,.44); }
 
 /* ── SECTION TITLE ── */
 .sd-section-title {
@@ -187,6 +198,44 @@
 }
 .sd-map-link:hover { text-decoration: underline; }
 
+/* ── CITY FILTER ── */
+.sd-city-bar {
+  display: flex; align-items: center; gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.sd-city-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 16px; border-radius: 100px;
+  font-size: 13px; font-weight: 700;
+  border: 1.5px solid var(--border);
+  background: var(--card); color: var(--text2);
+  cursor: pointer; transition: border-color .15s, background .15s, color .15s;
+  user-select: none;
+}
+.sd-city-pill:hover { border-color: var(--text); color: var(--text); }
+.sd-city-pill.active {
+  background: var(--text); color: #fff;
+  border-color: var(--text);
+}
+.sd-geo-btn {
+  margin-left: auto;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 16px; border-radius: 100px;
+  font-size: 13px; font-weight: 700;
+  border: 1.5px solid var(--border);
+  background: var(--card); color: var(--text2);
+  cursor: pointer; transition: border-color .15s, color .15s;
+}
+.sd-geo-btn:hover { border-color: var(--accent, #ff4d1c); color: var(--accent, #ff4d1c); }
+.sd-geo-btn.loading { opacity: .6; pointer-events: none; }
+.sd-row[hidden] { display: none !important; }
+.sd-no-results {
+  display: none; text-align: center; padding: 40px 24px;
+  background: var(--card); border-radius: 18px;
+  border: 1px solid var(--border); color: var(--muted); font-size: 14px;
+}
+
 /* Empty */
 .sd-empty {
   text-align: center; padding: 64px 24px;
@@ -248,6 +297,18 @@
         YouTube
       </a>
       {% endif %}
+      {% if store.instagram_url %}
+      <a href="{{ store.instagram_url }}" target="_blank" rel="noopener" class="sd-instagram">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+        Instagram
+      </a>
+      {% endif %}
+      {% if store.instagram_url_2 %}
+      <a href="{{ store.instagram_url_2 }}" target="_blank" rel="noopener" class="sd-instagram">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+        Instagram 2
+      </a>
+      {% endif %}
       <a href="{% url 'shops:store_list' %}" class="sd-back">← {% trans "Назад" %}</a>
     </div>
   </div>
@@ -255,9 +316,29 @@
   <!-- LIST -->
   {% if branches %}
   <div class="sd-section-title">{% trans "Выберите филиал" %}</div>
-  <div class="sd-list">
+
+  <!-- City filter bar -->
+  <div class="sd-city-bar">
+    <button class="sd-city-pill active" data-city="all">{% trans "Все" %}</button>
+    {% regroup branches by city as city_groups %}
+    {% for cg in city_groups %}
+      {% if cg.grouper == "bishkek" %}
+        <button class="sd-city-pill" data-city="bishkek">🏙 {% trans "Бишкек" %}</button>
+      {% elif cg.grouper == "osh" %}
+        <button class="sd-city-pill" data-city="osh">🌆 {% trans "Ош" %}</button>
+      {% elif cg.grouper == "other" %}
+        <button class="sd-city-pill" data-city="other">📍 {% trans "Другой город" %}</button>
+      {% endif %}
+    {% endfor %}
+    <button class="sd-geo-btn" id="sd-geo-btn" title="{% trans 'Показать ближайшие' %}">
+      📍 {% trans "Рядом со мной" %}
+    </button>
+  </div>
+
+  <div class="sd-list" id="sd-branch-list">
+    <div class="sd-no-results" id="sd-no-results">{% trans "В этом городе нет филиалов." %}</div>
     {% for b in branches %}
-    <div class="sd-row">
+    <div class="sd-row" data-city="{{ b.city }}" data-lat="{{ b.lat|default:'' }}" data-lon="{{ b.lon|default:'' }}">
 
       <!-- Thumbnail -->
       <div class="sd-thumb">
@@ -316,7 +397,7 @@
 
     </div>
     {% endfor %}
-  </div>
+  </div><!-- /.sd-list -->
 
   {% else %}
   <div class="sd-empty">
@@ -327,4 +408,65 @@
   {% endif %}
 
 </div>
+
+{% if branches %}
+<script>
+(function () {
+  const pills    = document.querySelectorAll('.sd-city-pill');
+  const rows     = document.querySelectorAll('#sd-branch-list .sd-row');
+  const noRes    = document.getElementById('sd-no-results');
+  const geoBtn   = document.getElementById('sd-geo-btn');
+
+  function filterByCity(city) {
+    let visible = 0;
+    rows.forEach(r => {
+      const match = city === 'all' || r.dataset.city === city;
+      r.hidden = !match;
+      if (match) visible++;
+    });
+    noRes.style.display = visible === 0 ? 'block' : 'none';
+  }
+
+  pills.forEach(p => {
+    p.addEventListener('click', () => {
+      pills.forEach(x => x.classList.remove('active'));
+      p.classList.add('active');
+      filterByCity(p.dataset.city);
+    });
+  });
+
+  /* ── Geolocation scaffold ── */
+  if (geoBtn) {
+    geoBtn.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        alert('{% trans "Геолокация не поддерживается вашим браузером." %}');
+        return;
+      }
+      geoBtn.classList.add('loading');
+      geoBtn.textContent = '{% trans "Определяем..." %}';
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          geoBtn.classList.remove('loading');
+          geoBtn.innerHTML = '📍 {% trans "Рядом со мной" %}';
+          // TODO: compare pos.coords with branch lat/lon when those fields are added
+          // For now just show all branches and notify
+          pills.forEach(x => x.classList.remove('active'));
+          document.querySelector('[data-city="all"]').classList.add('active');
+          filterByCity('all');
+          // future: sortByDistance(pos.coords.latitude, pos.coords.longitude)
+        },
+        err => {
+          geoBtn.classList.remove('loading');
+          geoBtn.innerHTML = '📍 {% trans "Рядом со мной" %}';
+          if (err.code !== err.PERMISSION_DENIED) {
+            alert('{% trans "Не удалось получить геопозицию." %}');
+          }
+        },
+        { timeout: 8000 }
+      );
+    });
+  }
+})();
+</script>
+{% endif %}
 {% endblock %}

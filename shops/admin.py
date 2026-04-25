@@ -20,13 +20,14 @@ class StoreAdmin(admin.ModelAdmin):
     list_display = ("name_ru", "slug", "is_active")
     search_fields = ("name_ru", "name_ky", "name_en", "slug")
     prepopulated_fields = {"slug": ("name_ru",)}
-    fields = ("name_ru", "name_ky", "name_en", "slug", "logo", "about_ru", "youtube_url", "is_active")
+    fields = ("name_ru", "name_ky", "name_en", "slug", "logo", "about_ru",
+              "youtube_url", "instagram_url", "instagram_url_2", "is_active")
 
 
 @admin.register(StoreBranch)
 class StoreBranchAdmin(admin.ModelAdmin):
-    list_display = ("store", "name_ru", "phone", "phone2", "is_active")
-    list_filter = ("store", "is_active")
+    list_display = ("store", "name_ru", "city", "phone", "phone2", "is_active")
+    list_filter = ("store", "city", "is_active")
     search_fields = ("name_ru", "address", "phone", "phone2")
     change_form_template = "admin/shops/storebranch/change_form.html"
 

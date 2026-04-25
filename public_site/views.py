@@ -1147,20 +1147,47 @@ def constructor_add_to_cart(request, branch_id: int):
     total_price = Decimal("0")
 
     for g in groups:
-        chosen_ids = selections_raw.get(str(g.id), [])
-        if not isinstance(chosen_ids, list):
-            chosen_ids = [chosen_ids]
-        chosen_ids = [int(i) for i in chosen_ids if i]
+        raw = selections_raw.get(str(g.id), {})
 
-        if g.min_select and len(chosen_ids) < g.min_select:
-            return JsonResponse({"ok": False, "error": f"Выберите минимум {g.min_select} в «{g.name}»"}, status=400)
-        if g.max_select > 0 and len(chosen_ids) > g.max_select:
-            return JsonResponse({"ok": False, "error": f"Максимум {g.max_select} в «{g.name}»"}, status=400)
+        # Обратная совместимость: старый формат [id, id] → {id: 1}
+        if isinstance(raw, list):
+            raw = {str(i): 1 for i in raw if i}
+
+        # qty-dict: {str(ing_id): qty}
+        qty_map = {}
+        for k, v in raw.items():
+            try:
+                qty_map[int(k)] = max(0, int(v))
+            except (ValueError, TypeError):
+                pass
+        qty_map = {k: v for k, v in qty_map.items() if v > 0}
+
+        total_qty = sum(qty_map.values())
+
+        if g.min_select and total_qty < g.min_select:
+            return JsonResponse(
+                {"ok": False, "error": f"Выберите минимум {g.min_select} в «{g.name}»"}, status=400
+            )
+        if g.max_select > 0 and total_qty > g.max_select:
+            return JsonResponse(
+                {"ok": False, "error": f"Максимум {g.max_select} в «{g.name}»"}, status=400
+            )
+
+        if not qty_map:
+            continue
 
         ings_data = []
-        for ing in g.ingredients.select_related("branch_item__item").filter(is_active=True, id__in=chosen_ids):
-            ings_data.append({"id": ing.id, "name": ing.display_name, "price": str(ing.display_price)})
-            total_price += ing.display_price
+        for ing in g.ingredients.select_related("branch_item__item").filter(
+            is_active=True, id__in=qty_map.keys()
+        ):
+            qty = qty_map.get(ing.id, 1)
+            ings_data.append({
+                "id":    ing.id,
+                "name":  ing.display_name,
+                "price": str(ing.display_price),
+                "qty":   qty,
+            })
+            total_price += ing.display_price * qty
 
         if ings_data:
             selections.append({"gid": g.id, "gname": g.name, "ings": ings_data})
@@ -1170,13 +1197,13 @@ def constructor_add_to_cart(request, branch_id: int):
     cart = _get_branch_cx_cart(request, branch_id)
     idx = max((item["idx"] for item in cart), default=-1) + 1
     cart.append({
-        "idx": idx,
-        "cx_id": cx.id,
-        "cx_name": cx.name,
+        "idx":        idx,
+        "cx_id":      cx.id,
+        "cx_name":    cx.name,
         "base_price": str(cx.base_price),
         "selections": selections,
         "unit_price": str(unit_price),
-        "qty": 1,
+        "qty":        1,
         "line_total": str(unit_price),
     })
     _save_branch_cx_cart(request, branch_id, cart)
