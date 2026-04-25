@@ -105,6 +105,11 @@ def shop_branch_edit(request, branch_id):
         branch.phone            = request.POST.get("phone", "").strip()
         branch.phone2           = request.POST.get("phone2", "").strip()
         branch.map_url          = request.POST.get("map_url", "").strip()
+        branch.city             = request.POST.get("city", branch.city).strip()
+        lat_raw = request.POST.get("lat", "").strip()
+        lon_raw = request.POST.get("lon", "").strip()
+        branch.lat = lat_raw if lat_raw else None
+        branch.lon = lon_raw if lon_raw else None
         branch.is_active        = request.POST.get("is_active") == "on"
         branch.delivery_enabled = request.POST.get("delivery_enabled") == "on"
         branch.delivery_fee     = _dec(request.POST.get("delivery_fee"))

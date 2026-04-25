@@ -24,14 +24,6 @@ def _add_if_field(model, data: dict, field_name: str, value):
     """Добавляет поле в data только если оно реально есть в модели."""
     return field_name in {f.name for f in model._meta.get_fields() if hasattr(f, "name")} and data.setdefault(field_name, value) is None
 
-def store_list(request):
-    q = (request.GET.get("q") or "").strip()
-    stores = Store.objects.filter(is_active=True)
-    if q:
-        stores = stores.filter(name_ru__icontains=q)
-    return render(request, "shops/store_list.html", {"stores": stores, "q": q})
-
-
 def store_detail(request, slug):
     store = get_object_or_404(Store, slug=slug, is_active=True)
     branches = store.branches.filter(is_active=True)
@@ -74,11 +66,28 @@ def _is_valid_kg_phone(phone: str) -> bool:
 
 
 def store_list(request):
+    import json
     q = (request.GET.get("q") or "").strip()
     stores = Store.objects.filter(is_active=True)
     if q:
         stores = stores.filter(name_ru__icontains=q)
-    return render(request, "shops/store_list.html", {"stores": stores, "q": q})
+
+    map_points = []
+    for b in StoreBranch.objects.filter(is_active=True, lat__isnull=False, lon__isnull=False).select_related("store"):
+        map_points.append({
+            "lat": float(b.lat),
+            "lon": float(b.lon),
+            "name": b.name_ru,
+            "store": b.store.name_ru,
+            "address": b.address,
+            "store_url": f"/ru/shops/{b.store.slug}/",
+        })
+
+    return render(request, "shops/store_list.html", {
+        "stores": stores,
+        "q": q,
+        "map_points_json": json.dumps(map_points, ensure_ascii=False),
+    })
 
 
 def store_detail(request, slug):

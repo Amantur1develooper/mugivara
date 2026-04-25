@@ -288,6 +288,32 @@ def home(request):
     except Exception:
         ad_banners = []
 
+    # ── КАРТА: все точки бизнесов ────────────────────────────────────────────
+    import json as _json
+    map_points = []
+    for b in Branch.objects.filter(is_active=True, lat__isnull=False, lon__isnull=False).select_related("restaurant"):
+        map_points.append({
+            "lat":   float(b.lat),
+            "lon":   float(b.lon),
+            "name":  b.name_ru,
+            "biz":   b.restaurant.name_ru,
+            "type":  "restaurant",
+            "icon":  "🍽",
+            "addr":  b.address,
+            "url":   f"/ru/restaurant/{b.restaurant.slug}/contacts/",
+        })
+    for b in StoreBranch.objects.filter(is_active=True, lat__isnull=False, lon__isnull=False).select_related("store"):
+        map_points.append({
+            "lat":   float(b.lat),
+            "lon":   float(b.lon),
+            "name":  b.name_ru,
+            "biz":   b.store.name_ru,
+            "type":  "store",
+            "icon":  "🏪",
+            "addr":  b.address,
+            "url":   f"/ru/shops/{b.store.slug}/",
+        })
+
     return render(request, "public_site/home.html", {
         "categories":       PLATFORM_CATEGORIES,
         "restaurant_cards": restaurant_cards,
@@ -301,6 +327,7 @@ def home(request):
         "agency_cards":     agency_cards,
         "karaoke_cards":    karaoke_cards,
         "stats":            stats,
+        "map_points_json":  _json.dumps(map_points, ensure_ascii=False),
     })
 
 

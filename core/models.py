@@ -85,6 +85,8 @@ class Branch(TimeStampedModel):
 
     pay_cash_enabled   = models.BooleanField("Наличные (касса)", default=True)
     pay_online_enabled = models.BooleanField("Онлайн / карта (касса)", default=True)
+    lat = models.DecimalField("Широта",  max_digits=10, decimal_places=7, null=True, blank=True)
+    lon = models.DecimalField("Долгота", max_digits=10, decimal_places=7, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         self.photo_compression = None

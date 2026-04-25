@@ -159,6 +159,11 @@ def branch_edit(request, branch_id):
 
         branch.external_url = request.POST.get("external_url", "").strip()
 
+        lat_raw = request.POST.get("lat", "").strip()
+        lon_raw = request.POST.get("lon", "").strip()
+        branch.lat = lat_raw if lat_raw else None
+        branch.lon = lon_raw if lon_raw else None
+
         photo = request.FILES.get("promo_photo")
         if photo:
             branch.promo_photo = photo

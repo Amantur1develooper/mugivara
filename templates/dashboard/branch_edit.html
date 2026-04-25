@@ -268,6 +268,23 @@
     </div>
   </div>
 
+  <!-- MAP PICKER -->
+  <div class="db-form-card" style="margin-top:20px">
+    <div class="db-form-section-title">📍 Расположение на карте</div>
+    <p style="font-size:12px;color:var(--muted,#888);margin:0 0 10px">Кликните на карте чтобы поставить метку, или введите координаты вручную.</p>
+    <div id="branch-map-picker" style="height:320px;border-radius:14px;overflow:hidden;border:1.5px solid var(--border,#e5e7eb);margin-bottom:12px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="db-form-group">
+        <label class="db-label" style="font-size:11px">Широта</label>
+        <input class="db-input" type="text" name="lat" id="inp-lat" value="{{ branch.lat|default:'' }}" placeholder="40.5283">
+      </div>
+      <div class="db-form-group">
+        <label class="db-label" style="font-size:11px">Долгота</label>
+        <input class="db-input" type="text" name="lon" id="inp-lon" value="{{ branch.lon|default:'' }}" placeholder="72.7985">
+      </div>
+    </div>
+  </div>
+
   <div style="display:flex;gap:12px;flex-wrap:wrap">
     <button type="submit" class="db-btn db-btn-primary">💾 Сохранить настройки</button>
     <a href="{% url 'dashboard:home' %}" class="db-btn db-btn-ghost">← Назад</a>
@@ -278,6 +295,47 @@
 {% endblock %}
 
 {% block extra_js %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Map picker
+(function () {
+  const inpLat = document.getElementById('inp-lat');
+  const inpLon = document.getElementById('inp-lon');
+  const initLat = parseFloat(inpLat.value) || 40.5283;
+  const initLon = parseFloat(inpLon.value) || 72.7985;
+  const hasCoords = inpLat.value && inpLon.value;
+  const map = L.map('branch-map-picker').setView([initLat, initLon], hasCoords ? 15 : 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(map);
+  const icon = L.icon({
+    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    iconSize: [25,41], iconAnchor: [12,41], popupAnchor: [1,-34],
+  });
+  let marker = hasCoords ? L.marker([initLat, initLon], { icon, draggable: true }).addTo(map) : null;
+  function setCoords(lat, lon) { inpLat.value = lat.toFixed(7); inpLon.value = lon.toFixed(7); }
+  if (marker) marker.on('dragend', e => { const p = e.target.getLatLng(); setCoords(p.lat, p.lng); });
+  map.on('click', e => {
+    const { lat, lng } = e.latlng;
+    if (marker) { marker.setLatLng([lat, lng]); } else {
+      marker = L.marker([lat, lng], { icon, draggable: true }).addTo(map);
+      marker.on('dragend', ev => { const p = ev.target.getLatLng(); setCoords(p.lat, p.lng); });
+    }
+    setCoords(lat, lng);
+  });
+  [inpLat, inpLon].forEach(inp => inp.addEventListener('change', () => {
+    const lat = parseFloat(inpLat.value), lon = parseFloat(inpLon.value);
+    if (!isNaN(lat) && !isNaN(lon)) {
+      if (marker) { marker.setLatLng([lat, lon]); } else {
+        marker = L.marker([lat, lon], { icon, draggable: true }).addTo(map);
+        marker.on('dragend', ev => { const p = ev.target.getLatLng(); setCoords(p.lat, p.lng); });
+      }
+      map.setView([lat, lon], 15);
+    }
+  }));
+})();
+</script>
 <script>
 function previewCover(input) {
   if (!input.files || !input.files[0]) return;

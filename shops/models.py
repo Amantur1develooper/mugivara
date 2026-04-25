@@ -59,7 +59,8 @@ class StoreBranch(TimeStampedModel):
     tg_thread_id     = models.IntegerField(null=True, blank=True)      # если форум-топик
     tg_manager_chat_id = models.BigIntegerField(null=True, blank=True) # личка менеджера
     phone2 = models.CharField("WhatsApp 2", max_length=32, blank=True, default="")
-
+    lat = models.DecimalField("Широта",  max_digits=10, decimal_places=7, null=True, blank=True)
+    lon = models.DecimalField("Долгота", max_digits=10, decimal_places=7, null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
 

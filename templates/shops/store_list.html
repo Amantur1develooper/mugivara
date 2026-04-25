@@ -209,6 +209,36 @@
 .sc:nth-child(5){animation-delay:.20s} .sc:nth-child(6){animation-delay:.25s}
 .sc:nth-child(n+7){animation-delay:.30s}
 
+/* ── MAP SECTION ── */
+.sl-map-section {
+  margin-top: 60px;
+}
+.sl-map-heading {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px;
+}
+.sl-map-title {
+  font-family: 'Unbounded', sans-serif;
+  font-weight: 900;
+  font-size: clamp(18px, 2.5vw, 26px);
+  letter-spacing: -1px;
+  color: var(--text);
+  margin: 0;
+}
+.sl-map-badge {
+  padding: 4px 12px; border-radius: 100px;
+  font-size: 11px; font-weight: 700;
+  background: rgba(255,77,28,.12); color: var(--accent, #ff4d1c);
+}
+#sl-map {
+  height: 480px;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 40px rgba(0,0,0,.08);
+}
+@media (max-width: 600px) { #sl-map { height: 320px; } }
+
 /* ── RESPONSIVE ── */
 @media (max-width: 860px) {
   .sl-wrap { padding: 40px 20px 60px; }
@@ -282,5 +312,76 @@
     {% endfor %}
   </div>
 
+  <!-- MAP SECTION -->
+  <div class="sl-map-section">
+    <div class="sl-map-heading">
+      <h2 class="sl-map-title">📍 {% trans "Наши точки на карте" %}</h2>
+      <span class="sl-map-badge" id="sl-map-count"></span>
+    </div>
+    <div id="sl-map"></div>
+  </div>
+
 </div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function () {
+  const points = {{ map_points_json|safe }};
+  const badge  = document.getElementById('sl-map-count');
+  badge.textContent = points.length + ' {% trans "точек" %}';
+
+  const defaultCenter = points.length ? [points[0].lat, points[0].lon] : [40.5283, 72.7985];
+  const map = L.map('sl-map', { zoomControl: true }).setView(defaultCenter, points.length ? 13 : 10);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19,
+  }).addTo(map);
+
+  if (points.length === 0) {
+    badge.textContent = '{% trans "нет точек" %}';
+    return;
+  }
+
+  const icon = L.divIcon({
+    className: '',
+    html: `<div style="
+      width:36px;height:36px;border-radius:50% 50% 50% 0;
+      background:var(--accent,#ff4d1c);
+      border:3px solid #fff;
+      box-shadow:0 3px 12px rgba(255,77,28,.5);
+      transform:rotate(-45deg);
+      display:flex;align-items:center;justify-content:center;
+    "><span style="transform:rotate(45deg);font-size:15px;line-height:1">🏪</span></div>`,
+    iconSize: [36, 36],
+    iconAnchor: [18, 36],
+    popupAnchor: [0, -38],
+  });
+
+  const bounds = [];
+
+  points.forEach(p => {
+    bounds.push([p.lat, p.lon]);
+    const popup = L.popup({ maxWidth: 240, className: 'sl-popup' }).setContent(`
+      <div style="font-family:'Geologica',sans-serif;padding:4px 2px">
+        <div style="font-weight:800;font-size:14px;color:#111;margin-bottom:4px">${p.store}</div>
+        <div style="font-size:13px;color:#444;margin-bottom:2px">${p.name}</div>
+        ${p.address ? `<div style="font-size:11px;color:#888;margin-bottom:8px">📍 ${p.address}</div>` : ''}
+        <a href="${p.store_url}" style="
+          display:inline-flex;align-items:center;gap:5px;
+          padding:7px 14px;border-radius:100px;
+          background:#ff4d1c;color:#fff;
+          font-size:12px;font-weight:700;text-decoration:none;
+        ">{% trans "Открыть" %} →</a>
+      </div>
+    `);
+    L.marker([p.lat, p.lon], { icon }).addTo(map).bindPopup(popup);
+  });
+
+  if (bounds.length > 1) {
+    map.fitBounds(bounds, { padding: [40, 40] });
+  }
+})();
+</script>
 {% endblock %}
