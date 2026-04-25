@@ -291,7 +291,12 @@ def home(request):
     # ── КАРТА: все точки бизнесов ────────────────────────────────────────────
     import json as _json
     map_points = []
+    from django.urls import reverse
     for b in Branch.objects.filter(is_active=True, lat__isnull=False, lon__isnull=False).select_related("restaurant"):
+        try:
+            url = reverse("public_site:restaurant_contacts", kwargs={"slug": b.restaurant.slug})
+        except Exception:
+            url = f"/ru/r/{b.restaurant.slug}/contacts/"
         map_points.append({
             "lat":   float(b.lat),
             "lon":   float(b.lon),
@@ -300,9 +305,13 @@ def home(request):
             "type":  "restaurant",
             "icon":  "🍽",
             "addr":  b.address,
-            "url":   f"/ru/restaurant/{b.restaurant.slug}/contacts/",
+            "url":   url,
         })
     for b in StoreBranch.objects.filter(is_active=True, lat__isnull=False, lon__isnull=False).select_related("store"):
+        try:
+            url = reverse("shops:store_detail", kwargs={"slug": b.store.slug})
+        except Exception:
+            url = f"/ru/shops/{b.store.slug}/"
         map_points.append({
             "lat":   float(b.lat),
             "lon":   float(b.lon),
@@ -311,7 +320,7 @@ def home(request):
             "type":  "store",
             "icon":  "🏪",
             "addr":  b.address,
-            "url":   f"/ru/shops/{b.store.slug}/",
+            "url":   url,
         })
 
     return render(request, "public_site/home.html", {

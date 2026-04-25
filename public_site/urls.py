@@ -1,5 +1,6 @@
 
 from django.urls import path, include
+from django.views.generic import RedirectView
 from .views import (
     about, booking_set_status, contacts, hall_plan, home, place_move, reservation, restaurant_about, restaurant_contacts, restaurant_detail, branch_menu, restaurant_branch_menu,
     add_to_cart, cart_detail, cart_json, cart_update, cart_remove,
@@ -58,6 +59,8 @@ urlpatterns = [
     path("about/", about, name="about"),
     # path("contacts/", contacts, name="contacts"),
     path("r/<slug:slug>/contacts/", restaurant_contacts, name="restaurant_contacts"),
+    # Редирект со старых URL /restaurant/{slug}/contacts/ → /r/{slug}/contacts/
+    path("restaurant/<slug:slug>/contacts/", RedirectView.as_view(pattern_name="public_site:restaurant_contacts", permanent=True)),
     # path("reservation/", reservation, name="reservation"),
     # slug — лучше в конце
     path("<slug:slug>/", restaurant_detail, name="restaurant_detail"),

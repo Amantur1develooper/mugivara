@@ -2,327 +2,297 @@
 {% load i18n i18n_attrs static %}
 
 {% block title %}{% t restaurant "name" %} — Webordo{% endblock %}
-
 {% block cta %}{% endblock %}
 
 {% block head_extra %}
 <style>
-  /* ═══ PAGE ═══ */
-  .rc-page { max-width: 1100px; margin: 0 auto; padding: 40px 32px 80px; }
+/* ════════════════════════════════
+   RESTAURANT CONTACTS — mobile-first
+════════════════════════════════ */
+.rc-page { max-width: 860px; margin: 0 auto; padding: 0 16px 80px; }
 
-  /* ═══ HERO ═══ */
-  .rch-hero {
-    position: relative; border-radius: 28px; overflow: hidden;
-    min-height: 260px; display: flex; flex-direction: column;
-    justify-content: flex-end; padding: 32px; margin-bottom: 44px;
-  }
-  .rch-hero-bg {
-    position: absolute; inset: 0;
-    background: linear-gradient(135deg, #0D1117 0%, #1c2535 100%);
-  }
-  .rch-hero-bg-img {
-    position: absolute; inset: 0; background-size: cover; background-position: center;
-    filter: blur(24px) saturate(0.6) brightness(0.3); transform: scale(1.08);
-  }
-  .rch-hero-bg-overlay {
-    position: absolute; inset: 0;
-    background:
-      radial-gradient(ellipse 80% 60% at 0% 100%, rgba(255,77,28,0.2), transparent 60%),
-      linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.05) 100%);
-  }
-  .rch-hero-dots {
-    position: absolute; inset: 0;
-    background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
-    background-size: 24px 24px;
-    mask-image: radial-gradient(ellipse 100% 100% at 100% 0%, black 20%, transparent 70%);
-  }
-  .rch-hero-content {
-    position: relative; z-index: 1;
-    display: flex; align-items: flex-end; gap: 24px; margin-top: 44px;
-  }
-  .rch-logo {
-    width: 88px; height: 88px; border-radius: 22px; flex-shrink: 0;
-    background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.18);
-    overflow: hidden; display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
-  }
-  .rch-logo img { width: 100%; height: 100%; object-fit: cover; }
-  .rch-logo-letter {
-    font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 36px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  }
-  .rch-hero-info { flex: 1; min-width: 0; }
-  .rch-hero-eyebrow {
-    font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
-    color: rgba(255,255,255,0.45); font-weight: 600; margin-bottom: 8px;
-  }
-  .rch-hero-title {
-    font-family: 'Unbounded', sans-serif; font-weight: 900;
-    font-size: clamp(22px, 4vw, 42px); letter-spacing: -1.5px;
-    color: white; line-height: 1; margin-bottom: 12px;
-  }
-  .rch-hero-pills { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .rch-hero-pill {
-    display: inline-flex; align-items: center; gap: 7px;
-    padding: 6px 14px; border-radius: 100px; font-size: 12px; font-weight: 600;
-    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.14);
-    color: rgba(255,255,255,0.8);
-  }
-  .rch-hero-pill.green {
-    background: rgba(0,184,150,0.18); border-color: rgba(0,184,150,0.3); color: #00CBA8;
-  }
-  .rch-back {
-    position: absolute; top: 20px; left: 24px; z-index: 2;
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 8px 16px; border-radius: 100px;
-    font-size: 13px; font-weight: 600;
-    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.16);
-    color: rgba(255,255,255,0.75); text-decoration: none;
-    backdrop-filter: blur(8px); transition: all 0.2s;
-  }
-  .rch-back:hover { background: rgba(255,255,255,0.16); color: white; }
+/* ── HERO ── */
+.rch-hero {
+  position: relative; border-radius: 0 0 28px 28px;
+  overflow: hidden; min-height: 280px;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 28px 24px; margin: 0 -16px 32px;
+}
+.rch-hero-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, #0D1117 0%, #1c2535 100%);
+}
+.rch-hero-bg-img {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  filter: blur(20px) saturate(.55) brightness(.28); transform: scale(1.1);
+}
+.rch-hero-overlay {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 0% 110%, rgba(255,77,28,.22), transparent 60%),
+    linear-gradient(to top, rgba(0,0,0,.82) 0%, rgba(0,0,0,.15) 55%, transparent 100%);
+}
+.rch-hero-dots {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 100% 100% at 100% 0%, black 30%, transparent 70%);
+}
+.rch-back {
+  position: absolute; top: 16px; left: 20px; z-index: 3;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18);
+  color: rgba(255,255,255,.8); text-decoration: none;
+  backdrop-filter: blur(10px); transition: all .2s;
+}
+.rch-back:hover { background: rgba(255,255,255,.18); color: #fff; }
 
-  /* ═══ SECTION HEAD ═══ */
-  .rch-sec-tag {
-    font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
-    color: var(--accent); font-weight: 600; margin-bottom: 8px;
-  }
-  .rch-sec-title {
-    font-family: 'Unbounded', sans-serif; font-weight: 800;
-    font-size: clamp(20px, 3vw, 30px); letter-spacing: -1.5px;
-    color: var(--text); margin-bottom: 28px;
-  }
+.rch-hero-content {
+  position: relative; z-index: 2;
+  display: flex; align-items: flex-end; gap: 18px;
+}
+.rch-logo {
+  width: 80px; height: 80px; border-radius: 20px; flex-shrink: 0;
+  background: rgba(255,255,255,.1); border: 2px solid rgba(255,255,255,.2);
+  overflow: hidden; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,.45);
+}
+.rch-logo img { width: 100%; height: 100%; object-fit: cover; }
+.rch-logo-letter {
+  font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 32px;
+  background: linear-gradient(135deg, #ff4d1c, #ff8a00);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.rch-hero-info { flex: 1; min-width: 0; }
+.rch-eyebrow {
+  font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+  color: rgba(255,255,255,.45); font-weight: 600; margin-bottom: 6px;
+}
+.rch-title {
+  font-family: 'Unbounded', sans-serif; font-weight: 900;
+  font-size: clamp(20px, 5vw, 36px); letter-spacing: -1.5px;
+  color: #fff; line-height: 1.05; margin-bottom: 12px;
+}
+.rch-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.rch-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 13px; border-radius: 100px; font-size: 11px; font-weight: 600;
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14);
+  color: rgba(255,255,255,.8);
+}
+.rch-pill.open { background: rgba(0,200,140,.2); border-color: rgba(0,200,140,.35); color: #00c88c; }
 
-  /* ═══ BRANCH CARD ═══ */
-  .bc {
-    background: var(--card); border: 1.5px solid var(--border);
-    border-radius: 26px; overflow: hidden;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.07);
-    display: flex; flex-direction: column;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    animation: cardIn 0.5s ease both;
-  }
-  .bc:hover { transform: translateY(-6px); box-shadow: 0 24px 60px rgba(0,0,0,0.13); }
-  @keyframes cardIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  .bc:nth-child(1) { animation-delay: 0s; }
-  .bc:nth-child(2) { animation-delay: 0.08s; }
-  .bc:nth-child(3) { animation-delay: 0.16s; }
-  .bc:nth-child(n+4) { animation-delay: 0.24s; }
+/* ── SECTION LABEL ── */
+.rc-label {
+  font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--accent,#ff4d1c); font-weight: 700; margin-bottom: 6px;
+}
+.rc-heading {
+  font-family: 'Unbounded', sans-serif; font-weight: 900;
+  font-size: clamp(18px, 3vw, 26px); letter-spacing: -1px;
+  color: var(--text); margin-bottom: 20px;
+}
 
-  /* ── PHOTO ── */
-  .bc-photo {
-    position: relative;
-    background: var(--card2); overflow: hidden; flex-shrink: 0;
-  }
-  .bc-photo img {
-    width: 100%; height: auto; display: block;
-    object-fit: contain;
-  }
-  .bc-photo-empty {
-    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(135deg, #FFF1EB, #FFE4D6, #FFD6C8);
-    position: relative; overflow: hidden;
-  }
-  .bc-photo-empty::before {
-    content: '';  position: absolute; inset: 0;
-    background: radial-gradient(ellipse 70% 60% at 30% 40%, rgba(255,77,28,0.15), transparent);
-  }
-  .bc-photo-empty span { font-size: 64px; opacity: 0.28; position: relative; z-index: 1; }
-  .bc-photo-grad {
-    position: absolute; inset: 0;
-    background: linear-gradient(to bottom, transparent 35%, rgba(0,0,0,0.6) 100%);
-  }
-  .bc-status {
-    position: absolute; top: 14px; left: 14px;
-    display: inline-flex; align-items: center; gap: 7px;
-    padding: 6px 14px; border-radius: 100px; font-size: 11px; font-weight: 700;
-    backdrop-filter: blur(12px); border: 1px solid transparent;
-  }
-  .bc-status.open { background: rgba(0,184,150,0.18); border-color: rgba(0,184,150,0.3); color: #00CBA8; }
-  .bc-status.closed { background: rgba(0,0,0,0.38); border-color: rgba(255,255,255,0.1); color: rgba(255,255,255,0.7); }
-  .bc-status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-  .bc-status.open .bc-status-dot {
-    background: var(--teal); box-shadow: 0 0 0 3px rgba(0,184,150,0.3);
-    animation: blink 2.5s infinite;
-  }
-  .bc-status.closed .bc-status-dot { background: rgba(255,255,255,0.4); }
-  @keyframes blink {
-    0%,100% { box-shadow: 0 0 0 3px rgba(0,184,150,0.3); }
-    50%      { box-shadow: 0 0 0 6px rgba(0,184,150,0.08); }
-  }
-  .bc-hours {
-    position: absolute; top: 14px; right: 14px;
-    padding: 5px 12px; border-radius: 100px;
-    font-size: 10px; font-weight: 700;
-    background: rgba(0,0,0,0.42); border: 1px solid rgba(255,255,255,0.12);
-    backdrop-filter: blur(10px); color: rgba(255,255,255,0.82);
-  }
-  .bc-photo-info { position: absolute; bottom: 0; left: 0; right: 0; padding: 16px 18px 14px; }
-  .bc-photo-name {
-    font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 15px;
-    color: white; letter-spacing: -0.4px; text-shadow: 0 2px 8px rgba(0,0,0,0.5);
-  }
-  .bc-photo-addr { margin-top: 5px; font-size: 12px; color: rgba(255,255,255,0.65); }
+/* ── BRANCH CARDS ── */
+.bc-list { display: flex; flex-direction: column; gap: 16px; }
 
-  /* ── BODY ── */
-  .bc-body { padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 16px; flex: 1; }
+.bc {
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 24px; overflow: hidden;
+  box-shadow: 0 2px 16px rgba(0,0,0,.06);
+  transition: box-shadow .25s, transform .25s, border-color .25s;
+  animation: bcIn .4s ease both;
+}
+.bc:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,.11); border-color: rgba(255,77,28,.2); }
+.bc:nth-child(1){animation-delay:.00s} .bc:nth-child(2){animation-delay:.07s}
+.bc:nth-child(3){animation-delay:.14s} .bc:nth-child(n+4){animation-delay:.20s}
+@keyframes bcIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
 
-  .bc-chips { display: flex; flex-wrap: wrap; gap: 7px; }
-  .bc-chip {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 6px 14px; border-radius: 100px;
-    font-size: 12px; font-weight: 600;
-    border: 1.5px solid var(--border); background: var(--bg);
-    color: var(--text2); text-decoration: none; transition: all 0.2s;
-  }
-  .bc-chip:is(a):hover { border-color: rgba(0,0,0,0.15); background: var(--card2); }
-  .bc-chip.delivery { background: rgba(255,138,0,0.08); border-color: rgba(255,138,0,0.25); color: #B86C00; }
-  .bc-chip.allday   { background: rgba(0,184,150,0.08);  border-color: rgba(0,184,150,0.25); color: var(--teal); }
+/* Cover */
+.bc-cover {
+  position: relative; height: 180px;
+  background: var(--card2); overflow: hidden;
+}
+.bc-cover img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .4s ease; }
+.bc:hover .bc-cover img { transform: scale(1.04); }
+.bc-cover-empty {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #fff1eb, #ffd6c8);
+}
+.bc-cover-empty-icon { font-size: 64px; opacity: .25; }
+.bc-cover-grad {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 30%, rgba(0,0,0,.65) 100%);
+}
+/* Status badge */
+.bc-status {
+  position: absolute; top: 12px; left: 12px;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 11px; border-radius: 100px; font-size: 11px; font-weight: 700;
+  backdrop-filter: blur(10px); border: 1px solid transparent;
+}
+.bc-status.open  { background: rgba(0,184,150,.2); border-color: rgba(0,184,150,.3); color: #00cba8; }
+.bc-status.closed { background: rgba(0,0,0,.45); border-color: rgba(255,255,255,.1); color: rgba(255,255,255,.7); }
+.bc-status-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.bc-status.open .bc-status-dot { animation: blink 2.5s infinite; box-shadow: 0 0 0 3px rgba(0,184,150,.3); }
+@keyframes blink {
+  0%,100% { box-shadow: 0 0 0 3px rgba(0,184,150,.3); }
+  50%      { box-shadow: 0 0 0 6px rgba(0,184,150,.08); }
+}
+/* Hours badge */
+.bc-hours {
+  position: absolute; top: 12px; right: 12px;
+  padding: 4px 10px; border-radius: 100px; font-size: 10px; font-weight: 700;
+  background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.12);
+  backdrop-filter: blur(10px); color: rgba(255,255,255,.85);
+}
+/* Name on photo */
+.bc-cover-bottom { position: absolute; bottom: 0; left: 0; right: 0; padding: 14px 16px; }
+.bc-cover-name {
+  font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 15px;
+  color: #fff; letter-spacing: -.3px; text-shadow: 0 2px 8px rgba(0,0,0,.5);
+}
+.bc-cover-addr { font-size: 11px; color: rgba(255,255,255,.65); margin-top: 3px; }
 
-  /* ── КНОПКИ ── */
-  .bc-actions {
-    display: flex; flex-direction: column; gap: 8px;
-  }
-  .bc-actions-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* Body */
+.bc-body { padding: 16px 18px 0; }
 
-  .bc-btn {
-    display: flex; align-items: center; justify-content: center; gap: 7px;
-    padding: 10px 14px; border-radius: 12px; font-size: 12px; font-weight: 600;
-    border: 1.5px solid var(--border); background: var(--card); color: var(--text2);
-    text-decoration: none; transition: all 0.15s; white-space: nowrap;
-  }
-  .bc-btn:hover { border-color: rgba(0,0,0,.14); background: var(--card2); }
+/* Chips */
+.bc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.bc-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 100px; font-size: 11px; font-weight: 600;
+  border: 1.5px solid var(--border); background: var(--bg); color: var(--text2);
+  text-decoration: none; transition: all .15s;
+}
+.bc-chip:is(a):hover { background: var(--card2); }
+.bc-chip.delivery { background: rgba(255,138,0,.08); border-color: rgba(255,138,0,.25); color: #b86c00; }
+.bc-chip.allday   { background: rgba(0,184,150,.08); border-color: rgba(0,184,150,.25); color: var(--teal,#00cba8); }
 
-  .bc-btn.menu {
-    background: rgba(255,77,28,.07);
-    border-color: rgba(255,77,28,.22);
-    color: var(--accent);
-    font-weight: 700;
-  }
-  .bc-btn.menu:hover { background: rgba(255,77,28,.13); border-color: rgba(255,77,28,.35); }
+/* Actions */
+.bc-actions { display: flex; flex-direction: column; gap: 8px; }
+.bc-actions-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
-  .bc-btn.wa { background:#25D366; border-color:#25D366; color:#fff; }
-  .bc-btn.wa:hover { background:#1fba5a; border-color:#1fba5a; }
+.bc-btn {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 11px 16px; border-radius: 14px; font-size: 13px; font-weight: 700;
+  border: 1.5px solid var(--border); background: var(--card); color: var(--text2);
+  text-decoration: none; transition: all .15s; white-space: nowrap;
+}
+.bc-btn:hover { background: var(--card2); border-color: rgba(0,0,0,.12); }
 
-  .bc-btn.call { background: var(--card); border-color: var(--border); color: var(--text2); }
-  .bc-btn.call:hover { background: var(--card2); }
+.bc-btn.menu {
+  background: var(--text); border-color: var(--text); color: #fff;
+  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+}
+.bc-btn.menu:hover { opacity: .9; }
 
-  .bc-btn.book { background:rgba(37,99,235,.06); border-color:rgba(37,99,235,.2); color:#2563EB; }
-  .bc-btn.book:hover { background:rgba(37,99,235,.1); }
+.bc-btn.wa   { background: #25D366; border-color: #25D366; color: #fff; box-shadow: 0 4px 14px rgba(37,211,102,.3); }
+.bc-btn.wa:hover { background: #1fba5a; }
+.bc-btn.call { background: var(--bg); }
+.bc-btn.book { background: rgba(37,99,235,.06); border-color: rgba(37,99,235,.22); color: #2563eb; }
+.bc-btn.book:hover { background: rgba(37,99,235,.11); }
+.bc-btn.map  { background: rgba(255,77,28,.06); border-color: rgba(255,77,28,.2); color: var(--accent,#ff4d1c); }
+.bc-btn.map:hover { background: rgba(255,77,28,.11); }
 
-  .bc-btn.map { background: rgba(0,0,0,.04); border-color: var(--border); color: var(--text2); }
-  .bc-btn.map:hover { background: rgba(0,0,0,.07); }
+/* CTA divider */
+.bc-cta-row {
+  border-top: 1px solid var(--border);
+  margin-top: 16px;
+  padding: 14px 18px 16px;
+}
 
-  /* ═══ ABOUT ═══ */
-  .rch-about {
-    margin-top: 52px;
-    display: grid; grid-template-columns: 1fr 2fr;
-    background: var(--card); border: 1.5px solid var(--border);
-    border-radius: 28px; overflow: hidden;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.06);
-  }
-  .rch-about-left {
-    padding: 40px 32px;
-    background: linear-gradient(160deg, #0D1117, #1c2535);
-    position: relative; overflow: hidden;
-    display: flex; flex-direction: column; justify-content: center;
-  }
-  .rch-about-left::before {
-    content: ''; position: absolute; inset: 0;
-    background: radial-gradient(ellipse 80% 60% at 0% 100%, rgba(255,77,28,0.22), transparent 60%);
-  }
-  .rch-about-label {
-    font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
-    color: rgba(255,255,255,0.38); font-weight: 600; margin-bottom: 12px; position: relative;
-  }
-  .rch-about-heading {
-    font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 28px;
-    letter-spacing: -1.5px; color: white; line-height: 1.1; position: relative;
-  }
-  .rch-about-name { margin-top: 12px; font-size: 13px; color: rgba(255,255,255,0.4); position: relative; }
-  .rch-about-right { padding: 40px 36px; }
-  .rch-about-text { font-size: 15px; line-height: 1.85; color: var(--text2); white-space: pre-line; }
-  .rch-about-empty { display:flex; flex-direction:column; gap:12px; }
-  .rch-about-empty-icon { font-size: 40px; }
-  .rch-about-empty-title {
-    font-family: 'Unbounded', sans-serif; font-size: 16px; font-weight: 800;
-    color: var(--text); letter-spacing: -0.5px;
-  }
+/* ── ABOUT BLOCK ── */
+.rch-about {
+  margin-top: 44px;
+  border-radius: 24px; overflow: hidden;
+  background: var(--card); border: 1.5px solid var(--border);
+  box-shadow: 0 4px 24px rgba(0,0,0,.06);
+}
+.rch-about-header {
+  padding: 28px 24px;
+  background: linear-gradient(135deg, #0D1117 0%, #1c2535 100%);
+  position: relative; overflow: hidden;
+}
+.rch-about-header::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 70% 60% at 0% 100%, rgba(255,77,28,.22), transparent 60%);
+}
+.rch-about-label {
+  font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+  color: rgba(255,255,255,.38); font-weight: 600; margin-bottom: 8px; position: relative;
+}
+.rch-about-title {
+  font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 22px;
+  letter-spacing: -1px; color: #fff; position: relative;
+}
+.rch-about-body { padding: 24px; }
+.rch-about-text { font-size: 15px; line-height: 1.85; color: var(--text2); white-space: pre-line; }
 
-  /* ═══ BRANCHES GRID ═══ */
-  .bc-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 22px;
-  }
+/* ════ MOBILE ════ */
+@media (max-width: 520px) {
+  .rch-hero { min-height: 240px; padding: 20px 16px; border-radius: 0 0 20px 20px; }
+  .rch-logo { width: 64px; height: 64px; border-radius: 16px; }
+  .rch-logo-letter { font-size: 26px; }
+  .rch-hero-content { gap: 14px; }
+  .rch-title { font-size: 20px; letter-spacing: -.8px; }
+  .rch-back { top: 12px; left: 14px; padding: 6px 13px; font-size: 12px; }
 
-  /* ═══ RESPONSIVE ═══ */
-  @media (max-width: 860px) {
-    .rch-about { grid-template-columns: 1fr; }
-    .rch-about-left { padding: 28px 24px; min-height: 150px; }
-    .rch-about-right { padding: 28px 24px; }
-  }
-  @media (max-width: 640px) {
-    .rc-page { padding: 16px 10px 60px; }
-    .rch-hero { padding: 20px; }
-    .rch-logo { width: 68px; height: 68px; border-radius: 16px; }
-    .rch-logo-letter { font-size: 28px; }
-    .bc-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .bc-photo-name { font-size: 12px; }
-    .bc-photo-addr { display: none; }
-    .bc-status { padding: 4px 8px; font-size: 10px; gap: 5px; }
-    .bc-hours { font-size: 9px; padding: 3px 8px; }
-    .bc-body { padding: 12px 12px 14px; gap: 10px; }
-    .bc-chip { font-size: 10px; padding: 4px 10px; }
-    .bc-actions { gap: 6px; }
-    .bc-actions-row { grid-template-columns: 1fr; gap: 6px; }
-    .bc-btn { padding: 9px 10px; font-size: 11px; }
-  }
+  .bc-cover { height: 150px; }
+  .bc-cover-name { font-size: 13px; }
+  .bc-cover-addr { display: none; }
+  .bc-body { padding: 14px 14px 0; }
+  .bc-chip { font-size: 10px; padding: 4px 10px; }
+  .bc-btn { padding: 10px 12px; font-size: 12px; gap: 5px; }
+  .bc-cta-row { padding: 12px 14px 14px; }
+  .rch-about-body { padding: 18px; }
+  .rch-about-text { font-size: 14px; }
+}
 </style>
 {% endblock %}
-
 
 {% block content %}
 <div class="rc-page">
 
-  {# ══ HERO ══ #}
+  <!-- ══ HERO ══ -->
   <div class="rch-hero">
     <div class="rch-hero-bg"></div>
     {% if restaurant.logo %}
-      <div class="rch-hero-bg-img" style="background-image:url('{{ restaurant.logo.url }}');"></div>
+      <div class="rch-hero-bg-img" style="background-image:url('{{ restaurant.logo.url }}')"></div>
     {% endif %}
-    <div class="rch-hero-bg-overlay"></div>
+    <div class="rch-hero-overlay"></div>
     <div class="rch-hero-dots"></div>
 
-    <a href="{% url 'public_site:restaurants_list' %}" class="rch-back">← Рестораны</a>
+    <a href="{% url 'public_site:restaurants_list' %}" class="rch-back">← {% trans "Рестораны" %}</a>
 
     <div class="rch-hero-content">
       <div class="rch-logo">
         {% if restaurant.logo %}
           <img src="{{ restaurant.logo.url }}" alt="{% t restaurant 'name' %}" loading="lazy">
         {% else %}
-          <span class="rch-logo-letter">{% t restaurant "name" as rn %}{{ rn|slice:":1" }}</span>
+          {% t restaurant "name" as rn %}
+          <span class="rch-logo-letter">{{ rn|slice:":1" }}</span>
         {% endif %}
       </div>
       <div class="rch-hero-info">
-        <div class="rch-hero-eyebrow">Ресторан · Webordo</div>
-        <h1 class="rch-hero-title">{% t restaurant "name" %}</h1>
-        <div class="rch-hero-pills">
-          <span class="rch-hero-pill">🏢 {{ branches|length }} {% if branches|length == 1 %}филиал{% else %}филиала{% endif %}</span>
+        <div class="rch-eyebrow">{% trans "Ресторан · Webordo" %}</div>
+        <h1 class="rch-title">{% t restaurant "name" %}</h1>
+        <div class="rch-pills">
+          <span class="rch-pill">🏢 {{ branches|length }}
+            {% if branches|length == 1 %}{% trans "филиал" %}{% else %}{% trans "филиала" %}{% endif %}
+          </span>
           {% for b in branches %}{% if b.is_open_now %}
-            <span class="rch-hero-pill green">
-              <span style="width:6px;height:6px;border-radius:50%;background:currentColor;animation:blink 2.5s infinite;"></span>
-              Открыто сейчас
-            </span>{% endif %}{% endfor %}
+            <span class="rch-pill open">
+              <span style="width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 2.5s infinite;flex-shrink:0"></span>
+              {% trans "Открыто" %}
+            </span>
+          {% endif %}{% endfor %}
           {% if restaurant.external_url %}
-            <a href="{{ restaurant.external_url }}" target="_blank" rel="noopener"
-               class="rch-hero-pill"
-               style="background:rgba(255,255,255,0.18);border-color:rgba(255,255,255,0.3);color:white;text-decoration:none;">
-              🌐 Сайт ресторана ↗
+            <a href="{{ restaurant.external_url }}" target="_blank" rel="noopener" class="rch-pill" style="background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.3);color:#fff;text-decoration:none">
+              🌐 {% trans "Сайт" %} ↗
             </a>
           {% endif %}
         </div>
@@ -330,80 +300,76 @@
     </div>
   </div>
 
+  <!-- ══ ФИЛИАЛЫ ══ -->
+  <div class="rc-label">{% trans "Филиалы" %}</div>
+  <h2 class="rc-heading">{% trans "Выберите филиал" %}</h2>
 
-  {# ══ ФИЛИАЛЫ ══ #}
-  <div class="rch-sec-tag">Филиалы</div>
-  <div class="rch-sec-title">Выберите филиал</div>
-
-  <div class="bc-grid">
+  <div class="bc-list">
     {% for b in branches %}
     <div class="bc">
 
-      {# ФОТО #}
-      <div class="bc-photo">
+      <!-- Cover -->
+      <div class="bc-cover">
         {% if b.cover_photo %}
-          <img src="{{ b.cover_photo.url }}" alt="{% t b 'name' %}" loading="lazy" width="400" height="220">
+          <img src="{{ b.cover_photo.url }}" alt="{% t b 'name' %}" loading="lazy">
         {% else %}
-          <div class="bc-photo-empty"><span>🍽️</span></div>
+          <div class="bc-cover-empty"><span class="bc-cover-empty-icon">🍽️</span></div>
         {% endif %}
-        <div class="bc-photo-grad"></div>
+        <div class="bc-cover-grad"></div>
 
         <div class="bc-status {% if b.is_open_now %}open{% else %}closed{% endif %}">
           <span class="bc-status-dot"></span>
-          {% if b.is_open_now %}Открыто{% else %}Закрыто{% endif %}
+          {% if b.is_open_now %}{% trans "Открыто" %}{% else %}{% trans "Закрыто" %}{% endif %}
         </div>
 
         {% if b.is_open_24h %}
-          <span class="bc-hours">🌙 Круглосуточно</span>
+          <span class="bc-hours">🌙 {% trans "Круглосуточно" %}</span>
         {% elif b.open_time and b.close_time %}
           <span class="bc-hours">{{ b.open_time|time:"H:i" }} – {{ b.close_time|time:"H:i" }}</span>
         {% endif %}
 
-        <div class="bc-photo-info">
-          <div class="bc-photo-name">{% t b "name" %}</div>
-          {% if b.address %}<div class="bc-photo-addr">📍 {{ b.address }}</div>{% endif %}
+        <div class="bc-cover-bottom">
+          <div class="bc-cover-name">{% t b "name" %}</div>
+          {% if b.address %}<div class="bc-cover-addr">📍 {{ b.address }}</div>{% endif %}
         </div>
       </div>
 
-      {# BODY #}
+      <!-- Body -->
       <div class="bc-body">
-
         <div class="bc-chips">
           {% if b.delivery_enabled %}
-            <span class="bc-chip delivery">🚚 Доставка · {{ b.delivery_fee|floatformat:"0" }} сом</span>
-            {% if b.min_order_amount %}<span class="bc-chip">Мин. {{ b.min_order_amount|floatformat:"0" }} сом</span>{% endif %}
+            <span class="bc-chip delivery">🚚 {% trans "Доставка" %} · {{ b.delivery_fee|floatformat:"0" }} {% trans "сом" %}</span>
+            {% if b.min_order_amount %}
+              <span class="bc-chip">{% trans "Мин." %} {{ b.min_order_amount|floatformat:"0" }} {% trans "сом" %}</span>
+            {% endif %}
           {% else %}
-            <span class="bc-chip">🥡 Самовывоз</span>
+            <span class="bc-chip">🥡 {% trans "Самовывоз" %}</span>
           {% endif %}
-          {% if b.phone %}<a href="tel:{{ b.phone }}" class="bc-chip">📞 {{ b.phone }}</a>{% endif %}
+          {% if b.is_open_24h %}
+            <span class="bc-chip allday">🌙 24/7</span>
+          {% endif %}
         </div>
 
         <div class="bc-actions">
-
-          {# Меню — первая строка, одна кнопка на всю ширину #}
-          {% if b.external_url %}
-          <a href="{{ b.external_url }}" target="_blank" rel="noopener" class="bc-btn menu">
-            🍽️ Открыть меню ↗
-          </a>
-          {% else %}
-          <a href="{% url 'public_site:branch_menu' b.id %}" class="bc-btn menu">
-            🍽️ Открыть меню
-          </a>
-          {% endif %}
-
-          {# Вторая строка: Позвонить + WhatsApp #}
+          <!-- Контакты: Позвонить + WhatsApp -->
           {% if b.phone %}
           <div class="bc-actions-row">
-            <a href="tel:{{ b.phone }}" class="bc-btn call">📞 Позвонить</a>
+            <a href="tel:{{ b.phone }}" class="bc-btn call">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+              {% trans "Позвонить" %}
+            </a>
             <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}"
-               target="_blank" rel="noopener" class="bc-btn wa">💬 WhatsApp</a>
+               target="_blank" rel="noopener" class="bc-btn wa">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-1-.3-.1-.5-.1-.7.1s-.8 1-.9 1.2-.3.2-.6 0c-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5s0-.4 0-.5c0-.2-.7-1.7-1-2.3C9.3 8.1 9 8.1 8.8 8.1H8.3c-.2 0-.5.1-.8.4C7.2 8.8 6.3 9.6 6.3 11.3s1.2 3.5 1.4 3.7c.2.2 2.4 3.7 5.9 5.2 2.3 1 3.2 1.1 4.3.9.7-.1 2.2-.9 2.5-1.7.3-.8.3-1.5.2-1.7-.1-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.9.5 3.7 1.4 5.3L2 22l4.9-1.3C8.3 21.5 10.1 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>
+              WhatsApp
+            </a>
           </div>
           {% endif %}
 
-          {# Третья строка: Маршрут + Бронирование #}
+          <!-- Маршрут + Бронирование -->
           <div class="bc-actions-row">
             {% if b.map_url %}
-            <a href="{{ b.map_url }}" target="_blank" rel="noopener" class="bc-btn map">📍 Маршрут</a>
+            <a href="{{ b.map_url }}" target="_blank" rel="noopener" class="bc-btn map">📍 {% trans "Маршрут" %}</a>
             {% endif %}
             {% if b.phone %}
               {% with wa=b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' %}
@@ -413,47 +379,52 @@
 Дата: __.__.____
 Время: __:__
 Гостей: __
-Имя: __{% endfilter %}" target="_blank" rel="noopener" class="bc-btn book">🗓️ Бронирование</a>
+Имя: __{% endfilter %}" target="_blank" rel="noopener" class="bc-btn book">🗓️ {% trans "Бронирование" %}</a>
               {% endwith %}
             {% else %}
-              <a href="{% url 'public_site:reservation' b.id %}" class="bc-btn book">🗓️ Бронирование</a>
+              <a href="{% url 'public_site:reservation' b.id %}" class="bc-btn book">🗓️ {% trans "Бронирование" %}</a>
             {% endif %}
           </div>
-
         </div>
       </div>
-    </div>
 
-    {% empty %}
-    <div style="grid-column:1/-1;text-align:center;padding:60px 24px;
-                background:var(--card);border:1.5px solid var(--border);border-radius:24px;">
-      <div style="font-size:48px;margin-bottom:12px;">🏗️</div>
-      <div style="font-family:'Unbounded',sans-serif;font-size:15px;font-weight:800;color:var(--text);letter-spacing:-.5px;">
-        Филиалы пока не добавлены
+      <!-- Main CTA -->
+      <div class="bc-cta-row">
+        {% if b.external_url %}
+        <a href="{{ b.external_url }}" target="_blank" rel="noopener" class="bc-btn menu" style="width:100%">
+          🍽️ {% trans "Открыть меню" %} ↗
+        </a>
+        {% else %}
+        <a href="{% url 'public_site:branch_menu' b.id %}" class="bc-btn menu" style="width:100%">
+          🍽️ {% trans "Открыть меню" %}
+        </a>
+        {% endif %}
       </div>
+
+    </div>
+    {% empty %}
+    <div style="text-align:center;padding:60px 24px;background:var(--card);border:1.5px solid var(--border);border-radius:24px">
+      <div style="font-size:48px;margin-bottom:14px">🏗️</div>
+      <div style="font-family:'Unbounded',sans-serif;font-size:15px;font-weight:800;color:var(--text)">{% trans "Филиалы пока не добавлены" %}</div>
     </div>
     {% endfor %}
   </div>
 
-
-  {# ══ О РЕСТОРАНЕ ══ #}
+  <!-- ══ О РЕСТОРАНЕ ══ -->
   {% t restaurant "about" as about_text %}
-  <div class="rch-about reveal">
-    <div class="rch-about-left">
-      <div class="rch-about-label">О заведении</div>
-      <div class="rch-about-heading">О нас</div>
-      <div class="rch-about-name">{% t restaurant "name" %}</div>
+  <div class="rch-about reveal" style="margin-top:40px">
+    <div class="rch-about-header">
+      <div class="rch-about-label">{% trans "О заведении" %}</div>
+      <div class="rch-about-title">{% t restaurant "name" %}</div>
     </div>
-    <div class="rch-about-right">
+    <div class="rch-about-body">
       {% if about_text %}
         <p class="rch-about-text">{{ about_text }}</p>
       {% else %}
-        <div class="rch-about-empty">
-          <div class="rch-about-empty-icon">✍️</div>
-          <div class="rch-about-empty-title">Описание не добавлено</div>
-          <div style="font-size:14px;color:var(--muted);line-height:1.6;">
-            Владелец может добавить информацию через панель управления
-          </div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:36px">✍️</div>
+          <div style="font-family:'Unbounded',sans-serif;font-size:15px;font-weight:800;color:var(--text)">{% trans "Описание не добавлено" %}</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.6">{% trans "Владелец может добавить информацию через панель управления" %}</div>
         </div>
       {% endif %}
     </div>
