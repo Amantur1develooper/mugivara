@@ -26,7 +26,7 @@ def _add_if_field(model, data: dict, field_name: str, value):
 
 def store_detail(request, slug):
     store = get_object_or_404(Store, slug=slug, is_active=True)
-    branches = store.branches.filter(is_active=True)
+    branches = store.branches.filter(is_active=True).order_by("city", "name_ru")
     return render(request, "shops/store_detail.html", {"store": store, "branches": branches})
 
 
@@ -92,7 +92,7 @@ def store_list(request):
 
 def store_detail(request, slug):
     store = get_object_or_404(Store, slug=slug, is_active=True)
-    branches = store.branches.filter(is_active=True)
+    branches = store.branches.filter(is_active=True).order_by("city", "name_ru")
     return render(request, "shops/store_detail.html", {"store": store, "branches": branches})
 
 

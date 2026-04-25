@@ -304,6 +304,8 @@
       .wb-cta { padding: 80px 24px; }
       .wb-cta-btns { flex-direction: column; align-items: center; }
     }
+    /* iOS auto-zoom fix: inputs must be ≥16px to prevent Safari from zooming */
+    input, textarea, select { font-size: max(16px, 1em) !important; }
   </style>
 
   {% block head_extra %}{% endblock %}
@@ -546,5 +548,17 @@
   document.querySelectorAll('.reveal').forEach(r => revObs.observe(r));
   </script>
   {% block page_scripts %}{% endblock %}
+  <script>
+  /* Prevent pinch-zoom on iOS (Safari ignores user-scalable=no since iOS 10) */
+  document.addEventListener('gesturestart', function(e){ e.preventDefault(); }, { passive: false });
+  document.addEventListener('touchmove', function(e){ if(e.touches.length > 1) e.preventDefault(); }, { passive: false });
+  /* Prevent double-tap zoom */
+  var _lastTap = 0;
+  document.addEventListener('touchend', function(e){
+    var now = Date.now();
+    if(now - _lastTap < 300){ e.preventDefault(); }
+    _lastTap = now;
+  }, { passive: false });
+  </script>
 </body>
 </html>
