@@ -154,7 +154,8 @@ def parse_product_detail(url: str, category_hint: str, session: requests.Session
     }
 
 
-def run(store_id=None, branch_id=None, dry_run=False, delay=0.7):
+def run(store_id=None, branch_id=None, dry_run=False, delay=0.7,
+        store_name=None, store_slug=None, branch_name=None):
     session = requests.Session()
 
     # ── 1. Магазин ──────────────────────────────────────────────────────────
@@ -162,10 +163,13 @@ def run(store_id=None, branch_id=None, dry_run=False, delay=0.7):
         store = Store.objects.get(pk=store_id)
         print(f"Используется существующий магазин: {store}")
     elif not dry_run:
+        # Если передано своё имя/slug — создаём новый магазин, не ищем старый
+        slug = store_slug or "don-buton"
+        name = store_name or "Дон Бутон"
         store, created = Store.objects.get_or_create(
-            slug="don-buton",
+            slug=slug,
             defaults={
-                "name_ru": "Дон Бутон",
+                "name_ru": name,
                 "about_ru": (
                     "Уютный цветочный магазин в Оше. "
                     "Свежие букеты, авторские композиции и доставка цветов по городу."
@@ -182,9 +186,10 @@ def run(store_id=None, branch_id=None, dry_run=False, delay=0.7):
         branch = StoreBranch.objects.get(pk=branch_id)
         print(f"Используется существующий филиал: {branch}")
     elif not dry_run and store:
+        b_name = branch_name or store.name_ru + " — Ош"
         branch, created = StoreBranch.objects.get_or_create(
             store=store,
-            name_ru="Дон Бутон — Ош",
+            name_ru=b_name,
             defaults={
                 "city": StoreBranch.City.OSH,
                 "address": "г. Ош",
@@ -234,23 +239,25 @@ def run(store_id=None, branch_id=None, dry_run=False, delay=0.7):
             )
             categories[cat_name] = cat_obj
 
-        # Товар
-        product, created = StoreProduct.objects.get_or_create(
-            store=store,
-            name_ru=data["title"],
-            defaults={
-                "category": categories[cat_name],
-                "description_ru": data["description"],
-                "price": data["price"],
-                "unit": StoreProduct.Unit.PCS,
-                "is_active": True,
-            },
-        )
-        if not created:
-            product.price = data["price"]
-            product.description_ru = data["description"]
-            product.category = categories[cat_name]
-            product.save(update_fields=["price", "description_ru", "category"])
+        # Товар — всегда новая запись если магазин новый,
+        # иначе обновляем существующий по имени
+        existing = StoreProduct.objects.filter(store=store, name_ru=data["title"]).first()
+        if existing:
+            existing.price = data["price"]
+            existing.description_ru = data["description"]
+            existing.category = categories[cat_name]
+            existing.save(update_fields=["price", "description_ru", "category"])
+            product = existing
+        else:
+            product = StoreProduct.objects.create(
+                store=store,
+                name_ru=data["title"],
+                category=categories[cat_name],
+                description_ru=data["description"],
+                price=data["price"],
+                unit=StoreProduct.Unit.PCS,
+                is_active=True,
+            )
 
         # Фото: скачиваем и сжимаем только если ещё нет
         if data["img_url"] and not product.photo:
@@ -286,12 +293,30 @@ def run(store_id=None, branch_id=None, dry_run=False, delay=0.7):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Импорт товаров с donbuton.kg → Webordo"
+        description="Импорт товаров с donbuton.kg → Webordo",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Примеры:
+  # Первый раз (создаёт магазин "Дон Бутон"):
+  python import_donbuton_standalone.py
+
+  # Создать второй магазин с другим именем:
+  python import_donbuton_standalone.py --store-name "Дон Бутон 2" --store-slug don-buton-2
+
+  # Загрузить в уже существующий магазин по ID:
+  python import_donbuton_standalone.py --store-id 5
+
+  # Тест без записи в БД:
+  python import_donbuton_standalone.py --dry-run
+        """
     )
-    parser.add_argument("--store-id",  type=int, default=None)
-    parser.add_argument("--branch-id", type=int, default=None)
-    parser.add_argument("--dry-run",   action="store_true")
-    parser.add_argument("--delay",     type=float, default=0.7)
+    parser.add_argument("--store-id",    type=int,   default=None,  help="ID существующего магазина")
+    parser.add_argument("--branch-id",   type=int,   default=None,  help="ID существующего филиала")
+    parser.add_argument("--store-name",  type=str,   default=None,  help='Название нового магазина, например "Дон Бутон 2"')
+    parser.add_argument("--store-slug",  type=str,   default=None,  help='Slug нового магазина, например don-buton-2')
+    parser.add_argument("--branch-name", type=str,   default=None,  help='Название нового филиала')
+    parser.add_argument("--dry-run",     action="store_true",        help="Только парсинг, без записи в БД")
+    parser.add_argument("--delay",       type=float, default=0.7,   help="Задержка между запросами (сек)")
     args = parser.parse_args()
 
     run(
@@ -299,4 +324,7 @@ if __name__ == "__main__":
         branch_id=args.branch_id,
         dry_run=args.dry_run,
         delay=args.delay,
+        store_name=args.store_name,
+        store_slug=args.store_slug,
+        branch_name=args.branch_name,
     )

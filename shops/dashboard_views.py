@@ -563,6 +563,143 @@ def shop_pos_receipt(request, order_id):
     return render(request, "dashboard/shops/receipt.html", {"order": order})
 
 
+# ── BRANCH DUPLICATE ─────────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def shop_branch_duplicate(request, branch_id):
+    """
+    Только для суперпользователей.
+    GET  — страница подтверждения с выбором целевого магазина.
+    POST — создаёт полную копию филиала: новые категории, товары (название,
+           описание, цена, фото) и остатки. Всё автономно в БД.
+    """
+    if not request.user.is_superuser:
+        return redirect("dashboard:shop_home")
+
+    branch = get_object_or_404(StoreBranch, id=branch_id)
+    all_stores = Store.objects.all().order_by("name_ru")
+
+    if request.method == "GET":
+        return render(request, "dashboard/shops/branch_duplicate.html", {
+            "branch": branch,
+            "store": branch.store,
+            "all_stores": all_stores,
+        })
+
+    # POST — выполняем копирование
+    target_store_id = request.POST.get("target_store_id")
+    new_name = request.POST.get("new_name", "").strip() or f"{branch.name_ru} (копия)"
+
+    try:
+        target_store = Store.objects.get(pk=target_store_id)
+    except (Store.DoesNotExist, TypeError, ValueError):
+        target_store = branch.store
+
+    if not _has_store_access(request.user, target_store):
+        messages.error(request, "Нет доступа к выбранному магазину")
+        return redirect("dashboard:shop_branch_duplicate", branch_id=branch.id)
+
+    # 1. Новый филиал
+    new_branch = StoreBranch.objects.create(
+        store=target_store,
+        name_ru=new_name,
+        city=branch.city,
+        address=branch.address,
+        phone=branch.phone,
+        phone2=branch.phone2,
+        map_url=branch.map_url,
+        lat=branch.lat,
+        lon=branch.lon,
+        delivery_enabled=branch.delivery_enabled,
+        delivery_fee=branch.delivery_fee,
+        min_order_amount=branch.min_order_amount,
+        tg_group_chat_id=branch.tg_group_chat_id,
+        tg_thread_id=branch.tg_thread_id,
+        tg_manager_chat_id=branch.tg_manager_chat_id,
+        is_active=False,
+    )
+
+    from django.core.files.base import ContentFile
+    from django.core.files.storage import default_storage
+    import os
+
+    def _copy_file(src_field, dest_field):
+        """Надёжно копирует файл через default_storage (работает с любым бэкендом)."""
+        if not src_field:
+            return
+        try:
+            fname = os.path.basename(src_field.name)
+            with default_storage.open(src_field.name, "rb") as f:
+                dest_field.save(fname, ContentFile(f.read()), save=True)
+        except Exception:
+            pass
+
+    # 2. Копируем обложку филиала
+    if branch.cover_photo:
+        _copy_file(branch.cover_photo, new_branch.cover_photo)
+
+    # 3. Полностью дублируем категории, товары и остатки
+    stocks = StoreStock.objects.filter(branch=branch).select_related(
+        "product", "product__category"
+    )
+    cat_map = {}  # old StoreCategory.pk → new StoreCategory
+
+    for stock in stocks:
+        old_product = stock.product
+        old_cat = old_product.category
+
+        # Категория — создаём один раз на каждую уникальную категорию
+        if old_cat:
+            if old_cat.pk not in cat_map:
+                new_cat = StoreCategory.objects.create(
+                    store=target_store,
+                    name_ru=old_cat.name_ru,
+                    name_ky=old_cat.name_ky,
+                    name_en=old_cat.name_en,
+                    sort_order=old_cat.sort_order,
+                    is_active=old_cat.is_active,
+                )
+                cat_map[old_cat.pk] = new_cat
+            new_cat = cat_map[old_cat.pk]
+        else:
+            new_cat = None
+
+        # Товар — новая независимая запись со всеми полями
+        new_product = StoreProduct.objects.create(
+            store=target_store,
+            category=new_cat,
+            name_ru=old_product.name_ru,
+            name_ky=old_product.name_ky,
+            name_en=old_product.name_en,
+            description_ru=old_product.description_ru,
+            description_ky=old_product.description_ky,
+            description_en=old_product.description_en,
+            price=old_product.price,
+            unit=old_product.unit,
+            barcode=old_product.barcode,
+            is_active=old_product.is_active,
+        )
+
+        # Фото товара — копируем через default_storage (не зависит от курсора файла)
+        if old_product.photo:
+            _copy_file(old_product.photo, new_product.photo)
+
+        # Остаток на складе нового филиала
+        StoreStock.objects.create(
+            branch=new_branch,
+            product=new_product,
+            qty=stock.qty,
+        )
+
+    total = StoreStock.objects.filter(branch=new_branch).count()
+    messages.success(
+        request,
+        f"Филиал «{new_branch.name_ru}» создан — скопировано {total} товаров. "
+        "Откройте настройки и активируйте его когда будете готовы."
+    )
+    return redirect("dashboard:shop_branch_edit", branch_id=new_branch.id)
+
+
 # ── BARCODE LOOKUP ────────────────────────────────────────────────────────────
 
 @login_required(login_url=LOGIN_URL)

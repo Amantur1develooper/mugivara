@@ -108,6 +108,7 @@
         </div>
         <div class="sh-btns">
           <a href="{% url 'dashboard:shop_pos' branch.id %}" style="background:linear-gradient(135deg,#1a7a4a,#0f5c34);color:#fff;box-shadow:0 3px 10px rgba(26,122,74,.25)">🖥️ Касса (POS)</a>
+          {% if request.user.is_superuser %}<a href="{% url 'dashboard:shop_branch_duplicate' branch.id %}" class="btn-s" title="Создать копию этого филиала со всеми товарами">📋 Дублировать</a>{% endif %}
         </div>
       </div>
       {% endfor %}
