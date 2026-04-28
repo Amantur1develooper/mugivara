@@ -659,6 +659,118 @@
     .sc-top-btn{ right:14px; bottom:96px; }
     .sc-toast-wrap{ right:12px; top:76px; }
   }
+
+  /* ── Product modal ───────────────────────────────────── */
+  .sc-modal-overlay{
+    position:fixed; inset:0; z-index:10000;
+    background:rgba(13,17,23,.72);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    display:flex; align-items:flex-end; justify-content:center;
+    opacity:0; pointer-events:none;
+    transition:opacity .22s ease;
+  }
+  .sc-modal-overlay.open{ opacity:1; pointer-events:all; }
+  .sc-modal{
+    background:#fff;
+    border-radius:28px 28px 0 0;
+    width:100%;
+    max-width:560px;
+    max-height:92dvh;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    transform:translateY(24px);
+    transition:transform .26s cubic-bezier(.32,.72,0,1);
+    position:relative;
+  }
+  .sc-modal-overlay.open .sc-modal{ transform:translateY(0); }
+  .sc-modal-close{
+    position:absolute; top:14px; right:14px; z-index:2;
+    width:34px; height:34px; border-radius:50%;
+    border:none; cursor:pointer;
+    background:rgba(13,17,23,.08);
+    color:var(--sc-text); font-size:16px;
+    display:flex; align-items:center; justify-content:center;
+    transition:background .15s;
+  }
+  .sc-modal-close:hover{ background:rgba(13,17,23,.14); }
+  .sc-modal-drag{
+    width:40px; height:4px; border-radius:2px;
+    background:rgba(16,24,40,.14);
+    margin:12px auto 0;
+  }
+  .sc-modal-img-wrap{
+    width:100%; aspect-ratio:4/3;
+    background:linear-gradient(145deg,#fff8f2,#ffe8d6);
+    overflow:hidden;
+  }
+  .sc-modal-img-wrap img{
+    width:100%; height:100%; object-fit:cover; display:block;
+  }
+  .sc-modal-img-ph{
+    width:100%; height:100%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:72px;
+  }
+  .sc-modal-body{ padding:20px 20px 28px; }
+  .sc-modal-cat{
+    display:inline-flex; padding:4px 10px; border-radius:999px;
+    background:#f2f4f7; color:#475467;
+    font-size:11px; font-weight:800;
+    border:1px solid rgba(16,24,40,.06);
+    margin-bottom:10px;
+  }
+  .sc-modal-title{
+    font-family:'Unbounded',sans-serif;
+    font-size:clamp(17px,4vw,22px);
+    font-weight:800; line-height:1.25;
+    letter-spacing:-.5px; color:var(--sc-text);
+    margin:0 0 12px;
+  }
+  .sc-modal-desc{
+    font-size:14px; line-height:1.6;
+    color:var(--sc-muted); margin-bottom:20px;
+    white-space:pre-line;
+  }
+  .sc-modal-footer{
+    display:flex; align-items:flex-end;
+    justify-content:space-between; gap:14px;
+    border-top:1px solid rgba(16,24,40,.07);
+    padding-top:18px; flex-wrap:wrap;
+  }
+  .sc-modal-price{ font-family:'Unbounded',sans-serif; font-size:22px; font-weight:900; color:var(--sc-text); }
+  .sc-modal-stock{ font-size:12px; color:var(--sc-muted); margin-top:4px; }
+  .sc-modal-add{
+    flex-shrink:0;
+    min-width:130px; height:48px; padding:0 20px;
+    border-radius:16px; border:none; cursor:pointer;
+    color:#fff; font-size:14px; font-weight:900;
+    font-family:inherit;
+    background:linear-gradient(135deg,var(--sc-accent),var(--sc-accent-2));
+    box-shadow:0 10px 28px var(--sc-glow);
+    transition:transform .18s, box-shadow .18s, opacity .18s;
+  }
+  .sc-modal-add:hover{ transform:translateY(-1px); box-shadow:0 14px 34px var(--sc-glow); }
+  .sc-modal-add.loading{ opacity:.7; pointer-events:none; }
+  .sc-modal-add.pulse{ animation:scPulse .3s ease; }
+  .sc-modal-sold{
+    min-width:130px; height:48px; padding:0 20px;
+    border-radius:16px;
+    background:#f3f4f6; color:#6b7280;
+    border:1px solid #e5e7eb;
+    font-size:13px; font-weight:700;
+    display:inline-flex; align-items:center; justify-content:center;
+  }
+
+  /* make card image + desc clickable cue */
+  .sc-card-media{ cursor:pointer; }
+  .sc-card-desc{ cursor:pointer; }
+  .sc-card-title{ cursor:pointer; }
+
+  @media (min-width:600px){
+    .sc-modal-overlay{ align-items:center; }
+    .sc-modal{ border-radius:28px; max-height:88dvh; }
+  }
 </style>
 {% endblock %}
 
@@ -760,8 +872,16 @@
           <div class="sc-grid">
             {% for s in stocks %}
               {% if s.product.category_id == c.id %}
-                <article class="sc-card">
-                  <div class="sc-card-media">
+                <article class="sc-card"
+                  data-pid="{{ s.product.id }}"
+                  data-name="{{ s.product.name_ru }}"
+                  data-price="{{ s.product.price|floatformat:'0' }}"
+                  data-qty="{{ s.qty|floatformat:'-3' }}"
+                  data-unit="{{ s.product.get_unit_display }}"
+                  data-cat="{{ c.name_ru }}"
+                  data-photo="{% if s.product.photo %}{{ s.product.photo.url }}{% endif %}"
+                  data-in-stock="{% if s.qty > 0 %}1{% else %}0{% endif %}">
+                  <div class="sc-card-media" onclick="openProductModal(this.closest('.sc-card'))">
                     {% if s.product.photo %}
                       <img src="{{ s.product.photo.url }}" alt="{{ s.product.name_ru }}" loading="lazy" decoding="async">
                     {% else %}
@@ -776,15 +896,18 @@
 
                   <div class="sc-card-body">
                     <div class="sc-card-top">
-                      <div class="sc-card-title">{{ s.product.name_ru }}</div>
+                      <div class="sc-card-title" onclick="openProductModal(this.closest('.sc-card'))">{{ s.product.name_ru }}</div>
                       <div class="sc-card-cat">{{ c.name_ru }}</div>
                     </div>
 
                     {% if s.product.description_ru %}
-                      <div class="sc-card-desc" title="{{ s.product.description_ru }}">{{ s.product.description_ru }}</div>
+                      <div class="sc-card-desc" onclick="openProductModal(this.closest('.sc-card'))">{{ s.product.description_ru }}</div>
                     {% else %}
-                      <div class="sc-card-desc">{% trans "Товар из каталога магазина с актуальной ценой и доступностью." %}</div>
+                      <div class="sc-card-desc" onclick="openProductModal(this.closest('.sc-card'))">{% trans "Товар из каталога магазина с актуальной ценой и доступностью." %}</div>
                     {% endif %}
+
+                    {# hidden span for full description (safe from HTML escaping) #}
+                    <span style="display:none" class="sc-card-full-desc">{{ s.product.description_ru }}</span>
 
                     <div class="sc-card-footer">
                       <div class="sc-price-wrap">
@@ -819,6 +942,31 @@
     {% endif %}
   </div>
 </div>
+
+{# ── Product detail modal ── #}
+<div class="sc-modal-overlay" id="scProductModal" onclick="closeProductModal(event)">
+  <div class="sc-modal" id="scModalBox">
+    <div class="sc-modal-drag"></div>
+    <button class="sc-modal-close" onclick="closeProductModal()">✕</button>
+    <div class="sc-modal-img-wrap" id="scModalImg"></div>
+    <div class="sc-modal-body">
+      <div class="sc-modal-cat" id="scModalCat"></div>
+      <h2 class="sc-modal-title" id="scModalTitle"></h2>
+      <div class="sc-modal-desc" id="scModalDesc"></div>
+      <div class="sc-modal-footer">
+        <div>
+          <div class="sc-modal-price" id="scModalPrice"></div>
+          <div class="sc-modal-stock" id="scModalStock"></div>
+        </div>
+        <div id="scModalAction"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# URL template for cart_add — replace 0 with product id in JS #}
+<div id="scCartAddUrl" data-url="{% url 'shops:cart_add' branch.id 0 %}" style="display:none"></div>
+<div id="scCsrfToken" data-token="{{ csrf_token }}" style="display:none"></div>
 
 <a id="cartFab"
    href="{% url 'shops:cart_detail' branch.id %}"
@@ -949,6 +1097,108 @@
     onScroll();
     btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
   })();
+
+  /* ── Product modal ── */
+  const _modal    = document.getElementById('scProductModal');
+  const _modalBox = document.getElementById('scModalBox');
+  let _touchStartY = 0;
+
+  function openProductModal(card) {
+    const d = card.dataset;
+    const inStock = d.inStock === '1';
+
+    // image
+    const imgWrap = document.getElementById('scModalImg');
+    imgWrap.innerHTML = d.photo
+      ? `<img src="${d.photo}" alt="${escH(d.name)}">`
+      : `<div class="sc-modal-img-ph">🛍️</div>`;
+
+    // texts
+    document.getElementById('scModalCat').textContent   = d.cat || '';
+    document.getElementById('scModalTitle').textContent = d.name || '';
+    document.getElementById('scModalPrice').textContent = (d.price || '0') + ' сом';
+    document.getElementById('scModalStock').textContent =
+      inStock ? ('В наличии: ' + d.qty + ' ' + (d.unit || '')) : 'Нет в наличии';
+
+    // full description from hidden span
+    const fullDesc = card.querySelector('.sc-card-full-desc')?.textContent?.trim() || '';
+    document.getElementById('scModalDesc').textContent = fullDesc || '';
+    document.getElementById('scModalDesc').style.display = fullDesc ? '' : 'none';
+
+    // action button
+    const actionWrap = document.getElementById('scModalAction');
+    if (inStock) {
+      const baseUrl = document.getElementById('scCartAddUrl').dataset.url;
+      const url = baseUrl.replace('/0/', '/' + d.pid + '/');
+      actionWrap.innerHTML =
+        `<button class="sc-modal-add" id="scModalAddBtn" onclick="modalAddToCart('${url}', this)">＋ В корзину</button>`;
+    } else {
+      actionWrap.innerHTML = `<span class="sc-modal-sold">Нет в наличии</span>`;
+    }
+
+    _modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeProductModal(e) {
+    if (e && e.target !== _modal) return;
+    _modal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  // swipe-down to close on mobile
+  _modalBox.addEventListener('touchstart', e => { _touchStartY = e.touches[0].clientY; }, { passive: true });
+  _modalBox.addEventListener('touchend', e => {
+    if (e.changedTouches[0].clientY - _touchStartY > 72) closeProductModal();
+  }, { passive: true });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeProductModal();
+  });
+
+  async function modalAddToCart(url, btn) {
+    btn.classList.add('loading');
+    btn.textContent = '...';
+    const csrf = document.getElementById('scCsrfToken').dataset.token;
+    try {
+      const fd = new FormData();
+      fd.append('qty', '1');
+      fd.append('csrfmiddlewaretoken', csrf);
+      const resp = await fetch(url, {
+        method: 'POST',
+        body: fd,
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrf }
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        updateCartUI(data.qty_total, data.total);
+        btn.classList.remove('loading');
+        btn.classList.add('pulse');
+        btn.textContent = '✓ Добавлено';
+        showToast('Добавлено в корзину', true);
+        setTimeout(() => {
+          btn.textContent = '＋ В корзину';
+          btn.classList.remove('pulse');
+        }, 1200);
+      } else if (data.error === 'not_enough') {
+        showToast('Недостаточно товара', false);
+        btn.classList.remove('loading');
+        btn.textContent = '＋ В корзину';
+      } else {
+        showToast('Не удалось добавить', false);
+        btn.classList.remove('loading');
+        btn.textContent = '＋ В корзину';
+      }
+    } catch {
+      showToast('Ошибка сети', false);
+      btn.classList.remove('loading');
+      btn.textContent = '＋ В корзину';
+    }
+  }
+
+  function escH(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
 
   (function () {
     const links = Array.from(document.querySelectorAll('[data-cat-link]'));

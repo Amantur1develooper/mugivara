@@ -235,6 +235,7 @@ def shop_product_add(request, branch_id):
         name_ru=name_ru,
         name_ky=request.POST.get("name_ky", "").strip(),
         name_en=request.POST.get("name_en", "").strip(),
+        description_ru=request.POST.get("description_ru", "").strip(),
         price=_dec(request.POST.get("price", "0")),
         unit=request.POST.get("unit", "pcs"),
         barcode=request.POST.get("barcode", "").strip(),
@@ -278,6 +279,7 @@ def shop_product_edit(request, stock_id):
         product.name_ru = name_ru
     product.name_ky = request.POST.get("name_ky", "").strip()
     product.name_en = request.POST.get("name_en", "").strip()
+    product.description_ru = request.POST.get("description_ru", product.description_ru).strip()
     product.price = _dec(request.POST.get("price", str(product.price)))
     product.unit = request.POST.get("unit", product.unit)
 

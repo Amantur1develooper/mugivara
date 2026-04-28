@@ -108,27 +108,39 @@ def room_book(request, room_id):
     price_per_night = room.price_per_night + room.price_per_extra_guest * max(0, guests_int - 1)
     total = price_per_night * nights_int
 
-    action_text = "Заселиться" if book_type == "checkin" else "Бронирование"
+    # Формат даты: дд.мм.гггг
+    try:
+        from datetime import datetime
+        checkin_fmt = datetime.strptime(str(checkin), "%Y-%m-%d").strftime("%d.%m.%Y")
+    except Exception:
+        checkin_fmt = str(checkin)
 
-    price_breakdown = f"{room.price_per_night} сом (база)"
-    if room.price_per_extra_guest and guests_int > 1:
-        price_breakdown += f" + {room.price_per_extra_guest} × {guests_int - 1} доп. чел. = {price_per_night} сом/ночь"
+    nights_word = "ночь" if nights_int == 1 else ("ночи" if 2 <= nights_int <= 4 else "ночей")
+    guests_word = "гость" if guests_int == 1 else ("гостя" if 2 <= guests_int <= 4 else "гостей")
 
-    msg = (
-        f"🏨 {action_text}\n"
-        f"Отель: {branch.hotel.name_ru}\n"
-        f"Филиал: {branch.name_ru}\n"
-        f"Номер: {room.name_ru}\n"
-        f"Тариф: {price_breakdown}\n"
-        f"Заезд: {checkin}\n"
-        f"Ночей: {nights_int}\n"
-        f"Гостей: {guests_int}\n"
-        f"Итого: {total} сом\n"
-        f"Имя: {name}\n"
-        f"Телефон: {phone}\n"
-    )
-    if comment:
-        msg += f"Комментарий: {comment}\n"
+    total_fmt = f"{total:,}".replace(",", " ")
+
+    if book_type == "checkin":
+        msg = (
+            f"🏨 Заселение сегодня\n\n"
+            f"{branch.hotel.name_ru} — {room.name_ru}\n"
+            f"📅 {checkin_fmt} · {nights_int} {nights_word} · {guests_int} {guests_word}\n"
+            f"💰 {total_fmt} сом\n\n"
+            f"👤 {name} · {phone}\n"
+        )
+        if comment:
+            msg += f"💬 {comment}\n"
+    else:
+        msg = (
+            f"🏨 Запрос на бронь\n\n"
+            f"{branch.hotel.name_ru} — {room.name_ru}\n"
+            f"📅 {checkin_fmt} · {nights_int} {nights_word} · {guests_int} {guests_word}\n"
+            f"💰 {total_fmt} сом\n\n"
+            f"👤 {name} · {phone}\n"
+        )
+        if comment:
+            msg += f"💬 {comment}\n"
+        msg += f"\nДля подтверждения брони нужен задаток — уточните реквизиты у администратора."
 
     # сохраняем в БД
     HotelBooking.objects.create(

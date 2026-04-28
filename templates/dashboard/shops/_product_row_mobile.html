@@ -1,0 +1,64 @@
+{% with p=stock.product qty=stock.qty %}
+<div class="pm-product{% if not p.is_active %} pm-inactive{% endif %}" id="stock-row-{{ stock.id }}">
+
+  {% if p.photo %}
+    <img src="{{ p.photo.url }}" class="pm-thumb">
+  {% else %}
+    <div class="pm-thumb-ph">📦</div>
+  {% endif %}
+
+  {# Скрытые элементы с данными товара — безопасное хранение без JSON в атрибуте #}
+  <div style="display:none">
+    <span id="d-name-ru-{{ stock.id }}">{{ p.name_ru }}</span>
+    <span id="d-name-ky-{{ stock.id }}">{{ p.name_ky }}</span>
+    <span id="d-name-en-{{ stock.id }}">{{ p.name_en }}</span>
+    <span id="d-desc-{{ stock.id }}">{{ p.description_ru }}</span>
+    <span id="d-barcode-{{ stock.id }}">{{ p.barcode }}</span>
+  </div>
+
+  <div style="flex:1;min-width:0">
+    <div class="pm-name" id="pname-{{ stock.id }}">{{ p.name_ru }}</div>
+    <div style="display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap">
+
+      <span class="pm-price-chip" id="pprice-{{ stock.id }}"
+            onclick="openPriceEdit({{ stock.id }}, '{{ p.price|floatformat:0 }}')">{{ p.price|floatformat:0 }} сом</span>
+
+      <div class="pm-price-edit" id="pprice-edit-{{ stock.id }}">
+        <input class="pm-price-edit-input" id="pprice-inp-{{ stock.id }}"
+               type="number" min="0" value="{{ p.price|floatformat:0 }}"
+               onkeydown="if(event.key==='Enter')savePriceEdit({{ stock.id }});if(event.key==='Escape'){document.getElementById('pprice-{{ stock.id }}').style.display='';this.closest('.pm-price-edit').classList.remove('open')}">
+        <button class="pm-price-save" onclick="savePriceEdit({{ stock.id }})">✓</button>
+      </div>
+
+      {# Visibility toggle badge — tappable directly #}
+      <span class="pm-vis-toggle {% if p.is_active %}active{% else %}hidden{% endif %}"
+            id="pvis-{{ stock.id }}"
+            onclick="toggleVis({{ stock.id }}, this)">
+        {% if p.is_active %}● Активен{% else %}○ Скрыт{% endif %}
+      </span>
+
+      <span class="pm-status {% if not p.is_active %}off{% elif qty == 0 %}none{% elif qty < 3 %}low{% else %}ok{% endif %}"
+            id="pdot-{{ stock.id }}"></span>
+      <span class="pm-meta" id="pmeta-{{ stock.id }}" style="margin:0">{{ p.get_unit_display }}</span>
+    </div>
+  </div>
+
+  <div class="pm-qty-block">
+    <button class="pm-qty-btn" onclick="changeQty({{ stock.id }}, -1)">−</button>
+    <span class="pm-qty-val" id="pqty-val-{{ stock.id }}">{{ qty|floatformat:"-3" }}</span>
+    <button class="pm-qty-btn" onclick="changeQty({{ stock.id }}, 1)">＋</button>
+  </div>
+
+  <button class="pm-dots"
+    data-sid="{{ stock.id }}"
+    data-price="{{ p.price|floatformat:0 }}"
+    data-qty="{{ qty|floatformat:'-3' }}"
+    data-unit="{{ p.unit }}"
+    data-unit-display="{{ p.get_unit_display }}"
+    data-cat="{{ p.category_id|default:0 }}"
+    data-photo="{% if p.photo %}{{ p.photo.url }}{% endif %}"
+    data-active="{% if p.is_active %}1{% else %}0{% endif %}"
+    onclick="openCtxFromBtn(this, event)">⋮</button>
+
+</div>
+{% endwith %}
