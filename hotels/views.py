@@ -122,25 +122,27 @@ def room_book(request, room_id):
 
     if book_type == "checkin":
         msg = (
-            f"🏨 Заселение сегодня\n\n"
+            f"Заселение сегодня\n\n"
             f"{branch.hotel.name_ru} — {room.name_ru}\n"
-            f"📅 {checkin_fmt} · {nights_int} {nights_word} · {guests_int} {guests_word}\n"
-            f"💰 {total_fmt} сом\n\n"
-            f"👤 {name} · {phone}\n"
+            f"Заезд: {checkin_fmt} · {nights_int} {nights_word} · {guests_int} {guests_word}\n"
+            f"Сумма: {total_fmt} сом\n\n"
+            f"Гость: {name}\n"
+            f"Тел: {phone}\n"
         )
         if comment:
-            msg += f"💬 {comment}\n"
+            msg += f"Комментарий: {comment}\n"
     else:
         msg = (
-            f"🏨 Запрос на бронь\n\n"
+            f"Запрос на бронь\n\n"
             f"{branch.hotel.name_ru} — {room.name_ru}\n"
-            f"📅 {checkin_fmt} · {nights_int} {nights_word} · {guests_int} {guests_word}\n"
-            f"💰 {total_fmt} сом\n\n"
-            f"👤 {name} · {phone}\n"
+            f"Заезд: {checkin_fmt} · {nights_int} {nights_word} · {guests_int} {guests_word}\n"
+            f"Сумма: {total_fmt} сом\n\n"
+            f"Гость: {name}\n"
+            f"Тел: {phone}\n"
         )
         if comment:
-            msg += f"💬 {comment}\n"
-        msg += f"\nДля подтверждения брони нужен задаток — уточните реквизиты у администратора."
+            msg += f"Комментарий: {comment}\n"
+        msg += f"\nЕсли номер свободен, готов(а) подтвердить бронь. Подскажите, пожалуйста, условия и реквизиты для оплаты задатка."
 
     # сохраняем в БД
     HotelBooking.objects.create(
