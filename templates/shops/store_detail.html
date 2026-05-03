@@ -6,326 +6,311 @@
 
 {% block head_extra %}
 <style>
-/* ════════════════════════════════
-   STORE DETAIL — mobile-first
-════════════════════════════════ */
-
-.sd-wrap {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 32px 16px 80px;
+:root {
+  --sd-accent: #ff6a1a;
+  --sd-accent2: #ff8a00;
+  --sd-dark: #0d1117;
+  --sd-glow: rgba(255,106,26,.26);
 }
 
-/* ── HERO ── */
-.sd-hero {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 28px;
-}
+body { background: #f5f6fa !important; }
 
-.sd-logo {
-  width: 68px; height: 68px;
-  border-radius: 20px;
-  overflow: hidden;
-  background: var(--card2);
-  border: 1px solid var(--border);
-  flex-shrink: 0;
+/* ── PAGE WRAP ── */
+.sd-page { max-width: 680px; margin: 0 auto; padding: 0 0 100px; }
+
+/* ── STORE HERO ── */
+.sd-store-hero {
+  background: var(--sd-dark);
+  padding: 28px 20px 24px;
+  display: flex; align-items: center; gap: 16px;
+  position: relative; overflow: hidden;
+}
+.sd-store-hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 100% 0%, rgba(255,106,26,.18), transparent 60%);
+  pointer-events: none;
+}
+.sd-store-logo {
+  width: 64px; height: 64px; border-radius: 18px;
+  overflow: hidden; flex-shrink: 0;
+  border: 2px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.08);
   display: flex; align-items: center; justify-content: center;
 }
-
-.sd-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.sd-logo-letter {
+.sd-store-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.sd-store-logo-letter {
   font-family: 'Unbounded', sans-serif;
-  font-size: 26px; font-weight: 900; color: var(--border);
+  font-size: 24px; font-weight: 900; color: rgba(255,255,255,.4);
 }
-.sd-hero-body { flex: 1; min-width: 0; }
-.sd-name {
-  margin: 0 0 3px;
+.sd-store-info { flex: 1; min-width: 0; }
+.sd-store-name {
   font-family: 'Unbounded', sans-serif;
-  font-size: clamp(20px, 5vw, 30px);
-  font-weight: 900; letter-spacing: -1px;
-  color: var(--text); line-height: 1.1;
+  font-size: clamp(18px, 5vw, 26px); font-weight: 900;
+  color: #fff; letter-spacing: -1px; line-height: 1.1; margin: 0 0 6px;
 }
-.sd-meta { font-size: 12px; color: var(--muted); }
-
-/* Social links row */
-.sd-socials {
-  display: flex; flex-wrap: wrap; gap: 8px;
-  margin-bottom: 24px;
+.sd-store-meta { font-size: 12px; color: rgba(255,255,255,.5); margin-bottom: 10px; }
+.sd-store-socials { display: flex; flex-wrap: wrap; gap: 6px; }
+.sd-soc {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 100px; font-size: 11px; font-weight: 700;
+  text-decoration: none; border: 1px solid rgba(255,255,255,.12);
 }
-.sd-soc-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 14px; border-radius: 100px;
-  font-size: 12px; font-weight: 700;
-  text-decoration: none; transition: opacity .15s;
-}
-.sd-soc-btn:hover { opacity: .85; }
-.sd-soc-back {
-  color: var(--text2); border: 1.5px solid var(--border);
-  background: var(--card);
-}
-.sd-soc-yt   { background: #FF0000; color: #fff; box-shadow: 0 3px 12px rgba(255,0,0,.22); }
-.sd-soc-ig   { background: linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); color: #fff; box-shadow: 0 3px 12px rgba(220,39,67,.22); }
+.sd-soc-back { background: rgba(255,255,255,.08); color: rgba(255,255,255,.7); }
+.sd-soc-back:hover { background: rgba(255,255,255,.14); color: #fff; }
+.sd-soc-yt   { background: #FF0000; color: #fff; border-color: transparent; }
+.sd-soc-ig   { background: linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); color: #fff; border-color: transparent; }
 
 /* ── CITY BAR ── */
 .sd-city-bar {
+  position: sticky; top: 56px; z-index: 50;
+  background: rgba(245,246,250,.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(16,24,40,.06);
+  padding: 10px 16px;
   display: flex; align-items: center; gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
-  position: sticky; top: 56px; z-index: 10;
-  background: var(--bg);
-  padding: 8px 0;
-  margin-left: -4px; margin-right: -4px;
+  overflow-x: auto; scrollbar-width: none;
 }
+.sd-city-bar::-webkit-scrollbar { display: none; }
 .sd-city-pill {
   display: inline-flex; align-items: center; gap: 5px;
-  padding: 7px 16px; border-radius: 100px;
-  font-size: 13px; font-weight: 700;
-  border: 1.5px solid var(--border);
-  background: var(--card); color: var(--text2);
-  cursor: pointer;
-  transition: border-color .15s, background .15s, color .15s;
-  user-select: none; white-space: nowrap;
-}
-.sd-city-pill:hover { border-color: var(--text); color: var(--text); }
-.sd-city-pill.active { background: var(--text); color: #fff; border-color: var(--text); }
-.sd-geo-btn {
-  margin-left: auto;
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 14px; border-radius: 100px;
+  padding: 7px 14px; border-radius: 100px; white-space: nowrap;
   font-size: 12px; font-weight: 700;
-  border: 1.5px solid var(--border);
-  background: var(--card); color: var(--text2);
-  cursor: pointer; transition: all .15s; white-space: nowrap;
+  border: 1.5px solid rgba(16,24,40,.1);
+  background: #fff; color: #667085;
+  cursor: pointer; transition: all .15s; flex-shrink: 0;
 }
-.sd-geo-btn:hover { border-color: var(--accent,#ff4d1c); color: var(--accent,#ff4d1c); }
+.sd-city-pill.active {
+  background: var(--sd-dark); color: #fff; border-color: var(--sd-dark);
+  box-shadow: 0 4px 14px rgba(16,24,40,.18);
+}
+.sd-geo-btn {
+  margin-left: auto; flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 12px; border-radius: 100px; white-space: nowrap;
+  font-size: 11px; font-weight: 700;
+  border: 1.5px solid rgba(16,24,40,.1);
+  background: #fff; color: #667085; cursor: pointer;
+  transition: all .15s;
+}
+.sd-geo-btn:hover { border-color: var(--sd-accent); color: var(--sd-accent); }
 .sd-geo-btn.loading { opacity: .5; pointer-events: none; }
 
-/* ── SECTION LABEL ── */
-.sd-label {
-  font-size: 11px; font-weight: 700; letter-spacing: 2px;
-  text-transform: uppercase; color: var(--muted);
-  margin-bottom: 14px;
-}
-
-/* ── CARD LIST ── */
-.sd-list { display: flex; flex-direction: column; gap: 12px; }
+/* ── BRANCH LIST ── */
+.sd-list { display: flex; flex-direction: column; gap: 0; padding: 16px 16px 0; }
 
 /* ── BRANCH CARD ── */
 .sd-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 22px;
+  background: #fff;
+  border-radius: 24px;
   overflow: hidden;
-  transition: box-shadow .2s, border-color .2s, transform .2s;
-  animation: sdCardIn .35s ease both;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 16px rgba(16,24,40,.07);
+  border: 1px solid rgba(16,24,40,.06);
+  transition: transform .22s ease, box-shadow .22s ease;
+  animation: sdIn .3s ease both;
 }
 .sd-card:hover {
-  border-color: rgba(var(--accent-rgb,255,77,28),.3);
-  box-shadow: 0 8px 32px rgba(0,0,0,.08);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 36px rgba(16,24,40,.12);
 }
 .sd-card:nth-child(1){animation-delay:.00s}
-.sd-card:nth-child(2){animation-delay:.06s}
-.sd-card:nth-child(3){animation-delay:.12s}
-.sd-card:nth-child(n+4){animation-delay:.16s}
-@keyframes sdCardIn {
-  from { opacity:0; transform:translateY(14px); }
+.sd-card:nth-child(2){animation-delay:.07s}
+.sd-card:nth-child(3){animation-delay:.13s}
+.sd-card:nth-child(n+4){animation-delay:.17s}
+@keyframes sdIn {
+  from { opacity:0; transform:translateY(16px); }
   to   { opacity:1; transform:translateY(0); }
 }
 
-/* Cover photo */
-.sd-card-cover {
-  position: relative;
-  height: 140px;
-  background: var(--card2);
-  overflow: hidden;
+/* Cover — big photo with text overlay */
+.sd-cover {
+  position: relative; height: 210px;
+  overflow: hidden; background: #1c2535;
 }
-.sd-card-cover img {
+.sd-cover img {
   width: 100%; height: 100%; object-fit: cover; display: block;
-  transition: transform .4s ease;
+  transition: transform .5s ease;
 }
-.sd-card:hover .sd-card-cover img { transform: scale(1.04); }
-.sd-card-cover-empty {
+.sd-card:hover .sd-cover img { transform: scale(1.05); }
+.sd-cover-ph {
   width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, var(--card2), var(--bg));
+  background: linear-gradient(135deg, #1c2535, #0d1117);
 }
-.sd-card-cover-letter {
+.sd-cover-ph-letter {
   font-family: 'Unbounded', sans-serif;
-  font-size: 56px; font-weight: 900;
-  color: var(--border); line-height: 1;
+  font-size: 80px; font-weight: 900;
+  color: rgba(255,255,255,.08); line-height: 1;
+  user-select: none;
 }
-.sd-card-cover-grad {
+.sd-cover-grad {
   position: absolute; inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,.5) 0%, transparent 55%);
+  background: linear-gradient(
+    to bottom,
+    transparent 30%,
+    rgba(13,17,23,.55) 65%,
+    rgba(13,17,23,.88) 100%
+  );
 }
-/* Status badge on cover */
-.sd-card-badge {
-  position: absolute; top: 12px; right: 12px;
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 4px 10px; border-radius: 100px;
-  font-size: 11px; font-weight: 700;
-  backdrop-filter: blur(8px);
+/* Text overlaid on photo */
+.sd-cover-body {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 14px 16px;
 }
-.sd-card-badge.open  { background: rgba(16,185,129,.85); color: #fff; }
-.sd-card-badge.closed { background: rgba(0,0,0,.55); color: rgba(255,255,255,.8); }
-.sd-card-badge-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-
-/* Body */
-.sd-card-body { padding: 16px 18px 18px; }
-.sd-card-name {
+.sd-cover-name {
   font-family: 'Unbounded', sans-serif;
-  font-size: 15px; font-weight: 900;
-  color: var(--text); letter-spacing: -.3px;
-  margin-bottom: 8px; line-height: 1.2;
+  font-size: 16px; font-weight: 800;
+  color: #fff; letter-spacing: -.3px; line-height: 1.2;
+  margin-bottom: 6px;
 }
-.sd-card-chips {
-  display: flex; flex-wrap: wrap; gap: 6px;
-  margin-bottom: 10px;
+.sd-cover-chips {
+  display: flex; flex-wrap: wrap; gap: 5px;
 }
-.sd-chip {
+.sd-cover-chip {
   display: inline-flex; align-items: center; gap: 4px;
-  padding: 3px 10px; border-radius: 100px;
+  padding: 3px 9px; border-radius: 100px;
   font-size: 11px; font-weight: 600;
-  background: var(--bg); border: 1px solid var(--border);
-  color: var(--text2);
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.14);
+  color: rgba(255,255,255,.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
-.sd-map-chip {
-  text-decoration: none;
-  color: var(--accent,#ff4d1c);
-  border-color: rgba(255,77,28,.25);
-  background: rgba(255,77,28,.06);
+.sd-cover-chip.open-chip {
+  background: rgba(16,185,129,.75); border-color: transparent; color: #fff;
 }
-.sd-card-addr {
-  font-size: 12px; color: var(--muted);
-  margin-bottom: 12px;
-  display: flex; gap: 5px; align-items: flex-start; line-height: 1.4;
+.sd-cover-chip.closed-chip {
+  background: rgba(0,0,0,.45); border-color: rgba(255,255,255,.1); color: rgba(255,255,255,.65);
 }
 
-/* Contacts */
-.sd-card-contacts {
-  display: flex; gap: 8px;
+/* Card bottom: contact + CTA */
+.sd-card-bottom { padding: 14px 16px 0; }
+
+.sd-addr {
+  display: flex; align-items: flex-start; gap: 6px;
+  font-size: 12px; color: #667085; line-height: 1.45;
+  margin-bottom: 12px;
+}
+.sd-addr svg { flex-shrink: 0; margin-top: 1px; }
+
+.sd-contacts { display: flex; gap: 8px; margin-bottom: 14px; }
+.sd-contact {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 10px; border-radius: 13px;
+  font-size: 12px; font-weight: 700; text-decoration: none;
+  transition: opacity .15s, transform .15s;
+}
+.sd-contact:hover { opacity: .85; transform: translateY(-1px); }
+.sd-contact-call {
+  background: #f2f4f7; color: #344054;
+  border: 1px solid rgba(16,24,40,.1);
+}
+.sd-contact-wa { background: #25D366; color: #fff; }
+
+/* CTA button */
+.sd-cta {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 15px 18px;
+  background: linear-gradient(135deg, var(--sd-accent), var(--sd-accent2));
+  color: #fff; text-decoration: none;
+  font-family: 'Unbounded', sans-serif;
+  font-size: 13px; font-weight: 800; letter-spacing: -.2px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  transition: opacity .15s;
+}
+.sd-cta:hover { opacity: .92; }
+.sd-cta-left { display: flex; align-items: center; gap: 10px; }
+.sd-cta-icon {
+  width: 36px; height: 36px; border-radius: 11px; flex-shrink: 0;
+  background: rgba(255,255,255,.18);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.sd-cta-arrow {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(255,255,255,.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 900;
+}
+
+/* ── NO RESULTS / EMPTY ── */
+.sd-no-results {
+  display: none; text-align: center; padding: 40px 20px;
+  background: #fff; border-radius: 20px;
+  border: 1px solid rgba(16,24,40,.07);
+  color: #667085; font-size: 14px;
   margin-bottom: 14px;
 }
-.sd-contact-btn {
-  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
-  padding: 8px 10px; border-radius: 12px;
-  font-size: 12px; font-weight: 700; text-decoration: none;
-  transition: opacity .15s;
-}
-.sd-contact-btn:hover { opacity: .85; }
-.sd-contact-call { background: var(--bg); color: var(--text2); border: 1px solid var(--border); }
-.sd-contact-wa   { background: #25D366; color: #fff; }
-
-/* CTA */
-.sd-card-cta {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 10px;
-  padding: 14px 18px;
-  background: var(--text);
-  color: #fff;
-  text-decoration: none;
-  font-family: 'Unbounded', sans-serif;
-  font-size: 13px; font-weight: 800;
-  letter-spacing: -.2px;
-  transition: opacity .15s;
-  border-top: 1px solid rgba(255,255,255,.06);
-}
-.sd-card-cta:hover { opacity: .9; }
-.sd-card-cta-icon { font-size: 20px; }
-.sd-card-cta-arrow {
-  width: 32px; height: 32px; border-radius: 50%;
-  background: rgba(255,255,255,.15);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px; flex-shrink: 0;
-}
-
-/* ── No results ── */
-.sd-no-results {
-  display: none; text-align: center; padding: 48px 20px;
-  background: var(--card); border-radius: 20px;
-  border: 1px solid var(--border); color: var(--muted); font-size: 14px;
-}
-
-/* ── Empty state ── */
 .sd-empty {
-  text-align: center; padding: 64px 24px;
-  background: var(--card); border-radius: 22px;
-  border: 1px solid var(--border);
+  text-align: center; padding: 64px 20px;
+  background: #fff; border-radius: 22px;
+  border: 1px solid rgba(16,24,40,.07);
+  margin: 16px;
 }
-.sd-empty-icon { font-size: 48px; margin-bottom: 14px; }
 
-/* ════ MOBILE ════ */
+/* ── MOBILE ── */
 @media (max-width: 520px) {
-  .sd-wrap { padding: 16px 12px 72px; }
-
-  .sd-logo { width: 56px; height: 56px; border-radius: 16px; }
-  .sd-logo-letter { font-size: 22px; }
-  .sd-name { font-size: 18px; }
-
-  .sd-city-bar { top: 48px; gap: 6px; }
-  .sd-city-pill { padding: 6px 13px; font-size: 12px; }
-  .sd-geo-btn { padding: 6px 12px; font-size: 11px; }
-
-  .sd-card-cover { height: 120px; }
-  .sd-card-cover-letter { font-size: 44px; }
-  .sd-card-body { padding: 14px 14px 0; }
-  .sd-card-name { font-size: 14px; }
-  .sd-card-cta { padding: 13px 14px; font-size: 12px; }
+  .sd-store-hero { padding: 20px 16px 18px; gap: 12px; }
+  .sd-store-logo { width: 54px; height: 54px; border-radius: 14px; }
+  .sd-city-bar { top: 48px; padding: 8px 14px; }
+  .sd-list { padding: 12px 12px 0; }
+  .sd-cover { height: 180px; }
+  .sd-cover-name { font-size: 14px; }
+  .sd-card-bottom { padding: 12px 14px 0; }
+  .sd-cta { padding: 13px 14px; font-size: 12px; }
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="sd-wrap">
+<div class="sd-page">
 
-  <!-- HERO -->
-  <div class="sd-hero">
-    <div class="sd-logo">
+  {# ── STORE HERO ── #}
+  <div class="sd-store-hero">
+    <div class="sd-store-logo">
       {% if store.logo %}
         <img src="{{ store.logo.url }}" alt="{% t store 'name' %}" loading="lazy">
       {% else %}
         {% t store "name" as sn %}
-        <span class="sd-logo-letter">{{ sn|slice:":1" }}</span>
+        <span class="sd-store-logo-letter">{{ sn|slice:":1" }}</span>
       {% endif %}
     </div>
-    <div class="sd-hero-body">
-      <h1 class="sd-name">{% t store "name" %}</h1>
-      <div class="sd-meta">{{ branches|length }} {% trans "филиал(ов)" %}</div>
+    <div class="sd-store-info">
+      <h1 class="sd-store-name">{% t store "name" %}</h1>
+      <div class="sd-store-meta">{{ branches|length }} {% trans "филиал(ов)" %}</div>
+      <div class="sd-store-socials">
+        <a href="{% url 'shops:store_list' %}" class="sd-soc sd-soc-back">← {% trans "Назад" %}</a>
+        {% if store.youtube_url %}
+          <a href="{{ store.youtube_url }}" target="_blank" rel="noopener" class="sd-soc sd-soc-yt">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.5 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg>
+            YouTube
+          </a>
+        {% endif %}
+        {% if store.instagram_url %}
+          <a href="{{ store.instagram_url }}" target="_blank" rel="noopener" class="sd-soc sd-soc-ig">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            Instagram
+          </a>
+        {% endif %}
+        {% if store.instagram_url_2 %}
+          <a href="{{ store.instagram_url_2 }}" target="_blank" rel="noopener" class="sd-soc sd-soc-ig">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            Instagram 2
+          </a>
+        {% endif %}
+      </div>
     </div>
-  </div>
-
-  <!-- Social / back -->
-  <div class="sd-socials">
-    <a href="{% url 'shops:store_list' %}" class="sd-soc-btn sd-soc-back">← {% trans "Назад" %}</a>
-    {% if store.youtube_url %}
-    <a href="{{ store.youtube_url }}" target="_blank" rel="noopener" class="sd-soc-btn sd-soc-yt">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.5 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg>
-      YouTube
-    </a>
-    {% endif %}
-    {% if store.instagram_url %}
-    <a href="{{ store.instagram_url }}" target="_blank" rel="noopener" class="sd-soc-btn sd-soc-ig">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-      Instagram
-    </a>
-    {% endif %}
-    {% if store.instagram_url_2 %}
-    <a href="{{ store.instagram_url_2 }}" target="_blank" rel="noopener" class="sd-soc-btn sd-soc-ig">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-      Instagram 2
-    </a>
-    {% endif %}
   </div>
 
   {% if branches %}
 
-  <!-- City filter -->
+  {# ── CITY FILTER ── #}
+  {% regroup branches by city as city_groups %}
+  {% if city_groups|length > 1 %}
   <div class="sd-city-bar">
     <button class="sd-city-pill active" data-city="all">{% trans "Все" %}</button>
-    {% regroup branches by city as city_groups %}
     {% for cg in city_groups %}
       {% if cg.grouper == "bishkek" %}
         <button class="sd-city-pill" data-city="bishkek">🏙 {% trans "Бишкек" %}</button>
@@ -340,61 +325,66 @@
       {% trans "Рядом" %}
     </button>
   </div>
+  {% endif %}
 
-  <!-- Branch cards -->
-  <div class="sd-label">{% trans "Выберите филиал" %}</div>
+  {# ── BRANCH CARDS ── #}
   <div class="sd-list" id="sd-branch-list">
     <div class="sd-no-results" id="sd-no-results">{% trans "В этом городе нет филиалов." %}</div>
 
     {% for b in branches %}
-    <div class="sd-card" data-city="{{ b.city }}">
+    <div class="sd-card" data-city="{{ b.city }}"
+         {% if b.latitude and b.longitude %}data-lat="{{ b.latitude }}" data-lon="{{ b.longitude }}"{% endif %}>
 
-      <!-- Cover -->
-      <div class="sd-card-cover">
+      {# Cover photo — big, with text overlay #}
+      <div class="sd-cover">
         {% if b.cover_photo %}
-          <img src="{{ b.cover_photo.url }}" alt="{% t b 'name' %}" loading="lazy">
+          <img src="{{ b.cover_photo.url }}" alt="{% t b 'name' %}" loading="lazy" decoding="async">
         {% else %}
-          <div class="sd-card-cover-empty">
+          <div class="sd-cover-ph">
             {% t b "name" as bn %}
-            <span class="sd-card-cover-letter">{{ bn|slice:":1" }}</span>
+            <span class="sd-cover-ph-letter">{{ bn|slice:":1" }}</span>
           </div>
         {% endif %}
-        <div class="sd-card-cover-grad"></div>
-        {% if b.is_open_now %}
-          <span class="sd-card-badge open"><span class="sd-card-badge-dot"></span>{% trans "Открыто" %}</span>
-        {% else %}
-          <span class="sd-card-badge closed"><span class="sd-card-badge-dot"></span>{% trans "Закрыто" %}</span>
-        {% endif %}
+        <div class="sd-cover-grad"></div>
+
+        <div class="sd-cover-body">
+          <div class="sd-cover-name">{% t b "name" %}</div>
+          <div class="sd-cover-chips">
+            {% if b.is_open_now %}
+              <span class="sd-cover-chip open-chip">● {% trans "Открыто" %}</span>
+            {% else %}
+              <span class="sd-cover-chip closed-chip">○ {% trans "Закрыто" %}</span>
+            {% endif %}
+            {% if b.working_hours %}
+              <span class="sd-cover-chip">🕐 {{ b.working_hours }}</span>
+            {% endif %}
+            {% if b.delivery_enabled %}
+              <span class="sd-cover-chip">🚚 {% trans "Доставка" %}</span>
+            {% endif %}
+            {% if b.map_url %}
+              <a href="{{ b.map_url }}" target="_blank" class="sd-cover-chip">📍 {% trans "На карте" %}</a>
+            {% endif %}
+          </div>
+        </div>
       </div>
 
-      <!-- Body -->
-      <div class="sd-card-body">
-        <div class="sd-card-name">{% t b "name" %}</div>
-
-        <div class="sd-card-chips">
-          {% if b.working_hours %}
-            <span class="sd-chip">🕐 {{ b.working_hours }}</span>
-          {% endif %}
-          {% if b.delivery_enabled %}
-            <span class="sd-chip">🚚 {% trans "Доставка" %}</span>
-          {% endif %}
-          {% if b.map_url %}
-            <a href="{{ b.map_url }}" target="_blank" class="sd-chip sd-map-chip">📍 {% trans "На карте" %}</a>
-          {% endif %}
-        </div>
-
+      {# Address + contacts #}
+      <div class="sd-card-bottom">
         {% if b.address %}
-        <div class="sd-card-addr"><span>📍</span><span>{{ b.address }}</span></div>
+        <div class="sd-addr">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span>{{ b.address }}</span>
+        </div>
         {% endif %}
 
         {% if b.phone %}
-        <div class="sd-card-contacts">
-          <a href="tel:{{ b.phone }}" class="sd-contact-btn sd-contact-call">
+        <div class="sd-contacts">
+          <a href="tel:{{ b.phone }}" class="sd-contact sd-contact-call">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
             {{ b.phone }}
           </a>
           <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}"
-             target="_blank" rel="noopener" class="sd-contact-btn sd-contact-wa">
+             target="_blank" rel="noopener" class="sd-contact sd-contact-wa">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-1-.3-.1-.5-.1-.7.1s-.8 1-.9 1.2-.3.2-.6 0c-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5s0-.4 0-.5c0-.2-.7-1.7-1-2.3C9.3 8.1 9 8.1 8.8 8.1H8.3c-.2 0-.5.1-.8.4C7.2 8.8 6.3 9.6 6.3 11.3s1.2 3.5 1.4 3.7c.2.2 2.4 3.7 5.9 5.2 2.3 1 3.2 1.1 4.3.9.7-.1 2.2-.9 2.5-1.7.3-.8.3-1.5.2-1.7-.1-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.9.5 3.7 1.4 5.3L2 22l4.9-1.3C8.3 21.5 10.1 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>
             WhatsApp
           </a>
@@ -402,11 +392,13 @@
         {% endif %}
       </div>
 
-      <!-- CTA -->
-      <a href="{% url 'shops:branch_catalog_delivery' b.id %}" class="sd-card-cta">
-        <span class="sd-card-cta-icon">🛍️</span>
-        <span>{% trans "Открыть каталог" %}</span>
-        <span class="sd-card-cta-arrow">→</span>
+      {# CTA #}
+      <a href="{% url 'shops:branch_catalog_delivery' b.id %}" class="sd-cta">
+        <div class="sd-cta-left">
+          <div class="sd-cta-icon">🛍️</div>
+          <span>{% trans "Открыть каталог" %}</span>
+        </div>
+        <div class="sd-cta-arrow">→</div>
       </a>
 
     </div>
@@ -415,9 +407,9 @@
 
   {% else %}
   <div class="sd-empty">
-    <div class="sd-empty-icon">🛍️</div>
-    <p style="font-family:'Unbounded',sans-serif;font-size:16px;font-weight:800;margin:0 0 6px;color:var(--text)">{% trans "Филиалы пока не добавлены" %}</p>
-    <p style="color:var(--muted);font-size:13px;margin:0">{% trans "Заходите позже." %}</p>
+    <div style="font-size:48px;margin-bottom:14px">🛍️</div>
+    <p style="font-family:'Unbounded',sans-serif;font-size:16px;font-weight:800;margin:0 0 6px;color:#101828">{% trans "Филиалы пока не добавлены" %}</p>
+    <p style="color:#667085;font-size:13px;margin:0">{% trans "Заходите позже." %}</p>
   </div>
   {% endif %}
 
@@ -438,7 +430,7 @@
       c.hidden = !show;
       if (show) n++;
     });
-    noRes.style.display = n === 0 ? 'block' : 'none';
+    if (noRes) noRes.style.display = n === 0 ? 'block' : 'none';
   }
 
   pills.forEach(p => p.addEventListener('click', () => {
@@ -455,20 +447,17 @@
         pos => {
           geoBtn.classList.remove('loading');
           geoBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg> {% trans "Рядом" %}`;
-
-          /* Sort visible cards by distance */
           const uLat = pos.coords.latitude, uLon = pos.coords.longitude;
           function dist(lat, lon) {
-            const dLat = (lat-uLat)*Math.PI/180, dLon = (lon-uLon)*Math.PI/180;
-            const a = Math.sin(dLat/2)**2 + Math.cos(uLat*Math.PI/180)*Math.cos(lat*Math.PI/180)*Math.sin(dLon/2)**2;
-            return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const dLat=(lat-uLat)*Math.PI/180, dLon=(lon-uLon)*Math.PI/180;
+            const a=Math.sin(dLat/2)**2+Math.cos(uLat*Math.PI/180)*Math.cos(lat*Math.PI/180)*Math.sin(dLon/2)**2;
+            return 6371000*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
           }
           const list = document.getElementById('sd-branch-list');
-          const sorted = [...cards].filter(c => c.dataset.lat && c.dataset.lon)
-            .sort((a,b) => dist(+a.dataset.lat,+a.dataset.lon) - dist(+b.dataset.lat,+b.dataset.lon));
-          sorted.forEach(c => list.appendChild(c));
-
-          pills.forEach(x => x.classList.remove('active'));
+          [...cards].filter(c=>c.dataset.lat&&c.dataset.lon)
+            .sort((a,b)=>dist(+a.dataset.lat,+a.dataset.lon)-dist(+b.dataset.lat,+b.dataset.lon))
+            .forEach(c=>list.appendChild(c));
+          pills.forEach(x=>x.classList.remove('active'));
           document.querySelector('[data-city="all"]').classList.add('active');
           filterByCity('all');
         },

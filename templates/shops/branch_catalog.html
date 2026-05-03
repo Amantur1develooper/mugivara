@@ -815,6 +815,10 @@
               <span class="sc-pill">📞 {{ branch.phone }}</span>
             {% endif %}
 
+            {% if store.order_phone %}
+              <span class="sc-pill" style="background:rgba(124,58,237,.12);border-color:rgba(124,58,237,.22);color:#c4b5fd;">✨ Инд. заказы: {{ store.order_phone }}</span>
+            {% endif %}
+
             <span class="sc-pill open"><span class="sc-pill-dot"></span>{% trans "Каталог открыт" %}</span>
           </div>
         </div>
@@ -823,6 +827,10 @@
           {% if branch.phone %}
             <a href="tel:{{ branch.phone }}" class="sc-call-btn">📞 {% trans "Позвонить" %}</a>
             <a href="https://wa.me/{{ branch.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" rel="noopener" class="sc-wa-btn">WhatsApp</a>
+          {% endif %}
+          {% if store.order_phone %}
+            <a href="tel:{{ store.order_phone }}"
+               class="sc-call-btn" style="background:rgba(124,58,237,.18);border-color:rgba(124,58,237,.3);color:#ddd6fe;">✨ Инд. заказ</a>
           {% endif %}
           <a href="{% url 'shops:cart_detail' branch.id %}" class="sc-cart-btn" id="heroCartBtn">
             🧺 {% trans "Корзина" %}
@@ -847,6 +855,15 @@
       <div class="sc-info-label">{% trans "Контакт" %}</div>
       <div class="sc-info-value">{% if branch.phone %}{{ branch.phone }}{% else %}{% trans "Уточняется" %}{% endif %}</div>
     </div>
+    {% if store.order_phone %}
+    <div class="sc-info-card" style="border-color:rgba(124,58,237,.18)">
+      <div class="sc-info-label" style="color:#a78bfa">✨ Индивидуальные заказы</div>
+      <div class="sc-info-value">
+        <a href="tel:{{ store.order_phone }}"
+           style="color:#7c3aed;text-decoration:none;font-weight:900">{{ store.order_phone }}</a>
+      </div>
+    </div>
+    {% endif %}
   </section>
 
   <div class="sc-cats-sticky">
@@ -859,6 +876,14 @@
   </div>
 
   <div class="sc-content" id="sc-top">
+
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;margin-bottom:18px;
+                background:rgba(16,24,40,.04);border:1px solid rgba(16,24,40,.07);border-radius:12px;
+                font-size:12px;color:#667085;line-height:1.45">
+      <span style="font-size:15px;flex-shrink:0">ℹ️</span>
+      <span>Цены указаны по прайс-листу фирменных магазинов и могут отличаться в других точках продаж.</span>
+    </div>
+
     {% if categories and stocks %}
       {% for c in categories %}
         <section class="sc-cat-section" id="cat-{{ c.id }}" data-cat-section="cat-{{ c.id }}">

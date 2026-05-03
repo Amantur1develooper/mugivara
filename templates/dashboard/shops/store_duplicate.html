@@ -1,0 +1,82 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Клонировать сеть — {{ store.name_ru }}{% endblock %}
+{% block nav_shops %}active{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">📋 Клонировать сеть магазинов</div>
+    <div class="db-breadcrumb">{{ store.name_ru }} → новая полная копия</div>
+  </div>
+  <a href="{% url 'dashboard:shop_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
+</div>
+
+{# Source info #}
+<div class="db-form-card" style="max-width:600px;margin-bottom:16px">
+  <div class="db-form-section-title">Источник</div>
+  <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+    {% if store.logo %}
+      <img src="{{ store.logo.url }}" style="width:56px;height:56px;border-radius:14px;object-fit:cover">
+    {% endif %}
+    <div>
+      <div style="font-weight:800;font-size:15px;color:var(--text)">{{ store.name_ru }}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px">
+        {{ branches|length }} филиал(ов) · {{ total_products }} товаров
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:14px">
+    <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">Будет скопировано</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      {% for b in branches %}
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg);border-radius:10px;border:1px solid var(--border)">
+        {% if b.cover_photo %}
+          <img src="{{ b.cover_photo.url }}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0">
+        {% else %}
+          <div style="width:36px;height:36px;border-radius:8px;background:var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px">🏪</div>
+        {% endif %}
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text)">{{ b.name_ru }}</div>
+          <div style="font-size:11px;color:var(--muted)">{{ b.stocks.count }} товаров</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{# Form #}
+<form method="post" style="max-width:600px">
+  {% csrf_token %}
+
+  <div class="db-form-card">
+    <div class="db-form-section-title">Новая сеть</div>
+
+    <div class="db-form-group">
+      <label class="db-label">Название новой сети</label>
+      <input class="db-input" type="text" name="new_name"
+             value="{{ store.name_ru }} (копия)" required>
+    </div>
+
+    <div class="db-form-group">
+      <label class="db-label">URL-slug (уникальный, латиница)</label>
+      <input class="db-input" type="text" name="new_slug"
+             placeholder="например: don-buton-2"
+             pattern="[a-z0-9\-]+" title="Только строчные латинские буквы, цифры и дефис">
+      <div style="font-size:12px;color:var(--muted);margin-top:5px">Оставьте пустым — сгенерируется автоматически</div>
+    </div>
+
+    <div style="padding:12px 14px;background:rgba(255,77,28,.06);border:1px solid rgba(255,77,28,.18);border-radius:12px;font-size:13px;color:var(--text2)">
+      ⚠️ Будет создан новый магазин со всеми филиалами, категориями, товарами и фото.
+      Магазин будет <b>неактивен</b> — активируйте вручную после проверки.
+      Операция может занять несколько секунд.
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;max-width:600px">
+    <button type="submit" class="db-btn db-btn-primary">📋 Клонировать сеть</button>
+    <a href="{% url 'dashboard:shop_home' %}" class="db-btn db-btn-ghost">Отмена</a>
+  </div>
+</form>
+{% endblock %}

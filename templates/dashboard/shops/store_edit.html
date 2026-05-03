@@ -41,6 +41,12 @@
     </div>
 
     <div class="db-form-group">
+      <label class="db-label">Телефон для индивидуальных заказов</label>
+      <input class="db-input" type="tel" name="order_phone" value="{{ store.order_phone }}" placeholder="+996 XXX XXX XXX">
+      <div style="font-size:12px;color:var(--muted);margin-top:5px">Если заполнено — отображается на витрине всех филиалов как кнопка «Инд. заказ» (WhatsApp)</div>
+    </div>
+
+    <div class="db-form-group">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
         <input type="checkbox" name="is_active" {% if store.is_active %}checked{% endif %}
                style="width:16px;height:16px;accent-color:var(--accent)">

@@ -81,6 +81,7 @@ def shop_store_edit(request, store_id):
             store.name_ru = name
         store.about_ru = request.POST.get("about_ru", "").strip()
         store.youtube_url = request.POST.get("youtube_url", "").strip()
+        store.order_phone = request.POST.get("order_phone", "").strip()
         store.is_active = request.POST.get("is_active") == "on"
         if request.FILES.get("logo"):
             store.logo = request.FILES["logo"]
@@ -700,6 +701,158 @@ def shop_branch_duplicate(request, branch_id):
         "Откройте настройки и активируйте его когда будете готовы."
     )
     return redirect("dashboard:shop_branch_edit", branch_id=new_branch.id)
+
+
+# ── STORE DUPLICATE (clone entire network) ───────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def shop_store_duplicate(request, store_id):
+    """Только для суперпользователей. Клонирует весь магазин: все филиалы,
+    категории, товары (с фото), остатки — полностью независимые записи в БД."""
+    if not request.user.is_superuser:
+        return redirect("dashboard:shop_home")
+
+    source_store = get_object_or_404(Store, id=store_id)
+
+    if request.method == "GET":
+        branches = source_store.branches.prefetch_related(
+            "stocks__product"
+        ).order_by("name_ru")
+        total_products = StoreStock.objects.filter(branch__store=source_store).count()
+        return render(request, "dashboard/shops/store_duplicate.html", {
+            "store": source_store,
+            "branches": branches,
+            "total_products": total_products,
+        })
+
+    # POST
+    new_name = request.POST.get("new_name", "").strip() or f"{source_store.name_ru} (копия)"
+    new_slug = request.POST.get("new_slug", "").strip()
+    if not new_slug:
+        from django.utils.text import slugify
+        base = slugify(new_name)[:200]
+        new_slug = base
+        n = 1
+        while Store.objects.filter(slug=new_slug).exists():
+            new_slug = f"{base}-{n}"; n += 1
+
+    if Store.objects.filter(slug=new_slug).exists():
+        messages.error(request, f"Slug «{new_slug}» уже занят — выберите другой.")
+        return redirect("dashboard:shop_store_duplicate", store_id=source_store.id)
+
+    from django.core.files.base import ContentFile
+    from django.core.files.storage import default_storage
+    import os
+
+    def _copy_file(src_field, dest_field):
+        if not src_field:
+            return
+        try:
+            fname = os.path.basename(src_field.name)
+            with default_storage.open(src_field.name, "rb") as f:
+                dest_field.save(fname, ContentFile(f.read()), save=True)
+        except Exception:
+            pass
+
+    # 1. Новый магазин
+    new_store = Store.objects.create(
+        name_ru=new_name,
+        slug=new_slug,
+        about_ru=source_store.about_ru,
+        youtube_url=source_store.youtube_url,
+        instagram_url=source_store.instagram_url,
+        instagram_url_2=source_store.instagram_url_2,
+        order_phone=source_store.order_phone,
+        is_active=False,
+    )
+    if source_store.logo:
+        _copy_file(source_store.logo, new_store.logo)
+
+    # 2. Добавляем членство суперпользователя
+    StoreMembership.objects.get_or_create(user=request.user, store=new_store)
+
+    branches_created = 0
+    products_created = 0
+
+    for branch in source_store.branches.all().order_by("id"):
+        new_branch = StoreBranch.objects.create(
+            store=new_store,
+            name_ru=branch.name_ru,
+            name_ky=branch.name_ky,
+            name_en=branch.name_en,
+            city=branch.city,
+            address=branch.address,
+            phone=branch.phone,
+            phone2=branch.phone2,
+            map_url=branch.map_url,
+            lat=branch.lat,
+            lon=branch.lon,
+            delivery_enabled=branch.delivery_enabled,
+            delivery_fee=branch.delivery_fee,
+            min_order_amount=branch.min_order_amount,
+            tg_group_chat_id=branch.tg_group_chat_id,
+            tg_thread_id=branch.tg_thread_id,
+            tg_manager_chat_id=branch.tg_manager_chat_id,
+            is_active=False,
+        )
+        if branch.cover_photo:
+            _copy_file(branch.cover_photo, new_branch.cover_photo)
+        branches_created += 1
+
+        stocks = StoreStock.objects.filter(branch=branch).select_related(
+            "product", "product__category"
+        )
+        cat_map = {}
+
+        for stock in stocks:
+            old_product = stock.product
+            old_cat = old_product.category
+
+            if old_cat:
+                if old_cat.pk not in cat_map:
+                    new_cat = StoreCategory.objects.create(
+                        store=new_store,
+                        name_ru=old_cat.name_ru,
+                        name_ky=old_cat.name_ky,
+                        name_en=old_cat.name_en,
+                        sort_order=old_cat.sort_order,
+                        is_active=old_cat.is_active,
+                    )
+                    cat_map[old_cat.pk] = new_cat
+                new_cat = cat_map[old_cat.pk]
+            else:
+                new_cat = None
+
+            new_product = StoreProduct.objects.create(
+                store=new_store,
+                category=new_cat,
+                name_ru=old_product.name_ru,
+                name_ky=old_product.name_ky,
+                name_en=old_product.name_en,
+                description_ru=old_product.description_ru,
+                description_ky=old_product.description_ky,
+                description_en=old_product.description_en,
+                price=old_product.price,
+                unit=old_product.unit,
+                barcode=old_product.barcode,
+                is_active=old_product.is_active,
+            )
+            if old_product.photo:
+                _copy_file(old_product.photo, new_product.photo)
+
+            StoreStock.objects.create(
+                branch=new_branch,
+                product=new_product,
+                qty=stock.qty,
+            )
+            products_created += 1
+
+    messages.success(
+        request,
+        f"Сеть «{new_store.name_ru}» создана: {branches_created} филиал(ов), "
+        f"{products_created} товаров. Активируйте магазин в настройках когда будете готовы."
+    )
+    return redirect("dashboard:shop_store_edit", store_id=new_store.id)
 
 
 # ── BARCODE LOOKUP ────────────────────────────────────────────────────────────

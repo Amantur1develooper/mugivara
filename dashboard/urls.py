@@ -73,7 +73,8 @@ urlpatterns = [
 
     # ── SHOPS ───────────────────────────────────────────────────────────────
     path("shops/",                                          sv.shop_home,          name="shop_home"),
-    path("shops/<int:store_id>/edit/",                      sv.shop_store_edit,    name="shop_store_edit"),
+    path("shops/<int:store_id>/edit/",                      sv.shop_store_edit,       name="shop_store_edit"),
+    path("shops/<int:store_id>/duplicate/",                 sv.shop_store_duplicate,  name="shop_store_duplicate"),
     path("shops/branch/<int:branch_id>/edit/",              sv.shop_branch_edit,   name="shop_branch_edit"),
     path("shops/branch/<int:branch_id>/toggle/",            sv.shop_branch_toggle,     name="shop_branch_toggle"),
     path("shops/branch/<int:branch_id>/duplicate/",        sv.shop_branch_duplicate,  name="shop_branch_duplicate"),

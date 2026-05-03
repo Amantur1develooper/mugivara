@@ -24,6 +24,7 @@ class Store(models.Model):
     youtube_url    = models.URLField("YouTube канал",    blank=True, default="")
     instagram_url  = models.URLField("Instagram (1)",   blank=True, default="")
     instagram_url_2 = models.URLField("Instagram (2)",  blank=True, default="")
+    order_phone    = models.CharField("Телефон для индивидуальных заказов", max_length=32, blank=True, default="")
     is_active = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):
