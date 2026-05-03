@@ -340,6 +340,31 @@ def shop_product_toggle(request, stock_id):
     return JsonResponse({"ok": True, "is_active": p.is_active})
 
 
+# ── CATEGORY LIST PAGE ───────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def shop_category_list(request, branch_id):
+    branch = get_object_or_404(StoreBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:shop_home")
+    categories = branch.store.categories.order_by("sort_order", "id")
+    # product count per category
+    from django.db.models import Count
+    counts = (
+        StoreStock.objects
+        .filter(branch=branch, product__is_active=True)
+        .values("product__category_id")
+        .annotate(n=Count("id"))
+    )
+    count_map = {r["product__category_id"]: r["n"] for r in counts}
+    cats_with_count = [(cat, count_map.get(cat.id, 0)) for cat in categories]
+    return render(request, "dashboard/shops/category_list.html", {
+        "branch": branch,
+        "store": branch.store,
+        "cats_with_count": cats_with_count,
+    })
+
+
 # ── CATEGORY ADD / RENAME / DELETE ────────────────────────────────────────────
 
 @require_POST
@@ -382,6 +407,24 @@ def shop_category_delete(request, category_id):
     if not _has_store_access(request.user, cat.store):
         return JsonResponse({"ok": False}, status=403)
     cat.delete()   # StoreProduct.category = SET_NULL, товары остаются
+    return JsonResponse({"ok": True})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_category_reorder(request, branch_id):
+    """Принимает order=id1,id2,id3 и обновляет sort_order категорий."""
+    branch = get_object_or_404(StoreBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return JsonResponse({"ok": False}, status=403)
+    ids_raw = request.POST.get("order", "")
+    try:
+        ids = [int(x) for x in ids_raw.split(",") if x.strip()]
+    except ValueError:
+        return JsonResponse({"ok": False, "error": "bad ids"})
+    store = branch.store
+    for i, cat_id in enumerate(ids):
+        StoreCategory.objects.filter(id=cat_id, store=store).update(sort_order=i * 10)
     return JsonResponse({"ok": True})
 
 

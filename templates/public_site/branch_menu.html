@@ -633,8 +633,8 @@
 
       <div class="cx-cards">
         {% for cx in constructors %}
-        <a href="{% url 'public_site:constructor_build' branch.id cx.id %}" class="cx-card">
-          {# фото или градиентный фон #}
+        <div class="cx-card" onclick="openCxModal({{ cx.id }})" role="button" tabindex="0"
+             onkeydown="if(event.key==='Enter'||event.key===' ')openCxModal({{ cx.id }})">
           <div class="cx-card-img">
             {% if cx.photo %}
               <img src="{{ cx.photo.url }}" alt="{{ cx.name }}" loading="lazy">
@@ -644,26 +644,20 @@
             <div class="cx-card-overlay"></div>
             <div class="cx-card-label">Собери сам</div>
           </div>
-
           <div class="cx-card-body">
             <div class="cx-card-name">{{ cx.name }}</div>
             {% if cx.description %}
             <div class="cx-card-desc">{{ cx.description|truncatechars:60 }}</div>
             {% endif %}
-
-            {# шаги — названия групп #}
             <div class="cx-card-steps">
               {% for g in cx.groups.all %}
               <span class="cx-card-step">{{ g.name }}</span>
               {% if not forloop.last %}<span class="cx-card-step-sep">·</span>{% endif %}
               {% endfor %}
             </div>
-
-            <div class="cx-card-cta">
-              <span>Собрать →</span>
-            </div>
+            <div class="cx-card-cta"><span>Собрать →</span></div>
           </div>
-        </a>
+        </div>
         {% endfor %}
       </div>
     </section>
@@ -681,7 +675,7 @@
       display: flex; flex-direction: column;
       background: var(--card); border-radius: 20px;
       border: 1.5px solid var(--border);
-      overflow: hidden; text-decoration: none; color: inherit;
+      overflow: hidden; text-decoration: none; color: inherit; cursor: pointer;
       transition: transform .18s, box-shadow .18s, border-color .18s;
       box-shadow: 0 2px 10px rgba(0,0,0,.05);
     }
@@ -755,64 +749,12 @@
   </div>
 </div>
 
-{# ── МОДАЛЬНОЕ ОКНО КОНСТРУКТОРА (delivery) ── #}
+{# ── КОНСТРУКТОР МОДАЛ ── #}
 {% if constructors %}
-<div class="tm-cx-modal-bg" id="bmCxModalBg">
-  <div class="tm-cx-modal" id="bmCxModal">
-    <div class="tm-cx-modal-head">
-      <div class="tm-cx-modal-handle"></div>
-      <div class="tm-cx-modal-title" id="bmCxModalTitle">Собери сам</div>
-      <div class="tm-cx-modal-price" id="bmCxModalPrice">от 0 сом</div>
-    </div>
-    <div class="tm-cx-modal-body" id="bmCxModalBody"></div>
-    <div class="tm-cx-modal-foot">
-      <div class="tm-cx-total-row">
-        <div class="tm-cx-total-label">Итого:</div>
-        <div class="tm-cx-total-val" id="bmCxTotal">0 сом</div>
-      </div>
-      <div class="tm-cx-error" id="bmCxError"></div>
-      <button class="tm-cx-add-btn" id="bmCxAddBtn" type="button">🧩 Добавить в корзину</button>
-    </div>
-  </div>
-</div>
 
-<style>
-.tm-cx-modal-bg { position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s; }
-.tm-cx-modal-bg.open { opacity:1;pointer-events:auto; }
-.tm-cx-modal { background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:520px;transform:translateY(100%);transition:transform .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 -20px 60px rgba(0,0,0,.25);max-height:92vh;display:flex;flex-direction:column; }
-.tm-cx-modal-bg.open .tm-cx-modal { transform:translateY(0); }
-.tm-cx-modal-head { padding:16px 20px 12px;border-bottom:1px solid var(--border);flex-shrink:0; }
-.tm-cx-modal-handle { width:36px;height:4px;border-radius:2px;background:var(--border);margin:0 auto 14px; }
-.tm-cx-modal-title { font-family:'Unbounded',sans-serif;font-weight:800;font-size:17px;color:var(--text); }
-.tm-cx-modal-price { font-size:13px;color:var(--muted);margin-top:4px; }
-.tm-cx-modal-body { overflow-y:auto;padding:16px 20px;flex:1; }
-.tm-cx-modal-foot { padding:14px 20px;border-top:1px solid var(--border);flex-shrink:0; }
-.cx-group-block { margin-bottom:24px; }
-.cx-group-title { font-family:'Unbounded',sans-serif;font-weight:700;font-size:13px;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:8px; }
-.cx-group-badge { font-family:inherit;font-size:10px;font-weight:600;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:100px;padding:2px 8px; }
-.cx-ing-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px; }
-.cx-ing-card { border:2px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:all .18s;user-select:none;position:relative;background:var(--bg); }
-.cx-ing-card:hover { border-color:var(--accent); }
-.cx-ing-card.selected { border-color:var(--accent);background:rgba(255,77,28,.05); }
-.cx-ing-card-check { position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:7px;border:2px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;font-size:12px;color:transparent;transition:all .15s; }
-.cx-ing-card.selected .cx-ing-card-check { background:var(--accent);border-color:var(--accent);color:#fff; }
-.cx-ing-card-img { width:100%;aspect-ratio:4/3;object-fit:cover;display:block; }
-.cx-ing-card-img-placeholder { width:100%;aspect-ratio:4/3;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:28px; }
-.cx-ing-card-body { padding:8px 10px; }
-.cx-ing-card-name { font-size:12px;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:2px; }
-.cx-ing-card-desc { font-size:11px;color:var(--muted);line-height:1.4;margin-bottom:4px; }
-.cx-ing-card-price { font-size:13px;font-weight:800;color:var(--accent); }
-.tm-cx-total-row { display:flex;align-items:center;gap:12px; }
-.tm-cx-total-label { flex:1;font-size:12px;color:var(--muted); }
-.tm-cx-total-val { font-family:'Unbounded',sans-serif;font-weight:800;font-size:18px;color:var(--text); }
-.tm-cx-add-btn { width:100%;padding:14px;border-radius:14px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;font-family:'Unbounded',sans-serif;font-size:14px;font-weight:700;box-shadow:0 6px 20px rgba(255,77,28,.3);transition:transform .15s;margin-top:12px; }
-.tm-cx-add-btn:hover { transform:translateY(-1px); }
-.tm-cx-add-btn:disabled { opacity:.6;pointer-events:none; }
-.tm-cx-error { font-size:12px;color:#EF4444;margin-top:8px;text-align:center;min-height:18px; }
-</style>
-
+{# Данные конструкторов для JS #}
 <script>
-const BM_CX_DATA = {
+const CX_DATA = {
   {% for cx in constructors %}
   {{ cx.id }}: {
     id: {{ cx.id }},
@@ -822,11 +764,11 @@ const BM_CX_DATA = {
       {
         id: {{ g.id }},
         name: "{{ g.name|escapejs }}",
-        min_select: {{ g.min_select }},
-        max_select: {{ g.max_select }},
+        min: {{ g.min_select }},
+        max: {{ g.max_select }},
         ingredients: [
           {% for ing in g.ingredients.all %}{% if ing.is_active %}
-          { id: {{ ing.id }}, name: "{{ ing.display_name|escapejs }}", description: "{{ ing.display_description|escapejs }}", price: {{ ing.display_price }}, photo: "{{ ing.display_photo_url }}" },
+          { id: {{ ing.id }}, name: "{{ ing.display_name|escapejs }}", desc: "{{ ing.display_description|escapejs }}", price: {{ ing.display_price }}, photo: "{{ ing.display_photo_url }}" },
           {% endif %}{% endfor %}
         ]
       },
@@ -835,124 +777,639 @@ const BM_CX_DATA = {
   },
   {% endfor %}
 };
+const CX_ADD_URL = "{% url 'public_site:constructor_add_to_cart' branch.id %}";
+const CX_CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+</script>
 
-const BM_ADD_CX_URL = "{% url 'public_site:constructor_add_to_cart' branch.id %}";
-const BM_CX_UPD_URL = "{% url 'public_site:constructor_cx_update' branch.id %}";
-const BM_CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+{# Модал #}
+<div class="cxov" id="cxOverlay">
+  <div class="cxm" id="cxModal">
 
-let bmCxId = null;
-let bmSelMap = {};
+    {# Шапка #}
+    <div class="cxm-head">
+      <div class="cxm-drag-handle"></div>
+      <div class="cxm-head-row">
+        <button class="cxm-close" type="button" onclick="closeCxModal()">✕</button>
+        <div class="cxm-title" id="cxTitle"></div>
+      </div>
+      {# Прогресс-точки #}
+      <div class="cxm-dots" id="cxDots"></div>
+      {# Табы групп #}
+      <div class="cxm-tabs" id="cxTabs"></div>
+    </div>
 
-window.openBmCxModal = function(cxId) {
-  const cx = BM_CX_DATA[cxId];
-  if (!cx) return;
-  bmCxId = cxId;
-  bmSelMap = {};
-  document.getElementById("bmCxModalTitle").textContent = cx.name;
-  document.getElementById("bmCxModalPrice").textContent = "Выберите позиции";
-  document.getElementById("bmCxError").textContent = "";
-  renderBmGroups(cx);
-  updateBmTotal(cx);
-  document.getElementById("bmCxModalBg").classList.add("open");
-  document.body.style.overflow = "hidden";
-};
+    {# Контент группы #}
+    <div class="cxm-body" id="cxBody"></div>
 
-function closeBmCxModal() {
-  document.getElementById("bmCxModalBg").classList.remove("open");
-  document.body.style.overflow = "";
-  bmCxId = null; bmSelMap = {};
+    {# Навигация Назад/Дальше #}
+    <div class="cxm-nav" id="cxNav" style="display:none">
+      <button class="cxm-nav-btn cxm-prev" id="cxPrevBtn" type="button" onclick="cxGoPrev()">← Назад</button>
+      <button class="cxm-nav-btn cxm-next" id="cxNextBtn" type="button" onclick="cxGoNext()">Дальше →</button>
+    </div>
+
+    {# Подвал #}
+    <div class="cxm-foot">
+      <div class="cxm-chips" id="cxChips"></div>
+      <div class="cxm-foot-row">
+        <div class="cxm-foot-total">
+          <span class="cxm-foot-lbl">Итого</span>
+          <span class="cxm-foot-val" id="cxTotal">0 сом</span>
+        </div>
+        <button class="cxm-add-btn" id="cxAddBtn" type="button" onclick="cxAddToCart()">В корзину 🧩</button>
+      </div>
+      <div class="cxm-error" id="cxError"></div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+/* ── Overlay ── */
+.cxov {
+  position:fixed;inset:0;z-index:10002;
+  background:rgba(0,0,0,.55);backdrop-filter:blur(6px);
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .22s;
+}
+.cxov.open { opacity:1;pointer-events:auto; }
+
+/* ── Modal sheet ── */
+.cxm {
+  background:var(--card);border-radius:24px 24px 0 0;
+  width:100%;max-width:560px;max-height:92dvh;
+  display:flex;flex-direction:column;
+  transform:translateY(100%);
+  transition:transform .3s cubic-bezier(.34,1.1,.64,1);
+  box-shadow:0 -24px 60px rgba(0,0,0,.22);
+}
+.cxov.open .cxm { transform:translateY(0); }
+
+@media(min-width:600px) {
+  .cxov { align-items:center; }
+  .cxm {
+    border-radius:24px;max-height:88dvh;
+    transform:scale(.9) translateY(24px);
+  }
+  .cxov.open .cxm { transform:scale(1) translateY(0); }
 }
 
-document.getElementById("bmCxModalBg").addEventListener("click", e => {
-  if (e.target === document.getElementById("bmCxModalBg")) closeBmCxModal();
+/* ── Head ── */
+.cxm-head { flex-shrink:0;border-bottom:1px solid var(--border); }
+.cxm-drag-handle {
+  width:36px;height:4px;border-radius:2px;
+  background:var(--border);margin:12px auto 0;
+}
+.cxm-head-row {
+  display:flex;align-items:center;gap:10px;
+  padding:10px 16px 0;
+}
+.cxm-close {
+  width:34px;height:34px;border-radius:50%;border:1.5px solid var(--border);
+  background:var(--bg);font-size:14px;cursor:pointer;color:var(--muted);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:all .15s;
+}
+.cxm-close:hover { background:var(--border);color:var(--text); }
+.cxm-title {
+  flex:1;font-family:'Unbounded',sans-serif;font-weight:800;
+  font-size:15px;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+/* Progress dots */
+.cxm-dots {
+  display:flex;gap:5px;padding:10px 16px 0;
+}
+.cxm-dot {
+  height:3px;flex:1;border-radius:2px;
+  background:var(--border);transition:background .25s;
+}
+.cxm-dot.current { background:var(--accent); }
+.cxm-dot.done    { background:#10b981; }
+
+/* Tabs */
+.cxm-tabs {
+  display:flex;overflow-x:auto;scrollbar-width:none;
+  padding:0 16px;gap:0;
+}
+.cxm-tabs::-webkit-scrollbar { display:none; }
+.cxm-tab {
+  padding:10px 14px;font-size:13px;font-weight:600;
+  color:var(--muted);border-bottom:2.5px solid transparent;
+  white-space:nowrap;cursor:pointer;flex-shrink:0;
+  transition:all .15s;
+}
+.cxm-tab.active { color:var(--accent);border-bottom-color:var(--accent); }
+.cxm-tab.done   { color:#10b981;border-bottom-color:transparent; }
+
+/* ── Body ── */
+.cxm-body { flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch; }
+
+/* Step */
+.cxm-step { display:none;padding:16px 16px 8px; }
+.cxm-step.active { display:block;animation:cxFadeUp .2s ease; }
+@keyframes cxFadeUp {
+  from { opacity:0;transform:translateY(10px); }
+  to   { opacity:1;transform:translateY(0); }
+}
+.cxm-step-title {
+  font-family:'Unbounded',sans-serif;font-weight:800;
+  font-size:16px;color:var(--text);margin-bottom:5px;
+}
+.cxm-step-hint { font-size:12px;color:var(--muted);margin-bottom:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap; }
+.cxm-hint-badge {
+  display:inline-block;padding:2px 8px;border-radius:100px;
+  font-size:11px;font-weight:700;
+  background:rgba(255,77,28,.08);color:var(--accent);
+  border:1px solid rgba(255,77,28,.15);
+}
+.cxm-hint-badge.opt {
+  background:rgba(16,185,129,.08);color:#10b981;
+  border-color:rgba(16,185,129,.2);
+}
+.cxm-step-qty-info {
+  font-size:12px;color:var(--muted);margin-bottom:14px;
+  min-height:16px;transition:color .2s;
+}
+.cxm-step-qty-info.ok { color:#10b981;font-weight:600; }
+
+/* Ingredient grid */
+.cxm-ing-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+  gap:10px;margin-bottom:8px;
+}
+@media(max-width:360px){.cxm-ing-grid{grid-template-columns:repeat(2,1fr);}}
+
+/* Ingredient card */
+.cxm-ing {
+  border:2px solid var(--border);border-radius:14px;
+  overflow:hidden;cursor:pointer;
+  transition:border-color .18s,box-shadow .18s;
+  user-select:none;background:var(--bg);position:relative;
+}
+.cxm-ing:hover { border-color:rgba(255,77,28,.4); }
+.cxm-ing.selected {
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(255,77,28,.1);
+  background:rgba(255,77,28,.03);
+}
+.cxm-ing-photo { width:100%;aspect-ratio:1/1;object-fit:cover;display:block; }
+.cxm-ing-ph {
+  width:100%;aspect-ratio:1/1;
+  background:linear-gradient(135deg,#f0eff5,#e8e7ef);
+  display:flex;align-items:center;justify-content:center;font-size:36px;
+}
+/* qty badge on photo */
+.cxm-ing-badge {
+  position:absolute;top:7px;right:7px;
+  background:var(--accent);color:white;
+  font-size:12px;font-weight:800;
+  width:24px;height:24px;border-radius:50%;
+  display:none;align-items:center;justify-content:center;
+  border:2px solid white;box-shadow:0 2px 6px rgba(255,77,28,.35);
+}
+.cxm-ing.selected .cxm-ing-badge { display:flex; }
+.cxm-ing-body { padding:8px 10px 10px; }
+.cxm-ing-name { font-weight:700;font-size:12px;line-height:1.3;margin-bottom:3px; }
+.cxm-ing-desc { font-size:10px;color:var(--muted);line-height:1.4;margin-bottom:6px; }
+.cxm-ing-price {
+  font-family:'Unbounded',sans-serif;font-weight:800;
+  font-size:12px;color:var(--accent);margin-bottom:8px;
+}
+.cxm-ing-price.free { color:#10b981; }
+
+/* Qty control inside card */
+.cxm-qty {
+  display:flex;align-items:center;
+  background:var(--bg);border:1.5px solid var(--border);
+  border-radius:9px;overflow:hidden;height:30px;
+}
+.cxm-qty-btn {
+  width:30px;height:30px;border:none;background:transparent;
+  font-size:16px;font-weight:700;color:var(--text2);
+  cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .1s;
+}
+.cxm-qty-btn:hover { background:var(--border); }
+.cxm-qty-val {
+  flex:1;text-align:center;font-size:13px;font-weight:800;
+  color:var(--text);min-width:24px;
+}
+.cxm-qty.active { border-color:var(--accent);background:rgba(255,77,28,.04); }
+.cxm-qty.active .cxm-qty-val { color:var(--accent); }
+
+/* ── Navigation ── */
+.cxm-nav {
+  display:flex;gap:10px;padding:10px 16px 0;flex-shrink:0;
+}
+.cxm-nav-btn {
+  flex:1;padding:12px;border-radius:12px;
+  font-size:14px;font-weight:700;border:none;cursor:pointer;
+  font-family:inherit;transition:all .15s;
+}
+.cxm-prev {
+  background:var(--bg);color:var(--text2);
+  border:1.5px solid var(--border);
+}
+.cxm-next {
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:white;box-shadow:0 4px 14px rgba(255,77,28,.28);
+}
+.cxm-next:disabled { background:var(--border);color:var(--muted);box-shadow:none; }
+
+/* ── Footer ── */
+.cxm-foot {
+  flex-shrink:0;padding:12px 16px;
+  border-top:1px solid var(--border);
+  padding-bottom:max(14px,env(safe-area-inset-bottom));
+}
+.cxm-chips {
+  display:flex;gap:6px;flex-wrap:wrap;
+  margin-bottom:10px;max-height:50px;overflow:hidden;
+}
+.cxm-chip {
+  padding:3px 10px;border-radius:100px;
+  font-size:11px;font-weight:600;
+  background:rgba(255,77,28,.07);color:var(--accent);
+  border:1px solid rgba(255,77,28,.18);
+  white-space:nowrap;max-width:170px;
+  overflow:hidden;text-overflow:ellipsis;
+}
+.cxm-chip.empty { background:var(--bg);color:var(--muted);border-color:var(--border); }
+.cxm-foot-row { display:flex;align-items:center;gap:12px; }
+.cxm-foot-total { flex:1; }
+.cxm-foot-lbl { font-size:10px;color:var(--muted);display:block; }
+.cxm-foot-val {
+  font-family:'Unbounded',sans-serif;font-weight:800;
+  font-size:18px;color:var(--text);
+}
+.cxm-add-btn {
+  padding:13px 20px;border-radius:13px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:white;font-size:14px;font-weight:700;
+  box-shadow:0 4px 14px rgba(255,77,28,.28);
+  transition:all .15s;white-space:nowrap;font-family:inherit;
+}
+.cxm-add-btn:hover { box-shadow:0 6px 20px rgba(255,77,28,.38); }
+.cxm-add-btn:disabled { background:var(--border);color:var(--muted);box-shadow:none;pointer-events:none; }
+.cxm-error {
+  font-size:12px;color:#ef4444;text-align:center;
+  margin-top:6px;min-height:16px;
+}
+</style>
+
+<script>
+/* ── State ── */
+let _cxId = null, _cxGroups = [], _cxSel = {}, _cxStep = 0;
+
+/* ── Open/Close ── */
+function openCxModal(id) {
+  const cx = CX_DATA[id];
+  if (!cx) return;
+  _cxId = id;
+  _cxGroups = cx.groups;
+  _cxStep = 0;
+  _cxSel = {};
+  _cxGroups.forEach(g => { _cxSel[g.id] = {}; });
+
+  document.getElementById('cxTitle').textContent = cx.name;
+  _buildDots();
+  _buildTabs();
+  _buildSteps();
+  _updateNav();
+  _updateChips();
+  _updateTotal();
+  document.getElementById('cxError').textContent = '';
+
+  document.getElementById('cxOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeCxModal() {
+  document.getElementById('cxOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+  _cxId = null;
+}
+window.openCxModal = openCxModal;
+/* backward compat alias */
+window.openBmCxModal = openCxModal;
+
+document.getElementById('cxOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('cxOverlay')) closeCxModal();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('cxOverlay').classList.contains('open')) closeCxModal();
 });
 
-function renderBmGroups(cx) {
-  const body = document.getElementById("bmCxModalBody");
-  body.innerHTML = "";
-  for (const g of cx.groups) {
-    const maxLabel = g.max_select === 0 ? "∞" : g.max_select;
-    const hint = g.min_select > 0 ? `Обязательно: мин ${g.min_select}` : "Необязательно";
-    const block = document.createElement("div");
-    block.className = "cx-group-block";
-    block.innerHTML = `<div class="cx-group-title">${g.name} <span class="cx-group-badge">${hint}</span></div><div class="cx-ing-grid" id="bmcxg-${g.id}"></div>`;
-    body.appendChild(block);
-    bmSelMap[g.id] = [];
-    for (const ing of g.ingredients) {
-      const card = document.createElement("div");
-      card.className = "cx-ing-card";
+/* ── Build UI ── */
+function _buildDots() {
+  const el = document.getElementById('cxDots');
+  el.innerHTML = '';
+  const n = _cxGroups.length;
+  if (n <= 1) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  _cxGroups.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'cxm-dot' + (i === 0 ? ' current' : '');
+    d.id = 'cxDot' + i;
+    el.appendChild(d);
+  });
+}
+
+function _buildTabs() {
+  const el = document.getElementById('cxTabs');
+  el.innerHTML = '';
+  _cxGroups.forEach((g, i) => {
+    const t = document.createElement('div');
+    t.className = 'cxm-tab' + (i === 0 ? ' active' : '');
+    t.id = 'cxTab' + i;
+    t.textContent = g.name;
+    t.onclick = () => _switchStep(i);
+    el.appendChild(t);
+  });
+}
+
+function _buildSteps() {
+  const body = document.getElementById('cxBody');
+  body.innerHTML = '';
+  _cxGroups.forEach((g, i) => {
+    const step = document.createElement('div');
+    step.className = 'cxm-step' + (i === 0 ? ' active' : '');
+    step.id = 'cxStep' + i;
+
+    const isRequired = g.min > 0;
+    const maxTxt = g.max > 0 ? ` / ${g.max}` : '';
+    const hintBadge = isRequired
+      ? `<span class="cxm-hint-badge">Обязательно</span> мин ${g.min}${g.max > 0 ? `, макс ${g.max}` : ''}`
+      : `<span class="cxm-hint-badge opt">Необязательно</span>${g.max > 0 ? ` макс ${g.max}` : ''}`;
+
+    step.innerHTML = `
+      <div class="cxm-step-title">${_esc(g.name)}</div>
+      <div class="cxm-step-hint">${hintBadge}</div>
+      <div class="cxm-step-qty-info" id="cxQtyInfo${g.id}">Выбрано: 0${maxTxt}</div>
+      <div class="cxm-ing-grid" id="cxGrid${g.id}"></div>`;
+
+    const grid = step.querySelector('#cxGrid' + g.id);
+    const isRadio = g.max === 1;
+
+    g.ingredients.forEach(ing => {
+      const card = document.createElement('div');
+      card.className = 'cxm-ing';
+      card.dataset.gid = g.id;
+      card.dataset.iid = ing.id;
+      card.dataset.name = ing.name;
+
       card.innerHTML = `
-        <div class="cx-ing-card-check">✓</div>
-        ${ing.photo ? `<img class="cx-ing-card-img" src="${ing.photo}" alt="${ing.name}" loading="lazy">` : `<div class="cx-ing-card-img-placeholder">🍽</div>`}
-        <div class="cx-ing-card-body">
-          <div class="cx-ing-card-name">${ing.name}</div>
-          ${ing.description ? `<div class="cx-ing-card-desc">${ing.description}</div>` : ""}
-          <div class="cx-ing-card-price">${ing.price} сом</div>
+        ${ing.photo ? `<img class="cxm-ing-photo" src="${ing.photo}" alt="${_esc(ing.name)}" loading="lazy">` : `<div class="cxm-ing-ph">🍽</div>`}
+        <div class="cxm-ing-badge" id="cxBadge${ing.id}">1</div>
+        <div class="cxm-ing-body">
+          <div class="cxm-ing-name">${_esc(ing.name)}</div>
+          ${ing.desc ? `<div class="cxm-ing-desc">${_esc(ing.desc)}</div>` : ''}
+          <div class="cxm-ing-price${ing.price == 0 ? ' free' : ''}">${ing.price == 0 ? 'Бесплатно' : '+' + ing.price + ' сом'}</div>
+          ${isRadio ? '' : `
+          <div class="cxm-qty" id="cxQtyCtrl${ing.id}">
+            <button class="cxm-qty-btn" type="button" onclick="event.stopPropagation();_cxQty(${g.id},${ing.id},-1)">−</button>
+            <div class="cxm-qty-val" id="cxQtyVal${ing.id}">0</div>
+            <button class="cxm-qty-btn" type="button" onclick="event.stopPropagation();_cxQty(${g.id},${ing.id},+1)">+</button>
+          </div>`}
         </div>`;
-      card.addEventListener("click", () => bmToggleIng(card, g, ing.id));
-      block.querySelector(`#bmcxg-${g.id}`).appendChild(card);
+
+      if (isRadio) {
+        card.addEventListener('click', () => {
+          const cur = (_cxSel[g.id] || {})[ing.id] || 0;
+          _cxQty(g.id, ing.id, cur > 0 ? -1 : 1);
+        });
+      } else {
+        card.addEventListener('click', e => {
+          if (e.target.closest('.cxm-qty')) return;
+          const cur = (_cxSel[g.id] || {})[ing.id] || 0;
+          _cxQty(g.id, ing.id, cur > 0 ? -1 : 1);
+        });
+      }
+      grid.appendChild(card);
+    });
+
+    body.appendChild(step);
+  });
+
+  /* Nav buttons */
+  const nav = document.getElementById('cxNav');
+  if (_cxGroups.length > 1) {
+    nav.style.display = 'flex';
+    document.getElementById('cxPrevBtn').style.display = 'none';
+    document.getElementById('cxNextBtn').textContent = 'Дальше →';
+  } else {
+    nav.style.display = 'none';
+  }
+}
+
+/* ── Qty logic ── */
+function _cxGroupTotal(gid) {
+  return Object.values(_cxSel[gid] || {}).reduce((a,b) => a+b, 0);
+}
+
+function _cxQty(gid, iid, delta) {
+  const g = _cxGroups.find(x => x.id === gid);
+  if (!g) return;
+  const map = _cxSel[gid] || {};
+  const cur = map[iid] || 0;
+  const isRadio = g.max === 1;
+
+  if (isRadio) {
+    /* radio: only one selected at a time */
+    if (delta > 0) {
+      Object.keys(map).forEach(k => delete map[k]);
+      map[iid] = 1;
+      document.querySelectorAll(`.cxm-ing[data-gid="${gid}"]`).forEach(c => {
+        _updateCard(gid, parseInt(c.dataset.iid));
+      });
+    } else {
+      delete map[iid];
+    }
+  } else {
+    let nq = cur + delta;
+    if (nq < 0) nq = 0;
+    if (nq === 0) { delete map[iid]; }
+    else {
+      const rest = _cxGroupTotal(gid) - cur;
+      if (g.max > 0 && rest + nq > g.max) {
+        _showErr(`Максимум ${g.max} в «${g.name}»`);
+        return;
+      }
+      map[iid] = nq;
     }
   }
+  _cxSel[gid] = map;
+  _updateCard(gid, iid);
+  _updateGroupInfo(gid);
+  _updateChips();
+  _updateTotal();
+  document.getElementById('cxError').textContent = '';
 }
 
-function bmToggleIng(card, group, ingId) {
-  const sel = bmSelMap[group.id] || [];
-  const has = sel.includes(ingId);
-  if (has) {
-    bmSelMap[group.id] = sel.filter(id => id !== ingId);
-    card.classList.remove("selected");
-  } else if (group.max_select === 1) {
-    bmSelMap[group.id] = [ingId];
-    document.querySelectorAll(`#bmcxg-${group.id} .cx-ing-card`).forEach(c => c.classList.remove("selected"));
-    card.classList.add("selected");
-  } else if (group.max_select === 0 || sel.length < group.max_select) {
-    bmSelMap[group.id] = [...sel, ingId];
-    card.classList.add("selected");
-  }
-  updateBmTotal(BM_CX_DATA[bmCxId]);
+function _updateCard(gid, iid) {
+  const card = document.querySelector(`.cxm-ing[data-gid="${gid}"][data-iid="${iid}"]`);
+  if (!card) return;
+  const qty = (_cxSel[gid] || {})[iid] || 0;
+  card.classList.toggle('selected', qty > 0);
+  const badge = document.getElementById('cxBadge' + iid);
+  if (badge) badge.textContent = qty;
+  const val = document.getElementById('cxQtyVal' + iid);
+  if (val) val.textContent = qty;
+  const ctrl = document.getElementById('cxQtyCtrl' + iid);
+  if (ctrl) ctrl.classList.toggle('active', qty > 0);
 }
 
-function updateBmTotal(cx) {
+function _updateGroupInfo(gid) {
+  const g = _cxGroups.find(x => x.id === gid);
+  const el = document.getElementById('cxQtyInfo' + gid);
+  if (!g || !el) return;
+  const tot = _cxGroupTotal(gid);
+  const maxTxt = g.max > 0 ? ` / ${g.max}` : '';
+  el.textContent = `Выбрано: ${tot}${maxTxt}`;
+  el.classList.toggle('ok', tot > 0 && (g.min === 0 || tot >= g.min));
+}
+
+function _updateChips() {
+  const chips = document.getElementById('cxChips');
+  if (!chips) return;
+  chips.innerHTML = '';
+  _cxGroups.forEach(g => {
+    const map = _cxSel[g.id] || {};
+    const entries = Object.entries(map).filter(([,q]) => q > 0);
+    const chip = document.createElement('div');
+    if (entries.length) {
+      const names = entries.map(([iid, qty]) => {
+        const c = document.querySelector(`.cxm-ing[data-gid="${g.id}"][data-iid="${iid}"]`);
+        const nm = c ? c.dataset.name : iid;
+        return qty > 1 ? `${nm} ×${qty}` : nm;
+      }).join(', ');
+      chip.className = 'cxm-chip';
+      chip.textContent = `${g.name}: ${names}`;
+    } else {
+      chip.className = 'cxm-chip empty';
+      chip.textContent = `${g.name}: —`;
+    }
+    chips.appendChild(chip);
+  });
+}
+
+function _updateTotal() {
+  if (!_cxId) return;
+  const cx = CX_DATA[_cxId];
   let total = 0;
-  for (const g of cx.groups) {
-    for (const ing of g.ingredients) {
-      if ((bmSelMap[g.id] || []).includes(ing.id)) total += Number(ing.price);
-    }
-  }
-  document.getElementById("bmCxTotal").textContent = total + " сом";
+  cx.groups.forEach(g => {
+    const map = _cxSel[g.id] || {};
+    g.ingredients.forEach(ing => {
+      total += (map[ing.id] || 0) * Number(ing.price);
+    });
+  });
+  document.getElementById('cxTotal').textContent = total + ' сом';
 }
 
-document.getElementById("bmCxAddBtn").addEventListener("click", async () => {
-  if (!bmCxId) return;
-  const cx = BM_CX_DATA[bmCxId];
-  const errEl = document.getElementById("bmCxError");
-  errEl.textContent = "";
-  for (const g of cx.groups) {
-    const chosen = bmSelMap[g.id] || [];
-    if (g.min_select > 0 && chosen.length < g.min_select) {
-      errEl.textContent = `Выберите минимум ${g.min_select} в «${g.name}»`;
+/* ── Step navigation ── */
+function _switchStep(idx, validate = false) {
+  const n = _cxGroups.length;
+  if (validate && idx > _cxStep) {
+    const g = _cxGroups[_cxStep];
+    if (g.min > 0 && _cxGroupTotal(g.id) < g.min) {
+      _showErr(`Выберите минимум ${g.min} в «${g.name}»`);
+      const btn = document.getElementById('cxNextBtn');
+      if (btn) {
+        btn.style.transform = 'translateX(-4px)';
+        setTimeout(() => btn.style.transform = 'translateX(4px)', 100);
+        setTimeout(() => btn.style.transform = '', 200);
+      }
+      return false;
+    }
+  }
+  document.getElementById('cxStep' + _cxStep)?.classList.remove('active');
+  document.getElementById('cxTab'  + _cxStep)?.classList.remove('active');
+
+  _cxStep = idx;
+
+  document.getElementById('cxStep' + _cxStep)?.classList.add('active');
+  const newTab = document.getElementById('cxTab' + _cxStep);
+  newTab?.classList.add('active');
+  newTab?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+
+  /* dots + tab states */
+  _cxGroups.forEach((g, i) => {
+    const dot = document.getElementById('cxDot' + i);
+    const tab = document.getElementById('cxTab' + i);
+    const tot = _cxGroupTotal(g.id);
+    const done = tot > 0 && (g.min === 0 || tot >= g.min);
+    if (i < _cxStep) {
+      if (dot) dot.className = 'cxm-dot done';
+      if (tab && i !== _cxStep) { tab.classList.remove('active'); if(done) tab.classList.add('done'); }
+    } else if (i === _cxStep) {
+      if (dot) dot.className = 'cxm-dot current';
+      if (tab) { tab.classList.remove('done'); tab.classList.add('active'); }
+    } else {
+      if (dot) dot.className = 'cxm-dot';
+      if (tab) tab.classList.remove('active', 'done');
+    }
+  });
+
+  _updateNav();
+  document.getElementById('cxError').textContent = '';
+  document.getElementById('cxBody').scrollTo({ top: 0, behavior: 'smooth' });
+  return true;
+}
+
+function _updateNav() {
+  const n = _cxGroups.length;
+  if (n <= 1) return;
+  const prev = document.getElementById('cxPrevBtn');
+  const next = document.getElementById('cxNextBtn');
+  if (prev) prev.style.display = _cxStep === 0 ? 'none' : '';
+  if (next) next.textContent = _cxStep === n - 1 ? 'Готово ✓' : 'Дальше →';
+}
+
+function cxGoNext() { if (_cxStep < _cxGroups.length - 1) _switchStep(_cxStep + 1, true); }
+function cxGoPrev() { if (_cxStep > 0) _switchStep(_cxStep - 1); }
+
+/* ── Add to cart ── */
+async function cxAddToCart() {
+  if (!_cxId) return;
+  for (let i = 0; i < _cxGroups.length; i++) {
+    const g = _cxGroups[i];
+    if (g.min > 0 && _cxGroupTotal(g.id) < g.min) {
+      _switchStep(i);
+      _showErr(`Выберите минимум ${g.min} в «${g.name}»`);
       return;
     }
   }
-  const btn = document.getElementById("bmCxAddBtn");
-  btn.disabled = true; btn.textContent = "Добавляю...";
+  const btn = document.getElementById('cxAddBtn');
+  btn.disabled = true; btn.textContent = '...';
   try {
     const fd = new FormData();
-    fd.append("cx_id", bmCxId);
-    fd.append("selections", JSON.stringify(bmSelMap));
-    const r = await fetch(BM_ADD_CX_URL, { method:"POST", body:fd, headers:{"X-CSRFToken":BM_CSRF()} });
+    fd.append('cx_id', _cxId);
+    fd.append('selections', JSON.stringify(_cxSel));
+    const r = await fetch(CX_ADD_URL, {
+      method: 'POST', body: fd,
+      headers: { 'X-CSRFToken': CX_CSRF(), 'X-Requested-With': 'XMLHttpRequest' }
+    });
     const d = await r.json();
-    if (!d.ok) { errEl.textContent = d.error || "Ошибка"; return; }
-    closeBmCxModal();
-    // обновляем FAB корзины
-    const qEls = document.querySelectorAll("[data-cart-qty]");
-    const tEls = document.querySelectorAll("[data-cart-total]");
-    // перезагружаем корзину если она открыта
-    if (typeof silentRefresh === "function") silentRefresh();
-    if (typeof loadCart === "function" && document.getElementById("cartModal")?.classList.contains("open")) loadCart();
-  } catch { errEl.textContent = "Ошибка, попробуйте ещё"; }
-  finally { btn.disabled = false; btn.textContent = "🧩 Добавить в корзину"; }
-});
+    if (!d.ok) { _showErr(d.error || 'Ошибка'); return; }
+    closeCxModal();
+    const fab = document.getElementById('cartFab');
+    if (fab) fab.classList.remove('hide');
+    if (d.qty_total !== undefined) updateCartUI(d.qty_total, d.total);
+    if (typeof window._cartSilentRefresh === 'function') window._cartSilentRefresh();
+  } catch { _showErr('Ошибка сети'); }
+  finally { btn.disabled = false; btn.textContent = 'В корзину 🧩'; }
+}
+
+/* ── Helpers ── */
+function _esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function _showErr(msg) {
+  const el = document.getElementById('cxError');
+  if (el) { el.textContent = msg; setTimeout(() => { if(el.textContent===msg) el.textContent=''; }, 3000); }
+}
 </script>
 {% endif %}
 
@@ -1618,11 +2075,16 @@ document.addEventListener('submit', async (e) => {
   }
 
   function buildCxRow(item) {
+    const sels = item.selections || [];
+    const selHtml = sels.length
+      ? sels.map(s => `<div style="font-size:11px;color:var(--text2);line-height:1.4">
+          <span style="font-weight:600">${s.gname}:</span> ${s.ings.join(', ')}</div>`).join('')
+      : (item.detail ? `<div style="font-size:11px;color:var(--text2)">${item.detail}</div>` : '');
     return `
       <div style="flex:1;min-width:0">
         <div class="cm-row-name">🧩 ${item.name}</div>
-        ${item.detail ? `<div class="cm-row-price" style="font-size:11px">${item.detail}</div>` : ''}
-        <div class="cm-row-price">${item.price} сом / шт.</div>
+        ${selHtml}
+        <div class="cm-row-price" style="margin-top:3px">${item.price} сом / шт.</div>
       </div>
       <div class="cm-qty">
         <button class="cm-qty-btn" data-cx-dec="${item.cx_idx}">−</button>
@@ -1966,6 +2428,12 @@ document.addEventListener('submit', async (e) => {
   window.updateCartUI = function(qty, total) {
     _origUpdate(qty, total);
     if (modal.classList.contains('open')) silentRefresh();
+  };
+
+  /* ── Глобальный хук для конструктора — обновить модал после добавления ── */
+  window._cartSilentRefresh = function() {
+    if (modal.classList.contains('open')) silentRefresh();
+    else if (!cartRendered) loadCart();
   };
 
 })();

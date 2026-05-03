@@ -51,6 +51,35 @@
 }
 .pm-cat-del-btn:hover { background: rgba(239,68,68,.1); color: #dc2626; }
 
+/* drag handle */
+.pm-cat-drag {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); font-size: 16px; flex-shrink: 0;
+  cursor: grab; touch-action: none; user-select: none;
+}
+.pm-cat-drag:active { cursor: grabbing; }
+.pm-cat.dragging {
+  opacity: .4; border: 2px dashed var(--accent);
+}
+.pm-cat.drag-over {
+  border-top: 3px solid var(--accent);
+}
+.pm-cat.drag-highlight { background: rgba(255,77,28,.05); }
+
+/* ▲▼ move buttons */
+.pm-cat-move {
+  display: flex; flex-direction: column; gap: 0; flex-shrink: 0;
+}
+.pm-cat-move-btn {
+  width: 26px; height: 20px; border: none; background: transparent;
+  color: var(--muted); cursor: pointer; font-size: 10px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; transition: background .1s, color .1s; line-height: 1;
+}
+.pm-cat-move-btn:hover { background: var(--bg); color: var(--text); }
+.pm-cat-move-btn:active { background: rgba(255,77,28,.1); color: var(--accent); }
+
 /* rename inline */
 .pm-cat-name-input {
   flex: 1; font-size: 14px; font-weight: 700;
@@ -412,6 +441,7 @@
   data-stock-toggle="{% url 'dashboard:shop_product_toggle' 0 %}"
   data-cat-rename="{% url 'dashboard:shop_category_rename' 0 %}"
   data-cat-delete="{% url 'dashboard:shop_category_delete' 0 %}"
+  data-cat-reorder="{% url 'dashboard:shop_category_reorder' branch.id %}"
   data-barcode-lookup="{% url 'dashboard:shop_barcode_lookup' branch.id %}"
 ></div>
 
@@ -430,6 +460,7 @@ const PM_CATS = [
     <div class="db-breadcrumb">{{ store.name_ru }} — {{ branch.name_ru }}</div>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a href="{% url 'dashboard:shop_category_list' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📁 Категории</a>
     <a href="{% url 'dashboard:shop_orders' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📋 Заказы</a>
     <a href="{% url 'dashboard:shop_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
   </div>
@@ -454,6 +485,10 @@ const PM_CATS = [
 <div class="pm-cat" id="cat-section-{{ cat.id }}" data-cat-id="{{ cat.id }}">
 
   <div class="pm-cat-head" onclick="toggleCat({{ cat.id }})">
+    <div class="pm-cat-move" onclick="event.stopPropagation()">
+      <button class="pm-cat-move-btn" onclick="moveCatUp(this)" title="Выше">▲</button>
+      <button class="pm-cat-move-btn" onclick="moveCatDown(this)" title="Ниже">▼</button>
+    </div>
     <span class="pm-cat-chevron open" id="cat-chev-{{ cat.id }}">▶</span>
     <span class="pm-cat-name" id="cat-name-{{ cat.id }}">{{ cat.name_ru }}</span>
     <input class="pm-cat-name-input" id="cat-input-{{ cat.id }}" value="{{ cat.name_ru }}"
@@ -710,6 +745,39 @@ async function deleteCat(id, name) {
   PM_CATS.splice(PM_CATS.findIndex(c => c.id === id), 1);
 }
 
+/* ── Category reorder: ▲▼ buttons ── */
+let _catOrderTimer;
+function saveCatOrder() {
+  clearTimeout(_catOrderTimer);
+  _catOrderTimer = setTimeout(() => {
+    const ids = [...document.querySelectorAll('#plWrap .pm-cat[data-cat-id]')]
+      .map(el => el.dataset.catId)
+      .filter(id => id !== '0');
+    if (!ids.length) return;
+    postFD(URLS.catReorder, { order: ids.join(',') });
+  }, 400);
+}
+function moveCatUp(btn) {
+  const cat = btn.closest('.pm-cat');
+  const prev = cat.previousElementSibling;
+  if (prev && prev.classList.contains('pm-cat') && prev.dataset.catId && prev.dataset.catId !== '0') {
+    cat.parentNode.insertBefore(cat, prev);
+    saveCatOrder();
+    cat.classList.add('drag-highlight');
+    setTimeout(() => cat.classList.remove('drag-highlight'), 300);
+  }
+}
+function moveCatDown(btn) {
+  const cat = btn.closest('.pm-cat');
+  const next = cat.nextElementSibling;
+  if (next && next.classList.contains('pm-cat') && next.dataset.catId && next.dataset.catId !== '0') {
+    cat.parentNode.insertBefore(next, cat);
+    saveCatOrder();
+    cat.classList.add('drag-highlight');
+    setTimeout(() => cat.classList.remove('drag-highlight'), 300);
+  }
+}
+
 /* ── FAB ── */
 function toggleFab() {
   document.getElementById('pmFabBtn').classList.toggle('open');
@@ -959,6 +1027,10 @@ function appendCatSection(id, name) {
   const html = `
   <div class="pm-cat" id="cat-section-${id}" data-cat-id="${id}">
     <div class="pm-cat-head" onclick="toggleCat(${id})">
+      <div class="pm-cat-move" onclick="event.stopPropagation()">
+        <button class="pm-cat-move-btn" onclick="moveCatUp(this)" title="Выше">▲</button>
+        <button class="pm-cat-move-btn" onclick="moveCatDown(this)" title="Ниже">▼</button>
+      </div>
       <span class="pm-cat-chevron open" id="cat-chev-${id}">▶</span>
       <span class="pm-cat-name" id="cat-name-${id}">${esc(name)}</span>
       <input class="pm-cat-name-input" id="cat-input-${id}" value="${esc(name)}"

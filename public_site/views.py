@@ -545,11 +545,15 @@ def cart_json(request, branch_id: int):
             for s in item.get("selections", [])
         )
         cx_items.append({
-            "cx_idx":    item["idx"],
-            "name":      item["cx_name"],
-            "detail":    detail,
-            "price":     str(unit),
-            "qty":       qty,
+            "cx_idx":     item["idx"],
+            "name":       item["cx_name"],
+            "detail":     detail,
+            "selections": [
+                {"gname": s["gname"], "ings": [i["name"] for i in s.get("ings", [])]}
+                for s in item.get("selections", [])
+            ],
+            "price":      str(unit),
+            "qty":        qty,
             "line_total": str(line),
         })
 
@@ -817,12 +821,15 @@ def checkout(request, branch_id: int):
                     line_total=line_total,
                     ingredients_snapshot=cx_item.get("selections", []),
                 )
-            detail = " · ".join(
-                f"{s['gname']}: {', '.join(i['name'] for i in s.get('ings', []))}"
-                for s in cx_item.get("selections", [])
-            )
             n = len(lines) + 1
-            lines.append(f"{n}) 🧩 {cx_item['cx_name']}{(' ('+detail+')') if detail else ''} × {qty} = {line_total} сом")
+            detail_parts = [
+                f"  • {s['gname']}: {', '.join(i['name'] for i in s.get('ings', []))}"
+                for s in cx_item.get("selections", [])
+            ]
+            entry = f"{n}) 🧩 {cx_item['cx_name']} × {qty} = {line_total} сом"
+            if detail_parts:
+                entry += "\n" + "\n".join(detail_parts)
+            lines.append(entry)
 
     # очищаем обе корзины
     clear_cart(request, branch.id)
@@ -860,17 +867,7 @@ def checkout(request, branch_id: int):
 
 from urllib.parse import quote
 from django.shortcuts import get_object_or_404, render
-from orders.models import Order, OrderItem
-from core.models import Branch
-from urllib.parse import quote
-from decimal import Decimal
-from django.shortcuts import get_object_or_404, render
-from orders.models import Order, OrderItem
-from core.models import Branch
-from urllib.parse import quote
-from decimal import Decimal
-from django.shortcuts import get_object_or_404, render
-from orders.models import Order, OrderItem
+from orders.models import Order, OrderItem, ConstructorOrderItem
 from core.models import Branch
 
 def checkout_success(request, branch_id: int, order_id: int):
@@ -881,6 +878,10 @@ def checkout_success(request, branch_id: int, order_id: int):
              .filter(order=order)
              .select_related("item")
              .order_by("id"))
+
+    cx_items = (ConstructorOrderItem.objects
+                .filter(order=order)
+                .order_by("id"))
 
     lines = []
     subtotal = Decimal("0")
@@ -899,6 +900,22 @@ def checkout_success(request, branch_id: int, order_id: int):
         # preview: 1–2 строки
         if len(preview_lines) < 2:
             preview_lines.append(f"{name} × {oi.qty}")
+
+    for coi in cx_items:
+        n = len(lines) + 1
+        cx_name = coi.constructor_name_snapshot
+        detail_parts = [
+            f"  • {s['gname']}: {', '.join(i['name'] for i in s.get('ings', []))}"
+            for s in (coi.ingredients_snapshot or [])
+        ]
+        entry = f"{n}) 🧩 {cx_name} × {coi.qty} = {coi.line_total} сом"
+        if detail_parts:
+            entry += "\n" + "\n".join(detail_parts)
+        lines.append(entry)
+        subtotal += coi.line_total
+        items_count += 1
+        if len(preview_lines) < 2:
+            preview_lines.append(f"🧩 {cx_name} × {coi.qty}")
 
     is_delivery = (order.type == Order.Type.DELIVERY)
     delivery_fee = branch.delivery_fee if (is_delivery and branch.delivery_enabled) else Decimal("0")
@@ -1244,7 +1261,18 @@ def constructor_add_to_cart(request, branch_id: int):
     })
     _save_branch_cx_cart(request, branch_id, cart)
 
-    return JsonResponse({"ok": True})
+    reg_cart = get_cart(request, branch_id)
+    _, reg_subtotal, reg_qty = cart_details(branch, reg_cart)
+    cx_total = sum(Decimal(str(x["unit_price"])) * int(x["qty"]) for x in cart)
+    cx_qty   = sum(int(x["qty"]) for x in cart)
+    total_sub = reg_subtotal + cx_total
+    delivery  = _calc_delivery(branch, total_sub)
+
+    return JsonResponse({
+        "ok":       True,
+        "qty_total": reg_qty + cx_qty,
+        "total":     str(total_sub + delivery),
+    })
 
 
 @require_POST

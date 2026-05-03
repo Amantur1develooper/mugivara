@@ -1441,7 +1441,26 @@ def constructor_add(request, branch_id):
     except InvalidOperation:
         bp = Decimal("0")
     cx = DishConstructor.objects.create(branch=branch, name=name, base_price=bp, description=desc)
-    return JsonResponse({"ok": True, "id": cx.id, "name": cx.name, "base_price": str(cx.base_price)})
+    photo = request.FILES.get("photo")
+    if photo:
+        cx.photo = photo
+        cx.save()
+    return JsonResponse({"ok": True, "id": cx.id, "name": cx.name, "base_price": str(cx.base_price),
+                         "photo_url": cx.photo.url if cx.photo else ""})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def constructor_photo_update(request, cx_id):
+    cx = get_object_or_404(DishConstructor, id=cx_id)
+    if not _has_branch_access(request.user, cx.branch):
+        return JsonResponse({"ok": False}, status=403)
+    photo = request.FILES.get("photo")
+    if not photo:
+        return JsonResponse({"ok": False, "error": "Нет файла"})
+    cx.photo = photo
+    cx.save()
+    return JsonResponse({"ok": True, "photo_url": cx.photo.url})
 
 
 @require_POST
@@ -1547,3 +1566,42 @@ def constructor_ingredient_delete(request, ing_id):
         return JsonResponse({"ok": False}, status=403)
     ing.delete()
     return JsonResponse({"ok": True})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def constructor_ingredient_update(request, ing_id):
+    """Обновить цену (и имя, если ручной) ингредиента."""
+    ing = get_object_or_404(ConstructorIngredient, id=ing_id)
+    if not _has_branch_access(request.user, ing.group.constructor.branch):
+        return JsonResponse({"ok": False}, status=403)
+    price_raw = request.POST.get("price", "").strip()
+    if price_raw != "":
+        try:
+            ing.price = Decimal(price_raw)
+        except Exception:
+            return JsonResponse({"ok": False, "error": "Неверная цена"})
+    if not ing.branch_item_id:
+        name = request.POST.get("name", "").strip()
+        if name:
+            ing.name = name
+    ing.save()
+    return JsonResponse({"ok": True, "price": str(ing.display_price), "name": ing.display_name})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def constructor_group_update(request, group_id):
+    """Обновить min/max группы."""
+    g = get_object_or_404(ConstructorGroup, id=group_id)
+    if not _has_branch_access(request.user, g.constructor.branch):
+        return JsonResponse({"ok": False}, status=403)
+    try:
+        min_s = int(request.POST.get("min_select", g.min_select))
+        max_s = int(request.POST.get("max_select", g.max_select))
+    except (ValueError, TypeError):
+        return JsonResponse({"ok": False, "error": "Неверные значения"})
+    g.min_select = min_s
+    g.max_select = max_s
+    g.save()
+    return JsonResponse({"ok": True, "min_select": g.min_select, "max_select": g.max_select})

@@ -29,9 +29,28 @@ class Category(TimeStampedModel):
         verbose_name = "Категории"
         verbose_name_plural = "Категории"
         
+def _compress_photo(field, max_side=900, quality=82):
+    """Resize to max_side×max_side, convert to WebP. Returns True if processed."""
+    if not (field and hasattr(field, 'file')):
+        return False
+    try:
+        field.file.seek(0)
+        img = Image.open(field)
+        img = img.convert("RGB")
+        img.thumbnail((max_side, max_side), Image.LANCZOS)
+        buf = BytesIO()
+        img.save(buf, format="WEBP", quality=quality, method=6)
+        buf.seek(0)
+        name = os.path.splitext(field.name)[0] + ".webp"
+        field.save(name, ContentFile(buf.read()), save=False)
+        return True
+    except Exception:
+        return False
+
+
 class Item(TimeStampedModel):
     restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name="items")
-    
+
     name_ru = models.CharField(max_length=200)
     name_ky = models.CharField(max_length=200, blank=True, default="")
     name_en = models.CharField(max_length=200, blank=True, default="")
@@ -46,35 +65,7 @@ class Item(TimeStampedModel):
     rating      = models.DecimalField("Рейтинг", max_digits=3, decimal_places=1, default=1.0)
 
     def save(self, *args, **kwargs):
-        self.photo_compression = None
-        if self.photo and hasattr(self.photo, 'file'):
-            try:
-                original_size = self.photo.file.seek(0, 2) or self.photo.file.tell()
-                self.photo.file.seek(0)
-
-                img = Image.open(self.photo)
-                orig_w, orig_h = img.size
-                img = img.convert("RGB")
-                img.thumbnail((800, 800), Image.LANCZOS)
-                new_w, new_h = img.size
-
-                buf = BytesIO()
-                img.save(buf, format="WEBP", quality=82, method=6)
-                compressed_size = buf.tell()
-                buf.seek(0)
-
-                name = os.path.splitext(self.photo.name)[0] + ".webp"
-                self.photo.save(name, ContentFile(buf.read()), save=False)
-
-                self.photo_compression = {
-                    "before_kb": round(original_size / 1024, 1),
-                    "after_kb":  round(compressed_size / 1024, 1),
-                    "saved_pct": round((1 - compressed_size / original_size) * 100) if original_size else 0,
-                    "orig_size": f"{orig_w}×{orig_h}",
-                    "new_size":  f"{new_w}×{new_h}",
-                }
-            except Exception:
-                pass
+        _compress_photo(self.photo)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -173,6 +164,10 @@ class DishConstructor(TimeStampedModel):
         verbose_name = "Конструктор блюда"
         verbose_name_plural = "Конструкторы блюд"
 
+    def save(self, *args, **kwargs):
+        _compress_photo(self.photo)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.branch} / {self.name}"
 
@@ -215,6 +210,10 @@ class ConstructorIngredient(TimeStampedModel):
         ordering = ["sort_order", "id"]
         verbose_name = "Позиция конструктора"
         verbose_name_plural = "Позиции конструктора"
+
+    def save(self, *args, **kwargs):
+        _compress_photo(self.photo)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.group.name} / {self.display_name}"
