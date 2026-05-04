@@ -1485,6 +1485,7 @@ function _showErr(msg) {
      data-cart-json="{% url 'public_site:cart_json' branch.id %}"
      data-checkout-url="{% url 'public_site:checkout' branch.id %}"
      data-promo-url="{% url 'public_site:validate_promo' branch.id %}"
+     data-cx-upd="{% url 'public_site:constructor_cx_update' branch.id %}"
      data-delivery-enabled="{{ branch.delivery_enabled|yesno:'true,false' }}"
      data-delivery-fee="{{ branch.delivery_fee|floatformat:'0' }}"
      data-min-order="{{ branch.min_order_amount|floatformat:'0' }}"
@@ -1957,9 +1958,18 @@ document.addEventListener('submit', async (e) => {
   const modal = document.getElementById('cartModal');
   const body  = document.getElementById('cmBody');
   const urls  = document.getElementById('cm-urls').dataset;
+  const BM_CX_UPD_URL = urls.cxUpd;
 
   let promoCode   = '';
   let cartRendered = false;  // true после первого полного рендера
+
+  function _updateSubmitState() {
+    const btn   = document.getElementById('cmSubmitBtn');
+    const items = document.getElementById('cmItems');
+    if (!btn) return;
+    const empty = !items || !items.querySelector('.cm-row');
+    btn.disabled = empty;
+  }
 
   /* ── Открыть / закрыть ── */
   window.openCartModal = function() {
@@ -2220,9 +2230,20 @@ document.addEventListener('submit', async (e) => {
 
   /* ── Привязать события в модале ── */
   function bindModalEvents() {
-    document.getElementById('cmSubmitBtn').addEventListener('click', () => {
-      const form = document.getElementById('cmCheckoutForm');
-      if (!form.checkValidity()) return;
+    const form      = document.getElementById('cmCheckoutForm');
+    const submitBtn = document.getElementById('cmSubmitBtn');
+
+    _updateSubmitState();
+
+    form.addEventListener('submit', e => {
+      const items = document.getElementById('cmItems');
+      const empty = !items || !items.querySelector('.cm-row');
+      if (empty) {
+        e.preventDefault();
+        submitBtn.disabled = true;
+        submitBtn.textContent = '🛒 Корзина пуста';
+        setTimeout(() => { submitBtn.textContent = 'Оформить заказ →'; _updateSubmitState(); }, 2000);
+      }
     });
 
     const ph = document.getElementById('cmPhone');
@@ -2315,6 +2336,7 @@ document.addEventListener('submit', async (e) => {
               </div>`;
             cartRendered = false;
           }
+          _updateSubmitState();
         } else {
           if (qtyEl) qtyEl.textContent = d.item_qty;
           const totalEl = row.querySelector('.cm-row-total');
@@ -2358,6 +2380,7 @@ document.addEventListener('submit', async (e) => {
             </div>`;
           cartRendered = false;
         }
+        _updateSubmitState();
       } else {
         qtyEl.textContent = d.row_qty ?? qty;
         const totalEl = row.querySelector('.cm-row-total');
