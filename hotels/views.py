@@ -1,11 +1,27 @@
 import json
 from urllib.parse import quote
+from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.urls import reverse
 
 from .models import Hotel, HotelBranch, RoomCategory, Room, HotelBooking
+
+
+def _get_bot_token():
+    return (getattr(settings, "TG_BOT_TOKEN", "") or getattr(settings, "TELEGRAM_BOT_TOKEN", "") or "").strip()
+
+
+def _notify_hotel_booking(branch, msg):
+    token = _get_bot_token()
+    if not token or not branch.tg_chat_id:
+        return
+    try:
+        from integrations.telegram import send_message
+        send_message(token, branch.tg_chat_id, msg, message_thread_id=branch.tg_thread_id)
+    except Exception:
+        pass
 
 
 def hotel_list(request):
@@ -159,6 +175,8 @@ def room_book(request, room_id):
         comment=comment,
         status=HotelBooking.Status.NEW,
     )
+
+    _notify_hotel_booking(branch, msg)
 
     wa_number = "".join(ch for ch in (branch.phone or "") if ch.isdigit())
     if wa_number:

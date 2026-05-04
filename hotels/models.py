@@ -45,6 +45,10 @@ class HotelBranch(TimeStampedModel):
     is_active = models.BooleanField("Активен", default=True)
     cover_photo = models.ImageField("Обложка", upload_to="hotels/covers/", blank=True, null=True)
     external_url = models.URLField("Внешний сайт / приложение", blank=True, default="")
+    tg_chat_id  = models.CharField("Telegram chat ID", max_length=64, blank=True, default="",
+                                    help_text="ID группы/канала для уведомлений о бронях")
+    tg_thread_id = models.PositiveIntegerField("Telegram thread ID", null=True, blank=True,
+                                                help_text="ID темы (необязательно)")
 
     class Meta:
         verbose_name = "Филиал отеля"

@@ -86,6 +86,9 @@ def hotel_branch_edit(request, branch_id):
         branch.map_url     = request.POST.get("map_url", "").strip()
         branch.external_url = request.POST.get("external_url", "").strip()
         branch.is_active   = request.POST.get("is_active") == "on"
+        branch.tg_chat_id  = request.POST.get("tg_chat_id", "").strip()
+        tgt = request.POST.get("tg_thread_id", "").strip()
+        branch.tg_thread_id = int(tgt) if tgt.isdigit() else None
         if request.FILES.get("cover_photo"):
             branch.cover_photo = request.FILES["cover_photo"]
         branch.save()

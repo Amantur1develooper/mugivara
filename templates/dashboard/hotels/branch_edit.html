@@ -64,6 +64,24 @@
       <input class="db-input" type="file" name="cover_photo" accept="image/*">
     </div>
 
+    <div class="db-form-group" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <label class="db-label">🤖 Telegram — ID чата для уведомлений о бронях</label>
+      <input class="db-input" name="tg_chat_id" value="{{ branch.tg_chat_id }}"
+             placeholder="-1001234567890">
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">
+        ID группы или канала. Бот должен быть добавлен как администратор.
+      </div>
+    </div>
+
+    <div class="db-form-group">
+      <label class="db-label">🧵 Telegram — ID темы (необязательно)</label>
+      <input class="db-input" name="tg_thread_id" value="{{ branch.tg_thread_id|default:'' }}"
+             placeholder="">
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">
+        Если группа с темами — укажите ID темы. Иначе оставьте пустым.
+      </div>
+    </div>
+
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
       <button type="submit" class="db-btn db-btn-primary">💾 Сохранить</button>
       <a href="{% url 'dashboard:hotel_home' %}" class="db-btn db-btn-ghost">← Назад</a>
