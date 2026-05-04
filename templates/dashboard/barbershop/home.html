@@ -1,0 +1,48 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Барбершопы{% endblock %}
+{% block nav_barbershop %}active{% endblock %}
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">✂️ Мои барбершопы</div>
+    <div class="db-breadcrumb">Управление записями, мастерами и финансами</div>
+  </div>
+</div>
+{% if not data %}
+<div class="db-card" style="text-align:center;padding:60px 24px">
+  <div style="font-size:48px;margin-bottom:16px">✂️</div>
+  <div style="font-size:16px;font-weight:600;color:var(--text2)">Нет доступных барбершопов</div>
+  <div style="font-size:13px;color:var(--muted);margin-top:8px">Обратитесь к администратору</div>
+</div>
+{% endif %}
+<div style="display:flex;flex-direction:column;gap:16px">
+{% for row in data %}
+{% with shop=row.shop %}
+<div class="db-card" style="padding:0;overflow:hidden">
+  <div style="display:flex;align-items:center;gap:16px;padding:20px 24px;border-bottom:1px solid var(--border)">
+    <div style="width:52px;height:52px;border-radius:14px;overflow:hidden;background:#111;border:1.5px solid rgba(255,107,53,.2);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">
+      {% if shop.logo %}<img src="{{ shop.logo.url }}" style="width:100%;height:100%;object-fit:cover">{% else %}✂️{% endif %}
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:15px">{{ shop.name }}</div>
+      {% if shop.address %}<div style="font-size:13px;color:var(--muted);margin-top:3px">📍 {{ shop.address }}</div>{% endif %}
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a href="{% url 'dashboard:bs_appointments' shop.id %}" class="db-btn db-btn-primary db-btn-sm">📋 Записи{% if row.new_count %} <span style="background:rgba(255,255,255,.3);padding:1px 6px;border-radius:8px">{{ row.new_count }}</span>{% endif %}</a>
+      <a href="{% url 'dashboard:bs_barbers' shop.id %}" class="db-btn db-btn-ghost db-btn-sm">👤 Мастера</a>
+      <a href="{% url 'dashboard:bs_services' shop.id %}" class="db-btn db-btn-ghost db-btn-sm">📋 Услуги</a>
+      <a href="{% url 'dashboard:bs_report' shop.id %}" class="db-btn db-btn-ghost db-btn-sm">📊 Отчёт</a>
+      <a href="{% url 'dashboard:bs_venue_edit' shop.id %}" class="db-btn db-btn-ghost db-btn-sm">⚙️</a>
+    </div>
+  </div>
+  <div style="display:flex;gap:24px;padding:12px 24px;background:var(--bg);font-size:13px;color:var(--muted)">
+    <span>📅 Сегодня: <b style="color:var(--text2)">{{ row.today_count }}</b> записей</span>
+    {% if row.new_count %}<span style="color:var(--accent)">🆕 Новых: <b>{{ row.new_count }}</b></span>{% endif %}
+    {% if shop.phone %}<span>📞 {{ shop.phone }}</span>{% endif %}
+    <a href="{% url 'barbershop:venue' shop.slug %}" target="_blank" style="color:var(--muted);text-decoration:none">🔗 Страница</a>
+  </div>
+</div>
+{% endwith %}
+{% endfor %}
+</div>
+{% endblock %}

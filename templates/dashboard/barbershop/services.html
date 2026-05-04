@@ -1,0 +1,103 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ shop.name }} — Услуги{% endblock %}
+{% block nav_barbershop %}active{% endblock %}
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">{{ shop.name }}</div>
+    <div class="db-breadcrumb"><a href="{% url 'dashboard:bs_home' %}">Барбершопы</a> / Услуги</div>
+  </div>
+  <a href="{% url 'dashboard:bs_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
+</div>
+
+<!-- Add category -->
+<div class="db-card">
+  <div class="db-card-title">➕ Добавить категорию</div>
+  <form method="post" action="{% url 'dashboard:bs_category_add' shop.id %}" style="display:flex;gap:10px">
+    {% csrf_token %}
+    <input class="db-input" name="name" placeholder="Название категории (Стрижки, Борода...)" required style="flex:1">
+    <button type="submit" class="db-btn db-btn-teal">Добавить</button>
+  </form>
+</div>
+
+{% for cat in categories %}
+<div class="db-card" style="margin-bottom:16px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div class="db-card-title" style="margin-bottom:0">📂 {{ cat.name }}</div>
+    <form method="post" action="{% url 'dashboard:bs_category_delete' cat.id %}" onsubmit="return confirm('Удалить категорию «{{ cat.name }}»?')">
+      {% csrf_token %}
+      <button type="submit" class="db-btn db-btn-ghost db-btn-sm" style="color:var(--accent)">🗑</button>
+    </form>
+  </div>
+
+  <!-- Services list -->
+  {% for svc in cat.services.all %}
+  <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)" id="svc-row-{{ svc.id }}">
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:600;font-size:14px">{{ svc.name }}</div>
+      {% if svc.description %}<div style="font-size:12px;color:var(--muted);margin-top:2px">{{ svc.description }}</div>{% endif %}
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">⏱ {{ svc.duration_min }} мин &nbsp;|&nbsp; 💰 {{ svc.price }} сом</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <button onclick="toggleEdit({{ svc.id }})" class="db-btn db-btn-ghost db-btn-sm">✏️</button>
+      <button onclick="toggleSvc({{ svc.id }},this)" class="db-btn db-btn-ghost db-btn-sm" style="color:{% if svc.is_active %}var(--teal){% else %}var(--muted){% endif %}">
+        {% if svc.is_active %}🟢{% else %}⛔{% endif %}
+      </button>
+      <form method="post" action="{% url 'dashboard:bs_service_delete' svc.id %}" onsubmit="return confirm('Удалить?')" style="display:inline">
+        {% csrf_token %}
+        <button type="submit" class="db-btn db-btn-ghost db-btn-sm" style="color:var(--accent)">🗑</button>
+      </form>
+    </div>
+  </div>
+  <!-- Edit form (hidden) -->
+  <div id="edit-{{ svc.id }}" style="display:none;background:var(--bg);border-radius:12px;padding:16px;margin-top:8px">
+    <form method="post" action="{% url 'dashboard:bs_service_edit' svc.id %}">
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+        <div><label class="db-label">Название</label><input class="db-input" name="name" value="{{ svc.name }}" required></div>
+        <div><label class="db-label">Цена (сом)</label><input class="db-input" type="number" name="price" value="{{ svc.price }}" required></div>
+        <div><label class="db-label">Длительность (мин)</label><input class="db-input" type="number" name="duration_min" value="{{ svc.duration_min }}" required></div>
+      </div>
+      <div style="margin-bottom:10px"><label class="db-label">Описание</label><input class="db-input" name="description" value="{{ svc.description }}"></div>
+      <div style="display:flex;gap:8px">
+        <button type="submit" class="db-btn db-btn-primary db-btn-sm">💾 Сохранить</button>
+        <button type="button" onclick="toggleEdit({{ svc.id }})" class="db-btn db-btn-ghost db-btn-sm">Отмена</button>
+      </div>
+    </form>
+  </div>
+  {% endfor %}
+
+  <!-- Add service form -->
+  <div style="margin-top:16px;background:var(--bg);border-radius:12px;padding:16px">
+    <div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">+ Новая услуга</div>
+    <form method="post" action="{% url 'dashboard:bs_service_add' cat.id %}">
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+        <div><label class="db-label">Название</label><input class="db-input" name="name" placeholder="Стрижка машинкой" required></div>
+        <div><label class="db-label">Цена (сом)</label><input class="db-input" type="number" name="price" placeholder="500" required></div>
+        <div><label class="db-label">Длительность (мин)</label><input class="db-input" type="number" name="duration_min" value="30" required></div>
+      </div>
+      <div style="margin-bottom:10px"><label class="db-label">Описание (необязательно)</label><input class="db-input" name="description" placeholder="Краткое описание..."></div>
+      <button type="submit" class="db-btn db-btn-teal db-btn-sm">➕ Добавить услугу</button>
+    </form>
+  </div>
+</div>
+{% empty %}
+<div class="db-card" style="text-align:center;padding:40px">
+  <div style="font-size:36px;margin-bottom:12px">📋</div>
+  <div style="color:var(--muted)">Добавьте первую категорию услуг</div>
+</div>
+{% endfor %}
+
+<script>
+function toggleEdit(id){
+  const el = document.getElementById('edit-'+id);
+  el.style.display = el.style.display==='none' ? 'block' : 'none';
+}
+async function toggleSvc(id, btn){
+  const r = await fetch("{% url 'dashboard:bs_service_toggle' 9999 %}".replace('9999',id), {method:'POST',headers:{'X-CSRFToken':'{{ csrf_token }}'}});
+  const d = await r.json();
+  if(d.ok) btn.textContent = d.is_active ? '🟢' : '⛔';
+}
+</script>
+{% endblock %}

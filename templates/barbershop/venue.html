@@ -1,0 +1,92 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ shop.name }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',sans-serif;background:#0d0d0d;color:#f0f0f0;min-height:100vh}
+    .hero{position:relative;height:300px;display:flex;align-items:flex-end;overflow:hidden}
+    .hero-bg{position:absolute;inset:0;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:96px}
+    .hero-bg img{width:100%;height:100%;object-fit:cover;filter:brightness(.5)}
+    .hero-text{position:relative;padding:28px 24px;max-width:900px;margin:0 auto;width:100%}
+    .hero-name{font-family:'Unbounded',sans-serif;font-size:clamp(22px,4vw,38px);font-weight:900;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+    .hero-sub{font-size:14px;color:#ccc;margin-top:6px}
+    .wrap{max-width:900px;margin:0 auto;padding:32px 20px 60px}
+    .info-bar{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:32px}
+    .info-item{font-size:14px;color:#aaa}
+    .book-btn{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;background:linear-gradient(135deg,#ff6b35,#ff4444);color:white;border-radius:14px;font-size:15px;font-weight:700;text-decoration:none;transition:box-shadow .2s,transform .2s;box-shadow:0 4px 16px rgba(255,77,28,.3);margin-bottom:40px}
+    .book-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(255,77,28,.45)}
+    .section-title{font-family:'Unbounded',sans-serif;font-size:18px;font-weight:700;margin-bottom:20px;letter-spacing:-0.3px}
+    .services-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:40px}
+    .svc-card{background:#1a1a1a;border-radius:14px;padding:18px;border:1px solid rgba(255,255,255,.06)}
+    .svc-name{font-weight:600;font-size:15px;margin-bottom:6px}
+    .svc-meta{display:flex;justify-content:space-between;font-size:13px;color:#888;margin-top:8px}
+    .svc-price{font-weight:700;font-size:15px;color:#ff6b35}
+    .barbers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px}
+    .barber-card{background:#1a1a1a;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.06);text-align:center;padding-bottom:16px}
+    .barber-photo{height:140px;display:flex;align-items:center;justify-content:center;background:#222;font-size:52px;overflow:hidden}
+    .barber-photo img{width:100%;height:100%;object-fit:cover}
+    .barber-name{font-weight:700;font-size:15px;margin:12px 12px 4px}
+    .barber-exp{font-size:12px;color:#888}
+    .cat-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#666;margin-bottom:10px;margin-top:6px}
+  </style>
+</head>
+<body>
+<div class="hero">
+  <div class="hero-bg">
+    {% if shop.cover %}<img src="{{ shop.cover.url }}" alt="">{% else %}✂️{% endif %}
+  </div>
+  <div class="hero-text">
+    <div class="hero-name">{{ shop.name }}</div>
+    {% if shop.tagline %}<div class="hero-sub">{{ shop.tagline }}</div>{% endif %}
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="info-bar">
+    {% if shop.address %}<div class="info-item">📍 {{ shop.address }}</div>{% endif %}
+    {% if shop.working_hours %}<div class="info-item">🕐 {{ shop.working_hours }}</div>{% endif %}
+    {% if shop.phone %}<div class="info-item">📞 {{ shop.phone }}</div>{% endif %}
+  </div>
+
+  <a href="{% url 'barbershop:book' shop.slug %}" class="book-btn">✂️ Записаться онлайн</a>
+
+  {% for cat in categories %}
+  <div class="cat-label">{{ cat.name }}</div>
+  <div class="services-grid">
+    {% for svc in cat.services.all %}
+    {% if svc.is_active %}
+    <div class="svc-card">
+      <div class="svc-name">{{ svc.name }}</div>
+      {% if svc.description %}<div style="font-size:13px;color:#888;margin-top:4px">{{ svc.description }}</div>{% endif %}
+      <div class="svc-meta">
+        <span>⏱ {{ svc.duration_min }} мин</span>
+        <span class="svc-price">{{ svc.price }} сом</span>
+      </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+  {% endfor %}
+
+  {% if barbers %}
+  <div class="section-title" style="margin-top:16px">Наши мастера</div>
+  <div class="barbers-grid">
+    {% for b in barbers %}
+    <div class="barber-card">
+      <div class="barber-photo">
+        {% if b.photo %}<img src="{{ b.photo.url }}" alt="{{ b.name }}">{% else %}👤{% endif %}
+      </div>
+      <div class="barber-name">{{ b.name }}</div>
+      {% if b.experience %}<div class="barber-exp">{{ b.experience }}</div>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+</body>
+</html>

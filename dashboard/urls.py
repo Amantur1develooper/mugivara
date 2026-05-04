@@ -5,6 +5,7 @@ from shops import dashboard_views as sv
 from legal import dashboard_views as lv
 from agency import dashboard_views as av
 from karaoke import dashboard_views as kv
+from barbershop import dashboard_views as bsv
 
 app_name = "dashboard"
 
@@ -146,6 +147,29 @@ urlpatterns = [
     path("hotels/room/<int:room_id>/toggle/",             hv.hotel_room_toggle,   name="hotel_room_toggle"),
     path("hotels/branch/<int:branch_id>/bookings/",       hv.hotel_bookings,      name="hotel_bookings"),
     path("hotels/booking/<int:booking_id>/status/",       hv.hotel_booking_status, name="hotel_booking_status"),
+
+    # ── BARBERSHOP ───────────────────────────────────────────────────────────────
+    path("barbershop/",                                          bsv.bs_home,                  name="bs_home"),
+    path("barbershop/<int:shop_id>/edit/",                       bsv.bs_venue_edit,            name="bs_venue_edit"),
+    path("barbershop/<int:shop_id>/services/",                   bsv.bs_services,              name="bs_services"),
+    path("barbershop/<int:shop_id>/services/category/add/",      bsv.bs_category_add,          name="bs_category_add"),
+    path("barbershop/category/<int:cat_id>/delete/",             bsv.bs_category_delete,       name="bs_category_delete"),
+    path("barbershop/category/<int:cat_id>/service/add/",        bsv.bs_service_add,           name="bs_service_add"),
+    path("barbershop/service/<int:svc_id>/edit/",                bsv.bs_service_edit,          name="bs_service_edit"),
+    path("barbershop/service/<int:svc_id>/delete/",              bsv.bs_service_delete,        name="bs_service_delete"),
+    path("barbershop/service/<int:svc_id>/toggle/",              bsv.bs_service_toggle,        name="bs_service_toggle"),
+    path("barbershop/<int:shop_id>/barbers/",                    bsv.bs_barbers,               name="bs_barbers"),
+    path("barbershop/<int:shop_id>/barbers/add/",                bsv.bs_barber_add,            name="bs_barber_add"),
+    path("barbershop/barber/<int:barber_id>/edit/",              bsv.bs_barber_edit,           name="bs_barber_edit"),
+    path("barbershop/barber/<int:barber_id>/toggle/",            bsv.bs_barber_toggle,         name="bs_barber_toggle"),
+    path("barbershop/barber/<int:barber_id>/delete/",            bsv.bs_barber_delete,         name="bs_barber_delete"),
+    path("barbershop/barber/<int:barber_id>/schedule/",          bsv.bs_barber_schedule,       name="bs_barber_schedule"),
+    path("barbershop/<int:shop_id>/appointments/",               bsv.bs_appointments,          name="bs_appointments"),
+    path("barbershop/<int:shop_id>/appointments/add/",           bsv.bs_appointment_add,       name="bs_appointment_add"),
+    path("barbershop/appointment/<int:appt_id>/status/",         bsv.bs_appointment_status,    name="bs_appointment_status"),
+    path("barbershop/appointment/<int:appt_id>/payment/",        bsv.bs_appointment_payment,   name="bs_appointment_payment"),
+    path("barbershop/appointment/<int:appt_id>/delete/",         bsv.bs_appointment_delete,    name="bs_appointment_delete"),
+    path("barbershop/<int:shop_id>/report/",                     bsv.bs_report,                name="bs_report"),
 
     # ── LEGAL ────────────────────────────────────────────────────────────────
     path("legal/",                                      lv.legal_home,           name="legal_home"),

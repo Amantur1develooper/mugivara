@@ -420,6 +420,9 @@
     {% if pharmacy_cards %}
     <a href="#services" class="cat-pill">🏥 Аптеки</a>
     {% endif %}
+    {% if barbershop_cards %}
+    <a href="#services" class="cat-pill">✂️ Барбершоп</a>
+    {% endif %}
     {% if legal_cards or eco_cards or agency_cards %}
     <a href="#services" class="cat-pill" data-section="services">⚡ Услуги</a>
     {% endif %}
@@ -772,6 +775,36 @@
       {% endif %}
 
       <!-- Karaoke -->
+      <!-- Barbershop -->
+      {% if barbershop_cards %}
+      <div class="svc-block" id="svc-barbershop">
+        <div class="svc-block-head">
+          <div class="svc-block-icon" style="background:rgba(180,83,9,.08);border-color:rgba(180,83,9,.2);">✂️</div>
+          <div>
+            <div class="svc-block-title">Барбершопы</div>
+            <div class="svc-block-sub">Онлайн-запись к мастеру</div>
+          </div>
+          <a href="{% url 'barbershop:index' %}" class="svc-block-all" style="color:#b45309;border-color:rgba(180,83,9,.3);">Все →</a>
+        </div>
+        <div class="svc-list">
+          {% for shop in barbershop_cards %}
+          <a href="{% url 'barbershop:venue' shop.slug %}" class="svc-row">
+            <div class="svc-row-icon">
+              {% if shop.logo %}<img src="{{ shop.logo.url }}" alt="{{ shop.name }}" loading="lazy"
+                   style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
+              {% else %}<span style="font-size:20px;">✂️</span>{% endif %}
+            </div>
+            <div class="svc-row-info">
+              <div class="svc-row-name">{{ shop.name }}</div>
+              <div class="svc-row-sub">{% if shop.address %}📍 {{ shop.address }}{% endif %}{% if shop.working_hours %} · {{ shop.working_hours }}{% endif %}</div>
+            </div>
+            <span class="svc-row-arrow" style="color:#b45309;">→</span>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
       {% if karaoke_cards %}
       <div class="svc-block" id="svc-karaoke">
         <div class="svc-block-head">

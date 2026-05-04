@@ -1,0 +1,94 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ shop.name }} — Настройки{% endblock %}
+{% block nav_barbershop %}active{% endblock %}
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">{{ shop.name }}</div>
+    <div class="db-breadcrumb"><a href="{% url 'dashboard:bs_home' %}">Барбершопы</a> / Настройки</div>
+  </div>
+</div>
+<div class="db-card">
+  <div class="db-card-title">⚙️ Настройки барбершопа</div>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="db-form-group">
+        <label class="db-label">Название</label>
+        <input class="db-input" name="name" value="{{ shop.name }}" required>
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Слоган</label>
+        <input class="db-input" name="tagline" value="{{ shop.tagline }}">
+      </div>
+    </div>
+    <div class="db-form-group">
+      <label class="db-label">Описание</label>
+      <textarea class="db-textarea" name="description">{{ shop.description }}</textarea>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="db-form-group">
+        <label class="db-label">Телефон</label>
+        <input class="db-input" name="phone" value="{{ shop.phone }}" placeholder="+996...">
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">WhatsApp (без +)</label>
+        <input class="db-input" name="whatsapp" value="{{ shop.whatsapp }}" placeholder="996700...">
+      </div>
+    </div>
+    <div class="db-form-group">
+      <label class="db-label">Адрес</label>
+      <input class="db-input" name="address" value="{{ shop.address }}">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="db-form-group">
+        <label class="db-label">Часы работы</label>
+        <input class="db-input" name="working_hours" value="{{ shop.working_hours }}" placeholder="09:00 – 21:00">
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Ссылка на карту</label>
+        <input class="db-input" name="map_url" type="url" value="{{ shop.map_url }}">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="db-form-group">
+        <label class="db-label">Логотип</label>
+        {% if shop.logo %}<img src="{{ shop.logo.url }}" style="width:60px;height:60px;object-fit:cover;border-radius:10px;margin-bottom:8px;display:block">{% endif %}
+        <input class="db-input" type="file" name="logo" accept="image/*">
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Обложка</label>
+        {% if shop.cover %}<img src="{{ shop.cover.url }}" style="width:100%;max-height:80px;object-fit:cover;border-radius:10px;margin-bottom:8px;display:block">{% endif %}
+        <input class="db-input" type="file" name="cover" accept="image/*">
+      </div>
+    </div>
+    <div style="padding-top:16px;border-top:1px solid var(--border);margin-top:8px">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px">🤖 Telegram уведомления</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="db-form-group">
+          <label class="db-label">Chat ID</label>
+          <input class="db-input" name="tg_chat_id" value="{{ shop.tg_chat_id }}" placeholder="-1001234567890">
+        </div>
+        <div class="db-form-group">
+          <label class="db-label">Thread ID (необязательно)</label>
+          <input class="db-input" name="tg_thread_id" value="{{ shop.tg_thread_id|default:'' }}">
+        </div>
+      </div>
+    </div>
+    <div class="db-toggle-row">
+      <div>
+        <div class="db-toggle-label">Активен</div>
+        <div class="db-toggle-desc">Барбершоп виден на сайте</div>
+      </div>
+      <label class="db-switch">
+        <input type="checkbox" name="is_active" {% if shop.is_active %}checked{% endif %}>
+        <span class="db-switch-slider"></span>
+      </label>
+    </div>
+    <div style="display:flex;gap:12px;margin-top:20px">
+      <button type="submit" class="db-btn db-btn-primary">💾 Сохранить</button>
+      <a href="{% url 'dashboard:bs_home' %}" class="db-btn db-btn-ghost">← Назад</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

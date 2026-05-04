@@ -1,0 +1,280 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Запись — {{ shop.name }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',sans-serif;background:#0d0d0d;color:#f0f0f0;min-height:100vh}
+    .page{max-width:620px;margin:0 auto;padding:32px 20px 60px}
+    .back{font-size:13px;color:#888;text-decoration:none;display:inline-flex;align-items:center;gap:6px;margin-bottom:24px}
+    .back:hover{color:#ff6b35}
+    h1{font-family:'Unbounded',sans-serif;font-size:22px;font-weight:900;margin-bottom:6px}
+    .sub{font-size:14px;color:#777;margin-bottom:32px}
+    /* Steps */
+    .steps{display:flex;gap:0;margin-bottom:32px}
+    .step{flex:1;text-align:center;position:relative}
+    .step-num{width:32px;height:32px;border-radius:50%;border:2px solid #333;background:#111;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 6px;transition:all .2s}
+    .step.active .step-num{background:linear-gradient(135deg,#ff6b35,#ff4444);border-color:transparent;color:white}
+    .step.done .step-num{background:#1a7a3a;border-color:transparent;color:white}
+    .step-label{font-size:11px;color:#666;transition:color .2s}
+    .step.active .step-label{color:#ff6b35;font-weight:600}
+    .step::after{content:'';position:absolute;top:15px;right:-50%;width:100%;height:2px;background:#222;z-index:-1}
+    .step:last-child::after{display:none}
+    /* Step panels */
+    .panel{display:none}
+    .panel.active{display:block}
+    /* Service selection */
+    .cat-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#555;margin-bottom:8px;margin-top:16px}
+    .svc-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+    .svc-item{background:#1a1a1a;border:2px solid transparent;border-radius:14px;padding:14px;cursor:pointer;transition:all .15s}
+    .svc-item:hover{border-color:rgba(255,107,53,.4)}
+    .svc-item.selected{border-color:#ff6b35;background:rgba(255,107,53,.08)}
+    .svc-item-name{font-weight:600;font-size:14px;margin-bottom:4px}
+    .svc-item-meta{font-size:12px;color:#888;display:flex;justify-content:space-between}
+    .svc-price{color:#ff6b35;font-weight:700}
+    /* Barber selection */
+    .barbers-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+    .barber-item{background:#1a1a1a;border:2px solid transparent;border-radius:14px;overflow:hidden;cursor:pointer;transition:all .15s;text-align:center}
+    .barber-item:hover{border-color:rgba(255,107,53,.4)}
+    .barber-item.selected{border-color:#ff6b35;background:rgba(255,107,53,.08)}
+    .barber-img{height:100px;background:#222;display:flex;align-items:center;justify-content:center;font-size:40px;overflow:hidden}
+    .barber-img img{width:100%;height:100%;object-fit:cover}
+    .barber-name{font-weight:600;font-size:13px;padding:8px 10px 4px}
+    .barber-exp{font-size:11px;color:#888;padding-bottom:8px}
+    /* Date + slots */
+    .date-input{width:100%;padding:14px 16px;background:#1a1a1a;border:2px solid #333;border-radius:12px;color:#f0f0f0;font-size:16px;outline:none;font-family:inherit;margin-bottom:16px}
+    .date-input:focus{border-color:#ff6b35}
+    .slots-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+    .slot{padding:10px 18px;background:#1a1a1a;border:2px solid #333;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;transition:all .15s}
+    .slot:hover{border-color:rgba(255,107,53,.5)}
+    .slot.selected{border-color:#ff6b35;background:rgba(255,107,53,.1);color:#ff6b35}
+    .slot-none{color:#555;font-size:14px;padding:16px 0}
+    /* Contact */
+    .field{margin-bottom:16px}
+    .field label{display:block;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#666;margin-bottom:6px}
+    .field input{width:100%;padding:14px 16px;background:#1a1a1a;border:2px solid #333;border-radius:12px;color:#f0f0f0;font-size:15px;outline:none;font-family:inherit;transition:border-color .2s}
+    .field input:focus{border-color:#ff6b35}
+    /* Summary */
+    .summary{background:#1a1a1a;border-radius:16px;padding:20px;margin-bottom:20px;border:1px solid rgba(255,255,255,.06)}
+    .summary-row{display:flex;justify-content:space-between;font-size:14px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+    .summary-row:last-child{border-bottom:none;font-weight:700;font-size:15px;padding-top:10px;margin-top:4px}
+    /* Buttons */
+    .btn-next{width:100%;padding:16px;background:linear-gradient(135deg,#ff6b35,#ff4444);color:white;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s;margin-top:20px}
+    .btn-next:disabled{opacity:.4;cursor:not-allowed}
+    .btn-back{background:none;border:2px solid #333;color:#aaa;width:100%;padding:14px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:10px;transition:border-color .2s}
+    .btn-back:hover{border-color:#555}
+    .loading{text-align:center;padding:24px;color:#555;font-size:14px}
+  </style>
+</head>
+<body>
+<div class="page">
+  <a href="{% url 'barbershop:venue' shop.slug %}" class="back">← {{ shop.name }}</a>
+  <h1>Онлайн-запись</h1>
+  <div class="sub">{{ shop.name }}</div>
+
+  <div class="steps">
+    <div class="step active" id="step-ind-1"><div class="step-num">1</div><div class="step-label">Услуга</div></div>
+    <div class="step" id="step-ind-2"><div class="step-num">2</div><div class="step-label">Мастер</div></div>
+    <div class="step" id="step-ind-3"><div class="step-num">3</div><div class="step-label">Дата и время</div></div>
+    <div class="step" id="step-ind-4"><div class="step-num">4</div><div class="step-label">Контакты</div></div>
+  </div>
+
+  <!-- Step 1: Service -->
+  <div class="panel active" id="panel-1">
+    <div id="services-list">
+      {% for cat in categories_json|safe %}{% endfor %}
+    </div>
+    <button class="btn-next" id="btn1" disabled onclick="goStep(2)">Далее →</button>
+  </div>
+
+  <!-- Step 2: Barber -->
+  <div class="panel" id="panel-2">
+    <div class="loading" id="barbers-loading">Загрузка мастеров…</div>
+    <div class="barbers-wrap" id="barbers-list" style="display:none"></div>
+    <button class="btn-next" id="btn2" disabled onclick="goStep(3)">Далее →</button>
+    <button class="btn-back" onclick="goStep(1)">← Назад</button>
+  </div>
+
+  <!-- Step 3: Date + Time -->
+  <div class="panel" id="panel-3">
+    <div class="field">
+      <label>Выберите дату</label>
+      <input type="date" class="date-input" id="date-input">
+    </div>
+    <div class="field">
+      <label>Доступное время</label>
+      <div id="slots-wrap"><div class="slot-none">Выберите дату</div></div>
+    </div>
+    <button class="btn-next" id="btn3" disabled onclick="goStep(4)">Далее →</button>
+    <button class="btn-back" onclick="goStep(2)">← Назад</button>
+  </div>
+
+  <!-- Step 4: Contact -->
+  <div class="panel" id="panel-4">
+    <div class="summary" id="summary"></div>
+    <form method="post" action="{% url 'barbershop:book_confirm' shop.slug %}">
+      {% csrf_token %}
+      <input type="hidden" name="service_id" id="f-service">
+      <input type="hidden" name="barber_id" id="f-barber">
+      <input type="hidden" name="appt_date" id="f-date">
+      <input type="hidden" name="appt_time" id="f-time">
+      <div class="field">
+        <label>Ваше имя</label>
+        <input type="text" name="name" placeholder="Имя" required>
+      </div>
+      <div class="field">
+        <label>Телефон</label>
+        <input type="tel" name="phone" placeholder="+996 700 000 000">
+      </div>
+      <button type="submit" class="btn-next">Подтвердить запись ✓</button>
+      <button type="button" class="btn-back" onclick="goStep(3)">← Назад</button>
+    </form>
+  </div>
+</div>
+
+<script>
+const CATEGORIES = {{ categories_json|safe }};
+const SERVICES   = {{ services_json|safe }};
+const BARBERS_URL = "{% url 'barbershop:barbers_json' shop.slug %}";
+const SLOTS_URL   = "{% url 'barbershop:slots_json' shop.slug %}";
+
+let sel = {service:null, barber:null, date:null, time:null};
+
+// Build service list
+function buildServices(){
+  const wrap = document.getElementById('services-list');
+  let html = '';
+  CATEGORIES.forEach(cat => {
+    const svcs = SERVICES.filter(s => s.category === cat.id);
+    if (!svcs.length) return;
+    html += `<div class="cat-label">${cat.name}</div><div class="svc-list">`;
+    svcs.forEach(s => {
+      html += `<div class="svc-item" id="svc-${s.id}" onclick="selectService(${s.id})">
+        <div class="svc-item-name">${s.name}</div>
+        <div class="svc-item-meta">
+          <span>⏱ ${s.duration} мин</span>
+          <span class="svc-price">${s.price} сом</span>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  wrap.innerHTML = html;
+}
+
+function selectService(id){
+  document.querySelectorAll('.svc-item').forEach(el => el.classList.remove('selected'));
+  const el = document.getElementById('svc-' + id);
+  if(el) el.classList.add('selected');
+  sel.service = SERVICES.find(s => s.id === id);
+  sel.barber = null; sel.date = null; sel.time = null;
+  document.getElementById('btn1').disabled = false;
+}
+
+async function loadBarbers(){
+  const wrap = document.getElementById('barbers-list');
+  const loading = document.getElementById('barbers-loading');
+  wrap.style.display = 'none';
+  loading.style.display = 'block';
+  wrap.innerHTML = '';
+  const r = await fetch(BARBERS_URL + '?service=' + sel.service.id);
+  const d = await r.json();
+  loading.style.display = 'none';
+  if(!d.barbers.length){
+    wrap.style.display = 'block';
+    wrap.innerHTML = '<div class="slot-none">Нет доступных мастеров для этой услуги</div>';
+    return;
+  }
+  let html = '';
+  d.barbers.forEach(b => {
+    const photo = b.photo ? `<img src="${b.photo}" alt="">` : '👤';
+    html += `<div class="barber-item" id="barb-${b.id}" onclick="selectBarber(${b.id},'${b.name}')">
+      <div class="barber-img">${photo}</div>
+      <div class="barber-name">${b.name}</div>
+      <div class="barber-exp">${b.experience||''}</div>
+    </div>`;
+  });
+  wrap.innerHTML = html;
+  wrap.style.display = 'grid';
+}
+
+function selectBarber(id, name){
+  document.querySelectorAll('.barber-item').forEach(el=>el.classList.remove('selected'));
+  const el = document.getElementById('barb-'+id);
+  if(el) el.classList.add('selected');
+  sel.barber = {id, name};
+  sel.date = null; sel.time = null;
+  document.getElementById('btn2').disabled = false;
+}
+
+async function loadSlots(dateStr){
+  sel.time = null;
+  document.getElementById('btn3').disabled = true;
+  const wrap = document.getElementById('slots-wrap');
+  wrap.innerHTML = '<div class="slot-none">Загрузка…</div>';
+  const r = await fetch(`${SLOTS_URL}?barber=${sel.barber.id}&service=${sel.service.id}&date=${dateStr}`);
+  const d = await r.json();
+  if(!d.slots.length){
+    wrap.innerHTML = '<div class="slot-none">Нет свободного времени на эту дату</div>';
+    return;
+  }
+  let html = '<div class="slots-grid">';
+  d.slots.forEach(t => {
+    html += `<div class="slot" id="slot-${t}" onclick="selectSlot('${t}')">${t}</div>`;
+  });
+  html += '</div>';
+  wrap.innerHTML = html;
+}
+
+function selectSlot(t){
+  document.querySelectorAll('.slot').forEach(el=>el.classList.remove('selected'));
+  const el = document.getElementById('slot-'+t);
+  if(el) el.classList.add('selected');
+  sel.time = t;
+  document.getElementById('btn3').disabled = false;
+}
+
+function buildSummary(){
+  const dateDisp = sel.date ? new Date(sel.date).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric',weekday:'short'}) : '';
+  document.getElementById('summary').innerHTML = `
+    <div class="summary-row"><span>✂️ Услуга</span><span>${sel.service.name}</span></div>
+    <div class="summary-row"><span>👤 Мастер</span><span>${sel.barber.name}</span></div>
+    <div class="summary-row"><span>📅 Дата и время</span><span>${dateDisp}, ${sel.time}</span></div>
+    <div class="summary-row"><span>💰 Стоимость</span><span>${sel.service.price} сом</span></div>
+  `;
+  document.getElementById('f-service').value = sel.service.id;
+  document.getElementById('f-barber').value = sel.barber.id;
+  document.getElementById('f-date').value = sel.date;
+  document.getElementById('f-time').value = sel.time;
+}
+
+let currentStep = 1;
+function goStep(n){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.step').forEach((s,i)=>{
+    s.classList.remove('active','done');
+    if(i+1 < n) s.classList.add('done');
+    if(i+1 === n) s.classList.add('active');
+  });
+  document.getElementById('panel-'+n).classList.add('active');
+  currentStep = n;
+  if(n===2) loadBarbers();
+  if(n===4) buildSummary();
+}
+
+// Date picker min = today
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('date-input').min = today;
+document.getElementById('date-input').addEventListener('change', function(){
+  sel.date = this.value;
+  if(sel.date && sel.barber && sel.service) loadSlots(sel.date);
+});
+
+buildServices();
+</script>
+</body>
+</html>

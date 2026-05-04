@@ -1,0 +1,52 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Барбершопы — Webordo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',sans-serif;background:#0d0d0d;color:#f0f0f0;min-height:100vh}
+    .hero{text-align:center;padding:80px 24px 48px}
+    .hero h1{font-family:'Unbounded',sans-serif;font-size:clamp(28px,5vw,52px);font-weight:900;letter-spacing:-1px;margin-bottom:12px}
+    .hero p{font-size:16px;color:#aaa;max-width:480px;margin:0 auto}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;max-width:1100px;margin:0 auto;padding:0 24px 60px}
+    .card{background:#1a1a1a;border-radius:20px;overflow:hidden;text-decoration:none;color:inherit;transition:transform .2s,box-shadow .2s;border:1px solid rgba(255,255,255,.06)}
+    .card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.5)}
+    .card-cover{height:180px;background:#222;display:flex;align-items:center;justify-content:center;font-size:56px;position:relative;overflow:hidden}
+    .card-cover img{width:100%;height:100%;object-fit:cover}
+    .card-body{padding:20px}
+    .card-name{font-family:'Unbounded',sans-serif;font-weight:700;font-size:16px;margin-bottom:6px}
+    .card-info{font-size:13px;color:#888;line-height:1.6}
+    .card-btn{display:inline-block;margin-top:14px;padding:10px 22px;background:linear-gradient(135deg,#ff6b35,#ff4444);color:white;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none}
+  </style>
+</head>
+<body>
+<div class="hero">
+  <h1>✂️ Барбершопы</h1>
+  <p>Запишитесь онлайн за несколько секунд</p>
+</div>
+<div class="grid">
+  {% for shop in shops %}
+  <a href="{% url 'barbershop:venue' shop.slug %}" class="card">
+    <div class="card-cover">
+      {% if shop.cover %}<img src="{{ shop.cover.url }}" alt="">{% else %}✂️{% endif %}
+    </div>
+    <div class="card-body">
+      <div class="card-name">{{ shop.name }}</div>
+      <div class="card-info">
+        {% if shop.address %}📍 {{ shop.address }}<br>{% endif %}
+        {% if shop.working_hours %}🕐 {{ shop.working_hours }}<br>{% endif %}
+        {% if shop.phone %}📞 {{ shop.phone }}{% endif %}
+      </div>
+      <span class="card-btn">Записаться →</span>
+    </div>
+  </a>
+  {% empty %}
+  <div style="grid-column:1/-1;text-align:center;padding:60px;color:#555">Нет доступных барбершопов</div>
+  {% endfor %}
+</div>
+</body>
+</html>

@@ -1,0 +1,222 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ shop.name }} — Записи{% endblock %}
+{% block nav_barbershop %}active{% endblock %}
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">{{ shop.name }}</div>
+    <div class="db-breadcrumb"><a href="{% url 'dashboard:bs_home' %}">Барбершопы</a> / Записи</div>
+  </div>
+  <button onclick="document.getElementById('add-modal').style.display='flex'" class="db-btn db-btn-primary db-btn-sm">➕ Добавить офлайн</button>
+</div>
+
+<!-- Filters -->
+<div class="db-card" style="padding:16px 20px">
+  <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+    <div>
+      <label class="db-label">Статус</label>
+      <select name="status" class="db-input" style="min-width:140px">
+        <option value="">Все</option>
+        {% for val,label in statuses %}
+        <option value="{{ val }}" {% if status_f == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="db-label">Мастер</label>
+      <select name="barber" class="db-input" style="min-width:140px">
+        <option value="">Все</option>
+        {% for b in barbers %}
+        <option value="{{ b.id }}" {% if barber_f == b.id|stringformat:'s' %}selected{% endif %}>{{ b.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="db-label">Дата</label>
+      <input type="date" name="date" value="{{ date_f }}" class="db-input">
+    </div>
+    <button type="submit" class="db-btn db-btn-ghost">Фильтр</button>
+    <a href="{% url 'dashboard:bs_appointments' shop.id %}?all=1" class="db-btn db-btn-ghost">Все записи</a>
+    <a href="{% url 'dashboard:bs_appointments' shop.id %}" class="db-btn db-btn-ghost">Сегодня</a>
+  </form>
+</div>
+
+<!-- Appointments table -->
+<div class="db-card" style="padding:0;overflow:hidden">
+  <table style="width:100%;border-collapse:collapse">
+    <thead>
+      <tr style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border)">
+        <th style="padding:14px 20px;text-align:left">#</th>
+        <th style="padding:14px 12px;text-align:left">Клиент</th>
+        <th style="padding:14px 12px;text-align:left">Услуга</th>
+        <th style="padding:14px 12px;text-align:left">Мастер</th>
+        <th style="padding:14px 12px;text-align:left">Дата / Время</th>
+        <th style="padding:14px 12px;text-align:center">Статус</th>
+        <th style="padding:14px 12px;text-align:center">Оплата</th>
+        <th style="padding:14px 12px;text-align:center">Действия</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for appt in appointments %}
+      <tr style="border-bottom:1px solid var(--border)" id="appt-{{ appt.id }}">
+        <td style="padding:12px 20px;font-size:13px;color:var(--muted)">#{{ appt.id }}</td>
+        <td style="padding:12px">
+          <div style="font-weight:600;font-size:14px">{{ appt.customer_name }}</div>
+          {% if appt.customer_phone %}<div style="font-size:12px;color:var(--muted)">{{ appt.customer_phone }}</div>{% endif %}
+          {% if appt.source == 'offline' %}<span style="font-size:10px;background:rgba(124,58,237,.1);color:#7C3AED;padding:2px 6px;border-radius:6px">офлайн</span>{% endif %}
+        </td>
+        <td style="padding:12px">
+          <div style="font-size:14px">{{ appt.service_name }}</div>
+          <div style="font-size:12px;color:var(--muted)">{{ appt.price_snapshot }} сом · {{ appt.duration_min }} мин</div>
+        </td>
+        <td style="padding:12px;font-size:14px">{{ appt.barber_name }}</td>
+        <td style="padding:12px">
+          <div style="font-size:14px;font-weight:600">{{ appt.appt_date|date:"d.m.Y" }}</div>
+          <div style="font-size:13px;color:var(--muted)">{{ appt.appt_time|time:"H:i" }}</div>
+        </td>
+        <td style="padding:12px;text-align:center">
+          <select onchange="updateStatus({{ appt.id }}, this.value)" style="padding:5px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-size:12px;font-weight:600;cursor:pointer;color:var(--text2)">
+            {% for val,label in statuses %}
+            <option value="{{ val }}" {% if appt.status == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td style="padding:12px;text-align:center">
+          <button onclick="togglePayment({{ appt.id }}, this)"
+            style="padding:5px 12px;border-radius:8px;border:1.5px solid;font-size:12px;font-weight:600;cursor:pointer;background:none;
+                   {% if appt.is_paid %}background:rgba(0,184,150,.08);border-color:rgba(0,184,150,.3);color:var(--teal){% else %}border-color:var(--border);color:var(--muted){% endif %}">
+            {% if appt.is_paid %}✓ {{ appt.get_payment_method_display }}{% else %}Не оплачено{% endif %}
+          </button>
+        </td>
+        <td style="padding:12px;text-align:center">
+          <form method="post" action="{% url 'dashboard:bs_appointment_delete' appt.id %}" onsubmit="return confirm('Удалить запись?')" style="display:inline">
+            {% csrf_token %}
+            <button type="submit" class="db-btn db-btn-ghost db-btn-sm" style="color:var(--accent)">🗑</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" style="padding:40px;text-align:center;color:var(--muted)">Нет записей</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Offline booking modal -->
+<div id="add-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--card);border-radius:20px;padding:28px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:16px">➕ Новая запись (офлайн)</div>
+      <button onclick="document.getElementById('add-modal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">×</button>
+    </div>
+    <form method="post" action="{% url 'dashboard:bs_appointment_add' shop.id %}">
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="db-form-group">
+          <label class="db-label">Имя клиента</label>
+          <input class="db-input" name="customer_name" placeholder="Имя" required>
+        </div>
+        <div class="db-form-group">
+          <label class="db-label">Телефон</label>
+          <input class="db-input" name="customer_phone" placeholder="+996...">
+        </div>
+        <div class="db-form-group">
+          <label class="db-label">Мастер</label>
+          <select class="db-input" name="barber_id" id="modal-barber" onchange="loadModalServices()" required>
+            <option value="">— Выберите мастера —</option>
+            {% for b in barbers %}
+            <option value="{{ b.id }}">{{ b.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="db-form-group">
+          <label class="db-label">Услуга</label>
+          <select class="db-input" name="service_id" id="modal-service" required>
+            <option value="">— Сначала мастер —</option>
+          </select>
+        </div>
+        <div class="db-form-group">
+          <label class="db-label">Дата</label>
+          <input type="date" class="db-input" name="appt_date" required>
+        </div>
+        <div class="db-form-group">
+          <label class="db-label">Время</label>
+          <input type="time" class="db-input" name="appt_time" required>
+        </div>
+        <div class="db-form-group">
+          <label class="db-label">Статус</label>
+          <select class="db-input" name="status">
+            {% for val,label in statuses %}
+            <option value="{{ val }}" {% if val == 'confirmed' %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="db-form-group">
+          <label class="db-label">Способ оплаты</label>
+          <select class="db-input" name="payment_method">
+            <option value="">—</option>
+            <option value="cash">Наличные</option>
+            <option value="transfer">Перевод</option>
+            <option value="card">Карта</option>
+            <option value="other">Другое</option>
+          </select>
+        </div>
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Заметки</label>
+        <textarea class="db-textarea" name="notes" style="min-height:50px"></textarea>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+        <label class="db-switch"><input type="checkbox" name="is_paid" id="modal-paid"><span class="db-switch-slider"></span></label>
+        <span style="font-size:14px">Оплачено</span>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button type="submit" class="db-btn db-btn-primary">✓ Создать запись</button>
+        <button type="button" onclick="document.getElementById('add-modal').style.display='none'" class="db-btn db-btn-ghost">Отмена</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const SHOP_SERVICES = {
+  {% for b in barbers %}
+  {{ b.id }}: [{% for bs in b.barber_services.all %}{"id":{{ bs.service.id }},"name":"{{ bs.service.name }}","price":{{ bs.service.price }}}{% if not forloop.last %},{% endif %}{% endfor %}],
+  {% endfor %}
+};
+
+function loadModalServices(){
+  const bid = document.getElementById('modal-barber').value;
+  const sel = document.getElementById('modal-service');
+  sel.innerHTML = '<option value="">— Выберите услугу —</option>';
+  if(!bid || !SHOP_SERVICES[bid]) return;
+  SHOP_SERVICES[bid].forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id; opt.textContent = `${s.name} (${s.price} сом)`;
+    sel.appendChild(opt);
+  });
+}
+
+async function updateStatus(id, status){
+  await fetch("{% url 'dashboard:bs_appointment_status' 9999 %}".replace('9999',id),
+    {method:'POST', headers:{'X-CSRFToken':'{{ csrf_token }}','Content-Type':'application/x-www-form-urlencoded'},
+     body:'status='+status});
+}
+
+async function togglePayment(id, btn){
+  const r = await fetch("{% url 'dashboard:bs_appointment_payment' 9999 %}".replace('9999',id),
+    {method:'POST', headers:{'X-CSRFToken':'{{ csrf_token }}','Content-Type':'application/x-www-form-urlencoded'},
+     body:'payment_method=cash'});
+  const d = await r.json();
+  if(d.ok){
+    if(d.is_paid){
+      btn.style.background='rgba(0,184,150,.08)'; btn.style.borderColor='rgba(0,184,150,.3)';
+      btn.style.color='var(--teal)'; btn.textContent='✓ Наличные';
+    } else {
+      btn.style.background='none'; btn.style.borderColor='var(--border)';
+      btn.style.color='var(--muted)'; btn.textContent='Не оплачено';
+    }
+  }
+}
+</script>
+{% endblock %}
