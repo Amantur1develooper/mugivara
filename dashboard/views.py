@@ -264,15 +264,6 @@ def item_add(request, branch_id):
             item.photo = photo
         item.save()
 
-        c = item.photo_compression
-        if c:
-            photo_msg = (
-                f" | Фото: {c['before_kb']} KB → {c['after_kb']} KB "
-                f"(−{c['saved_pct']}%, {c['orig_size']} → {c['new_size']})"
-            )
-        else:
-            photo_msg = ""
-
         # создаём BranchItem
         bi = BranchItem.objects.create(
             branch=branch,
@@ -329,7 +320,7 @@ def item_add(request, branch_id):
         else:
             ensure_links_for_branch_item(bi)
 
-        messages.success(request, f"Блюдо «{name}» добавлено{photo_msg}")
+        messages.success(request, f"Блюдо «{name}» добавлено")
         return redirect("dashboard:branch_items", branch_id=branch.id)
 
     return render(request, "dashboard/item_add.html", {
@@ -395,15 +386,7 @@ def item_edit(request, branch_item_id):
             # "Без категории" — remove all category assignments
             bi.categories_in_branch.all().delete()
 
-        c = item.photo_compression
-        if c:
-            photo_msg = (
-                f" | Фото: {c['before_kb']} KB → {c['after_kb']} KB "
-                f"(−{c['saved_pct']}%, {c['orig_size']} → {c['new_size']})"
-            )
-            messages.success(request, f"Блюдо обновлено{photo_msg}")
-        else:
-            messages.success(request, "Блюдо обновлено")
+        messages.success(request, "Блюдо обновлено")
         return redirect("dashboard:branch_items", branch_id=bi.branch_id)
 
     return render(request, "dashboard/item_edit.html", {
