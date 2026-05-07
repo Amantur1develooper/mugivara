@@ -88,8 +88,9 @@
           <a href="{% url 'dashboard:hotel_room_list' branch.id %}" class="btn-p">🛏 Номера</a>
         </div>
         <div class="h-btns">
-          <a href="{% url 'dashboard:hotel_bookings' branch.id %}" class="btn-s" style="flex:none;width:100%;text-align:center">
-            📋 Бронирования
+          <a href="{% url 'dashboard:hotel_services' branch.id %}" class="btn-s">🛁 Услуги</a>
+          <a href="{% url 'dashboard:hotel_bookings' branch.id %}" class="btn-s">
+            📋 Брони
             {% with cnt=branch.bookings.count %}{% if cnt %} ({{ cnt }}){% endif %}{% endwith %}
           </a>
         </div>

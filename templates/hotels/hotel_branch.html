@@ -474,20 +474,25 @@
         {% csrf_token %}
         <input type="hidden" name="book_type" id="bmType" value="booking">
 
+        <div>
+          <label class="bm-lbl">Дата заезда *</label>
+          <input class="bm-inp" type="date" name="checkin" id="bmCheckin" required>
+        </div>
+
         <div class="bm-2col">
-          <div>
-            <label class="bm-lbl">Дата заезда *</label>
-            <input class="bm-inp" type="date" name="checkin" id="bmCheckin" required>
-          </div>
           <div>
             <label class="bm-lbl">Ночей *</label>
             <input class="bm-inp" type="number" name="nights" id="bmNights" min="1" value="1" required>
           </div>
+          <div>
+            <label class="bm-lbl" id="bmGuestsLbl">Гостей</label>
+            <input class="bm-inp" type="number" name="guests" id="bmGuests" min="1" value="1" required>
+          </div>
         </div>
 
         <div>
-          <label class="bm-lbl">Гостей</label>
-          <input class="bm-inp" type="number" name="guests" id="bmGuests" min="1" value="1">
+          <label class="bm-lbl">Количество номеров</label>
+          <input class="bm-inp" type="number" name="rooms_count" id="bmRooms" min="1" max="10" value="1" required>
         </div>
 
         <div>
@@ -521,9 +526,129 @@
 </div>
 
 
+{% if services %}
+<!-- ══ SERVICES SECTION ══ -->
+<div class="hb-wrap" style="padding-top:0;padding-bottom:0">
+  <div class="hb-cat" style="margin-top:40px">
+    <div class="hb-cat-line"></div>
+    <div class="hb-cat-label">Услуги</div>
+    <div class="hb-cat-line"></div>
+  </div>
+  <div class="hb-grid" style="margin-bottom:40px">
+    {% for svc in services %}
+    <div class="rc" style="cursor:default">
+      <!-- Фото -->
+      <div class="rc-photo" onclick="openServiceDetail({{ svc.id }})" style="cursor:pointer">
+        {% if svc.photo1 %}
+          <img src="{{ svc.photo1.url }}" alt="{{ svc.name_ru }}" loading="lazy">
+          <div class="rc-photo-grad"></div>
+        {% else %}
+          <div class="rc-photo-empty"><span>🛁</span></div>
+        {% endif %}
+        {% if svc.photos|length > 1 %}
+          <div class="rc-photo-cnt">📷 {{ svc.photos|length }}</div>
+        {% endif %}
+        <div class="rc-photo-price">
+          {{ svc.price|floatformat:"0" }} <span>сом</span>
+        </div>
+      </div>
+      <!-- Тело -->
+      <div class="rc-body">
+        <div class="rc-name">{{ svc.name_ru }}</div>
+        {% with active_sessions=svc.sessions.all %}
+        {% if active_sessions %}
+        <div class="rc-chips">
+          {% for sess in active_sessions %}
+            {% if sess.is_active %}<span class="rc-chip gray">🕐 {{ sess.label }}</span>{% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+        {% if svc.description_ru %}
+          <div class="rc-desc">{{ svc.description_ru }}</div>
+        {% endif %}
+        <div class="rc-actions" style="grid-template-columns:1fr">
+          <button class="rc-btn rc-btn-blue" onclick="openServiceBook({{ svc.id }})">📅 Забронировать</button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ══ SERVICE DETAIL MODAL ══ -->
+<div class="m-overlay" id="svcDetailOverlay">
+  <div class="m-box">
+    <button class="m-close" onclick="closeSvcDetail()">✕</button>
+    <div class="dm-gallery" id="svcGallery">
+      <img class="dm-main" id="svcMain" src="" alt="">
+      <div class="dm-no-photo" id="svcNoPhoto" style="display:none">🛁</div>
+      <div class="dm-thumbs" id="svcThumbs"></div>
+    </div>
+    <div class="dm-body">
+      <div class="dm-name" id="svcName"></div>
+      <div class="dm-price" id="svcPrice"></div>
+      <div class="dm-sec" id="svcSessionsSec">Сеансы</div>
+      <div class="dm-tags" id="svcSessions"></div>
+      <div class="dm-sec">Описание</div>
+      <div class="dm-desc" id="svcDesc"></div>
+      <div class="dm-actions" style="grid-template-columns:1fr">
+        <button class="dm-btn dm-btn-blue" onclick="closeSvcDetail();openServiceBook(curSvc&&curSvc.id)">📅 Забронировать</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SERVICE BOOKING MODAL ══ -->
+<div class="m-overlay" id="svcBookOverlay">
+  <div class="m-box">
+    <button class="m-close" onclick="closeSvcBook()">✕</button>
+    <div class="bm-head">
+      <div class="bm-type-badge blue">Услуга</div>
+      <div class="bm-title" id="svcBmTitle">Забронировать</div>
+      <div class="bm-subtitle" id="svcBmSub"></div>
+    </div>
+    <div class="bm-body">
+      <form method="post" id="svcBmForm" class="bm-grid">
+        {% csrf_token %}
+        <div>
+          <label class="bm-lbl">Дата *</label>
+          <input class="bm-inp" type="date" name="booking_date" id="svcBmDate" required>
+        </div>
+        <div id="svcSessionBlock">
+          <label class="bm-lbl">Сеанс *</label>
+          <select class="bm-inp" name="session_id" id="svcBmSession" required>
+            <option value="">— Выберите сеанс —</option>
+          </select>
+        </div>
+        <div>
+          <label class="bm-lbl">Ваше имя *</label>
+          <input class="bm-inp" type="text" name="name" placeholder="Имя" required>
+        </div>
+        <div>
+          <label class="bm-lbl">Телефон *</label>
+          <input class="bm-inp" type="tel" name="phone" id="svcBmPhone"
+                 value="+996" placeholder="+996700123456" required>
+        </div>
+        <div>
+          <label class="bm-lbl">Комментарий</label>
+          <textarea class="bm-inp" name="comment" rows="2" placeholder="Особые пожелания…"></textarea>
+        </div>
+        <div class="bm-total">
+          <span class="bm-total-lbl" id="svcBmLbl">Стоимость</span>
+          <span class="bm-total-sum" id="svcBmTotal">0 сом</span>
+        </div>
+        <button type="submit" class="bm-submit blue">💬 Подтвердить в WhatsApp</button>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- ══ JS DATA & LOGIC ══ -->
 <script>
 const ROOMS = {{ rooms_json|safe }};
+const SERVICES = {{ services_json|default:"[]"|safe }};
 let cur = null;
 
 /* ─── helpers ─── */
@@ -641,6 +766,12 @@ function openBook(type) {
 
   $('bmForm').action = cur.book_url;
 
+  // guests limit
+  const guestInp = $('bmGuests');
+  guestInp.max = cur.max_guests;
+  $('bmGuestsLbl').textContent = `Гостей (макс. ${cur.max_guests})`;
+  if (parseInt(guestInp.value) > cur.max_guests) guestInp.value = 1;
+
   // today
   const today = new Date().toISOString().slice(0, 10);
   $('bmCheckin').min = today;
@@ -671,16 +802,24 @@ function calcPricePerNight(price, priceExtra, guests) {
   return price + priceExtra * Math.max(0, guests - 1);
 }
 
+function roomsWord(r) {
+  if (r === 1) return '1 номер';
+  if (r >= 2 && r <= 4) return r + ' номера';
+  return r + ' номеров';
+}
+
 function updateTotal() {
   if (!cur) return;
   const n = Math.max(1, parseInt($('bmNights').value) || 1);
-  const g = Math.max(1, parseInt($('bmGuests').value) || 1);
+  const g = Math.max(1, Math.min(parseInt($('bmGuests').value) || 1, cur.max_guests));
+  const r = Math.max(1, parseInt($('bmRooms').value) || 1);
+  $('bmGuests').value = g;
   const perNight = calcPricePerNight(cur.price, cur.price_extra, g);
-  const total = perNight * n;
+  const total = perNight * n * r;
 
   $('bmTotalSum').textContent = total.toLocaleString() + ' сом';
 
-  let lbl = nightsWord(n) + ', ' + g + ' чел.';
+  let lbl = roomsWord(r) + ' · ' + nightsWord(n) + ' · ' + g + ' ' + (g === 1 ? 'гость' : g < 5 ? 'гостя' : 'гостей');
   if (cur.price_extra > 0 && g > 1) {
     lbl += ` · ${perNight.toLocaleString()} сом/ночь`;
   }
@@ -689,6 +828,7 @@ function updateTotal() {
 
 $('bmNights').addEventListener('input', updateTotal);
 $('bmGuests').addEventListener('input', updateTotal);
+$('bmRooms').addEventListener('input', updateTotal);
 
 /* ─── phone prefix ─── */
 (function () {
@@ -708,8 +848,125 @@ $('bmGuests').addEventListener('input', updateTotal);
 
 /* ─── ESC ─── */
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeDetail(); closeBook(); }
+  if (e.key === 'Escape') { closeDetail(); closeBook(); closeSvcDetail(); closeSvcBook(); }
 });
+
+/* ════════════════════════════════════════
+   SERVICES
+════════════════════════════════════════ */
+let curSvc = null;
+
+function openServiceDetail(id) {
+  curSvc = SERVICES.find(s => s.id === id);
+  if (!curSvc) return;
+
+  const main = $('svcMain'), noPhoto = $('svcNoPhoto'), thumbs = $('svcThumbs');
+  thumbs.innerHTML = '';
+  if (curSvc.photos.length) {
+    main.src = curSvc.photos[0]; main.style.display = 'block'; noPhoto.style.display = 'none';
+    if (curSvc.photos.length > 1) {
+      curSvc.photos.forEach((url, i) => {
+        const d = document.createElement('div');
+        d.className = 'dm-thumb' + (i === 0 ? ' on' : '');
+        d.innerHTML = `<img src="${url}" loading="lazy">`;
+        d.onclick = () => {
+          main.style.opacity = '0';
+          setTimeout(() => { main.src = url; main.style.opacity = '1'; }, 150);
+          thumbs.querySelectorAll('.dm-thumb').forEach(t => t.classList.remove('on'));
+          d.classList.add('on');
+        };
+        thumbs.appendChild(d);
+      });
+    }
+  } else {
+    main.style.display = 'none'; noPhoto.style.display = 'flex';
+  }
+
+  $('svcName').textContent = curSvc.name;
+  $('svcPrice').textContent = curSvc.price.toLocaleString() + ' сом';
+  $('svcDesc').textContent = curSvc.description || '—';
+
+  const tags = $('svcSessions'), sec = $('svcSessionsSec');
+  tags.innerHTML = '';
+  if (curSvc.sessions.length) {
+    sec.style.display = ''; tags.style.display = '';
+    curSvc.sessions.forEach(s => {
+      const sp = document.createElement('span');
+      sp.className = 'dm-tag'; sp.textContent = '🕐 ' + s.label;
+      tags.appendChild(sp);
+    });
+  } else {
+    sec.style.display = 'none'; tags.style.display = 'none';
+  }
+
+  $('svcDetailOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSvcDetail() {
+  $('svcDetailOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+$('svcDetailOverlay').addEventListener('click', e => { if (e.target === $('svcDetailOverlay')) closeSvcDetail(); });
+
+function openServiceBook(id) {
+  if (id) curSvc = SERVICES.find(s => s.id === id);
+  if (!curSvc) return;
+  closeSvcDetail();
+
+  $('svcBmTitle').textContent = curSvc.name;
+  $('svcBmLbl').textContent = 'Стоимость';
+  $('svcBmTotal').textContent = curSvc.price.toLocaleString() + ' сом';
+  $('svcBmForm').action = curSvc.book_url;
+
+  // fill sessions
+  const sel = $('svcBmSession');
+  sel.innerHTML = '<option value="">— Выберите сеанс —</option>';
+  const block = $('svcSessionBlock');
+  if (curSvc.sessions.length) {
+    block.style.display = '';
+    curSvc.sessions.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id; opt.textContent = s.label;
+      sel.appendChild(opt);
+    });
+  } else {
+    block.style.display = 'none';
+    sel.removeAttribute('required');
+  }
+
+  // today
+  const today = new Date().toISOString().slice(0, 10);
+  $('svcBmDate').min = today;
+  if (!$('svcBmDate').value || $('svcBmDate').value < today) $('svcBmDate').value = today;
+
+  $('svcBookOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSvcBook() {
+  $('svcBookOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+$('svcBookOverlay').addEventListener('click', e => { if (e.target === $('svcBookOverlay')) closeSvcBook(); });
+
+/* phone prefix for service modal */
+(function () {
+  const ph = $('svcBmPhone'), pfx = '+996';
+  const norm = () => {
+    let v = (ph.value || '').replace(/[^\d+]/g, '');
+    if (!v.startsWith(pfx)) v = pfx + v.replace(/^\+?9?9?6?/, '').replace(/^\+/, '');
+    ph.value = v;
+  };
+  ph.addEventListener('focus', () => { if (!ph.value) ph.value = pfx; norm(); });
+  ph.addEventListener('input', norm);
+  ph.addEventListener('keydown', e => {
+    if ((ph.selectionStart || 0) <= pfx.length && (e.key === 'Backspace' || e.key === 'Delete'))
+      e.preventDefault();
+  });
+})();
 </script>
 
 {% endblock %}

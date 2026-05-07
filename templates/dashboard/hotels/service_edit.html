@@ -1,0 +1,110 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{% if service %}Изменить услугу{% else %}Новая услуга{% endif %}{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">{% if service %}Изменить услугу{% else %}Новая услуга{% endif %}</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:hotel_home' %}">Мои отели</a> /
+      {{ hotel.name_ru }} / {{ branch.name_ru }} /
+      <a href="{% url 'dashboard:hotel_services' branch.id %}">Услуги</a>
+    </div>
+  </div>
+</div>
+
+{% if messages %}
+  {% for m in messages %}
+    <div class="db-card" style="padding:12px 16px;margin-bottom:16px;font-size:14px">{{ m }}</div>
+  {% endfor %}
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+{% csrf_token %}
+
+<div class="db-card">
+  <div class="db-card-title">📋 Основное</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="db-form-group" style="grid-column:1/-1">
+      <label class="db-label">Название *</label>
+      <input class="db-input" name="name_ru" value="{{ service.name_ru|default:'' }}" required placeholder="Баня, Массаж, Бассейн…">
+    </div>
+    <div class="db-form-group">
+      <label class="db-label">Цена (сом)</label>
+      <input class="db-input" type="number" name="price" min="0" step="1"
+             value="{{ service.price|default:'' }}" placeholder="2000">
+    </div>
+    <div class="db-form-group">
+      <label class="db-label">Порядок сортировки</label>
+      <input class="db-input" type="number" name="sort_order" min="0"
+             value="{{ service.sort_order|default:0 }}">
+    </div>
+    <div class="db-form-group" style="grid-column:1/-1">
+      <label class="db-label">Описание</label>
+      <textarea class="db-textarea" name="description_ru" style="min-height:90px"
+                placeholder="Вместимость, время работы, особенности…">{{ service.description_ru|default:'' }}</textarea>
+    </div>
+    <div class="db-form-group" style="display:flex;align-items:center;gap:10px">
+      <label class="db-switch">
+        <input type="checkbox" name="is_active" {% if service == None or service.is_active %}checked{% endif %}>
+        <span class="db-switch-slider"></span>
+      </label>
+      <span class="db-label" style="margin:0">Показывать на сайте</span>
+    </div>
+  </div>
+</div>
+
+<div class="db-card" style="margin-top:16px">
+  <div class="db-card-title">📷 Фотографии (до 3 штук)</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+
+    <div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">Фото 1 (главное)</div>
+      {% if service and service.photo1 %}
+        <img src="{{ service.photo1.url }}" style="width:100%;max-height:140px;object-fit:cover;border-radius:12px;margin-bottom:8px;display:block" id="prev1">
+      {% else %}
+        <img style="display:none;width:100%;max-height:140px;object-fit:cover;border-radius:12px;margin-bottom:8px" id="prev1">
+      {% endif %}
+      <input class="db-input" type="file" name="photo1" accept="image/*" onchange="prevPhoto(this,'prev1')">
+    </div>
+
+    <div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">Фото 2</div>
+      {% if service and service.photo2 %}
+        <img src="{{ service.photo2.url }}" style="width:100%;max-height:140px;object-fit:cover;border-radius:12px;margin-bottom:8px;display:block" id="prev2">
+      {% else %}
+        <img style="display:none;width:100%;max-height:140px;object-fit:cover;border-radius:12px;margin-bottom:8px" id="prev2">
+      {% endif %}
+      <input class="db-input" type="file" name="photo2" accept="image/*" onchange="prevPhoto(this,'prev2')">
+    </div>
+
+    <div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600">Фото 3</div>
+      {% if service and service.photo3 %}
+        <img src="{{ service.photo3.url }}" style="width:100%;max-height:140px;object-fit:cover;border-radius:12px;margin-bottom:8px;display:block" id="prev3">
+      {% else %}
+        <img style="display:none;width:100%;max-height:140px;object-fit:cover;border-radius:12px;margin-bottom:8px" id="prev3">
+      {% endif %}
+      <input class="db-input" type="file" name="photo3" accept="image/*" onchange="prevPhoto(this,'prev3')">
+    </div>
+
+  </div>
+</div>
+
+<div style="display:flex;gap:12px;margin-top:16px">
+  <button type="submit" class="db-btn db-btn-primary">💾 Сохранить</button>
+  <a href="{% url 'dashboard:hotel_services' branch.id %}" class="db-btn db-btn-ghost">← Назад</a>
+</div>
+</form>
+
+<script>
+function prevPhoto(input, imgId) {
+  const img = document.getElementById(imgId);
+  if (input.files && input.files[0]) {
+    const r = new FileReader();
+    r.onload = e => { img.src = e.target.result; img.style.display = 'block'; };
+    r.readAsDataURL(input.files[0]);
+  }
+}
+</script>
+{% endblock %}

@@ -6,7 +6,7 @@ from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.urls import reverse
 
-from .models import Hotel, HotelBranch, RoomCategory, Room, HotelBooking
+from .models import Hotel, HotelBranch, RoomCategory, Room, HotelBooking, HotelService, HotelServiceSession, HotelServiceBooking
 
 
 def _get_bot_token():
@@ -84,12 +84,36 @@ def hotel_branch(request, branch_id):
         for r in all_rooms
     ], ensure_ascii=False)
 
+    services = (
+        HotelService.objects
+        .filter(branch=branch, is_active=True)
+        .prefetch_related("sessions")
+        .order_by("sort_order", "id")
+    )
+    services_json = json.dumps([
+        {
+            "id": s.id,
+            "name": s.name_ru,
+            "price": float(s.price),
+            "description": s.description_ru or "",
+            "photos": [p.url for p in s.photos],
+            "sessions": [
+                {"id": ss.id, "label": ss.label}
+                for ss in s.sessions.filter(is_active=True)
+            ],
+            "book_url": reverse("hotels:service_book", args=[s.id]),
+        }
+        for s in services
+    ], ensure_ascii=False)
+
     return render(request, "hotels/hotel_branch.html", {
         "branch": branch,
         "hotel": branch.hotel,
         "categories": categories,
         "uncategorized": uncategorized,
         "rooms_json": rooms_json,
+        "services": services,
+        "services_json": services_json,
     })
 
 
@@ -98,13 +122,14 @@ def room_book(request, room_id):
     room = get_object_or_404(Room, id=room_id, is_available=True)
     branch = room.branch
 
-    name      = (request.POST.get("name") or "").strip() or "Гость"
-    phone     = (request.POST.get("phone") or "").strip()
-    checkin   = (request.POST.get("checkin") or "").strip()
-    nights    = (request.POST.get("nights") or "1").strip()
-    guests    = (request.POST.get("guests") or "1").strip()
-    comment   = (request.POST.get("comment") or "").strip()
-    book_type = request.POST.get("book_type", "booking")  # booking | checkin
+    name        = (request.POST.get("name") or "").strip() or "Гость"
+    phone       = (request.POST.get("phone") or "").strip()
+    checkin     = (request.POST.get("checkin") or "").strip()
+    nights      = (request.POST.get("nights") or "1").strip()
+    guests      = (request.POST.get("guests") or "1").strip()
+    rooms       = (request.POST.get("rooms_count") or "1").strip()
+    comment     = (request.POST.get("comment") or "").strip()
+    book_type   = request.POST.get("book_type", "booking")  # booking | checkin
 
     if not phone:
         messages.error(request, "Укажите телефон")
@@ -120,9 +145,14 @@ def room_book(request, room_id):
     except ValueError:
         guests_int = 1
 
-    # цена за ночь = базовая + доплата за каждого гостя сверх первого
+    try:
+        rooms_int = max(1, int(rooms))
+    except ValueError:
+        rooms_int = 1
+
+    # цена за ночь = (базовая + доплата за гостей) × кол-во номеров
     price_per_night = room.price_per_night + room.price_per_extra_guest * max(0, guests_int - 1)
-    total = price_per_night * nights_int
+    total = price_per_night * nights_int * rooms_int
 
     # Формат даты: дд.мм.гггг
     try:
@@ -133,29 +163,32 @@ def room_book(request, room_id):
 
     nights_word = "ночь" if nights_int == 1 else ("ночи" if 2 <= nights_int <= 4 else "ночей")
     guests_word = "гость" if guests_int == 1 else ("гостя" if 2 <= guests_int <= 4 else "гостей")
+    rooms_word  = "номер" if rooms_int == 1 else ("номера" if 2 <= rooms_int <= 4 else "номеров")
 
-    total_fmt = f"{total:,}".replace(",", " ")
+    total_fmt = f"{int(total):,}".replace(",", " ")
+
+    rooms_line = f"{rooms_int} {rooms_word}" if rooms_int > 1 else ""
 
     if book_type == "checkin":
-        msg = (
-            f"Заселение сегодня\n\n"
-            f"{branch.hotel.name_ru} — {room.name_ru}\n"
-            f"Заезд: {checkin_fmt} · {nights_int} {nights_word} · {guests_int} {guests_word}\n"
-            f"Сумма: {total_fmt} сом\n\n"
-            f"Гость: {name}\n"
-            f"Тел: {phone}\n"
-        )
+        msg = f"Заселение сегодня\n\n"
+        msg += f"{branch.hotel.name_ru} — {room.name_ru}\n"
+        if rooms_line:
+            msg += f"Номеров: {rooms_line}\n"
+        msg += f"Заезд: {checkin_fmt} · {nights_int} {nights_word} · {guests_int} {guests_word}\n"
+        msg += f"Сумма: {total_fmt} сом\n\n"
+        msg += f"Гость: {name}\n"
+        msg += f"Тел: {phone}\n"
         if comment:
             msg += f"Комментарий: {comment}\n"
     else:
-        msg = (
-            f"Запрос на бронь\n\n"
-            f"{branch.hotel.name_ru} — {room.name_ru}\n"
-            f"Заезд: {checkin_fmt} · {nights_int} {nights_word} · {guests_int} {guests_word}\n"
-            f"Сумма: {total_fmt} сом\n\n"
-            f"Гость: {name}\n"
-            f"Тел: {phone}\n"
-        )
+        msg = f"Запрос на бронь\n\n"
+        msg += f"{branch.hotel.name_ru} — {room.name_ru}\n"
+        if rooms_line:
+            msg += f"Номеров: {rooms_line}\n"
+        msg += f"Заезд: {checkin_fmt} · {nights_int} {nights_word} · {guests_int} {guests_word}\n"
+        msg += f"Сумма: {total_fmt} сом\n\n"
+        msg += f"Гость: {name}\n"
+        msg += f"Тел: {phone}\n"
         if comment:
             msg += f"Комментарий: {comment}\n"
         msg += f"\nЕсли номер свободен, готов(а) подтвердить бронь. Подскажите, пожалуйста, условия и реквизиты для оплаты задатка."
@@ -170,6 +203,7 @@ def room_book(request, room_id):
         checkin_date=checkin,
         nights=nights_int,
         guests=guests_int,
+        rooms_count=rooms_int,
         price_per_night=price_per_night,
         total=total,
         comment=comment,
@@ -183,4 +217,68 @@ def room_book(request, room_id):
         return redirect(f"https://wa.me/{wa_number}?text={quote(msg)}")
 
     messages.success(request, "Ваша заявка принята! Мы свяжемся с вами.")
+    return redirect("hotels:hotel_branch", branch_id=branch.id)
+
+
+@require_POST
+def service_book(request, service_id):
+    service = get_object_or_404(HotelService, id=service_id, is_active=True)
+    branch  = service.branch
+
+    name       = (request.POST.get("name") or "").strip() or "Гость"
+    phone      = (request.POST.get("phone") or "").strip()
+    date_val   = (request.POST.get("booking_date") or "").strip()
+    session_id = request.POST.get("session_id") or None
+    comment    = (request.POST.get("comment") or "").strip()
+
+    if not phone:
+        messages.error(request, "Укажите телефон")
+        return redirect("hotels:hotel_branch", branch_id=branch.id)
+
+    session = None
+    session_label = "—"
+    if session_id:
+        try:
+            session = HotelServiceSession.objects.get(id=session_id, service=service)
+            session_label = session.label
+        except HotelServiceSession.DoesNotExist:
+            pass
+
+    try:
+        from datetime import datetime
+        date_fmt = datetime.strptime(date_val, "%Y-%m-%d").strftime("%d.%m.%Y")
+    except Exception:
+        date_fmt = date_val
+
+    price_fmt = f"{int(service.price):,}".replace(",", " ")
+
+    msg  = f"Заявка на услугу\n\n"
+    msg += f"{branch.hotel.name_ru}\n"
+    msg += f"Услуга: {service.name_ru}\n"
+    if date_fmt:
+        msg += f"Дата: {date_fmt}\n"
+    msg += f"Сеанс: {session_label}\n"
+    msg += f"Стоимость: {price_fmt} сом\n\n"
+    msg += f"Гость: {name}\n"
+    msg += f"Тел: {phone}\n"
+    if comment:
+        msg += f"Комментарий: {comment}\n"
+
+    HotelServiceBooking.objects.create(
+        service=service,
+        session=session,
+        booking_date=date_val,
+        customer_name=name,
+        customer_phone=phone,
+        comment=comment,
+        status=HotelServiceBooking.Status.NEW,
+    )
+
+    _notify_hotel_booking(branch, msg)
+
+    wa_number = "".join(ch for ch in (branch.phone or "") if ch.isdigit())
+    if wa_number:
+        return redirect(f"https://wa.me/{wa_number}?text={quote(msg)}")
+
+    messages.success(request, "Заявка принята! Мы свяжемся с вами.")
     return redirect("hotels:hotel_branch", branch_id=branch.id)

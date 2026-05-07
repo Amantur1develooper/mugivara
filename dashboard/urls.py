@@ -147,6 +147,13 @@ urlpatterns = [
     path("hotels/room/<int:room_id>/toggle/",             hv.hotel_room_toggle,   name="hotel_room_toggle"),
     path("hotels/branch/<int:branch_id>/bookings/",       hv.hotel_bookings,      name="hotel_bookings"),
     path("hotels/booking/<int:booking_id>/status/",       hv.hotel_booking_status, name="hotel_booking_status"),
+    path("hotels/branch/<int:branch_id>/services/",       hv.hotel_services,      name="hotel_services"),
+    path("hotels/branch/<int:branch_id>/services/add/",   hv.hotel_service_edit,  name="hotel_service_add"),
+    path("hotels/service/<int:service_id>/edit/",         hv.hotel_service_edit,  name="hotel_service_edit"),
+    path("hotels/service/<int:service_id>/delete/",       hv.hotel_service_delete, name="hotel_service_delete"),
+    path("hotels/service/<int:service_id>/sessions/",     hv.hotel_service_sessions, name="hotel_service_sessions"),
+    path("hotels/service/<int:service_id>/bookings/",     hv.hotel_service_bookings, name="hotel_service_bookings"),
+    path("hotels/service-booking/<int:booking_id>/status/", hv.hotel_service_booking_status, name="hotel_service_booking_status"),
 
     # ── BARBERSHOP ───────────────────────────────────────────────────────────────
     path("barbershop/",                                          bsv.bs_home,                  name="bs_home"),

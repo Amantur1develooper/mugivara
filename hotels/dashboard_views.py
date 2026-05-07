@@ -5,7 +5,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 
-from .models import Hotel, HotelBranch, HotelMembership, RoomCategory, Room, HotelBooking
+from .models import (
+    Hotel, HotelBranch, HotelMembership, RoomCategory, Room, HotelBooking,
+    HotelService, HotelServiceSession, HotelServiceBooking,
+)
 
 LOGIN_URL = "dashboard:login"
 
@@ -288,3 +291,134 @@ def hotel_booking_status(request, booking_id):
         booking.save(update_fields=["status", "updated_at"])
         messages.success(request, "Статус обновлён")
     return redirect("dashboard:hotel_bookings", branch_id=booking.branch_id)
+
+
+# ── HOTEL SERVICES ────────────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def hotel_services(request, branch_id):
+    branch = get_object_or_404(HotelBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:hotel_home")
+    services = branch.services.prefetch_related("sessions").order_by("sort_order", "id")
+    return render(request, "dashboard/hotels/services.html", {
+        "branch": branch,
+        "hotel": branch.hotel,
+        "services": services,
+    })
+
+
+@login_required(login_url=LOGIN_URL)
+def hotel_service_edit(request, branch_id, service_id=None):
+    branch = get_object_or_404(HotelBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:hotel_home")
+
+    service = get_object_or_404(HotelService, id=service_id, branch=branch) if service_id else None
+
+    if request.method == "POST":
+        name = request.POST.get("name_ru", "").strip()
+        if not name:
+            messages.error(request, "Укажите название")
+            return redirect(request.path)
+
+        if service is None:
+            service = HotelService(branch=branch)
+
+        service.name_ru = name
+        service.description_ru = request.POST.get("description_ru", "").strip()
+        service.price = _dec(request.POST.get("price"))
+        service.is_active = request.POST.get("is_active") == "on"
+        try:
+            service.sort_order = int(request.POST.get("sort_order") or 0)
+        except (ValueError, TypeError):
+            service.sort_order = 0
+
+        for fname in ("photo1", "photo2", "photo3"):
+            f = request.FILES.get(fname)
+            if f:
+                setattr(service, fname, f)
+        service.save()
+        messages.success(request, "Услуга сохранена")
+        return redirect("dashboard:hotel_services", branch_id=branch.id)
+
+    return render(request, "dashboard/hotels/service_edit.html", {
+        "branch": branch,
+        "hotel": branch.hotel,
+        "service": service,
+    })
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def hotel_service_delete(request, service_id):
+    service = get_object_or_404(HotelService, id=service_id)
+    if not _has_branch_access(request.user, service.branch):
+        return redirect("dashboard:hotel_home")
+    branch_id = service.branch_id
+    service.delete()
+    messages.success(request, "Услуга удалена")
+    return redirect("dashboard:hotel_services", branch_id=branch_id)
+
+
+@login_required(login_url=LOGIN_URL)
+def hotel_service_sessions(request, service_id):
+    service = get_object_or_404(HotelService, id=service_id)
+    if not _has_branch_access(request.user, service.branch):
+        return redirect("dashboard:hotel_home")
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "add":
+            label = request.POST.get("label", "").strip()
+            if label:
+                sort_order = service.sessions.count()
+                HotelServiceSession.objects.create(service=service, label=label, sort_order=sort_order)
+                messages.success(request, "Сеанс добавлен")
+        elif action == "delete":
+            session_id = request.POST.get("session_id")
+            HotelServiceSession.objects.filter(id=session_id, service=service).delete()
+            messages.success(request, "Сеанс удалён")
+        elif action == "toggle":
+            session_id = request.POST.get("session_id")
+            s = get_object_or_404(HotelServiceSession, id=session_id, service=service)
+            s.is_active = not s.is_active
+            s.save(update_fields=["is_active", "updated_at"])
+        return redirect("dashboard:hotel_service_sessions", service_id=service.id)
+
+    sessions = service.sessions.all()
+    return render(request, "dashboard/hotels/service_sessions.html", {
+        "service": service,
+        "branch": service.branch,
+        "hotel": service.branch.hotel,
+        "sessions": sessions,
+    })
+
+
+@login_required(login_url=LOGIN_URL)
+def hotel_service_bookings(request, service_id):
+    service = get_object_or_404(HotelService, id=service_id)
+    if not _has_branch_access(request.user, service.branch):
+        return redirect("dashboard:hotel_home")
+
+    bookings = service.bookings.select_related("session").order_by("-created_at")
+    return render(request, "dashboard/hotels/service_bookings.html", {
+        "service": service,
+        "branch": service.branch,
+        "hotel": service.branch.hotel,
+        "bookings": bookings,
+        "statuses": HotelServiceBooking.Status.choices,
+    })
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def hotel_service_booking_status(request, booking_id):
+    booking = get_object_or_404(HotelServiceBooking, id=booking_id)
+    if not _has_branch_access(request.user, booking.service.branch):
+        return redirect("dashboard:hotel_home")
+    new_status = request.POST.get("status", "")
+    if new_status in dict(HotelServiceBooking.Status.choices):
+        booking.status = new_status
+        booking.save(update_fields=["status", "updated_at"])
+    return redirect("dashboard:hotel_service_bookings", service_id=booking.service_id)

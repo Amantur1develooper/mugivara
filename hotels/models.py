@@ -147,6 +147,76 @@ class Room(TimeStampedModel):
         return [ln.strip() for ln in self.amenities_ru.splitlines() if ln.strip()]
 
 
+class HotelService(TimeStampedModel):
+    branch      = models.ForeignKey(HotelBranch, on_delete=models.CASCADE, related_name="services")
+    name_ru     = models.CharField("Название", max_length=200)
+    description_ru = models.TextField("Описание", blank=True, default="")
+    price       = models.DecimalField("Цена (сом)", max_digits=10, decimal_places=0, default=0)
+    photo1      = models.ImageField("Фото 1", upload_to="hotels/services/", blank=True, null=True)
+    photo2      = models.ImageField("Фото 2", upload_to="hotels/services/", blank=True, null=True)
+    photo3      = models.ImageField("Фото 3", upload_to="hotels/services/", blank=True, null=True)
+    is_active   = models.BooleanField("Активна", default=True)
+    sort_order  = models.PositiveIntegerField("Порядок", default=0)
+
+    class Meta:
+        verbose_name = "Услуга отеля"
+        verbose_name_plural = "Услуги отеля"
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return f"{self.name_ru} ({self.branch})"
+
+    def save(self, *args, **kwargs):
+        for fname in ("photo1", "photo2", "photo3"):
+            field = getattr(self, fname)
+            if field and not getattr(field, "_committed", True):
+                result = _compress_photo(field)
+                if result:
+                    name, content = result
+                    field.save(os.path.basename(name), content, save=False)
+        super().save(*args, **kwargs)
+
+    @property
+    def photos(self):
+        return [p for p in (self.photo1, self.photo2, self.photo3) if p]
+
+
+class HotelServiceSession(TimeStampedModel):
+    service    = models.ForeignKey(HotelService, on_delete=models.CASCADE, related_name="sessions")
+    label      = models.CharField("Сеанс", max_length=100, help_text="Пример: 10:00 – 12:00")
+    is_active  = models.BooleanField("Активен", default=True)
+    sort_order = models.PositiveIntegerField("Порядок", default=0)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return f"{self.service.name_ru} — {self.label}"
+
+
+class HotelServiceBooking(TimeStampedModel):
+    class Status(models.TextChoices):
+        NEW       = "new",       "Новая"
+        CONFIRMED = "confirmed", "Подтверждена"
+        CANCELLED = "cancelled", "Отменена"
+
+    service       = models.ForeignKey(HotelService, on_delete=models.CASCADE, related_name="bookings")
+    session       = models.ForeignKey(HotelServiceSession, on_delete=models.SET_NULL, null=True, blank=True, related_name="bookings")
+    booking_date  = models.CharField("Дата", max_length=20, blank=True)
+    customer_name = models.CharField("Имя", max_length=200)
+    customer_phone= models.CharField("Телефон", max_length=50)
+    comment       = models.TextField("Комментарий", blank=True, default="")
+    status        = models.CharField("Статус", max_length=20, choices=Status.choices, default=Status.NEW)
+
+    class Meta:
+        verbose_name = "Бронь услуги"
+        verbose_name_plural = "Брони услуг"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"#{self.id} {self.customer_name} → {self.service.name_ru}"
+
+
 class HotelMembership(TimeStampedModel):
     class Role(models.TextChoices):
         OWNER   = "owner",   "Владелец"
@@ -185,6 +255,7 @@ class HotelBooking(TimeStampedModel):
     checkin_date    = models.CharField("Дата заезда", max_length=20, blank=True)
     nights          = models.PositiveSmallIntegerField("Ночей", default=1)
     guests          = models.PositiveSmallIntegerField("Гостей", default=1)
+    rooms_count     = models.PositiveSmallIntegerField("Кол-во номеров", default=1)
     price_per_night = models.DecimalField("Цена/ночь", max_digits=10, decimal_places=0, default=0)
     total           = models.DecimalField("Итого", max_digits=12, decimal_places=0, default=0)
     comment         = models.TextField("Комментарий", blank=True)
