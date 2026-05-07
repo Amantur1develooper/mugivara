@@ -5,6 +5,30 @@ from django.db import models, transaction
 from django.utils.text import slugify
 from django.utils import timezone
 from django.conf import settings
+from io import BytesIO
+from django.core.files.base import ContentFile
+from PIL import Image
+import os
+
+
+def _compress(field, max_size=(1200, 900), quality=85):
+    """Compress and convert an image field to WebP. Returns (name, content) or None."""
+    if not field or not hasattr(field, "file"):
+        return None
+    # Skip already-committed files (only process new uploads)
+    if getattr(field, "_committed", True):
+        return None
+    try:
+        field.file.seek(0)
+        img = Image.open(field.file).convert("RGB")
+        img.thumbnail(max_size, Image.LANCZOS)
+        buf = BytesIO()
+        img.save(buf, format="WEBP", quality=quality, method=6)
+        buf.seek(0)
+        name = os.path.splitext(os.path.basename(field.name))[0] + ".webp"
+        return name, ContentFile(buf.read())
+    except Exception:
+        return None
 
 class TimeStampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -30,6 +54,10 @@ class Store(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name_ru)[:220]
+        result = _compress(self.logo)
+        if result:
+            name, content = result
+            self.logo.save(name, content, save=False)
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -64,6 +92,13 @@ class StoreBranch(TimeStampedModel):
     lon = models.DecimalField("Долгота", max_digits=10, decimal_places=7, null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
+
+    def save(self, *args, **kwargs):
+        result = _compress(self.cover_photo)
+        if result:
+            name, content = result
+            self.cover_photo.save(name, content, save=False)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.store} — {self.name_ru}"
@@ -104,6 +139,13 @@ class StoreProduct(models.Model):
     barcode = models.CharField("Штрих-код", max_length=64, blank=True, default="")
 
     is_active = models.BooleanField(default=True)
+
+    def save(self, *args, **kwargs):
+        result = _compress(self.photo)
+        if result:
+            name, content = result
+            self.photo.save(name, content, save=False)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name_ru
