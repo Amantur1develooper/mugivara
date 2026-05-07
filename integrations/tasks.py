@@ -92,7 +92,8 @@ def _order_text(order: Order, title_override: str = None) -> str:
 
     # ── СОСТАВ ЗАКАЗА ─────────────────────────────────────────────────────────
     items = list(order.items.select_related("item").all())
-    if items:
+    cx_items = list(order.constructor_items.all())
+    if items or cx_items:
         lines.append("")
         lines.append("📋 Состав заказа:")
         for it in items:
@@ -103,6 +104,18 @@ def _order_text(order: Order, title_override: str = None) -> str:
                 lines.append(f"  • {name} × {qty}  —  {_money(lt)}")
             else:
                 lines.append(f"  • {name} × {qty}")
+        for coi in cx_items:
+            cx_name = coi.constructor_name_snapshot or "Конструктор"
+            lt = getattr(coi, "line_total", None)
+            entry = f"  • 🧩 {cx_name} × {coi.qty}"
+            if lt is not None:
+                entry += f"  —  {_money(lt)}"
+            # детали состава
+            for sel in (coi.ingredients_snapshot or []):
+                ings = ", ".join(i["name"] for i in sel.get("ings", []) if i.get("name"))
+                if sel.get("gname") and ings:
+                    entry += f"\n      {sel['gname']}: {ings}"
+            lines.append(entry)
     else:
         lines.append("")
         lines.append("⚠️ Состав: нет позиций")
@@ -156,7 +169,7 @@ def notify_new_order(order_id: int):
     order = (
         Order.objects
         .select_related("branch", "table_place")
-        .prefetch_related("items__item")
+        .prefetch_related("items__item", "constructor_items")
         .get(id=order_id)
     )
 
@@ -198,7 +211,7 @@ def notify_order_status(self, order_id: int, old_status: str, new_status: str):
     order = (
         Order.objects
         .select_related("branch", "table_place")
-        .prefetch_related("items__item")
+        .prefetch_related("items__item", "constructor_items")
         .get(id=order_id)
     )
 

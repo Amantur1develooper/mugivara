@@ -193,9 +193,15 @@ def hotel_room_edit(request, room_id):
         room.amenities_ru         = request.POST.get("amenities_ru", "").strip()
         room.price_per_night      = _dec(request.POST.get("price_per_night"))
         room.price_per_extra_guest = _dec(request.POST.get("price_per_extra_guest"))
-        room.max_guests           = max(1, int(request.POST.get("max_guests") or 1))
-        room.is_available         = request.POST.get("is_available") == "on"
-        room.sort_order           = int(request.POST.get("sort_order") or 0)
+        try:
+            room.max_guests = max(1, int(request.POST.get("max_guests") or 1))
+        except (ValueError, TypeError):
+            room.max_guests = 1
+        room.is_available = request.POST.get("is_available") == "on"
+        try:
+            room.sort_order = int(request.POST.get("sort_order") or 0)
+        except (ValueError, TypeError):
+            room.sort_order = 0
 
         cat_id = request.POST.get("category") or None
         if cat_id:

@@ -602,15 +602,19 @@ def cart_detail(request, branch_id: int):
     cart = get_cart(request, branch.id)
     rows, subtotal, qty_total = cart_details(branch, cart)
 
+    cx_cart = _get_branch_cx_cart(request, branch_id)
+    cx_qty = sum(int(x["qty"]) for x in cx_cart)
+    cx_subtotal = sum(Decimal(str(x["unit_price"])) * int(x["qty"]) for x in cx_cart)
+
     delivery_fee = branch.delivery_fee if branch.delivery_enabled else Decimal("0")
-    total = subtotal + delivery_fee
-    print("SESSION CART =", request.session.get("cart"))
+    full_subtotal = subtotal + cx_subtotal
+    total = full_subtotal + delivery_fee
 
     return render(request, "public_site/cart_detail.html", {
         "branch": branch,
         "rows": rows,
-        "qty_total": qty_total,
-        "subtotal": subtotal,
+        "qty_total": qty_total + cx_qty,
+        "subtotal": full_subtotal,
         "delivery_fee": delivery_fee,
         "total": total,
     })

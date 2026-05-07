@@ -296,7 +296,7 @@
           </label>
         </div>
 
-        <button type="submit" class="cart-submit">
+        <button type="submit" class="cart-submit" id="checkout-submit-btn">
           Оформить заказ →
         </button>
       </form>
@@ -455,6 +455,48 @@ document.addEventListener('change', async e => {
   ph.addEventListener('keydown', e => {
     if (e.key === 'Backspace' && ph.value === '+996') e.preventDefault();
   });
+})();
+
+// ── Защита формы: пустая корзина и двойной клик ──────────────────────────────
+(function(){
+  const form = document.getElementById('checkout-form');
+  const btn  = document.getElementById('checkout-submit-btn');
+  if (!form || !btn) return;
+
+  function totalQty() {
+    let q = 0;
+    document.querySelectorAll('[data-qty-input]').forEach(el => {
+      q += parseInt(el.value || '0', 10);
+    });
+    return q;
+  }
+
+  function refreshBtn() {
+    const empty = totalQty() === 0;
+    btn.disabled = empty;
+    btn.style.opacity = empty ? '0.4' : '';
+    btn.style.cursor  = empty ? 'not-allowed' : '';
+    btn.textContent   = empty ? 'Корзина пуста' : 'Оформить заказ →';
+  }
+
+  // следим за изменением qty
+  document.addEventListener('input', function(e){
+    if (e.target.matches('[data-qty-input]')) refreshBtn();
+  });
+  // qty кнопки тоже меняют значение, но через JS — смотрим на изменение DOM
+  const observer = new MutationObserver(refreshBtn);
+  document.querySelectorAll('[data-qty-input]').forEach(el =>
+    observer.observe(el, { attributes: true, attributeFilter: ['value'] })
+  );
+
+  // защита от двойного клика
+  form.addEventListener('submit', function(e){
+    if (totalQty() === 0) { e.preventDefault(); return; }
+    btn.disabled = true;
+    btn.textContent = 'Отправляем…';
+  });
+
+  refreshBtn();
 })();
 </script>
 {% endblock %}

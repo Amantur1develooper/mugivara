@@ -129,10 +129,13 @@ class Room(TimeStampedModel):
 
     def save(self, *args, **kwargs):
         for fname in ("photo1", "photo2", "photo3"):
-            result = _compress_photo(getattr(self, fname))
-            if result:
-                name, content = result
-                getattr(self, fname).save(name, content, save=False)
+            field = getattr(self, fname)
+            # Only compress new uploads (not already-saved files)
+            if field and not getattr(field, "_committed", True):
+                result = _compress_photo(field)
+                if result:
+                    name, content = result
+                    field.save(os.path.basename(name), content, save=False)
         super().save(*args, **kwargs)
 
     @property
