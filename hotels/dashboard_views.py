@@ -309,12 +309,16 @@ def hotel_services(request, branch_id):
 
 
 @login_required(login_url=LOGIN_URL)
-def hotel_service_edit(request, branch_id, service_id=None):
-    branch = get_object_or_404(HotelBranch, id=branch_id)
+def hotel_service_edit(request, branch_id=None, service_id=None):
+    if service_id:
+        service = get_object_or_404(HotelService, id=service_id)
+        branch = service.branch
+    else:
+        branch = get_object_or_404(HotelBranch, id=branch_id)
+        service = None
+
     if not _has_branch_access(request.user, branch):
         return redirect("dashboard:hotel_home")
-
-    service = get_object_or_404(HotelService, id=service_id, branch=branch) if service_id else None
 
     if request.method == "POST":
         name = request.POST.get("name_ru", "").strip()
