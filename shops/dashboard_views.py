@@ -56,9 +56,21 @@ def shop_home(request):
     else:
         stores = _user_stores(request.user).prefetch_related("branches")
 
+    from django.db.models import Count as _Count, Q as _Q
+
     data = []
     for store in stores:
-        branches = list(store.branches.filter(is_active=True).order_by("name_ru"))
+        branches_qs = store.branches.filter(is_active=True).order_by("name_ru")
+        branches_qs = branches_qs.annotate(
+            total_products=_Count("stocks", distinct=True),
+            out_of_stock=_Count("stocks", filter=_Q(stocks__qty=0), distinct=True),
+            low_stock=_Count(
+                "stocks",
+                filter=_Q(stocks__qty__gt=0, stocks__qty__lte=3),
+                distinct=True,
+            ),
+        )
+        branches = list(branches_qs)
         new_orders = StoreOrder.objects.filter(
             branch__store=store, status=StoreOrder.Status.NEW
         ).count()
