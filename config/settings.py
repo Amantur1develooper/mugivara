@@ -64,6 +64,7 @@ INSTALLED_APPS = [
    "agency",
    "karaoke",
    "barbershop",
+   "techcards.apps.TechCardsConfig",
 ]
 # CELERY_TASK_ALWAYS_EAGER = True
 # CELERY_TASK_EAGER_PROPAGATES = True

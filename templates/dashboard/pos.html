@@ -580,6 +580,9 @@
       <a href="{% url 'dashboard:pos_history' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📋 История</a>
       <a href="{% url 'dashboard:pos_inventory' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📦 Инвентаризация</a>
       <a href="{% url 'dashboard:pos_report' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📊 Отчёт</a>
+      <a href="{% url 'dashboard:tc_list' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">🧪 Техкарты</a>
+      <a href="{% url 'dashboard:tc_ingredients' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">🥩 Склад</a>
+      <a href="{% url 'dashboard:tc_report' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">💰 Food Cost</a>
       <a href="{% url 'dashboard:home' %}" class="db-btn db-btn-ghost db-btn-sm">← Дашборд</a>
     </div>
   </div>

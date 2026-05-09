@@ -1,0 +1,114 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Журнал движений — {{ branch.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+.tc-wrap { max-width:1100px; margin:0 auto; padding:24px 16px 60px; }
+.tc-topbar { display:flex; align-items:flex-start; gap:14px; margin-bottom:24px; flex-wrap:wrap; }
+.tc-title { font-family:'Unbounded',sans-serif; font-size:18px; font-weight:900; color:var(--text); }
+.tc-sub { font-size:12px; color:var(--muted); margin-top:3px; }
+
+.filter-row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:20px; background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 16px; }
+.f-label { font-size:10px; font-weight:700; color:var(--muted); display:block; margin-bottom:4px; }
+.f-input { padding:7px 11px; border-radius:9px; border:1.5px solid var(--border); background:var(--bg); color:var(--text); font-size:12px; outline:none; }
+.f-input:focus { border-color:var(--accent); }
+
+.jrn-table { width:100%; border-collapse:collapse; font-size:13px; }
+.jrn-table th { padding:9px 14px; text-align:left; font-size:10px; font-weight:700; color:var(--muted); border-bottom:2px solid var(--border); white-space:nowrap; }
+.jrn-table td { padding:9px 14px; border-bottom:1px solid var(--border); }
+.jrn-table tr:last-child td { border-bottom:none; }
+
+.mv-badge { display:inline-block; padding:3px 10px; border-radius:100px; font-size:11px; font-weight:700; white-space:nowrap; }
+.mv-purchase   { background:rgba(0,184,150,.1); color:#00b896; }
+.mv-sale       { background:rgba(59,130,246,.1); color:#3b82f6; }
+.mv-writeoff   { background:rgba(239,68,68,.1); color:#ef4444; }
+.mv-manual_add { background:rgba(255,149,0,.1); color:#f59e0b; }
+.mv-manual_sub { background:rgba(139,92,246,.1); color:#8b5cf6; }
+.mv-return     { background:rgba(0,184,150,.1); color:#00b896; }
+
+.qty-pos { color:#22c55e; font-weight:700; }
+.qty-neg { color:#ef4444; font-weight:700; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tc-wrap">
+
+  <div class="tc-topbar">
+    <div style="flex:1">
+      <div class="tc-title">📜 Журнал движений склада</div>
+      <div class="tc-sub">{{ branch.restaurant.name_ru }} · {{ branch.name_ru }}</div>
+    </div>
+    <a href="{% url 'dashboard:tc_ingredients' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">← Склад</a>
+    <a href="{% url 'dashboard:tc_writeoff' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">✕ Списание</a>
+  </div>
+
+  <form method="get" class="filter-row">
+    <div>
+      <label class="f-label">Дата</label>
+      <input type="date" name="date" class="f-input" value="{{ sel_date }}">
+    </div>
+    <div>
+      <label class="f-label">Тип операции</label>
+      <select name="type" class="f-input">
+        <option value="">Все типы</option>
+        {% for val, label in move_type_choices %}
+          <option value="{{ val }}" {% if val == sel_type %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="f-label">Ингредиент</label>
+      <input type="text" name="q" class="f-input" value="{{ q }}" placeholder="Название...">
+    </div>
+    <button type="submit" class="db-btn db-btn-primary db-btn-sm">Показать</button>
+    {% if sel_date or sel_type or q %}
+      <a href="?" class="db-btn db-btn-ghost db-btn-sm">✕</a>
+    {% endif %}
+  </form>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;overflow-x:auto">
+    <table class="jrn-table">
+      <thead>
+        <tr>
+          <th>Дата и время</th>
+          <th>Ингредиент</th>
+          <th>Тип</th>
+          <th>Количество</th>
+          <th>Цена / ед.</th>
+          <th>Сумма</th>
+          <th>Заказ</th>
+          <th>Кто</th>
+          <th>Примечание</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for mv in movements %}
+        <tr>
+          <td style="white-space:nowrap;color:var(--muted);font-size:12px">{{ mv.created_at|date:"d.m.Y H:i" }}</td>
+          <td style="font-weight:700">{{ mv.ingredient.name_ru }}</td>
+          <td>
+            <span class="mv-badge mv-{{ mv.move_type }}">{{ mv.get_move_type_display }}</span>
+          </td>
+          <td>
+            <span class="{% if mv.qty > 0 %}qty-pos{% else %}qty-neg{% endif %}">
+              {% if mv.qty > 0 %}+{% endif %}{{ mv.qty|floatformat:3 }} {{ mv.ingredient.get_unit_display }}
+            </span>
+          </td>
+          <td style="color:var(--muted)">{% if mv.cost_per_unit %}{{ mv.cost_per_unit|floatformat:2 }} сом{% else %}—{% endif %}</td>
+          <td style="font-weight:600">{% if mv.total_cost %}{{ mv.total_cost|floatformat:2 }} сом{% else %}—{% endif %}</td>
+          <td>{% if mv.order %}<span style="font-size:11px;color:var(--accent)">#{{ mv.order.id }}</span>{% else %}—{% endif %}</td>
+          <td style="font-size:11px;color:var(--muted)">{% if mv.created_by %}{{ mv.created_by.get_full_name|default:mv.created_by.username }}{% else %}авто{% endif %}</td>
+          <td style="font-size:11px;color:var(--muted)">{{ mv.note|default:"" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" style="text-align:center;padding:40px;color:var(--muted)">Нет записей</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

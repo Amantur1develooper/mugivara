@@ -1,0 +1,84 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Списание — {{ branch.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+.tc-wrap { max-width:700px; margin:0 auto; padding:24px 16px 60px; }
+.tc-topbar { display:flex; align-items:flex-start; gap:14px; margin-bottom:24px; flex-wrap:wrap; }
+.tc-title { font-family:'Unbounded',sans-serif; font-size:18px; font-weight:900; color:var(--text); }
+.tc-sub { font-size:12px; color:var(--muted); margin-top:3px; }
+.tc-section { background:var(--card); border:1.5px solid var(--border); border-radius:16px; padding:20px; }
+.field-label { display:block; font-size:11px; font-weight:700; color:var(--muted); margin-bottom:5px; text-transform:uppercase; }
+.field-input { width:100%; padding:9px 12px; border-radius:10px; border:1.5px solid var(--border); background:var(--bg); color:var(--text); font-size:13px; outline:none; box-sizing:border-box; font-family:inherit; }
+.field-input:focus { border-color:var(--accent); }
+.field-row { margin-bottom:14px; }
+
+.stock-info { display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:6px; }
+.stock-chip { font-size:11px; font-weight:700; padding:3px 10px; border-radius:100px; }
+.chip-ok   { background:rgba(0,184,150,.1); color:#00b896; }
+.chip-low  { background:rgba(255,149,0,.12); color:#f59e0b; }
+.chip-zero { background:rgba(239,68,68,.1); color:#ef4444; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tc-wrap">
+
+  <div class="tc-topbar">
+    <div style="flex:1">
+      <div class="tc-title">✕ Ручное списание</div>
+      <div class="tc-sub">{{ branch.restaurant.name_ru }} · {{ branch.name_ru }}</div>
+    </div>
+    <a href="{% url 'dashboard:tc_ingredients' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">← Склад</a>
+    <a href="{% url 'dashboard:tc_journal' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📜 Журнал</a>
+  </div>
+
+  <div class="tc-section">
+    <form method="post">
+      {% csrf_token %}
+      <div class="field-row">
+        <label class="field-label">Ингредиент</label>
+        <select name="ingredient_id" class="field-input" id="ingSelect" onchange="showStock(this)">
+          <option value="">— выберите ингредиент —</option>
+          {% for row in rows %}
+            <option value="{{ row.ing.id }}"
+                    data-qty="{% if row.stock %}{{ row.stock.qty }}{% else %}0{% endif %}"
+                    data-unit="{{ row.ing.get_unit_display }}">
+              {{ row.ing.name_ru }} ({% if row.stock %}{{ row.stock.qty|floatformat:3 }}{% else %}0{% endif %} {{ row.ing.get_unit_display }})
+            </option>
+          {% endfor %}
+        </select>
+        <div id="stockInfo" class="stock-info"></div>
+      </div>
+
+      <div class="field-row">
+        <label class="field-label">Количество к списанию</label>
+        <input type="number" name="qty" step="0.001" min="0.001" class="field-input" required placeholder="100">
+      </div>
+
+      <div class="field-row">
+        <label class="field-label">Причина</label>
+        <input type="text" name="note" class="field-input" placeholder="Порча, истёк срок, пересортица...">
+      </div>
+
+      <button type="submit" class="db-btn db-btn-primary" style="width:100%">
+        Списать
+      </button>
+    </form>
+  </div>
+
+</div>
+<script>
+function showStock(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  const qty  = parseFloat(opt.dataset.qty) || 0;
+  const unit = opt.dataset.unit || "";
+  const info = document.getElementById("stockInfo");
+  if (!opt.value) { info.innerHTML = ""; return; }
+  let cls = "chip-ok";
+  if (qty <= 0) cls = "chip-zero";
+  else if (qty <= 5) cls = "chip-low";
+  info.innerHTML = `<span class="stock-chip ${cls}">Остаток: ${qty} ${unit}</span>`;
+}
+</script>
+{% endblock %}

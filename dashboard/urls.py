@@ -6,6 +6,7 @@ from legal import dashboard_views as lv
 from agency import dashboard_views as av
 from karaoke import dashboard_views as kv
 from barbershop import dashboard_views as bsv
+from dashboard import techcard_views as tcv
 
 app_name = "dashboard"
 
@@ -181,6 +182,21 @@ urlpatterns = [
     path("barbershop/appointment/<int:appt_id>/payment/",        bsv.bs_appointment_payment,   name="bs_appointment_payment"),
     path("barbershop/appointment/<int:appt_id>/delete/",         bsv.bs_appointment_delete,    name="bs_appointment_delete"),
     path("barbershop/<int:shop_id>/report/",                     bsv.bs_report,                name="bs_report"),
+
+    # ── ТЕХКАРТЫ И СКЛАД ─────────────────────────────────────────────────────
+    path("branch/<int:branch_id>/techcards/",                   tcv.tc_list,                  name="tc_list"),
+    path("branch/<int:branch_id>/techcards/create/<int:item_id>/", tcv.tc_create,             name="tc_create"),
+    path("techcard/<int:tc_id>/edit/",                          tcv.tc_edit,                  name="tc_edit"),
+    path("techcard/<int:tc_id>/delete/",                        tcv.tc_delete,                name="tc_delete"),
+    path("techcard/line/<int:line_id>/delete/",                 tcv.tc_ingredient_line_delete, name="tc_line_delete"),
+    path("techcard/line/<int:line_id>/update/",                 tcv.tc_ingredient_line_update, name="tc_line_update"),
+    path("techcard/step/<int:step_id>/delete/",                 tcv.tc_step_delete,            name="tc_step_delete"),
+    path("branch/<int:branch_id>/ingredients/",                 tcv.tc_ingredient_list,        name="tc_ingredients"),
+    path("ingredient/<int:ing_id>/edit/",                       tcv.tc_ingredient_edit,        name="tc_ingredient_edit"),
+    path("ingredient/<int:ing_id>/delete/",                     tcv.tc_ingredient_delete,      name="tc_ingredient_delete"),
+    path("branch/<int:branch_id>/writeoff/",                    tcv.tc_writeoff,               name="tc_writeoff"),
+    path("branch/<int:branch_id>/stock-journal/",               tcv.tc_movement_journal,       name="tc_journal"),
+    path("branch/<int:branch_id>/food-cost/",                   tcv.tc_report,                 name="tc_report"),
 
     # ── LEGAL ────────────────────────────────────────────────────────────────
     path("legal/",                                      lv.legal_home,           name="legal_home"),

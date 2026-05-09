@@ -1,0 +1,119 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Техкарты — {{ branch.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+.tc-wrap { max-width:1100px; margin:0 auto; padding:24px 16px 60px; }
+.tc-topbar { display:flex; align-items:flex-start; gap:16px; margin-bottom:24px; flex-wrap:wrap; }
+.tc-title { font-family:'Unbounded',sans-serif; font-size:18px; font-weight:900; color:var(--text); }
+.tc-sub { font-size:12px; color:var(--muted); margin-top:3px; }
+
+.tc-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; margin-bottom:36px; }
+.tc-card {
+  background:var(--card); border:1.5px solid var(--border); border-radius:16px;
+  padding:18px; display:flex; flex-direction:column; gap:10px;
+  transition:border-color .15s, box-shadow .15s;
+}
+.tc-card:hover { border-color:rgba(255,77,28,.3); box-shadow:0 4px 20px rgba(0,0,0,.08); }
+.tc-card-name { font-weight:800; font-size:14px; color:var(--text); }
+.tc-card-ing { font-size:12px; color:var(--muted); }
+.tc-card-cost { font-size:13px; font-weight:700; }
+.tc-metrics { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+.tc-metric { background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:8px 10px; text-align:center; }
+.tc-metric-val { font-size:14px; font-weight:900; color:var(--text); }
+.tc-metric-label { font-size:10px; color:var(--muted); font-weight:600; margin-top:1px; }
+.tc-card-btns { display:flex; gap:8px; }
+.tc-card-btns a { flex:1; text-align:center; padding:8px; border-radius:10px; font-size:12px; font-weight:700; text-decoration:none; }
+.btn-edit { background:var(--accent); color:#fff; }
+.btn-ghost-sm { background:var(--bg); color:var(--text2); border:1px solid var(--border); }
+.margin-good { color:#22c55e; }
+.margin-ok   { color:#f59e0b; }
+.margin-bad  { color:#ef4444; }
+
+.no-tc-section { margin-top:12px; }
+.no-tc-title { font-size:13px; font-weight:700; color:var(--muted); margin-bottom:12px; }
+.no-tc-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:10px; }
+.no-tc-card {
+  background:var(--card); border:1.5px dashed var(--border); border-radius:14px;
+  padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
+}
+.no-tc-card:hover { border-color:rgba(255,77,28,.3); }
+.no-tc-name { font-size:13px; font-weight:700; color:var(--text2); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tc-wrap">
+
+  <div class="tc-topbar">
+    <div style="flex:1">
+      <div class="tc-title">📋 Технологические карты</div>
+      <div class="tc-sub">{{ branch.restaurant.name_ru }} · {{ branch.name_ru }}</div>
+    </div>
+    <a href="{% url 'dashboard:tc_ingredients' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">🥩 Склад</a>
+    <a href="{% url 'dashboard:tc_writeoff' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">✕ Списание</a>
+    <a href="{% url 'dashboard:tc_journal' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📜 Журнал</a>
+    <a href="{% url 'dashboard:tc_report' branch.id %}" class="db-btn db-btn-primary db-btn-sm">📊 Отчёт</a>
+  </div>
+
+  {% if cards %}
+  <div class="tc-grid">
+    {% for c in cards %}
+    <div class="tc-card">
+      <div class="tc-card-name">{{ c.tc.item.name_ru }}</div>
+      <div class="tc-card-ing">{{ c.tc.ingredients.count }} ингредиент(ов) · Выход: {{ c.tc.yield_qty }} порц.</div>
+
+      <div class="tc-metrics">
+        <div class="tc-metric">
+          <div class="tc-metric-val">{{ c.cost|floatformat:0 }}</div>
+          <div class="tc-metric-label">с/с, сом</div>
+        </div>
+        <div class="tc-metric">
+          <div class="tc-metric-val">{{ c.price|floatformat:0 }}</div>
+          <div class="tc-metric-label">цена, сом</div>
+        </div>
+        <div class="tc-metric">
+          <div class="tc-metric-val {% if c.margin >= 60 %}margin-good{% elif c.margin >= 30 %}margin-ok{% else %}margin-bad{% endif %}">
+            {{ c.margin }}%
+          </div>
+          <div class="tc-metric-label">маржа</div>
+        </div>
+      </div>
+
+      <div class="tc-card-btns">
+        <a href="{% url 'dashboard:tc_edit' c.tc.id %}" class="btn-edit">✏️ Редактировать</a>
+        <form method="post" action="{% url 'dashboard:tc_delete' c.tc.id %}" style="flex:0"
+              onsubmit="return confirm('Удалить техкарту?')">
+          {% csrf_token %}
+          <button type="submit" class="btn-ghost-sm" style="padding:8px 12px;border-radius:10px;font-size:12px;font-weight:700;border:1px solid var(--border);background:var(--bg);cursor:pointer">🗑</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:48px;color:var(--muted);background:var(--card);border:1.5px dashed var(--border);border-radius:20px;margin-bottom:24px">
+    <div style="font-size:48px;opacity:.3;margin-bottom:12px">📋</div>
+    Пока нет техкарт. Создайте первую — нажмите «+ Создать» рядом с блюдом ниже.
+  </div>
+  {% endif %}
+
+  {% if branch_items %}
+  <div class="no-tc-section">
+    <div class="no-tc-title">📦 Блюда без техкарты</div>
+    <div class="no-tc-grid">
+      {% for bi in branch_items %}
+      <div class="no-tc-card">
+        <div>
+          <div class="no-tc-name">{{ bi.item.name_ru }}</div>
+          <div style="font-size:11px;color:var(--muted)">{{ bi.price|floatformat:0 }} сом</div>
+        </div>
+        <a href="{% url 'dashboard:tc_create' branch.id bi.item.id %}" class="db-btn db-btn-primary db-btn-sm" style="white-space:nowrap">+ Карта</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

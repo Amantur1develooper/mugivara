@@ -137,11 +137,20 @@ def _table_order_text(order: Order) -> str:
     lines.append(f"🏪 {getattr(order.branch, 'name_ru', str(order.branch))}")
 
     items = list(order.items.select_related("item").all())
-    if items:
+    cx_items = list(order.constructor_items.all())
+    if items or cx_items:
         lines.append("")
         for it in items:
             name = getattr(it.item, "name_ru", None) or str(it.item)
             lines.append(f"• {name}  ×{it.qty}")
+        for coi in cx_items:
+            cx_name = coi.constructor_name_snapshot or "Собери сам"
+            entry = f"• 🧩 {cx_name}  ×{coi.qty}"
+            for sel in (coi.ingredients_snapshot or []):
+                ings = ", ".join(i["name"] for i in sel.get("ings", []) if i.get("name"))
+                if sel.get("gname") and ings:
+                    entry += f"\n    {sel['gname']}: {ings}"
+            lines.append(entry)
     else:
         lines.append("⚠️ Состав не указан")
 

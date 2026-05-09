@@ -1300,7 +1300,11 @@ def pos_inventory(request, branch_id):
 
 @login_required(login_url="dashboard:login")
 def pos_report(request, branch_id):
-    from datetime import date as _date
+    from datetime import date as _date, datetime as _dt
+    from django.db.models import Sum as _Sum, Q as _Q
+    from django.db.models.functions import TruncDate
+    from orders.models import ConstructorOrderItem
+
     branch = get_object_or_404(Branch, id=branch_id)
     if not (request.user.is_staff or request.user.is_superuser or _has_branch_access(request.user, branch)):
         return redirect("dashboard:home")
@@ -1308,79 +1312,135 @@ def pos_report(request, branch_id):
     today = _date.today()
     date_from_str = request.GET.get("from", str(today))
     date_to_str   = request.GET.get("to",   str(today))
-
     try:
-        from datetime import datetime as _dt
         date_from = _dt.strptime(date_from_str, "%Y-%m-%d").date()
         date_to   = _dt.strptime(date_to_str,   "%Y-%m-%d").date()
     except ValueError:
         date_from = date_to = today
-
     if date_from > date_to:
         date_from, date_to = date_to, date_from
 
-    orders = (
-        Order.objects
-        .filter(
-            branch=branch,
-            status__in=[Order.Status.CLOSED],
-            created_at__date__gte=date_from,
-            created_at__date__lte=date_to,
-        )
-        .prefetch_related("items__item")
-        .order_by("created_at")
+    base_qs = Order.objects.filter(
+        branch=branch,
+        created_at__date__gte=date_from,
+        created_at__date__lte=date_to,
     )
 
-    # ── Aggregates (без стоимости доставки — только позиции заказа) ──
-    from django.db.models import Sum as _Sum
-    total_revenue  = orders.aggregate(s=_Sum("items__line_total"))["s"] or Decimal("0")
-    total_orders   = orders.count()
+    # Закрытые (учитываются в выручке)
+    closed = base_qs.filter(status=Order.Status.CLOSED)
+    # Отменённые
+    cancelled = base_qs.filter(status=Order.Status.CANCELLED)
+    # Активные (ещё не закрыты)
+    active = base_qs.filter(status__in=[
+        Order.Status.NEW, Order.Status.ACCEPTED,
+        Order.Status.COOKING, Order.Status.READY,
+    ])
 
-    # By payment method
-    pay_cash   = orders.filter(payment_method="cash").aggregate(s=_Sum("items__line_total"))["s"] or Decimal("0")
-    pay_online = orders.filter(payment_method="online").aggregate(s=_Sum("items__line_total"))["s"] or Decimal("0")
+    # ── Выручка: используем total_amount (включает и обычные, и конструктор) ──
+    total_revenue  = closed.aggregate(s=_Sum("total_amount"))["s"] or Decimal("0")
+    total_orders   = closed.count()
+    cancelled_count = cancelled.count()
+    cancelled_sum  = cancelled.aggregate(s=_Sum("total_amount"))["s"] or Decimal("0")
 
-    # By type
-    type_stats = {}
-    for t in Order.Type.values:
-        qs = orders.filter(type=t)
-        type_stats[t] = {
-            "label": dict(Order.Type.choices).get(t, t),
-            "count": qs.count(),
-            "revenue": qs.aggregate(s=_Sum("items__line_total"))["s"] or Decimal("0"),
-        }
+    # ── Онлайн vs Офлайн ──
+    # Онлайн = заказ через QR-стол (table_place не null) или delivery/pickup
+    online_qs  = closed.filter(
+        _Q(table_place__isnull=False) |
+        _Q(type__in=[Order.Type.DELIVERY, Order.Type.PICKUP])
+    )
+    offline_qs = closed.filter(
+        table_place__isnull=True,
+        type=Order.Type.DINE_IN,
+    )
+    online_revenue  = online_qs.aggregate(s=_Sum("total_amount"))["s"] or Decimal("0")
+    offline_revenue = offline_qs.aggregate(s=_Sum("total_amount"))["s"] or Decimal("0")
+    online_count    = online_qs.count()
+    offline_count   = offline_qs.count()
 
-    # Top items
-    from django.db.models import Sum as _Sum2
-    item_totals = (
+    # ── По способу оплаты ──
+    pay_cash   = closed.filter(payment_method="cash").aggregate(s=_Sum("total_amount"))["s"] or Decimal("0")
+    pay_online = closed.filter(payment_method="online").aggregate(s=_Sum("total_amount"))["s"] or Decimal("0")
+
+    # ── Топ блюд (обычные + конструктор) ──
+    regular_items = (
         OrderItem.objects
-        .filter(order__in=orders)
+        .filter(order__in=closed)
         .values("item__name_ru")
-        .annotate(total_qty=_Sum2("qty"), total_rev=_Sum2("line_total"))
-        .order_by("-total_rev")[:20]
+        .annotate(total_qty=_Sum("qty"), total_rev=_Sum("line_total"))
     )
+    cx_items = (
+        ConstructorOrderItem.objects
+        .filter(order__in=closed)
+        .values("constructor_name_snapshot")
+        .annotate(total_qty=_Sum("qty"), total_rev=_Sum("line_total"))
+    )
+    # объединяем в Python и сортируем
+    top_items = []
+    for r in regular_items:
+        top_items.append({"name": r["item__name_ru"], "qty": r["total_qty"], "rev": r["total_rev"] or Decimal("0")})
+    for r in cx_items:
+        name = (r["constructor_name_snapshot"] or "Собери сам") + " 🧩"
+        top_items.append({"name": name, "qty": r["total_qty"], "rev": r["total_rev"] or Decimal("0")})
+    top_items.sort(key=lambda x: x["rev"], reverse=True)
+    top_items = top_items[:20]
 
-    # Daily breakdown
-    from django.db.models.functions import TruncDate
-    daily = (
-        orders
+    # ── Разбивка по дням ──
+    daily_raw = (
+        closed
         .annotate(day=TruncDate("created_at"))
         .values("day")
-        .annotate(cnt=Count("id"), rev=_Sum("items__line_total"))
+        .annotate(cnt=Count("id"), rev=_Sum("total_amount"))
         .order_by("day")
     )
+    cancelled_daily = {
+        row["day"]: row["cnt"]
+        for row in cancelled
+            .annotate(day=TruncDate("created_at"))
+            .values("day")
+            .annotate(cnt=Count("id"))
+    }
+    online_daily = {
+        row["day"]: row["cnt"]
+        for row in online_qs
+            .annotate(day=TruncDate("created_at"))
+            .values("day")
+            .annotate(cnt=Count("id"))
+    }
+    offline_daily = {
+        row["day"]: row["cnt"]
+        for row in offline_qs
+            .annotate(day=TruncDate("created_at"))
+            .values("day")
+            .annotate(cnt=Count("id"))
+    }
+    daily = [
+        {
+            "day":       row["day"],
+            "cnt":       row["cnt"],
+            "rev":       row["rev"] or Decimal("0"),
+            "cancelled": cancelled_daily.get(row["day"], 0),
+            "online":    online_daily.get(row["day"], 0),
+            "offline":   offline_daily.get(row["day"], 0),
+        }
+        for row in daily_raw
+    ]
 
     return render(request, "dashboard/pos_report.html", {
-        "branch":        branch,
-        "date_from":     date_from,
-        "date_to":       date_to,
-        "total_revenue": total_revenue,
-        "total_orders":  total_orders,
-        "pay_cash":      pay_cash,
-        "pay_online":    pay_online,
-        "type_stats":    type_stats,
-        "item_totals":   item_totals,
-        "daily":         daily,
+        "branch":           branch,
+        "date_from":        date_from,
+        "date_to":          date_to,
+        "total_revenue":    total_revenue,
+        "total_orders":     total_orders,
+        "cancelled_count":  cancelled_count,
+        "cancelled_sum":    cancelled_sum,
+        "online_revenue":   online_revenue,
+        "offline_revenue":  offline_revenue,
+        "online_count":     online_count,
+        "offline_count":    offline_count,
+        "pay_cash":         pay_cash,
+        "pay_online_amt":   pay_online,
+        "top_items":        top_items,
+        "daily":            daily,
     })
 
 
@@ -1403,7 +1463,7 @@ def pos_history(request, branch_id):
     orders = (
         Order.objects
         .filter(branch=branch, created_at__date=sel_date)
-        .prefetch_related("items__item")
+        .prefetch_related("items__item", "constructor_items")
         .order_by("-created_at")
     )
 

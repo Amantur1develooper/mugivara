@@ -1,0 +1,381 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Техкарта — {{ tc.item.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+.tc-wrap { max-width:1000px; margin:0 auto; padding:24px 16px 60px; }
+.tc-topbar { display:flex; align-items:flex-start; gap:14px; margin-bottom:24px; flex-wrap:wrap; }
+.tc-title { font-family:'Unbounded',sans-serif; font-size:18px; font-weight:900; color:var(--text); }
+.tc-sub { font-size:12px; color:var(--muted); margin-top:3px; }
+
+.tc-layout { display:grid; grid-template-columns:1fr 320px; gap:20px; }
+@media (max-width:760px) { .tc-layout { grid-template-columns:1fr; } }
+
+.tc-section { background:var(--card); border:1.5px solid var(--border); border-radius:16px; padding:20px; margin-bottom:16px; }
+.tc-section-title { font-size:13px; font-weight:800; color:var(--text); margin-bottom:16px; display:flex; align-items:center; gap:6px; }
+
+/* Cost panel */
+.cost-panel { background:linear-gradient(135deg,rgba(255,77,28,.06),rgba(255,138,0,.04)); border:1.5px solid rgba(255,77,28,.15); border-radius:16px; padding:20px; position:sticky; top:80px; }
+.cost-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.08); }
+.cost-row:last-child { border-bottom:none; }
+.cost-label { font-size:12px; font-weight:600; color:var(--muted); }
+.cost-val { font-size:14px; font-weight:900; color:var(--text); }
+.cost-total { font-size:18px; color:var(--accent); }
+.cost-margin { font-size:16px; }
+.margin-good { color:#22c55e; }
+.margin-ok { color:#f59e0b; }
+.margin-bad { color:#ef4444; }
+
+/* Ingredient table */
+.ing-table { width:100%; border-collapse:collapse; font-size:13px; }
+.ing-table th { padding:7px 12px; text-align:left; font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; border-bottom:2px solid var(--border); white-space:nowrap; }
+.ing-table td { padding:8px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.ing-table tr:last-child td { border-bottom:none; }
+
+.ing-name { font-weight:700; font-size:13px; color:var(--text); }
+.ing-edit { display:inline-flex; gap:4px; align-items:center; }
+.inline-num { width:80px; padding:4px 8px; border-radius:7px; border:1.5px solid var(--border); background:var(--bg); color:var(--text); font-size:12px; text-align:right; font-family:inherit; }
+.inline-num:focus { border-color:var(--accent); outline:none; }
+.del-btn { width:26px; height:26px; border-radius:6px; background:rgba(239,68,68,.1); border:none; color:#ef4444; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.del-btn:hover { background:rgba(239,68,68,.2); }
+.net-qty { font-size:11px; color:var(--muted); }
+.line-cost { font-weight:700; color:var(--accent); font-size:13px; }
+
+/* Step */
+.step-item { display:flex; gap:10px; align-items:flex-start; margin-bottom:10px; }
+.step-num { width:28px; height:28px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; flex-shrink:0; }
+.step-text { flex:1; font-size:13px; color:var(--text2); line-height:1.5; }
+
+/* Form inputs */
+.field-group { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+.field-label { display:block; font-size:10px; font-weight:700; color:var(--muted); margin-bottom:4px; text-transform:uppercase; }
+.field-input { width:100%; padding:8px 10px; border-radius:9px; border:1.5px solid var(--border); background:var(--bg); color:var(--text); font-size:13px; outline:none; box-sizing:border-box; font-family:inherit; }
+.field-input:focus { border-color:var(--accent); }
+.field-input-full { grid-column:1/-1; }
+
+.add-ing-form { display:flex; gap:8px; flex-wrap:wrap; align-items:flex-end; background:var(--bg); border-radius:12px; padding:14px; border:1px solid var(--border); margin-top:12px; }
+.add-ing-form .field-wrap { display:flex; flex-direction:column; }
+.add-ing-form .field-wrap label { font-size:10px; font-weight:700; color:var(--muted); margin-bottom:4px; }
+.add-ing-form select, .add-ing-form input { padding:7px 10px; border-radius:9px; border:1.5px solid var(--border); background:var(--card); color:var(--text); font-size:12px; outline:none; }
+.add-ing-form select:focus, .add-ing-form input:focus { border-color:var(--accent); }
+
+/* version history */
+.ver-item { display:flex; justify-content:space-between; font-size:12px; padding:7px 0; border-bottom:1px solid var(--border); }
+.ver-item:last-child { border-bottom:none; }
+.ver-num { font-weight:700; color:var(--accent); }
+.ver-time { color:var(--muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tc-wrap">
+
+  <div class="tc-topbar">
+    <div style="flex:1">
+      <div class="tc-title">📋 {{ tc.item.name_ru }}</div>
+      <div class="tc-sub">{{ tc.branch.restaurant.name_ru }} · {{ tc.branch.name_ru }}</div>
+    </div>
+    <a href="{% url 'dashboard:tc_list' tc.branch.id %}" class="db-btn db-btn-ghost db-btn-sm">← Техкарты</a>
+    <button onclick="window.print()" class="db-btn db-btn-ghost db-btn-sm">🖨 Печать</button>
+  </div>
+
+  <div class="tc-layout">
+    <!-- LEFT COLUMN -->
+    <div>
+
+      <!-- Header form -->
+      <div class="tc-section">
+        <div class="tc-section-title">⚙️ Параметры</div>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="save_header">
+          <div class="field-group">
+            <div>
+              <label class="field-label">Выход (порций)</label>
+              <input type="number" name="yield_qty" value="{{ tc.yield_qty }}" step="0.5" min="0.5" class="field-input">
+            </div>
+            <div>
+              <label class="field-label">Время (мин)</label>
+              <input type="number" name="cooking_time" value="{{ tc.cooking_time }}" min="0" class="field-input">
+            </div>
+          </div>
+          <div style="margin-bottom:14px">
+            <label class="field-label">Примечания</label>
+            <textarea name="notes" rows="2" class="field-input" style="resize:vertical">{{ tc.notes }}</textarea>
+          </div>
+          <button type="submit" class="db-btn db-btn-primary db-btn-sm">💾 Сохранить параметры</button>
+        </form>
+      </div>
+
+      <!-- Ingredients -->
+      <div class="tc-section">
+        <div class="tc-section-title">🥩 Ингредиенты</div>
+
+        {% if lines %}
+        <div style="overflow-x:auto">
+          <table class="ing-table" id="ingTable">
+            <thead>
+              <tr>
+                <th>Ингредиент</th>
+                <th>Брутто</th>
+                <th>Отходы %</th>
+                <th>Нетто</th>
+                <th>Ед.</th>
+                <th>с/с</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for l in lines %}
+              <tr id="ing-row-{{ l.line.id }}" data-cost="{{ l.line_cost }}">
+                <td>
+                  <div class="ing-name">{{ l.line.display_name }}</div>
+                  {% if l.stock %}
+                    <div style="font-size:10px;color:{% if l.stock.qty <= 0 %}#ef4444{% elif l.stock.qty <= 5 %}#f59e0b{% else %}var(--muted){% endif %}">
+                      Остаток: {{ l.stock.qty|floatformat:3 }} {{ l.line.ingredient.get_unit_display }}
+                    </div>
+                  {% endif %}
+                </td>
+                <td>
+                  <input class="inline-num" type="number" step="0.001" min="0"
+                         value="{{ l.line.gross_qty }}"
+                         onchange="updateLine({{ l.line.id }}, this)"
+                         data-field="gross_qty">
+                </td>
+                <td>
+                  <input class="inline-num" type="number" step="0.1" min="0" max="100"
+                         value="{{ l.line.waste_pct }}"
+                         onchange="updateLine({{ l.line.id }}, this)"
+                         data-field="waste_pct">
+                </td>
+                <td><span class="net-qty" id="net-{{ l.line.id }}">{{ l.line.net_qty }}</span></td>
+                <td>
+                  <select style="padding:4px 6px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:12px"
+                          onchange="updateLineUnit({{ l.line.id }}, this.value)">
+                    {% for val, label in unit_choices %}
+                      <option value="{{ val }}" {% if val == l.line.unit %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </td>
+                <td><span class="line-cost" id="cost-{{ l.line.id }}">{{ l.line_cost|floatformat:2 }}</span> сом</td>
+                <td>
+                  <button class="del-btn" onclick="deleteLine({{ l.line.id }}, this)" title="Удалить">×</button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div style="text-align:center;padding:24px;color:var(--muted);font-size:13px">Ингредиентов нет. Добавьте ниже.</div>
+        {% endif %}
+
+        <!-- Add ingredient form -->
+        <form method="post" class="add-ing-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add_ingredient">
+          <div class="field-wrap" style="flex:2;min-width:180px">
+            <label>Ингредиент</label>
+            <select name="ingredient_id" id="ingSelect">
+              <option value="">— выберите —</option>
+              {% for ing in avail_ings %}
+                <option value="{{ ing.id }}">{{ ing.name_ru }} ({{ ing.get_unit_display }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% if semi_finished %}
+          <div class="field-wrap" style="flex:2;min-width:160px">
+            <label>Полуфабрикат</label>
+            <select name="semi_id">
+              <option value="">— или п/ф —</option>
+              {% for sf in semi_finished %}
+                <option value="{{ sf.id }}">п/ф: {{ sf.item.name_ru }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+          <div class="field-wrap" style="width:90px">
+            <label>Брутто</label>
+            <input type="number" name="gross_qty" step="0.001" min="0" value="100" placeholder="100">
+          </div>
+          <div class="field-wrap" style="width:80px">
+            <label>Отходы %</label>
+            <input type="number" name="waste_pct" step="0.1" min="0" max="100" value="0" placeholder="0">
+          </div>
+          <div class="field-wrap" style="width:70px">
+            <label>Ед.</label>
+            <select name="unit">
+              {% for val, label in unit_choices %}
+                <option value="{{ val }}"{% if val == "gr" %} selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field-wrap" style="align-self:flex-end">
+            <button type="submit" class="db-btn db-btn-primary db-btn-sm">+ Добавить</button>
+          </div>
+        </form>
+
+        <div style="margin-top:8px;text-align:right">
+          <a href="{% url 'dashboard:tc_ingredients' tc.branch.id %}" style="font-size:12px;color:var(--accent)">+ Создать новый ингредиент</a>
+        </div>
+      </div>
+
+      <!-- Steps -->
+      <div class="tc-section">
+        <div class="tc-section-title">👨‍🍳 Этапы приготовления</div>
+
+        {% if steps %}
+        <div style="margin-bottom:16px">
+          {% for step in steps %}
+          <div class="step-item">
+            <div class="step-num">{{ step.step_number }}</div>
+            <div class="step-text">{{ step.description }}</div>
+            <button class="del-btn" onclick="deleteStep({{ step.id }}, this)" title="Удалить шаг">×</button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" style="display:flex;gap:8px;align-items:flex-end">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add_step">
+          <div style="flex:1">
+            <label class="field-label">Новый шаг</label>
+            <input type="text" name="description" class="field-input" placeholder="Нарезать лук кубиками..." required>
+          </div>
+          <button type="submit" class="db-btn db-btn-ghost db-btn-sm">+ Шаг</button>
+        </form>
+      </div>
+
+      <!-- Version history -->
+      {% if versions %}
+      <div class="tc-section">
+        <div class="tc-section-title">🕐 История изменений</div>
+        {% for v in versions %}
+        <div class="ver-item">
+          <span><span class="ver-num">v{{ v.version_number }}</span> · {{ v.snapshot.ingredients|length }} ингредиентов</span>
+          <span class="ver-time">{{ v.created_at|date:"d.m.Y H:i" }}{% if v.changed_by %} · {{ v.changed_by.get_full_name|default:v.changed_by.username }}{% endif %}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+    </div>
+
+    <!-- RIGHT COLUMN: Cost Panel -->
+    <div>
+      <div class="cost-panel" id="costPanel">
+        <div style="font-size:12px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px">💰 Расчёт себестоимости</div>
+
+        <div class="cost-row">
+          <span class="cost-label">Выход</span>
+          <span class="cost-val">{{ tc.yield_qty }} порц.</span>
+        </div>
+        <div class="cost-row">
+          <span class="cost-label">С/с итого</span>
+          <span class="cost-val cost-total" id="totalCost">{{ total_cost|floatformat:2 }} сом</span>
+        </div>
+        <div class="cost-row">
+          <span class="cost-label">С/с за порцию</span>
+          <span class="cost-val" id="costPerServing">{{ cost_per_serving|floatformat:2 }} сом</span>
+        </div>
+        {% if price %}
+        <div class="cost-row">
+          <span class="cost-label">Цена продажи</span>
+          <span class="cost-val">{{ price|floatformat:0 }} сом</span>
+        </div>
+        <div class="cost-row">
+          <span class="cost-label">Прибыль / порцию</span>
+          <span class="cost-val {% if profit > 0 %}margin-good{% else %}margin-bad{% endif %}">
+            {{ profit|floatformat:0 }} сом
+          </span>
+        </div>
+        <div class="cost-row">
+          <span class="cost-label">Маржа</span>
+          <span class="cost-val cost-margin {% if margin >= 60 %}margin-good{% elif margin >= 30 %}margin-ok{% else %}margin-bad{% endif %}">
+            {{ margin }}%
+          </span>
+        </div>
+        <div class="cost-row">
+          <span class="cost-label">Наценка</span>
+          <span class="cost-val">{{ markup }}%</span>
+        </div>
+        {% endif %}
+
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.1)">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Остатки ингредиентов</div>
+          {% for l in lines %}
+            {% if l.line.ingredient %}
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;color:{% if l.stock %}{% if l.stock.qty <= 0 %}#ef4444{% elif l.stock.qty <= 5 %}#f59e0b{% else %}var(--text2){% endif %}{% else %}var(--muted){% endif %}">
+              <span>{{ l.line.ingredient.name_ru }}</span>
+              <span>{% if l.stock %}{{ l.stock.qty|floatformat:2 }}{% else %}—{% endif %}</span>
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tc-layout -->
+
+</div>
+
+<script>
+const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+const UPDATE_URL = "{% url 'dashboard:tc_line_update' 0 %}".replace("/0/", "/{id}/");
+const DELETE_URL = "{% url 'dashboard:tc_line_delete' 0 %}".replace("/0/", "/{id}/");
+const STEP_DELETE_URL = "{% url 'dashboard:tc_step_delete' 0 %}".replace("/0/", "/{id}/");
+
+async function updateLine(id, input) {
+  const row = document.getElementById("ing-row-" + id);
+  const grossQty = row.querySelector('[data-field="gross_qty"]').value;
+  const wastePct = row.querySelector('[data-field="waste_pct"]').value;
+
+  const fd = new FormData();
+  fd.append("gross_qty", grossQty);
+  fd.append("waste_pct", wastePct);
+  const r = await fetch(UPDATE_URL.replace("{id}", id), { method:"POST", headers:{"X-CSRFToken":CSRF()}, body:fd });
+  const d = await r.json();
+  if (d.ok) {
+    document.getElementById("net-" + id).textContent  = d.net_qty;
+    document.getElementById("cost-" + id).textContent = parseFloat(d.line_cost).toFixed(2);
+    row.dataset.cost = d.line_cost;
+    recalcTotal();
+  }
+}
+
+async function updateLineUnit(id, unit) {
+  const fd = new FormData();
+  fd.append("unit", unit);
+  await fetch(UPDATE_URL.replace("{id}", id), { method:"POST", headers:{"X-CSRFToken":CSRF()}, body:fd });
+}
+
+async function deleteLine(id, btn) {
+  if (!confirm("Удалить ингредиент из техкарты?")) return;
+  const r = await fetch(DELETE_URL.replace("{id}", id), { method:"POST", headers:{"X-CSRFToken":CSRF()} });
+  const d = await r.json();
+  if (d.ok) {
+    document.getElementById("ing-row-" + id).remove();
+    recalcTotal();
+  }
+}
+
+async function deleteStep(id, btn) {
+  if (!confirm("Удалить шаг?")) return;
+  const r = await fetch(STEP_DELETE_URL.replace("{id}", id), { method:"POST", headers:{"X-CSRFToken":CSRF()} });
+  const d = await r.json();
+  if (d.ok) { btn.closest(".step-item").remove(); }
+}
+
+function recalcTotal() {
+  let total = 0;
+  document.querySelectorAll("#ingTable tbody tr").forEach(row => {
+    total += parseFloat(row.dataset.cost) || 0;
+  });
+  const yieldQty = parseFloat(document.querySelector('[name="yield_qty"]')?.value) || 1;
+  document.getElementById("totalCost").textContent = total.toFixed(2) + " сом";
+  document.getElementById("costPerServing").textContent = (total / yieldQty).toFixed(2) + " сом";
+}
+</script>
+
+{% endblock %}

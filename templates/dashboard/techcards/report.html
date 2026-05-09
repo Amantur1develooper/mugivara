@@ -1,0 +1,222 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Food Cost отчёт — {{ branch.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+.tc-wrap { max-width:1100px; margin:0 auto; padding:24px 16px 60px; }
+.tc-topbar { display:flex; align-items:flex-start; gap:14px; margin-bottom:24px; flex-wrap:wrap; }
+.tc-title { font-family:'Unbounded',sans-serif; font-size:18px; font-weight:900; color:var(--text); }
+.tc-sub { font-size:12px; color:var(--muted); margin-top:3px; }
+
+.rep-filter {
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  background:var(--card); padding:12px 16px; border-radius:14px;
+  border:1px solid var(--border); margin-bottom:24px;
+}
+.rep-filter label { font-size:12px; color:var(--muted); font-weight:600; }
+.rep-date-input { padding:7px 12px; border-radius:8px; border:1.5px solid var(--border); background:var(--bg); color:var(--text); font-size:13px; outline:none; }
+.rep-date-input:focus { border-color:var(--accent); }
+.rep-filter-btn { padding:8px 18px; border-radius:8px; background:var(--accent); color:#fff; border:none; font-size:12px; font-weight:800; cursor:pointer; }
+.rep-preset { padding:5px 12px; border-radius:100px; border:1.5px solid var(--border); background:var(--bg); color:var(--text2); font-size:11px; font-weight:700; cursor:pointer; }
+.rep-preset:hover { border-color:var(--accent); color:var(--accent); }
+
+.stat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px; margin-bottom:28px; }
+.stat-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:18px 20px; }
+.stat-label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; margin-bottom:6px; }
+.stat-val { font-family:'Unbounded',sans-serif; font-size:20px; font-weight:900; color:var(--text); line-height:1; }
+.stat-sub { font-size:11px; color:var(--muted); margin-top:4px; }
+.stat-accent { background:linear-gradient(135deg,rgba(255,77,28,.08),rgba(255,138,0,.05)); border-color:rgba(255,77,28,.2); }
+.stat-accent .stat-val { color:var(--accent); }
+.stat-green { background:rgba(0,184,150,.05); border-color:rgba(0,184,150,.2); }
+.stat-green .stat-val { color:#00b896; }
+.stat-red { background:rgba(239,68,68,.05); border-color:rgba(239,68,68,.2); }
+.stat-red .stat-val { color:#ef4444; }
+
+.section-title { font-size:13px; font-weight:800; color:var(--text); margin-bottom:12px; margin-top:4px; }
+
+.rep-table { width:100%; border-collapse:collapse; background:var(--card); border-radius:14px; overflow:hidden; margin-bottom:28px; }
+.rep-table th { padding:10px 16px; font-size:11px; font-weight:700; color:var(--muted); text-align:left; border-bottom:1px solid var(--border); }
+.rep-table td { padding:10px 16px; font-size:13px; color:var(--text); border-bottom:1px solid var(--border); }
+.rep-table tr:last-child td { border-bottom:none; }
+.rep-table td.r { text-align:right; }
+.rep-table td.rev { font-weight:900; color:var(--accent); text-align:right; }
+.rep-table td.cost { font-weight:700; color:#ef4444; text-align:right; }
+.rep-table td.profit { font-weight:900; color:#22c55e; text-align:right; }
+.rep-table th.r { text-align:right; }
+
+.margin-good { color:#22c55e; font-weight:700; }
+.margin-ok   { color:#f59e0b; font-weight:700; }
+.margin-bad  { color:#ef4444; font-weight:700; }
+.no-tc-tag { font-size:10px; color:var(--muted); background:rgba(0,0,0,.05); border-radius:100px; padding:2px 8px; margin-left:4px; }
+
+.bar-wrap { display:flex; align-items:center; gap:6px; }
+.bar { height:6px; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:3px; min-width:4px; }
+
+@media print { .rep-filter,.db-btn { display:none !important; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tc-wrap">
+
+  <div class="tc-topbar">
+    <div style="flex:1">
+      <div class="tc-title">📊 Food Cost — себестоимость</div>
+      <div class="tc-sub">{{ branch.restaurant.name_ru }} · {{ branch.name_ru }}</div>
+    </div>
+    <a href="{% url 'dashboard:tc_list' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">← Техкарты</a>
+    <a href="{% url 'dashboard:tc_ingredients' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">🥩 Склад</a>
+    <button onclick="window.print()" class="db-btn db-btn-ghost db-btn-sm">🖨 Печать</button>
+  </div>
+
+  <!-- Date filter -->
+  <form method="get" class="rep-filter" id="repForm">
+    <label>С</label>
+    <input class="rep-date-input" type="date" name="from" value="{{ date_from|date:'Y-m-d' }}">
+    <label>По</label>
+    <input class="rep-date-input" type="date" name="to" value="{{ date_to|date:'Y-m-d' }}">
+    <button type="submit" class="rep-filter-btn">Показать</button>
+    <button type="button" class="rep-preset" onclick="setPreset(0,0)">Сегодня</button>
+    <button type="button" class="rep-preset" onclick="setPreset(6,0)">7 дней</button>
+    <button type="button" class="rep-preset" onclick="setPreset(29,0)">30 дней</button>
+    <button type="button" class="rep-preset" onclick="setMonth()">Месяц</button>
+  </form>
+
+  <!-- Stats -->
+  <div class="stat-grid">
+    <div class="stat-card stat-accent">
+      <div class="stat-label">Выручка</div>
+      <div class="stat-val">{{ total_revenue|floatformat:0 }}</div>
+      <div class="stat-sub">сом · {{ total_orders }} заказов</div>
+    </div>
+    <div class="stat-card stat-red">
+      <div class="stat-label">Себестоимость</div>
+      <div class="stat-val">{{ total_cost|floatformat:0 }}</div>
+      <div class="stat-sub">сом</div>
+    </div>
+    <div class="stat-card stat-green">
+      <div class="stat-label">Валовая прибыль</div>
+      <div class="stat-val">{{ total_profit|floatformat:0 }}</div>
+      <div class="stat-sub">сом</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Средняя маржа</div>
+      <div class="stat-val {% if avg_margin >= 60 %}margin-good{% elif avg_margin >= 30 %}margin-ok{% else %}margin-bad{% endif %}">{{ avg_margin }}%</div>
+      <div class="stat-sub"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Стоимость склада</div>
+      <div class="stat-val">{{ stock_value|floatformat:0 }}</div>
+      <div class="stat-sub">сом · текущий остаток</div>
+    </div>
+    {% if writeoff_cost %}
+    <div class="stat-card stat-red">
+      <div class="stat-label">Списания / потери</div>
+      <div class="stat-val">{{ writeoff_cost|floatformat:0 }}</div>
+      <div class="stat-sub">сом</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Dish breakdown -->
+  {% if dish_list %}
+  <div class="section-title">🍽️ Себестоимость по блюдам</div>
+  <div style="overflow-x:auto">
+    <table class="rep-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Блюдо</th>
+          <th class="r">Кол-во</th>
+          <th class="r">Выручка</th>
+          <th class="r">С/С</th>
+          <th class="r">Прибыль</th>
+          <th class="r">Маржа</th>
+          <th style="width:100px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in dish_list %}
+        <tr>
+          <td style="color:var(--muted);font-size:11px;font-weight:700">{{ forloop.counter }}</td>
+          <td>
+            {{ d.name }}
+            {% if not d.has_tc %}<span class="no-tc-tag">без техкарты</span>{% endif %}
+          </td>
+          <td class="r">{{ d.qty }}</td>
+          <td class="rev">{{ d.revenue|floatformat:0 }} сом</td>
+          <td class="cost">{{ d.cost_total|floatformat:0 }} сом</td>
+          <td class="profit">{{ d.profit|floatformat:0 }} сом</td>
+          <td class="r {% if d.margin >= 60 %}margin-good{% elif d.margin >= 30 %}margin-ok{% else %}margin-bad{% endif %}">
+            {% if d.has_tc %}{{ d.margin }}%{% else %}—{% endif %}
+          </td>
+          <td>
+            <div class="bar-wrap">
+              <div class="bar" data-rev="{{ d.revenue }}" style="width:4px"></div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Daily breakdown -->
+  {% if daily %}
+  <div class="section-title">📅 По дням</div>
+  <table class="rep-table">
+    <thead>
+      <tr>
+        <th>Дата</th>
+        <th class="r">Заказов</th>
+        <th class="r">Выручка</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in daily %}
+      <tr>
+        <td style="font-weight:600">{{ row.day|date:"d.m.Y, l" }}</td>
+        <td class="r">{{ row.cnt }}</td>
+        <td class="rev">{{ row.rev|floatformat:0 }} сом</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if not dish_list %}
+  <div style="text-align:center;padding:60px;color:var(--muted)">За выбранный период нет данных</div>
+  {% endif %}
+
+</div>
+<script>
+function setPreset(daysBack, fwd) {
+  const form = document.getElementById("repForm");
+  const to = new Date(); to.setDate(to.getDate() + fwd);
+  const from = new Date(); from.setDate(from.getDate() - daysBack);
+  form.querySelector('[name="from"]').value = from.toISOString().slice(0,10);
+  form.querySelector('[name="to"]').value   = to.toISOString().slice(0,10);
+  form.submit();
+}
+function setMonth() {
+  const now = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth(), 1);
+  const to   = new Date(now.getFullYear(), now.getMonth()+1, 0);
+  const form = document.getElementById("repForm");
+  form.querySelector('[name="from"]').value = from.toISOString().slice(0,10);
+  form.querySelector('[name="to"]').value   = to.toISOString().slice(0,10);
+  form.submit();
+}
+(function(){
+  const bars = document.querySelectorAll(".bar");
+  let max = 0;
+  bars.forEach(b => { const v = parseFloat(b.dataset.rev)||0; if(v>max) max=v; });
+  if (!max) return;
+  bars.forEach(b => {
+    const v = parseFloat(b.dataset.rev)||0;
+    b.style.width = Math.max(4, Math.round(v/max*100)) + "px";
+  });
+})();
+</script>
+{% endblock %}

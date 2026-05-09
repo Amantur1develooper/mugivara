@@ -137,11 +137,7 @@ table.hist-table { width: 100%; border-collapse: collapse; font-size: 13px; }
           <td class="order-time">{{ o.created_at|date:"H:i" }}</td>
           <td><span style="font-size:12px;font-weight:700">{{ o.get_type_display }}</span></td>
           <td class="order-items">
-            {% for oi in o.items.all %}
-              {{ oi.item.name_ru }} ×{{ oi.qty }}{% if not forloop.last %}, {% endif %}
-            {% empty %}
-              <span style="color:var(--muted)">—</span>
-            {% endfor %}
+            {% for oi in o.items.all %}{{ oi.item.name_ru }} ×{{ oi.qty }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if o.items.all and o.constructor_items.all %}, {% endif %}{% for coi in o.constructor_items.all %}🧩 {{ coi.constructor_name_snapshot|default:"Конструктор" }} ×{{ coi.qty }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if not o.items.all and not o.constructor_items.all %}<span style="color:var(--muted)">—</span>{% endif %}
             {% if o.customer_name %}<br><span style="color:var(--muted);font-size:11px">{{ o.customer_name }}</span>{% endif %}
             {% if o.comment %}<br><span style="color:var(--muted);font-size:11px">💬 {{ o.comment }}</span>{% endif %}
           </td>

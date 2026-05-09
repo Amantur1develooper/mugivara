@@ -12,6 +12,7 @@
 
 {% block topbar_actions %}
 <a href="{% url 'dashboard:item_add' branch.id %}" class="db-topbar-btn accent">+ <span>Добавить блюдо</span></a>
+<a href="{% url 'dashboard:tc_list' branch.id %}" class="db-topbar-btn">📋 <span>Техкарты</span></a>
 <a href="{% url 'dashboard:pos' branch.id %}" class="db-topbar-btn">🖥️ <span>Касса</span></a>
 {% endblock %}
 

@@ -1,0 +1,258 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Склад ингредиентов — {{ branch.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+.tc-wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px 60px; }
+.tc-topbar { display:flex; align-items:flex-start; gap:16px; margin-bottom:24px; flex-wrap:wrap; }
+.tc-title { font-family:'Unbounded',sans-serif; font-size:18px; font-weight:900; color:var(--text); }
+.tc-sub { font-size:12px; color:var(--muted); margin-top:3px; }
+
+.tc-stat-row { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; margin-bottom:24px; }
+.tc-stat { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
+.tc-stat-label { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+.tc-stat-val { font-family:'Unbounded',sans-serif; font-size:20px; font-weight:900; color:var(--text); }
+
+.tc-filter { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+.tc-search { padding:9px 14px; border-radius:10px; border:1.5px solid var(--border); background:var(--card); color:var(--text); font-size:13px; outline:none; min-width:240px; }
+.tc-search:focus { border-color:var(--accent); }
+
+.tc-table { width:100%; border-collapse:collapse; font-size:13px; }
+.tc-table th { padding:9px 14px; text-align:left; font-size:11px; font-weight:700; color:var(--muted); border-bottom:2px solid var(--border); white-space:nowrap; }
+.tc-table td { padding:10px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.tc-table tr:last-child td { border-bottom:none; }
+.tc-table tr:hover td { background:var(--card2,rgba(0,0,0,.02)); }
+
+.stock-badge { display:inline-block; padding:3px 10px; border-radius:100px; font-size:11px; font-weight:700; }
+.stock-ok   { background:rgba(0,184,150,.1); color:#00b896; }
+.stock-low  { background:rgba(255,149,0,.12); color:#f59e0b; }
+.stock-zero { background:rgba(239,68,68,.1); color:#ef4444; }
+
+.ing-name { font-weight:700; color:var(--text); }
+.ing-unit { font-size:11px; color:var(--muted); margin-left:4px; }
+
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; display:none; align-items:center; justify-content:center; }
+.modal-overlay.open { display:flex; }
+.modal-box { background:var(--card); border-radius:20px; padding:28px; width:100%; max-width:440px; box-shadow:0 20px 60px rgba(0,0,0,.25); }
+.modal-title { font-family:'Unbounded',sans-serif; font-size:16px; font-weight:800; margin-bottom:20px; color:var(--text); }
+.form-field { margin-bottom:14px; }
+.form-field label { display:block; font-size:11px; font-weight:700; color:var(--muted); margin-bottom:5px; text-transform:uppercase; }
+.form-field input, .form-field select, .form-field textarea {
+  width:100%; padding:9px 12px; border-radius:10px;
+  border:1.5px solid var(--border); background:var(--bg);
+  color:var(--text); font-size:13px; outline:none; box-sizing:border-box;
+  font-family:inherit;
+}
+.form-field input:focus, .form-field select:focus { border-color:var(--accent); }
+.modal-actions { display:flex; gap:8px; margin-top:18px; }
+.btn-primary { background:var(--accent); color:#fff; border:none; border-radius:10px; padding:10px 20px; font-size:13px; font-weight:700; cursor:pointer; }
+.btn-ghost   { background:var(--bg); color:var(--text2); border:1.5px solid var(--border); border-radius:10px; padding:10px 20px; font-size:13px; font-weight:700; cursor:pointer; }
+.action-link { font-size:12px; font-weight:600; color:var(--accent); text-decoration:none; cursor:pointer; border:none; background:none; padding:0; }
+.action-link:hover { text-decoration:underline; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tc-wrap">
+
+  <div class="tc-topbar">
+    <div style="flex:1">
+      <div class="tc-title">🥩 Склад ингредиентов</div>
+      <div class="tc-sub">{{ branch.restaurant.name_ru }} · {{ branch.name_ru }}</div>
+    </div>
+    <a href="{% url 'dashboard:tc_list' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📋 Техкарты</a>
+    <a href="{% url 'dashboard:tc_report' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📊 Отчёт</a>
+    <a href="{% url 'dashboard:tc_journal' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📜 Журнал</a>
+    <button onclick="openModal('addIngModal')" class="db-btn db-btn-primary db-btn-sm">+ Ингредиент</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="tc-stat-row">
+    <div class="tc-stat">
+      <div class="tc-stat-label">Ингредиентов</div>
+      <div class="tc-stat-val">{{ rows|length }}</div>
+    </div>
+    <div class="tc-stat">
+      <div class="tc-stat-label">Стоимость склада</div>
+      <div class="tc-stat-val">{{ total_value|floatformat:0 }} <span style="font-size:13px;font-weight:600">сом</span></div>
+    </div>
+    <div class="tc-stat" style="background:rgba(239,68,68,.04);border-color:rgba(239,68,68,.2)">
+      <div class="tc-stat-label" style="color:#ef4444">Нет в наличии</div>
+      <div class="tc-stat-val" style="color:#ef4444" id="zeroCount">—</div>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <form method="get" class="tc-filter">
+    <input type="text" name="q" value="{{ q }}" class="tc-search" placeholder="Поиск ингредиента...">
+    <button type="submit" class="db-btn db-btn-primary db-btn-sm">Найти</button>
+    {% if q %}<a href="?" class="db-btn db-btn-ghost db-btn-sm">✕ Сбросить</a>{% endif %}
+  </form>
+
+  <!-- Table -->
+  <div style="overflow-x:auto;background:var(--card);border:1px solid var(--border);border-radius:16px">
+    <table class="tc-table">
+      <thead>
+        <tr>
+          <th>Ингредиент</th>
+          <th>Ед. изм.</th>
+          <th>Остаток</th>
+          <th>Цена / ед.</th>
+          <th>Сумма</th>
+          <th>Статус</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td><span class="ing-name">{{ row.ing.name_ru }}</span></td>
+          <td><span class="ing-unit">{{ row.ing.get_unit_display }}</span></td>
+          <td style="font-weight:700">{{ row.qty|floatformat:3 }}</td>
+          <td>{{ row.cost|floatformat:2 }} сом</td>
+          <td style="font-weight:600;color:var(--accent)">
+            {% if row.stock %}{{ row.stock.total_value|floatformat:0 }} сом{% else %}—{% endif %}
+          </td>
+          <td>
+            {% if row.qty == 0 %}
+              <span class="stock-badge stock-zero">Нет</span>
+            {% elif row.qty <= 5 %}
+              <span class="stock-badge stock-low">Мало</span>
+            {% else %}
+              <span class="stock-badge stock-ok">В наличии</span>
+            {% endif %}
+          </td>
+          <td style="white-space:nowrap;display:flex;gap:8px">
+            <button class="action-link" onclick="openStockModal({{ row.ing.id }},'{{ row.ing.name_ru|escapejs }}',{{ row.qty }},{{ row.cost }})">
+              📦 Остаток
+            </button>
+            <button class="action-link" onclick="openPurchaseModal({{ row.ing.id }},'{{ row.ing.name_ru|escapejs }}')">
+              🛒 Закупка
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">
+            {% if q %}Ничего не найдено{% else %}Нет ингредиентов. Добавьте первый.{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- Add Ingredient Modal -->
+<div class="modal-overlay" id="addIngModal">
+  <div class="modal-box">
+    <div class="modal-title">+ Новый ингредиент</div>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="add_ingredient">
+      <div class="form-field">
+        <label>Название</label>
+        <input type="text" name="name_ru" placeholder="Куриная грудка" required autofocus>
+      </div>
+      <div class="form-field">
+        <label>Единица измерения</label>
+        <select name="unit">
+          {% for val, label in unit_choices %}
+            <option value="{{ val }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn-primary">Добавить</button>
+        <button type="button" class="btn-ghost" onclick="closeModal('addIngModal')">Отмена</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Update Stock Modal -->
+<div class="modal-overlay" id="stockModal">
+  <div class="modal-box">
+    <div class="modal-title" id="stockModalTitle">Обновить остаток</div>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="update_stock">
+      <input type="hidden" name="ingredient_id" id="stockIngId">
+      <div class="form-field">
+        <label>Остаток (факт)</label>
+        <input type="number" name="qty" id="stockQty" step="0.001" min="0" required>
+      </div>
+      <div class="form-field">
+        <label>Цена за единицу (сом)</label>
+        <input type="number" name="cost" id="stockCost" step="0.01" min="0">
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn-primary">Сохранить</button>
+        <button type="button" class="btn-ghost" onclick="closeModal('stockModal')">Отмена</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Purchase Modal -->
+<div class="modal-overlay" id="purchaseModal">
+  <div class="modal-box">
+    <div class="modal-title" id="purchaseModalTitle">🛒 Закупка</div>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="record_purchase">
+      <input type="hidden" name="ingredient_id" id="purchaseIngId">
+      <div class="form-field">
+        <label>Количество</label>
+        <input type="number" name="qty" id="purchaseQty" step="0.001" min="0.001" required>
+      </div>
+      <div class="form-field">
+        <label>Цена за единицу (сом)</label>
+        <input type="number" name="cost" step="0.01" min="0" required>
+      </div>
+      <div class="form-field">
+        <label>Примечание (поставщик и т.д.)</label>
+        <input type="text" name="note" placeholder="ООО Поставщик">
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn-primary">Оприходовать</button>
+        <button type="button" class="btn-ghost" onclick="closeModal('purchaseModal')">Отмена</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openModal(id) {
+  document.getElementById(id).classList.add("open");
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove("open");
+}
+document.querySelectorAll(".modal-overlay").forEach(m => {
+  m.addEventListener("click", e => { if (e.target === m) m.classList.remove("open"); });
+});
+
+function openStockModal(id, name, qty, cost) {
+  document.getElementById("stockModalTitle").textContent = "📦 Остаток: " + name;
+  document.getElementById("stockIngId").value = id;
+  document.getElementById("stockQty").value   = qty;
+  document.getElementById("stockCost").value  = cost;
+  openModal("stockModal");
+}
+function openPurchaseModal(id, name) {
+  document.getElementById("purchaseModalTitle").textContent = "🛒 Закупка: " + name;
+  document.getElementById("purchaseIngId").value = id;
+  openModal("purchaseModal");
+}
+
+// Count zero-stock rows
+(function(){
+  let zero = 0;
+  document.querySelectorAll(".stock-badge.stock-zero").forEach(() => zero++);
+  const el = document.getElementById("zeroCount");
+  if (el) el.textContent = zero;
+})();
+</script>
+{% endblock %}
