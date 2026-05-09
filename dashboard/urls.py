@@ -60,6 +60,8 @@ urlpatterns = [
     path("pos/receipt/<int:order_id>/",       views.pos_receipt,       name="pos_receipt"),
     path("pos/<int:branch_id>/inventory/",    views.pos_inventory,     name="pos_inventory"),
     path("pos/<int:branch_id>/report/",       views.pos_report,        name="pos_report"),
+    path("pos/<int:branch_id>/history/",      views.pos_history,       name="pos_history"),
+    path("pos/order/<int:order_id>/cancel/",  views.pos_order_cancel,  name="pos_order_cancel"),
 
     # ── КОНСТРУКТОР БЛЮД ────────────────────────────────────────────────────
     path("branch/<int:branch_id>/constructor/",                  views.constructor_list,             name="constructor_list"),
@@ -102,6 +104,8 @@ urlpatterns = [
     path("shops/branch/<int:branch_id>/pos/live/",         sv.shop_pos_live_orders,   name="shop_pos_live_orders"),
     path("shops/branch/<int:branch_id>/pos/status/<int:order_id>/", sv.shop_pos_order_status, name="shop_pos_order_status"),
     path("shops/pos/receipt/<int:order_id>/",              sv.shop_pos_receipt,        name="shop_pos_receipt"),
+    path("shops/branch/<int:branch_id>/pos/history/",      sv.shop_pos_history,        name="shop_pos_history"),
+    path("shops/pos/order/<int:order_id>/cancel/",         sv.shop_pos_order_cancel,   name="shop_pos_order_cancel"),
 
     # ── AGENCY ──────────────────────────────────────────────────────────────
     path("agency/",                                      av.agency_home,           name="agency_home"),

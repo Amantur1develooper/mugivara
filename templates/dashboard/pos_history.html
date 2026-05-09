@@ -1,0 +1,236 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}История заказов — {{ branch.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+.hist-wrap { max-width: 960px; margin: 0 auto; padding: 24px 16px 60px; }
+.hist-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.hist-title { font-family: 'Unbounded', sans-serif; font-size: 20px; font-weight: 900; color: var(--text); }
+.hist-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
+
+.hist-filters { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hist-date-input {
+  padding: 8px 12px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: var(--card);
+  color: var(--text); font-size: 13px; font-family: 'Geologica', sans-serif;
+  outline: none; transition: border-color .15s;
+}
+.hist-date-input:focus { border-color: var(--accent); }
+
+.hist-summary {
+  display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;
+}
+.hist-stat {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 18px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.hist-stat-val { font-size: 20px; font-weight: 900; color: var(--text); }
+.hist-stat-label { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+.hist-table-wrap { overflow-x: auto; }
+table.hist-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.hist-table th {
+  text-align: left; padding: 8px 12px;
+  font-size: 11px; font-weight: 700; letter-spacing: .5px;
+  color: var(--muted); border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+.hist-table td {
+  padding: 10px 12px; border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.hist-table tr:last-child td { border-bottom: none; }
+.hist-table tr:hover td { background: var(--card2); }
+
+.order-id { font-weight: 900; color: var(--muted); }
+.order-time { font-size: 12px; color: var(--text2); white-space: nowrap; }
+.order-items { font-size: 12px; color: var(--text2); max-width: 320px; }
+.order-total { font-weight: 900; white-space: nowrap; }
+.order-pay { font-size: 11px; font-weight: 700; }
+
+.st-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 100px;
+  font-size: 11px; font-weight: 700; white-space: nowrap;
+}
+.st-new       { background: rgba(255,149,0,.12);  color: #ff9500; }
+.st-accepted  { background: rgba(0,122,255,.10);  color: #007aff; }
+.st-cooking   { background: rgba(255,77,28,.10);  color: var(--accent); }
+.st-ready     { background: rgba(0,184,150,.10);  color: var(--teal); }
+.st-closed    { background: rgba(0,184,150,.12);  color: #22c55e; }
+.st-cancelled { background: rgba(255,59,48,.10);  color: #ff3b30; }
+
+.cancel-btn {
+  padding: 5px 12px; border-radius: 8px; font-size: 11px; font-weight: 700;
+  border: 1.5px solid rgba(255,59,48,.3); background: none;
+  color: #ff3b30; cursor: pointer; transition: background .12s;
+}
+.cancel-btn:hover { background: rgba(255,59,48,.08); }
+.cancel-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.hist-empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 14px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hist-wrap">
+
+  <div class="hist-header">
+    <div style="flex:1">
+      <div class="hist-title">📋 История заказов</div>
+      <div class="hist-sub">{{ branch.name_ru }} — {{ branch.restaurant.name_ru }}</div>
+    </div>
+    <a href="{% url 'dashboard:pos' branch.id %}" class="db-btn db-btn-ghost">← Касса</a>
+  </div>
+
+  <!-- Date filter -->
+  <form method="get" class="hist-filters" style="margin-bottom:20px">
+    <input type="date" name="date" class="hist-date-input"
+           value="{{ sel_date|date:'Y-m-d' }}"
+           max="{{ today|date:'Y-m-d' }}">
+    <button type="submit" class="db-btn db-btn-primary db-btn-sm">Показать</button>
+    {% if sel_date != today %}
+      <a href="?" class="db-btn db-btn-ghost db-btn-sm">Сегодня</a>
+    {% endif %}
+  </form>
+
+  {% if orders %}
+  <!-- Summary -->
+  {% with total_sum=0 %}
+  <div class="hist-summary">
+    <div class="hist-stat">
+      <div class="hist-stat-val">{{ orders.count }}</div>
+      <div class="hist-stat-label">Заказов за день</div>
+    </div>
+    <div class="hist-stat">
+      <div class="hist-stat-val" id="sumTotal">—</div>
+      <div class="hist-stat-label">Выручка (закрытые)</div>
+    </div>
+    <div class="hist-stat">
+      <div class="hist-stat-val" id="sumCancelled">—</div>
+      <div class="hist-stat-label">Отменено</div>
+    </div>
+  </div>
+  {% endwith %}
+
+  <!-- Table -->
+  <div class="hist-table-wrap">
+    <table class="hist-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Время</th>
+          <th>Тип</th>
+          <th>Состав</th>
+          <th>Итого</th>
+          <th>Оплата</th>
+          <th>Статус</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="histBody">
+        {% for o in orders %}
+        <tr id="row-{{ o.id }}" data-status="{{ o.status }}" data-total="{{ o.total_amount|floatformat:0 }}">
+          <td class="order-id">#{{ o.id }}</td>
+          <td class="order-time">{{ o.created_at|date:"H:i" }}</td>
+          <td><span style="font-size:12px;font-weight:700">{{ o.get_type_display }}</span></td>
+          <td class="order-items">
+            {% for oi in o.items.all %}
+              {{ oi.item.name_ru }} ×{{ oi.qty }}{% if not forloop.last %}, {% endif %}
+            {% empty %}
+              <span style="color:var(--muted)">—</span>
+            {% endfor %}
+            {% if o.customer_name %}<br><span style="color:var(--muted);font-size:11px">{{ o.customer_name }}</span>{% endif %}
+            {% if o.comment %}<br><span style="color:var(--muted);font-size:11px">💬 {{ o.comment }}</span>{% endif %}
+          </td>
+          <td class="order-total">{{ o.total_amount|floatformat:0 }} сом</td>
+          <td class="order-pay">
+            {% if o.payment_method == "cash" %}💵 Нал
+            {% elif o.payment_method == "online" %}💳 Онлайн
+            {% else %}{{ o.get_payment_method_display }}{% endif %}
+          </td>
+          <td>
+            <span class="st-badge st-{{ o.status }}">
+              {% if o.status == "new" %}🟡 Новый
+              {% elif o.status == "accepted" %}🔵 Принят
+              {% elif o.status == "cooking" %}🔴 Готовится
+              {% elif o.status == "ready" %}✅ Готов
+              {% elif o.status == "closed" %}✅ Закрыт
+              {% elif o.status == "cancelled" %}✕ Отменён
+              {% else %}{{ o.get_status_display }}{% endif %}
+            </span>
+          </td>
+          <td>
+            {% if o.status != "cancelled" %}
+            <button class="cancel-btn" id="cbtn-{{ o.id }}"
+                    onclick="cancelOrder({{ o.id }}, this)">
+              Отменить
+            </button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="hist-empty">
+    <div style="font-size:48px;opacity:.3;margin-bottom:12px">📋</div>
+    Нет заказов за {{ sel_date|date:"d.m.Y" }}
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+const CANCEL_URL = "{% url 'dashboard:pos_order_cancel' 0 %}".replace("/0/", "/{id}/");
+const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+
+async function cancelOrder(id, btn) {
+  if (!confirm("Отменить заказ #" + id + "?")) return;
+  btn.disabled = true;
+  btn.textContent = "...";
+  try {
+    const r = await fetch(CANCEL_URL.replace("{id}", id), {
+      method: "POST", headers: { "X-CSRFToken": CSRF() }
+    });
+    const d = await r.json();
+    if (d.ok) {
+      const row = document.getElementById("row-" + id);
+      row.dataset.status = "cancelled";
+      // Update status badge
+      const badge = row.querySelector(".st-badge");
+      badge.className = "st-badge st-cancelled";
+      badge.textContent = "✕ Отменён";
+      // Remove cancel button
+      btn.remove();
+      recalcSummary();
+    } else {
+      alert(d.error || "Ошибка");
+      btn.disabled = false;
+      btn.textContent = "Отменить";
+    }
+  } catch(e) {
+    alert("Ошибка сети");
+    btn.disabled = false;
+    btn.textContent = "Отменить";
+  }
+}
+
+function recalcSummary() {
+  let revenue = 0, cancelled = 0;
+  document.querySelectorAll("#histBody tr").forEach(row => {
+    const total = parseFloat(row.dataset.total) || 0;
+    if (row.dataset.status === "closed") revenue += total;
+    if (row.dataset.status === "cancelled") cancelled++;
+  });
+  document.getElementById("sumTotal").textContent = revenue.toLocaleString() + " сом";
+  document.getElementById("sumCancelled").textContent = cancelled;
+}
+
+recalcSummary();
+</script>
+{% endblock %}

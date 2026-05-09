@@ -118,66 +118,81 @@ def book(request, slug):
 
 def barbers_json(request, slug):
     shop = get_object_or_404(Barbershop, slug=slug, is_active=True)
-    service_id = request.GET.get("service")
+    # Accept comma-separated service IDs: ?services=1,2,3
+    raw = request.GET.get("services", request.GET.get("service", ""))
+    service_ids = [int(x) for x in raw.split(",") if x.strip().isdigit()]
     qs = Barber.objects.filter(barbershop=shop, is_active=True).order_by("sort_order")
-    if service_id:
-        qs = qs.filter(barber_services__service_id=service_id)
-    data = []
-    for b in qs:
-        data.append({
+    if service_ids:
+        qs = qs.filter(barber_services__service_id__in=service_ids).distinct()
+    data = [
+        {
             "id": b.id,
             "name": b.name,
             "experience": b.experience,
             "photo": b.photo.url if b.photo else "",
-        })
+        }
+        for b in qs
+    ]
     return JsonResponse({"barbers": data})
 
 
 def slots_json(request, slug):
     shop = get_object_or_404(Barbershop, slug=slug, is_active=True)
-    barber_id   = request.GET.get("barber")
-    service_id  = request.GET.get("service")
-    date_str    = request.GET.get("date")
-    if not (barber_id and service_id and date_str):
+    barber_id = request.GET.get("barber")
+    date_str  = request.GET.get("date")
+    raw       = request.GET.get("services", request.GET.get("service", ""))
+    service_ids = [int(x) for x in raw.split(",") if x.strip().isdigit()]
+    if not (barber_id and service_ids and date_str):
         return JsonResponse({"slots": []})
     try:
-        barber      = Barber.objects.get(id=barber_id, barbershop=shop, is_active=True)
-        service     = Service.objects.get(id=service_id, barbershop=shop, is_active=True)
-        appt_date   = datetime.strptime(date_str, "%Y-%m-%d").date()
+        barber    = Barber.objects.get(id=barber_id, barbershop=shop, is_active=True)
+        services  = list(Service.objects.filter(id__in=service_ids, barbershop=shop, is_active=True))
+        appt_date = datetime.strptime(date_str, "%Y-%m-%d").date()
     except Exception:
         return JsonResponse({"slots": []})
     if appt_date < date.today():
         return JsonResponse({"slots": []})
-    slots = _available_slots(barber, appt_date, service.duration_min)
+    total_duration = sum(s.duration_min for s in services)
+    slots = _available_slots(barber, appt_date, total_duration)
     return JsonResponse({"slots": slots})
 
 
 @require_POST
 def book_confirm(request, slug):
-    shop = get_object_or_404(Barbershop, slug=slug, is_active=True)
-    service_id  = request.POST.get("service_id")
-    barber_id   = request.POST.get("barber_id")
-    date_str    = request.POST.get("appt_date")
-    time_str    = request.POST.get("appt_time")
-    name        = (request.POST.get("name") or "").strip() or "Клиент"
-    phone       = (request.POST.get("phone") or "").strip()
+    shop      = get_object_or_404(Barbershop, slug=slug, is_active=True)
+    barber_id = request.POST.get("barber_id")
+    date_str  = request.POST.get("appt_date")
+    time_str  = request.POST.get("appt_time")
+    name      = (request.POST.get("name") or "").strip() or "Клиент"
+    phone     = (request.POST.get("phone") or "").strip()
+    # Multiple services: comma-separated IDs
+    raw_ids   = request.POST.get("service_ids", request.POST.get("service_id", ""))
+    service_ids = [int(x) for x in raw_ids.split(",") if x.strip().isdigit()]
 
     try:
-        service   = Service.objects.get(id=service_id, barbershop=shop, is_active=True)
+        services  = list(Service.objects.filter(id__in=service_ids, barbershop=shop, is_active=True))
         barber    = Barber.objects.get(id=barber_id, barbershop=shop, is_active=True)
         appt_date = datetime.strptime(date_str, "%Y-%m-%d").date()
         appt_time = datetime.strptime(time_str, "%H:%M").time()
     except Exception:
         return redirect("barbershop:book", slug=slug)
 
+    if not services:
+        return redirect("barbershop:book", slug=slug)
+
+    total_price    = sum(s.price for s in services)
+    total_duration = sum(s.duration_min for s in services)
+    service_names  = " + ".join(s.name for s in services)
+    primary_service = services[0]
+
     appt = Appointment.objects.create(
         barbershop=shop,
         barber=barber,
-        service=service,
-        service_name=service.name,
+        service=primary_service,
+        service_name=service_names,
         barber_name=barber.name,
-        price_snapshot=service.price,
-        duration_min=service.duration_min,
+        price_snapshot=total_price,
+        duration_min=total_duration,
         customer_name=name,
         customer_phone=phone,
         appt_date=appt_date,
@@ -186,12 +201,15 @@ def book_confirm(request, slug):
         source="online",
     )
 
-    # Telegram notification
     weekday_ru = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"]
     date_fmt = appt_date.strftime("%d.%m.%Y") + f" ({weekday_ru[appt_date.weekday()]})"
+    svc_lines = "\n".join(
+        f"  • {s.name} — {int(s.price)} сом ({s.duration_min} мин)" for s in services
+    )
     tg_text = (
         f"✂️ <b>Новая запись #{appt.id}</b>\n"
-        f"📋 Услуга: {service.name} — {int(service.price)} сом ({service.duration_min} мин)\n"
+        f"📋 Услуги:\n{svc_lines}\n"
+        f"💰 Итого: {int(total_price)} сом ({total_duration} мин)\n"
         f"👤 Мастер: {barber.name}\n"
         f"📅 Дата: {date_fmt} в {time_str}\n"
         f"👤 Клиент: {name}\n"
@@ -199,15 +217,20 @@ def book_confirm(request, slug):
     )
     _tg_notify(shop, tg_text)
 
-    # WhatsApp notification to admin
-    wa_msg = (
-        f"Новая запись #{appt.id}\n"
-        f"Услуга: {service.name} ({int(service.price)} сом)\n"
-        f"Мастер: {barber.name}\n"
-        f"Дата: {date_fmt} в {time_str}\n"
-        f"Клиент: {name} {phone}"
-    )
-    wa_number = "".join(c for c in (shop.whatsapp or "") if c.isdigit())
+    wa_number = "".join(ch for ch in (shop.whatsapp or shop.phone or "") if ch.isdigit())
+    if wa_number:
+        wa_text = (
+            f"✂️ Новая запись\n\n"
+            f"Услуги: {service_names}\n"
+            f"Мастер: {barber.name}\n"
+            f"Дата: {date_fmt} в {time_str}\n"
+            f"Итого: {int(total_price)} сом ({total_duration} мин)\n\n"
+            f"Клиент: {name}\n"
+            f"Телефон: {phone or '—'}"
+        )
+        request.session[f"bs_appt_{slug}"] = appt.id
+        return redirect(f"https://wa.me/{wa_number}?text={quote(wa_text)}")
+
     request.session[f"bs_appt_{slug}"] = appt.id
     return redirect("barbershop:book_success", slug=slug)
 

@@ -609,6 +609,62 @@ def shop_pos_receipt(request, order_id):
     return render(request, "dashboard/shops/receipt.html", {"order": order})
 
 
+@login_required(login_url=LOGIN_URL)
+def shop_pos_history(request, branch_id):
+    from datetime import date as _date, datetime as _dt
+    branch = get_object_or_404(StoreBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:shop_home")
+
+    today = _date.today()
+    date_str = request.GET.get("date", str(today))
+    try:
+        sel_date = _dt.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        sel_date = today
+
+    orders = (
+        StoreOrder.objects
+        .filter(branch=branch, created_at__date=sel_date)
+        .prefetch_related("items__product")
+        .order_by("-created_at")
+    )
+
+    return render(request, "dashboard/shops/pos_history.html", {
+        "branch":   branch,
+        "store":    branch.store,
+        "orders":   orders,
+        "sel_date": sel_date,
+        "today":    today,
+    })
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_pos_order_cancel(request, order_id):
+    order = get_object_or_404(StoreOrder, id=order_id)
+    if not _has_branch_access(request.user, order.branch):
+        return JsonResponse({"ok": False}, status=403)
+
+    if order.status == StoreOrder.Status.CANCELED:
+        return JsonResponse({"ok": False, "error": "Уже отменён"})
+
+    # Restore stock for done (closed) POS orders
+    if order.status == StoreOrder.Status.DONE:
+        for oi in order.items.select_related("product").all():
+            try:
+                stock = StoreStock.objects.get(branch=order.branch, product=oi.product)
+                stock.qty += oi.qty
+                stock.save(update_fields=["qty"])
+            except StoreStock.DoesNotExist:
+                pass
+
+    order.status = StoreOrder.Status.CANCELED
+    order.save(update_fields=["status"])
+
+    return JsonResponse({"ok": True})
+
+
 # ── BRANCH DUPLICATE ─────────────────────────────────────────────────────────
 
 @login_required(login_url=LOGIN_URL)

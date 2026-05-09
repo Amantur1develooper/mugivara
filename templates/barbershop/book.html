@@ -28,14 +28,22 @@
     .panel{display:none}
     .panel.active{display:block}
     /* Service selection */
-    .cat-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#555;margin-bottom:8px;margin-top:16px}
-    .svc-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
-    .svc-item{background:#1a1a1a;border:2px solid transparent;border-radius:14px;padding:14px;cursor:pointer;transition:all .15s}
+    .cat-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#555;margin-bottom:8px;margin-top:20px}
+    .svc-list{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+    .svc-item{background:#1a1a1a;border:2px solid transparent;border-radius:14px;padding:14px;cursor:pointer;transition:all .15s;position:relative}
     .svc-item:hover{border-color:rgba(255,107,53,.4)}
     .svc-item.selected{border-color:#ff6b35;background:rgba(255,107,53,.08)}
-    .svc-item-name{font-weight:600;font-size:14px;margin-bottom:4px}
+    .svc-check{position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;border:2px solid #444;background:#111;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s}
+    .svc-item.selected .svc-check{background:#ff6b35;border-color:#ff6b35;color:white}
+    .svc-item-name{font-weight:600;font-size:14px;margin-bottom:4px;padding-right:24px}
     .svc-item-meta{font-size:12px;color:#888;display:flex;justify-content:space-between}
     .svc-price{color:#ff6b35;font-weight:700}
+    /* Selected basket */
+    .basket{background:#1a1a1a;border:1.5px solid rgba(255,107,53,.25);border-radius:14px;padding:14px 16px;margin-top:16px;display:none}
+    .basket-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#ff6b35;margin-bottom:10px}
+    .basket-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+    .basket-row:last-child{border-bottom:none}
+    .basket-total{display:flex;justify-content:space-between;font-size:15px;font-weight:700;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,107,53,.2)}
     /* Barber selection */
     .barbers-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
     .barber-item{background:#1a1a1a;border:2px solid transparent;border-radius:14px;overflow:hidden;cursor:pointer;transition:all .15s;text-align:center}
@@ -62,6 +70,7 @@
     .summary{background:#1a1a1a;border-radius:16px;padding:20px;margin-bottom:20px;border:1px solid rgba(255,255,255,.06)}
     .summary-row{display:flex;justify-content:space-between;font-size:14px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)}
     .summary-row:last-child{border-bottom:none;font-weight:700;font-size:15px;padding-top:10px;margin-top:4px}
+    .summary-svc-item{font-size:13px;color:#aaa;padding:3px 0 3px 12px}
     /* Buttons */
     .btn-next{width:100%;padding:16px;background:linear-gradient(135deg,#ff6b35,#ff4444);color:white;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s;margin-top:20px}
     .btn-next:disabled{opacity:.4;cursor:not-allowed}
@@ -77,17 +86,26 @@
   <div class="sub">{{ shop.name }}</div>
 
   <div class="steps">
-    <div class="step active" id="step-ind-1"><div class="step-num">1</div><div class="step-label">Услуга</div></div>
+    <div class="step active" id="step-ind-1"><div class="step-num">1</div><div class="step-label">Услуги</div></div>
     <div class="step" id="step-ind-2"><div class="step-num">2</div><div class="step-label">Мастер</div></div>
     <div class="step" id="step-ind-3"><div class="step-num">3</div><div class="step-label">Дата и время</div></div>
     <div class="step" id="step-ind-4"><div class="step-num">4</div><div class="step-label">Контакты</div></div>
   </div>
 
-  <!-- Step 1: Service -->
+  <!-- Step 1: Services (multi-select) -->
   <div class="panel active" id="panel-1">
-    <div id="services-list">
-      {% for cat in categories_json|safe %}{% endfor %}
+    <div id="services-list"></div>
+
+    <!-- Selected basket -->
+    <div class="basket" id="basket">
+      <div class="basket-title">Выбранные услуги</div>
+      <div id="basket-rows"></div>
+      <div class="basket-total">
+        <span>Итого</span>
+        <span id="basket-total-val"></span>
+      </div>
     </div>
+
     <button class="btn-next" id="btn1" disabled onclick="goStep(2)">Далее →</button>
   </div>
 
@@ -118,10 +136,10 @@
     <div class="summary" id="summary"></div>
     <form method="post" action="{% url 'barbershop:book_confirm' shop.slug %}">
       {% csrf_token %}
-      <input type="hidden" name="service_id" id="f-service">
-      <input type="hidden" name="barber_id" id="f-barber">
-      <input type="hidden" name="appt_date" id="f-date">
-      <input type="hidden" name="appt_time" id="f-time">
+      <input type="hidden" name="service_ids" id="f-services">
+      <input type="hidden" name="barber_id"   id="f-barber">
+      <input type="hidden" name="appt_date"   id="f-date">
+      <input type="hidden" name="appt_time"   id="f-time">
       <div class="field">
         <label>Ваше имя</label>
         <input type="text" name="name" placeholder="Имя" required>
@@ -142,10 +160,12 @@ const SERVICES   = {{ services_json|safe }};
 const BARBERS_URL = "{% url 'barbershop:barbers_json' shop.slug %}";
 const SLOTS_URL   = "{% url 'barbershop:slots_json' shop.slug %}";
 
-let sel = {service:null, barber:null, date:null, time:null};
+// State
+let selectedSvcIds = new Set();   // selected service IDs
+let sel = {barber: null, date: null, time: null};
 
-// Build service list
-function buildServices(){
+/* ─── Build service list ─── */
+function buildServices() {
   const wrap = document.getElementById('services-list');
   let html = '';
   CATEGORIES.forEach(cat => {
@@ -153,11 +173,12 @@ function buildServices(){
     if (!svcs.length) return;
     html += `<div class="cat-label">${cat.name}</div><div class="svc-list">`;
     svcs.forEach(s => {
-      html += `<div class="svc-item" id="svc-${s.id}" onclick="selectService(${s.id})">
+      html += `<div class="svc-item" id="svc-${s.id}" onclick="toggleService(${s.id})">
+        <div class="svc-check" id="chk-${s.id}">✓</div>
         <div class="svc-item-name">${s.name}</div>
         <div class="svc-item-meta">
           <span>⏱ ${s.duration} мин</span>
-          <span class="svc-price">${s.price} сом</span>
+          <span class="svc-price">${s.price.toLocaleString()} сом</span>
         </div>
       </div>`;
     });
@@ -166,27 +187,54 @@ function buildServices(){
   wrap.innerHTML = html;
 }
 
-function selectService(id){
-  document.querySelectorAll('.svc-item').forEach(el => el.classList.remove('selected'));
-  const el = document.getElementById('svc-' + id);
-  if(el) el.classList.add('selected');
-  sel.service = SERVICES.find(s => s.id === id);
+function toggleService(id) {
+  if (selectedSvcIds.has(id)) {
+    selectedSvcIds.delete(id);
+    document.getElementById('svc-' + id)?.classList.remove('selected');
+  } else {
+    selectedSvcIds.add(id);
+    document.getElementById('svc-' + id)?.classList.add('selected');
+  }
   sel.barber = null; sel.date = null; sel.time = null;
-  document.getElementById('btn1').disabled = false;
+  updateBasket();
 }
 
-async function loadBarbers(){
+function updateBasket() {
+  const selected = SERVICES.filter(s => selectedSvcIds.has(s.id));
+  const basket = document.getElementById('basket');
+  const btn = document.getElementById('btn1');
+  if (!selected.length) {
+    basket.style.display = 'none';
+    btn.disabled = true;
+    return;
+  }
+  const totalPrice    = selected.reduce((a, s) => a + s.price, 0);
+  const totalDuration = selected.reduce((a, s) => a + s.duration, 0);
+  let rows = '';
+  selected.forEach(s => {
+    rows += `<div class="basket-row"><span>${s.name}</span><span>${s.price.toLocaleString()} сом · ${s.duration} мин</span></div>`;
+  });
+  document.getElementById('basket-rows').innerHTML = rows;
+  document.getElementById('basket-total-val').textContent =
+    `${totalPrice.toLocaleString()} сом · ${totalDuration} мин`;
+  basket.style.display = 'block';
+  btn.disabled = false;
+}
+
+/* ─── Step 2: Barbers ─── */
+async function loadBarbers() {
   const wrap = document.getElementById('barbers-list');
   const loading = document.getElementById('barbers-loading');
   wrap.style.display = 'none';
   loading.style.display = 'block';
   wrap.innerHTML = '';
-  const r = await fetch(BARBERS_URL + '?service=' + sel.service.id);
+  const ids = [...selectedSvcIds].join(',');
+  const r = await fetch(BARBERS_URL + '?services=' + ids);
   const d = await r.json();
   loading.style.display = 'none';
-  if(!d.barbers.length){
+  if (!d.barbers.length) {
     wrap.style.display = 'block';
-    wrap.innerHTML = '<div class="slot-none">Нет доступных мастеров для этой услуги</div>';
+    wrap.innerHTML = '<div class="slot-none">Нет доступных мастеров</div>';
     return;
   }
   let html = '';
@@ -195,30 +243,31 @@ async function loadBarbers(){
     html += `<div class="barber-item" id="barb-${b.id}" onclick="selectBarber(${b.id},'${b.name}')">
       <div class="barber-img">${photo}</div>
       <div class="barber-name">${b.name}</div>
-      <div class="barber-exp">${b.experience||''}</div>
+      <div class="barber-exp">${b.experience || ''}</div>
     </div>`;
   });
   wrap.innerHTML = html;
   wrap.style.display = 'grid';
 }
 
-function selectBarber(id, name){
-  document.querySelectorAll('.barber-item').forEach(el=>el.classList.remove('selected'));
-  const el = document.getElementById('barb-'+id);
-  if(el) el.classList.add('selected');
+function selectBarber(id, name) {
+  document.querySelectorAll('.barber-item').forEach(el => el.classList.remove('selected'));
+  document.getElementById('barb-' + id)?.classList.add('selected');
   sel.barber = {id, name};
   sel.date = null; sel.time = null;
   document.getElementById('btn2').disabled = false;
 }
 
-async function loadSlots(dateStr){
+/* ─── Step 3: Slots ─── */
+async function loadSlots(dateStr) {
   sel.time = null;
   document.getElementById('btn3').disabled = true;
   const wrap = document.getElementById('slots-wrap');
   wrap.innerHTML = '<div class="slot-none">Загрузка…</div>';
-  const r = await fetch(`${SLOTS_URL}?barber=${sel.barber.id}&service=${sel.service.id}&date=${dateStr}`);
+  const ids = [...selectedSvcIds].join(',');
+  const r = await fetch(`${SLOTS_URL}?barber=${sel.barber.id}&services=${ids}&date=${dateStr}`);
   const d = await r.json();
-  if(!d.slots.length){
+  if (!d.slots.length) {
     wrap.innerHTML = '<div class="slot-none">Нет свободного времени на эту дату</div>';
     return;
   }
@@ -230,48 +279,62 @@ async function loadSlots(dateStr){
   wrap.innerHTML = html;
 }
 
-function selectSlot(t){
-  document.querySelectorAll('.slot').forEach(el=>el.classList.remove('selected'));
-  const el = document.getElementById('slot-'+t);
-  if(el) el.classList.add('selected');
+function selectSlot(t) {
+  document.querySelectorAll('.slot').forEach(el => el.classList.remove('selected'));
+  document.getElementById('slot-' + t)?.classList.add('selected');
   sel.time = t;
   document.getElementById('btn3').disabled = false;
 }
 
-function buildSummary(){
-  const dateDisp = sel.date ? new Date(sel.date).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric',weekday:'short'}) : '';
+/* ─── Step 4: Summary ─── */
+function buildSummary() {
+  const selected = SERVICES.filter(s => selectedSvcIds.has(s.id));
+  const totalPrice    = selected.reduce((a, s) => a + s.price, 0);
+  const totalDuration = selected.reduce((a, s) => a + s.duration, 0);
+  const dateDisp = sel.date
+    ? new Date(sel.date).toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric', weekday:'short'})
+    : '';
+
+  let svcRows = '';
+  selected.forEach(s => {
+    svcRows += `<div class="summary-svc-item">• ${s.name} — ${s.price.toLocaleString()} сом</div>`;
+  });
+
   document.getElementById('summary').innerHTML = `
-    <div class="summary-row"><span>✂️ Услуга</span><span>${sel.service.name}</span></div>
+    <div class="summary-row"><span>✂️ Услуги (${selected.length})</span><span>${totalPrice.toLocaleString()} сом</span></div>
+    ${svcRows}
+    <div class="summary-row" style="margin-top:8px"><span>⏱ Длительность</span><span>${totalDuration} мин</span></div>
     <div class="summary-row"><span>👤 Мастер</span><span>${sel.barber.name}</span></div>
     <div class="summary-row"><span>📅 Дата и время</span><span>${dateDisp}, ${sel.time}</span></div>
-    <div class="summary-row"><span>💰 Стоимость</span><span>${sel.service.price} сом</span></div>
+    <div class="summary-row"><span>💰 Итого</span><span>${totalPrice.toLocaleString()} сом</span></div>
   `;
-  document.getElementById('f-service').value = sel.service.id;
-  document.getElementById('f-barber').value = sel.barber.id;
-  document.getElementById('f-date').value = sel.date;
-  document.getElementById('f-time').value = sel.time;
+  document.getElementById('f-services').value = [...selectedSvcIds].join(',');
+  document.getElementById('f-barber').value   = sel.barber.id;
+  document.getElementById('f-date').value     = sel.date;
+  document.getElementById('f-time').value     = sel.time;
 }
 
+/* ─── Navigation ─── */
 let currentStep = 1;
-function goStep(n){
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.step').forEach((s,i)=>{
-    s.classList.remove('active','done');
-    if(i+1 < n) s.classList.add('done');
-    if(i+1 === n) s.classList.add('active');
+function goStep(n) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.step').forEach((s, i) => {
+    s.classList.remove('active', 'done');
+    if (i + 1 < n) s.classList.add('done');
+    if (i + 1 === n) s.classList.add('active');
   });
-  document.getElementById('panel-'+n).classList.add('active');
+  document.getElementById('panel-' + n).classList.add('active');
   currentStep = n;
-  if(n===2) loadBarbers();
-  if(n===4) buildSummary();
+  if (n === 2) loadBarbers();
+  if (n === 4) buildSummary();
 }
 
-// Date picker min = today
+/* ─── Date picker ─── */
 const today = new Date().toISOString().split('T')[0];
 document.getElementById('date-input').min = today;
-document.getElementById('date-input').addEventListener('change', function(){
+document.getElementById('date-input').addEventListener('change', function () {
   sel.date = this.value;
-  if(sel.date && sel.barber && sel.service) loadSlots(sel.date);
+  if (sel.date && sel.barber && selectedSvcIds.size) loadSlots(sel.date);
 });
 
 buildServices();

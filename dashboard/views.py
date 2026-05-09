@@ -1384,6 +1384,65 @@ def pos_report(request, branch_id):
     })
 
 
+# ── POS History ───────────────────────────────────────────────────────────────
+
+@login_required(login_url="dashboard:login")
+def pos_history(request, branch_id):
+    from datetime import date as _date, datetime as _dt
+    branch = get_object_or_404(Branch, id=branch_id)
+    if not (request.user.is_staff or request.user.is_superuser or _has_branch_access(request.user, branch)):
+        return redirect("dashboard:home")
+
+    today = _date.today()
+    date_str = request.GET.get("date", str(today))
+    try:
+        sel_date = _dt.strptime(date_str, "%Y-%m-%d").date()
+    except ValueError:
+        sel_date = today
+
+    orders = (
+        Order.objects
+        .filter(branch=branch, created_at__date=sel_date)
+        .prefetch_related("items__item")
+        .order_by("-created_at")
+    )
+
+    return render(request, "dashboard/pos_history.html", {
+        "branch":    branch,
+        "orders":    orders,
+        "sel_date":  sel_date,
+        "today":     today,
+    })
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def pos_order_cancel(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    if not (request.user.is_staff or request.user.is_superuser or _has_branch_access(request.user, order.branch)):
+        return JsonResponse({"ok": False}, status=403)
+
+    if order.status == Order.Status.CANCELLED:
+        return JsonResponse({"ok": False, "error": "Уже отменён"})
+
+    # Restore stock for closed POS orders
+    if order.status == Order.Status.CLOSED:
+        for oi in order.items.select_related("item").all():
+            try:
+                bi = BranchItem.objects.get(branch=order.branch, item=oi.item)
+                if bi.stock is not None:
+                    bi.stock += oi.qty
+                    bi.is_available = True
+                    bi.save(update_fields=["stock", "is_available"])
+            except BranchItem.DoesNotExist:
+                pass
+
+    order.status = Order.Status.CANCELLED
+    order.save(update_fields=["status", "updated_at"])
+
+    return JsonResponse({"ok": True})
+
+
 # ── КОНСТРУКТОР БЛЮД ──────────────────────────────────────────────────────────
 
 @login_required(login_url="dashboard:login")

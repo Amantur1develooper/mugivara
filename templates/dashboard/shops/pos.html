@@ -397,7 +397,8 @@
     </div>
     <div class="pos-clock" id="posClock">--:--</div>
     <div class="pos-topbar-btns">
-      <a href="{% url 'dashboard:shop_orders' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📋 Заказы</a>
+      <a href="{% url 'dashboard:shop_pos_history' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📋 История</a>
+      <a href="{% url 'dashboard:shop_orders' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📦 Заказы</a>
       <a href="{% url 'dashboard:shop_product_list' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📦 Товары</a>
       <a href="{% url 'dashboard:shop_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Магазины</a>
     </div>

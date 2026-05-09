@@ -519,6 +519,9 @@
   <div class="bm-cats-sticky">
     <div class="bm-cats-inner" id="catsBar">
       <a href="#bm-top" class="bm-cat-btn active" data-cat-link="bm-top">Все</a>
+      {% if constructors %}
+        <a href="#cat-constructors" class="bm-cat-btn" data-cat-link="cat-constructors">🧩 Собери сам</a>
+      {% endif %}
       {% for c in menu %}
         <a href="#cat-{{ c.branch_category.id }}"
            class="bm-cat-btn"
@@ -526,14 +529,52 @@
           {% t c.branch_category.category "name" %}
         </a>
       {% endfor %}
-      {% if constructors %}
-        <a href="#cat-constructors" class="bm-cat-btn" data-cat-link="cat-constructors">🧩 Собери сам</a>
-      {% endif %}
     </div>
   </div>
 
 
   <div class="bm-content" id="bm-top">
+
+    {# ── Собери сам — всегда вверху ── #}
+    {% if constructors %}
+    <section class="bm-cat-section" id="cat-constructors" data-cat-section="cat-constructors">
+      <div class="bm-cat-header">
+        <div class="bm-cat-line"></div>
+        <h2 class="bm-cat-title">🧩 Собери сам</h2>
+        <span class="bm-cat-count">{{ constructors|length }}</span>
+        <div class="bm-cat-line"></div>
+      </div>
+      <div class="cx-cards">
+        {% for cx in constructors %}
+        <div class="cx-card" onclick="openCxModal({{ cx.id }})" role="button" tabindex="0"
+             onkeydown="if(event.key==='Enter'||event.key===' ')openCxModal({{ cx.id }})">
+          <div class="cx-card-img">
+            {% if cx.photo %}
+              <img src="{{ cx.photo.url }}" alt="{{ cx.name }}" loading="lazy">
+            {% else %}
+              <div class="cx-card-img-placeholder">🧩</div>
+            {% endif %}
+            <div class="cx-card-overlay"></div>
+            <div class="cx-card-label">Собери сам</div>
+          </div>
+          <div class="cx-card-body">
+            <div class="cx-card-name">{{ cx.name }}</div>
+            {% if cx.description %}
+            <div class="cx-card-desc">{{ cx.description|truncatechars:60 }}</div>
+            {% endif %}
+            <div class="cx-card-steps">
+              {% for g in cx.groups.all %}
+              <span class="cx-card-step">{{ g.name }}</span>
+              {% if not forloop.last %}<span class="cx-card-step-sep">·</span>{% endif %}
+              {% endfor %}
+            </div>
+            <div class="cx-card-cta"><span>Собрать →</span></div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
 
     {% if menu %}
       {% for c in menu %}
@@ -621,46 +662,6 @@
       </div>
     {% endif %}
 
-    {# ── СЕКЦИЯ КОНСТРУКТОРА ── #}
-    {% if constructors %}
-    <section class="bm-cat-section" id="cat-constructors" data-cat-section="cat-constructors">
-      <div class="bm-cat-header">
-        <div class="bm-cat-line"></div>
-        <h2 class="bm-cat-title">🧩 Собери сам</h2>
-        <span class="bm-cat-count">{{ constructors|length }}</span>
-        <div class="bm-cat-line"></div>
-      </div>
-
-      <div class="cx-cards">
-        {% for cx in constructors %}
-        <div class="cx-card" onclick="openCxModal({{ cx.id }})" role="button" tabindex="0"
-             onkeydown="if(event.key==='Enter'||event.key===' ')openCxModal({{ cx.id }})">
-          <div class="cx-card-img">
-            {% if cx.photo %}
-              <img src="{{ cx.photo.url }}" alt="{{ cx.name }}" loading="lazy">
-            {% else %}
-              <div class="cx-card-img-placeholder">🧩</div>
-            {% endif %}
-            <div class="cx-card-overlay"></div>
-            <div class="cx-card-label">Собери сам</div>
-          </div>
-          <div class="cx-card-body">
-            <div class="cx-card-name">{{ cx.name }}</div>
-            {% if cx.description %}
-            <div class="cx-card-desc">{{ cx.description|truncatechars:60 }}</div>
-            {% endif %}
-            <div class="cx-card-steps">
-              {% for g in cx.groups.all %}
-              <span class="cx-card-step">{{ g.name }}</span>
-              {% if not forloop.last %}<span class="cx-card-step-sep">·</span>{% endif %}
-              {% endfor %}
-            </div>
-            <div class="cx-card-cta"><span>Собрать →</span></div>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    </section>
 
     <style>
     .cx-cards {
@@ -744,7 +745,6 @@
     }
     .cx-card:hover .cx-card-cta { box-shadow: 0 6px 18px rgba(255,77,28,.35); }
     </style>
-    {% endif %}
 
   </div>
 </div>

@@ -461,6 +461,21 @@ def table_create_order(request, token):
     if not cart and not cx_cart:
         return redirect("table_cart", token=token)
 
+    # Pre-calculate total so the signal gets the correct value on create
+    total = Decimal("0")
+    cart_rows = []
+    for bi_id, qty in cart.items():
+        bi = get_object_or_404(BranchItem, id=int(bi_id), branch=branch)
+        qty = int(qty)
+        line_total = bi.price * qty
+        cart_rows.append({"bi": bi, "qty": qty, "line_total": line_total})
+        total += line_total
+
+    for cx_item in cx_cart:
+        qty = int(cx_item.get("qty", 1))
+        unit_price = Decimal(str(cx_item["unit_price"]))
+        total += unit_price * qty
+
     order = Order.objects.create(
         branch=branch,
         type=Order.Type.DINE_IN,
@@ -468,24 +483,19 @@ def table_create_order(request, token):
         status=Order.Status.NEW,
         customer_name=customer_name,
         comment=comment,
+        total_amount=total,
         payment_method=Order.PaymentMethod.CASH,
         payment_status=Order.PaymentStatus.UNPAID,
     )
 
-    total = Decimal("0")
-
-    for bi_id, qty in cart.items():
-        bi = get_object_or_404(BranchItem, id=int(bi_id), branch=branch)
-        qty = int(qty)
-        line_total = bi.price * qty
+    for row in cart_rows:
         OrderItem.objects.create(
             order=order,
-            item=bi.item,
-            qty=qty,
-            price_snapshot=bi.price,
-            line_total=line_total,
+            item=row["bi"].item,
+            qty=row["qty"],
+            price_snapshot=row["bi"].price,
+            line_total=row["line_total"],
         )
-        total += line_total
 
     for cx_item in cx_cart:
         qty = int(cx_item.get("qty", 1))
@@ -501,10 +511,6 @@ def table_create_order(request, token):
             line_total=line_total,
             ingredients_snapshot=cx_item.get("selections", []),
         )
-        total += line_total
-
-    order.total_amount = total
-    order.save(update_fields=["total_amount"])
 
     _save_cart(request, token, {})
     _save_cx_cart(request, token, [])
