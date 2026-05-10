@@ -1336,11 +1336,15 @@ def pos_report(request, branch_id):
         Order.Status.COOKING, Order.Status.READY,
     ])
 
-    # ── Выручка: используем total_amount (включает и обычные, и конструктор) ──
-    total_revenue  = closed.aggregate(s=_Sum("total_amount"))["s"] or Decimal("0")
-    total_orders   = closed.count()
+    # ── Выручка без стоимости доставки ──
+    def _revenue(qs):
+        agg = qs.aggregate(amt=_Sum("total_amount"), fee=_Sum("delivery_fee"))
+        return (agg["amt"] or Decimal("0")) - (agg["fee"] or Decimal("0"))
+
+    total_revenue   = _revenue(closed)
+    total_orders    = closed.count()
     cancelled_count = cancelled.count()
-    cancelled_sum  = cancelled.aggregate(s=_Sum("total_amount"))["s"] or Decimal("0")
+    cancelled_sum   = _revenue(cancelled)
 
     # ── Онлайн vs Офлайн ──
     # Онлайн = заказ через QR-стол (table_place не null) или delivery/pickup
@@ -1352,14 +1356,14 @@ def pos_report(request, branch_id):
         table_place__isnull=True,
         type=Order.Type.DINE_IN,
     )
-    online_revenue  = online_qs.aggregate(s=_Sum("total_amount"))["s"] or Decimal("0")
-    offline_revenue = offline_qs.aggregate(s=_Sum("total_amount"))["s"] or Decimal("0")
+    online_revenue  = _revenue(online_qs)
+    offline_revenue = _revenue(offline_qs)
     online_count    = online_qs.count()
     offline_count   = offline_qs.count()
 
-    # ── По способу оплаты ──
-    pay_cash   = closed.filter(payment_method="cash").aggregate(s=_Sum("total_amount"))["s"] or Decimal("0")
-    pay_online = closed.filter(payment_method="online").aggregate(s=_Sum("total_amount"))["s"] or Decimal("0")
+    # ── По способу оплаты (тоже без доставки) ──
+    pay_cash   = _revenue(closed.filter(payment_method="cash"))
+    pay_online = _revenue(closed.filter(payment_method="online"))
 
     # ── Топ блюд (обычные + конструктор) ──
     regular_items = (
@@ -1389,7 +1393,7 @@ def pos_report(request, branch_id):
         closed
         .annotate(day=TruncDate("created_at"))
         .values("day")
-        .annotate(cnt=Count("id"), rev=_Sum("total_amount"))
+        .annotate(cnt=Count("id"), rev=_Sum("total_amount"), fee=_Sum("delivery_fee"))
         .order_by("day")
     )
     cancelled_daily = {
@@ -1417,7 +1421,7 @@ def pos_report(request, branch_id):
         {
             "day":       row["day"],
             "cnt":       row["cnt"],
-            "rev":       row["rev"] or Decimal("0"),
+            "rev":       (row["rev"] or Decimal("0")) - (row["fee"] or Decimal("0")),
             "cancelled": cancelled_daily.get(row["day"], 0),
             "online":    online_daily.get(row["day"], 0),
             "offline":   offline_daily.get(row["day"], 0),

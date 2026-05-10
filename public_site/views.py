@@ -802,6 +802,7 @@ def checkout(request, branch_id: int):
             delivery_address=address,
             comment=comment,
             total_amount=total,
+            delivery_fee=delivery_fee,
             payment_method=payment_method,
             payment_status=Order.PaymentStatus.UNPAID,
         )
