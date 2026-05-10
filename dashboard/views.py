@@ -1303,7 +1303,7 @@ def pos_report(request, branch_id):
     from datetime import date as _date, datetime as _dt
     from django.db.models import Sum as _Sum, Q as _Q
     from django.db.models.functions import TruncDate
-    from orders.models import ConstructorOrderItem
+    from orders.models import OrderItem as _OI, ConstructorOrderItem
 
     branch = get_object_or_404(Branch, id=branch_id)
     if not (request.user.is_staff or request.user.is_superuser or _has_branch_access(request.user, branch)):
@@ -1326,20 +1326,18 @@ def pos_report(request, branch_id):
         created_at__date__lte=date_to,
     )
 
-    # Закрытые (учитываются в выручке)
-    closed = base_qs.filter(status=Order.Status.CLOSED)
-    # Отменённые
+    closed    = base_qs.filter(status=Order.Status.CLOSED)
     cancelled = base_qs.filter(status=Order.Status.CANCELLED)
-    # Активные (ещё не закрыты)
-    active = base_qs.filter(status__in=[
-        Order.Status.NEW, Order.Status.ACCEPTED,
-        Order.Status.COOKING, Order.Status.READY,
-    ])
 
-    # ── Выручка без стоимости доставки ──
-    def _revenue(qs):
-        agg = qs.aggregate(amt=_Sum("total_amount"), fee=_Sum("delivery_fee"))
-        return (agg["amt"] or Decimal("0")) - (agg["fee"] or Decimal("0"))
+    # ── Выручка = сумма позиций (line_total), без доставки ──
+    # Используем сумму line_total из OrderItem + ConstructorOrderItem —
+    # это единственный надёжный способ: delivery_fee в старых заказах мог
+    # не сохраняться, но line_total всегда считается только по блюдам.
+    def _revenue(order_qs):
+        ids = order_qs.values_list("id", flat=True)
+        item_rev = _OI.objects.filter(order_id__in=ids).aggregate(s=_Sum("line_total"))["s"] or Decimal("0")
+        cx_rev   = ConstructorOrderItem.objects.filter(order_id__in=ids).aggregate(s=_Sum("line_total"))["s"] or Decimal("0")
+        return item_rev + cx_rev
 
     total_revenue   = _revenue(closed)
     total_orders    = closed.count()
@@ -1347,7 +1345,6 @@ def pos_report(request, branch_id):
     cancelled_sum   = _revenue(cancelled)
 
     # ── Онлайн vs Офлайн ──
-    # Онлайн = заказ через QR-стол (table_place не null) или delivery/pickup
     online_qs  = closed.filter(
         _Q(table_place__isnull=False) |
         _Q(type__in=[Order.Type.DELIVERY, Order.Type.PICKUP])
@@ -1361,72 +1358,92 @@ def pos_report(request, branch_id):
     online_count    = online_qs.count()
     offline_count   = offline_qs.count()
 
-    # ── По способу оплаты (тоже без доставки) ──
+    # ── По способу оплаты ──
     pay_cash   = _revenue(closed.filter(payment_method="cash"))
     pay_online = _revenue(closed.filter(payment_method="online"))
 
-    # ── Топ блюд (обычные + конструктор) ──
+    # ── Топ блюд ──
     regular_items = (
-        OrderItem.objects
+        _OI.objects
         .filter(order__in=closed)
         .values("item__name_ru")
         .annotate(total_qty=_Sum("qty"), total_rev=_Sum("line_total"))
     )
-    cx_items = (
+    cx_items_qs = (
         ConstructorOrderItem.objects
         .filter(order__in=closed)
         .values("constructor_name_snapshot")
         .annotate(total_qty=_Sum("qty"), total_rev=_Sum("line_total"))
     )
-    # объединяем в Python и сортируем
     top_items = []
     for r in regular_items:
         top_items.append({"name": r["item__name_ru"], "qty": r["total_qty"], "rev": r["total_rev"] or Decimal("0")})
-    for r in cx_items:
+    for r in cx_items_qs:
         name = (r["constructor_name_snapshot"] or "Собери сам") + " 🧩"
         top_items.append({"name": name, "qty": r["total_qty"], "rev": r["total_rev"] or Decimal("0")})
     top_items.sort(key=lambda x: x["rev"], reverse=True)
     top_items = top_items[:20]
 
-    # ── Разбивка по дням ──
-    daily_raw = (
+    # ── Разбивка по дням (через item line_total) ──
+    # Собираем line_total по order_id для закрытых заказов
+    closed_ids = list(closed.values_list("id", flat=True))
+
+    item_rev_map = {
+        r["order_id"]: r["s"]
+        for r in _OI.objects.filter(order_id__in=closed_ids)
+            .values("order_id").annotate(s=_Sum("line_total"))
+    }
+    cx_rev_map = {
+        r["order_id"]: r["s"]
+        for r in ConstructorOrderItem.objects.filter(order_id__in=closed_ids)
+            .values("order_id").annotate(s=_Sum("line_total"))
+    }
+
+    order_days = (
         closed
         .annotate(day=TruncDate("created_at"))
-        .values("day")
-        .annotate(cnt=Count("id"), rev=_Sum("total_amount"), fee=_Sum("delivery_fee"))
+        .values("id", "day")
         .order_by("day")
     )
+
+    daily_agg = {}
+    for row in order_days:
+        day = row["day"]
+        rev = (item_rev_map.get(row["id"]) or Decimal("0")) + (cx_rev_map.get(row["id"]) or Decimal("0"))
+        if day not in daily_agg:
+            daily_agg[day] = {"cnt": 0, "rev": Decimal("0")}
+        daily_agg[day]["cnt"] += 1
+        daily_agg[day]["rev"] += rev
+
     cancelled_daily = {
         row["day"]: row["cnt"]
         for row in cancelled
             .annotate(day=TruncDate("created_at"))
-            .values("day")
-            .annotate(cnt=Count("id"))
+            .values("day").annotate(cnt=Count("id"))
     }
     online_daily = {
         row["day"]: row["cnt"]
         for row in online_qs
             .annotate(day=TruncDate("created_at"))
-            .values("day")
-            .annotate(cnt=Count("id"))
+            .values("day").annotate(cnt=Count("id"))
     }
     offline_daily = {
         row["day"]: row["cnt"]
         for row in offline_qs
             .annotate(day=TruncDate("created_at"))
-            .values("day")
-            .annotate(cnt=Count("id"))
+            .values("day").annotate(cnt=Count("id"))
     }
+
     daily = [
         {
-            "day":       row["day"],
-            "cnt":       row["cnt"],
-            "rev":       (row["rev"] or Decimal("0")) - (row["fee"] or Decimal("0")),
-            "cancelled": cancelled_daily.get(row["day"], 0),
-            "online":    online_daily.get(row["day"], 0),
-            "offline":   offline_daily.get(row["day"], 0),
+            "day":       day,
+            "cnt":       vals["cnt"],
+            "rev":       vals["rev"],
+            "cancelled": cancelled_daily.get(day, 0),
+            "online":    online_daily.get(day, 0),
+            "offline":   offline_daily.get(day, 0),
         }
-        for row in daily_raw
+        for day, vals in sorted(daily_agg.items())
     ]
 
     return render(request, "dashboard/pos_report.html", {
