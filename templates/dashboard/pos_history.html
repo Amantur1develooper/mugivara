@@ -106,7 +106,7 @@ table.hist-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     </div>
     <div class="hist-stat">
       <div class="hist-stat-val" id="sumTotal">—</div>
-      <div class="hist-stat-label">Выручка (закрытые)</div>
+      <div class="hist-stat-label">Выручка (без доставки)</div>
     </div>
     <div class="hist-stat">
       <div class="hist-stat-val" id="sumCancelled">—</div>
@@ -132,7 +132,7 @@ table.hist-table { width: 100%; border-collapse: collapse; font-size: 13px; }
       </thead>
       <tbody id="histBody">
         {% for o in orders %}
-        <tr id="row-{{ o.id }}" data-status="{{ o.status }}" data-total="{{ o.total_amount|floatformat:0 }}">
+        <tr id="row-{{ o.id }}" data-status="{{ o.status }}" data-total="{{ o.net_total|floatformat:0 }}">
           <td class="order-id">#{{ o.id }}</td>
           <td class="order-time">{{ o.created_at|date:"H:i" }}</td>
           <td><span style="font-size:12px;font-weight:700">{{ o.get_type_display }}</span></td>
@@ -141,7 +141,10 @@ table.hist-table { width: 100%; border-collapse: collapse; font-size: 13px; }
             {% if o.customer_name %}<br><span style="color:var(--muted);font-size:11px">{{ o.customer_name }}</span>{% endif %}
             {% if o.comment %}<br><span style="color:var(--muted);font-size:11px">💬 {{ o.comment }}</span>{% endif %}
           </td>
-          <td class="order-total">{{ o.total_amount|floatformat:0 }} сом</td>
+          <td class="order-total">
+            {{ o.net_total|floatformat:0 }} сом
+            {% if o.delivery_fee %}<br><span style="font-size:10px;color:var(--muted);font-weight:500">+{{ o.delivery_fee|floatformat:0 }} доставка</span>{% endif %}
+          </td>
           <td class="order-pay">
             {% if o.payment_method == "cash" %}💵 Нал
             {% elif o.payment_method == "online" %}💳 Онлайн

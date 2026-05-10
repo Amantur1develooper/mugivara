@@ -1464,10 +1464,15 @@ def pos_history(request, branch_id):
     except ValueError:
         sel_date = today
 
+    from django.db.models import ExpressionWrapper, F, DecimalField as _Dec
     orders = (
         Order.objects
         .filter(branch=branch, created_at__date=sel_date)
         .prefetch_related("items__item", "constructor_items")
+        .annotate(net_total=ExpressionWrapper(
+            F("total_amount") - F("delivery_fee"),
+            output_field=_Dec(max_digits=10, decimal_places=2),
+        ))
         .order_by("-created_at")
     )
 
