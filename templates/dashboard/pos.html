@@ -493,13 +493,10 @@
   color: var(--text2);
 }
 .pos-orow-items {
-  font-size: 11px;
-  color: var(--muted);
-  margin-top: 3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 400px;
+  font-size: 12px;
+  color: var(--text2);
+  margin-top: 4px;
+  line-height: 1.6;
 }
 .pos-orow-total {
   font-size: 14px;
@@ -962,7 +959,17 @@ async function loadQueue() {
 
     let html = "";
     d.orders.forEach(o => {
-      const itemsList = o.items.map(i => `${i.name} ×${i.qty}`).join(", ");
+      const itemsHtml = o.items.map(i => {
+        const isConstructor = i.name.startsWith("🧩");
+        // For constructor items, split name from detail in parentheses
+        const match = isConstructor ? i.name.match(/^(🧩 [^(]+?)(?:\s*\((.+)\))?$/) : null;
+        if (match && match[2]) {
+          const cxName = match[1].trim();
+          const detail = match[2].split(" · ").map(p => `<span style="color:var(--muted);font-size:11px;margin-left:12px">· ${p}</span>`).join("");
+          return `<div><span style="font-weight:700">${cxName}</span> <span style="color:var(--muted)">×${i.qty}</span><br>${detail}</div>`;
+        }
+        return `<div><span style="font-weight:600">${i.name}</span> <span style="color:var(--muted)">×${i.qty}</span></div>`;
+      }).join("");
       const next = STATUS_NEXT[o.status];
       let info = "";
       if (o.customer) info += o.customer;
@@ -979,7 +986,7 @@ async function loadQueue() {
               ${info ? `<span class="pos-orow-customer">${info}</span>` : ""}
               <span style="font-size:10px;color:var(--muted)">${o.created}</span>
             </div>
-            <div class="pos-orow-items">${itemsList}</div>
+            <div class="pos-orow-items">${itemsHtml}</div>
             ${o.comment ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">💬 ${o.comment}</div>` : ""}
           </div>
           <div class="pos-orow-total">${parseInt(o.total).toLocaleString()} сом</div>

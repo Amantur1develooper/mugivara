@@ -476,46 +476,47 @@ def table_create_order(request, token):
         unit_price = Decimal(str(cx_item["unit_price"]))
         total += unit_price * qty
 
-    order = Order.objects.create(
-        branch=branch,
-        type=Order.Type.DINE_IN,
-        table_place=place,
-        status=Order.Status.NEW,
-        customer_name=customer_name,
-        comment=comment,
-        total_amount=total,
-        payment_method=Order.PaymentMethod.CASH,
-        payment_status=Order.PaymentStatus.UNPAID,
-    )
-
-    for row in cart_rows:
-        OrderItem.objects.create(
-            order=order,
-            item=row["bi"].item,
-            qty=row["qty"],
-            price_snapshot=row["bi"].price,
-            line_total=row["line_total"],
+    with transaction.atomic():
+        order = Order.objects.create(
+            branch=branch,
+            type=Order.Type.DINE_IN,
+            table_place=place,
+            status=Order.Status.NEW,
+            customer_name=customer_name,
+            comment=comment,
+            total_amount=total,
+            payment_method=Order.PaymentMethod.CASH,
+            payment_status=Order.PaymentStatus.UNPAID,
         )
 
-    for cx_item in cx_cart:
-        qty = int(cx_item.get("qty", 1))
-        unit_price = Decimal(str(cx_item["unit_price"]))
-        line_total = unit_price * qty
-        cx = get_object_or_404(DishConstructor, id=cx_item["cx_id"])
-        ConstructorOrderItem.objects.create(
-            order=order,
-            constructor=cx,
-            constructor_name_snapshot=cx_item["cx_name"],
-            qty=qty,
-            unit_price=unit_price,
-            line_total=line_total,
-            ingredients_snapshot=cx_item.get("selections", []),
-        )
+        for row in cart_rows:
+            OrderItem.objects.create(
+                order=order,
+                item=row["bi"].item,
+                qty=row["qty"],
+                price_snapshot=row["bi"].price,
+                line_total=row["line_total"],
+            )
+
+        for cx_item in cx_cart:
+            qty = int(cx_item.get("qty", 1))
+            unit_price = Decimal(str(cx_item["unit_price"]))
+            line_total = unit_price * qty
+            cx = get_object_or_404(DishConstructor, id=cx_item["cx_id"])
+            ConstructorOrderItem.objects.create(
+                order=order,
+                constructor=cx,
+                constructor_name_snapshot=cx_item["cx_name"],
+                qty=qty,
+                unit_price=unit_price,
+                line_total=line_total,
+                ingredients_snapshot=cx_item.get("selections", []),
+            )
+
+        Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
 
     _save_cart(request, token, {})
     _save_cx_cart(request, token, [])
-
-    Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
 
     return redirect("table_success", token=token, order_id=order.id)
 
