@@ -934,7 +934,7 @@ async function cancelOrder(orderId) {
 }
 
 function printReceipt(orderId) {
-  window.open(RECEIPT_URL.replace("{id}", orderId), "_blank");
+  window.open(RECEIPT_URL.replace("{id}", orderId) + "?auto=1", "_blank");
 }
 
 async function loadQueue() {

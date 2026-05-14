@@ -1236,7 +1236,9 @@ def pos_live_orders(request, branch_id):
 @login_required(login_url="dashboard:login")
 def pos_receipt(request, order_id):
     order = get_object_or_404(
-        Order.objects.prefetch_related("items__item").select_related("branch__restaurant"),
+        Order.objects
+        .prefetch_related("items__item", "constructor_items")
+        .select_related("branch__restaurant", "table_place"),
         id=order_id,
     )
     if not (request.user.is_staff or request.user.is_superuser or _has_branch_access(request.user, order.branch)):

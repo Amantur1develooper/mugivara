@@ -2,158 +2,114 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Чек #{{ order.id }}</title>
 <style>
+  @page {
+    size: 80mm auto;
+    margin: 3mm 2mm;
+  }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
     font-family: 'Courier New', Courier, monospace;
-    font-size: 13px;
-    color: #111;
+    font-size: 12px;
+    color: #000;
     background: #fff;
-    display: flex;
-    justify-content: center;
-    padding: 20px;
+    width: 76mm;
   }
 
-  .receipt {
-    width: 300px;
-    padding: 16px 12px;
+  .receipt { width: 76mm; }
+
+  /* ── Helpers ── */
+  .center { text-align: center; }
+  .bold   { font-weight: bold; }
+  .sep    { border-top: 1px dashed #000; margin: 6px 0; }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+    margin-bottom: 2px;
+    font-size: 11px;
   }
+  .row .lbl { color: #333; flex-shrink: 0; }
+  .row .val { font-weight: bold; text-align: right; }
 
   /* ── Header ── */
   .r-header {
     text-align: center;
-    margin-bottom: 14px;
-    padding-bottom: 10px;
-    border-bottom: 1px dashed #888;
-  }
-
-  .r-logo {
-    width: 64px;
-    height: 64px;
-    object-fit: contain;
+    padding-bottom: 6px;
     margin-bottom: 6px;
+    border-bottom: 1px dashed #000;
   }
-
   .r-name {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: bold;
-    text-transform: uppercase;
     letter-spacing: 1px;
+    text-transform: uppercase;
   }
-
-  .r-branch {
-    font-size: 12px;
-    color: #555;
-    margin-top: 2px;
-  }
-
-  .r-addr {
-    font-size: 11px;
-    color: #777;
-    margin-top: 2px;
-  }
-
-  /* ── Meta ── */
-  .r-meta {
-    margin-bottom: 12px;
-    padding-bottom: 10px;
-    border-bottom: 1px dashed #888;
-  }
-
-  .r-meta-row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 3px;
-    font-size: 12px;
-  }
-
-  .r-meta-row .lbl { color: #555; }
-  .r-meta-row .val { font-weight: bold; }
+  .r-sub { font-size: 10px; color: #333; margin-top: 2px; }
 
   /* ── Items ── */
-  .r-items {
-    margin-bottom: 12px;
-    padding-bottom: 10px;
-    border-bottom: 1px dashed #888;
-  }
-
-  .r-item {
-    margin-bottom: 6px;
-  }
-
-  .r-item-name {
-    font-size: 12px;
-    font-weight: bold;
-    word-break: break-word;
-  }
-
-  .r-item-detail {
+  .r-item { margin-bottom: 5px; }
+  .r-item-name { font-size: 12px; font-weight: bold; word-break: break-word; }
+  .r-item-ing  { font-size: 10px; color: #444; padding-left: 4px; line-height: 1.4; }
+  .r-item-line {
     display: flex;
     justify-content: space-between;
-    font-size: 12px;
-    color: #444;
+    font-size: 11px;
+    color: #222;
     margin-top: 1px;
   }
 
   /* ── Totals ── */
-  .r-totals {
-    margin-bottom: 14px;
-  }
-
-  .r-total-row {
+  .r-sub-row {
     display: flex;
     justify-content: space-between;
-    font-size: 13px;
-    margin-bottom: 4px;
+    font-size: 11px;
+    color: #333;
+    margin-bottom: 2px;
   }
-
-  .r-total-row.main {
-    font-size: 16px;
+  .r-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 15px;
     font-weight: bold;
-    border-top: 1px solid #111;
-    padding-top: 6px;
+    border-top: 1px solid #000;
+    padding-top: 5px;
     margin-top: 4px;
+    margin-bottom: 4px;
   }
 
   /* ── Footer ── */
   .r-footer {
     text-align: center;
-    font-size: 12px;
-    color: #555;
-    border-top: 1px dashed #888;
-    padding-top: 10px;
+    border-top: 1px dashed #000;
+    padding-top: 8px;
+    margin-top: 4px;
   }
+  .r-footer .thanks { font-size: 13px; font-weight: bold; margin-bottom: 3px; }
+  .r-footer .sub    { font-size: 10px; color: #444; }
 
-  .r-footer .thanks {
-    font-size: 14px;
-    font-weight: bold;
-    color: #111;
-    margin-bottom: 4px;
-  }
-
-  /* ── Print button (hidden in print) ── */
+  /* ── Print button (screen only) ── */
   .r-print-btn {
     display: block;
     width: 100%;
-    margin-top: 20px;
+    margin-top: 18px;
     padding: 10px;
-    background: #111;
+    background: #000;
     color: #fff;
     border: none;
-    border-radius: 6px;
-    font-size: 14px;
+    font-family: inherit;
+    font-size: 13px;
     cursor: pointer;
     text-align: center;
   }
-
-  .r-print-btn:hover { background: #333; }
+  .r-print-btn:active { background: #333; }
 
   @media print {
-    body { padding: 0; }
-    .receipt { width: 100%; }
+    body { width: 76mm; }
     .r-print-btn { display: none !important; }
   }
 </style>
@@ -163,66 +119,77 @@
 
   <!-- Header -->
   <div class="r-header">
-    {% if order.branch.restaurant.logo %}
-      <img class="r-logo" src="{{ order.branch.restaurant.logo.url }}" alt="">
-    {% endif %}
-    <div class="r-name">{{ order.branch.restaurant.name }}</div>
-    <div class="r-branch">{{ order.branch.address|default:"" }}</div>
+    <div class="r-name">{{ order.branch.restaurant.name_ru }}</div>
+    {% if order.branch.address %}<div class="r-sub">{{ order.branch.address }}</div>{% endif %}
+    {% if order.branch.phone  %}<div class="r-sub">{{ order.branch.phone }}</div>{% endif %}
   </div>
 
   <!-- Meta -->
-  <div class="r-meta">
-    <div class="r-meta-row">
-      <span class="lbl">Чек №</span>
-      <span class="val">{{ order.id }}</span>
-    </div>
-    <div class="r-meta-row">
-      <span class="lbl">Дата</span>
-      <span class="val">{{ order.created_at|date:"d.m.Y H:i" }}</span>
-    </div>
-    <div class="r-meta-row">
-      <span class="lbl">Тип</span>
-      <span class="val">{{ order.get_type_display }}</span>
-    </div>
-    <div class="r-meta-row">
-      <span class="lbl">Оплата</span>
-      <span class="val">{{ order.get_payment_method_display }}</span>
-    </div>
-    {% if order.customer_name %}
-    <div class="r-meta-row">
-      <span class="lbl">Гость</span>
-      <span class="val">{{ order.customer_name }}</span>
-    </div>
+  <div style="padding-bottom:6px;margin-bottom:6px;border-bottom:1px dashed #000">
+    <div class="row"><span class="lbl">Чек №</span>   <span class="val">{{ order.id }}</span></div>
+    <div class="row"><span class="lbl">Дата</span>     <span class="val">{{ order.created_at|date:"d.m.Y H:i" }}</span></div>
+    <div class="row"><span class="lbl">Тип</span>      <span class="val">{{ order.get_type_display }}</span></div>
+    {% if order.table_place %}
+    <div class="row"><span class="lbl">Стол</span>     <span class="val">{{ order.table_place.title }}</span></div>
     {% endif %}
+    {% if order.customer_name %}
+    <div class="row"><span class="lbl">Гость</span>    <span class="val">{{ order.customer_name }}</span></div>
+    {% endif %}
+    {% if order.customer_phone %}
+    <div class="row"><span class="lbl">Телефон</span>  <span class="val">{{ order.customer_phone }}</span></div>
+    {% endif %}
+    <div class="row"><span class="lbl">Оплата</span>   <span class="val">{{ order.get_payment_method_display }}</span></div>
     {% if order.comment %}
-    <div class="r-meta-row">
-      <span class="lbl">Примечание</span>
-      <span class="val" style="text-align:right;max-width:170px;">{{ order.comment }}</span>
-    </div>
+    <div class="row"><span class="lbl">Примечание</span><span class="val" style="max-width:42mm">{{ order.comment }}</span></div>
     {% endif %}
   </div>
 
   <!-- Items -->
-  <div class="r-items">
+  <div style="padding-bottom:6px;margin-bottom:6px;border-bottom:1px dashed #000">
     {% for oi in order.items.all %}
     <div class="r-item">
-      <div class="r-item-name">{{ oi.item.name }}</div>
-      <div class="r-item-detail">
-        <span>{{ oi.price_snapshot|floatformat:0 }} × {{ oi.qty }}</span>
+      <div class="r-item-name">{{ oi.item.name_ru }}</div>
+      <div class="r-item-line">
+        <span>{{ oi.price_snapshot|floatformat:0 }} x {{ oi.qty }}</span>
         <span>{{ oi.line_total|floatformat:0 }} сом</span>
+      </div>
+    </div>
+    {% endfor %}
+
+    {% for coi in order.constructor_items.all %}
+    <div class="r-item">
+      <div class="r-item-name">{{ coi.constructor_name_snapshot|default:"Собери сам" }}</div>
+      {% for sel in coi.ingredients_snapshot %}
+        {% if sel.ings %}
+        <div class="r-item-ing">{{ sel.gname }}: {% for i in sel.ings %}{{ i.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+        {% endif %}
+      {% endfor %}
+      <div class="r-item-line">
+        <span>{{ coi.unit_price|floatformat:0 }} x {{ coi.qty }}</span>
+        <span>{{ coi.line_total|floatformat:0 }} сом</span>
       </div>
     </div>
     {% endfor %}
   </div>
 
   <!-- Totals -->
-  <div class="r-totals">
-    <div class="r-total-row main">
-      <span>ИТОГО</span>
+  <div style="margin-bottom:8px">
+    {% if order.delivery_fee %}
+    <div class="r-sub-row">
+      <span>Блюда</span>
       <span>{{ order.total_amount|floatformat:0 }} сом</span>
     </div>
-    <div class="r-total-row">
-      <span>Статус оплаты</span>
+    <div class="r-sub-row">
+      <span>Доставка</span>
+      <span>{{ order.delivery_fee|floatformat:0 }} сом</span>
+    </div>
+    {% endif %}
+    <div class="r-total">
+      <span>ИТОГО</span>
+      <span>{{ order.total_amount|floatformat:0 }} СОМ</span>
+    </div>
+    <div class="r-sub-row">
+      <span>Статус</span>
       <span>{{ order.get_payment_status_display }}</span>
     </div>
   </div>
@@ -230,10 +197,19 @@
   <!-- Footer -->
   <div class="r-footer">
     <div class="thanks">Спасибо за заказ!</div>
-    <div>Приходите к нам снова</div>
+    <div class="sub">{{ order.branch.restaurant.name_ru }}</div>
   </div>
 
-  <button class="r-print-btn" onclick="window.print()">Распечатать</button>
+  <button class="r-print-btn" onclick="window.print()">🖨 Распечатать</button>
+
 </div>
+<script>
+  // ?auto=1 → автопечать (когда открывают из POS)
+  if (new URLSearchParams(window.location.search).get("auto") === "1") {
+    window.addEventListener("load", function() {
+      setTimeout(function() { window.print(); }, 300);
+    });
+  }
+</script>
 </body>
 </html>

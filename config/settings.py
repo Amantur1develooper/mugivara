@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
-import environ
+import environ 
 import os
 # from sanzhi.env import env
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
