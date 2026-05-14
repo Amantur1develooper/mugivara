@@ -15,7 +15,8 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path("",        views.home,        name="home"),
 
-    path("restaurant/<int:restaurant_id>/edit/", views.restaurant_edit, name="restaurant_edit"),
+    path("restaurant/create/",                   views.restaurant_create, name="restaurant_create"),
+    path("restaurant/<int:restaurant_id>/edit/", views.restaurant_edit,   name="restaurant_edit"),
 
     path("branch/<int:branch_id>/edit/",     views.branch_edit,  name="branch_edit"),
     path("branch/<int:branch_id>/items/",    views.branch_items, name="branch_items"),

@@ -99,6 +99,36 @@ def home(request):
 
 # ── RESTAURANT ───────────────────────────────────────────────────────────────
 
+@require_POST
+@login_required(login_url="dashboard:login")
+def restaurant_create(request):
+    from django.utils.text import slugify
+    import uuid
+    from catalog.models import MenuSet, BranchMenuSet
+
+    name = request.POST.get("name_ru", "").strip()
+    if not name:
+        messages.error(request, "Введите название")
+        return redirect("dashboard:home")
+
+    # Уникальный slug
+    base_slug = slugify(name) or "restaurant"
+    slug = base_slug
+    if Restaurant.objects.filter(slug=slug).exists():
+        slug = f"{base_slug}-{uuid.uuid4().hex[:6]}"
+
+    restaurant = Restaurant.objects.create(name_ru=name, slug=slug, is_active=True)
+    Membership.objects.create(user=request.user, restaurant=restaurant)
+
+    branch = Branch.objects.create(restaurant=restaurant, name_ru=name, is_active=True)
+
+    menu_set = MenuSet.objects.create(restaurant=restaurant, name="Основное меню", is_active=True)
+    BranchMenuSet.objects.create(branch=branch, menu_set=menu_set)
+
+    messages.success(request, f"Ресторан «{name}» создан")
+    return redirect("dashboard:restaurant_edit", restaurant_id=restaurant.id)
+
+
 @login_required(login_url="dashboard:login")
 def restaurant_edit(request, restaurant_id):
     restaurant = get_object_or_404(Restaurant, id=restaurant_id)

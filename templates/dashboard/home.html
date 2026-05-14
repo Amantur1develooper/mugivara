@@ -139,6 +139,28 @@
     <div class="pg-title">Мои заведения</div>
     <div class="pg-sub">Управляйте меню, ценами и заказами</div>
   </div>
+  <button onclick="document.getElementById('newRestModal').style.display='flex'" class="db-btn db-btn-primary">
+    + Новый ресторан
+  </button>
+</div>
+
+<!-- Модалка создания ресторана -->
+<div id="newRestModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--card);border-radius:18px;padding:28px 24px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="font-family:'Unbounded',sans-serif;font-size:16px;font-weight:900;margin-bottom:18px">🏪 Новый ресторан</div>
+    <form method="post" action="{% url 'dashboard:restaurant_create' %}">
+      {% csrf_token %}
+      <input type="text" name="name_ru" placeholder="Название ресторана" required autofocus
+             style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border);
+                    background:var(--bg);color:var(--text);font-size:14px;font-family:inherit;
+                    outline:none;margin-bottom:14px">
+      <div style="display:flex;gap:10px">
+        <button type="submit" class="db-btn db-btn-primary" style="flex:1">Создать</button>
+        <button type="button" onclick="document.getElementById('newRestModal').style.display='none'"
+                class="db-btn db-btn-ghost" style="flex:1">Отмена</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 {% if data %}
@@ -230,7 +252,7 @@
 <div class="empty-state">
   <div class="empty-state-icon">🏪</div>
   <h3>Нет заведений</h3>
-  <p>Обратитесь к администратору для подключения вашего ресторана</p>
+  <p>Нажмите «+ Новый ресторан» чтобы начать</p>
 </div>
 {% endif %}
 
