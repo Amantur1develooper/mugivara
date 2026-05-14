@@ -8,7 +8,10 @@
     <div class="db-page-title">⚙️ {{ branch.name_ru }}</div>
     <div class="db-breadcrumb">{{ store.name_ru }} — настройки филиала</div>
   </div>
-  <a href="{% url 'dashboard:shop_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Мои магазины</a>
+  <div style="display:flex;gap:8px">
+    <a href="{% url 'dashboard:shop_branch_duplicate' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📋 Дублировать</a>
+    <a href="{% url 'dashboard:shop_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Мои магазины</a>
+  </div>
 </div>
 
 <form method="post" enctype="multipart/form-data" style="max-width:600px">

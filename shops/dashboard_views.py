@@ -687,11 +687,11 @@ def shop_branch_duplicate(request, branch_id):
     POST — создаёт полную копию филиала: новые категории, товары (название,
            описание, цена, фото) и остатки. Всё автономно в БД.
     """
-    if not request.user.is_superuser:
+    branch = get_object_or_404(StoreBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
         return redirect("dashboard:shop_home")
 
-    branch = get_object_or_404(StoreBranch, id=branch_id)
-    all_stores = Store.objects.all().order_by("name_ru")
+    all_stores = _user_stores(request.user).order_by("name_ru") if not request.user.is_superuser else Store.objects.all().order_by("name_ru")
 
     if request.method == "GET":
         return render(request, "dashboard/shops/branch_duplicate.html", {
