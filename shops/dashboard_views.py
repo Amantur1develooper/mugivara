@@ -762,16 +762,18 @@ def shop_branch_duplicate(request, branch_id):
         old_product = stock.product
         old_cat = old_product.category
 
-        # Категория — создаём один раз на каждую уникальную категорию
+        # Категория — переиспользуем существующую или создаём новую
         if old_cat:
             if old_cat.pk not in cat_map:
-                new_cat = StoreCategory.objects.create(
+                new_cat, _ = StoreCategory.objects.get_or_create(
                     store=target_store,
                     name_ru=old_cat.name_ru,
-                    name_ky=old_cat.name_ky,
-                    name_en=old_cat.name_en,
-                    sort_order=old_cat.sort_order,
-                    is_active=old_cat.is_active,
+                    defaults={
+                        "name_ky": old_cat.name_ky,
+                        "name_en": old_cat.name_en,
+                        "sort_order": old_cat.sort_order,
+                        "is_active": old_cat.is_active,
+                    },
                 )
                 cat_map[old_cat.pk] = new_cat
             new_cat = cat_map[old_cat.pk]
