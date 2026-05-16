@@ -84,12 +84,24 @@
       <div class="sh-card">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
           <div>
-            <div style="font-size:14px;font-weight:600;color:var(--text)">{{ branch.name_ru }}</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span style="font-size:14px;font-weight:600;color:var(--text)">{{ branch.name_ru }}</span>
+              {% if branch.is_open_now %}
+                <span class="sh-badge sh-badge-open">🟢 Открыто</span>
+              {% else %}
+                <span class="sh-badge sh-badge-closed">🔴 Закрыто</span>
+              {% endif %}
+            </div>
             {% if branch.address %}
               <div style="font-size:12px;color:var(--muted);margin-top:3px">📍 {{ branch.address }}</div>
             {% endif %}
+            {% if branch.open_time and branch.close_time and not branch.is_open_24h %}
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">⏰ {{ branch.open_time|time:"H:i" }} – {{ branch.close_time|time:"H:i" }}</div>
+            {% elif branch.is_open_24h %}
+              <div style="font-size:11px;color:var(--teal);margin-top:2px;font-weight:600">🌙 24/7</div>
+            {% endif %}
             {% if branch.delivery_enabled %}
-              <div style="font-size:11px;color:var(--teal);margin-top:4px;font-weight:600">🚚 Доставка включена</div>
+              <div style="font-size:11px;color:var(--teal);margin-top:2px;font-weight:600">🚚 Доставка включена</div>
             {% endif %}
           </div>
           <form method="post" action="{% url 'dashboard:shop_branch_toggle' branch.id %}">

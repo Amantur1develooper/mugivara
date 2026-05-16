@@ -93,6 +93,32 @@ class StoreBranch(TimeStampedModel):
 
     is_active = models.BooleanField(default=True)
 
+    # часы работы
+    is_open_24h = models.BooleanField("Круглосуточно", default=False)
+    open_time   = models.TimeField("Время открытия", null=True, blank=True)
+    close_time  = models.TimeField("Время закрытия", null=True, blank=True)
+    # рабочие дни: строка вида "0,1,2,3,4,5,6" (0=пн, 6=вс), пусто = все дни
+    work_days   = models.CharField("Рабочие дни", max_length=20, blank=True, default="")
+
+    def is_open_now(self) -> bool:
+        if not self.is_active:
+            return False
+        if self.is_open_24h:
+            return True
+        from django.utils import timezone
+        now = timezone.localtime()
+        # проверяем день недели (0=пн … 6=вс)
+        if self.work_days:
+            allowed = {int(d) for d in self.work_days.split(",") if d.strip().isdigit()}
+            if now.weekday() not in allowed:
+                return False
+        if not self.open_time or not self.close_time:
+            return False
+        t = now.time()
+        if self.open_time < self.close_time:
+            return self.open_time <= t < self.close_time
+        return t >= self.open_time or t < self.close_time
+
     def save(self, *args, **kwargs):
         result = _compress(self.cover_photo)
         if result:

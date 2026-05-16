@@ -39,6 +39,9 @@
 {% block head_extra %}
 <style>
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .day-cb{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;cursor:pointer;border:1.5px solid var(--border);background:var(--bg);font-size:13px;font-weight:600;color:var(--text2);transition:all .13s;user-select:none}
+  .day-cb input{display:none}
+  .day-cb:has(input:checked){background:rgba(255,77,28,.1);border-color:rgba(255,77,28,.4);color:var(--accent)}
   .promo-box{
     background:linear-gradient(135deg,rgba(0,184,150,.06),rgba(0,184,150,.02));
     border:1.5px solid rgba(0,184,150,.2);
@@ -142,6 +145,19 @@
           <label class="db-label" for="close_time">Закрытие</label>
           <input class="db-input" id="close_time" name="close_time" type="time"
                  value="{% if branch.close_time %}{{ branch.close_time|time:'H:i' }}{% endif %}">
+        </div>
+      </div>
+
+      <div class="db-form-group" style="margin-top:14px">
+        <label class="db-label">Рабочие дни</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">
+          <label class="day-cb"><input type="checkbox" name="work_days" value="0" {% if "0" in work_days_list %}checked{% endif %}> Пн</label>
+          <label class="day-cb"><input type="checkbox" name="work_days" value="1" {% if "1" in work_days_list %}checked{% endif %}> Вт</label>
+          <label class="day-cb"><input type="checkbox" name="work_days" value="2" {% if "2" in work_days_list %}checked{% endif %}> Ср</label>
+          <label class="day-cb"><input type="checkbox" name="work_days" value="3" {% if "3" in work_days_list %}checked{% endif %}> Чт</label>
+          <label class="day-cb"><input type="checkbox" name="work_days" value="4" {% if "4" in work_days_list %}checked{% endif %}> Пт</label>
+          <label class="day-cb"><input type="checkbox" name="work_days" value="5" {% if "5" in work_days_list %}checked{% endif %}> Сб</label>
+          <label class="day-cb"><input type="checkbox" name="work_days" value="6" {% if "6" in work_days_list %}checked{% endif %}> Вс</label>
         </div>
       </div>
     </div>

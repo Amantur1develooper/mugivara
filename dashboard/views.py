@@ -186,6 +186,8 @@ def branch_edit(request, branch_id):
         ct = request.POST.get("close_time", "").strip()
         branch.open_time  = ot or None
         branch.close_time = ct or None
+        work_days_list = request.POST.getlist("work_days")
+        branch.work_days = ",".join(work_days_list)
 
         branch.external_url = request.POST.get("external_url", "").strip()
 
@@ -215,7 +217,11 @@ def branch_edit(request, branch_id):
             messages.success(request, "Настройки филиала сохранены")
         return redirect("dashboard:branch_edit", branch_id=branch.id)
 
-    return render(request, "dashboard/branch_edit.html", {"branch": branch})
+    work_days_list = branch.work_days.split(",") if branch.work_days else ["0","1","2","3","4","5","6"]
+    return render(request, "dashboard/branch_edit.html", {
+        "branch": branch,
+        "work_days_list": work_days_list,
+    })
 
 
 # ── BRANCH MENU (prices + list) ───────────────────────────────────────────────

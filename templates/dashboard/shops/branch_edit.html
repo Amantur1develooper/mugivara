@@ -2,6 +2,22 @@
 {% block title %}{{ branch.name_ru }} — настройки{% endblock %}
 {% block nav_shops %}active{% endblock %}
 
+{% block head_extra %}
+<style>
+.day-cb {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:6px 12px; border-radius:8px; cursor:pointer;
+  border:1.5px solid var(--border); background:var(--bg);
+  font-size:13px; font-weight:600; color:var(--text2);
+  transition:all .13s; user-select:none;
+}
+.day-cb input { display:none; }
+.day-cb:has(input:checked) {
+  background:rgba(255,77,28,.1); border-color:rgba(255,77,28,.4); color:var(--accent);
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="db-topbar">
   <div>
@@ -97,6 +113,52 @@
         <div class="db-form-group">
           <label class="db-label">Минимальная сумма заказа (сом)</label>
           <input class="db-input" type="number" name="min_order_amount" value="{{ branch.min_order_amount }}" min="0" step="50">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ── Часы работы ── #}
+  <div class="db-form-card">
+    <div class="db-form-section-title">⏰ Часы работы</div>
+
+    <div class="db-toggle-row" style="margin-bottom:16px">
+      <div>
+        <div class="db-toggle-label">Круглосуточно (24/7)</div>
+        <div class="db-toggle-desc">Поля ниже будут игнорироваться</div>
+      </div>
+      <label class="db-switch">
+        <input type="checkbox" name="is_open_24h" id="sh_is_open_24h"
+               {% if branch.is_open_24h %}checked{% endif %}
+               onchange="document.getElementById('sh-hours-block').style.opacity=this.checked?'0.35':'1'">
+        <span class="db-switch-slider"></span>
+      </label>
+    </div>
+
+    <div id="sh-hours-block" style="opacity:{% if branch.is_open_24h %}0.35{% else %}1{% endif %}">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div class="db-form-group">
+          <label class="db-label">Открытие</label>
+          <input class="db-input" type="time" name="open_time"
+                 value="{% if branch.open_time %}{{ branch.open_time|time:'H:i' }}{% endif %}">
+        </div>
+        <div class="db-form-group">
+          <label class="db-label">Закрытие</label>
+          <input class="db-input" type="time" name="close_time"
+                 value="{% if branch.close_time %}{{ branch.close_time|time:'H:i' }}{% endif %}">
+        </div>
+      </div>
+
+      <div class="db-form-group">
+        <label class="db-label">Рабочие дни</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+          <label class="day-cb"><input type="checkbox" name="work_days" value="0" {% if "0" in work_days_list %}checked{% endif %}> Пн</label>
+          <label class="day-cb"><input type="checkbox" name="work_days" value="1" {% if "1" in work_days_list %}checked{% endif %}> Вт</label>
+          <label class="day-cb"><input type="checkbox" name="work_days" value="2" {% if "2" in work_days_list %}checked{% endif %}> Ср</label>
+          <label class="day-cb"><input type="checkbox" name="work_days" value="3" {% if "3" in work_days_list %}checked{% endif %}> Чт</label>
+          <label class="day-cb"><input type="checkbox" name="work_days" value="4" {% if "4" in work_days_list %}checked{% endif %}> Пт</label>
+          <label class="day-cb"><input type="checkbox" name="work_days" value="5" {% if "5" in work_days_list %}checked{% endif %}> Сб</label>
+          <label class="day-cb"><input type="checkbox" name="work_days" value="6" {% if "6" in work_days_list %}checked{% endif %}> Вс</label>
         </div>
       </div>
     </div>

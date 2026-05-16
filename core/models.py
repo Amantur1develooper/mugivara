@@ -70,8 +70,9 @@ class Branch(TimeStampedModel):
     )
     
     is_open_24h = models.BooleanField(default=False)
-    open_time = models.TimeField(null=True, blank=True)   # например 09:00
-    close_time = models.TimeField(null=True, blank=True)  # например 22:00
+    open_time  = models.TimeField(null=True, blank=True)
+    close_time = models.TimeField(null=True, blank=True)
+    work_days  = models.CharField("Рабочие дни", max_length=20, blank=True, default="")
     cover_photo = models.ImageField(upload_to="branches/covers/", blank=True, null=True)
     promo_photo = models.ImageField(
         "Фото для акции (фон карусели)",
@@ -130,16 +131,16 @@ class Branch(TimeStampedModel):
             return False
         if self.is_open_24h:
             return True
+        now = timezone.localtime()
+        if self.work_days:
+            allowed = {int(d) for d in self.work_days.split(",") if d.strip().isdigit()}
+            if now.weekday() not in allowed:
+                return False
         if not self.open_time or not self.close_time:
             return False
-
-        now = timezone.localtime()
         t = now.time()
-
-        # обычный режим (09:00-22:00)
         if self.open_time < self.close_time:
             return self.open_time <= t < self.close_time
-        # через полночь (18:00-02:00)
         return t >= self.open_time or t < self.close_time
 
 class PromoCode(TimeStampedModel):

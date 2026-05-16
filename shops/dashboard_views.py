@@ -127,14 +127,24 @@ def shop_branch_edit(request, branch_id):
         branch.delivery_enabled = request.POST.get("delivery_enabled") == "on"
         branch.delivery_fee     = _dec(request.POST.get("delivery_fee"))
         branch.min_order_amount = _dec(request.POST.get("min_order_amount"))
+        # часы работы
+        branch.is_open_24h = request.POST.get("is_open_24h") == "on"
+        ot = request.POST.get("open_time", "").strip()
+        ct = request.POST.get("close_time", "").strip()
+        branch.open_time  = ot or None
+        branch.close_time = ct or None
+        work_days_list = request.POST.getlist("work_days")
+        branch.work_days = ",".join(work_days_list)
         if request.FILES.get("cover_photo"):
             branch.cover_photo = request.FILES["cover_photo"]
         branch.save()
         messages.success(request, "Настройки филиала сохранены")
         return redirect("dashboard:shop_branch_edit", branch_id=branch.id)
 
+    work_days_list = branch.work_days.split(",") if branch.work_days else ["0","1","2","3","4","5","6"]
     return render(request, "dashboard/shops/branch_edit.html", {
         "branch": branch, "store": branch.store,
+        "work_days_list": work_days_list,
     })
 
 
