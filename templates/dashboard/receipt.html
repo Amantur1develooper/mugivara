@@ -159,11 +159,13 @@
     {% for coi in order.constructor_items.all %}
     <div class="r-item">
       <div class="r-item-name">{{ coi.constructor_name_snapshot|default:"Собери сам" }}</div>
-      {% for sel in coi.ingredients_snapshot %}
-        {% if sel.ings %}
-        <div class="r-item-ing">{{ sel.gname }}: {% for i in sel.ings %}{{ i.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
-        {% endif %}
-      {% endfor %}
+      {% if coi.ingredients_snapshot %}
+        {% for sel in coi.ingredients_snapshot %}
+          {% if sel.ings %}
+          <div class="r-item-ing">{{ sel.gname }}: {% for i in sel.ings %}{{ i.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
       <div class="r-item-line">
         <span>{{ coi.unit_price|floatformat:0 }} x {{ coi.qty }}</span>
         <span>{{ coi.line_total|floatformat:0 }} сом</span>
@@ -186,7 +188,7 @@
     {% endif %}
     <div class="r-total">
       <span>ИТОГО</span>
-      <span>{{ order.total_amount|floatformat:0 }} СОМ</span>
+      <span>{{ order.total_amount|add:order.delivery_fee|floatformat:0 }} СОМ</span>
     </div>
     <div class="r-sub-row">
       <span>Статус</span>
