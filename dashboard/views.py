@@ -440,6 +440,33 @@ if __name__ == "__main__":
 
 @require_POST
 @login_required(login_url="dashboard:login")
+@require_POST
+@login_required(login_url="dashboard:login")
+def item_printer_group(request, bci_id):
+    """AJAX: назначить группу принтера отдельному блюду (BranchCategoryItem)."""
+    from printing.models import PrinterGroup
+    bci = get_object_or_404(BranchCategoryItem, id=bci_id)
+    if not _has_branch_access(request.user, bci.branch_category.branch):
+        return JsonResponse({"ok": False}, status=403)
+
+    group_id = request.POST.get("group_id") or None
+    if group_id:
+        try:
+            group = PrinterGroup.objects.get(
+                id=group_id, restaurant=bci.branch_category.branch.restaurant
+            )
+            bci.printer_group = group
+        except PrinterGroup.DoesNotExist:
+            return JsonResponse({"ok": False, "error": "Группа не найдена"})
+    else:
+        bci.printer_group = None
+
+    bci.save(update_fields=["printer_group"])
+    return JsonResponse({"ok": True})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
 def category_printer_group(request, bc_id):
     """AJAX: назначить группу принтера категории."""
     from printing.models import PrinterGroup
@@ -543,12 +570,15 @@ def branch_items(request, branch_id):
         .order_by("sort_order", "id")
     )
 
+    from printing.models import PrinterGroup
+    printer_groups = list(PrinterGroup.objects.filter(restaurant=branch.restaurant))
+
     menu = []
     for bc in categories:
         items = (
             BranchCategoryItem.objects
             .filter(branch_category=bc)
-            .select_related("branch_item__item")
+            .select_related("branch_item__item", "printer_group")
             .order_by("sort_order", "id")
         )
         menu.append({"category": bc, "items": list(items)})
@@ -556,6 +586,7 @@ def branch_items(request, branch_id):
     return render(request, "dashboard/branch_items.html", {
         "branch": branch,
         "menu": menu,
+        "printer_groups": printer_groups,
     })
 
 

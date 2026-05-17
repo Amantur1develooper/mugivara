@@ -54,18 +54,22 @@ def create_print_jobs(order):
     from catalog.models import BranchCategoryItem
 
     # Строим маппинг item_id → printer_group
+    # Приоритет: принтер блюда > принтер категории
     branch = order.branch
     bci_qs = (
         BranchCategoryItem.objects
-        .filter(
-            branch_category__branch=branch,
-            branch_category__printer_group__isnull=False,
+        .filter(branch_category__branch=branch)
+        .select_related(
+            "printer_group",
+            "branch_category__printer_group",
+            "branch_item__item",
         )
-        .select_related("branch_category__printer_group", "branch_item__item")
     )
     item_to_group = {}
     for bci in bci_qs:
-        item_to_group[bci.branch_item.item_id] = bci.branch_category.printer_group
+        group = bci.printer_group or bci.branch_category.printer_group
+        if group:
+            item_to_group[bci.branch_item.item_id] = group
 
     # Группируем позиции
     groups: dict = defaultdict(list)  # PrinterGroup → [(name, qty)]

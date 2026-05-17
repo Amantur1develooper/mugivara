@@ -145,6 +145,13 @@ class BranchCategoryItem(TimeStampedModel):
     branch_category = models.ForeignKey(BranchCategory, on_delete=models.CASCADE, related_name="items_in_category")
     branch_item = models.ForeignKey(BranchItem, on_delete=models.CASCADE, related_name="categories_in_branch")
     sort_order = models.PositiveIntegerField(default=0)
+    printer_group = models.ForeignKey(
+        "printing.PrinterGroup",
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="category_items",
+        verbose_name="Принтер блюда",
+    )
 
     class Meta:
         unique_together = ("branch_category", "branch_item")

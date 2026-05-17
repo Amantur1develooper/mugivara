@@ -219,6 +219,20 @@
         <button class="save-btn" data-id="{{ bi.id }}" onclick="savePrice(this)">✓</button>
       </div>
 
+      {% if printer_groups %}
+      <select class="pg-item-select"
+              data-bci="{{ row.id }}"
+              onchange="setItemPrinter(this)"
+              title="Принтер для этого блюда"
+              style="font-size:11px;padding:5px 8px;border-radius:8px;border:1.5px solid var(--border);
+                     background:var(--bg);color:var(--text2);cursor:pointer;max-width:110px;flex-shrink:0">
+        <option value="">🖨 авто</option>
+        {% for g in printer_groups %}
+        <option value="{{ g.id }}" {% if row.printer_group_id == g.id %}selected{% endif %}>{{ g.display_name }}</option>
+        {% endfor %}
+      </select>
+      {% endif %}
+
       <button class="toggle-btn {% if bi.is_available %}on{% else %}off{% endif %}"
               data-id="{{ bi.id }}"
               onclick="toggleItem(this)"
@@ -249,13 +263,30 @@
 <div id="js-urls"
      data-price-url="{% url 'dashboard:update_price' 99999 %}"
      data-toggle-url="{% url 'dashboard:toggle_item' 99999 %}"
+     data-item-printer-url="{% url 'dashboard:item_printer_group' 99999 %}"
      style="display:none"></div>
 
 <script>
 const CSRF = '{{ csrf_token }}';
 const _urls = document.getElementById('js-urls').dataset;
-const priceUrl  = id => _urls.priceUrl.replace('99999', id);
-const toggleUrl = id => _urls.toggleUrl.replace('99999', id);
+const priceUrl       = id => _urls.priceUrl.replace('99999', id);
+const toggleUrl      = id => _urls.toggleUrl.replace('99999', id);
+const itemPrinterUrl = id => _urls.itemPrinterUrl.replace('99999', id);
+
+async function setItemPrinter(sel) {
+  const bciId   = sel.dataset.bci;
+  const groupId = sel.value;
+  const body = new FormData();
+  body.append('csrfmiddlewaretoken', CSRF);
+  body.append('group_id', groupId);
+  try {
+    const r = await fetch(itemPrinterUrl(bciId), { method: 'POST', body });
+    const d = await r.json();
+    showToast(d.ok ? '🖨 Принтер блюда сохранён' : 'Ошибка', d.ok ? 'ok' : 'err');
+  } catch {
+    showToast('Ошибка сети', 'err');
+  }
+}
 
 /* ── показ кнопки при изменении цены ── */
 document.querySelectorAll('.price-input').forEach(inp => {
