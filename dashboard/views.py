@@ -1716,6 +1716,7 @@ def pos_order_status(request, order_id):
     if not (request.user.is_staff or request.user.is_superuser or _has_branch_access(request.user, order.branch)):
         return JsonResponse({"ok": False}, status=403)
 
+    prev_status = order.status
     new_status  = request.POST.get("status")
     new_payment = request.POST.get("payment_status")
 
@@ -1740,6 +1741,14 @@ def pos_order_status(request, order_id):
     if fields:
         fields.append("updated_at")
         order.save(update_fields=fields)
+
+    # При принятии заказа (new → accepted) отправляем на кухонный принтер
+    if new_status == Order.Status.ACCEPTED and prev_status == Order.Status.NEW:
+        try:
+            from printing.jobs import create_print_jobs
+            create_print_jobs(order)
+        except Exception:
+            pass
 
     return JsonResponse({
         "ok": True,
