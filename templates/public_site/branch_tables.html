@@ -9,24 +9,20 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f0f0f5;
-      min-height: 100vh;
-      color: #1a1a1a;
+      background: #f0f0f5; min-height: 100vh; color: #1a1a1a;
     }
 
     /* ── header ── */
     .hdr {
-      background: #fff;
-      padding: 14px 16px;
-      border-bottom: 1px solid #e8e8e8;
+      background: #fff; padding: 14px 16px; border-bottom: 1px solid #e8e8e8;
       position: sticky; top: 0; z-index: 20;
       display: flex; align-items: center; gap: 12px;
     }
     .hdr-logo {
-      width: 40px; height: 40px; border-radius: 10px; object-fit: cover;
-      background: linear-gradient(135deg, #FF4D1C, #FF8A00);
-      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-      font-size: 18px; overflow: hidden;
+      width: 40px; height: 40px; border-radius: 10px;
+      background: linear-gradient(135deg,#FF4D1C,#FF8A00);
+      flex-shrink: 0; display: flex; align-items: center;
+      justify-content: center; font-size: 18px; overflow: hidden;
     }
     .hdr-logo img { width: 100%; height: 100%; object-fit: cover; }
     .hdr-info { flex: 1; min-width: 0; }
@@ -35,12 +31,10 @@
     .hdr-refresh {
       width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid #e8e8e8;
       background: #f5f5f7; cursor: pointer; display: flex; align-items: center;
-      justify-content: center; font-size: 16px; flex-shrink: 0;
-      transition: background .15s;
+      justify-content: center; font-size: 16px; flex-shrink: 0; transition: background .15s;
     }
-    .hdr-refresh:active { background: #e8e8e8; }
 
-    /* ── summary bar ── */
+    /* ── summary ── */
     .summary {
       display: flex; gap: 8px; padding: 10px 16px;
       background: #fff; border-bottom: 1px solid #e8e8e8;
@@ -48,8 +42,8 @@
     }
     .summary::-webkit-scrollbar { display: none; }
     .sum-chip {
-      display: flex; align-items: center; gap: 5px;
-      padding: 6px 12px; border-radius: 20px; white-space: nowrap;
+      display: flex; align-items: center; gap: 5px; padding: 6px 12px;
+      border-radius: 20px; white-space: nowrap;
       font-size: 12px; font-weight: 700; flex-shrink: 0;
     }
     .sum-chip.total   { background: #f0f0f5; color: #555; }
@@ -57,72 +51,52 @@
     .sum-chip.revenue { background: rgba(22,163,74,.1); color: #15803d; }
 
     /* ── content ── */
-    .content { padding: 16px 14px 100px; }
-
-    /* ── floor section ── */
+    .content { padding: 16px 14px 120px; }
     .floor-section { margin-bottom: 24px; }
     .floor-title {
       font-size: 11px; font-weight: 700; color: #888;
       text-transform: uppercase; letter-spacing: .6px;
       margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
     }
-    .floor-title::after { content: ''; flex: 1; height: 1px; background: #e0e0e0; }
+    .floor-title::after { content:''; flex:1; height:1px; background:#e0e0e0; }
 
-    /* ── grid ── */
+    /* ── table grid ── */
     .tables-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
       gap: 10px;
     }
 
     /* ── table card ── */
     .table-card {
-      background: #fff;
-      border: 2px solid #e8e8e8;
-      border-radius: 16px;
-      padding: 14px 10px 12px;
-      text-align: center;
-      cursor: pointer;
-      position: relative;
-      transition: all .15s;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
+      background: #fff; border: 2px solid #e8e8e8; border-radius: 16px;
+      padding: 14px 10px 12px; text-align: center; cursor: pointer;
+      position: relative; transition: all .15s;
+      -webkit-tap-highlight-color: transparent; user-select: none;
     }
-    .table-card:active { transform: scale(.96); }
+    .table-card:active { transform: scale(.95); }
+    .table-card.occupied { border-color: rgba(239,68,68,.4); background: #fff8f8; }
+    .table-card.free:active { border-color: #22c55e; }
+    .table-card.occupied:active { border-color: #dc2626; }
 
-    /* free */
-    .table-card.free:active { border-color: #22c55e; background: #f0fdf4; }
-
-    /* occupied */
-    .table-card.occupied {
-      border-color: rgba(239,68,68,.35);
-      background: rgba(255,59,48,.03);
-    }
-    .table-card.occupied:active { border-color: #dc2626; background: rgba(239,68,68,.08); }
-
-    .table-icon { font-size: 24px; margin-bottom: 6px; line-height: 1; }
-    .table-num  { font-size: 16px; font-weight: 800; line-height: 1.1; }
-    .table-seats { font-size: 10px; color: #aaa; margin-top: 3px; }
-
-    /* occupied badge */
-    .table-amount {
-      margin-top: 6px;
-      font-size: 13px; font-weight: 800;
-      color: #dc2626;
-      line-height: 1;
-    }
-    .table-time {
-      font-size: 10px; color: #aaa; margin-top: 2px;
-    }
-    .table-dot {
-      position: absolute; top: 10px; right: 10px;
+    .tbl-dot {
+      position: absolute; top: 9px; right: 9px;
       width: 9px; height: 9px; border-radius: 50%;
-      background: #dc2626;
-      box-shadow: 0 0 0 2px rgba(239,68,68,.2);
     }
-    .table-dot.free { background: #22c55e; box-shadow: 0 0 0 2px rgba(34,197,94,.2); }
+    .tbl-dot.free { background: #22c55e; box-shadow: 0 0 0 2px rgba(34,197,94,.2); }
+    .tbl-dot.busy { background: #dc2626; box-shadow: 0 0 0 2px rgba(239,68,68,.2); animation: pulse 2s infinite; }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 2px rgba(239,68,68,.2); }
+      50%      { box-shadow: 0 0 0 5px rgba(239,68,68,.1); }
+    }
 
-    /* ── bottom overlay ── */
+    .tbl-icon  { font-size: 26px; margin-bottom: 5px; line-height: 1; }
+    .tbl-name  { font-size: 15px; font-weight: 800; line-height: 1.1; }
+    .tbl-seats { font-size: 10px; color: #aaa; margin-top: 3px; }
+    .tbl-sum   { margin-top: 7px; font-size: 14px; font-weight: 800; color: #dc2626; }
+    .tbl-time  { font-size: 10px; color: #aaa; margin-top: 2px; }
+
+    /* ── OVERLAY + SHEET ── */
     .overlay {
       position: fixed; inset: 0; z-index: 100;
       background: rgba(0,0,0,.45);
@@ -131,41 +105,46 @@
       transition: opacity .25s;
     }
     .overlay.show { opacity: 1; pointer-events: all; }
-    .overlay.show .sheet { transform: translateY(0); }
-
     .sheet {
-      width: 100%; max-height: 88vh;
-      background: #fff; border-radius: 24px 24px 0 0;
+      width: 100%; max-height: 92vh; background: #fff;
+      border-radius: 24px 24px 0 0;
       display: flex; flex-direction: column;
       transform: translateY(100%);
       transition: transform .3s cubic-bezier(.4,0,.2,1);
       overflow: hidden;
     }
+    .overlay.show .sheet { transform: translateY(0); }
 
     .sheet-handle {
       width: 40px; height: 4px; border-radius: 2px;
-      background: #ddd; margin: 10px auto 0;
-      flex-shrink: 0;
+      background: #ddd; margin: 10px auto 0; flex-shrink: 0;
     }
-
     .sheet-head {
-      padding: 14px 18px 12px;
-      border-bottom: 1px solid #f0f0f0;
-      display: flex; align-items: center; justify-content: space-between;
-      flex-shrink: 0;
+      padding: 12px 18px 12px; border-bottom: 1px solid #f0f0f0;
+      display: flex; align-items: center; gap: 12px; flex-shrink: 0;
     }
-    .sheet-title { font-size: 17px; font-weight: 800; }
-    .sheet-sub   { font-size: 12px; color: #888; margin-top: 2px; }
-    .sheet-close {
-      width: 30px; height: 30px; border-radius: 50%;
-      background: #f0f0f5; border: none; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px; color: #555; flex-shrink: 0;
+    .sheet-titles { flex: 1; }
+    .sheet-title  { font-size: 18px; font-weight: 900; }
+    .sheet-sub    { font-size: 12px; color: #888; margin-top: 2px; }
+    .sheet-close  {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #f0f0f5; border: none; cursor: pointer; font-size: 14px; color: #555;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
 
-    .sheet-body {
-      flex: 1; overflow-y: auto; padding: 12px 18px;
+    /* ── tab bar ── */
+    .tab-bar {
+      display: flex; border-bottom: 1px solid #f0f0f0; flex-shrink: 0;
     }
+    .tab-btn {
+      flex: 1; padding: 12px 4px; border: none; background: none;
+      font-size: 13px; font-weight: 700; color: #aaa; cursor: pointer;
+      border-bottom: 2px solid transparent; transition: all .15s; font-family: inherit;
+    }
+    .tab-btn.active { color: #FF4D1C; border-bottom-color: #FF4D1C; }
+
+    /* ── body ── */
+    .sheet-body { flex: 1; overflow-y: auto; padding: 14px 18px; }
 
     .order-row {
       display: flex; align-items: center; gap: 10px;
@@ -173,60 +152,62 @@
     }
     .order-row:last-child { border-bottom: none; }
     .order-name { flex: 1; font-size: 14px; font-weight: 500; line-height: 1.3; }
-    .order-qty  { font-size: 12px; color: #aaa; flex-shrink: 0; }
-    .order-line { font-size: 14px; font-weight: 700; color: #1a1a1a; flex-shrink: 0; min-width: 70px; text-align: right; }
+    .order-qty  { font-size: 12px; color: #aaa; white-space: nowrap; }
+    .order-line { font-size: 14px; font-weight: 700; min-width: 70px; text-align: right; flex-shrink: 0; }
 
-    .sheet-total {
-      padding: 14px 18px;
-      border-top: 2px solid #f0f0f0;
+    .empty-state {
+      text-align: center; padding: 32px 16px; color: #aaa; font-size: 13px;
+    }
+    .empty-state .big { font-size: 36px; margin-bottom: 8px; }
+
+    /* ── sheet footer ── */
+    .sheet-foot {
+      padding: 12px 18px 22px; flex-shrink: 0;
+      border-top: 1px solid #f0f0f0;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .foot-total {
       display: flex; align-items: baseline; justify-content: space-between;
-      flex-shrink: 0;
     }
-    .sheet-total-label { font-size: 14px; color: #888; font-weight: 600; }
-    .sheet-total-val   { font-size: 24px; font-weight: 900; color: #1a1a1a; }
+    .foot-total-label { font-size: 14px; color: #888; font-weight: 600; }
+    .foot-total-val   { font-size: 26px; font-weight: 900; }
 
-    .sheet-actions {
-      padding: 0 18px 18px;
-      display: flex; gap: 10px;
-      flex-shrink: 0;
-    }
-    .pay-btn {
-      flex: 1; padding: 15px 10px; border-radius: 14px; border: none;
-      font-size: 15px; font-weight: 800; cursor: pointer;
-      transition: opacity .15s; font-family: inherit;
+    .foot-btns { display: flex; gap: 8px; }
+    .foot-btn  {
+      flex: 1; padding: 15px 8px; border-radius: 14px; border: none;
+      font-size: 14px; font-weight: 800; cursor: pointer; font-family: inherit;
       display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: opacity .15s;
     }
-    .pay-btn:active { opacity: .75; }
-    .pay-btn.cash   { background: #166534; color: #bbf7d0; }
-    .pay-btn.card   { background: #1e3a8a; color: #bfdbfe; }
-    .pay-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .foot-btn:active { opacity: .75; }
+    .foot-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .foot-btn.enter  { background: #FF4D1C; color: #fff; }
+    .foot-btn.cash   { background: #166534; color: #bbf7d0; }
+    .foot-btn.card   { background: #1e3a8a; color: #bfdbfe; }
+    .foot-btn.add    { background: #f0f0f5; color: #1a1a1a; }
 
-    .sheet-loading {
-      text-align: center; padding: 40px; color: #aaa; font-size: 14px;
+    /* ── loading / spinner ── */
+    .loading-row {
+      text-align: center; padding: 32px; color: #aaa; font-size: 13px;
     }
 
     /* ── toast ── */
     .toast {
-      position: fixed; bottom: 24px; left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      z-index: 200;
-      background: #1c1c1e; color: #fff;
-      padding: 12px 20px; border-radius: 14px;
-      font-size: 13px; font-weight: 600;
-      transition: transform .3s; white-space: nowrap;
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(80px); z-index: 300;
+      background: #1c1c1e; color: #fff; padding: 12px 22px; border-radius: 14px;
+      font-size: 13px; font-weight: 600; white-space: nowrap;
+      transition: transform .3s; pointer-events: none;
     }
     .toast.show { transform: translateX(-50%) translateY(0); }
-    .toast.ok   { background: #047857; }
-    .toast.err  { background: #b91c1c; }
+    .toast.ok  { background: #047857; }
+    .toast.err { background: #b91c1c; }
 
-    /* ── empty ── */
-    .empty {
-      text-align: center; padding: 60px 24px;
-      background: #fff; border-radius: 20px; border: 1px solid #e8e8e8;
+    /* empty page */
+    .page-empty {
+      text-align: center; padding: 60px 24px; background: #fff;
+      border-radius: 20px; border: 1px solid #e8e8e8;
     }
-    .empty-icon  { font-size: 48px; margin-bottom: 12px; }
-    .empty-title { font-size: 17px; font-weight: 800; margin-bottom: 6px; }
-    .empty-sub   { font-size: 14px; color: #888; }
   </style>
 </head>
 <body>
@@ -240,20 +221,20 @@
   </div>
   <div class="hdr-info">
     <div class="hdr-name">{{ branch.name_ru }}</div>
-    <div class="hdr-sub" id="updTime">обновляется...</div>
+    <div class="hdr-sub" id="updTime">—</div>
   </div>
-  <button class="hdr-refresh" onclick="loadTables()" title="Обновить">🔄</button>
+  <button class="hdr-refresh" onclick="location.reload()" title="Обновить">🔄</button>
 </div>
 
-<!-- SUMMARY BAR -->
+<!-- SUMMARY -->
 <div class="summary">
   <div class="sum-chip total">🪑 <span id="sumTotal">0</span> столов</div>
   <div class="sum-chip busy">🔴 <span id="sumBusy">0</span> занято</div>
   <div class="sum-chip revenue">💰 <span id="sumRevenue">0</span> сом</div>
 </div>
 
-<!-- CONTENT -->
-<div class="content" id="tableContent">
+<!-- TABLE GRID -->
+<div class="content">
   {% if floors %}
     {% for section in floors %}
     <div class="floor-section">
@@ -264,16 +245,18 @@
         {% for place in section.places %}
         <div class="table-card {% if place.open_order %}occupied{% else %}free{% endif %}"
              data-place-id="{{ place.id }}"
-             data-order-id="{{ place.open_order.id|default:'' }}"
              data-place-name="{{ place.title }}"
-             onclick="handleTableClick(this)">
-          <div class="table-dot {% if not place.open_order %}free{% endif %}"></div>
-          <div class="table-icon">{% if place.open_order %}🔴{% else %}🟢{% endif %}</div>
-          <div class="table-num">{{ place.title }}</div>
-          {% if place.seats %}<div class="table-seats">👤 {{ place.seats }}</div>{% endif %}
+             data-token="{{ place.token }}"
+             data-order-id="{{ place.open_order.id|default:'' }}"
+             data-order-total="{{ place.open_order.total_amount|default:'0'|floatformat:0 }}"
+             onclick="openTable(this)">
+          <div class="tbl-dot {% if place.open_order %}busy{% else %}free{% endif %}"></div>
+          <div class="tbl-icon">{% if place.open_order %}🍽{% else %}🪑{% endif %}</div>
+          <div class="tbl-name">{{ place.title }}</div>
+          {% if place.seats %}<div class="tbl-seats">👤 {{ place.seats }}</div>{% endif %}
           {% if place.open_order %}
-          <div class="table-amount">{{ place.open_order.total_amount|floatformat:0 }} сом</div>
-          <div class="table-time">с {{ place.open_order.created_at|time:"H:i" }}</div>
+          <div class="tbl-sum">{{ place.open_order.total_amount|floatformat:0 }} сом</div>
+          <div class="tbl-time">с {{ place.open_order.created_at|time:"H:i" }}</div>
           {% endif %}
         </div>
         {% endfor %}
@@ -281,99 +264,126 @@
     </div>
     {% endfor %}
   {% else %}
-    <div class="empty">
-      <div class="empty-icon">🪑</div>
-      <div class="empty-title">Столики не настроены</div>
-      <div class="empty-sub">Добавьте столики в дашборде</div>
-    </div>
+  <div class="page-empty">
+    <div style="font-size:48px;margin-bottom:12px">🪑</div>
+    <div style="font-size:17px;font-weight:800;margin-bottom:6px">Столики не настроены</div>
+    <div style="font-size:14px;color:#888">Добавьте столики в дашборде</div>
+  </div>
   {% endif %}
 </div>
 
-<!-- BOTTOM SHEET OVERLAY -->
-<div class="overlay" id="overlay" onclick="closeSheet(event)">
+<!-- BOTTOM SHEET -->
+<div class="overlay" id="overlay" onclick="handleOverlayClick(event)">
   <div class="sheet" id="sheet">
     <div class="sheet-handle"></div>
+
     <div class="sheet-head">
-      <div>
+      <div class="sheet-titles">
         <div class="sheet-title" id="sheetTitle">Стол</div>
-        <div class="sheet-sub" id="sheetSub"></div>
+        <div class="sheet-sub"   id="sheetSub">—</div>
       </div>
       <button class="sheet-close" onclick="closeSheet()">✕</button>
     </div>
+
+    <!-- Tab bar (только для занятых столов) -->
+    <div class="tab-bar" id="tabBar" style="display:none">
+      <button class="tab-btn active" data-tab="order" onclick="switchTab(this)">📋 Заказ</button>
+      <button class="tab-btn"        data-tab="menu"  onclick="switchTab(this)">➕ Дозаказ</button>
+    </div>
+
     <div class="sheet-body" id="sheetBody">
-      <div class="sheet-loading">Загрузка...</div>
+      <div class="loading-row">⏳ Загрузка...</div>
     </div>
-    <div class="sheet-total" id="sheetTotal" style="display:none">
-      <span class="sheet-total-label">ИТОГО</span>
-      <span class="sheet-total-val" id="sheetTotalVal">0 сом</span>
-    </div>
-    <div class="sheet-actions" id="sheetActions" style="display:none">
-      <button class="pay-btn cash" onclick="closeTable('cash')">💵 Наличные</button>
-      <button class="pay-btn card" onclick="closeTable('online')">💳 Карта</button>
+
+    <div class="sheet-foot" id="sheetFoot">
+      <!-- динамически заполняется -->
     </div>
   </div>
 </div>
 
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <script>
-const ORDER_JSON_URL  = "{% url 'public_site:table_order_json' 0 %}".replace("/0/", "/{id}/");
-const CLOSE_URL       = "{% url 'public_site:table_waiter_close' 0 %}".replace("/0/", "/{id}/");
+const ORDER_JSON_URL = "{% url 'public_site:table_order_json'   0 %}".replace("/0/",  "/{id}/");
+const CLOSE_URL      = "{% url 'public_site:table_waiter_close' 0 %}".replace("/0/",  "/{id}/");
+const MENU_URL       = "{% url 'public_site:table_menu' token='TOKEN_PLACEHOLDER' %}";
 const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
 
-let currentOrderId = null;
-let currentPlaceEl = null;
+let curOrderId  = null;
+let curToken    = null;
+let curCard     = null;
+let curTab      = "order";
+let loadedOrder = null;
 
-// ── Summary bar counts ──────────────────────────────────────────────────────
+// ── Summary ─────────────────────────────────────────────────────────────────
 function updateSummary() {
-  const cards = document.querySelectorAll(".table-card");
+  const all      = document.querySelectorAll(".table-card");
   const occupied = document.querySelectorAll(".table-card.occupied");
   let revenue = 0;
-  occupied.forEach(c => {
-    const amt = c.querySelector(".table-amount");
-    if (amt) revenue += parseFloat(amt.textContent) || 0;
-  });
-  document.getElementById("sumTotal").textContent  = cards.length;
-  document.getElementById("sumBusy").textContent   = occupied.length;
-  document.getElementById("sumRevenue").textContent = revenue.toLocaleString("ru");
+  occupied.forEach(c => revenue += parseFloat(c.dataset.orderTotal || 0));
+  document.getElementById("sumTotal").textContent   = all.length;
+  document.getElementById("sumBusy").textContent    = occupied.length;
+  document.getElementById("sumRevenue").textContent = Math.round(revenue).toLocaleString("ru");
 }
 
-// ── Table click ─────────────────────────────────────────────────────────────
-async function handleTableClick(card) {
-  const orderId   = card.dataset.orderId;
-  const placeName = card.dataset.placeName;
+// ── Open table ───────────────────────────────────────────────────────────────
+async function openTable(card) {
+  curCard    = card;
+  curToken   = card.dataset.token;
+  curOrderId = card.dataset.orderId ? parseInt(card.dataset.orderId) : null;
+  loadedOrder = null;
+  curTab     = "order";
 
-  if (!orderId) {
-    // Free table — go to menu
-    showToast("🟢 " + placeName + " — свободен");
-    return;
-  }
+  document.getElementById("sheetTitle").textContent = "🪑 " + card.dataset.placeName;
+  document.getElementById("sheetSub").textContent   = curOrderId ? "Открытый счёт" : "Свободен";
 
-  // Occupied — open sheet
-  currentOrderId = parseInt(orderId);
-  currentPlaceEl = card;
+  const tabBar = document.getElementById("tabBar");
+  tabBar.style.display = curOrderId ? "" : "none";
+  tabBar.querySelectorAll(".tab-btn").forEach((b, i) => {
+    b.classList.toggle("active", i === 0);
+  });
 
-  document.getElementById("sheetTitle").textContent = "🪑 " + placeName;
-  document.getElementById("sheetSub").textContent   = "Загрузка заказа...";
-  document.getElementById("sheetBody").innerHTML    = '<div class="sheet-loading">⏳ Загрузка...</div>';
-  document.getElementById("sheetTotal").style.display   = "none";
-  document.getElementById("sheetActions").style.display = "none";
+  document.getElementById("sheetBody").innerHTML = '<div class="loading-row">⏳ Загрузка...</div>';
+  renderFoot();
   openSheet();
 
+  if (curOrderId) {
+    await loadOrder(curOrderId);
+  } else {
+    renderFreeBody();
+  }
+}
+
+// ── Load order details ───────────────────────────────────────────────────────
+async function loadOrder(orderId) {
   try {
     const r = await fetch(ORDER_JSON_URL.replace("{id}", orderId));
     const d = await r.json();
     if (!d.ok || !d.order) { showToast("Ошибка загрузки", "err"); return; }
-    renderOrder(d.order);
+    loadedOrder = d.order;
+    renderOrderBody(d.order);
+    renderFoot();
   } catch {
     showToast("Ошибка сети", "err");
   }
 }
 
-function renderOrder(order) {
-  document.getElementById("sheetSub").textContent = `#${order.id} · с ${order.created_at}` + (order.customer ? ` · ${order.customer}` : "");
+// ── Render: free table body ──────────────────────────────────────────────────
+function renderFreeBody() {
+  document.getElementById("sheetBody").innerHTML = `
+    <div class="empty-state">
+      <div class="big">🟢</div>
+      <div style="font-weight:700;font-size:15px;color:#1a1a1a;margin-bottom:4px">Стол свободен</div>
+      <div>Нажмите «Войти и заказать» чтобы открыть меню</div>
+    </div>`;
+}
 
+// ── Render: order body ───────────────────────────────────────────────────────
+function renderOrderBody(order) {
+  if (!order.items.length) {
+    document.getElementById("sheetBody").innerHTML = '<div class="empty-state"><div class="big">🛒</div><div>Нет позиций</div></div>';
+    return;
+  }
   let html = "";
   order.items.forEach(it => {
     html += `<div class="order-row">
@@ -382,29 +392,72 @@ function renderOrder(order) {
       <div class="order-line">${Math.round(it.line_total).toLocaleString("ru")} сом</div>
     </div>`;
   });
-  if (!html) html = '<div style="color:#aaa;font-size:13px;padding:12px 0">Нет позиций</div>';
   if (order.comment) {
-    html += `<div style="margin-top:12px;padding:10px 12px;background:#fff8f5;border-radius:10px;font-size:12px;color:#888">
-      💬 ${order.comment}
-    </div>`;
+    html += `<div style="margin-top:10px;padding:10px 12px;background:#fff8f5;border-radius:10px;font-size:12px;color:#888">💬 ${order.comment}</div>`;
   }
-
   document.getElementById("sheetBody").innerHTML = html;
-  document.getElementById("sheetTotalVal").textContent = Math.round(order.total).toLocaleString("ru") + " сом";
-  document.getElementById("sheetTotal").style.display   = "";
-  document.getElementById("sheetActions").style.display = "";
 }
 
-// ── Close table ─────────────────────────────────────────────────────────────
-async function closeTable(payment) {
-  if (!currentOrderId) return;
-  const label = payment === "cash" ? "наличные" : "карта";
-  if (!confirm(`Закрыть стол? Оплата: ${label}`)) return;
+// ── Render: footer ───────────────────────────────────────────────────────────
+function renderFoot() {
+  const foot = document.getElementById("sheetFoot");
+  if (!curOrderId) {
+    // Free table
+    foot.innerHTML = `
+      <div class="foot-btns">
+        <button class="foot-btn enter" onclick="goMenu()">🍽 Войти и заказать</button>
+      </div>`;
+    return;
+  }
+  // Occupied table
+  const total = loadedOrder ? Math.round(loadedOrder.total).toLocaleString("ru") : (curCard ? Math.round(parseFloat(curCard.dataset.orderTotal||0)).toLocaleString("ru") : "—");
+  foot.innerHTML = `
+    <div class="foot-total">
+      <span class="foot-total-label">ИТОГО</span>
+      <span class="foot-total-val">${total} сом</span>
+    </div>
+    <div class="foot-btns">
+      <button class="foot-btn add" onclick="goMenu()">➕ Дозаказать</button>
+    </div>
+    <div class="foot-btns">
+      <button class="foot-btn cash" id="payBtnCash" onclick="closeTable('cash')">💵 Рассчитать (нал)</button>
+      <button class="foot-btn card" id="payBtnCard" onclick="closeTable('online')">💳 По карте</button>
+    </div>`;
+}
 
-  document.querySelectorAll(".pay-btn").forEach(b => b.disabled = true);
+// ── Tab switch ───────────────────────────────────────────────────────────────
+function switchTab(btn) {
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  curTab = btn.dataset.tab;
+  if (curTab === "order") {
+    if (loadedOrder) renderOrderBody(loadedOrder);
+    else document.getElementById("sheetBody").innerHTML = '<div class="loading-row">⏳ Загрузка...</div>';
+  } else {
+    // menu tab — just redirect
+    goMenu();
+  }
+}
+
+// ── Go to table menu ─────────────────────────────────────────────────────────
+function goMenu() {
+  if (!curToken) return;
+  window.location.href = MENU_URL.replace("TOKEN_PLACEHOLDER", curToken);
+}
+
+// ── Close (pay) table ────────────────────────────────────────────────────────
+async function closeTable(payment) {
+  if (!curOrderId) return;
+  const label = payment === "cash" ? "наличные" : "карта";
+  if (!confirm(`Рассчитать стол? Оплата: ${label}`)) return;
+
+  ["payBtnCash","payBtnCard"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = true;
+  });
 
   try {
-    const r = await fetch(CLOSE_URL.replace("{id}", currentOrderId), {
+    const r = await fetch(CLOSE_URL.replace("{id}", curOrderId), {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF() },
       body: JSON.stringify({ payment }),
@@ -412,70 +465,59 @@ async function closeTable(payment) {
     const d = await r.json();
     if (d.ok) {
       closeSheet();
-      showToast("✅ Стол закрыт · " + Math.round(d.total).toLocaleString("ru") + " сом", "ok");
-      // Mark card as free
-      if (currentPlaceEl) {
-        currentPlaceEl.classList.remove("occupied");
-        currentPlaceEl.classList.add("free");
-        currentPlaceEl.dataset.orderId = "";
-        currentPlaceEl.querySelector(".table-dot").classList.add("free");
-        currentPlaceEl.querySelector(".table-icon").textContent = "🟢";
-        const amt  = currentPlaceEl.querySelector(".table-amount");
-        const time = currentPlaceEl.querySelector(".table-time");
-        if (amt)  amt.remove();
-        if (time) time.remove();
+      showToast("✅ Стол закрыт · " + Math.round(d.total).toLocaleString("ru") + " сом · чек отправлен", "ok");
+      // Update card to free
+      if (curCard) {
+        curCard.classList.replace("occupied", "free");
+        curCard.dataset.orderId    = "";
+        curCard.dataset.orderTotal = "0";
+        curCard.querySelector(".tbl-dot").className = "tbl-dot free";
+        curCard.querySelector(".tbl-icon").textContent = "🪑";
+        const s = curCard.querySelector(".tbl-sum");
+        const t = curCard.querySelector(".tbl-time");
+        if (s) s.remove();
+        if (t) t.remove();
         updateSummary();
       }
-      currentOrderId = null;
-      currentPlaceEl = null;
     } else {
       showToast(d.error || "Ошибка", "err");
-      document.querySelectorAll(".pay-btn").forEach(b => b.disabled = false);
+      ["payBtnCash","payBtnCard"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = false;
+      });
     }
   } catch {
     showToast("Ошибка сети", "err");
-    document.querySelectorAll(".pay-btn").forEach(b => b.disabled = false);
   }
 }
 
-// ── Sheet ────────────────────────────────────────────────────────────────────
-function openSheet() {
-  document.getElementById("overlay").classList.add("show");
-}
-function closeSheet(e) {
-  if (e && e.target !== document.getElementById("overlay")) return;
-  document.getElementById("overlay").classList.remove("show");
-}
-
-// ── Reload tables via full-page refresh ──────────────────────────────────────
-function loadTables() {
-  const btn = document.querySelector(".hdr-refresh");
-  btn.style.transform = "rotate(360deg)";
-  btn.style.transition = "transform .4s";
-  setTimeout(() => { btn.style.transform = ""; btn.style.transition = ""; }, 400);
-  location.reload();
+// ── Sheet open/close ─────────────────────────────────────────────────────────
+function openSheet()  { document.getElementById("overlay").classList.add("show"); }
+function closeSheet() { document.getElementById("overlay").classList.remove("show"); }
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById("overlay")) closeSheet();
 }
 
 // ── Toast ────────────────────────────────────────────────────────────────────
-let _toastT;
+let _tt;
 function showToast(msg, type = "") {
   const t = document.getElementById("toast");
   t.textContent = msg;
-  t.className = "toast show" + (type ? " " + type : "");
-  clearTimeout(_toastT);
-  _toastT = setTimeout(() => t.classList.remove("show"), 2500);
+  t.className   = "toast show" + (type ? " " + type : "");
+  clearTimeout(_tt);
+  _tt = setTimeout(() => t.classList.remove("show"), 3000);
 }
 
-// ── Auto-refresh every 30 sec ────────────────────────────────────────────────
-function updateClock() {
-  const now = new Date();
-  const hm  = String(now.getHours()).padStart(2,"0") + ":" + String(now.getMinutes()).padStart(2,"0");
-  document.getElementById("updTime").textContent = "обновлено в " + hm;
+// ── Clock / auto-refresh ─────────────────────────────────────────────────────
+function tick() {
+  const n = new Date();
+  document.getElementById("updTime").textContent =
+    "обновлено " + String(n.getHours()).padStart(2,"0") + ":" + String(n.getMinutes()).padStart(2,"0");
 }
+tick();
+setInterval(() => { tick(); location.reload(); }, 30000);
 
 updateSummary();
-updateClock();
-setInterval(() => { updateClock(); location.reload(); }, 30000);
 </script>
 </body>
 </html>
