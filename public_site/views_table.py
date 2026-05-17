@@ -362,19 +362,33 @@ def table_menu(request, token: str):
     cx_cart = _get_cx_cart(request, token)
     cx_qty, cx_total = _cx_cart_totals(cx_cart)
 
-    # Текущий открытый заказ стола (уже отправлен на кухню)
-    open_order = (
+    # Все открытые заказы стола (накопительный режим)
+    _OPEN = [Order.Status.NEW, Order.Status.ACCEPTED, Order.Status.COOKING, Order.Status.READY]
+    open_orders_qs = list(
         Order.objects
-        .filter(
-            branch=branch,
-            table_place=place,
-            status__in=[Order.Status.NEW, Order.Status.ACCEPTED,
-                        Order.Status.COOKING, Order.Status.READY],
-        )
+        .filter(branch=branch, table_place=place, status__in=_OPEN)
         .prefetch_related("items__item", "constructor_items")
-        .order_by("-created_at")
-        .first()
+        .order_by("created_at")
     )
+    open_order = None
+    open_order_items = []   # list of (name, qty, line_total) tuples
+    open_order_total = Decimal("0")
+    if open_orders_qs:
+        open_order = open_orders_qs[0]  # primary (earliest) — for order_id / time ref
+        for o in open_orders_qs:
+            for oi in o.items.select_related("item").all():
+                open_order_items.append({
+                    "name": oi.item.name_ru,
+                    "qty": oi.qty,
+                    "line_total": oi.line_total,
+                })
+            for coi in o.constructor_items.all():
+                open_order_items.append({
+                    "name": coi.constructor_name_snapshot or "Конструктор",
+                    "qty": coi.qty,
+                    "line_total": coi.line_total,
+                })
+            open_order_total += o.total_amount
 
     return render(request, "public_site/table_menu.html", {
         "branch": branch,
@@ -386,6 +400,8 @@ def table_menu(request, token: str):
         "cart_total": reg_total + cx_total,
         "table": True,
         "open_order": open_order,
+        "open_order_items": open_order_items,
+        "open_order_total": open_order_total,
     })
     
     
@@ -491,44 +507,84 @@ def table_create_order(request, token):
         unit_price = Decimal(str(cx_item["unit_price"]))
         total += unit_price * qty
 
+    _OPEN = [Order.Status.NEW, Order.Status.ACCEPTED, Order.Status.COOKING, Order.Status.READY]
+
     with transaction.atomic():
-        order = Order.objects.create(
-            branch=branch,
-            type=Order.Type.DINE_IN,
-            table_place=place,
-            status=Order.Status.NEW,
-            customer_name=customer_name,
-            comment=comment,
-            total_amount=total,
-            payment_method=Order.PaymentMethod.CASH,
-            payment_status=Order.PaymentStatus.UNPAID,
+        existing_order = (
+            Order.objects
+            .filter(branch=branch, table_place=place, status__in=_OPEN)
+            .select_for_update()
+            .order_by("-created_at")
+            .first()
         )
 
-        for row in cart_rows:
-            OrderItem.objects.create(
-                order=order,
-                item=row["bi"].item,
-                qty=row["qty"],
-                price_snapshot=row["bi"].price,
-                line_total=row["line_total"],
+        if existing_order:
+            order = existing_order
+            # Append new items to the existing order
+            for row in cart_rows:
+                OrderItem.objects.create(
+                    order=order,
+                    item=row["bi"].item,
+                    qty=row["qty"],
+                    price_snapshot=row["bi"].price,
+                    line_total=row["line_total"],
+                )
+            for cx_item in cx_cart:
+                qty = int(cx_item.get("qty", 1))
+                unit_price = Decimal(str(cx_item["unit_price"]))
+                line_total = unit_price * qty
+                cx = get_object_or_404(DishConstructor, id=cx_item["cx_id"])
+                ConstructorOrderItem.objects.create(
+                    order=order,
+                    constructor=cx,
+                    constructor_name_snapshot=cx_item["cx_name"],
+                    qty=qty,
+                    unit_price=unit_price,
+                    line_total=line_total,
+                    ingredients_snapshot=cx_item.get("selections", []),
+                )
+            order.total_amount = order.total_amount + total
+            if comment and not order.comment:
+                order.comment = comment
+            order.save(update_fields=["total_amount", "comment"])
+        else:
+            order = Order.objects.create(
+                branch=branch,
+                type=Order.Type.DINE_IN,
+                table_place=place,
+                status=Order.Status.NEW,
+                customer_name=customer_name,
+                comment=comment,
+                total_amount=total,
+                payment_method=Order.PaymentMethod.CASH,
+                payment_status=Order.PaymentStatus.UNPAID,
             )
 
-        for cx_item in cx_cart:
-            qty = int(cx_item.get("qty", 1))
-            unit_price = Decimal(str(cx_item["unit_price"]))
-            line_total = unit_price * qty
-            cx = get_object_or_404(DishConstructor, id=cx_item["cx_id"])
-            ConstructorOrderItem.objects.create(
-                order=order,
-                constructor=cx,
-                constructor_name_snapshot=cx_item["cx_name"],
-                qty=qty,
-                unit_price=unit_price,
-                line_total=line_total,
-                ingredients_snapshot=cx_item.get("selections", []),
-            )
+            for row in cart_rows:
+                OrderItem.objects.create(
+                    order=order,
+                    item=row["bi"].item,
+                    qty=row["qty"],
+                    price_snapshot=row["bi"].price,
+                    line_total=row["line_total"],
+                )
 
-        Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
+            for cx_item in cx_cart:
+                qty = int(cx_item.get("qty", 1))
+                unit_price = Decimal(str(cx_item["unit_price"]))
+                line_total = unit_price * qty
+                cx = get_object_or_404(DishConstructor, id=cx_item["cx_id"])
+                ConstructorOrderItem.objects.create(
+                    order=order,
+                    constructor=cx,
+                    constructor_name_snapshot=cx_item["cx_name"],
+                    qty=qty,
+                    unit_price=unit_price,
+                    line_total=line_total,
+                    ingredients_snapshot=cx_item.get("selections", []),
+                )
+
+            Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
 
     _save_cart(request, token, {})
     _save_cx_cart(request, token, [])
@@ -551,21 +607,30 @@ def branch_tables_page(request, branch_id):
     branch = get_object_or_404(Branch, id=branch_id, is_active=True)
 
     # Open orders for this branch
+    _OPEN = [Order.Status.NEW, Order.Status.ACCEPTED, Order.Status.COOKING, Order.Status.READY]
     open_orders = (
         Order.objects
         .filter(
             branch=branch,
             table_place__isnull=False,
-            status__in=[Order.Status.NEW, Order.Status.ACCEPTED,
-                        Order.Status.COOKING, Order.Status.READY],
+            status__in=_OPEN,
         )
         .select_related("table_place")
         .order_by("created_at")
     )
-    order_by_place = {}
+    # Combine all open orders per table: use the earliest order as the primary,
+    # sum total_amount across all orders for the table
+    order_by_place = {}   # place_id → primary Order (earliest), with summed total
+    totals_by_place = {}  # place_id → Decimal sum
     for o in open_orders:
-        if o.table_place_id not in order_by_place:
-            order_by_place[o.table_place_id] = o
+        pid = o.table_place_id
+        if pid not in order_by_place:
+            order_by_place[pid] = o
+            totals_by_place[pid] = Decimal("0")
+        totals_by_place[pid] += o.total_amount
+    # Patch the primary order's total_amount with the combined total (in memory only)
+    for pid, o in order_by_place.items():
+        o.total_amount = totals_by_place[pid]
 
     floors = (Floor.objects
               .filter(branch=branch, is_active=True)
@@ -588,31 +653,50 @@ def branch_tables_page(request, branch_id):
 
 
 def table_order_json(request, order_id):
-    """AJAX: детали открытого заказа для официанта."""
-    order = get_object_or_404(
-        Order.objects.prefetch_related("items__item", "constructor_items"),
-        id=order_id,
-    )
+    """AJAX: детали открытого заказа для официанта. Возвращает все позиции со стола."""
+    order = get_object_or_404(Order, id=order_id)
+
+    _OPEN = [Order.Status.NEW, Order.Status.ACCEPTED, Order.Status.COOKING, Order.Status.READY]
+
+    # Collect all open orders for this table
+    if order.table_place_id:
+        all_orders = list(
+            Order.objects
+            .filter(branch=order.branch, table_place_id=order.table_place_id, status__in=_OPEN)
+            .prefetch_related("items__item", "constructor_items")
+            .order_by("created_at")
+        )
+        if not all_orders:
+            # Order may already be closed — return it alone
+            all_orders = [order]
+            order.prefetch_related("items__item", "constructor_items")
+    else:
+        all_orders = [order]
+
     items = []
-    for oi in order.items.select_related("item").all():
-        items.append({
-            "name": oi.item.name_ru,
-            "qty": oi.qty,
-            "price": float(oi.price_snapshot),
-            "line_total": float(oi.line_total),
-        })
-    for coi in order.constructor_items.all():
-        items.append({
-            "name": coi.constructor_name_snapshot or "Конструктор",
-            "qty": coi.qty,
-            "price": float(coi.unit_price),
-            "line_total": float(coi.line_total),
-        })
+    combined_total = Decimal("0")
+    for o in all_orders:
+        for oi in o.items.select_related("item").all():
+            items.append({
+                "name": oi.item.name_ru,
+                "qty": oi.qty,
+                "price": float(oi.price_snapshot),
+                "line_total": float(oi.line_total),
+            })
+        for coi in o.constructor_items.all():
+            items.append({
+                "name": coi.constructor_name_snapshot or "Конструктор",
+                "qty": coi.qty,
+                "price": float(coi.unit_price),
+                "line_total": float(coi.line_total),
+            })
+        combined_total += o.total_amount
+
     return JsonResponse({
         "ok": True,
         "order": {
             "id": order.id,
-            "total": float(order.total_amount),
+            "total": float(combined_total),
             "comment": order.comment,
             "customer": order.customer_name,
             "created_at": order.created_at.strftime("%H:%M"),
@@ -623,7 +707,7 @@ def table_order_json(request, order_id):
 
 @require_POST
 def table_waiter_close(request, order_id):
-    """Официант закрывает стол. Печатает чек покупателя."""
+    """Официант закрывает стол. Закрывает ВСЕ открытые заказы на этом столе. Печатает чек."""
     import json as _json
     order = get_object_or_404(Order, id=order_id)
 
@@ -636,12 +720,33 @@ def table_waiter_close(request, order_id):
         data = {}
 
     payment = data.get("payment", "cash")
-    order.payment_method = payment
-    order.status = Order.Status.CLOSED
-    order.payment_status = Order.PaymentStatus.PAID
-    order.save(update_fields=["status", "payment_status", "payment_method"])
 
-    # Печать чека покупателя
+    _OPEN = [Order.Status.NEW, Order.Status.ACCEPTED, Order.Status.COOKING, Order.Status.READY]
+
+    # Close all open orders for this table
+    if order.table_place_id:
+        all_open = list(
+            Order.objects.filter(
+                branch=order.branch,
+                table_place_id=order.table_place_id,
+                status__in=_OPEN,
+            )
+        )
+    else:
+        all_open = [order]
+
+    combined_total = Decimal("0")
+    for o in all_open:
+        o.payment_method = payment
+        o.status = Order.Status.CLOSED
+        o.payment_status = Order.PaymentStatus.PAID
+        o.save(update_fields=["status", "payment_status", "payment_method"])
+        combined_total += o.total_amount
+
+    # Print receipt for the primary order (which now reflects the full total)
+    order.total_amount = combined_total
+    order.save(update_fields=["total_amount"])
+
     try:
         from printing.jobs import create_receipt_job
         create_receipt_job(order)
@@ -651,5 +756,5 @@ def table_waiter_close(request, order_id):
     return JsonResponse({
         "ok": True,
         "order_id": order.id,
-        "total": float(order.total_amount),
+        "total": float(combined_total),
     })

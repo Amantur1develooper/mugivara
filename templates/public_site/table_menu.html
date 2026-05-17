@@ -469,7 +469,7 @@
   <div class="tm-ob-icon">🧾</div>
   <div class="tm-ob-info">
     <div class="tm-ob-label">Ваш счёт (уже на кухне)</div>
-    <div class="tm-ob-total">{{ open_order.total_amount|floatformat:0 }} сом</div>
+    <div class="tm-ob-total">{{ open_order_total|floatformat:0 }} сом</div>
   </div>
   <div class="tm-ob-arrow">›</div>
 </div>
@@ -480,30 +480,23 @@
     <div class="tm-bill-handle"></div>
     <div class="tm-bill-head">
       <div>
-        <div class="tm-bill-title">🧾 Счёт #{{ open_order.id }}</div>
-        <div class="tm-bill-sub">Стол {{ place.title }} · с {{ open_order.created_at|time:"H:i" }}</div>
+        <div class="tm-bill-title">🧾 Счёт стола {{ place.title }}</div>
+        <div class="tm-bill-sub">с {{ open_order.created_at|time:"H:i" }}</div>
       </div>
       <button class="tm-bill-close" onclick="closeBillModal()">✕</button>
     </div>
     <div class="tm-bill-body">
-      {% for oi in open_order.items.all %}
+      {% for oi in open_order_items %}
       <div class="tm-bill-row">
-        <div class="tm-bill-name">{{ oi.item.name_ru }}</div>
+        <div class="tm-bill-name">{{ oi.name }}</div>
         <div class="tm-bill-qty">×{{ oi.qty }}</div>
         <div class="tm-bill-line">{{ oi.line_total|floatformat:0 }} сом</div>
-      </div>
-      {% endfor %}
-      {% for coi in open_order.constructor_items.all %}
-      <div class="tm-bill-row">
-        <div class="tm-bill-name">{{ coi.constructor_name_snapshot|default:"Конструктор" }}</div>
-        <div class="tm-bill-qty">×{{ coi.qty }}</div>
-        <div class="tm-bill-line">{{ coi.line_total|floatformat:0 }} сом</div>
       </div>
       {% endfor %}
     </div>
     <div class="tm-bill-foot">
       <span class="tm-bill-foot-label">ИТОГО</span>
-      <span class="tm-bill-foot-val">{{ open_order.total_amount|floatformat:0 }} сом</span>
+      <span class="tm-bill-foot-val">{{ open_order_total|floatformat:0 }} сом</span>
     </div>
   </div>
 </div>

@@ -1505,17 +1505,11 @@ def pos_order_create(request, branch_id):
         except (Place.DoesNotExist, ValueError):
             pass
 
-    order = Order.objects.create(
-        branch=branch,
-        type=order_type,
-        status=Order.Status.NEW,
-        payment_method=payment_method,
-        customer_name=customer_name,
-        comment=comment,
-        table_place=table_place,
-    )
+    _OPEN = [Order.Status.NEW, Order.Status.ACCEPTED, Order.Status.COOKING, Order.Status.READY]
 
+    # Pre-calculate items and total
     total = Decimal("0")
+    prepared_items = []
     for it in items_data:
         try:
             bi  = BranchItem.objects.select_related("item").get(
@@ -1523,31 +1517,73 @@ def pos_order_create(request, branch_id):
             )
             qty = max(1, int(it.get("qty", 1)))
             line = bi.price * qty
-            OrderItem.objects.create(
-                order=order, item=bi.item,
-                qty=qty, price_snapshot=bi.price, line_total=line,
-            )
+            prepared_items.append({"bi": bi, "qty": qty, "line": line})
             total += line
-            if bi.stock is not None:
-                bi.stock = max(0, bi.stock - qty)
-                if bi.stock == 0:
-                    bi.is_available = False
-                bi.save(update_fields=["stock", "is_available"])
         except (BranchItem.DoesNotExist, ValueError, KeyError):
             continue
 
-    order.total_amount = total
+    with transaction.atomic():
+        # If a table is selected, try to add to existing open order
+        existing_order = None
+        if table_place:
+            existing_order = (
+                Order.objects
+                .filter(branch=branch, table_place=table_place, status__in=_OPEN)
+                .select_for_update()
+                .order_by("-created_at")
+                .first()
+            )
 
-    # Заказ в зале со столом → оставляем ОТКРЫТЫМ, кухня уже получает задание
-    # Остальные типы (самовывоз, доставка) → сразу закрываем
-    if table_place:
-        order.save(update_fields=["total_amount"])
-        open_table = True
-    else:
-        order.status = Order.Status.CLOSED
-        order.payment_status = Order.PaymentStatus.PAID
-        order.save(update_fields=["total_amount", "status", "payment_status"])
-        open_table = False
+        if existing_order:
+            order = existing_order
+            for pit in prepared_items:
+                OrderItem.objects.create(
+                    order=order, item=pit["bi"].item,
+                    qty=pit["qty"], price_snapshot=pit["bi"].price, line_total=pit["line"],
+                )
+                bi = pit["bi"]
+                if bi.stock is not None:
+                    bi.stock = max(0, bi.stock - pit["qty"])
+                    if bi.stock == 0:
+                        bi.is_available = False
+                    bi.save(update_fields=["stock", "is_available"])
+            order.total_amount = order.total_amount + total
+            order.save(update_fields=["total_amount"])
+            open_table = True
+        else:
+            order = Order.objects.create(
+                branch=branch,
+                type=order_type,
+                status=Order.Status.NEW,
+                payment_method=payment_method,
+                customer_name=customer_name,
+                comment=comment,
+                table_place=table_place,
+            )
+            for pit in prepared_items:
+                OrderItem.objects.create(
+                    order=order, item=pit["bi"].item,
+                    qty=pit["qty"], price_snapshot=pit["bi"].price, line_total=pit["line"],
+                )
+                bi = pit["bi"]
+                if bi.stock is not None:
+                    bi.stock = max(0, bi.stock - pit["qty"])
+                    if bi.stock == 0:
+                        bi.is_available = False
+                    bi.save(update_fields=["stock", "is_available"])
+
+            order.total_amount = total
+
+            # Заказ в зале со столом → оставляем ОТКРЫТЫМ
+            # Остальные типы → сразу закрываем
+            if table_place:
+                order.save(update_fields=["total_amount"])
+                open_table = True
+            else:
+                order.status = Order.Status.CLOSED
+                order.payment_status = Order.PaymentStatus.PAID
+                order.save(update_fields=["total_amount", "status", "payment_status"])
+                open_table = False
 
     # Облачная печать — всегда при создании заказа
     try:
@@ -1567,9 +1603,8 @@ def pos_order_create(request, branch_id):
 
 @require_POST
 @login_required(login_url="dashboard:login")
-@transaction.atomic
 def pos_table_close(request, order_id):
-    """Закрыть счёт стола — принять оплату."""
+    """Закрыть счёт стола — принять оплату. Закрывает ВСЕ открытые заказы на столе."""
     order = get_object_or_404(Order, id=order_id)
     if not (request.user.is_staff or request.user.is_superuser or _has_branch_access(request.user, order.branch)):
         return JsonResponse({"ok": False}, status=403)
@@ -1583,10 +1618,31 @@ def pos_table_close(request, order_id):
         data = {}
 
     payment_method = data.get("payment", order.payment_method)
-    order.payment_method = payment_method
-    order.status = Order.Status.CLOSED
-    order.payment_status = Order.PaymentStatus.PAID
-    order.save(update_fields=["status", "payment_status", "payment_method"])
+
+    _OPEN = [Order.Status.NEW, Order.Status.ACCEPTED, Order.Status.COOKING, Order.Status.READY]
+
+    with transaction.atomic():
+        if order.table_place_id:
+            all_open = list(
+                Order.objects.select_for_update().filter(
+                    branch=order.branch,
+                    table_place_id=order.table_place_id,
+                    status__in=_OPEN,
+                )
+            )
+        else:
+            all_open = [order]
+
+        combined_total = Decimal("0")
+        for o in all_open:
+            o.payment_method = payment_method
+            o.status = Order.Status.CLOSED
+            o.payment_status = Order.PaymentStatus.PAID
+            o.save(update_fields=["status", "payment_status", "payment_method"])
+            combined_total += o.total_amount
+
+        order.total_amount = combined_total
+        order.save(update_fields=["total_amount"])
 
     # Печать чека покупателя
     try:
@@ -1598,7 +1654,7 @@ def pos_table_close(request, order_id):
     return JsonResponse({
         "ok": True,
         "order_id": order.id,
-        "total": str(order.total_amount),
+        "total": str(combined_total),
     })
 
 
