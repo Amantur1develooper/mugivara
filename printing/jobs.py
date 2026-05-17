@@ -9,10 +9,10 @@ from .models import PrintJob, RestaurantPrintConfig
 
 
 def _build_ticket(order, items_by_group, group):
-    """Генерирует plain-text чек для кухонного принтера."""
+    """Генерирует plain-text чек для кухонного принтера (80мм)."""
     now = timezone.localtime()
     lines = []
-    SEP = "-" * 32
+    SEP = "-" * 48  # 80мм → ~48 символов при жирном 2x-высота шрифте
 
     lines.append(SEP)
     lines.append(f"  ЗАКАЗ #{order.id}")
@@ -30,7 +30,7 @@ def _build_ticket(order, items_by_group, group):
         lines.append(f"  {qty}x  {name}")
 
     lines.append(SEP)
-    lines.append("")  # пустая строка для отрыва бумаги
+    lines.append("")
 
     return "\n".join(lines)
 
@@ -167,7 +167,7 @@ def create_cancel_job(order, item_name: str, item_qty: int, item_id: int = None)
         return
 
     now = timezone.localtime()
-    SEP = "=" * 32
+    SEP = "=" * 48   # 80мм
     lines = [
         SEP,
         "  !! ОТМЕНА БЛЮДА !!",
@@ -212,8 +212,8 @@ def create_receipt_job(order):
 
     now = timezone.localtime()
     lines = []
-    SEP  = "=" * 32
-    SEP2 = "-" * 32
+    SEP  = "=" * 48   # 80мм
+    SEP2 = "-" * 48
 
     lines.append(SEP)
     lines.append(f"  {restaurant.name_ru}")
@@ -242,7 +242,7 @@ def create_receipt_job(order):
     pm = "Наличные" if order.payment_method == "cash" else "Карта"
     lines.append(f"  Оплата: {pm}")
     lines.append(SEP)
-    lines.append("     Спасибо за визит!")
+    lines.append("        Спасибо за визит!")
     lines.append("")
 
     PrintJob.objects.create(

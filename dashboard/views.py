@@ -348,12 +348,26 @@ def print_text_windows(printer_name, content):
     try:
         win32print.StartDocPrinter(handle, 1, ("Receipt", None, "RAW"))
         win32print.StartPagePrinter(handle)
-        ESC  = b"\\x1b"
-        init = ESC + b"@"           # ESC @ — инициализация принтера
-        feed = ESC + b"d\\x05"      # ESC d 5 — протяжка 5 строк перед отрезом
-        cut  = b"\\x1d\\x56\\x41\\x00"  # GS V A 0 — полный отрез бумаги
+        ESC = b"\\x1b"
+        # Инициализация
+        init     = ESC + b"@"                   # ESC @   — сброс принтера
+        # Звуковой сигнал: ESC B n t — n раз по t*100мс
+        beep     = ESC + b"B\\x03\\x02"         # 3 сигнала по 200мс
+        # Жирный шрифт
+        bold_on  = ESC + b"E\\x01"              # ESC E 1 — жирный вкл
+        bold_off = ESC + b"E\\x00"              # ESC E 0 — жирный выкл
+        # Размер символов: GS ! n
+        # 0x01 = двойная высота, 0x10 = двойная ширина, 0x11 = оба
+        dbl_h    = b"\\x1d\\x21\\x01"           # GS ! 1  — 2x высота (80мм, 42 симв/строку)
+        normal   = b"\\x1d\\x21\\x00"           # GS ! 0  — обычный размер
+        # Протяжка и отрез
+        feed     = ESC + b"d\\x05"              # ESC d 5 — 5 строк вперёд
+        cut      = b"\\x1d\\x56\\x41\\x00"      # GS V A 0 — полный отрез
         data = content.encode("cp866", errors="replace")
-        win32print.WritePrinter(handle, init + data + feed + cut)
+        win32print.WritePrinter(
+            handle,
+            init + beep + bold_on + dbl_h + data + normal + bold_off + feed + cut,
+        )
         win32print.EndPagePrinter(handle)
     finally:
         win32print.EndDocPrinter(handle)
