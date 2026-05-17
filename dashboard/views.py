@@ -258,25 +258,179 @@ def restaurant_print_download_config(request, restaurant_id):
 
 @login_required(login_url="dashboard:login")
 def restaurant_print_download_agent(request, restaurant_id):
-    """Скачать agent.py."""
-    import os as _os
+    """Генерирует и отдаёт agent.py с уже вписанным URL сервера."""
     restaurant = get_object_or_404(Restaurant, id=restaurant_id)
     if not Membership.objects.filter(user=request.user, restaurant=restaurant).exists():
         return redirect("dashboard:home")
 
-    agent_path = _os.path.join(
-        _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
-        "..", "printer_agent", "agent.py"
-    )
-    agent_path = _os.path.normpath(agent_path)
+    server_url = request.build_absolute_uri("/").rstrip("/")
+
+    content = f'''\
+"""
+WebOrdo Cloud Printer Agent
+============================
+Сервер: {server_url}
+
+Установка:
+    pip install requests pywin32
+
+Запуск:
+    python agent.py
+
+Сборка в .exe:
+    pip install pyinstaller
+    pyinstaller --onefile agent.py
+"""
+
+import json, logging, os, sys, time
+from pathlib import Path
+
+import requests
+
+LOG_DIR = Path(__file__).parent / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(LOG_DIR / "agent.log", encoding="utf-8"),
+        logging.StreamHandler(sys.stdout),
+    ],
+)
+log = logging.getLogger("printer_agent")
+
+CONFIG_PATH = Path(__file__).parent / "config.json"
+
+
+def load_config():
+    with open(CONFIG_PATH, encoding="utf-8") as f:
+        return json.load(f)
+
+
+class ApiClient:
+    def __init__(self, server_url, token):
+        self.base = server_url.rstrip("/")
+        self.session = requests.Session()
+        self.session.headers["X-Print-Token"] = token
+
+    def get_jobs(self):
+        r = self.session.get(f"{{self.base}}/api/print/jobs/", timeout=10)
+        r.raise_for_status()
+        return r.json().get("jobs", [])
+
+    def ack_job(self, job_id, status, error=""):
+        payload = {{"status": status}}
+        if error:
+            payload["error"] = error
+        r = self.session.post(f"{{self.base}}/api/print/jobs/{{job_id}}/ack/", json=payload, timeout=10)
+        r.raise_for_status()
+
+    def heartbeat(self):
+        r = self.session.post(f"{{self.base}}/api/print/heartbeat/", timeout=10)
+        r.raise_for_status()
+        return r.json()
+
+    def get_config(self):
+        r = self.session.get(f"{{self.base}}/api/print/config/", timeout=10)
+        r.raise_for_status()
+        return r.json()
+
+
+def print_text_windows(printer_name, content):
+    try:
+        import win32print
+    except ImportError:
+        log.error("pywin32 не установлен. Запустите: pip install pywin32")
+        raise
+
+    handle = win32print.OpenPrinter(printer_name)
+    try:
+        win32print.StartDocPrinter(handle, 1, ("Receipt", None, "RAW"))
+        win32print.StartPagePrinter(handle)
+        ESC  = b"\\x1b"
+        init = ESC + b"@"
+        cut  = ESC + b"d\\x04"
+        data = content.encode("cp866", errors="replace")
+        win32print.WritePrinter(handle, init + data + cut)
+        win32print.EndPagePrinter(handle)
+    finally:
+        win32print.EndDocPrinter(handle)
+        win32print.ClosePrinter(handle)
+    log.info(f"Напечатано на \'{{printer_name}}\'")
+
+
+def print_job(job, printer_map):
+    group        = job.get("group")
+    content      = job.get("content", "")
+    printer_name = printer_map.get(group) or next(iter(printer_map.values()), None)
+    if not printer_name:
+        raise RuntimeError(f"Нет принтера для группы \'{{group}}\'")
+    log.info(f"Печать job #{{job[\'id\']}} (group={{group}}) → \'{{printer_name}}\'")
+    print_text_windows(printer_name, content)
+
+
+def main():
+    cfg = load_config()
+    client = ApiClient(cfg["server_url"], cfg["token"])
+    poll_interval      = cfg.get("poll_interval", 3)
+    heartbeat_interval = cfg.get("heartbeat_interval", 30)
+    printer_map        = dict(cfg.get("printers", {{}}))
 
     try:
-        with open(agent_path, "rb") as f:
-            content = f.read()
-    except FileNotFoundError:
-        return HttpResponse("agent.py не найден на сервере", status=404)
+        srv = client.get_config()
+        printer_map.update(srv.get("printers", {{}}))
+        log.info(f"Ресторан: {{srv.get(\'restaurant\')}}")
+        log.info(f"Принтеры: {{printer_map}}")
+    except Exception as e:
+        log.warning(f"Не удалось получить конфиг с сервера: {{e}}")
 
-    response = HttpResponse(content, content_type="text/x-python")
+    last_heartbeat = 0
+    log.info("=" * 48)
+    log.info("WebOrdo Printer Agent запущен")
+    log.info(f"Сервер: {{cfg[\'server_url\']}}")
+    log.info("=" * 48)
+
+    while True:
+        now = time.time()
+        if now - last_heartbeat >= heartbeat_interval:
+            try:
+                client.heartbeat()
+                last_heartbeat = now
+            except Exception as e:
+                log.warning(f"Heartbeat failed: {{e}}")
+
+        try:
+            jobs = client.get_jobs()
+        except Exception as e:
+            log.error(f"Ошибка получения заданий: {{e}}")
+            time.sleep(poll_interval)
+            continue
+
+        for job in jobs:
+            jid = job["id"]
+            try:
+                print_job(job, printer_map)
+                client.ack_job(jid, "printed")
+                log.info(f"Job #{{jid}} — OK")
+            except Exception as e:
+                log.error(f"Job #{{jid}} — ERROR: {{e}}")
+                try:
+                    client.ack_job(jid, "error", str(e))
+                except Exception:
+                    pass
+
+        time.sleep(poll_interval)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        log.info("Агент остановлен")
+'''
+
+    response = HttpResponse(content.encode("utf-8"), content_type="text/x-python; charset=utf-8")
     response["Content-Disposition"] = 'attachment; filename="agent.py"'
     return response
 
