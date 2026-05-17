@@ -697,6 +697,8 @@ def table_order_json(request, order_id):
     for o in all_orders:
         for oi in o.items.select_related("item").all():
             items.append({
+                "oi_id": oi.id,
+                "type": "item",
                 "name": oi.item.name_ru,
                 "qty": oi.qty,
                 "price": float(oi.price_snapshot),
@@ -704,6 +706,8 @@ def table_order_json(request, order_id):
             })
         for coi in o.constructor_items.all():
             items.append({
+                "oi_id": coi.id,
+                "type": "cx",
                 "name": coi.constructor_name_snapshot or "Конструктор",
                 "qty": coi.qty,
                 "price": float(coi.unit_price),
@@ -776,4 +780,75 @@ def table_waiter_close(request, order_id):
         "ok": True,
         "order_id": order.id,
         "total": float(combined_total),
+    })
+
+
+@require_POST
+def table_waiter_cancel_item(request, order_id):
+    """Официант отменяет одну позицию из заказа. Печатает ОТМЕНУ на кухню."""
+    import json as _json
+    from orders.models import OrderItem, ConstructorOrderItem
+
+    order = get_object_or_404(Order, id=order_id)
+
+    _OPEN = [Order.Status.NEW, Order.Status.ACCEPTED, Order.Status.COOKING, Order.Status.READY]
+    if order.status not in _OPEN:
+        return JsonResponse({"ok": False, "error": "Заказ уже закрыт"})
+
+    try:
+        data = _json.loads(request.body)
+    except Exception:
+        data = {}
+
+    oi_id = data.get("oi_id")
+    item_type = data.get("type", "item")  # "item" | "cx"
+
+    if not oi_id:
+        return JsonResponse({"ok": False, "error": "Не указана позиция"}, status=400)
+
+    item_name = ""
+    item_qty = 0
+    item_line = Decimal("0")
+
+    with transaction.atomic():
+        if item_type == "cx":
+            obj = get_object_or_404(ConstructorOrderItem, id=oi_id, order__table_place=order.table_place)
+            item_name = obj.constructor_name_snapshot or "Конструктор"
+            item_qty = obj.qty
+            item_line = obj.line_total
+            parent_order = obj.order
+            obj.delete()
+        else:
+            obj = get_object_or_404(OrderItem, id=oi_id, order__table_place=order.table_place)
+            item_name = obj.item.name_ru
+            item_qty = obj.qty
+            item_line = obj.line_total
+            parent_order = obj.order
+            obj.delete()
+
+        # Уменьшаем сумму заказа
+        parent_order.total_amount = max(Decimal("0"), parent_order.total_amount - item_line)
+        parent_order.save(update_fields=["total_amount"])
+
+    # Пересчитываем суммарный итог по всем открытым заказам стола
+    from django.db.models import Sum as _Sum
+    _OPEN2 = [Order.Status.NEW, Order.Status.ACCEPTED, Order.Status.COOKING, Order.Status.READY]
+    new_total = float(
+        Order.objects
+        .filter(branch=order.branch, table_place_id=order.table_place_id, status__in=_OPEN2)
+        .aggregate(s=_Sum('total_amount'))['s']
+        or 0
+    )
+
+    # Кухонный тикет ОТМЕНА
+    try:
+        from printing.jobs import create_cancel_job
+        create_cancel_job(order, item_name, item_qty)
+    except Exception:
+        pass
+
+    return JsonResponse({
+        "ok": True,
+        "cancelled_name": item_name,
+        "new_total": new_total,
     })

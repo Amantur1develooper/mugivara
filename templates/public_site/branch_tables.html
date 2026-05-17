@@ -154,6 +154,13 @@
     .order-name { flex: 1; font-size: 14px; font-weight: 500; line-height: 1.3; }
     .order-qty  { font-size: 12px; color: #aaa; white-space: nowrap; }
     .order-line { font-size: 14px; font-weight: 700; min-width: 70px; text-align: right; flex-shrink: 0; }
+    .order-cancel {
+      width: 28px; height: 28px; border-radius: 8px; border: none; cursor: pointer;
+      background: rgba(220,38,38,.1); color: #dc2626; font-size: 14px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s;
+    }
+    .order-cancel:active { background: rgba(220,38,38,.25); }
 
     .empty-state {
       text-align: center; padding: 32px 16px; color: #aaa; font-size: 13px;
@@ -304,9 +311,10 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const ORDER_JSON_URL = "{% url 'public_site:table_order_json'   0 %}".replace("/0/",  "/{id}/");
-const CLOSE_URL      = "{% url 'public_site:table_waiter_close' 0 %}".replace("/0/",  "/{id}/");
-const MENU_URL       = "{% url 'public_site:table_menu' token='TOKEN_PLACEHOLDER' %}";
+const ORDER_JSON_URL  = "{% url 'public_site:table_order_json'        0 %}".replace("/0/", "/{id}/");
+const CLOSE_URL       = "{% url 'public_site:table_waiter_close'      0 %}".replace("/0/", "/{id}/");
+const CANCEL_ITEM_URL = "{% url 'public_site:table_waiter_cancel_item' 0 %}".replace("/0/", "/{id}/");
+const MENU_URL        = "{% url 'public_site:table_menu' token='TOKEN_PLACEHOLDER' %}";
 const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
 
 let curOrderId  = null;
@@ -386,16 +394,49 @@ function renderOrderBody(order) {
   }
   let html = "";
   order.items.forEach(it => {
-    html += `<div class="order-row">
+    html += `<div class="order-row" id="oi-row-${it.oi_id}-${it.type}">
       <div class="order-name">${it.name}</div>
       <div class="order-qty">×${it.qty}</div>
       <div class="order-line">${Math.round(it.line_total).toLocaleString("ru")} сом</div>
+      <button class="order-cancel" title="Отменить"
+              onclick="cancelItem(${it.oi_id},'${it.type}','${it.name.replace(/'/g,"\\'")}',${it.qty})">✕</button>
     </div>`;
   });
   if (order.comment) {
     html += `<div style="margin-top:10px;padding:10px 12px;background:#fff8f5;border-radius:10px;font-size:12px;color:#888">💬 ${order.comment}</div>`;
   }
   document.getElementById("sheetBody").innerHTML = html;
+}
+
+// ── Cancel single item ───────────────────────────────────────────────────────
+async function cancelItem(oiId, type, name, qty) {
+  if (!confirm(`Отменить «${name}» ×${qty}?\nТикет ОТМЕНЫ уйдёт на кухню.`)) return;
+
+  const row = document.getElementById(`oi-row-${oiId}-${type}`);
+  if (row) row.style.opacity = "0.4";
+
+  try {
+    const r = await fetch(CANCEL_ITEM_URL.replace("{id}", curOrderId), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF() },
+      body: JSON.stringify({ oi_id: oiId, type }),
+    });
+    const d = await r.json();
+    if (!d.ok) {
+      showToast(d.error || "Ошибка", "err");
+      if (row) row.style.opacity = "";
+      return;
+    }
+    // Remove row and update total
+    if (row) row.remove();
+    loadedOrder.total = d.new_total;
+    loadedOrder.items = loadedOrder.items.filter(i => !(i.oi_id === oiId && i.type === type));
+    renderFoot();
+    showToast(`✅ «${name}» отменено · тикет на кухню`, "ok");
+  } catch {
+    showToast("Ошибка сети", "err");
+    if (row) row.style.opacity = "";
+  }
 }
 
 // ── Render: footer ───────────────────────────────────────────────────────────

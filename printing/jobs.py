@@ -130,6 +130,52 @@ def create_print_jobs(order, new_order_item_ids=None, new_cx_item_ids=None):
         PrintJob.objects.bulk_create(jobs)
 
 
+def create_cancel_job(order, item_name: str, item_qty: int):
+    """
+    Печатает тикет ОТМЕНЫ блюда на все кухонные принтеры стола.
+    Отправляется при удалении позиции официантом.
+    """
+    restaurant = order.branch.restaurant
+    try:
+        cfg = RestaurantPrintConfig.objects.get(restaurant=restaurant, enabled=True)
+    except RestaurantPrintConfig.DoesNotExist:
+        return
+
+    now = timezone.localtime()
+    SEP = "=" * 32
+    lines = [
+        SEP,
+        "  !! ОТМЕНА БЛЮДА !!",
+        f"  Заказ #{order.id}",
+        f"  {now.strftime('%d.%m.%Y  %H:%M')}",
+    ]
+    if order.table_place:
+        lines.append(f"  Стол: {order.table_place.title}")
+    lines.append(SEP)
+    lines.append(f"  ОТМЕНЕНО: {item_qty}x  {item_name}")
+    lines.append(SEP)
+    lines.append("")
+
+    content = "\n".join(lines)
+
+    # Отправляем на все группы принтеров филиала
+    groups = list(restaurant.printer_groups.all())
+    if not groups:
+        return
+
+    jobs = [
+        PrintJob(
+            restaurant=restaurant,
+            order_id=order.id,
+            group=g,
+            content=content,
+            status=PrintJob.Status.NEW,
+        )
+        for g in groups
+    ]
+    PrintJob.objects.bulk_create(jobs)
+
+
 def create_receipt_job(order):
     """
     Печатает чек покупателя при закрытии стола.
