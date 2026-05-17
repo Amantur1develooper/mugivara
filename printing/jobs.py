@@ -118,3 +118,67 @@ def create_print_jobs(order):
 
     if jobs:
         PrintJob.objects.bulk_create(jobs)
+
+
+def create_receipt_job(order):
+    """
+    Печатает чек покупателя при закрытии стола.
+    Идёт на группу 'cashier' / 'receipt' или первую доступную.
+    """
+    restaurant = order.branch.restaurant
+    try:
+        cfg = RestaurantPrintConfig.objects.get(restaurant=restaurant, enabled=True)
+    except RestaurantPrintConfig.DoesNotExist:
+        return
+
+    group = (
+        restaurant.printer_groups
+        .filter(name__in=["cashier", "receipt", "kitchen"])
+        .first()
+        or restaurant.printer_groups.first()
+    )
+    if not group:
+        return
+
+    now = timezone.localtime()
+    lines = []
+    SEP  = "=" * 32
+    SEP2 = "-" * 32
+
+    lines.append(SEP)
+    lines.append(f"  {restaurant.name_ru}")
+    lines.append(f"  {order.branch.name_ru}")
+    lines.append(SEP)
+    lines.append(f"  ЧЕК #{order.id}")
+    lines.append(f"  {now.strftime('%d.%m.%Y  %H:%M')}")
+    if order.table_place:
+        lines.append(f"  Стол: {order.table_place.title}")
+    if order.customer_name:
+        lines.append(f"  Гость: {order.customer_name}")
+    lines.append(SEP2)
+
+    for oi in order.items.select_related("item").all():
+        name = oi.item.name_ru
+        lines.append(f"  {name}")
+        lines.append(f"    {oi.qty} x {oi.price_snapshot:.0f} = {oi.line_total:.0f} сом")
+
+    for coi in order.constructor_items.all():
+        name = coi.constructor_name_snapshot or "Конструктор"
+        lines.append(f"  {name}")
+        lines.append(f"    {coi.qty} x {coi.unit_price:.0f} = {coi.line_total:.0f} сом")
+
+    lines.append(SEP2)
+    lines.append(f"  ИТОГО:  {order.total_amount:.0f} сом")
+    pm = "Наличные" if order.payment_method == "cash" else "Карта"
+    lines.append(f"  Оплата: {pm}")
+    lines.append(SEP)
+    lines.append("     Спасибо за визит!")
+    lines.append("")
+
+    PrintJob.objects.create(
+        restaurant=restaurant,
+        order_id=order.id,
+        group=group,
+        content="\n".join(lines),
+        status=PrintJob.Status.NEW,
+    )

@@ -1588,6 +1588,13 @@ def pos_table_close(request, order_id):
     order.payment_status = Order.PaymentStatus.PAID
     order.save(update_fields=["status", "payment_status", "payment_method"])
 
+    # Печать чека покупателя
+    try:
+        from printing.jobs import create_receipt_job
+        create_receipt_job(order)
+    except Exception:
+        pass
+
     return JsonResponse({
         "ok": True,
         "order_id": order.id,

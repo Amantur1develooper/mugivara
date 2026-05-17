@@ -13,7 +13,7 @@ from public_site.views_table import (
     table_cart, table_create_order, table_cart_update,
     table_call_waiter, table_menu, table_add_to_cart,
     table_add_constructor, table_cx_update,
-    branch_tables_page,
+    branch_tables_page, table_order_json, table_waiter_close,
 )
 
 
@@ -34,6 +34,8 @@ urlpatterns = [
     path("t/<str:token>/order/create/", table_create_order, name="table_create_order"),
     path("t/<str:token>/call-waiter/", table_call_waiter, name="table_call_waiter"),
     path("<int:branch_id>/tables/", branch_tables_page, name="branch_tables"),
+    path("order/<int:order_id>/json/",  table_order_json,   name="table_order_json"),
+    path("order/<int:order_id>/close/", table_waiter_close, name="table_waiter_close"),
     # ВАЖНО: без ведущего "/"
     path("<int:branch_id>/menu/", branch_menu, name="branch_menu"),
 

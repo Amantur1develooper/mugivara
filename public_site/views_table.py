@@ -518,25 +518,123 @@ def table_create_order(request, token):
     _save_cart(request, token, {})
     _save_cx_cart(request, token, [])
 
+    # Кухонный чек → облачная печать
+    try:
+        from printing.jobs import create_print_jobs
+        create_print_jobs(order)
+    except Exception:
+        pass
+
     return redirect("table_success", token=token, order_id=order.id)
 
 
-# ── Branch tables public page ─────────────────────────────────────────────────
+# ── Branch tables — waiter dashboard ─────────────────────────────────────────
 
 def branch_tables_page(request, branch_id):
     from core.models import Branch
     from reservations.models import Floor
     branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+
+    # Open orders for this branch
+    open_orders = (
+        Order.objects
+        .filter(
+            branch=branch,
+            table_place__isnull=False,
+            status__in=[Order.Status.NEW, Order.Status.ACCEPTED,
+                        Order.Status.COOKING, Order.Status.READY],
+        )
+        .select_related("table_place")
+        .order_by("created_at")
+    )
+    order_by_place = {}
+    for o in open_orders:
+        if o.table_place_id not in order_by_place:
+            order_by_place[o.table_place_id] = o
+
     floors = (Floor.objects
               .filter(branch=branch, is_active=True)
               .prefetch_related("places")
               .order_by("sort_order", "id"))
-    floors_with_tables = [
-        {"floor": f, "places": [p for p in f.places.all() if p.is_active]}
-        for f in floors
-        if any(p.is_active for p in f.places.all())
-    ]
+
+    floors_with_tables = []
+    for f in floors:
+        places = [p for p in f.places.all() if p.is_active]
+        if not places:
+            continue
+        for p in places:
+            p.open_order = order_by_place.get(p.id)
+        floors_with_tables.append({"floor": f, "places": places})
+
     return render(request, "public_site/branch_tables.html", {
         "branch": branch,
         "floors": floors_with_tables,
+    })
+
+
+def table_order_json(request, order_id):
+    """AJAX: детали открытого заказа для официанта."""
+    order = get_object_or_404(
+        Order.objects.prefetch_related("items__item", "constructor_items"),
+        id=order_id,
+    )
+    items = []
+    for oi in order.items.select_related("item").all():
+        items.append({
+            "name": oi.item.name_ru,
+            "qty": oi.qty,
+            "price": float(oi.price_snapshot),
+            "line_total": float(oi.line_total),
+        })
+    for coi in order.constructor_items.all():
+        items.append({
+            "name": coi.constructor_name_snapshot or "Конструктор",
+            "qty": coi.qty,
+            "price": float(coi.unit_price),
+            "line_total": float(coi.line_total),
+        })
+    return JsonResponse({
+        "ok": True,
+        "order": {
+            "id": order.id,
+            "total": float(order.total_amount),
+            "comment": order.comment,
+            "customer": order.customer_name,
+            "created_at": order.created_at.strftime("%H:%M"),
+            "items": items,
+        },
+    })
+
+
+@require_POST
+def table_waiter_close(request, order_id):
+    """Официант закрывает стол. Печатает чек покупателя."""
+    import json as _json
+    order = get_object_or_404(Order, id=order_id)
+
+    if order.status == Order.Status.CLOSED:
+        return JsonResponse({"ok": False, "error": "Уже закрыт"})
+
+    try:
+        data = _json.loads(request.body)
+    except Exception:
+        data = {}
+
+    payment = data.get("payment", "cash")
+    order.payment_method = payment
+    order.status = Order.Status.CLOSED
+    order.payment_status = Order.PaymentStatus.PAID
+    order.save(update_fields=["status", "payment_status", "payment_method"])
+
+    # Печать чека покупателя
+    try:
+        from printing.jobs import create_receipt_job
+        create_receipt_job(order)
+    except Exception:
+        pass
+
+    return JsonResponse({
+        "ok": True,
+        "order_id": order.id,
+        "total": float(order.total_amount),
     })

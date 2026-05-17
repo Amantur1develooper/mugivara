@@ -4,13 +4,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>{{ branch.name_ru }} — Выберите стол</title>
+  <title>{{ branch.name_ru }} — Столы</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f5f5f7;
+      background: #f0f0f5;
       min-height: 100vh;
       color: #1a1a1a;
     }
@@ -18,156 +17,465 @@
     /* ── header ── */
     .hdr {
       background: #fff;
-      padding: 18px 20px 14px;
+      padding: 14px 16px;
       border-bottom: 1px solid #e8e8e8;
-      position: sticky; top: 0; z-index: 10;
-      display: flex; align-items: center; gap: 14px;
+      position: sticky; top: 0; z-index: 20;
+      display: flex; align-items: center; gap: 12px;
     }
     .hdr-logo {
-      width: 44px; height: 44px; border-radius: 12px; object-fit: cover;
+      width: 40px; height: 40px; border-radius: 10px; object-fit: cover;
       background: linear-gradient(135deg, #FF4D1C, #FF8A00);
       flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-      font-size: 20px;
+      font-size: 18px; overflow: hidden;
     }
-    .hdr-logo img { width: 100%; height: 100%; border-radius: 12px; object-fit: cover; }
+    .hdr-logo img { width: 100%; height: 100%; object-fit: cover; }
     .hdr-info { flex: 1; min-width: 0; }
-    .hdr-name {
-      font-size: 16px; font-weight: 800; white-space: nowrap;
-      overflow: hidden; text-overflow: ellipsis;
+    .hdr-name { font-size: 15px; font-weight: 800; }
+    .hdr-sub  { font-size: 11px; color: #888; margin-top: 1px; }
+    .hdr-refresh {
+      width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid #e8e8e8;
+      background: #f5f5f7; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; font-size: 16px; flex-shrink: 0;
+      transition: background .15s;
     }
-    .hdr-sub { font-size: 12px; color: #888; margin-top: 2px; }
+    .hdr-refresh:active { background: #e8e8e8; }
+
+    /* ── summary bar ── */
+    .summary {
+      display: flex; gap: 8px; padding: 10px 16px;
+      background: #fff; border-bottom: 1px solid #e8e8e8;
+      overflow-x: auto; scrollbar-width: none;
+    }
+    .summary::-webkit-scrollbar { display: none; }
+    .sum-chip {
+      display: flex; align-items: center; gap: 5px;
+      padding: 6px 12px; border-radius: 20px; white-space: nowrap;
+      font-size: 12px; font-weight: 700; flex-shrink: 0;
+    }
+    .sum-chip.total   { background: #f0f0f5; color: #555; }
+    .sum-chip.busy    { background: rgba(239,68,68,.1); color: #dc2626; }
+    .sum-chip.revenue { background: rgba(22,163,74,.1); color: #15803d; }
 
     /* ── content ── */
-    .content { padding: 20px 16px 40px; max-width: 520px; margin: 0 auto; }
+    .content { padding: 16px 14px 100px; }
 
     /* ── floor section ── */
-    .floor-section { margin-bottom: 28px; }
+    .floor-section { margin-bottom: 24px; }
     .floor-title {
-      font-size: 13px; font-weight: 700; color: #888;
+      font-size: 11px; font-weight: 700; color: #888;
       text-transform: uppercase; letter-spacing: .6px;
-      margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+      margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
     }
-    .floor-title::after {
-      content: ''; flex: 1; height: 1px; background: #e8e8e8;
-    }
+    .floor-title::after { content: ''; flex: 1; height: 1px; background: #e0e0e0; }
 
-    /* ── 2-column table grid ── */
+    /* ── grid ── */
     .tables-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
     }
 
-    .table-btn {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    /* ── table card ── */
+    .table-card {
       background: #fff;
       border: 2px solid #e8e8e8;
-      border-radius: 18px;
-      padding: 18px 12px 14px;
-      text-decoration: none; color: inherit;
-      min-height: 100px;
-      transition: all .15s;
+      border-radius: 16px;
+      padding: 14px 10px 12px;
+      text-align: center;
       cursor: pointer;
       position: relative;
-      overflow: hidden;
+      transition: all .15s;
       -webkit-tap-highlight-color: transparent;
+      user-select: none;
     }
-    .table-btn:active {
-      transform: scale(.97);
-      background: #fff8f5;
-      border-color: #FF4D1C;
-    }
-    .table-btn::before {
-      content: '';
-      position: absolute; inset: 0;
-      background: linear-gradient(135deg, rgba(255,77,28,.06), transparent);
-      opacity: 0; transition: opacity .15s;
-    }
-    .table-btn:active::before { opacity: 1; }
+    .table-card:active { transform: scale(.96); }
 
-    .table-icon {
-      font-size: 26px; margin-bottom: 6px;
+    /* free */
+    .table-card.free:active { border-color: #22c55e; background: #f0fdf4; }
+
+    /* occupied */
+    .table-card.occupied {
+      border-color: rgba(239,68,68,.35);
+      background: rgba(255,59,48,.03);
+    }
+    .table-card.occupied:active { border-color: #dc2626; background: rgba(239,68,68,.08); }
+
+    .table-icon { font-size: 24px; margin-bottom: 6px; line-height: 1; }
+    .table-num  { font-size: 16px; font-weight: 800; line-height: 1.1; }
+    .table-seats { font-size: 10px; color: #aaa; margin-top: 3px; }
+
+    /* occupied badge */
+    .table-amount {
+      margin-top: 6px;
+      font-size: 13px; font-weight: 800;
+      color: #dc2626;
       line-height: 1;
     }
-    .table-num {
-      font-size: 18px; font-weight: 800; color: #1a1a1a;
-      line-height: 1.1;
+    .table-time {
+      font-size: 10px; color: #aaa; margin-top: 2px;
     }
-    .table-seats {
-      font-size: 11px; color: #aaa; margin-top: 4px;
-      display: flex; align-items: center; gap: 3px;
+    .table-dot {
+      position: absolute; top: 10px; right: 10px;
+      width: 9px; height: 9px; border-radius: 50%;
+      background: #dc2626;
+      box-shadow: 0 0 0 2px rgba(239,68,68,.2);
+    }
+    .table-dot.free { background: #22c55e; box-shadow: 0 0 0 2px rgba(34,197,94,.2); }
+
+    /* ── bottom overlay ── */
+    .overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,.45);
+      display: flex; align-items: flex-end;
+      opacity: 0; pointer-events: none;
+      transition: opacity .25s;
+    }
+    .overlay.show { opacity: 1; pointer-events: all; }
+    .overlay.show .sheet { transform: translateY(0); }
+
+    .sheet {
+      width: 100%; max-height: 88vh;
+      background: #fff; border-radius: 24px 24px 0 0;
+      display: flex; flex-direction: column;
+      transform: translateY(100%);
+      transition: transform .3s cubic-bezier(.4,0,.2,1);
+      overflow: hidden;
     }
 
-    /* ── empty state ── */
+    .sheet-handle {
+      width: 40px; height: 4px; border-radius: 2px;
+      background: #ddd; margin: 10px auto 0;
+      flex-shrink: 0;
+    }
+
+    .sheet-head {
+      padding: 14px 18px 12px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .sheet-title { font-size: 17px; font-weight: 800; }
+    .sheet-sub   { font-size: 12px; color: #888; margin-top: 2px; }
+    .sheet-close {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: #f0f0f5; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; color: #555; flex-shrink: 0;
+    }
+
+    .sheet-body {
+      flex: 1; overflow-y: auto; padding: 12px 18px;
+    }
+
+    .order-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0; border-bottom: 1px solid #f5f5f5;
+    }
+    .order-row:last-child { border-bottom: none; }
+    .order-name { flex: 1; font-size: 14px; font-weight: 500; line-height: 1.3; }
+    .order-qty  { font-size: 12px; color: #aaa; flex-shrink: 0; }
+    .order-line { font-size: 14px; font-weight: 700; color: #1a1a1a; flex-shrink: 0; min-width: 70px; text-align: right; }
+
+    .sheet-total {
+      padding: 14px 18px;
+      border-top: 2px solid #f0f0f0;
+      display: flex; align-items: baseline; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .sheet-total-label { font-size: 14px; color: #888; font-weight: 600; }
+    .sheet-total-val   { font-size: 24px; font-weight: 900; color: #1a1a1a; }
+
+    .sheet-actions {
+      padding: 0 18px 18px;
+      display: flex; gap: 10px;
+      flex-shrink: 0;
+    }
+    .pay-btn {
+      flex: 1; padding: 15px 10px; border-radius: 14px; border: none;
+      font-size: 15px; font-weight: 800; cursor: pointer;
+      transition: opacity .15s; font-family: inherit;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .pay-btn:active { opacity: .75; }
+    .pay-btn.cash   { background: #166534; color: #bbf7d0; }
+    .pay-btn.card   { background: #1e3a8a; color: #bfdbfe; }
+    .pay-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    .sheet-loading {
+      text-align: center; padding: 40px; color: #aaa; font-size: 14px;
+    }
+
+    /* ── toast ── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      z-index: 200;
+      background: #1c1c1e; color: #fff;
+      padding: 12px 20px; border-radius: 14px;
+      font-size: 13px; font-weight: 600;
+      transition: transform .3s; white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.ok   { background: #047857; }
+    .toast.err  { background: #b91c1c; }
+
+    /* ── empty ── */
     .empty {
       text-align: center; padding: 60px 24px;
       background: #fff; border-radius: 20px; border: 1px solid #e8e8e8;
     }
-    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-icon  { font-size: 48px; margin-bottom: 12px; }
     .empty-title { font-size: 17px; font-weight: 800; margin-bottom: 6px; }
-    .empty-sub { font-size: 14px; color: #888; }
-
-    /* ── footer hint ── */
-    .hint {
-      text-align: center; font-size: 12px; color: #bbb;
-      margin-top: 32px; line-height: 1.5;
-    }
+    .empty-sub   { font-size: 14px; color: #888; }
   </style>
 </head>
 <body>
 
+<!-- HEADER -->
 <div class="hdr">
   <div class="hdr-logo">
     {% if branch.restaurant.logo %}
-      <img src="{{ branch.restaurant.logo.url }}" alt="{{ branch.name_ru }}">
-    {% else %}
-      🍽
-    {% endif %}
+      <img src="{{ branch.restaurant.logo.url }}" alt="">
+    {% else %}🍽{% endif %}
   </div>
   <div class="hdr-info">
     <div class="hdr-name">{{ branch.name_ru }}</div>
-    <div class="hdr-sub">Выберите ваш столик</div>
+    <div class="hdr-sub" id="updTime">обновляется...</div>
   </div>
+  <button class="hdr-refresh" onclick="loadTables()" title="Обновить">🔄</button>
 </div>
 
-<div class="content">
+<!-- SUMMARY BAR -->
+<div class="summary">
+  <div class="sum-chip total">🪑 <span id="sumTotal">0</span> столов</div>
+  <div class="sum-chip busy">🔴 <span id="sumBusy">0</span> занято</div>
+  <div class="sum-chip revenue">💰 <span id="sumRevenue">0</span> сом</div>
+</div>
 
+<!-- CONTENT -->
+<div class="content" id="tableContent">
   {% if floors %}
     {% for section in floors %}
-      <div class="floor-section">
-        {% if floors|length > 1 or section.floor.name_ru != "Основной зал" %}
-          <div class="floor-title">🏠 {{ section.floor.name_ru }}</div>
-        {% endif %}
-
-        <div class="tables-grid">
-          {% for place in section.places %}
-          <a class="table-btn" href="{% url 'public_site:table_menu' token=place.token %}">
-            <div class="table-icon">🪑</div>
-            <div class="table-num">{{ place.title }}</div>
-            {% if place.seats %}
-            <div class="table-seats">
-              <span>👤</span> {{ place.seats }} мест
-            </div>
-            {% endif %}
-          </a>
-          {% endfor %}
+    <div class="floor-section">
+      {% if floors|length > 1 or section.floor.name_ru != "Основной зал" %}
+        <div class="floor-title">🏠 {{ section.floor.name_ru }}</div>
+      {% endif %}
+      <div class="tables-grid">
+        {% for place in section.places %}
+        <div class="table-card {% if place.open_order %}occupied{% else %}free{% endif %}"
+             data-place-id="{{ place.id }}"
+             data-order-id="{{ place.open_order.id|default:'' }}"
+             data-place-name="{{ place.title }}"
+             onclick="handleTableClick(this)">
+          <div class="table-dot {% if not place.open_order %}free{% endif %}"></div>
+          <div class="table-icon">{% if place.open_order %}🔴{% else %}🟢{% endif %}</div>
+          <div class="table-num">{{ place.title }}</div>
+          {% if place.seats %}<div class="table-seats">👤 {{ place.seats }}</div>{% endif %}
+          {% if place.open_order %}
+          <div class="table-amount">{{ place.open_order.total_amount|floatformat:0 }} сом</div>
+          <div class="table-time">с {{ place.open_order.created_at|time:"H:i" }}</div>
+          {% endif %}
         </div>
+        {% endfor %}
       </div>
-    {% endfor %}
-
-    <div class="hint">
-      Нажмите на свой столик, чтобы открыть меню и сделать заказ
     </div>
-
+    {% endfor %}
   {% else %}
     <div class="empty">
       <div class="empty-icon">🪑</div>
-      <div class="empty-title">Столики пока не настроены</div>
-      <div class="empty-sub">Обратитесь к персоналу</div>
+      <div class="empty-title">Столики не настроены</div>
+      <div class="empty-sub">Добавьте столики в дашборде</div>
     </div>
   {% endif %}
-
 </div>
 
+<!-- BOTTOM SHEET OVERLAY -->
+<div class="overlay" id="overlay" onclick="closeSheet(event)">
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div>
+        <div class="sheet-title" id="sheetTitle">Стол</div>
+        <div class="sheet-sub" id="sheetSub"></div>
+      </div>
+      <button class="sheet-close" onclick="closeSheet()">✕</button>
+    </div>
+    <div class="sheet-body" id="sheetBody">
+      <div class="sheet-loading">Загрузка...</div>
+    </div>
+    <div class="sheet-total" id="sheetTotal" style="display:none">
+      <span class="sheet-total-label">ИТОГО</span>
+      <span class="sheet-total-val" id="sheetTotalVal">0 сом</span>
+    </div>
+    <div class="sheet-actions" id="sheetActions" style="display:none">
+      <button class="pay-btn cash" onclick="closeTable('cash')">💵 Наличные</button>
+      <button class="pay-btn card" onclick="closeTable('online')">💳 Карта</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const ORDER_JSON_URL  = "{% url 'public_site:table_order_json' 0 %}".replace("/0/", "/{id}/");
+const CLOSE_URL       = "{% url 'public_site:table_waiter_close' 0 %}".replace("/0/", "/{id}/");
+const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+
+let currentOrderId = null;
+let currentPlaceEl = null;
+
+// ── Summary bar counts ──────────────────────────────────────────────────────
+function updateSummary() {
+  const cards = document.querySelectorAll(".table-card");
+  const occupied = document.querySelectorAll(".table-card.occupied");
+  let revenue = 0;
+  occupied.forEach(c => {
+    const amt = c.querySelector(".table-amount");
+    if (amt) revenue += parseFloat(amt.textContent) || 0;
+  });
+  document.getElementById("sumTotal").textContent  = cards.length;
+  document.getElementById("sumBusy").textContent   = occupied.length;
+  document.getElementById("sumRevenue").textContent = revenue.toLocaleString("ru");
+}
+
+// ── Table click ─────────────────────────────────────────────────────────────
+async function handleTableClick(card) {
+  const orderId   = card.dataset.orderId;
+  const placeName = card.dataset.placeName;
+
+  if (!orderId) {
+    // Free table — go to menu
+    showToast("🟢 " + placeName + " — свободен");
+    return;
+  }
+
+  // Occupied — open sheet
+  currentOrderId = parseInt(orderId);
+  currentPlaceEl = card;
+
+  document.getElementById("sheetTitle").textContent = "🪑 " + placeName;
+  document.getElementById("sheetSub").textContent   = "Загрузка заказа...";
+  document.getElementById("sheetBody").innerHTML    = '<div class="sheet-loading">⏳ Загрузка...</div>';
+  document.getElementById("sheetTotal").style.display   = "none";
+  document.getElementById("sheetActions").style.display = "none";
+  openSheet();
+
+  try {
+    const r = await fetch(ORDER_JSON_URL.replace("{id}", orderId));
+    const d = await r.json();
+    if (!d.ok || !d.order) { showToast("Ошибка загрузки", "err"); return; }
+    renderOrder(d.order);
+  } catch {
+    showToast("Ошибка сети", "err");
+  }
+}
+
+function renderOrder(order) {
+  document.getElementById("sheetSub").textContent = `#${order.id} · с ${order.created_at}` + (order.customer ? ` · ${order.customer}` : "");
+
+  let html = "";
+  order.items.forEach(it => {
+    html += `<div class="order-row">
+      <div class="order-name">${it.name}</div>
+      <div class="order-qty">×${it.qty}</div>
+      <div class="order-line">${Math.round(it.line_total).toLocaleString("ru")} сом</div>
+    </div>`;
+  });
+  if (!html) html = '<div style="color:#aaa;font-size:13px;padding:12px 0">Нет позиций</div>';
+  if (order.comment) {
+    html += `<div style="margin-top:12px;padding:10px 12px;background:#fff8f5;border-radius:10px;font-size:12px;color:#888">
+      💬 ${order.comment}
+    </div>`;
+  }
+
+  document.getElementById("sheetBody").innerHTML = html;
+  document.getElementById("sheetTotalVal").textContent = Math.round(order.total).toLocaleString("ru") + " сом";
+  document.getElementById("sheetTotal").style.display   = "";
+  document.getElementById("sheetActions").style.display = "";
+}
+
+// ── Close table ─────────────────────────────────────────────────────────────
+async function closeTable(payment) {
+  if (!currentOrderId) return;
+  const label = payment === "cash" ? "наличные" : "карта";
+  if (!confirm(`Закрыть стол? Оплата: ${label}`)) return;
+
+  document.querySelectorAll(".pay-btn").forEach(b => b.disabled = true);
+
+  try {
+    const r = await fetch(CLOSE_URL.replace("{id}", currentOrderId), {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF() },
+      body: JSON.stringify({ payment }),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      closeSheet();
+      showToast("✅ Стол закрыт · " + Math.round(d.total).toLocaleString("ru") + " сом", "ok");
+      // Mark card as free
+      if (currentPlaceEl) {
+        currentPlaceEl.classList.remove("occupied");
+        currentPlaceEl.classList.add("free");
+        currentPlaceEl.dataset.orderId = "";
+        currentPlaceEl.querySelector(".table-dot").classList.add("free");
+        currentPlaceEl.querySelector(".table-icon").textContent = "🟢";
+        const amt  = currentPlaceEl.querySelector(".table-amount");
+        const time = currentPlaceEl.querySelector(".table-time");
+        if (amt)  amt.remove();
+        if (time) time.remove();
+        updateSummary();
+      }
+      currentOrderId = null;
+      currentPlaceEl = null;
+    } else {
+      showToast(d.error || "Ошибка", "err");
+      document.querySelectorAll(".pay-btn").forEach(b => b.disabled = false);
+    }
+  } catch {
+    showToast("Ошибка сети", "err");
+    document.querySelectorAll(".pay-btn").forEach(b => b.disabled = false);
+  }
+}
+
+// ── Sheet ────────────────────────────────────────────────────────────────────
+function openSheet() {
+  document.getElementById("overlay").classList.add("show");
+}
+function closeSheet(e) {
+  if (e && e.target !== document.getElementById("overlay")) return;
+  document.getElementById("overlay").classList.remove("show");
+}
+
+// ── Reload tables via full-page refresh ──────────────────────────────────────
+function loadTables() {
+  const btn = document.querySelector(".hdr-refresh");
+  btn.style.transform = "rotate(360deg)";
+  btn.style.transition = "transform .4s";
+  setTimeout(() => { btn.style.transform = ""; btn.style.transition = ""; }, 400);
+  location.reload();
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────────
+let _toastT;
+function showToast(msg, type = "") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show" + (type ? " " + type : "");
+  clearTimeout(_toastT);
+  _toastT = setTimeout(() => t.classList.remove("show"), 2500);
+}
+
+// ── Auto-refresh every 30 sec ────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const hm  = String(now.getHours()).padStart(2,"0") + ":" + String(now.getMinutes()).padStart(2,"0");
+  document.getElementById("updTime").textContent = "обновлено в " + hm;
+}
+
+updateSummary();
+updateClock();
+setInterval(() => { updateClock(); location.reload(); }, 30000);
+</script>
 </body>
 </html>
