@@ -633,7 +633,7 @@ const CX_DATA = {
 };
 
 const ADD_CX_URL = "{% url 'public_site:table_add_constructor' token 0 %}".replace("/0/", "/{id}/");
-const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+const CSRF = () => "{{ csrf_token }}";
 
 let currentCxId = null;
 let selectedMap = {};  // {group_id: [ing_id, ...]}
@@ -796,7 +796,7 @@ document.getElementById("cxModalBg").addEventListener("click", e => {
 
 <script>
 const TOKEN = "{{ token }}";
-const CSRF  = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+const CSRF  = "{{ csrf_token }}";
 const ADD_URL    = "{% url 'public_site:table_add_to_cart' token 0 %}".replace("/0/", "/{id}/");
 const UPDATE_URL = "{% url 'public_site:table_cart_update' token %}";
 const WAITER_URL = "{% url 'public_site:table_call_waiter' token %}";

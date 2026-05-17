@@ -603,6 +603,13 @@ def table_create_order(request, token):
     except Exception:
         pass
 
+    # Telegram уведомление
+    try:
+        from integrations.tasks import notify_new_order
+        notify_new_order.delay(order.id)
+    except Exception:
+        pass
+
     return redirect("table_success", token=token, order_id=order.id)
 
 
@@ -644,12 +651,17 @@ def branch_tables_page(request, branch_id):
               .prefetch_related("places")
               .order_by("sort_order", "id"))
 
+    import secrets as _secrets
     floors_with_tables = []
     for f in floors:
         places = [p for p in f.places.all() if p.is_active]
         if not places:
             continue
         for p in places:
+            # Auto-fix missing tokens (created before save() override was added)
+            if not p.token:
+                p.token = _secrets.token_urlsafe(10)[:20]
+                p.save(update_fields=["token"])
             p.open_order = order_by_place.get(p.id)
         floors_with_tables.append({"floor": f, "places": places})
 

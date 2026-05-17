@@ -441,7 +441,10 @@ function switchTab(btn) {
 
 // ── Go to table menu ─────────────────────────────────────────────────────────
 function goMenu() {
-  if (!curToken) return;
+  if (!curToken) {
+    showToast("Нет QR-токена для стола. Обновите страницу.", "err");
+    return;
+  }
   window.location.href = MENU_URL.replace("TOKEN_PLACEHOLDER", curToken);
 }
 
