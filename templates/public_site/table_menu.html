@@ -66,7 +66,7 @@
   .tm-content { max-width: 900px; margin: 0 auto; padding: 20px 16px 140px; }
 
   /* ── CATEGORY SECTION ── */
-  .tm-cat-section { scroll-margin-top: 145px; margin-bottom: 40px; }
+  .tm-cat-section { scroll-margin-top: 185px; margin-bottom: 40px; }
   .tm-cat-header {
     display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
   }
@@ -194,6 +194,75 @@
     font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 800; color: white;
     box-shadow: 0 3px 10px var(--glow);
   }
+
+  /* ── ORDER BANNER ── */
+  .tm-order-banner {
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    color: #fff; cursor: pointer;
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 16px;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    transition: background .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tm-order-banner:active { background: #1e293b; }
+  .tm-ob-icon {
+    width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+    background: rgba(255,255,255,.1);
+    display: flex; align-items: center; justify-content: center; font-size: 17px;
+  }
+  .tm-ob-info { flex: 1; min-width: 0; }
+  .tm-ob-label { font-size: 10px; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .5px; }
+  .tm-ob-total {
+    font-family: 'Unbounded', sans-serif; font-weight: 800;
+    font-size: 15px; color: #fff; margin-top: 1px;
+  }
+  .tm-ob-arrow { font-size: 14px; color: rgba(255,255,255,.4); flex-shrink: 0; }
+
+  /* ── ORDER MODAL ── */
+  .tm-bill-bg {
+    position: fixed; inset: 0; z-index: 10002;
+    background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
+    display: flex; align-items: flex-end; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .22s;
+  }
+  .tm-bill-bg.open { opacity: 1; pointer-events: auto; }
+  .tm-bill-sheet {
+    width: 100%; max-width: 520px; max-height: 85vh;
+    background: var(--card); border-radius: 24px 24px 0 0;
+    display: flex; flex-direction: column;
+    transform: translateY(100%);
+    transition: transform .3s cubic-bezier(.4,0,.2,1);
+    overflow: hidden;
+  }
+  .tm-bill-bg.open .tm-bill-sheet { transform: translateY(0); }
+  .tm-bill-handle { width: 40px; height: 4px; border-radius: 2px; background: var(--border); margin: 10px auto 0; flex-shrink: 0; }
+  .tm-bill-head {
+    padding: 12px 18px 12px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+  }
+  .tm-bill-title { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 16px; color: var(--text); }
+  .tm-bill-sub   { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .tm-bill-close {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--bg);
+    border: none; cursor: pointer; font-size: 14px; color: var(--text2);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tm-bill-body { flex: 1; overflow-y: auto; padding: 12px 18px; }
+  .tm-bill-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .tm-bill-row:last-child { border-bottom: none; }
+  .tm-bill-name  { flex: 1; font-size: 14px; font-weight: 500; color: var(--text); line-height: 1.3; }
+  .tm-bill-qty   { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .tm-bill-line  { font-size: 14px; font-weight: 700; color: var(--text); min-width: 80px; text-align: right; flex-shrink: 0; }
+  .tm-bill-foot  {
+    padding: 14px 18px 24px; border-top: 2px solid var(--border); flex-shrink: 0;
+    display: flex; align-items: baseline; justify-content: space-between;
+  }
+  .tm-bill-foot-label { font-size: 14px; color: var(--muted); font-weight: 600; }
+  .tm-bill-foot-val   { font-family: 'Unbounded', sans-serif; font-size: 24px; font-weight: 900; color: var(--text); }
 
   /* ── TOAST ── */
   .tm-toast-wrap { position: fixed; top: 80px; right: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
@@ -393,6 +462,52 @@
     {% endif %}
   </div>
 </div>
+
+{% if open_order %}
+<!-- ── CURRENT ORDER BANNER ── -->
+<div class="tm-order-banner" onclick="openBillModal()">
+  <div class="tm-ob-icon">🧾</div>
+  <div class="tm-ob-info">
+    <div class="tm-ob-label">Ваш счёт (уже на кухне)</div>
+    <div class="tm-ob-total">{{ open_order.total_amount|floatformat:0 }} сом</div>
+  </div>
+  <div class="tm-ob-arrow">›</div>
+</div>
+
+<!-- ── BILL MODAL ── -->
+<div class="tm-bill-bg" id="billBg" onclick="closeBillModal(event)">
+  <div class="tm-bill-sheet">
+    <div class="tm-bill-handle"></div>
+    <div class="tm-bill-head">
+      <div>
+        <div class="tm-bill-title">🧾 Счёт #{{ open_order.id }}</div>
+        <div class="tm-bill-sub">Стол {{ place.title }} · с {{ open_order.created_at|time:"H:i" }}</div>
+      </div>
+      <button class="tm-bill-close" onclick="closeBillModal()">✕</button>
+    </div>
+    <div class="tm-bill-body">
+      {% for oi in open_order.items.all %}
+      <div class="tm-bill-row">
+        <div class="tm-bill-name">{{ oi.item.name_ru }}</div>
+        <div class="tm-bill-qty">×{{ oi.qty }}</div>
+        <div class="tm-bill-line">{{ oi.line_total|floatformat:0 }} сом</div>
+      </div>
+      {% endfor %}
+      {% for coi in open_order.constructor_items.all %}
+      <div class="tm-bill-row">
+        <div class="tm-bill-name">{{ coi.constructor_name_snapshot|default:"Конструктор" }}</div>
+        <div class="tm-bill-qty">×{{ coi.qty }}</div>
+        <div class="tm-bill-line">{{ coi.line_total|floatformat:0 }} сом</div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="tm-bill-foot">
+      <span class="tm-bill-foot-label">ИТОГО</span>
+      <span class="tm-bill-foot-val">{{ open_order.total_amount|floatformat:0 }} сом</span>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <!-- ── CONTENT ── -->
 <div class="tm-content" id="menuContent">
@@ -852,5 +967,16 @@ waiterSend.addEventListener("click", async () => {
     waiterSend.textContent = "🔔 Вызвать официанта";
   }
 });
+
+/* ── BILL MODAL ── */
+function openBillModal() {
+  const bg = document.getElementById("billBg");
+  if (bg) bg.classList.add("open");
+}
+function closeBillModal(e) {
+  const bg = document.getElementById("billBg");
+  if (!bg) return;
+  if (!e || e.target === bg) bg.classList.remove("open");
+}
 </script>
 {% endblock %}

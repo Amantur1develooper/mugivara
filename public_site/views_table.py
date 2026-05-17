@@ -362,6 +362,20 @@ def table_menu(request, token: str):
     cx_cart = _get_cx_cart(request, token)
     cx_qty, cx_total = _cx_cart_totals(cx_cart)
 
+    # Текущий открытый заказ стола (уже отправлен на кухню)
+    open_order = (
+        Order.objects
+        .filter(
+            branch=branch,
+            table_place=place,
+            status__in=[Order.Status.NEW, Order.Status.ACCEPTED,
+                        Order.Status.COOKING, Order.Status.READY],
+        )
+        .prefetch_related("items__item", "constructor_items")
+        .order_by("-created_at")
+        .first()
+    )
+
     return render(request, "public_site/table_menu.html", {
         "branch": branch,
         "place": place,
@@ -371,6 +385,7 @@ def table_menu(request, token: str):
         "cart_qty": reg_qty + cx_qty,
         "cart_total": reg_total + cx_total,
         "table": True,
+        "open_order": open_order,
     })
     
     
