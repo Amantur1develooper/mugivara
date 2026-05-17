@@ -61,10 +61,12 @@ urlpatterns = [
 
     # ── POS (Касса) ─────────────────────────────────────────────────────────
     path("pos/<int:branch_id>/",              views.pos,               name="pos"),
-    path("pos/<int:branch_id>/order/",        views.pos_order_create,  name="pos_order_create"),
-    path("pos/<int:branch_id>/live/",         views.pos_live_orders,   name="pos_live_orders"),
-    path("pos/order/<int:order_id>/status/",  views.pos_order_status,  name="pos_order_status"),
-    path("pos/receipt/<int:order_id>/",       views.pos_receipt,       name="pos_receipt"),
+    path("pos/<int:branch_id>/order/",          views.pos_order_create,      name="pos_order_create"),
+    path("pos/<int:branch_id>/live/",           views.pos_live_orders,       name="pos_live_orders"),
+    path("pos/order/<int:order_id>/status/",    views.pos_order_status,      name="pos_order_status"),
+    path("pos/order/<int:order_id>/close/",     views.pos_table_close,       name="pos_table_close"),
+    path("pos/table/<int:place_id>/order/",     views.pos_table_order_json,  name="pos_table_order_json"),
+    path("pos/receipt/<int:order_id>/",         views.pos_receipt,           name="pos_receipt"),
     path("pos/<int:branch_id>/inventory/",    views.pos_inventory,     name="pos_inventory"),
     path("pos/<int:branch_id>/report/",       views.pos_report,        name="pos_report"),
     path("pos/<int:branch_id>/history/",      views.pos_history,       name="pos_history"),

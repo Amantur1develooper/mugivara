@@ -349,10 +349,11 @@ def print_text_windows(printer_name, content):
         win32print.StartDocPrinter(handle, 1, ("Receipt", None, "RAW"))
         win32print.StartPagePrinter(handle)
         ESC  = b"\\x1b"
-        init = ESC + b"@"
-        cut  = ESC + b"d\\x04"
+        init = ESC + b"@"           # ESC @ — инициализация принтера
+        feed = ESC + b"d\\x05"      # ESC d 5 — протяжка 5 строк перед отрезом
+        cut  = b"\\x1d\\x56\\x41\\x00"  # GS V A 0 — полный отрез бумаги
         data = content.encode("cp866", errors="replace")
-        win32print.WritePrinter(handle, init + data + cut)
+        win32print.WritePrinter(handle, init + data + feed + cut)
         win32print.EndPagePrinter(handle)
     finally:
         win32print.EndDocPrinter(handle)
@@ -1415,10 +1416,24 @@ def pos(request, branch_id):
         .order_by("-created_at")
     )
 
+    # Столы и открытые заказы по столам
+    from reservations.models import Place
+    places = (
+        Place.objects
+        .filter(floor__branch=branch, is_active=True)
+        .order_by("floor__name", "title")
+    )
+    open_table_order_map = {}  # place_id → order
+    for o in live_orders:
+        if o.table_place_id and o.table_place_id not in open_table_order_map:
+            open_table_order_map[o.table_place_id] = o
+
     return render(request, "dashboard/pos.html", {
         "branch": branch,
         "categories": categories,
         "live_orders": live_orders,
+        "places": places,
+        "open_table_order_map": open_table_order_map,
     })
 
 
@@ -1440,9 +1455,19 @@ def pos_order_create(request, branch_id):
     payment_method  = data.get("payment", Order.PaymentMethod.CASH)
     customer_name   = (data.get("name") or "").strip()
     comment         = (data.get("comment") or "").strip()
+    table_place_id  = data.get("table_place_id") or None
 
     if not items_data:
         return JsonResponse({"ok": False, "error": "Нет позиций"}, status=400)
+
+    # Стол: если выбран — привязываем к заказу
+    table_place = None
+    if table_place_id and order_type == Order.Type.DINE_IN:
+        from reservations.models import Place
+        try:
+            table_place = Place.objects.get(id=int(table_place_id), floor__branch=branch)
+        except (Place.DoesNotExist, ValueError):
+            pass
 
     order = Order.objects.create(
         branch=branch,
@@ -1451,6 +1476,7 @@ def pos_order_create(request, branch_id):
         payment_method=payment_method,
         customer_name=customer_name,
         comment=comment,
+        table_place=table_place,
     )
 
     total = Decimal("0")
@@ -1466,7 +1492,6 @@ def pos_order_create(request, branch_id):
                 qty=qty, price_snapshot=bi.price, line_total=line,
             )
             total += line
-            # Decrement stock if tracked
             if bi.stock is not None:
                 bi.stock = max(0, bi.stock - qty)
                 if bi.stock == 0:
@@ -1476,18 +1501,108 @@ def pos_order_create(request, branch_id):
             continue
 
     order.total_amount = total
-    order.status = Order.Status.CLOSED
-    order.payment_status = Order.PaymentStatus.PAID
-    order.save(update_fields=["total_amount", "status", "payment_status"])
 
-    # Облачная печать — создаём задания если включена
+    # Заказ в зале со столом → оставляем ОТКРЫТЫМ, кухня уже получает задание
+    # Остальные типы (самовывоз, доставка) → сразу закрываем
+    if table_place:
+        order.save(update_fields=["total_amount"])
+        open_table = True
+    else:
+        order.status = Order.Status.CLOSED
+        order.payment_status = Order.PaymentStatus.PAID
+        order.save(update_fields=["total_amount", "status", "payment_status"])
+        open_table = False
+
+    # Облачная печать — всегда при создании заказа
     try:
         from printing.jobs import create_print_jobs
         create_print_jobs(order)
     except Exception:
-        pass  # печать не должна блокировать кассу
+        pass
 
-    return JsonResponse({"ok": True, "order_id": order.id, "total": str(total)})
+    return JsonResponse({
+        "ok": True,
+        "order_id": order.id,
+        "total": str(total),
+        "open_table": open_table,
+        "table_place_id": table_place.id if table_place else None,
+    })
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+@transaction.atomic
+def pos_table_close(request, order_id):
+    """Закрыть счёт стола — принять оплату."""
+    order = get_object_or_404(Order, id=order_id)
+    if not (request.user.is_staff or request.user.is_superuser or _has_branch_access(request.user, order.branch)):
+        return JsonResponse({"ok": False}, status=403)
+
+    if order.status == Order.Status.CLOSED:
+        return JsonResponse({"ok": False, "error": "Уже закрыт"})
+
+    try:
+        data = _json.loads(request.body)
+    except Exception:
+        data = {}
+
+    payment_method = data.get("payment", order.payment_method)
+    order.payment_method = payment_method
+    order.status = Order.Status.CLOSED
+    order.payment_status = Order.PaymentStatus.PAID
+    order.save(update_fields=["status", "payment_status", "payment_method"])
+
+    return JsonResponse({
+        "ok": True,
+        "order_id": order.id,
+        "total": str(order.total_amount),
+    })
+
+
+@login_required(login_url="dashboard:login")
+def pos_table_order_json(request, place_id):
+    """Получить открытый заказ по столу (для подгрузки в кассу)."""
+    from reservations.models import Place
+    place = get_object_or_404(Place, id=place_id)
+    branch = place.floor.branch
+    if not (request.user.is_staff or request.user.is_superuser or _has_branch_access(request.user, branch)):
+        return JsonResponse({"ok": False}, status=403)
+
+    order = (
+        Order.objects
+        .filter(
+            branch=branch,
+            table_place=place,
+            status__in=[Order.Status.NEW, Order.Status.ACCEPTED,
+                        Order.Status.COOKING, Order.Status.READY],
+        )
+        .prefetch_related("items__item")
+        .order_by("-created_at")
+        .first()
+    )
+
+    if not order:
+        return JsonResponse({"ok": True, "order": None})
+
+    items = [
+        {
+            "name": oi.item.name_ru,
+            "qty": oi.qty,
+            "price": str(oi.price_snapshot),
+            "line_total": str(oi.line_total),
+        }
+        for oi in order.items.all()
+    ]
+    return JsonResponse({
+        "ok": True,
+        "order": {
+            "id": order.id,
+            "total": str(order.total_amount),
+            "comment": order.comment,
+            "items": items,
+            "created_at": order.created_at.strftime("%H:%M"),
+        },
+    })
 
 
 @require_POST
