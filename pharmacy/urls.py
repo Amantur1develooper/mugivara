@@ -11,6 +11,7 @@ urlpatterns = [
     path("pharmacy/<int:branch_id>/drug/<int:drug_id>/", views.drug_detail, name="drug_detail"),
     
     
+    
     path("pharmacy/<int:branch_id>/cart/", views.cart_detail, name="cart_detail"),
     path("pharmacy/<int:branch_id>/cart/add/<int:branch_drug_id>/", views.cart_add, name="cart_add"),
     path("pharmacy/<int:branch_id>/cart/update/<int:branch_drug_id>/", views.cart_update, name="cart_update"),
