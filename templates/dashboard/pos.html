@@ -1,5 +1,5 @@
 {% extends "dashboard/base.html" %}
-{% load i18n dashboard_extras %}
+{% load i18n %}
 
 {% block title %}Касса — {{ branch.name_ru }}{% endblock %}
 
@@ -739,18 +739,16 @@
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:6px">
       {% for place in places %}
-      {% with order=open_table_order_map|get_item:place.id %}
       <button
-        class="table-btn {% if order %}table-occupied{% endif %}"
+        class="table-btn {% if place.open_order %}table-occupied{% endif %}"
         data-place-id="{{ place.id }}"
         data-place-name="{{ place.title }}"
-        data-order-id="{{ order.id|default:'' }}"
-        data-order-total="{{ order.total_amount|default:'' }}"
+        data-order-id="{{ place.open_order.id|default:'' }}"
+        data-order-total="{{ place.open_order.total_amount|default:'' }}"
         onclick="selectTable(this)">
         {{ place.title }}
-        {% if order %}<span style="display:block;font-size:9px;opacity:.8">{{ order.total_amount|floatformat:0 }} с</span>{% endif %}
+        {% if place.open_order %}<span style="display:block;font-size:9px;opacity:.8">{{ place.open_order.total_amount|floatformat:0 }} с</span>{% endif %}
       </button>
-      {% endwith %}
       {% endfor %}
     </div>
   </div>

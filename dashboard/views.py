@@ -1417,23 +1417,28 @@ def pos(request, branch_id):
     )
 
     # Столы и открытые заказы по столам
-    from reservations.models import Place
-    places = (
-        Place.objects
-        .filter(floor__branch=branch, is_active=True)
-        .order_by("floor__name", "title")
-    )
-    open_table_order_map = {}  # place_id → order
-    for o in live_orders:
-        if o.table_place_id and o.table_place_id not in open_table_order_map:
-            open_table_order_map[o.table_place_id] = o
+    try:
+        from reservations.models import Place
+        places_qs = list(
+            Place.objects
+            .filter(floor__branch=branch, is_active=True)
+            .order_by("floor__name", "title")
+        )
+        open_table_order_map = {}
+        for o in live_orders:
+            tid = getattr(o, "table_place_id", None)
+            if tid and tid not in open_table_order_map:
+                open_table_order_map[tid] = o
+        for place in places_qs:
+            place.open_order = open_table_order_map.get(place.id)
+    except Exception:
+        places_qs = []
 
     return render(request, "dashboard/pos.html", {
         "branch": branch,
         "categories": categories,
         "live_orders": live_orders,
-        "places": places,
-        "open_table_order_map": open_table_order_map,
+        "places": places_qs,
     })
 
 
