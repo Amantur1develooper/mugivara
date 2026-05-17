@@ -130,15 +130,40 @@ def create_print_jobs(order, new_order_item_ids=None, new_cx_item_ids=None):
         PrintJob.objects.bulk_create(jobs)
 
 
-def create_cancel_job(order, item_name: str, item_qty: int):
+def create_cancel_job(order, item_name: str, item_qty: int, item_id: int = None):
     """
-    Печатает тикет ОТМЕНЫ блюда на все кухонные принтеры стола.
-    Отправляется при удалении позиции официантом.
+    Печатает тикет ОТМЕНЫ блюда на принтер, назначенный этому блюду/категории.
+    Приоритет: принтер блюда > принтер категории > дефолтная группа.
+    item_id=None означает конструктор — отправляем на дефолтную группу.
     """
+    from catalog.models import BranchCategoryItem
+
     restaurant = order.branch.restaurant
     try:
         cfg = RestaurantPrintConfig.objects.get(restaurant=restaurant, enabled=True)
     except RestaurantPrintConfig.DoesNotExist:
+        return
+
+    # Определяем целевую группу принтеров
+    target_group = None
+    if item_id:
+        bci = (
+            BranchCategoryItem.objects
+            .filter(branch_category__branch=order.branch, branch_item__item_id=item_id)
+            .select_related("printer_group", "branch_category__printer_group")
+            .first()
+        )
+        if bci:
+            target_group = bci.printer_group or bci.branch_category.printer_group
+
+    if not target_group:
+        # Дефолтная группа (кухня)
+        target_group = (
+            restaurant.printer_groups.filter(name="kitchen").first()
+            or restaurant.printer_groups.first()
+        )
+
+    if not target_group:
         return
 
     now = timezone.localtime()
@@ -156,24 +181,13 @@ def create_cancel_job(order, item_name: str, item_qty: int):
     lines.append(SEP)
     lines.append("")
 
-    content = "\n".join(lines)
-
-    # Отправляем на все группы принтеров филиала
-    groups = list(restaurant.printer_groups.all())
-    if not groups:
-        return
-
-    jobs = [
-        PrintJob(
-            restaurant=restaurant,
-            order_id=order.id,
-            group=g,
-            content=content,
-            status=PrintJob.Status.NEW,
-        )
-        for g in groups
-    ]
-    PrintJob.objects.bulk_create(jobs)
+    PrintJob.objects.create(
+        restaurant=restaurant,
+        order_id=order.id,
+        group=target_group,
+        content="\n".join(lines),
+        status=PrintJob.Status.NEW,
+    )
 
 
 def create_receipt_job(order):

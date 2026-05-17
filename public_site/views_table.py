@@ -809,6 +809,7 @@ def table_waiter_cancel_item(request, order_id):
     item_name = ""
     item_qty = 0
     item_line = Decimal("0")
+    item_id = None  # для поиска принтера
 
     with transaction.atomic():
         if item_type == "cx":
@@ -819,10 +820,11 @@ def table_waiter_cancel_item(request, order_id):
             parent_order = obj.order
             obj.delete()
         else:
-            obj = get_object_or_404(OrderItem, id=oi_id, order__table_place=order.table_place)
+            obj = get_object_or_404(OrderItem.objects.select_related("item"), id=oi_id, order__table_place=order.table_place)
             item_name = obj.item.name_ru
             item_qty = obj.qty
             item_line = obj.line_total
+            item_id = obj.item_id
             parent_order = obj.order
             obj.delete()
 
@@ -840,10 +842,10 @@ def table_waiter_cancel_item(request, order_id):
         or 0
     )
 
-    # Кухонный тикет ОТМЕНА
+    # Кухонный тикет ОТМЕНА — на принтер этого блюда
     try:
         from printing.jobs import create_cancel_job
-        create_cancel_job(order, item_name, item_qty)
+        create_cancel_job(order, item_name, item_qty, item_id=item_id)
     except Exception:
         pass
 
