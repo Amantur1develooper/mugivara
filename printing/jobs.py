@@ -35,10 +35,13 @@ def _build_ticket(order, items_by_group, group):
     return "\n".join(lines)
 
 
-def create_print_jobs(order):
+def create_print_jobs(order, new_order_item_ids=None, new_cx_item_ids=None):
     """
-    Вызывается после создания заказа.
+    Вызывается после создания/дополнения заказа.
     Группирует позиции по printer_group → создаёт PrintJob на каждую группу.
+
+    new_order_item_ids / new_cx_item_ids — если переданы, печатаем ТОЛЬКО эти
+    позиции (дозаказ к уже открытому столу). Иначе — все позиции заказа.
     """
     restaurant = order.branch.restaurant
 
@@ -48,8 +51,6 @@ def create_print_jobs(order):
     except RestaurantPrintConfig.DoesNotExist:
         return
 
-    # Собираем позиции заказа с их printer_group
-    # OrderItem → item → BranchCategoryItem → BranchCategory → printer_group
     from orders.models import OrderItem, ConstructorOrderItem
     from catalog.models import BranchCategoryItem
 
@@ -71,18 +72,27 @@ def create_print_jobs(order):
         if group:
             item_to_group[bci.branch_item.item_id] = group
 
+    # Выбираем только новые позиции (если указаны ID) или все
+    oi_qs = order.items.select_related("item")
+    if new_order_item_ids is not None:
+        oi_qs = oi_qs.filter(id__in=new_order_item_ids)
+
+    cx_qs = order.constructor_items.all()
+    if new_cx_item_ids is not None:
+        cx_qs = cx_qs.filter(id__in=new_cx_item_ids)
+
     # Группируем позиции
     groups: dict = defaultdict(list)  # PrinterGroup → [(name, qty)]
     ungrouped = []
 
-    for oi in order.items.select_related("item").all():
+    for oi in oi_qs:
         group = item_to_group.get(oi.item_id)
         if group:
             groups[group].append((oi.item.name_ru, oi.qty))
         else:
             ungrouped.append((oi.item.name_ru, oi.qty))
 
-    for coi in order.constructor_items.all():
+    for coi in cx_qs:
         name = coi.constructor_name_snapshot or "Конструктор"
         ungrouped.append((name, coi.qty))
 

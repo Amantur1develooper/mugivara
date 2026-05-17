@@ -520,21 +520,24 @@ def table_create_order(request, token):
 
         if existing_order:
             order = existing_order
+            new_oi_ids = []
+            new_cx_ids = []
             # Append new items to the existing order
             for row in cart_rows:
-                OrderItem.objects.create(
+                oi = OrderItem.objects.create(
                     order=order,
                     item=row["bi"].item,
                     qty=row["qty"],
                     price_snapshot=row["bi"].price,
                     line_total=row["line_total"],
                 )
+                new_oi_ids.append(oi.id)
             for cx_item in cx_cart:
                 qty = int(cx_item.get("qty", 1))
                 unit_price = Decimal(str(cx_item["unit_price"]))
                 line_total = unit_price * qty
                 cx = get_object_or_404(DishConstructor, id=cx_item["cx_id"])
-                ConstructorOrderItem.objects.create(
+                coi = ConstructorOrderItem.objects.create(
                     order=order,
                     constructor=cx,
                     constructor_name_snapshot=cx_item["cx_name"],
@@ -543,6 +546,7 @@ def table_create_order(request, token):
                     line_total=line_total,
                     ingredients_snapshot=cx_item.get("selections", []),
                 )
+                new_cx_ids.append(coi.id)
             order.total_amount = order.total_amount + total
             if comment and not order.comment:
                 order.comment = comment
@@ -589,10 +593,13 @@ def table_create_order(request, token):
     _save_cart(request, token, {})
     _save_cx_cart(request, token, [])
 
-    # Кухонный чек → облачная печать
+    # Кухонный чек → облачная печать (только НОВЫЕ позиции, чтобы не дублировать)
     try:
         from printing.jobs import create_print_jobs
-        create_print_jobs(order)
+        if existing_order:
+            create_print_jobs(order, new_order_item_ids=new_oi_ids, new_cx_item_ids=new_cx_ids)
+        else:
+            create_print_jobs(order)
     except Exception:
         pass
 

@@ -1536,11 +1536,13 @@ def pos_order_create(request, branch_id):
 
         if existing_order:
             order = existing_order
+            new_oi_ids = []
             for pit in prepared_items:
-                OrderItem.objects.create(
+                oi = OrderItem.objects.create(
                     order=order, item=pit["bi"].item,
                     qty=pit["qty"], price_snapshot=pit["bi"].price, line_total=pit["line"],
                 )
+                new_oi_ids.append(oi.id)
                 bi = pit["bi"]
                 if bi.stock is not None:
                     bi.stock = max(0, bi.stock - pit["qty"])
@@ -1585,10 +1587,13 @@ def pos_order_create(request, branch_id):
                 order.save(update_fields=["total_amount", "status", "payment_status"])
                 open_table = False
 
-    # Облачная печать — всегда при создании заказа
+    # Облачная печать — только НОВЫЕ позиции (не дублировать уже напечатанные)
     try:
         from printing.jobs import create_print_jobs
-        create_print_jobs(order)
+        if existing_order:
+            create_print_jobs(order, new_order_item_ids=new_oi_ids, new_cx_item_ids=[])
+        else:
+            create_print_jobs(order)
     except Exception:
         pass
 
