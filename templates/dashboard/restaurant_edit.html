@@ -140,10 +140,143 @@
 </div>
 
 </form>
+
+{# ══════════════════════════════════════════════════════════ #}
+{# ── БЛОК ОБЛАЧНОЙ ПЕЧАТИ (отдельная форма) ── #}
+{# ══════════════════════════════════════════════════════════ #}
+<div class="db-card" style="margin-top:28px;border-top:2px solid var(--border);padding-top:24px">
+  <div class="db-card-title">🖨 Облачная печать (Cloud Print)</div>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:20px">
+    Установите агент на ноутбук в ресторане. Агент сам подключится и будет забирать задания на печать.
+    Не нужен белый IP и VPN.
+  </p>
+
+  <form method="post" action="{% url 'dashboard:restaurant_print_save' restaurant.id %}">
+    {% csrf_token %}
+
+    {# Тоггл включения #}
+    <div class="db-toggle-row" style="margin-bottom:20px">
+      <div>
+        <div class="db-toggle-label">Включить облачную печать</div>
+        <div class="db-toggle-desc">Задания будут создаваться автоматически при каждом заказе в кассе</div>
+      </div>
+      <label class="db-switch">
+        <input type="checkbox" name="printing_enabled" {% if print_cfg.enabled %}checked{% endif %}>
+        <span class="db-switch-slider"></span>
+      </label>
+    </div>
+
+    {# Токен агента #}
+    <div class="db-form-group" style="margin-bottom:20px">
+      <label class="db-label">🔑 Токен для агента</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="db-input" type="text" value="{{ print_cfg.token }}" readonly
+               id="printToken" style="font-family:monospace;font-size:12px;flex:1">
+        <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('printToken').value)"
+                class="db-btn db-btn-ghost db-btn-sm">📋 Копировать</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">
+        Вставьте в <code>config.json</code> агента. Не передавайте посторонним.
+      </div>
+    </div>
+
+    {# Статус агента #}
+    <div style="margin-bottom:20px">
+      {% if print_cfg.is_agent_online %}
+        <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:10px;background:rgba(0,184,150,.1);border:1px solid rgba(0,184,150,.25);color:var(--teal);font-size:12px;font-weight:600">
+          🟢 Агент онлайн ({{ print_cfg.last_heartbeat|timesince }} назад)
+        </span>
+      {% elif print_cfg.last_heartbeat %}
+        <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#dc2626;font-size:12px;font-weight:600">
+          🔴 Агент оффлайн ({{ print_cfg.last_heartbeat|timesince }} назад)
+        </span>
+      {% else %}
+        <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:10px;background:var(--bg);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:600">
+          ⚪ Агент ещё не подключался
+        </span>
+      {% endif %}
+    </div>
+
+    {# Группы принтеров #}
+    <div class="db-form-section-title" style="margin-bottom:12px">Группы принтеров</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">
+      Каждая группа = одна станция печати (кухня, бар и т.д.).
+      Назначайте группу категориям меню в настройках категорий.
+    </div>
+
+    <div id="printer-groups-list">
+      {% for group in printer_groups %}
+      <div class="pg-row" style="display:grid;grid-template-columns:120px 1fr 1fr auto;gap:10px;align-items:center;margin-bottom:10px">
+        <input class="db-input" type="text" name="group_code"
+               value="{{ group.name }}" placeholder="kitchen" style="font-family:monospace;font-size:12px">
+        <input class="db-input" type="text" name="group_display"
+               value="{{ group.display_name }}" placeholder="Кухня">
+        <input class="db-input" type="text" name="printer_windows_name"
+               value="{{ group.printers.first.windows_name|default:'' }}"
+               placeholder="Имя принтера в Windows">
+        <a href="{% url 'dashboard:restaurant_print_group_delete' restaurant.id group.id %}"
+           onclick="return confirm('Удалить группу?')"
+           style="color:#dc2626;font-size:18px;text-decoration:none;flex-shrink:0">✕</a>
+      </div>
+      {% endfor %}
+
+      {# Пустая строка для новой группы #}
+      <div class="pg-row" id="new-group-row" style="display:grid;grid-template-columns:120px 1fr 1fr auto;gap:10px;align-items:center;margin-bottom:10px">
+        <input class="db-input" type="text" name="group_code" placeholder="kitchen" style="font-family:monospace;font-size:12px">
+        <input class="db-input" type="text" name="group_display" placeholder="Кухня">
+        <input class="db-input" type="text" name="printer_windows_name" placeholder="Имя принтера в Windows">
+        <span style="width:24px"></span>
+      </div>
+    </div>
+
+    <button type="button" onclick="addGroupRow()" class="db-btn db-btn-ghost db-btn-sm" style="margin-bottom:16px">
+      + Добавить группу
+    </button>
+
+    <div>
+      <button type="submit" class="db-btn db-btn-primary">💾 Сохранить настройки печати</button>
+    </div>
+  </form>
+
+  {# Скачать агент #}
+  <div style="margin-top:20px;padding:16px;background:var(--bg);border-radius:12px;border:1px solid var(--border)">
+    <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">📥 Установка на компьютер в ресторане</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">
+      1. Скачайте оба файла<br>
+      2. Положите рядом в одну папку<br>
+      3. Установите: <code>pip install requests pywin32</code><br>
+      4. Запустите: <code>python agent.py</code>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a href="{% url 'dashboard:restaurant_print_download_config' restaurant.id %}"
+         class="db-btn db-btn-primary db-btn-sm">
+        ⬇️ Скачать config.json
+      </a>
+      <a href="{% url 'dashboard:restaurant_print_download_agent' restaurant.id %}"
+         class="db-btn db-btn-ghost db-btn-sm">
+        ⬇️ Скачать agent.py
+      </a>
+    </div>
+    <div style="margin-top:14px;font-family:monospace;font-size:11px;color:var(--muted);line-height:1.8">
+      GET  /api/print/jobs/?token=…<br>
+      POST /api/print/jobs/&lt;id&gt;/ack/?token=…<br>
+      POST /api/print/heartbeat/?token=…
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
+function addGroupRow() {
+  const list = document.getElementById('printer-groups-list');
+  const tpl = document.getElementById('new-group-row').cloneNode(true);
+  tpl.id = '';
+  tpl.querySelectorAll('input').forEach(i => i.value = '');
+  list.appendChild(tpl);
+}
+
 function previewLogo(input) {
   if (!input.files || !input.files[0]) return;
   const reader = new FileReader();

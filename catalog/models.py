@@ -104,8 +104,15 @@ class BranchMenuSet(TimeStampedModel):
 class BranchCategory(TimeStampedModel):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="branch_categories")
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="branch_categories")
-    sort_order = models.PositiveIntegerField(default=0)  # нумерация категории в филиале
+    sort_order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
+    printer_group = models.ForeignKey(
+        "printing.PrinterGroup",
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="branch_categories",
+        verbose_name="Принтер (группа)",
+    )
 
     class Meta:
         unique_together = ("branch", "category")

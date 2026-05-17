@@ -65,6 +65,7 @@ INSTALLED_APPS = [
    "karaoke",
    "barbershop",
    "techcards.apps.TechCardsConfig",
+   "printing.apps.PrintingConfig",
 ]
 # CELERY_TASK_ALWAYS_EAGER = True
 # CELERY_TASK_EAGER_PROPAGATES = True

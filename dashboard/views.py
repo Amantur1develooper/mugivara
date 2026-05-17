@@ -2,7 +2,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
 from django.db import transaction
 from decimal import Decimal, InvalidOperation
@@ -156,7 +156,156 @@ def restaurant_edit(request, restaurant_id):
         messages.success(request, "Данные ресторана сохранены")
         return redirect("dashboard:restaurant_edit", restaurant_id=restaurant.id)
 
-    return render(request, "dashboard/restaurant_edit.html", {"restaurant": restaurant})
+    from printing.models import RestaurantPrintConfig, PrinterGroup
+    print_cfg, _ = RestaurantPrintConfig.objects.get_or_create(restaurant=restaurant)
+    printer_groups = PrinterGroup.objects.filter(restaurant=restaurant).prefetch_related("printers")
+
+    return render(request, "dashboard/restaurant_edit.html", {
+        "restaurant": restaurant,
+        "print_cfg": print_cfg,
+        "printer_groups": printer_groups,
+    })
+
+
+# ── PRINT CONFIG SAVE ─────────────────────────────────────────────────────────
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def restaurant_print_save(request, restaurant_id):
+    from printing.models import RestaurantPrintConfig, PrinterGroup, Printer
+    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+    if not Membership.objects.filter(user=request.user, restaurant=restaurant).exists():
+        return redirect("dashboard:home")
+
+    cfg, _ = RestaurantPrintConfig.objects.get_or_create(restaurant=restaurant)
+    cfg.enabled = request.POST.get("printing_enabled") == "on"
+    cfg.save()
+
+    # Сохраняем группы принтеров
+    group_codes = request.POST.getlist("group_code")
+    group_names = request.POST.getlist("group_display")
+    printer_names = request.POST.getlist("printer_windows_name")
+
+    for code, display, win_name in zip(group_codes, group_names, printer_names):
+        code = code.strip().lower()
+        display = display.strip()
+        win_name = win_name.strip()
+        if not code or not display:
+            continue
+        group, _ = PrinterGroup.objects.get_or_create(
+            restaurant=restaurant, name=code,
+            defaults={"display_name": display},
+        )
+        group.display_name = display
+        group.save(update_fields=["display_name"])
+        if win_name:
+            Printer.objects.update_or_create(
+                restaurant=restaurant, group=group,
+                defaults={"windows_name": win_name, "is_active": True},
+            )
+
+    messages.success(request, "Настройки печати сохранены")
+    return redirect("dashboard:restaurant_edit", restaurant_id=restaurant.id)
+
+
+# ── PRINT GROUP DELETE ────────────────────────────────────────────────────────
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def restaurant_print_group_delete(request, restaurant_id, group_id):
+    from printing.models import PrinterGroup
+    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+    if not Membership.objects.filter(user=request.user, restaurant=restaurant).exists():
+        return redirect("dashboard:home")
+    PrinterGroup.objects.filter(id=group_id, restaurant=restaurant).delete()
+    return redirect("dashboard:restaurant_edit", restaurant_id=restaurant.id)
+
+
+# ── DOWNLOAD PRINT CONFIG & AGENT ─────────────────────────────────────────────
+
+@login_required(login_url="dashboard:login")
+def restaurant_print_download_config(request, restaurant_id):
+    """Скачать готовый config.json для агента."""
+    import json as _json
+    from printing.models import RestaurantPrintConfig, PrinterGroup, Printer
+    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+    if not Membership.objects.filter(user=request.user, restaurant=restaurant).exists():
+        return redirect("dashboard:home")
+
+    cfg, _ = RestaurantPrintConfig.objects.get_or_create(restaurant=restaurant)
+    groups = PrinterGroup.objects.filter(restaurant=restaurant).prefetch_related("printers")
+
+    printers = {}
+    for g in groups:
+        first = g.printers.filter(is_active=True).first()
+        printers[g.name] = first.windows_name if first else "Имя принтера в Windows"
+
+    server_url = request.build_absolute_uri("/").rstrip("/")
+
+    data = {
+        "server_url": server_url,
+        "token": cfg.token,
+        "poll_interval": 3,
+        "heartbeat_interval": 30,
+        "printers": printers if printers else {"kitchen": "XPrinter XP-80C"},
+    }
+
+    content = _json.dumps(data, ensure_ascii=False, indent=2)
+    response = HttpResponse(content, content_type="application/json")
+    response["Content-Disposition"] = 'attachment; filename="config.json"'
+    return response
+
+
+@login_required(login_url="dashboard:login")
+def restaurant_print_download_agent(request, restaurant_id):
+    """Скачать agent.py."""
+    import os as _os
+    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+    if not Membership.objects.filter(user=request.user, restaurant=restaurant).exists():
+        return redirect("dashboard:home")
+
+    agent_path = _os.path.join(
+        _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+        "..", "printer_agent", "agent.py"
+    )
+    agent_path = _os.path.normpath(agent_path)
+
+    try:
+        with open(agent_path, "rb") as f:
+            content = f.read()
+    except FileNotFoundError:
+        return HttpResponse("agent.py не найден на сервере", status=404)
+
+    response = HttpResponse(content, content_type="text/x-python")
+    response["Content-Disposition"] = 'attachment; filename="agent.py"'
+    return response
+
+
+# ── CATEGORY PRINTER GROUP ────────────────────────────────────────────────────
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def category_printer_group(request, bc_id):
+    """AJAX: назначить группу принтера категории."""
+    from printing.models import PrinterGroup
+    bc = get_object_or_404(BranchCategory, id=bc_id)
+    if not _has_branch_access(request.user, bc.branch):
+        return JsonResponse({"ok": False}, status=403)
+
+    group_id = request.POST.get("group_id") or None
+    if group_id:
+        try:
+            group = PrinterGroup.objects.get(
+                id=group_id, restaurant=bc.branch.restaurant
+            )
+            bc.printer_group = group
+        except PrinterGroup.DoesNotExist:
+            return JsonResponse({"ok": False, "error": "Группа не найдена"})
+    else:
+        bc.printer_group = None
+
+    bc.save(update_fields=["printer_group"])
+    return JsonResponse({"ok": True})
 
 
 # ── BRANCH SETTINGS ──────────────────────────────────────────────────────────
@@ -798,12 +947,11 @@ def branch_categories(request, branch_id):
     active_bcs = list(
         BranchCategory.objects
         .filter(branch=branch)
-        .select_related("category__menu_set")
+        .select_related("category__menu_set", "printer_group")
         .order_by("sort_order", "id")
     )
     added_cat_ids = {bc.category_id for bc in active_bcs}
 
-    # Все категории ресторана, ещё не добавленные в филиал
     all_cats = (
         Category.objects
         .filter(menu_set__restaurant=branch.restaurant)
@@ -812,10 +960,14 @@ def branch_categories(request, branch_id):
     )
     available_cats = [c for c in all_cats if c.id not in added_cat_ids]
 
+    from printing.models import PrinterGroup
+    printer_groups = list(PrinterGroup.objects.filter(restaurant=branch.restaurant))
+
     return render(request, "dashboard/branch_categories.html", {
         "branch": branch,
         "categories": active_bcs,
         "available_cats": available_cats,
+        "printer_groups": printer_groups,
     })
 
 
@@ -1173,6 +1325,13 @@ def pos_order_create(request, branch_id):
     order.status = Order.Status.CLOSED
     order.payment_status = Order.PaymentStatus.PAID
     order.save(update_fields=["total_amount", "status", "payment_status"])
+
+    # Облачная печать — создаём задания если включена
+    try:
+        from printing.jobs import create_print_jobs
+        create_print_jobs(order)
+    except Exception:
+        pass  # печать не должна блокировать кассу
 
     return JsonResponse({"ok": True, "order_id": order.id, "total": str(total)})
 

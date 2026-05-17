@@ -8,6 +8,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path("i18n/", __import__("django.conf.urls.i18n").conf.urls.i18n.set_language, name="set_language"),
+    path("api/print/", include("printing.urls")),
 ]
 
 urlpatterns += i18n_patterns(

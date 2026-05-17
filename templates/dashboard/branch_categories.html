@@ -239,6 +239,16 @@
     <div class="cat-name">{{ bc.category.name_ru }}</div>
     <div class="cat-ms">{{ bc.category.menu_set.name }}</div>
   </div>
+  {% if printer_groups %}
+  <select class="pg-select" data-bc="{{ bc.id }}"
+          onchange="setPrinterGroup(this)"
+          style="font-size:11px;padding:4px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text2);cursor:pointer;max-width:120px">
+    <option value="">🖨 Принтер</option>
+    {% for g in printer_groups %}
+    <option value="{{ g.id }}" {% if bc.printer_group_id == g.id %}selected{% endif %}>{{ g.display_name }}</option>
+    {% endfor %}
+  </select>
+  {% endif %}
   <div class="arrow-btns">
     <button class="arrow-btn" onclick="moveUp(this)" title="Выше">▲</button>
     <button class="arrow-btn" onclick="moveDown(this)" title="Ниже">▼</button>
@@ -269,6 +279,7 @@
      data-toggle-url="{% url 'dashboard:category_toggle' 99999 %}"
      data-reorder-url="{% url 'dashboard:category_reorder' 99999 %}"
      data-remove-url="{% url 'dashboard:category_remove' 99999 %}"
+     data-printer-group-url="{% url 'dashboard:category_printer_group' 99999 %}"
      style="display:none"></div>
 
 <script>
@@ -278,6 +289,18 @@ const addUrl     = _u.addUrl;
 const toggleUrl  = id => _u.toggleUrl.replace('99999', id);
 const reorderUrl = id => _u.reorderUrl.replace('99999', id);
 const removeUrl  = id => _u.removeUrl.replace('99999', id);
+const printerGroupUrl = id => _u.printerGroupUrl.replace('99999', id);
+
+async function setPrinterGroup(sel) {
+  const bcId = sel.dataset.bc;
+  const groupId = sel.value;
+  const body = new FormData();
+  body.append("csrfmiddlewaretoken", CSRF);
+  body.append("group_id", groupId);
+  const r = await fetch(printerGroupUrl(bcId), {method:"POST", body});
+  const d = await r.json();
+  showToast(d.ok ? "🖨 Принтер сохранён" : "Ошибка", d.ok ? "ok" : "err");
+}
 
 /* ── Toast ── */
 let _toastTimer;

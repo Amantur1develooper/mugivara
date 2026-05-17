@@ -203,13 +203,15 @@
   </div>
 
   <button class="r-print-btn" onclick="window.print()">🖨 Распечатать</button>
+  <div style="margin-top:10px;font-size:10px;color:#888;text-align:center">
+    Если принтер показывает ошибку — используйте Chrome или Edge
+  </div>
 
 </div>
 <script>
-  // ?auto=1 → автопечать (когда открывают из POS)
   if (new URLSearchParams(window.location.search).get("auto") === "1") {
     window.addEventListener("load", function() {
-      setTimeout(function() { window.print(); }, 300);
+      setTimeout(function() { window.print(); }, 800);
     });
   }
 </script>
