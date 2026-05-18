@@ -604,9 +604,10 @@ def table_create_order(request, token):
         pass
 
     # Telegram уведомление
+    # Для нового заказа — сигнал integrations/signals.py отправляет уведомление автоматически.
+    # Здесь отправляем только дозаказ (signal не срабатывает, т.к. Order не создаётся).
     try:
         if existing_order:
-            # Дозаказ — отправляем только новые блюда
             from integrations.tasks import notify_extra_order
             new_items_tg = []
             for row in cart_rows:
@@ -614,9 +615,6 @@ def table_create_order(request, token):
             for cx_item in cx_cart:
                 new_items_tg.append({"name": cx_item.get("cx_name", "Конструктор"), "qty": int(cx_item.get("qty", 1))})
             notify_extra_order.delay(order.id, new_items_tg)
-        else:
-            from integrations.tasks import notify_new_order
-            notify_new_order.delay(order.id)
     except Exception:
         pass
 
