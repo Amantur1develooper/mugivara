@@ -233,7 +233,7 @@ def notify_extra_order(order_id: int, new_items: list):
     if not recipients.exists():
         return "No recipients"
 
-    now = timezone.localtime(order.created_at).strftime("%H:%M")
+    now = timezone.localtime().strftime("%H:%M")
     lines = [
         f"➕ ДОЗАКАЗ — {order.table_place.title if order.table_place else 'стол'}",
         f"🏪 {getattr(order.branch, 'name_ru', str(order.branch))}",

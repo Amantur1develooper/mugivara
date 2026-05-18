@@ -1626,8 +1626,8 @@ def pos_order_create(request, branch_id):
     # Telegram уведомление
     # Для нового заказа — сигнал integrations/signals.py отправляет уведомление автоматически.
     # Здесь отправляем только дозаказ на стол (signal не срабатывает, т.к. Order не создаётся).
-    try:
-        if existing_order and table_place:
+    if existing_order and table_place:
+        try:
             from integrations.tasks import notify_extra_order
             new_items_tg = [
                 {"name": pit["bi"].item.name_ru, "qty": pit["qty"]}
@@ -1635,8 +1635,8 @@ def pos_order_create(request, branch_id):
             ]
             if new_items_tg:
                 notify_extra_order.delay(order.id, new_items_tg)
-    except Exception:
-        pass
+        except Exception as e:
+            print("TG notify_extra_order ERROR:", e)
 
     return JsonResponse({
         "ok": True,
