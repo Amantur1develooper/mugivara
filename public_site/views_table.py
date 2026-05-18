@@ -605,8 +605,18 @@ def table_create_order(request, token):
 
     # Telegram уведомление
     try:
-        from integrations.tasks import notify_new_order
-        notify_new_order.delay(order.id)
+        if existing_order:
+            # Дозаказ — отправляем только новые блюда
+            from integrations.tasks import notify_extra_order
+            new_items_tg = []
+            for row in cart_rows:
+                new_items_tg.append({"name": row["bi"].item.name_ru, "qty": row["qty"]})
+            for cx_item in cx_cart:
+                new_items_tg.append({"name": cx_item.get("cx_name", "Конструктор"), "qty": int(cx_item.get("qty", 1))})
+            notify_extra_order.delay(order.id, new_items_tg)
+        else:
+            from integrations.tasks import notify_new_order
+            notify_new_order.delay(order.id)
     except Exception:
         pass
 

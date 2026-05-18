@@ -1623,6 +1623,22 @@ def pos_order_create(request, branch_id):
     except Exception:
         pass
 
+    # Telegram уведомление
+    try:
+        if existing_order and table_place:
+            from integrations.tasks import notify_extra_order
+            new_items_tg = [
+                {"name": pit["bi"].item.name_ru, "qty": pit["qty"]}
+                for pit in prepared_items
+            ]
+            if new_items_tg:
+                notify_extra_order.delay(order.id, new_items_tg)
+        else:
+            from integrations.tasks import notify_new_order
+            notify_new_order.delay(order.id)
+    except Exception:
+        pass
+
     return JsonResponse({
         "ok": True,
         "order_id": order.id,

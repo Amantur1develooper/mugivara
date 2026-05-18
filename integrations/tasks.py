@@ -211,6 +211,59 @@ def notify_new_order(order_id: int):
     return f"sent={sent}"
 
 
+@shared_task
+def notify_extra_order(order_id: int, new_items: list):
+    """
+    Уведомление о дозаказе на стол.
+    new_items — список {"name": str, "qty": int} только добавленных блюд.
+    """
+    token = _tg_token()
+    if not token:
+        return "No TG token"
+
+    order = (
+        Order.objects
+        .select_related("branch", "table_place")
+        .get(id=order_id)
+    )
+
+    recipients = TelegramRecipient.objects.filter(
+        branch=order.branch, is_active=True, notify_new_orders=True
+    )
+    if not recipients.exists():
+        return "No recipients"
+
+    now = timezone.localtime(order.created_at).strftime("%H:%M")
+    lines = [
+        f"➕ ДОЗАКАЗ — {order.table_place.title if order.table_place else 'стол'}",
+        f"🏪 {getattr(order.branch, 'name_ru', str(order.branch))}",
+        f"🧾 Заказ №{order.id}",
+        "",
+        "📋 Добавлено:",
+    ]
+    for it in new_items:
+        lines.append(f"  • {it['name']}  ×{it['qty']}")
+
+    lines.append(f"\n⏰ {now}")
+    text = "\n".join(lines)
+
+    sent = 0
+    for r in recipients:
+        try:
+            send_message(
+                bot_token=token,
+                chat_id=str(r.chat_id),
+                text=text,
+                parse_mode=None,
+                message_thread_id=_thread_id_for(r),
+            )
+            sent += 1
+        except Exception as e:
+            print("TG ERROR:", r.chat_id, e)
+
+    return f"sent={sent}"
+
+
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=5)
 def notify_order_status(self, order_id: int, old_status: str, new_status: str):
     token = _tg_token()
