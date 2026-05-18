@@ -192,21 +192,20 @@ def create_cancel_job(order, item_name: str, item_qty: int, item_id: int = None)
 
 def create_receipt_job(order):
     """
-    Печатает чек покупателя при закрытии стола.
-    Идёт на группу 'cashier' / 'receipt' или первую доступную.
+    Печатает итоговый чек покупателя при закрытии стола/заказа.
+    Принтер берётся из настроек ресторана (receipt_printer_group).
+    Fallback: первая доступная группа.
     """
     restaurant = order.branch.restaurant
     try:
-        cfg = RestaurantPrintConfig.objects.get(restaurant=restaurant, enabled=True)
+        cfg = (RestaurantPrintConfig.objects
+               .select_related("receipt_printer_group")
+               .get(restaurant=restaurant, enabled=True))
     except RestaurantPrintConfig.DoesNotExist:
         return
 
-    group = (
-        restaurant.printer_groups
-        .filter(name__in=["cashier", "receipt", "kitchen"])
-        .first()
-        or restaurant.printer_groups.first()
-    )
+    # Явно назначенный принтер чеков имеет приоритет
+    group = cfg.receipt_printer_group or restaurant.printer_groups.first()
     if not group:
         return
 

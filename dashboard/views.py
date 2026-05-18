@@ -179,6 +179,18 @@ def restaurant_print_save(request, restaurant_id):
 
     cfg, _ = RestaurantPrintConfig.objects.get_or_create(restaurant=restaurant)
     cfg.enabled = request.POST.get("printing_enabled") == "on"
+
+    # Принтер итоговых чеков
+    receipt_group_id = request.POST.get("receipt_printer_group_id") or None
+    if receipt_group_id:
+        try:
+            cfg.receipt_printer_group = PrinterGroup.objects.get(
+                id=int(receipt_group_id), restaurant=restaurant
+            )
+        except (PrinterGroup.DoesNotExist, ValueError):
+            cfg.receipt_printer_group = None
+    else:
+        cfg.receipt_printer_group = None
     cfg.save()
 
     # Сохраняем группы принтеров

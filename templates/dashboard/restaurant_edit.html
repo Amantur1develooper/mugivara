@@ -229,9 +229,28 @@
       </div>
     </div>
 
-    <button type="button" onclick="addGroupRow()" class="db-btn db-btn-ghost db-btn-sm" style="margin-bottom:16px">
+    <button type="button" onclick="addGroupRow()" class="db-btn db-btn-ghost db-btn-sm" style="margin-bottom:24px">
       + Добавить группу
     </button>
+
+    {# Принтер для итоговых чеков #}
+    {% if printer_groups %}
+    <div style="background:var(--bg);border:1.5px solid var(--accent);border-radius:12px;padding:16px;margin-bottom:20px">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">🖨 Принтер для итоговых чеков</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">
+        Все чеки при закрытии стола / заказа будут всегда уходить на этот принтер.
+      </div>
+      <select name="receipt_printer_group_id" class="db-input" style="max-width:320px">
+        <option value="">— не задан (авто) —</option>
+        {% for group in printer_groups %}
+        <option value="{{ group.id }}"
+          {% if print_cfg.receipt_printer_group_id == group.id %}selected{% endif %}>
+          {{ group.display_name }}{% if group.printers.first %} ({{ group.printers.first.windows_name }}){% endif %}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
 
     <div>
       <button type="submit" class="db-btn db-btn-primary">💾 Сохранить настройки печати</button>

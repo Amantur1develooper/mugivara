@@ -11,6 +11,14 @@ class RestaurantPrintConfig(models.Model):
     enabled = models.BooleanField("Печать включена", default=False)
     token = models.CharField(max_length=64, unique=True, editable=False)
     last_heartbeat = models.DateTimeField("Последний heartbeat", null=True, blank=True)
+    receipt_printer_group = models.ForeignKey(
+        "PrinterGroup",
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        verbose_name="Принтер для итоговых чеков",
+        help_text="Этот принтер будет получать чеки при закрытии стола/заказа",
+    )
 
     def save(self, *args, **kwargs):
         if not self.token:
