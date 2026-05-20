@@ -290,7 +290,7 @@ WebOrdo Cloud Printer Agent
     python agent.py
 """
 
-import json, logging, sys, time
+import json, logging, random, socket, struct, sys, time
 from pathlib import Path
 
 import requests
@@ -312,6 +312,60 @@ logging.basicConfig(
 log = logging.getLogger("printer_agent")
 
 CONFIG_PATH = Path(__file__).parent / "config.json"
+
+
+# ── DNS fallback через Google 8.8.8.8 ────────────────────────────────────────
+def _resolve_via_google(hostname):
+    """Резолвит hostname через Google DNS 8.8.8.8 напрямую (UDP)."""
+    try:
+        tid = random.randint(0, 65535)
+        header = struct.pack('>HHHHHH', tid, 0x0100, 1, 0, 0, 0)
+        qname = b''.join(
+            struct.pack('B', len(p)) + p.encode()
+            for p in hostname.split('.')
+        ) + b'\\x00'
+        question = qname + struct.pack('>HH', 1, 1)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.settimeout(3)
+        try:
+            sock.sendto(header + question, ('8.8.8.8', 53))
+            data, _ = sock.recvfrom(512)
+        finally:
+            sock.close()
+        pos = 12 + len(qname) + 4
+        ancount = struct.unpack('>H', data[6:8])[0]
+        for _ in range(ancount):
+            if data[pos] & 0xC0 == 0xC0:
+                pos += 2
+            else:
+                while data[pos]:
+                    pos += data[pos] + 1
+                pos += 1
+            rtype, _, _, rdlen = struct.unpack('>HHIH', data[pos:pos + 10])
+            pos += 10
+            if rtype == 1 and rdlen == 4:
+                return '.'.join(str(b) for b in data[pos:pos + 4])
+            pos += rdlen
+    except Exception:
+        pass
+    return None
+
+
+_orig_getaddrinfo = socket.getaddrinfo
+
+
+def _patched_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    try:
+        return _orig_getaddrinfo(host, port, family, type, proto, flags)
+    except socket.gaierror:
+        ip = _resolve_via_google(host)
+        if ip:
+            log.info(f"DNS fallback: {{host}} → {{ip}} (8.8.8.8)")
+            return _orig_getaddrinfo(ip, port, family, type, proto, flags)
+        raise
+
+
+socket.getaddrinfo = _patched_getaddrinfo
 
 
 # ── Конфиг ───────────────────────────────────────────────────────────────────
