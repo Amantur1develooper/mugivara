@@ -56,11 +56,14 @@ def create_print_jobs(order, new_order_item_ids=None, new_cx_item_ids=None):
     позиции (дозаказ к уже открытому столу). Иначе — все позиции заказа.
     """
     restaurant = order.branch.restaurant
+    print(f"PRINT DEBUG: order={order.id} restaurant={restaurant.name_ru} branch={order.branch.name_ru}")
 
     # Проверяем что печать включена
     try:
         cfg = RestaurantPrintConfig.objects.get(restaurant=restaurant, enabled=True)
+        print(f"PRINT DEBUG: config found, enabled=True")
     except RestaurantPrintConfig.DoesNotExist:
+        print(f"PRINT DEBUG: RestaurantPrintConfig не найден или enabled=False для '{restaurant.name_ru}' — печать пропущена")
         return
 
     from orders.models import OrderItem, ConstructorOrderItem
@@ -121,6 +124,7 @@ def create_print_jobs(order, new_order_item_ids=None, new_cx_item_ids=None):
         ))
 
     # Позиции без группы — в группу по умолчанию (если есть)
+    print(f"PRINT DEBUG: grouped={len(groups)} ungrouped={len(ungrouped)}")
     if ungrouped:
         default_group = (
             restaurant.printer_groups
@@ -128,6 +132,7 @@ def create_print_jobs(order, new_order_item_ids=None, new_cx_item_ids=None):
             .first()
             or restaurant.printer_groups.first()
         )
+        print(f"PRINT DEBUG: default_group={default_group}")
         if default_group:
             content = _build_ticket(order, ungrouped, default_group)
             jobs.append(PrintJob(
@@ -138,8 +143,10 @@ def create_print_jobs(order, new_order_item_ids=None, new_cx_item_ids=None):
                 status=PrintJob.Status.NEW,
             ))
 
+    print(f"PRINT DEBUG: создаётся {len(jobs)} PrintJob(s)")
     if jobs:
         PrintJob.objects.bulk_create(jobs)
+        print(f"PRINT DEBUG: PrintJob сохранены в БД ✓")
 
 
 def create_cancel_job(order, item_name: str, item_qty: int, item_id: int = None):
