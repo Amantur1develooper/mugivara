@@ -1697,15 +1697,24 @@ def pos_order_create(request, branch_id):
                 order.save(update_fields=["total_amount", "status", "payment_status"])
                 open_table = False
 
-    # Облачная печать — только НОВЫЕ позиции (не дублировать уже напечатанные)
-    try:
-        from printing.jobs import create_print_jobs
-        if existing_order:
-            create_print_jobs(order, new_order_item_ids=new_oi_ids, new_cx_item_ids=[])
-        else:
-            create_print_jobs(order)
-    except Exception as e:
-        print("PRINT create_print_jobs ERROR (pos):", e)
+    # Облачная печать — запускаем ПОСЛЕ коммита транзакции
+    _order_id   = order.id
+    _ex_order   = bool(existing_order)
+    _new_oi_ids = list(new_oi_ids) if existing_order else None
+
+    def _do_print():
+        try:
+            from printing.jobs import create_print_jobs
+            from orders.models import Order as _Order
+            _order = _Order.objects.get(id=_order_id)
+            if _ex_order:
+                create_print_jobs(_order, new_order_item_ids=_new_oi_ids, new_cx_item_ids=[])
+            else:
+                create_print_jobs(_order)
+        except Exception as e:
+            print("PRINT create_print_jobs ERROR (pos):", e)
+
+    transaction.on_commit(_do_print)
 
     # Telegram уведомление
     # Для нового заказа — сигнал integrations/signals.py отправляет уведомление автоматически.
@@ -1866,14 +1875,6 @@ def pos_order_status(request, order_id):
     if fields:
         fields.append("updated_at")
         order.save(update_fields=fields)
-
-    # При принятии заказа (new → accepted) отправляем на кухонный принтер
-    if new_status == Order.Status.ACCEPTED and prev_status == Order.Status.NEW:
-        try:
-            from printing.jobs import create_print_jobs
-            create_print_jobs(order)
-        except Exception:
-            pass
 
     return JsonResponse({
         "ok": True,
