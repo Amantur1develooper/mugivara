@@ -332,7 +332,7 @@ def load_config():
     # Обязательные поля
     for key in ("server_url", "token"):
         if not cfg.get(key):
-            log.error(f"ОШИБКА: в config.json отсутствует поле '{{}}'.".format(key))
+            log.error("ОШИБКА: в config.json отсутствует поле '" + key + "'. Скачайте config.json заново.")
             input("Нажмите Enter для выхода...")
             sys.exit(1)
 
