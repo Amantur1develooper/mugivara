@@ -288,17 +288,17 @@ WebOrdo Cloud Printer Agent
 
 Запуск:
     python agent.py
-
-Сборка в .exe:
-    pip install pyinstaller
-    pyinstaller --onefile agent.py
 """
 
-import json, logging, os, sys, time
+import json, logging, socket, sys, time
 from pathlib import Path
+from urllib.parse import urlparse
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
+# ── Логирование ──────────────────────────────────────────────────────────────
 LOG_DIR = Path(__file__).parent / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 
@@ -315,28 +315,85 @@ log = logging.getLogger("printer_agent")
 CONFIG_PATH = Path(__file__).parent / "config.json"
 
 
+# ── Конфиг ───────────────────────────────────────────────────────────────────
 def load_config():
-    with open(CONFIG_PATH, encoding="utf-8") as f:
-        return json.load(f)
+    if not CONFIG_PATH.exists():
+        log.error(f"ОШИБКА: config.json не найден: {{CONFIG_PATH}}")
+        log.error("Скачайте config.json из личного кабинета ресторана.")
+        input("Нажмите Enter для выхода...")
+        sys.exit(1)
+    try:
+        with open(CONFIG_PATH, encoding="utf-8-sig") as f:
+            cfg = json.load(f)
+    except json.JSONDecodeError as e:
+        log.error(f"ОШИБКА: config.json повреждён: {{e}}")
+        input("Нажмите Enter для выхода...")
+        sys.exit(1)
+
+    # Обязательные поля
+    for key in ("server_url", "token"):
+        if not cfg.get(key):
+            log.error(f"ОШИБКА: в config.json отсутствует поле '{{}}'.".format(key))
+            input("Нажмите Enter для выхода...")
+            sys.exit(1)
+
+    cfg["server_url"] = cfg["server_url"].rstrip("/")
+    return cfg
 
 
+# ── Проверка соединения при старте ───────────────────────────────────────────
+def check_connection(server_url):
+    parsed = urlparse(server_url)
+    host = parsed.hostname
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+
+    log.info(f"Проверка соединения с {{host}}:{{port}} ...")
+    try:
+        ip = socket.gethostbyname(host)
+        log.info(f"DNS: {{host}} → {{ip}}")
+    except socket.gaierror as e:
+        log.error(f"DNS ОШИБКА: не удалось найти хост '{{host}}': {{e}}")
+        log.error("Решение: откройте браузер на этом компьютере и проверьте что")
+        log.error(f"  открывается: {{server_url}}")
+        log.error("Если сайт открывается — запустите в CMD от администратора:")
+        log.error("  ipconfig /flushdns")
+        log.error("и перезапустите агент.")
+        return False
+
+    try:
+        s = socket.create_connection((host, port), timeout=5)
+        s.close()
+        log.info(f"TCP соединение с {{host}}:{{port}} — OK")
+        return True
+    except Exception as e:
+        log.error(f"Не удалось подключиться к {{host}}:{{port}}: {{e}}")
+        return False
+
+
+# ── API клиент ───────────────────────────────────────────────────────────────
 class ApiClient:
     def __init__(self, server_url, token):
         self.base = server_url.rstrip("/")
         self.session = requests.Session()
         self.session.headers["X-Print-Token"] = token
+        retry = Retry(total=3, backoff_factor=0.5, status_forcelist=[500, 502, 503, 504])
+        adapter = HTTPAdapter(max_retries=retry)
+        self.session.mount("https://", adapter)
+        self.session.mount("http://", adapter)
 
     def get_jobs(self):
-        r = self.session.get(f"{{self.base}}/api/print/jobs/", timeout=10)
+        r = self.session.get(f"{{self.base}}/api/print/jobs/", timeout=15)
         r.raise_for_status()
         return r.json().get("jobs", [])
 
     def ack_job(self, job_id, status, error=""):
         payload = {{"status": status}}
         if error:
-            payload["error"] = error
-        r = self.session.post(f"{{self.base}}/api/print/jobs/{{job_id}}/ack/", json=payload, timeout=10)
-        r.raise_for_status()
+            payload["error"] = error[:300]
+        self.session.post(
+            f"{{self.base}}/api/print/jobs/{{job_id}}/ack/",
+            json=payload, timeout=10,
+        )
 
     def heartbeat(self):
         r = self.session.post(f"{{self.base}}/api/print/heartbeat/", timeout=10)
@@ -349,23 +406,23 @@ class ApiClient:
         return r.json()
 
 
+# ── Печать ───────────────────────────────────────────────────────────────────
 def print_text_windows(printer_name, content):
     try:
         import win32print
     except ImportError:
-        log.error("pywin32 не установлен. Запустите: pip install pywin32")
-        raise
+        raise RuntimeError("pywin32 не установлен. Выполните: pip install pywin32")
 
     handle = win32print.OpenPrinter(printer_name)
     try:
         win32print.StartDocPrinter(handle, 1, ("Receipt", None, "RAW"))
         win32print.StartPagePrinter(handle)
-        ESC = b"\\x1b"
-        init     = ESC + b"@"               # ESC @ — сброс принтера
-        codepage = ESC + b"t\\x11"          # ESC t 17 — кодовая страница cp866 (кириллица)
-        beep     = b"\\x07"                 # BEL — один сигнал пищалки
-        feed     = ESC + b"d\\x04"          # ESC d 4 — отступ перед отрезом
-        cut      = b"\\x1d\\x56\\x00"       # GS V 0 — полный отрез
+        ESC      = b"\\x1b"
+        init     = ESC + b"@"        # ESC @ — сброс
+        codepage = ESC + b"t\\x11"   # ESC t 17 — cp866 (кириллица)
+        beep     = b"\\x07"          # BEL
+        feed     = ESC + b"d\\x04"   # отступ 4 строки
+        cut      = b"\\x1d\\x56\\x00" # GS V 0 — полный отрез
         data = content.encode("cp866", errors="replace")
         win32print.WritePrinter(handle, init + codepage + beep + data + feed + cut)
         win32print.EndPagePrinter(handle)
@@ -380,60 +437,76 @@ def print_job(job, printer_map):
     content      = job.get("content", "")
     printer_name = printer_map.get(group) or next(iter(printer_map.values()), None)
     if not printer_name:
-        raise RuntimeError(f"Нет принтера для группы \'{{group}}\'")
-    log.info(f"Печать job #{{job[\'id\']}} (group={{group}}) → \'{{printer_name}}\'")
+        raise RuntimeError(f"Нет принтера для группы \'{{group}}\'. Проверьте config.json")
+    log.info(f"Печать job #{{job[\'id\']}} group={{group}} → \'{{printer_name}}\'")
     print_text_windows(printer_name, content)
 
 
+# ── Основной цикл ────────────────────────────────────────────────────────────
 def main():
     cfg = load_config()
+
+    log.info("=" * 48)
+    log.info("WebOrdo Printer Agent")
+    log.info(f"Сервер:  {{cfg[\'server_url\']}}")
+    log.info(f"Токен:   {{cfg[\'token\'][:8]}}...")
+    log.info(f"Принтеры из конфига: {{cfg.get(\'printers\', {{}})}}")
+    log.info("=" * 48)
+
+    # Проверяем соединение при старте
+    if not check_connection(cfg["server_url"]):
+        log.warning("Соединение не установлено — агент продолжит попытки каждые 10 сек.")
+
     client = ApiClient(cfg["server_url"], cfg["token"])
     poll_interval      = cfg.get("poll_interval", 3)
     heartbeat_interval = cfg.get("heartbeat_interval", 30)
     printer_map        = dict(cfg.get("printers", {{}}))
 
+    # Получаем актуальный список принтеров с сервера
     try:
         srv = client.get_config()
         printer_map.update(srv.get("printers", {{}}))
         log.info(f"Ресторан: {{srv.get(\'restaurant\')}}")
-        log.info(f"Принтеры: {{printer_map}}")
+        log.info(f"Принтеры (с сервера): {{printer_map}}")
     except Exception as e:
         log.warning(f"Не удалось получить конфиг с сервера: {{e}}")
+        log.warning(f"Используются принтеры из config.json: {{printer_map}}")
+
+    if not printer_map:
+        log.error("ОШИБКА: список принтеров пуст! Укажите принтер в config.json.")
 
     last_heartbeat = 0
-    log.info("=" * 48)
-    log.info("WebOrdo Printer Agent запущен")
-    log.info(f"Сервер: {{cfg[\'server_url\']}}")
-    log.info("=" * 48)
+    log.info("Агент запущен. Ожидание заданий...")
 
     while True:
         now = time.time()
+
+        # Heartbeat
         if now - last_heartbeat >= heartbeat_interval:
             try:
                 client.heartbeat()
                 last_heartbeat = now
             except Exception as e:
-                log.warning(f"Heartbeat failed: {{e}}")
+                log.warning(f"Heartbeat: {{e}}")
 
+        # Получаем задания
         try:
             jobs = client.get_jobs()
         except Exception as e:
             log.error(f"Ошибка получения заданий: {{e}}")
-            time.sleep(poll_interval)
+            time.sleep(poll_interval * 3)
             continue
 
+        # Печатаем
         for job in jobs:
             jid = job["id"]
             try:
                 print_job(job, printer_map)
                 client.ack_job(jid, "printed")
-                log.info(f"Job #{{jid}} — OK")
+                log.info(f"Job #{{jid}} — напечатано OK")
             except Exception as e:
-                log.error(f"Job #{{jid}} — ERROR: {{e}}")
-                try:
-                    client.ack_job(jid, "error", str(e))
-                except Exception:
-                    pass
+                log.error(f"Job #{{jid}} — ОШИБКА ПЕЧАТИ: {{e}}")
+                client.ack_job(jid, "error", str(e))
 
         time.sleep(poll_interval)
 
@@ -443,6 +516,9 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         log.info("Агент остановлен")
+    except Exception as e:
+        log.error(f"Критическая ошибка: {{e}}")
+        input("Нажмите Enter для выхода...")
 '''
 
     response = HttpResponse(content.encode("utf-8"), content_type="text/x-python; charset=utf-8")
