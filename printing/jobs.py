@@ -7,9 +7,10 @@ from django.utils import timezone
 
 from .models import PrintJob, RestaurantPrintConfig
 
-# ESC/POS inline bold (cp866-safe ASCII control bytes)
-_B  = "\x1b\x45\x01"   # bold on
-_B_ = "\x1b\x45\x00"   # bold off
+# ESC/POS inline bold — NUL byte (0x00) нельзя хранить в PostgreSQL text,
+# поэтому используем безопасные плейсхолдеры; агент заменит их перед печатью
+_B  = "\x02"   # STX — плейсхолдер "bold on"
+_B_ = "\x03"   # ETX — плейсхолдер "bold off"
 
 SEP  = "-" * 40
 SEP2 = "=" * 40
