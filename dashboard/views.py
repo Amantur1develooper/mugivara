@@ -290,9 +290,8 @@ WebOrdo Cloud Printer Agent
     python agent.py
 """
 
-import json, logging, socket, sys, time
+import json, logging, sys, time
 from pathlib import Path
-from urllib.parse import urlparse
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -339,35 +338,6 @@ def load_config():
 
     cfg["server_url"] = cfg["server_url"].rstrip("/")
     return cfg
-
-
-# ── Проверка соединения при старте ───────────────────────────────────────────
-def check_connection(server_url):
-    parsed = urlparse(server_url)
-    host = parsed.hostname
-    port = parsed.port or (443 if parsed.scheme == "https" else 80)
-
-    log.info(f"Проверка соединения с {{host}}:{{port}} ...")
-    try:
-        ip = socket.gethostbyname(host)
-        log.info(f"DNS: {{host}} → {{ip}}")
-    except socket.gaierror as e:
-        log.error(f"DNS ОШИБКА: не удалось найти хост '{{host}}': {{e}}")
-        log.error("Решение: откройте браузер на этом компьютере и проверьте что")
-        log.error(f"  открывается: {{server_url}}")
-        log.error("Если сайт открывается — запустите в CMD от администратора:")
-        log.error("  ipconfig /flushdns")
-        log.error("и перезапустите агент.")
-        return False
-
-    try:
-        s = socket.create_connection((host, port), timeout=5)
-        s.close()
-        log.info(f"TCP соединение с {{host}}:{{port}} — OK")
-        return True
-    except Exception as e:
-        log.error(f"Не удалось подключиться к {{host}}:{{port}}: {{e}}")
-        return False
 
 
 # ── API клиент ───────────────────────────────────────────────────────────────
@@ -452,10 +422,6 @@ def main():
     log.info(f"Токен:   {{cfg[\'token\'][:8]}}...")
     log.info(f"Принтеры из конфига: {{cfg.get(\'printers\', {{}})}}")
     log.info("=" * 48)
-
-    # Проверяем соединение при старте
-    if not check_connection(cfg["server_url"]):
-        log.warning("Соединение не установлено — агент продолжит попытки каждые 10 сек.")
 
     client = ApiClient(cfg["server_url"], cfg["token"])
     poll_interval      = cfg.get("poll_interval", 3)
