@@ -307,6 +307,17 @@ def table_checkout(request, token):
         # увеличиваем рейтинг ресторана
         Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
 
+        # Кухонный чек — после коммита транзакции
+        _order_id = order.id
+        def _do_print():
+            try:
+                from printing.jobs import create_print_jobs
+                from orders.models import Order as _Ord
+                create_print_jobs(_Ord.objects.get(id=_order_id))
+            except Exception as e:
+                print("PRINT create_print_jobs ERROR (checkout):", e)
+        transaction.on_commit(_do_print)
+
         return redirect("table_success", token=token, order_id=order.id)
 
     return render(request, "public_site/table_checkout.html", {
