@@ -361,12 +361,13 @@ def print_text_windows(printer_name, content):
         win32print.StartDocPrinter(handle, 1, ("Receipt", None, "RAW"))
         win32print.StartPagePrinter(handle)
         ESC = b"\\x1b"
-        init = ESC + b"@"               # ESC @ — сброс принтера
-        beep = ESC + b"B\\x03\\x02"     # 3 сигнала по 200мс
-        feed = ESC + b"d\\x04"          # ESC d 4 — отступ перед отрезом
-        cut  = b"\\x1d\\x56\\x41\\x00" # GS V A 0 — полный отрез
+        init     = ESC + b"@"               # ESC @ — сброс принтера
+        codepage = ESC + b"t\\x11"          # ESC t 17 — кодовая страница cp866 (кириллица)
+        beep     = b"\\x07"                 # BEL — один сигнал пищалки
+        feed     = ESC + b"d\\x04"          # ESC d 4 — отступ перед отрезом
+        cut      = b"\\x1d\\x56\\x00"       # GS V 0 — полный отрез
         data = content.encode("cp866", errors="replace")
-        win32print.WritePrinter(handle, init + beep + data + feed + cut)
+        win32print.WritePrinter(handle, init + codepage + beep + data + feed + cut)
         win32print.EndPagePrinter(handle)
     finally:
         win32print.EndDocPrinter(handle)
@@ -1607,8 +1608,8 @@ def pos_order_create(request, branch_id):
             create_print_jobs(order, new_order_item_ids=new_oi_ids, new_cx_item_ids=[])
         else:
             create_print_jobs(order)
-    except Exception:
-        pass
+    except Exception as e:
+        print("PRINT create_print_jobs ERROR (pos):", e)
 
     # Telegram уведомление
     # Для нового заказа — сигнал integrations/signals.py отправляет уведомление автоматически.

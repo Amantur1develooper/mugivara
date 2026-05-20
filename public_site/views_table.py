@@ -600,8 +600,8 @@ def table_create_order(request, token):
             create_print_jobs(order, new_order_item_ids=new_oi_ids, new_cx_item_ids=new_cx_ids)
         else:
             create_print_jobs(order)
-    except Exception:
-        pass
+    except Exception as e:
+        print("PRINT create_print_jobs ERROR (table):", e)
 
     # Telegram уведомление
     # Для нового заказа — сигнал integrations/signals.py отправляет уведомление автоматически.
