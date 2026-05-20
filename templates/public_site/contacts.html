@@ -219,10 +219,11 @@
 
     <div class="ct-rest-header">
       <div class="ct-rest-logo">
+        {% t r 'name' as r_name %}
         {% if r.logo %}
-          <img src="{{ r.logo.url }}" alt="{{ r.name_ru }}" loading="lazy">
+          <img src="{{ r.logo.url }}" alt="{{ r_name }}" loading="lazy">
         {% else %}
-          <span class="ct-rest-logo-letter">{{ r.name_ru|slice:":1" }}</span>
+          <span class="ct-rest-logo-letter">{{ r_name|slice:":1" }}</span>
         {% endif %}
       </div>
       <div>
@@ -241,9 +242,9 @@
         <!-- Cover -->
         <div class="ct-card-cover">
           {% if b.cover_photo %}
-            <img src="{{ b.cover_photo.url }}" alt="{{ b.name_ru }}" loading="lazy">
+            <img src="{{ b.cover_photo.url }}" alt="{% t b 'name' %}" loading="lazy">
           {% elif b.promo_photo %}
-            <img src="{{ b.promo_photo.url }}" alt="{{ b.name_ru }}" loading="lazy">
+            <img src="{{ b.promo_photo.url }}" alt="{% t b 'name' %}" loading="lazy">
           {% endif %}
           <div class="ct-card-cover-overlay"></div>
           <div class="ct-status-badge {% if b.is_open_now %}open{% else %}closed{% endif %}">

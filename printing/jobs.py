@@ -7,23 +7,35 @@ from django.utils import timezone
 
 from .models import PrintJob, RestaurantPrintConfig
 
+# ESC/POS inline bold (cp866-safe ASCII control bytes)
+_B  = "\x1b\x45\x01"   # bold on
+_B_ = "\x1b\x45\x00"   # bold off
+
+SEP  = "-" * 40
+SEP2 = "=" * 40
+
 
 def _build_ticket(order, items_by_group, group):
-    """Генерирует plain-text чек для кухонного принтера (80мм)."""
+    """Кухонный тикет — компактный, читаемый формат."""
     now = timezone.localtime()
     lines = []
-    SEP = "-" * 48  # 80мм → ~48 символов при жирном 2x-высота шрифте
 
     lines.append(SEP)
-    lines.append(f"  ЗАКАЗ #{order.id}")
-    lines.append(f"  {now.strftime('%d.%m.%Y  %H:%M')}")
-    lines.append(f"  {order.get_type_display()}")
+
+    # Строка 1: номер заказа + время
+    lines.append(f"{_B}  ЗАКАЗ #{order.id}  {now.strftime('%d.%m  %H:%M')}{_B_}")
+
+    # Строка 2: тип + стол (через разделитель если оба есть)
+    parts = [order.get_type_display()]
     if order.table_place:
-        lines.append(f"  Стол: {order.table_place.title}")
+        parts.append(f"Стол: {order.table_place.title}")
+    lines.append("  " + "  |  ".join(parts))
+
     if order.customer_name:
         lines.append(f"  Гость: {order.customer_name}")
     if order.comment:
         lines.append(f"  ! {order.comment}")
+
     lines.append(SEP)
 
     for name, qty in items_by_group:
@@ -167,18 +179,16 @@ def create_cancel_job(order, item_name: str, item_qty: int, item_id: int = None)
         return
 
     now = timezone.localtime()
-    SEP = "=" * 48   # 80мм
     lines = [
-        SEP,
-        "  !! ОТМЕНА БЛЮДА !!",
-        f"  Заказ #{order.id}",
-        f"  {now.strftime('%d.%m.%Y  %H:%M')}",
+        SEP2,
+        f"{_B}  !! ОТМЕНА !!{_B_}",
+        f"  Заказ #{order.id}   {now.strftime('%d.%m  %H:%M')}",
     ]
     if order.table_place:
         lines.append(f"  Стол: {order.table_place.title}")
-    lines.append(SEP)
+    lines.append(SEP2)
     lines.append(f"  ОТМЕНЕНО: {item_qty}x  {item_name}")
-    lines.append(SEP)
+    lines.append(SEP2)
     lines.append("")
 
     PrintJob.objects.create(
@@ -211,20 +221,16 @@ def create_receipt_job(order):
 
     now = timezone.localtime()
     lines = []
-    SEP  = "=" * 48   # 80мм
-    SEP2 = "-" * 48
 
-    lines.append(SEP)
-    lines.append(f"  {restaurant.name_ru}")
-    lines.append(f"  {order.branch.name_ru}")
-    lines.append(SEP)
-    lines.append(f"  ЧЕК #{order.id}")
-    lines.append(f"  {now.strftime('%d.%m.%Y  %H:%M')}")
+    lines.append(SEP2)
+    lines.append(f"  {restaurant.name_ru}  |  {order.branch.name_ru}")
+    lines.append(SEP2)
+    lines.append(f"{_B}  ЧЕК #{order.id}{_B_}   {now.strftime('%d.%m.%Y  %H:%M')}")
     if order.table_place:
         lines.append(f"  Стол: {order.table_place.title}")
     if order.customer_name:
         lines.append(f"  Гость: {order.customer_name}")
-    lines.append(SEP2)
+    lines.append(SEP)
 
     for oi in order.items.select_related("item").all():
         name = oi.item.name_ru
@@ -236,12 +242,12 @@ def create_receipt_job(order):
         lines.append(f"  {name}")
         lines.append(f"    {coi.qty} x {coi.unit_price:.0f} = {coi.line_total:.0f} сом")
 
-    lines.append(SEP2)
-    lines.append(f"  ИТОГО:  {order.total_amount:.0f} сом")
-    pm = "Наличные" if order.payment_method == "cash" else "Карта"
-    lines.append(f"  Оплата: {pm}")
     lines.append(SEP)
-    lines.append("        Спасибо за визит!")
+    pm = "Наличные" if order.payment_method == "cash" else "Карта"
+    lines.append(f"{_B}  ИТОГО: {order.total_amount:.0f} сом{_B_}")
+    lines.append(f"  Оплата: {pm}")
+    lines.append(SEP2)
+    lines.append("      Спасибо за визит!")
     lines.append("")
 
     PrintJob.objects.create(

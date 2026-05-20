@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static i18n_attrs %}
 {% block img %}
   <link rel="icon" type="image/jpg" sizes="32x32" href="{% static 'mini_logo.jpg' %}">
   <link rel="icon" type="image/jpg" sizes="16x16" href="{% static 'mini_logo.jpg' %}">
   <link rel="apple-touch-icon" href="{{ branch.cover_photo.url }}' %}">
   <link rel="shortcut icon" href="{{ branch.cover_photo.url }}">
 {% endblock img %}
-{% block title %}{{ restaurant.name_ru|default:restaurant.name_ru }} — Санжи{% endblock %}
+{% block title %}{% t restaurant 'name' %} — Санжи{% endblock %}
 
 {% block content %}
 <style>
@@ -293,14 +293,16 @@
       </div>
       
       <div>
+        {% t restaurant 'name' as rest_name %}
+        {% t restaurant 'about' as rest_about %}
         {% if restaurant.logo %}
-        <img src="{{ restaurant.logo.url }}" alt="{{ restaurant.name_ru }}"
+        <img src="{{ restaurant.logo.url }}" alt="{{ rest_name }}"
              style="width:64px;height:64px;border-radius:16px;object-fit:cover;
                     border:2px solid rgba(2,6,23,.08);margin-bottom:10px;display:block">
         {% endif %}
-        <h1>{{ restaurant.name_ru }}</h1>
-        {% if restaurant.about_ru %}
-        <p>{{ restaurant.about_ru|truncatechars:120 }}</p>
+        <h1>{{ rest_name }}</h1>
+        {% if rest_about %}
+        <p>{{ rest_about|truncatechars:120 }}</p>
         {% endif %}
       </div>
 
@@ -396,11 +398,12 @@
 
   <section class="grid" id="branchesGrid">
     {% for b in branches %}
-      <a class="card branch-card" data-name="{{ b.name_ru|default:b.name_ru|default:'' }} {{ b.address|default:'' }} {{ b.phone|default:'' }}"
+      {% t b 'name' as b_name %}
+      <a class="card branch-card" data-name="{{ b_name|default:'' }} {{ b.address|default:'' }} {{ b.phone|default:'' }}"
          href="{% url 'public_site:restaurant_branch_menu' restaurant.slug b.id %}">
         <div class="cover">
           {% if b.cover_photo %}
-            <img src="{{ b.cover_photo.url }}" alt="{{ b.name_ru|default:b.name_ru }}" loading="lazy" decoding="async">
+            <img src="{{ b.cover_photo.url }}" alt="{{ b_name }}" loading="lazy" decoding="async">
           {% else %}
             {# без фото — просто градиент #}
           {% endif %}
@@ -408,7 +411,7 @@
 
         <div class="card-body">
           <div class="title-row">
-            <div class="branch-name">{{ b.name_ru|default:b.name_ru }}</div>
+            <div class="branch-name">{{ b_name }}</div>
             {% if b.is_open_24h %}
               <span class="pill green">24/7</span>
             {% endif %}

@@ -1,0 +1,204 @@
+# English translations for Webordo
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: en\n"
+
+msgid "Webordo — Цифровая экосистема Кыргызстана"
+msgstr "Webordo — Digital Ecosystem of Kyrgyzstan"
+
+msgid "🇰🇬 Цифровая экосистема Кыргызстана"
+msgstr "🇰🇬 Digital Ecosystem of Kyrgyzstan"
+
+msgid "Всё в одном —"
+msgstr "All in one —"
+
+msgid "Рестораны, магазины, отели, аптеки — в единой платформе Кыргызстана. QR-заказы, онлайн-бронирование и доставка."
+msgstr "Restaurants, shops, hotels, pharmacies — on Kyrgyzstan's unified platform. QR orders, online booking and delivery."
+
+msgid "🚀 Открыть платформу"
+msgstr "🚀 Open Platform"
+
+msgid "🍽️ Еда"
+msgstr "🍽️ Food"
+
+msgid "🛍️ Магазины"
+msgstr "🛍️ Shops"
+
+msgid "🛒 Рынки"
+msgstr "🛒 Markets"
+
+msgid "🏨 Отели"
+msgstr "🏨 Hotels"
+
+msgid "🏥 Аптеки"
+msgstr "🏥 Pharmacies"
+
+msgid "✂️ Барбершоп"
+msgstr "✂️ Barbershop"
+
+msgid "⚡ Услуги"
+msgstr "⚡ Services"
+
+msgid "Еда и напитки"
+msgstr "Food & Drinks"
+
+msgid "Еда"
+msgstr "Food"
+
+msgid "Все заведения →"
+msgstr "All places →"
+
+msgid "● Открыто"
+msgstr "● Open"
+
+msgid "● Закрыто"
+msgstr "● Closed"
+
+msgid "🚚 Доставка"
+msgstr "🚚 Delivery"
+
+msgid "🥡 Самовывоз"
+msgstr "🥡 Takeaway"
+
+msgid "🏪 Самовывоз"
+msgstr "🏪 Takeaway"
+
+msgid "Открыть меню →"
+msgstr "Open menu →"
+
+msgid "Перейти →"
+msgstr "Go →"
+
+msgid "Товары"
+msgstr "Products"
+
+msgid "Все магазины →"
+msgstr "All shops →"
+
+msgid "Профессиональные услуги"
+msgstr "Professional Services"
+
+msgid "Услуги"
+msgstr "Services"
+
+msgid "Юридические"
+msgstr "Legal"
+
+msgid "Консультации и услуги юристов"
+msgstr "Legal consultations and services"
+
+msgid "Все →"
+msgstr "All →"
+
+msgid "Эко-проекты"
+msgstr "Eco Projects"
+
+msgid "Вывоз мусора, озеленение, переработка"
+msgstr "Waste removal, landscaping, recycling"
+
+msgid "Рынки"
+msgstr "Markets"
+
+msgid "Базары и торговля оптом"
+msgstr "Bazaars and wholesale trade"
+
+msgid "Отели"
+msgstr "Hotels"
+
+msgid "Бронирование номеров"
+msgstr "Room booking"
+
+msgid "Аптеки"
+msgstr "Pharmacies"
+
+msgid "Лекарства и здоровье"
+msgstr "Medicines & Health"
+
+msgid "IT Агентства"
+msgstr "IT Agencies"
+
+msgid "Разработка, дизайн, AI, маркетинг"
+msgstr "Development, design, AI, marketing"
+
+msgid "Барбершопы"
+msgstr "Barbershops"
+
+msgid "Онлайн-запись к мастеру"
+msgstr "Online booking"
+
+msgid "Бронирование кабинок"
+msgstr "Room reservations"
+
+msgid "бронирование"
+msgstr "booking"
+
+msgid "🛏 Проживание"
+msgstr "🛏 Stay"
+
+msgid "💊 Лекарства"
+msgstr "💊 Medicines"
+
+msgid "Добавьте свой бизнес"
+msgstr "Add your business"
+
+msgid "Присоединяйтесь к платформе Webordo — QR-меню, онлайн-заказы и аналитика в одном месте"
+msgstr "Join the Webordo platform — QR menu, online orders and analytics in one place"
+
+msgid "Бизнесов"
+msgstr "Businesses"
+
+msgid "Филиалов"
+msgstr "Branches"
+
+msgid "Категорий"
+msgstr "Categories"
+
+msgid "Города КР"
+msgstr "Cities of KR"
+
+msgid "📍 Мы на карте"
+msgstr "📍 We're on the map"
+
+msgid "Нажмите на точку чтобы открыть"
+msgstr "Click a point to open"
+
+msgid "всего точек"
+msgstr "total points"
+
+msgid "ресторанов"
+msgstr "restaurants"
+
+msgid "магазинов"
+msgstr "shops"
+
+msgid "Все"
+msgstr "All"
+
+msgid "Найти ближайшее"
+msgstr "Find nearest"
+
+msgid "✕ Маршрут"
+msgstr "✕ Route"
+
+msgid "Открыть меню"
+msgstr "Open menu"
+
+msgid "2ГИС"
+msgstr "2GIS"
+
+msgid "кабинок"
+msgstr "rooms"
+
+msgid "Webordo"
+msgstr "Webordo"
+
+msgid "Karaoke"
+msgstr "Karaoke"
+
+msgid "Рестораны"
+msgstr "Restaurants"
+
+msgid "Магазины"
+msgstr "Shops"

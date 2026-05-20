@@ -1437,11 +1437,11 @@ function _showErr(msg) {
       <div class="cm-header-left">
         <div class="cm-avatar">
           {% if branch.cover_photo %}<img src="{{ branch.cover_photo.url }}" alt="">
-          {% else %}{{ branch.name_ru|first }}{% endif %}
+          {% else %}{% t branch 'name' as branch_name_t %}{{ branch_name_t|first }}{% endif %}
         </div>
         <div>
           <div class="cm-title">Корзина</div>
-          <div class="cm-branch">{{ branch.name_ru }}{% if branch.address %} · {{ branch.address }}{% endif %}</div>
+          <div class="cm-branch">{% t branch 'name' %}{% if branch.address %} · {{ branch.address }}{% endif %}</div>
         </div>
       </div>
       <button class="cm-close" onclick="closeCartModal()" aria-label="Закрыть">✕</button>

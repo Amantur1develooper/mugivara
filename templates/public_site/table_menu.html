@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load i18n i18n_attrs %}
 
-{% block title %}{{ branch.name_ru }} — Меню · Стол {{ place.title }}{% endblock %}
+{% block title %}{% t branch 'name' %} — Меню · Стол {{ place.title }}{% endblock %}
 {% block cta %}{% endblock %}
 {% block footer %}{% endblock %}
 
@@ -439,7 +439,7 @@
   <div class="tm-topbar-inner">
     <div class="tm-place-info">
       <div class="tm-place-name">🪑 {{ place.title }}</div>
-      <div class="tm-branch-name">{{ branch.name_ru }}{% if branch.address %} · {{ branch.address }}{% endif %}</div>
+      <div class="tm-branch-name">{% t branch 'name' %}{% if branch.address %} · {{ branch.address }}{% endif %}</div>
     </div>
     <button class="tm-call-btn" id="callWaiterBtn" type="button">
       🔔 Официант

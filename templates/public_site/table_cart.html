@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n i18n_attrs %}
 
-{% block title %}Корзина · {{ place.title }} · {{ branch.name_ru }}{% endblock %}
+{% block title %}Корзина · {{ place.title }} · {% t branch 'name' %}{% endblock %}
 {% block cta %}{% endblock %}
 {% block footer %}{% endblock %}
 
@@ -140,7 +140,7 @@
     <a href="{% url 'public_site:table_menu' token %}" class="tc-back">←</a>
     <div>
       <div class="tc-title">Ваш заказ</div>
-      <div class="tc-subtitle">{{ branch.name_ru }} · 🪑 {{ place.title }}</div>
+      <div class="tc-subtitle">{% t branch 'name' %} · 🪑 {{ place.title }}</div>
     </div>
   </div>
 
@@ -161,7 +161,7 @@
       {% for r in rows %}
       <div class="tc-row" data-row="{{ r.branch_item.id }}">
         <div style="flex:1;min-width:0;">
-          <div class="tc-row-name">{{ r.branch_item.item.name_ru }}</div>
+          <div class="tc-row-name">{% t r.branch_item.item 'name' %}</div>
           <div class="tc-row-price">{{ r.branch_item.price }} сом / шт.</div>
         </div>
         <div class="tc-row-controls">

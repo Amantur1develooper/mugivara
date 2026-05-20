@@ -102,6 +102,7 @@
       font-family: 'Geologica', sans-serif; transition: all 0.2s;
     }
     .wb-lang-btn:hover { background: var(--card2); color: var(--text); }
+    .wb-lang-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
     /* ── DROPDOWN ── */
     .wb-dd { position: relative; }
@@ -400,17 +401,17 @@
       <form action="{% url 'set_language' %}" method="post">
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ request.path }}">
-        <button class="wb-lang-btn" type="submit" name="language" value="ru">RU</button>
+        <button class="wb-lang-btn{% if LANGUAGE_CODE == 'ru' %} active{% endif %}" type="submit" name="language" value="ru">RU</button>
       </form>
       <form action="{% url 'set_language' %}" method="post">
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ request.path }}">
-        <button class="wb-lang-btn" type="submit" name="language" value="ky">KY</button>
+        <button class="wb-lang-btn{% if LANGUAGE_CODE == 'ky' %} active{% endif %}" type="submit" name="language" value="ky">KY</button>
       </form>
       <form action="{% url 'set_language' %}" method="post">
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ request.path }}">
-        <button class="wb-lang-btn" type="submit" name="language" value="en">EN</button>
+        <button class="wb-lang-btn{% if LANGUAGE_CODE == 'en' %} active{% endif %}" type="submit" name="language" value="en">EN</button>
       </form>
     </div>
 
@@ -457,18 +458,18 @@
       </a>
 
       <div class="wb-drawer-langs">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;width:100%;">Язык</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px;width:100%;">Язык / Тил / Language</div>
         <form action="{% url 'set_language' %}" method="post">
           {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
-          <button class="wb-lang-btn" type="submit" name="language" value="ru">RU</button>
+          <button class="wb-lang-btn{% if LANGUAGE_CODE == 'ru' %} active{% endif %}" type="submit" name="language" value="ru">RU</button>
         </form>
         <form action="{% url 'set_language' %}" method="post">
           {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
-          <button class="wb-lang-btn" type="submit" name="language" value="ky">KY</button>
+          <button class="wb-lang-btn{% if LANGUAGE_CODE == 'ky' %} active{% endif %}" type="submit" name="language" value="ky">KY</button>
         </form>
         <form action="{% url 'set_language' %}" method="post">
           {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
-          <button class="wb-lang-btn" type="submit" name="language" value="en">EN</button>
+          <button class="wb-lang-btn{% if LANGUAGE_CODE == 'en' %} active{% endif %}" type="submit" name="language" value="en">EN</button>
         </form>
       </div>
     </div>

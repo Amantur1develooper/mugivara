@@ -1,10 +1,10 @@
-{% load i18n %}
+{% load i18n i18n_attrs %}
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="{{ LANGUAGE_CODE|default:'ru' }}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>{{ branch.name_ru }} — Столы</title>
+  <title>{% t branch 'name' %} — Столы</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -227,7 +227,7 @@
     {% else %}🍽{% endif %}
   </div>
   <div class="hdr-info">
-    <div class="hdr-name">{{ branch.name_ru }}</div>
+    <div class="hdr-name">{% t branch 'name' %}</div>
     <div class="hdr-sub" id="updTime">—</div>
   </div>
   <button class="hdr-refresh" onclick="location.reload()" title="Обновить">🔄</button>
