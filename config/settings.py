@@ -192,6 +192,19 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
 
+# ── Сессии и куки (Safari / iOS / Mi Browser совместимость) ──────────────────
+SESSION_ENGINE        = "django.contrib.sessions.backends.db"
+SESSION_COOKIE_AGE    = 60 * 60 * 24 * 30   # 30 дней
+SESSION_SAVE_EVERY_REQUEST = True             # сохраняем даже если ничего не менялось
+SESSION_COOKIE_HTTPONLY  = True
+SESSION_COOKIE_SAMESITE  = "Lax"             # работает с Safari ITP
+SESSION_COOKIE_SECURE    = True              # только HTTPS (сайт работает по https)
+
+# CSRF
+CSRF_COOKIE_SAMESITE  = "Lax"
+CSRF_COOKIE_SECURE    = True
+CSRF_TRUSTED_ORIGINS  = ["https://webordo.kg", "https://www.webordo.kg"]
+
 
 
 
