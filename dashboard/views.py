@@ -1713,7 +1713,7 @@ def pos_order_create(request, branch_id):
             from orders.models import Order as _Order
             _order = _Order.objects.get(id=_order_id)
             if _ex_order:
-                create_print_jobs(_order, new_order_item_ids=_new_oi_ids, new_cx_item_ids=[])
+                create_print_jobs(_order, new_item_ids=_new_oi_ids, new_cx_ids=[])
             else:
                 create_print_jobs(_order)
         except Exception as e:

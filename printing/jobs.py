@@ -1,79 +1,128 @@
 """
 Создание заданий на печать при оформлении заказа.
-Вызывается из dashboard/views.py после сохранения Order.
+Вызывается через transaction.on_commit после сохранения Order.
+
+Символы \x02 / \x03 — плейсхолдеры bold-on / bold-off.
+PostgreSQL не принимает NUL-байт (\x00), поэтому реальные ESC/POS
+коды подставляет агент непосредственно перед отправкой на принтер.
 """
 from collections import defaultdict
 from django.utils import timezone
 
 from .models import PrintJob, RestaurantPrintConfig
 
-# ESC/POS inline bold — NUL byte (0x00) нельзя хранить в PostgreSQL text,
-# поэтому используем безопасные плейсхолдеры; агент заменит их перед печатью
-_B  = "\x02"   # STX — плейсхолдер "bold on"
-_B_ = "\x03"   # ETX — плейсхолдер "bold off"
 
-SEP  = "-" * 40
-SEP2 = "=" * 40
+# ── Вспомогательные константы ────────────────────────────────────────────────
+
+SEP  = "-" * 32
+SEP2 = "=" * 32
+
+# Плейсхолдеры жирного текста (агент заменит на ESC E 1 / ESC E 0)
+_BOLD  = "\x02"
+_RESET = "\x03"
 
 
-def _build_ticket(order, items_by_group, group):
-    """Кухонный тикет — компактный, читаемый формат."""
+# ── Построение текста тикета ─────────────────────────────────────────────────
+
+def _ticket(order, items):
+    """
+    Кухонный тикет.  items = [(name, qty), ...]
+    """
     now = timezone.localtime()
-    lines = []
 
-    lines.append(SEP)
-
-    # Строка 1: номер заказа + время
-    lines.append(f"{_B}  ЗАКАЗ #{order.id}  {now.strftime('%d.%m  %H:%M')}{_B_}")
-
-    # Строка 2: тип + стол (через разделитель если оба есть)
     parts = [order.get_type_display()]
     if order.table_place:
-        parts.append(f"Стол: {order.table_place.title}")
-    lines.append("  " + "  |  ".join(parts))
+        parts.append(f"Стол {order.table_place.title}")
+    info = "  |  ".join(parts)
 
+    lines = [
+        SEP,
+        f"{_BOLD}  ЗАКАЗ #{order.id}   {now.strftime('%d.%m  %H:%M')}{_RESET}",
+        f"  {info}",
+    ]
     if order.customer_name:
         lines.append(f"  Гость: {order.customer_name}")
     if order.comment:
         lines.append(f"  ! {order.comment}")
 
     lines.append(SEP)
-
-    for name, qty in items_by_group:
+    for name, qty in items:
         lines.append(f"  {qty}x  {name}")
-
     lines.append(SEP)
     lines.append("")
 
     return "\n".join(lines)
 
 
-def create_print_jobs(order, new_order_item_ids=None, new_cx_item_ids=None):
-    """
-    Вызывается после создания/дополнения заказа.
-    Группирует позиции по printer_group → создаёт PrintJob на каждую группу.
+def _cancel_ticket(order, item_name, item_qty):
+    now = timezone.localtime()
+    lines = [
+        SEP2,
+        f"{_BOLD}  !! ОТМЕНА !!{_RESET}",
+        f"  Заказ #{order.id}   {now.strftime('%d.%m  %H:%M')}",
+    ]
+    if order.table_place:
+        lines.append(f"  Стол: {order.table_place.title}")
+    lines += [SEP2, f"  ОТМЕНЕНО: {item_qty}x  {item_name}", SEP2, ""]
+    return "\n".join(lines)
 
-    new_order_item_ids / new_cx_item_ids — если переданы, печатаем ТОЛЬКО эти
-    позиции (дозаказ к уже открытому столу). Иначе — все позиции заказа.
-    """
-    restaurant = order.branch.restaurant
-    print(f"PRINT DEBUG: order={order.id} restaurant={restaurant.name_ru} branch={order.branch.name_ru}")
 
-    # Проверяем что печать включена
-    try:
-        cfg = RestaurantPrintConfig.objects.get(restaurant=restaurant, enabled=True)
-        print(f"PRINT DEBUG: config found, enabled=True")
-    except RestaurantPrintConfig.DoesNotExist:
-        print(f"PRINT DEBUG: RestaurantPrintConfig не найден или enabled=False для '{restaurant.name_ru}' — печать пропущена")
-        return
+def _receipt_ticket(order, restaurant):
+    now = timezone.localtime()
+    pm  = "Наличные" if order.payment_method == "cash" else "Карта"
+    lines = [
+        SEP2,
+        f"  {restaurant.name_ru}  |  {order.branch.name_ru}",
+        SEP2,
+        f"{_BOLD}  ЧЕК #{order.id}{_RESET}   {now.strftime('%d.%m.%Y  %H:%M')}",
+    ]
+    if order.table_place:
+        lines.append(f"  Стол: {order.table_place.title}")
+    if order.customer_name:
+        lines.append(f"  Гость: {order.customer_name}")
+    lines.append(SEP)
 
-    from orders.models import OrderItem, ConstructorOrderItem
+    for oi in order.items.select_related("item").all():
+        lines.append(f"  {oi.item.name_ru}")
+        lines.append(f"    {oi.qty} x {oi.price_snapshot:.0f} = {oi.line_total:.0f} сом")
+
+    for coi in order.constructor_items.all():
+        lines.append(f"  {coi.constructor_name_snapshot or 'Конструктор'}")
+        lines.append(f"    {coi.qty} x {coi.unit_price:.0f} = {coi.line_total:.0f} сом")
+
+    lines += [
+        SEP,
+        f"{_BOLD}  ИТОГО: {order.total_amount:.0f} сом{_RESET}",
+        f"  Оплата: {pm}",
+        SEP2,
+        "      Спасибо за визит!",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+# ── Вспомогательные функции ──────────────────────────────────────────────────
+
+def _print_enabled(restaurant):
+    """True если для ресторана включена облачная печать."""
+    return RestaurantPrintConfig.objects.filter(
+        restaurant=restaurant, enabled=True
+    ).exists()
+
+
+def _default_group(restaurant):
+    """Дефолтная группа принтеров: сначала ищем 'kitchen', потом первую доступную."""
+    return (
+        restaurant.printer_groups.filter(name="kitchen").first()
+        or restaurant.printer_groups.first()
+    )
+
+
+def _item_group_map(branch):
+    """Возвращает {item_id: PrinterGroup} по настройкам ветки."""
     from catalog.models import BranchCategoryItem
-
-    # Строим маппинг item_id → printer_group
-    # Приоритет: принтер блюда > принтер категории
-    branch = order.branch
-    bci_qs = (
+    mapping = {}
+    qs = (
         BranchCategoryItem.objects
         .filter(branch_category__branch=branch)
         .select_related(
@@ -82,91 +131,95 @@ def create_print_jobs(order, new_order_item_ids=None, new_cx_item_ids=None):
             "branch_item__item",
         )
     )
-    item_to_group = {}
-    for bci in bci_qs:
-        group = bci.printer_group or bci.branch_category.printer_group
-        if group:
-            item_to_group[bci.branch_item.item_id] = group
+    for bci in qs:
+        grp = bci.printer_group or bci.branch_category.printer_group
+        if grp:
+            mapping[bci.branch_item.item_id] = grp
+    return mapping
 
-    # Выбираем только новые позиции (если указаны ID) или все
+
+# ── Публичные функции ────────────────────────────────────────────────────────
+
+def create_print_jobs(order, new_item_ids=None, new_cx_ids=None):
+    """
+    Создаёт PrintJob для каждой группы принтеров по позициям заказа.
+
+    new_item_ids  — список ID OrderItem, которые нужно напечатать.
+                    None = все позиции заказа (новый заказ).
+    new_cx_ids    — список ID ConstructorOrderItem аналогично.
+    """
+    restaurant = order.branch.restaurant
+
+    if not _print_enabled(restaurant):
+        return
+
+    item_group = _item_group_map(order.branch)
+
+    # Выбираем нужные позиции
     oi_qs = order.items.select_related("item")
-    if new_order_item_ids is not None:
-        oi_qs = oi_qs.filter(id__in=new_order_item_ids)
+    if new_item_ids is not None:
+        oi_qs = oi_qs.filter(id__in=new_item_ids)
 
     cx_qs = order.constructor_items.all()
-    if new_cx_item_ids is not None:
-        cx_qs = cx_qs.filter(id__in=new_cx_item_ids)
+    if new_cx_ids is not None:
+        cx_qs = cx_qs.filter(id__in=new_cx_ids)
 
-    # Группируем позиции
-    groups: dict = defaultdict(list)  # PrinterGroup → [(name, qty)]
-    ungrouped = []
+    # Группируем по принтерам
+    by_group  = defaultdict(list)
+    no_group  = []
 
     for oi in oi_qs:
-        group = item_to_group.get(oi.item_id)
-        if group:
-            groups[group].append((oi.item.name_ru, oi.qty))
+        grp = item_group.get(oi.item_id)
+        if grp:
+            by_group[grp].append((oi.item.name_ru, oi.qty))
         else:
-            ungrouped.append((oi.item.name_ru, oi.qty))
+            no_group.append((oi.item.name_ru, oi.qty))
 
     for coi in cx_qs:
-        name = coi.constructor_name_snapshot or "Конструктор"
-        ungrouped.append((name, coi.qty))
+        no_group.append((coi.constructor_name_snapshot or "Конструктор", coi.qty))
 
-    # Создаём PrintJob для каждой группы
-    jobs = []
-    for group, items in groups.items():
-        content = _build_ticket(order, items, group)
-        jobs.append(PrintJob(
+    # Позиции без группы → дефолтная группа
+    if no_group:
+        default = _default_group(restaurant)
+        if default:
+            by_group[default].extend(no_group)
+
+    if not by_group:
+        return
+
+    PrintJob.objects.bulk_create([
+        PrintJob(
             restaurant=restaurant,
             order_id=order.id,
-            group=group,
-            content=content,
+            group=grp,
+            content=_ticket(order, items),
             status=PrintJob.Status.NEW,
-        ))
-
-    # Позиции без группы — в группу по умолчанию (если есть)
-    print(f"PRINT DEBUG: grouped={len(groups)} ungrouped={len(ungrouped)}")
-    if ungrouped:
-        default_group = (
-            restaurant.printer_groups
-            .filter(name="kitchen")
-            .first()
-            or restaurant.printer_groups.first()
         )
-        print(f"PRINT DEBUG: default_group={default_group}")
-        if default_group:
-            content = _build_ticket(order, ungrouped, default_group)
-            jobs.append(PrintJob(
-                restaurant=restaurant,
-                order_id=order.id,
-                group=default_group,
-                content=content,
-                status=PrintJob.Status.NEW,
-            ))
+        for grp, items in by_group.items()
+    ])
 
-    print(f"PRINT DEBUG: создаётся {len(jobs)} PrintJob(s)")
-    if jobs:
-        PrintJob.objects.bulk_create(jobs)
-        print(f"PRINT DEBUG: PrintJob сохранены в БД ✓")
+
+def _create_job(restaurant, order, group, content):
+    """Создаёт и сохраняет один PrintJob."""
+    PrintJob.objects.create(
+        restaurant=restaurant,
+        order_id=order.id,
+        group=group,
+        content=content,
+        status=PrintJob.Status.NEW,
+    )
 
 
 def create_cancel_job(order, item_name: str, item_qty: int, item_id: int = None):
-    """
-    Печатает тикет ОТМЕНЫ блюда на принтер, назначенный этому блюду/категории.
-    Приоритет: принтер блюда > принтер категории > дефолтная группа.
-    item_id=None означает конструктор — отправляем на дефолтную группу.
-    """
-    from catalog.models import BranchCategoryItem
-
+    """Печатает тикет отмены блюда."""
     restaurant = order.branch.restaurant
-    try:
-        cfg = RestaurantPrintConfig.objects.get(restaurant=restaurant, enabled=True)
-    except RestaurantPrintConfig.DoesNotExist:
+
+    if not _print_enabled(restaurant):
         return
 
-    # Определяем целевую группу принтеров
-    target_group = None
+    target = None
     if item_id:
+        from catalog.models import BranchCategoryItem
         bci = (
             BranchCategoryItem.objects
             .filter(branch_category__branch=order.branch, branch_item__item_id=item_id)
@@ -174,94 +227,32 @@ def create_cancel_job(order, item_name: str, item_qty: int, item_id: int = None)
             .first()
         )
         if bci:
-            target_group = bci.printer_group or bci.branch_category.printer_group
+            target = bci.printer_group or bci.branch_category.printer_group
 
-    if not target_group:
-        # Дефолтная группа (кухня)
-        target_group = (
-            restaurant.printer_groups.filter(name="kitchen").first()
-            or restaurant.printer_groups.first()
-        )
+    if not target:
+        target = _default_group(restaurant)
 
-    if not target_group:
+    if not target:
         return
 
-    now = timezone.localtime()
-    lines = [
-        SEP2,
-        f"{_B}  !! ОТМЕНА !!{_B_}",
-        f"  Заказ #{order.id}   {now.strftime('%d.%m  %H:%M')}",
-    ]
-    if order.table_place:
-        lines.append(f"  Стол: {order.table_place.title}")
-    lines.append(SEP2)
-    lines.append(f"  ОТМЕНЕНО: {item_qty}x  {item_name}")
-    lines.append(SEP2)
-    lines.append("")
-
-    PrintJob.objects.create(
-        restaurant=restaurant,
-        order_id=order.id,
-        group=target_group,
-        content="\n".join(lines),
-        status=PrintJob.Status.NEW,
-    )
+    _create_job(restaurant, order, target, _cancel_ticket(order, item_name, item_qty))
 
 
 def create_receipt_job(order):
-    """
-    Печатает итоговый чек покупателя при закрытии стола/заказа.
-    Принтер берётся из настроек ресторана (receipt_printer_group).
-    Fallback: первая доступная группа.
-    """
+    """Печатает итоговый чек при закрытии стола."""
     restaurant = order.branch.restaurant
+
     try:
-        cfg = (RestaurantPrintConfig.objects
-               .select_related("receipt_printer_group")
-               .get(restaurant=restaurant, enabled=True))
+        cfg = (
+            RestaurantPrintConfig.objects
+            .select_related("receipt_printer_group")
+            .get(restaurant=restaurant, enabled=True)
+        )
     except RestaurantPrintConfig.DoesNotExist:
         return
 
-    # Явно назначенный принтер чеков имеет приоритет
-    group = cfg.receipt_printer_group or restaurant.printer_groups.first()
+    group = cfg.receipt_printer_group or _default_group(restaurant)
     if not group:
         return
 
-    now = timezone.localtime()
-    lines = []
-
-    lines.append(SEP2)
-    lines.append(f"  {restaurant.name_ru}  |  {order.branch.name_ru}")
-    lines.append(SEP2)
-    lines.append(f"{_B}  ЧЕК #{order.id}{_B_}   {now.strftime('%d.%m.%Y  %H:%M')}")
-    if order.table_place:
-        lines.append(f"  Стол: {order.table_place.title}")
-    if order.customer_name:
-        lines.append(f"  Гость: {order.customer_name}")
-    lines.append(SEP)
-
-    for oi in order.items.select_related("item").all():
-        name = oi.item.name_ru
-        lines.append(f"  {name}")
-        lines.append(f"    {oi.qty} x {oi.price_snapshot:.0f} = {oi.line_total:.0f} сом")
-
-    for coi in order.constructor_items.all():
-        name = coi.constructor_name_snapshot or "Конструктор"
-        lines.append(f"  {name}")
-        lines.append(f"    {coi.qty} x {coi.unit_price:.0f} = {coi.line_total:.0f} сом")
-
-    lines.append(SEP)
-    pm = "Наличные" if order.payment_method == "cash" else "Карта"
-    lines.append(f"{_B}  ИТОГО: {order.total_amount:.0f} сом{_B_}")
-    lines.append(f"  Оплата: {pm}")
-    lines.append(SEP2)
-    lines.append("      Спасибо за визит!")
-    lines.append("")
-
-    PrintJob.objects.create(
-        restaurant=restaurant,
-        order_id=order.id,
-        group=group,
-        content="\n".join(lines),
-        status=PrintJob.Status.NEW,
-    )
+    _create_job(restaurant, order, group, _receipt_ticket(order, restaurant))

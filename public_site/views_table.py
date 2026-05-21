@@ -608,7 +608,7 @@ def table_create_order(request, token):
     try:
         from printing.jobs import create_print_jobs
         if existing_order:
-            create_print_jobs(order, new_order_item_ids=new_oi_ids, new_cx_item_ids=new_cx_ids)
+            create_print_jobs(order, new_item_ids=new_oi_ids, new_cx_ids=new_cx_ids)
         else:
             create_print_jobs(order)
     except Exception as e:
