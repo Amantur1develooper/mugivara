@@ -633,7 +633,6 @@ const CX_DATA = {
 };
 
 const ADD_CX_URL = "{% url 'public_site:table_add_constructor' token 0 %}".replace("/0/", "/{id}/");
-const CSRF = () => "{{ csrf_token }}";
 
 let currentCxId = null;
 let selectedMap = {};  // {group_id: [ing_id, ...]}
@@ -758,7 +757,7 @@ document.getElementById("cxAddBtn").addEventListener("click", async () => {
     const url = ADD_CX_URL.replace("{id}", currentCxId);
     const r = await fetch(url, {
       method: "POST", body: fd,
-      headers: { "X-CSRFToken": CSRF() }
+      headers: { "X-CSRFToken": CSRF }
     });
     const d = await r.json();
 
