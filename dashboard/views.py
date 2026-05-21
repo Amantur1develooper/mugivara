@@ -442,18 +442,18 @@ def print_text_windows(printer_name, content):
         win32print.StartDocPrinter(handle, 1, ("Receipt", None, "RAW"))
         win32print.StartPagePrinter(handle)
         ESC      = b"\\x1b"
-        init     = ESC + b"@"         # ESC @ — сброс
-        codepage = ESC + b"t\\x11"    # ESC t 17 — cp866 (кириллица)
-        beep     = b"\\x07"           # BEL
-        bold_on  = ESC + b"E\\x01"    # ESC E 1 — жирный вкл
-        bold_off = ESC + b"E\\x00"    # ESC E 0 — жирный выкл
-        feed     = ESC + b"d\\x04"    # отступ 4 строки
-        cut      = b"\\x1d\\x56\\x00" # GS V 0 — полный отрез
+        init     = ESC + b"@"                   # ESC @ — сброс
+        codepage = ESC + b"t\\x11"              # ESC t 17 — cp866 (кириллица)
+        bold_on  = ESC + b"E\\x01"              # ESC E 1 — жирный вкл
+        bold_off = ESC + b"E\\x00"              # ESC E 0 — жирный выкл
+        feed     = ESC + b"d\\x04"              # отступ 4 строки
+        cut      = b"\\x1d\\x56\\x00"           # GS V 0 — полный отрез
+        beep     = b"\\x07\\x07\\x07"           # BEL x3 — звук после обрезки
         # Заменяем плейсхолдеры STX/ETX на реальные ESC/POS команды
         content = content.replace("\\x02", bold_on.decode("latin-1"))
         content = content.replace("\\x03", bold_off.decode("latin-1"))
         data = content.encode("cp866", errors="replace")
-        win32print.WritePrinter(handle, init + codepage + beep + data + feed + cut)
+        win32print.WritePrinter(handle, init + codepage + data + feed + cut + beep)
         win32print.EndPagePrinter(handle)
     finally:
         win32print.EndDocPrinter(handle)
