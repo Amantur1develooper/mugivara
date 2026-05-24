@@ -31,6 +31,7 @@ urlpatterns = [
     path("branch/<int:branch_id>/categories/add/",    views.category_add,    name="category_add"),
     path("branch/<int:branch_id>/categories/create/", views.category_create, name="category_create"),
 
+    path("category/<int:cat_id>/edit/",   views.category_edit,    name="category_edit"),
     path("category/<int:bc_id>/toggle/",  views.category_toggle,  name="category_toggle"),
     path("category/<int:bc_id>/reorder/", views.category_reorder, name="category_reorder"),
     path("category/<int:bc_id>/remove/",  views.category_remove,  name="category_remove"),

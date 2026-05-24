@@ -1355,6 +1355,26 @@ def category_create(request, branch_id):
 
 @require_POST
 @login_required(login_url="dashboard:login")
+def category_edit(request, cat_id):
+    """Edit name fields of a Category (must belong to a restaurant the user can access)."""
+    cat = get_object_or_404(Category, id=cat_id)
+    if not Membership.objects.filter(user=request.user, restaurant=cat.menu_set.restaurant).exists():
+        return JsonResponse({"ok": False}, status=403)
+
+    name_ru = request.POST.get("name_ru", "").strip()
+    if not name_ru:
+        return JsonResponse({"ok": False, "error": "Название не может быть пустым"})
+
+    cat.name_ru = name_ru
+    cat.name_ky = request.POST.get("name_ky", "").strip()
+    cat.name_en = request.POST.get("name_en", "").strip()
+    cat.save(update_fields=["name_ru", "name_ky", "name_en", "updated_at"])
+
+    return JsonResponse({"ok": True, "name_ru": cat.name_ru, "name_ky": cat.name_ky, "name_en": cat.name_en})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
 def category_toggle(request, bc_id):
     bc = get_object_or_404(BranchCategory, id=bc_id)
     if not _has_branch_access(request.user, bc.branch):

@@ -224,6 +224,35 @@
   </div>
 </div>
 
+{# ── РЕДАКТИРОВАТЬ КАТЕГОРИЮ — модал ── #}
+<div id="editModal" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
+  <div style="background:var(--card);border-radius:20px;padding:28px 24px;width:min(420px,94vw);box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <div style="font-size:15px;font-weight:700;margin-bottom:18px">Редактировать категорию</div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Название (рус) *</label>
+      <input id="editCatNameRu" type="text"
+             style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Название (кырг)</label>
+      <input id="editCatNameKy" type="text"
+             style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:20px">
+      <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Название (eng)</label>
+      <input id="editCatNameEn" type="text"
+             style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;box-sizing:border-box">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button onclick="closeEditModal()" style="flex:1;padding:11px;border-radius:12px;border:1.5px solid var(--border);background:none;cursor:pointer;font-size:14px;color:var(--text2)">Отмена</button>
+      <button onclick="submitEditCategory()" id="editCatBtn"
+              style="flex:2;padding:11px;border-radius:12px;border:none;background:var(--accent);color:white;font-size:14px;font-weight:700;cursor:pointer">
+        Сохранить
+      </button>
+    </div>
+  </div>
+</div>
+
 {# ── ДОСТУПНЫЕ КАТЕГОРИИ ── #}
 <div class="db-card avail-section">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
@@ -267,7 +296,11 @@
 <ul class="cat-list" id="catList">
 {% for bc in categories %}
 <li class="cat-row {% if not bc.is_active %}inactive{% endif %}"
-    draggable="true" data-id="{{ bc.id }}">
+    draggable="true" data-id="{{ bc.id }}"
+    data-cat-id="{{ bc.category.id }}"
+    data-name-ru="{{ bc.category.name_ru }}"
+    data-name-ky="{{ bc.category.name_ky }}"
+    data-name-en="{{ bc.category.name_en }}">
   <span class="drag-handle" title="Перетащить">⠿</span>
   <div class="pos-badge pos-num">{{ forloop.counter }}</div>
   <div style="flex:1;min-width:0">
@@ -288,6 +321,10 @@
     <button class="arrow-btn" onclick="moveUp(this)" title="Выше">▲</button>
     <button class="arrow-btn" onclick="moveDown(this)" title="Ниже">▼</button>
   </div>
+  <button class="del-btn" onclick="openEditModal(this)" title="Редактировать"
+          style="color:var(--muted);font-size:15px;background:none;border:none;cursor:pointer;padding:5px;border-radius:8px;flex-shrink:0;transition:color .15s,background .15s"
+          onmouseover="this.style.color='var(--accent)';this.style.background='rgba(255,77,28,.08)'"
+          onmouseout="this.style.color='var(--muted)';this.style.background='none'">✏️</button>
   <button class="toggle-btn {% if bc.is_active %}on{% else %}off{% endif %}"
           data-id="{{ bc.id }}" onclick="toggleCat(this)"
           title="{% if bc.is_active %}Видна в меню{% else %}Скрыта{% endif %}">
@@ -312,6 +349,7 @@
 <div id="js-urls"
      data-add-url="{% url 'dashboard:category_add' branch.id %}"
      data-create-url="{% url 'dashboard:category_create' branch.id %}"
+     data-edit-url="{% url 'dashboard:category_edit' 99999 %}"
      data-toggle-url="{% url 'dashboard:category_toggle' 99999 %}"
      data-reorder-url="{% url 'dashboard:category_reorder' 99999 %}"
      data-remove-url="{% url 'dashboard:category_remove' 99999 %}"
@@ -323,6 +361,7 @@ const CSRF       = '{{ csrf_token }}';
 const _u         = document.getElementById('js-urls').dataset;
 const addUrl     = _u.addUrl;
 const createUrl  = _u.createUrl;
+const editUrl    = id => _u.editUrl.replace('99999', id);
 const toggleUrl  = id => _u.toggleUrl.replace('99999', id);
 const reorderUrl = id => _u.reorderUrl.replace('99999', id);
 const removeUrl  = id => _u.removeUrl.replace('99999', id);
@@ -482,6 +521,10 @@ function addCategory(chip) {
     li.className = 'cat-row';
     li.draggable = true;
     li.dataset.id = data.bc_id;
+    li.dataset.catId = data.cat_id;
+    li.dataset.nameRu = data.name;
+    li.dataset.nameKy = '';
+    li.dataset.nameEn = '';
     li.innerHTML = `
       <span class="drag-handle" title="Перетащить">⠿</span>
       <div class="pos-badge pos-num"></div>
@@ -493,6 +536,7 @@ function addCategory(chip) {
         <button class="arrow-btn" onclick="moveUp(this)" title="Выше">▲</button>
         <button class="arrow-btn" onclick="moveDown(this)" title="Ниже">▼</button>
       </div>
+      <button onclick="openEditModal(this)" title="Редактировать" style="color:var(--muted);font-size:15px;background:none;border:none;cursor:pointer;padding:5px;border-radius:8px;flex-shrink:0">✏️</button>
       <button class="toggle-btn on" data-id="${data.bc_id}" onclick="toggleCat(this)" title="Видна в меню"></button>
       <button class="del-btn" data-id="${data.bc_id}" data-name="${data.name}" onclick="removeCat(this)" title="Убрать из филиала">✕</button>
     `;
@@ -543,7 +587,7 @@ document.getElementById('createModal').addEventListener('click', function(e) {
   if (e.target === this) closeCreateModal();
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeCreateModal();
+  if (e.key === 'Escape') { closeCreateModal(); closeEditModal(); }
 });
 
 async function submitCreateCategory() {
@@ -575,6 +619,10 @@ async function submitCreateCategory() {
     li.className = 'cat-row';
     li.draggable = true;
     li.dataset.id = data.bc_id;
+    li.dataset.catId = data.cat_id;
+    li.dataset.nameRu = data.name;
+    li.dataset.nameKy = '';
+    li.dataset.nameEn = '';
     li.innerHTML = `
       <span class="drag-handle" title="Перетащить">⠿</span>
       <div class="pos-badge pos-num"></div>
@@ -586,6 +634,7 @@ async function submitCreateCategory() {
         <button class="arrow-btn" onclick="moveUp(this)" title="Выше">▲</button>
         <button class="arrow-btn" onclick="moveDown(this)" title="Ниже">▼</button>
       </div>
+      <button onclick="openEditModal(this)" title="Редактировать" style="color:var(--muted);font-size:15px;background:none;border:none;cursor:pointer;padding:5px;border-radius:8px;flex-shrink:0">✏️</button>
       <button class="toggle-btn on" data-id="${data.bc_id}" onclick="toggleCat(this)" title="Видна в меню"></button>
       <button class="del-btn" data-id="${data.bc_id}" data-name="${data.name}" onclick="removeCat(this)" title="Убрать из филиала">✕</button>
     `;
@@ -597,6 +646,62 @@ async function submitCreateCategory() {
     showToast('Ошибка сети', 'err');
   } finally {
     btn.disabled = false; btn.textContent = 'Создать и добавить';
+  }
+}
+
+/* ── Редактировать категорию ── */
+let _editRow = null;
+function openEditModal(btn) {
+  _editRow = btn.closest('.cat-row');
+  document.getElementById('editCatNameRu').value = _editRow.dataset.nameRu || '';
+  document.getElementById('editCatNameKy').value = _editRow.dataset.nameKy || '';
+  document.getElementById('editCatNameEn').value = _editRow.dataset.nameEn || '';
+  const m = document.getElementById('editModal');
+  m.style.display = 'flex';
+  setTimeout(() => document.getElementById('editCatNameRu').focus(), 50);
+}
+function closeEditModal() {
+  document.getElementById('editModal').style.display = 'none';
+  _editRow = null;
+}
+document.getElementById('editModal').addEventListener('click', function(e) {
+  if (e.target === this) closeEditModal();
+});
+
+async function submitEditCategory() {
+  const nameRu = document.getElementById('editCatNameRu').value.trim();
+  if (!nameRu) { document.getElementById('editCatNameRu').focus(); return; }
+  if (!_editRow) return;
+
+  const catId = _editRow.dataset.catId;
+  const btn = document.getElementById('editCatBtn');
+  btn.disabled = true; btn.textContent = 'Сохраняем...';
+
+  const body = new FormData();
+  body.append('name_ru', nameRu);
+  body.append('name_ky', document.getElementById('editCatNameKy').value.trim());
+  body.append('name_en', document.getElementById('editCatNameEn').value.trim());
+  body.append('csrfmiddlewaretoken', CSRF);
+
+  try {
+    const r = await fetch(editUrl(catId), { method: 'POST', body });
+    const data = await r.json();
+    if (!data.ok) { showToast(data.error || 'Ошибка', 'err'); return; }
+
+    // Обновить данные в DOM
+    _editRow.dataset.nameRu = data.name_ru;
+    _editRow.dataset.nameKy = data.name_ky;
+    _editRow.dataset.nameEn = data.name_en;
+    _editRow.querySelector('.cat-name').textContent = data.name_ru;
+    const delBtn = _editRow.querySelector('.del-btn[data-name]');
+    if (delBtn) delBtn.dataset.name = data.name_ru;
+
+    closeEditModal();
+    showToast(`«${data.name_ru}» сохранена ✓`);
+  } catch (err) {
+    showToast('Ошибка сети', 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Сохранить';
   }
 }
 
