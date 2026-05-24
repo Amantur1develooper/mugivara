@@ -1307,6 +1307,54 @@ def category_add(request, branch_id):
 
 @require_POST
 @login_required(login_url="dashboard:login")
+def category_create(request, branch_id):
+    """Create a brand-new Category for the restaurant and add it to the branch."""
+    branch = get_object_or_404(Branch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return JsonResponse({"ok": False}, status=403)
+
+    name_ru = request.POST.get("name_ru", "").strip()
+    if not name_ru:
+        return JsonResponse({"ok": False, "error": "Введите название категории"})
+
+    name_ky = request.POST.get("name_ky", "").strip()
+    name_en = request.POST.get("name_en", "").strip()
+
+    menu_set = (
+        MenuSet.objects.filter(restaurant=branch.restaurant, is_active=True)
+        .order_by("id")
+        .first()
+    )
+    if not menu_set:
+        return JsonResponse({"ok": False, "error": "У ресторана нет ни одного меню-сета"})
+
+    cat = Category.objects.create(
+        menu_set=menu_set,
+        name_ru=name_ru,
+        name_ky=name_ky,
+        name_en=name_en,
+    )
+
+    max_order = BranchCategory.objects.filter(branch=branch).aggregate(m=Max("sort_order"))["m"] or 0
+    bc = BranchCategory.objects.create(
+        branch=branch,
+        category=cat,
+        sort_order=max_order + 10,
+        is_active=True,
+    )
+
+    return JsonResponse({
+        "ok": True,
+        "bc_id": bc.id,
+        "cat_id": cat.id,
+        "name": cat.name_ru,
+        "menu_set": menu_set.name,
+        "sort_order": bc.sort_order,
+    })
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
 def category_toggle(request, bc_id):
     bc = get_object_or_404(BranchCategory, id=bc_id)
     if not _has_branch_access(request.user, bc.branch):

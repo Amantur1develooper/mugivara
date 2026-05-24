@@ -28,7 +28,8 @@ urlpatterns = [
     path("branch/<int:branch_id>/items/",    views.branch_items, name="branch_items"),
     path("branch/<int:branch_id>/add-item/",    views.item_add,           name="item_add"),
     path("branch/<int:branch_id>/categories/", views.branch_categories,  name="branch_categories"),
-    path("branch/<int:branch_id>/categories/add/", views.category_add,   name="category_add"),
+    path("branch/<int:branch_id>/categories/add/",    views.category_add,    name="category_add"),
+    path("branch/<int:branch_id>/categories/create/", views.category_create, name="category_create"),
 
     path("category/<int:bc_id>/toggle/",  views.category_toggle,  name="category_toggle"),
     path("category/<int:bc_id>/reorder/", views.category_reorder, name="category_reorder"),

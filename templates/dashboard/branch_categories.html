@@ -195,9 +195,44 @@
   </div>
 </div>
 
+{# ── СОЗДАТЬ НОВУЮ КАТЕГОРИЮ — модал ── #}
+<div id="createModal" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
+  <div style="background:var(--card);border-radius:20px;padding:28px 24px;width:min(420px,94vw);box-shadow:0 20px 60px rgba(0,0,0,.25)">
+    <div style="font-size:15px;font-weight:700;margin-bottom:18px">Новая категория</div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Название (рус) *</label>
+      <input id="newCatNameRu" type="text" placeholder="Напр.: Горячие блюда"
+             style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Название (кырг)</label>
+      <input id="newCatNameKy" type="text" placeholder="Напр.: Ысык тамактар"
+             style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:20px">
+      <label style="font-size:11px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Название (eng)</label>
+      <input id="newCatNameEn" type="text" placeholder="E.g.: Hot dishes"
+             style="width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;box-sizing:border-box">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button onclick="closeCreateModal()" style="flex:1;padding:11px;border-radius:12px;border:1.5px solid var(--border);background:none;cursor:pointer;font-size:14px;color:var(--text2)">Отмена</button>
+      <button onclick="submitCreateCategory()" id="createCatBtn"
+              style="flex:2;padding:11px;border-radius:12px;border:none;background:var(--accent);color:white;font-size:14px;font-weight:700;cursor:pointer">
+        Создать и добавить
+      </button>
+    </div>
+  </div>
+</div>
+
 {# ── ДОСТУПНЫЕ КАТЕГОРИИ ── #}
 <div class="db-card avail-section">
-  <div class="db-card-title" style="margin-bottom:4px">➕ Добавить категорию</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+    <div class="db-card-title" style="margin:0">➕ Добавить категорию</div>
+    <button onclick="openCreateModal()"
+            style="padding:7px 16px;border-radius:100px;border:1.5px solid var(--accent);background:rgba(255,77,28,.08);color:var(--accent);font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">
+      + Новая категория
+    </button>
+  </div>
   <div style="font-size:12px;color:var(--muted);margin-bottom:16px">
     Нажмите на категорию — она сразу появится в меню филиала
   </div>
@@ -276,6 +311,7 @@
 
 <div id="js-urls"
      data-add-url="{% url 'dashboard:category_add' branch.id %}"
+     data-create-url="{% url 'dashboard:category_create' branch.id %}"
      data-toggle-url="{% url 'dashboard:category_toggle' 99999 %}"
      data-reorder-url="{% url 'dashboard:category_reorder' 99999 %}"
      data-remove-url="{% url 'dashboard:category_remove' 99999 %}"
@@ -286,6 +322,7 @@
 const CSRF       = '{{ csrf_token }}';
 const _u         = document.getElementById('js-urls').dataset;
 const addUrl     = _u.addUrl;
+const createUrl  = _u.createUrl;
 const toggleUrl  = id => _u.toggleUrl.replace('99999', id);
 const reorderUrl = id => _u.reorderUrl.replace('99999', id);
 const removeUrl  = id => _u.removeUrl.replace('99999', id);
@@ -488,6 +525,79 @@ function toggleCat(btn) {
     }
   })
   .catch(() => showToast('Ошибка сети', 'err'));
+}
+
+/* ── Создать новую категорию ── */
+function openCreateModal() {
+  document.getElementById('newCatNameRu').value = '';
+  document.getElementById('newCatNameKy').value = '';
+  document.getElementById('newCatNameEn').value = '';
+  const m = document.getElementById('createModal');
+  m.style.display = 'flex';
+  setTimeout(() => document.getElementById('newCatNameRu').focus(), 50);
+}
+function closeCreateModal() {
+  document.getElementById('createModal').style.display = 'none';
+}
+document.getElementById('createModal').addEventListener('click', function(e) {
+  if (e.target === this) closeCreateModal();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeCreateModal();
+});
+
+async function submitCreateCategory() {
+  const nameRu = document.getElementById('newCatNameRu').value.trim();
+  if (!nameRu) { document.getElementById('newCatNameRu').focus(); return; }
+
+  const btn = document.getElementById('createCatBtn');
+  btn.disabled = true; btn.textContent = 'Создаём...';
+
+  const body = new FormData();
+  body.append('name_ru', nameRu);
+  body.append('name_ky', document.getElementById('newCatNameKy').value.trim());
+  body.append('name_en', document.getElementById('newCatNameEn').value.trim());
+  body.append('csrfmiddlewaretoken', CSRF);
+
+  try {
+    const r = await fetch(createUrl, { method: 'POST', body });
+    const data = await r.json();
+    if (!data.ok) { showToast(data.error || 'Ошибка', 'err'); return; }
+
+    closeCreateModal();
+
+    // Убрать заглушку "нет категорий" если была
+    const empty = document.querySelector('.empty-state');
+    if (empty) empty.closest('li').remove();
+
+    // Добавить строку в список активных
+    const li = document.createElement('li');
+    li.className = 'cat-row';
+    li.draggable = true;
+    li.dataset.id = data.bc_id;
+    li.innerHTML = `
+      <span class="drag-handle" title="Перетащить">⠿</span>
+      <div class="pos-badge pos-num"></div>
+      <div style="flex:1;min-width:0">
+        <div class="cat-name">${data.name}</div>
+        <div class="cat-ms">${data.menu_set}</div>
+      </div>
+      <div class="arrow-btns">
+        <button class="arrow-btn" onclick="moveUp(this)" title="Выше">▲</button>
+        <button class="arrow-btn" onclick="moveDown(this)" title="Ниже">▼</button>
+      </div>
+      <button class="toggle-btn on" data-id="${data.bc_id}" onclick="toggleCat(this)" title="Видна в меню"></button>
+      <button class="del-btn" data-id="${data.bc_id}" data-name="${data.name}" onclick="removeCat(this)" title="Убрать из филиала">✕</button>
+    `;
+    document.getElementById('catList').appendChild(li);
+    initDrag(li);
+    refreshPositions();
+    showToast(`«${data.name}» создана и добавлена ✓`);
+  } catch (err) {
+    showToast('Ошибка сети', 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Создать и добавить';
+  }
 }
 
 /* ── Удалить ── */
