@@ -2191,7 +2191,7 @@ document.addEventListener('submit', async (e) => {
           <input type="hidden" name="csrfmiddlewaretoken" value="${CSRF}">
           <input type="hidden" name="promo_code" id="cmPromoHidden" value="${promoCode}">
 
-          <input name="name" placeholder="Ваше имя (необязательно)" class="cm-field">
+          <input name="name" required placeholder="Ваше имя" class="cm-field">
 
           <input name="phone" id="cmPhone" type="tel" inputmode="numeric" autocomplete="tel"
                  required value="+996" minlength="13" maxlength="13"

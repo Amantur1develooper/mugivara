@@ -723,12 +723,15 @@ def checkout(request, branch_id: int):
         messages.error(request, _("Корзина пуста."))
         return redirect("public_site:cart_detail", branch_id=branch.id)
 
-    name = (request.POST.get("name") or "").strip() or _("Гость")
+    name = (request.POST.get("name") or "").strip()
     phone = (request.POST.get("phone") or "").strip()
     address = (request.POST.get("address") or "").strip()
     comment = (request.POST.get("comment") or "").strip()
 
     # обязательные поля
+    if not name:
+        messages.error(request, _("Укажите ваше имя."))
+        return redirect("public_site:cart_detail", branch_id=branch.id)
     if not phone:
         messages.error(request, _("Укажите телефон."))
         return redirect("public_site:cart_detail", branch_id=branch.id)

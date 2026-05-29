@@ -1654,7 +1654,7 @@ def pos(request, branch_id):
         "categories": categories,
         "live_orders": live_orders,
         "places": places_qs,
-        "pos_delivery_fee": branch.delivery_fee if branch.pos_delivery_fee_enabled else 0,
+        "pos_delivery_fee": int(branch.delivery_fee) if branch.pos_delivery_fee_enabled else 0,
         "pos_delivery_fee_enabled": branch.pos_delivery_fee_enabled,
     })
 

@@ -214,7 +214,7 @@
       <div class="tc-form-title">📝 Подтвердить заказ</div>
       <form action="{% url 'public_site:table_create_order' token %}" method="post">
         {% csrf_token %}
-        <input name="customer_name" placeholder="Ваше имя (необязательно)" class="tc-field">
+        <input name="customer_name" required placeholder="Ваше имя" class="tc-field">
         <textarea name="comment" rows="2" placeholder="Комментарий к заказу (необязательно)" class="tc-field" style="resize:vertical"></textarea>
         <button type="submit" class="tc-submit">✅ Отправить заказ</button>
       </form>

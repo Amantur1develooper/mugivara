@@ -266,7 +266,7 @@
         {% csrf_token %}
         <input type="hidden" name="promo_code" id="promo-code-hidden">
 
-        <input name="name" placeholder="Ваше имя (необязательно)" class="cart-field">
+        <input name="name" required placeholder="Ваше имя" class="cart-field">
 
         <input name="phone" id="phone" type="tel" inputmode="numeric" autocomplete="tel"
                required value="+996" minlength="13" maxlength="13"

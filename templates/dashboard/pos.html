@@ -821,7 +821,7 @@ function switchCat(catId, btn) {
 })();
 
 // ── Delivery fee ──────────────────────────────────────────────────────────
-const POS_DELIVERY_FEE = {{ pos_delivery_fee|default:0 }};
+const POS_DELIVERY_FEE = {{ pos_delivery_fee|default:0|stringformat:"d" }};
 
 // ── Cart state ─────────────────────────────────────────────────────────────
 const cart = {};  // { bi_id: { name, price, qty } }
@@ -1003,6 +1003,7 @@ async function closeTableBill(payment) {
   if (!openTableOrderId) { alert("Нет открытого заказа на этом столе"); return; }
   if (!confirm("Закрыть счёт? Оплата: " + (payment === "cash" ? "наличные" : "карта"))) return;
 
+  const receiptWin = window.open('', '_blank');
   try {
     const r = await fetch(TABLE_CLOSE_URL.replace("{id}", openTableOrderId), {
       method: "POST",
@@ -1011,14 +1012,15 @@ async function closeTableBill(payment) {
     });
     const d = await r.json();
     if (d.ok) {
-      // Print receipt then refresh tables
-      window.open(RECEIPT_URL.replace("{id}", openTableOrderId), "_blank");
+      if (receiptWin) receiptWin.location.href = RECEIPT_URL.replace("{id}", openTableOrderId);
       clearTable();
       location.reload();
     } else {
+      if (receiptWin) receiptWin.close();
       alert(d.error || "Ошибка закрытия счёта");
     }
   } catch(e) {
+    if (receiptWin) receiptWin.close();
     alert("Ошибка сети");
   }
 }
@@ -1031,6 +1033,9 @@ async function submitOrder() {
   const btn = document.getElementById("posConfirmBtn");
   btn.disabled = true;
   btn.textContent = "Оформляем...";
+
+  // Open blank window before await — Chrome blocks window.open() after async calls
+  const receiptWin = window.open('', '_blank');
 
   const items = keys.map(id => ({ bi_id: parseInt(id), qty: cart[id].qty }));
   const comment = document.getElementById("posComment").value.trim();
@@ -1047,33 +1052,35 @@ async function submitOrder() {
     if (d.ok) {
       if (d.open_table) {
         // Table order stays open — print kitchen ticket, update table button
-        window.open(RECEIPT_URL.replace("{id}", d.order_id), "_blank");
+        if (receiptWin) receiptWin.location.href = RECEIPT_URL.replace("{id}", d.order_id);
         clearCart();
         // Mark the selected table button as occupied and refresh
         if (selectedTableId) {
-          const btn = document.querySelector(`.table-btn[data-place-id="${selectedTableId}"]`);
-          if (btn) {
-            btn.classList.add("table-occupied");
-            btn.dataset.orderId = d.order_id;
+          const tBtn = document.querySelector(`.table-btn[data-place-id="${selectedTableId}"]`);
+          if (tBtn) {
+            tBtn.classList.add("table-occupied");
+            tBtn.dataset.orderId = d.order_id;
           }
           openTableOrderId = d.order_id;
           updateCloseTableBlock(d.order_id);
         }
       } else {
-        window.open(RECEIPT_URL.replace("{id}", d.order_id), "_blank");
+        if (receiptWin) receiptWin.location.href = RECEIPT_URL.replace("{id}", d.order_id);
         clearCart();
         clearTable();
         showCancelToast(d.order_id);
       }
     } else {
+      if (receiptWin) receiptWin.close();
       alert(d.error || "Ошибка оформления");
     }
   } catch(e) {
+    if (receiptWin) receiptWin.close();
     alert("Ошибка сети");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "✓ Оформить заказ";
   }
-
-  btn.disabled = false;
-  btn.textContent = "✓ Оформить заказ";
 }
 
 // ── Cancel toast ──────────────────────────────────────────────────────────

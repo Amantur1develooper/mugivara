@@ -276,6 +276,14 @@ def table_checkout(request, token):
         phone = (request.POST.get("customer_phone") or "").strip()
         comment = (request.POST.get("comment") or "").strip()
 
+        if not name:
+            from django.contrib import messages
+            messages.error(request, "Укажите ваше имя.")
+            return render(request, "public_site/table_checkout.html", {
+                "token": token, "place": place, "branch": branch,
+                "rows": rows, "cart_qty": cart_qty, "cart_total": cart_total,
+            })
+
         order = Order.objects.create(
             type=Order.Type.DINE_IN,              # ✅ В заведении
             branch=branch,
@@ -496,6 +504,9 @@ def table_create_order(request, token):
 
     customer_name = (request.POST.get("customer_name") or "").strip()[:120]
     comment = (request.POST.get("comment") or "").strip()
+
+    if not customer_name:
+        return redirect("table_cart", token=token)
 
     cart = _get_cart(request, token)
     cx_cart = _get_cx_cart(request, token)
