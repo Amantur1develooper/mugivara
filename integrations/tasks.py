@@ -122,6 +122,11 @@ def _order_text(order: Order, title_override: str = None) -> str:
 
     if getattr(order, "total_amount", None) is not None:
         lines.append("")
+        delivery_fee = getattr(order, "delivery_fee", None)
+        if delivery_fee and Decimal(str(delivery_fee)) > 0:
+            items_total = Decimal(str(order.total_amount)) - Decimal(str(delivery_fee))
+            lines.append(f"🛒 Блюда: {_money(items_total)}")
+            lines.append(f"🚚 Доставка: {_money(delivery_fee)}")
         lines.append(f"💰 ИТОГО: {_money(order.total_amount)}")
 
     created = timezone.localtime(order.created_at).strftime("%d.%m.%Y %H:%M")

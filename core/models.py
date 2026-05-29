@@ -64,6 +64,10 @@ class Branch(TimeStampedModel):
     delivery_enabled = models.BooleanField(default=False)
     min_order_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    pos_delivery_fee_enabled = models.BooleanField(
+        "Добавлять стоимость доставки в кассе", default=True,
+        help_text="Автоматически добавлять delivery_fee к заказу при оформлении доставки через кассу"
+    )
     free_delivery_from = models.DecimalField(
         "Бесплатная доставка от (сом)", max_digits=10, decimal_places=2,
         default=0, help_text="0 = не действует"

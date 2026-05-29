@@ -667,6 +667,11 @@
     </div>
 
     <div class="pos-cart-footer">
+      <div id="deliveryFeeRow" style="display:none;justify-content:space-between;align-items:center;
+           padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:6px">
+        <span style="font-size:13px;color:var(--muted)">🚚 Доставка</span>
+        <span style="font-size:13px;font-weight:700;color:var(--accent)" id="deliveryFeeVal">0 сом</span>
+      </div>
       <div class="pos-total-row">
         <span class="pos-total-label">Итого</span>
         <span class="pos-total-val" id="posTotal">0 сом</span>
@@ -815,6 +820,9 @@ function switchCat(catId, btn) {
   if (first) switchCat(first.dataset.cat, first);
 })();
 
+// ── Delivery fee ──────────────────────────────────────────────────────────
+const POS_DELIVERY_FEE = {{ pos_delivery_fee|default:0 }};
+
 // ── Cart state ─────────────────────────────────────────────────────────────
 const cart = {};  // { bi_id: { name, price, qty } }
 let selectedType = "dine_in";
@@ -881,13 +889,27 @@ function renderCart() {
   });
 
   container.innerHTML = html;
-  document.getElementById("posTotal").textContent = total.toLocaleString() + " сом";
+  const deliveryFee = (selectedType === "delivery" && POS_DELIVERY_FEE > 0) ? POS_DELIVERY_FEE : 0;
+  document.getElementById("posTotal").textContent = (total + deliveryFee).toLocaleString() + " сом";
 }
 
 function setType(btn) {
   document.querySelectorAll(".pos-type-btn").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
   selectedType = btn.dataset.type;
+  updateDeliveryFeeRow();
+}
+
+function updateDeliveryFeeRow() {
+  const row = document.getElementById("deliveryFeeRow");
+  const feeVal = document.getElementById("deliveryFeeVal");
+  if (selectedType === "delivery" && POS_DELIVERY_FEE > 0) {
+    feeVal.textContent = POS_DELIVERY_FEE.toLocaleString() + " сом";
+    row.style.display = "flex";
+  } else {
+    row.style.display = "none";
+  }
+  renderCart();
 }
 function setPay(btn) {
   document.querySelectorAll(".pos-pay-btn").forEach(b => b.classList.remove("active"));

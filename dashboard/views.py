@@ -620,10 +620,11 @@ def branch_edit(request, branch_id):
             except InvalidOperation:
                 return Decimal(default)
 
-        branch.delivery_enabled    = request.POST.get("delivery_enabled") == "on"
-        branch.min_order_amount    = dec("min_order_amount")
-        branch.delivery_fee        = dec("delivery_fee")
-        branch.free_delivery_from  = dec("free_delivery_from")
+        branch.delivery_enabled          = request.POST.get("delivery_enabled") == "on"
+        branch.min_order_amount          = dec("min_order_amount")
+        branch.delivery_fee              = dec("delivery_fee")
+        branch.pos_delivery_fee_enabled  = request.POST.get("pos_delivery_fee_enabled") == "on"
+        branch.free_delivery_from        = dec("free_delivery_from")
         branch.is_open_24h         = request.POST.get("is_open_24h") == "on"
         branch.pay_cash_enabled    = request.POST.get("pay_cash_enabled") == "on"
         branch.pay_online_enabled  = request.POST.get("pay_online_enabled") == "on"
@@ -1653,6 +1654,8 @@ def pos(request, branch_id):
         "categories": categories,
         "live_orders": live_orders,
         "places": places_qs,
+        "pos_delivery_fee": branch.delivery_fee if branch.pos_delivery_fee_enabled else 0,
+        "pos_delivery_fee_enabled": branch.pos_delivery_fee_enabled,
     })
 
 
@@ -1689,6 +1692,13 @@ def pos_order_create(request, branch_id):
             pass
 
     _OPEN = [Order.Status.NEW, Order.Status.ACCEPTED, Order.Status.COOKING, Order.Status.READY]
+
+    # Delivery fee: добавляем если тип=доставка и включено в настройках филиала
+    applied_delivery_fee = Decimal("0")
+    if (order_type == Order.Type.DELIVERY
+            and branch.pos_delivery_fee_enabled
+            and branch.delivery_fee > 0):
+        applied_delivery_fee = branch.delivery_fee
 
     # Pre-calculate items and total
     total = Decimal("0")
@@ -1757,17 +1767,18 @@ def pos_order_create(request, branch_id):
                         bi.is_available = False
                     bi.save(update_fields=["stock", "is_available"])
 
-            order.total_amount = total
+            order.delivery_fee   = applied_delivery_fee
+            order.total_amount   = total + applied_delivery_fee
 
             # Заказ в зале со столом → оставляем ОТКРЫТЫМ
             # Остальные типы → сразу закрываем
             if table_place:
-                order.save(update_fields=["total_amount"])
+                order.save(update_fields=["total_amount", "delivery_fee"])
                 open_table = True
             else:
                 order.status = Order.Status.CLOSED
                 order.payment_status = Order.PaymentStatus.PAID
-                order.save(update_fields=["total_amount", "status", "payment_status"])
+                order.save(update_fields=["total_amount", "delivery_fee", "status", "payment_status"])
                 open_table = False
 
     # Облачная печать — запускаем ПОСЛЕ коммита транзакции
@@ -1807,7 +1818,9 @@ def pos_order_create(request, branch_id):
     return JsonResponse({
         "ok": True,
         "order_id": order.id,
-        "total": str(total),
+        "total": str(total + applied_delivery_fee),
+        "items_total": str(total),
+        "delivery_fee": str(applied_delivery_fee),
         "open_table": open_table,
         "table_place_id": table_place.id if table_place else None,
     })
@@ -2122,6 +2135,12 @@ def pos_report(request, branch_id):
     cancelled_count = cancelled.count()
     cancelled_sum   = _revenue(cancelled)
 
+    # Сумма доставки по закрытым доставочным заказам
+    total_delivery_fees = (
+        closed.filter(type=Order.Type.DELIVERY)
+        .aggregate(s=_Sum("delivery_fee"))["s"] or Decimal("0")
+    )
+
     # ── Онлайн vs Офлайн ──
     online_qs  = closed.filter(
         _Q(table_place__isnull=False) |
@@ -2236,10 +2255,11 @@ def pos_report(request, branch_id):
         "offline_revenue":  offline_revenue,
         "online_count":     online_count,
         "offline_count":    offline_count,
-        "pay_cash":         pay_cash,
-        "pay_online_amt":   pay_online,
-        "top_items":        top_items,
-        "daily":            daily,
+        "pay_cash":              pay_cash,
+        "pay_online_amt":        pay_online,
+        "top_items":             top_items,
+        "daily":                 daily,
+        "total_delivery_fees":   total_delivery_fees,
     })
 
 

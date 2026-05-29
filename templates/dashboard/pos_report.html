@@ -294,6 +294,13 @@
       <div class="rep-stat-sub">сом</div>
     </div>
     {% endif %}
+    {% if total_delivery_fees %}
+    <div class="rep-stat-card" style="border-color:rgba(255,77,28,.2);background:rgba(255,77,28,.04)">
+      <div class="rep-stat-label" style="color:var(--accent)">🚚 Доставка</div>
+      <div class="rep-stat-val" style="color:var(--accent)">{{ total_delivery_fees|floatformat:0 }}</div>
+      <div class="rep-stat-sub">сом (сумма доставок)</div>
+    </div>
+    {% endif %}
   </div>
 
   <!-- Online vs Offline -->

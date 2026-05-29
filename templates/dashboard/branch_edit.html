@@ -99,6 +99,19 @@
       </div>
     </div>
 
+    <div style="height:16px"></div>
+
+    <div class="db-toggle-row">
+      <div>
+        <div class="db-toggle-label">🖥️ Добавлять доставку в кассе</div>
+        <div class="db-toggle-desc">При оформлении доставки через кассу — автоматически добавлять стоимость доставки к сумме заказа</div>
+      </div>
+      <label class="db-switch">
+        <input type="checkbox" name="pos_delivery_fee_enabled" {% if branch.pos_delivery_fee_enabled %}checked{% endif %}>
+        <span class="db-switch-slider"></span>
+      </label>
+    </div>
+
     {# ── АКЦИЯ: бесплатная доставка ── #}
     <div class="promo-box">
       <div class="promo-title">🎁 Акция — бесплатная доставка</div>
