@@ -122,7 +122,7 @@ def room_book(request, room_id):
     room = get_object_or_404(Room, id=room_id, is_available=True)
     branch = room.branch
 
-    name        = (request.POST.get("name") or "").strip() or "Гость"
+    name        = (request.POST.get("name") or "").strip()
     phone       = (request.POST.get("phone") or "").strip()
     checkin     = (request.POST.get("checkin") or "").strip()
     nights      = (request.POST.get("nights") or "1").strip()
@@ -131,8 +131,8 @@ def room_book(request, room_id):
     comment     = (request.POST.get("comment") or "").strip()
     book_type   = request.POST.get("book_type", "booking")  # booking | checkin
 
-    if not phone:
-        messages.error(request, "Укажите телефон")
+    if not phone or len(phone) < 10:
+        messages.error(request, "Укажите номер телефона")
         return redirect("hotels:hotel_branch", branch_id=branch.id)
 
     try:
@@ -225,14 +225,14 @@ def service_book(request, service_id):
     service = get_object_or_404(HotelService, id=service_id, is_active=True)
     branch  = service.branch
 
-    name       = (request.POST.get("name") or "").strip() or "Гость"
+    name       = (request.POST.get("name") or "").strip()
     phone      = (request.POST.get("phone") or "").strip()
     date_val   = (request.POST.get("booking_date") or "").strip()
     session_id = request.POST.get("session_id") or None
     comment    = (request.POST.get("comment") or "").strip()
 
-    if not phone:
-        messages.error(request, "Укажите телефон")
+    if not phone or len(phone) < 10:
+        messages.error(request, "Укажите номер телефона")
         return redirect("hotels:hotel_branch", branch_id=branch.id)
 
     session = None

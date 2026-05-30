@@ -503,7 +503,9 @@
         <div>
           <label class="bm-lbl">Телефон *</label>
           <input class="bm-inp" type="tel" name="phone" id="bmPhone"
-                 value="+996" placeholder="+996700123456" required>
+                 value="+996" placeholder="+996700123456"
+                 required minlength="13" maxlength="13"
+                 pattern="^\+996\d{9}$" title="Формат: +996XXXXXXXXX">
         </div>
 
         <div>
@@ -629,7 +631,9 @@
         <div>
           <label class="bm-lbl">Телефон *</label>
           <input class="bm-inp" type="tel" name="phone" id="svcBmPhone"
-                 value="+996" placeholder="+996700123456" required>
+                 value="+996" placeholder="+996700123456"
+                 required minlength="13" maxlength="13"
+                 pattern="^\+996\d{9}$" title="Формат: +996XXXXXXXXX">
         </div>
         <div>
           <label class="bm-lbl">Комментарий</label>
