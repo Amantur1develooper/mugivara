@@ -71,6 +71,78 @@
   {% endif %}
   .km-order-btn{width:100%;padding:15px;border-radius:14px;background:var(--kr-grad);border:none;color:#fff;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 6px 24px rgba(168,85,247,.4);}
   .km-order-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+  /* ── DISH MODAL ── */
+  .km-item{cursor:pointer;}
+  .km-item:hover{border-color:rgba(168,85,247,.5);background:rgba(36,24,64,.85);}
+
+  .km-modal-overlay{
+    position:fixed;inset:0;z-index:400;
+    background:rgba(10,6,24,.82);
+    backdrop-filter:blur(6px);
+    display:flex;align-items:flex-end;justify-content:center;
+    opacity:0;pointer-events:none;transition:opacity .25s;
+  }
+  .km-modal-overlay.open{opacity:1;pointer-events:all;}
+
+  .km-modal{
+    width:100%;max-width:480px;
+    background:#1a1030;
+    border:1px solid rgba(168,85,247,.3);
+    border-radius:24px 24px 0 0;
+    box-shadow:0 -16px 60px rgba(0,0,0,.7);
+    transform:translateY(100%);
+    transition:transform .32s cubic-bezier(.32,1,.32,1);
+    max-height:92vh;
+    display:flex;flex-direction:column;
+    overflow:hidden;
+  }
+  .km-modal-overlay.open .km-modal{transform:translateY(0);}
+
+  @media(min-width:600px){
+    .km-modal-overlay{align-items:center;}
+    .km-modal{border-radius:24px;max-height:80vh;}
+  }
+
+  .km-modal-drag{width:40px;height:4px;border-radius:2px;background:rgba(168,85,247,.3);margin:12px auto 0;flex-shrink:0;}
+  .km-modal-photo{
+    width:100%;aspect-ratio:4/3;
+    background:linear-gradient(135deg,#1a0a2e,#0d0818);
+    display:flex;align-items:center;justify-content:center;
+    font-size:64px;flex-shrink:0;overflow:hidden;
+  }
+  .km-modal-photo img{width:100%;height:100%;object-fit:cover;}
+  .km-modal-body{padding:20px 20px 28px;overflow-y:auto;flex:1;}
+  .km-modal-name{font-family:'Unbounded',sans-serif;font-size:18px;font-weight:900;color:var(--kr-text);line-height:1.2;margin-bottom:8px;}
+  .km-modal-desc{font-size:14px;color:var(--kr-muted);line-height:1.6;margin-bottom:16px;}
+  .km-modal-price{font-family:'Unbounded',sans-serif;font-size:22px;font-weight:900;background:var(--kr-grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:20px;}
+  .km-modal-ctrl{display:flex;align-items:center;gap:12px;}
+  .km-modal-add-btn{
+    flex:1;padding:14px;border-radius:14px;
+    background:var(--kr-grad);border:none;color:#fff;
+    font-size:15px;font-weight:800;cursor:pointer;
+    box-shadow:0 6px 24px rgba(168,85,247,.4);
+    transition:opacity .15s;
+  }
+  .km-modal-add-btn:hover{opacity:.88;}
+  .km-modal-qty{display:flex;align-items:center;gap:0;flex:1;}
+  .km-modal-qty-btn{
+    flex:1;height:48px;border-radius:14px;
+    background:rgba(168,85,247,.12);border:1.5px solid rgba(168,85,247,.25);
+    color:var(--kr-purple);font-size:22px;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;transition:background .15s;
+  }
+  .km-modal-qty-btn:hover{background:rgba(168,85,247,.22);}
+  .km-modal-qty-val{font-weight:900;font-size:20px;color:var(--kr-text);min-width:48px;text-align:center;}
+  .km-modal-close{
+    position:absolute;top:12px;right:16px;
+    width:32px;height:32px;border-radius:50%;
+    background:rgba(0,0,0,.5);border:1px solid rgba(168,85,247,.2);
+    color:rgba(245,240,255,.7);font-size:16px;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;z-index:2;
+  }
 </style>
 {% endblock %}
 {% block content %}
@@ -94,7 +166,11 @@
     <div class="km-cat-title">{{ cat.name }}</div>
     <div class="km-items">
       {% for item in cat.items.all %}{% if item.is_active %}
-      <div class="km-item" data-id="{{ item.id }}" data-name="{{ item.name|escapejs }}" data-price="{{ item.price|floatformat:0 }}">
+      <div class="km-item" data-id="{{ item.id }}" data-name="{{ item.name|escapejs }}"
+           data-price="{{ item.price|floatformat:0 }}"
+           data-desc="{{ item.description|escapejs }}"
+           data-photo="{% if item.photo %}{{ item.photo.url }}{% endif %}"
+           onclick="openDishModal({{ item.id }})">
         <div class="km-item-photo">
           {% if item.photo %}<img src="{{ item.photo.url }}" alt="{{ item.name }}" loading="lazy">{% else %}🍽️{% endif %}
         </div>
@@ -103,7 +179,7 @@
           {% if item.description %}<div class="km-item-desc">{{ item.description|truncatechars:60 }}</div>{% endif %}
           <div class="km-item-price">{{ item.price|floatformat:0 }} сом</div>
         </div>
-        <div class="km-item-ctrl" id="ctrl-{{ item.id }}">
+        <div class="km-item-ctrl" id="ctrl-{{ item.id }}" onclick="event.stopPropagation()">
           <div class="km-add-btn" onclick="addItem({{ item.id }})">+</div>
         </div>
       </div>
@@ -112,6 +188,21 @@
   </div>
   {% endfor %}
 </div>
+</div>
+
+<!-- ── DISH MODAL ── -->
+<div class="km-modal-overlay" id="kmModalOverlay" onclick="closeDishModal(event)">
+  <div class="km-modal" id="kmModal" style="position:relative">
+    <div class="km-modal-drag"></div>
+    <div class="km-modal-close" onclick="forceCloseDishModal()">✕</div>
+    <div class="km-modal-photo" id="kmModalPhoto"></div>
+    <div class="km-modal-body">
+      <div class="km-modal-name" id="kmModalName"></div>
+      <div class="km-modal-desc" id="kmModalDesc"></div>
+      <div class="km-modal-price" id="kmModalPrice"></div>
+      <div class="km-modal-ctrl" id="kmModalCtrl"></div>
+    </div>
+  </div>
 </div>
 
 <!-- ── CART SHEET ── -->
@@ -219,6 +310,86 @@ function renderCart() {
   countEl.textContent = `${count} позиций`;
   totalEl.textContent = `${total.toLocaleString()} сом`;
 }
+
+// ── DISH MODAL ─────────────────────────────────────────────────────────────
+let modalItemId = null;
+
+function openDishModal(id) {
+  const el = document.querySelector(`.km-item[data-id="${id}"]`);
+  if (!el) return;
+  modalItemId = id;
+
+  const name  = el.dataset.name;
+  const price = el.dataset.price;
+  const desc  = el.dataset.desc;
+  const photo = el.dataset.photo;
+
+  document.getElementById("kmModalName").textContent  = name;
+  document.getElementById("kmModalPrice").textContent = price + " сом";
+  const descEl = document.getElementById("kmModalDesc");
+  descEl.textContent = desc || "";
+  descEl.style.display = desc ? "block" : "none";
+
+  const photoEl = document.getElementById("kmModalPhoto");
+  if (photo) {
+    photoEl.innerHTML = `<img src="${photo}" alt="${name}">`;
+    photoEl.style.display = "block";
+  } else {
+    photoEl.innerHTML = "🍽️";
+    photoEl.style.display = "flex";
+  }
+
+  renderModalCtrl();
+  document.getElementById("kmModalOverlay").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeDishModal(e) {
+  if (e && e.target !== document.getElementById("kmModalOverlay")) return;
+  document.getElementById("kmModalOverlay").classList.remove("open");
+  document.body.style.overflow = "";
+  modalItemId = null;
+}
+
+function renderModalCtrl() {
+  if (!modalItemId) return;
+  const id = modalItemId;
+  const ctrl = document.getElementById("kmModalCtrl");
+  if (cart[id]) {
+    ctrl.innerHTML = `
+      <div class="km-modal-qty">
+        <div class="km-modal-qty-btn" onclick="modalChangeQty(${id},-1)">−</div>
+        <div class="km-modal-qty-val" id="mqv-${id}">${cart[id].qty}</div>
+        <div class="km-modal-qty-btn" onclick="modalChangeQty(${id},1)">+</div>
+      </div>`;
+  } else {
+    ctrl.innerHTML = `<button class="km-modal-add-btn" onclick="modalAddItem(${id})">+ В корзину</button>`;
+  }
+}
+
+function modalAddItem(id) {
+  addItem(id);
+  renderModalCtrl();
+}
+
+function modalChangeQty(id, delta) {
+  changeQty(id, delta);
+  if (!cart[id]) {
+    // item removed — show add button again
+    document.getElementById("kmModalCtrl").innerHTML =
+      `<button class="km-modal-add-btn" onclick="modalAddItem(${id})">+ В корзину</button>`;
+  } else {
+    const vEl = document.getElementById(`mqv-${id}`);
+    if (vEl) vEl.textContent = cart[id].qty;
+  }
+}
+
+function forceCloseDishModal() {
+  document.getElementById("kmModalOverlay").classList.remove("open");
+  document.body.style.overflow = "";
+  modalItemId = null;
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape") forceCloseDishModal(); });
 
 async function confirmOrder() {
   const phone = document.getElementById("kmPhone").value.trim();

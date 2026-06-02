@@ -434,6 +434,11 @@ def karaoke_menu_item_update(request, item_id):
         return JsonResponse({"ok": False}, status=403)
 
     fields = []
+    if "name" in request.POST:
+        name = request.POST["name"].strip()
+        if name:
+            item.name = name
+            fields.append("name")
     if "price" in request.POST:
         try:
             item.price = int(request.POST["price"] or 0)
@@ -464,6 +469,7 @@ def karaoke_menu_item_update(request, item_id):
     pct = round(margin / int(item.price) * 100) if item.price else 0
     return JsonResponse({
         "ok": True,
+        "name": item.name,
         "price": str(item.price),
         "cost_price": str(item.cost_price),
         "margin": margin,

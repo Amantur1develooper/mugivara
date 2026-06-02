@@ -3,50 +3,166 @@
 {% block nav_karaoke %}active{% endblock %}
 {% block head_extra %}
 <style>
-  .kmi-row{background:var(--card);border:1.5px solid var(--border);border-radius:12px;display:flex;align-items:center;gap:12px;padding:12px 16px;margin-bottom:8px;}
-  .kmi-row:hover{border-color:rgba(168,85,247,.22);}
-  .kmi-photo{width:48px;height:40px;border-radius:8px;overflow:hidden;flex-shrink:0;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:18px;border:1px solid var(--border);}
-  .kmi-photo img{width:100%;height:100%;object-fit:cover;}
-  .kmi-add-form{background:var(--bg);border:1.5px dashed var(--border);border-radius:12px;padding:14px;margin-top:10px;display:none;}
-  .kmi-add-form.open{display:block;}
-  .kmi-price-inline{display:inline-flex;align-items:center;gap:4px;cursor:pointer;}
-  .kmi-price-inline input{width:70px;padding:2px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--bg);color:var(--text);text-align:right;}
-  .kmi-margin{font-size:11px;padding:2px 7px;border-radius:100px;font-weight:600;margin-left:4px;}
-  .kmi-margin.pos{background:rgba(0,184,150,.1);color:#00b896;}
-  .kmi-margin.neg{background:rgba(255,59,48,.1);color:#ff3b30;}
-  .kmi-margin.zero{background:rgba(0,0,0,.05);color:var(--muted);}
+/* ── КАРТОЧКИ БЛЮД ── */
+.kmi-card {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  transition: border-color .15s;
+}
+.kmi-card:hover { border-color: rgba(168,85,247,.3); }
+.kmi-card.inactive { opacity: .45; }
 
-  /* photo edit */
-  .kmi-photo-wrap{position:relative;width:48px;height:48px;flex-shrink:0;cursor:pointer;}
-  .kmi-photo-wrap input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
-  .kmi-photo-wrap:hover .kmi-photo-overlay{opacity:1;}
-  .kmi-photo-overlay{
-    position:absolute;inset:0;border-radius:8px;
-    background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;
-    font-size:16px;opacity:0;transition:opacity .15s;pointer-events:none;
-  }
-  .kmi-photo-del{
-    position:absolute;top:-5px;right:-5px;width:18px;height:18px;border-radius:50%;
-    background:#ff3b30;color:#fff;border:none;cursor:pointer;
-    font-size:10px;display:none;align-items:center;justify-content:center;
-    z-index:2;padding:0;line-height:1;
-  }
-  .kmi-photo-wrap:hover .kmi-photo-del{display:flex;}
-  .kmi-photo{width:100%;height:100%;border-radius:8px;overflow:hidden;
-    background:var(--bg);display:flex;align-items:center;justify-content:center;
-    font-size:18px;border:1px solid var(--border);}
-  .kmi-photo img{width:100%;height:100%;object-fit:cover;}
-  .kmi-photo-spin{
-    position:absolute;inset:0;border-radius:8px;background:rgba(0,0,0,.4);
-    display:none;align-items:center;justify-content:center;font-size:14px;
-  }
+.kmi-thumb {
+  width: 56px; height: 56px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+.kmi-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+.kmi-info { flex: 1; min-width: 0; }
+.kmi-name {
+  font-weight: 700; font-size: 14px; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.kmi-desc-preview {
+  font-size: 12px; color: var(--muted); margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.kmi-meta {
+  display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap;
+}
+.kmi-price-badge {
+  font-size: 12px; font-weight: 700; color: var(--text);
+}
+.kmi-margin-badge {
+  font-size: 11px; padding: 1px 7px; border-radius: 100px; font-weight: 600;
+}
+.kmi-margin-badge.pos { background: rgba(0,184,150,.1); color: #00b896; }
+.kmi-margin-badge.neg { background: rgba(255,59,48,.1); color: #ff3b30; }
+.kmi-margin-badge.zero { background: rgba(0,0,0,.05); color: var(--muted); }
+
+.kmi-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+
+/* ── МОДАЛ ── */
+.km-ov {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .22s;
+}
+.km-ov.open { opacity: 1; pointer-events: all; }
+
+.km-sheet {
+  width: 100%; max-width: 520px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 40px rgba(0,0,0,.25);
+  transform: translateY(100%);
+  transition: transform .28s cubic-bezier(.32,1,.32,1);
+  max-height: 92vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.km-ov.open .km-sheet { transform: translateY(0); }
+
+@media (min-width: 600px) {
+  .km-ov { align-items: center; }
+  .km-sheet { border-radius: 20px; max-height: 84vh; }
+}
+
+.km-sheet-drag {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--border); margin: 12px auto 0; flex-shrink: 0;
+}
+.km-sheet-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px 10px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.km-sheet-title {
+  font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 800; color: var(--text);
+}
+.km-sheet-close {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--muted); font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.km-sheet-body {
+  padding: 20px; overflow-y: auto; flex: 1;
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+/* Photo area inside modal */
+.km-edit-photo-wrap {
+  position: relative; width: 100%; aspect-ratio: 16/9;
+  background: var(--bg); border: 1.5px dashed var(--border);
+  border-radius: 12px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 48px; cursor: pointer;
+}
+.km-edit-photo-wrap img { width: 100%; height: 100%; object-fit: cover; }
+.km-edit-photo-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.5);
+  display: flex; align-items: center; justify-content: center;
+  gap: 12px;
+  opacity: 0; transition: opacity .15s;
+}
+.km-edit-photo-wrap:hover .km-edit-photo-overlay { opacity: 1; }
+.km-edit-photo-wrap input[type=file] { display: none; }
+.km-ep-btn {
+  padding: 8px 14px; border-radius: 8px;
+  border: 1.5px solid rgba(255,255,255,.3);
+  background: rgba(255,255,255,.1);
+  color: #fff; font-size: 12px; font-weight: 600;
+  cursor: pointer;
+}
+.km-edit-photo-spin {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.5);
+  display: none; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+
+.km-sheet-footer {
+  padding: 12px 20px 20px;
+  border-top: 1px solid var(--border);
+  display: flex; gap: 8px; flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* category header */
+.kmi-cat-hd {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;
+}
+.kmi-cat-name {
+  font-family: 'Unbounded', sans-serif; font-size: 12px; font-weight: 800; color: var(--text2);
+}
 </style>
 {% endblock %}
+
 {% block content %}
 <div class="db-topbar">
   <div>
     <div class="db-page-title">🍽️ Меню</div>
-    <div class="db-breadcrumb"><a href="{% url 'dashboard:karaoke_home' %}">Karaoke</a> → {{ venue.name }}</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:karaoke_home' %}">Karaoke</a> → {{ venue.name }}
+    </div>
   </div>
   <a href="{% url 'karaoke:karaoke_menu' venue.slug %}" target="_blank" class="db-btn db-btn-ghost db-btn-sm">👁 QR-меню</a>
 </div>
@@ -55,105 +171,51 @@
 <div class="db-messages">{% for m in messages %}<div class="db-msg {{m.tags}}">{{m}}</div>{% endfor %}</div>
 {% endif %}
 
-<!-- ДОБАВИТЬ КАТЕГОРИЮ -->
+<!-- Добавить категорию -->
 <div style="display:flex;align-items:center;gap:8px;margin-bottom:24px;flex-wrap:wrap">
-  <input id="newCatName" class="db-input" style="max-width:200px" placeholder="Новая категория">
+  <input id="newCatName" class="db-input" style="max-width:220px" placeholder="Название новой категории">
   <button onclick="addCat()" class="db-btn db-btn-ghost db-btn-sm">+ Категория</button>
 </div>
 
 {% for cat in cats %}
 <div style="margin-bottom:28px">
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-    <div style="font-family:'Unbounded',sans-serif;font-size:12px;font-weight:800;color:var(--text2)">{{ cat.name }}</div>
-    <button onclick="toggleAddForm({{ cat.id }})" class="db-btn db-btn-ghost db-btn-sm">+ Блюдо</button>
+  <div class="kmi-cat-hd">
+    <div class="kmi-cat-name">{{ cat.name }}</div>
+    <button onclick="openAddModal({{ cat.id }})" class="db-btn db-btn-primary db-btn-sm">+ Блюдо</button>
   </div>
 
   {% for item in cat.items.all %}
-  <div class="kmi-row" id="kmi-{{ item.id }}" {% if not item.is_active %}style="opacity:.45"{% endif %}>
-    <div class="kmi-photo-wrap" title="Нажмите для замены фото">
-      <div class="kmi-photo" id="kmi-photo-{{ item.id }}">
-        {% if item.photo %}<img src="{{ item.photo.url }}" alt="" id="kmi-img-{{ item.id }}">{% else %}<span id="kmi-img-{{ item.id }}">🍽️</span>{% endif %}
-      </div>
-      <div class="kmi-photo-overlay">📷</div>
-      <div class="kmi-photo-spin" id="kmi-spin-{{ item.id }}">⏳</div>
-      {% if item.photo %}
-      <button class="kmi-photo-del" title="Удалить фото"
-              onclick="removePhoto(event, {{ item.id }})">✕</button>
+  <div class="kmi-card {% if not item.is_active %}inactive{% endif %}" id="kmi-{{ item.id }}">
+    <div class="kmi-thumb" id="kmi-thumb-{{ item.id }}">
+      {% if item.photo %}<img src="{{ item.photo.url }}" alt="" id="kmi-img-{{ item.id }}">
+      {% else %}<span id="kmi-img-{{ item.id }}">🍽️</span>{% endif %}
+    </div>
+    <div class="kmi-info">
+      <div class="kmi-name" id="kmi-name-{{ item.id }}">{{ item.name }}</div>
+      {% if item.description %}
+      <div class="kmi-desc-preview" id="kmi-desc-{{ item.id }}">{{ item.description|truncatechars:55 }}</div>
       {% else %}
-      <button class="kmi-photo-del" id="kmi-del-btn-{{ item.id }}" title="Удалить фото"
-              style="display:none" onclick="removePhoto(event, {{ item.id }})">✕</button>
+      <div class="kmi-desc-preview" id="kmi-desc-{{ item.id }}" style="display:none"></div>
       {% endif %}
-      <input type="file" accept="image/*"
-             onchange="uploadPhoto({{ item.id }}, this)">
-    </div>
-    <div style="flex:1;min-width:0">
-      <div style="font-weight:600;font-size:13px;color:var(--text)">{{ item.name }}</div>
-      <div style="margin-top:3px">
-        <input type="text" value="{{ item.description }}"
-               placeholder="Описание (необязательно)"
-               data-field="description" data-id="{{ item.id }}"
-               onblur="saveField({{ item.id }}, 'description', this)"
-               onkeydown="if(event.key==='Enter'){this.blur()}"
-               style="width:100%;max-width:360px;padding:2px 6px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--bg);color:var(--text)">
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px">
-        <span style="font-size:11px;color:var(--muted)">Цена:</span>
-        <span class="kmi-price-inline">
-          <input type="number" min="0" value="{{ item.price|floatformat:0 }}"
-                 data-field="price" data-id="{{ item.id }}"
-                 onblur="saveField({{ item.id }}, 'price', this)"
-                 onkeydown="if(event.key==='Enter'){this.blur()}"
-                 style="width:70px">
-          <span style="font-size:11px;color:var(--muted)">сом</span>
-        </span>
-        <span style="font-size:11px;color:var(--muted)">Себест.:</span>
-        <span class="kmi-price-inline">
-          <input type="number" min="0" value="{{ item.cost_price|floatformat:0 }}"
-                 data-field="cost_price" data-id="{{ item.id }}"
-                 onblur="saveField({{ item.id }}, 'cost_price', this)"
-                 onkeydown="if(event.key==='Enter'){this.blur()}"
-                 style="width:70px">
-          <span style="font-size:11px;color:var(--muted)">сом</span>
-        </span>
-        <span class="kmi-margin zero" id="kmi-margin-{{ item.id }}">—</span>
+      <div class="kmi-meta">
+        <span class="kmi-price-badge" id="kmi-price-{{ item.id }}">{{ item.price|floatformat:0 }} сом</span>
+        <span class="kmi-margin-badge zero" id="kmi-margin-{{ item.id }}">—</span>
       </div>
     </div>
-    <button onclick="toggleItem({{ item.id }}, this)" class="db-btn db-btn-ghost db-btn-sm">{% if item.is_active %}👁{% else %}🚫{% endif %}</button>
-    <button onclick="deleteItem({{ item.id }})" class="db-btn db-btn-ghost db-btn-sm" style="color:#ff3b30">🗑</button>
+    <div class="kmi-actions">
+      <button class="db-btn db-btn-ghost db-btn-sm"
+              onclick="openEditModal({{ item.id }}, '{{ item.name|escapejs }}', '{{ item.description|escapejs }}', {{ item.price|floatformat:0 }}, {{ item.cost_price|floatformat:0 }}, '{% if item.photo %}{{ item.photo.url }}{% endif %}', {{ item.is_active|yesno:'true,false' }})"
+              title="Редактировать">✏️</button>
+      <button class="db-btn db-btn-ghost db-btn-sm" id="kmi-tog-{{ item.id }}"
+              onclick="toggleItem({{ item.id }}, this)"
+              title="{% if item.is_active %}Скрыть{% else %}Показать{% endif %}">
+        {% if item.is_active %}👁{% else %}🚫{% endif %}
+      </button>
+    </div>
   </div>
   {% empty %}
-  <div style="font-size:13px;color:var(--muted);padding:8px 0">Нет позиций</div>
+  <div style="font-size:13px;color:var(--muted);padding:8px 0">Нет позиций — нажмите «+ Блюдо»</div>
   {% endfor %}
-
-  <!-- Форма добавления -->
-  <div class="kmi-add-form" id="addform-{{ cat.id }}">
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end">
-      <div>
-        <label class="db-label">Название *</label>
-        <input class="db-input" id="iname-{{ cat.id }}" placeholder="Шашлык">
-      </div>
-      <div>
-        <label class="db-label">Цена (сом)</label>
-        <input class="db-input" id="iprice-{{ cat.id }}" type="number" min="0" value="0">
-      </div>
-      <div>
-        <label class="db-label">Себестоимость (сом)</label>
-        <input class="db-input" id="icost-{{ cat.id }}" type="number" min="0" value="0">
-      </div>
-      <div>
-        <label class="db-label">Фото</label>
-        <input class="db-input" id="iphoto-{{ cat.id }}" type="file" accept="image/*">
-      </div>
-    </div>
-    <div style="margin-top:8px">
-      <label class="db-label">Описание</label>
-      <input class="db-input" id="idesc-{{ cat.id }}" placeholder="Краткое описание блюда (необязательно)">
-    </div>
-    <div style="margin-top:10px;display:flex;gap:8px">
-      <button onclick="addItem({{ cat.id }})" class="db-btn db-btn-primary db-btn-sm">Добавить</button>
-      <button onclick="toggleAddForm({{ cat.id }})" class="db-btn db-btn-ghost db-btn-sm">Отмена</button>
-    </div>
-  </div>
 </div>
 {% empty %}
 <div class="db-card" style="text-align:center;padding:48px">
@@ -162,133 +224,346 @@
 </div>
 {% endfor %}
 
+
+<!-- ══ EDIT MODAL ══ -->
+<div class="km-ov" id="editOv" onclick="ovClose(event,'editOv')">
+  <div class="km-sheet">
+    <div class="km-sheet-drag"></div>
+    <div class="km-sheet-head">
+      <div class="km-sheet-title" id="editTitle">Редактировать блюдо</div>
+      <div class="km-sheet-close" onclick="closeModal('editOv')">✕</div>
+    </div>
+    <div class="km-sheet-body">
+
+      <!-- Photo -->
+      <div>
+        <label class="db-label">Фото</label>
+        <div class="km-edit-photo-wrap" id="editPhotoWrap">
+          <span id="editPhotoEmoji">🍽️</span>
+          <img id="editPhotoImg" src="" alt="" style="display:none">
+          <div class="km-edit-photo-overlay">
+            <button class="km-ep-btn" onclick="document.getElementById('editPhotoFile').click()">📷 Заменить</button>
+            <button class="km-ep-btn" id="editPhotoDelBtn" style="display:none" onclick="removeEditPhoto()">🗑 Удалить</button>
+          </div>
+          <div class="km-edit-photo-spin" id="editPhotoSpin">⏳</div>
+          <input type="file" id="editPhotoFile" accept="image/*" onchange="uploadEditPhoto(this)">
+        </div>
+      </div>
+
+      <!-- Name -->
+      <div>
+        <label class="db-label">Название *</label>
+        <input class="db-input" id="editName" placeholder="Название блюда">
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label class="db-label">Описание</label>
+        <textarea class="db-input" id="editDesc" rows="3" placeholder="Краткое описание (необязательно)" style="resize:vertical"></textarea>
+      </div>
+
+      <!-- Price + Cost -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="db-label">Цена (сом)</label>
+          <input class="db-input" id="editPrice" type="number" min="0" value="0">
+        </div>
+        <div>
+          <label class="db-label">Себестоимость (сом)</label>
+          <input class="db-input" id="editCost" type="number" min="0" value="0">
+        </div>
+      </div>
+      <div id="editMarginInfo" style="font-size:12px;color:var(--muted)"></div>
+
+    </div>
+    <div class="km-sheet-footer">
+      <button class="db-btn db-btn-primary" style="flex:1" onclick="saveEdit()">💾 Сохранить</button>
+      <button class="db-btn db-btn-ghost" style="color:#ff3b30" onclick="deleteEditItem()">🗑 Удалить</button>
+      <button class="db-btn db-btn-ghost" onclick="closeModal('editOv')">Отмена</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ ADD MODAL ══ -->
+<div class="km-ov" id="addOv" onclick="ovClose(event,'addOv')">
+  <div class="km-sheet">
+    <div class="km-sheet-drag"></div>
+    <div class="km-sheet-head">
+      <div class="km-sheet-title">Новое блюдо</div>
+      <div class="km-sheet-close" onclick="closeModal('addOv')">✕</div>
+    </div>
+    <div class="km-sheet-body">
+
+      <!-- Photo -->
+      <div>
+        <label class="db-label">Фото</label>
+        <div class="km-edit-photo-wrap" id="addPhotoWrap" onclick="document.getElementById('addPhotoFile').click()" style="cursor:pointer">
+          <span id="addPhotoEmoji">📷 Нажмите для выбора</span>
+          <img id="addPhotoImg" src="" alt="" style="display:none">
+          <input type="file" id="addPhotoFile" accept="image/*" onclick="event.stopPropagation()" onchange="previewAddPhoto(this)">
+        </div>
+      </div>
+
+      <!-- Name -->
+      <div>
+        <label class="db-label">Название *</label>
+        <input class="db-input" id="addName" placeholder="Шашлык">
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label class="db-label">Описание</label>
+        <textarea class="db-input" id="addDesc" rows="3" placeholder="Краткое описание (необязательно)" style="resize:vertical"></textarea>
+      </div>
+
+      <!-- Price + Cost -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="db-label">Цена (сом)</label>
+          <input class="db-input" id="addPrice" type="number" min="0" value="0">
+        </div>
+        <div>
+          <label class="db-label">Себестоимость (сом)</label>
+          <input class="db-input" id="addCost" type="number" min="0" value="0">
+        </div>
+      </div>
+
+    </div>
+    <div class="km-sheet-footer">
+      <button class="db-btn db-btn-primary" style="flex:1" onclick="saveAdd()">+ Добавить</button>
+      <button class="db-btn db-btn-ghost" onclick="closeModal('addOv')">Отмена</button>
+    </div>
+  </div>
+</div>
+
+
 <script>
-const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1]||"";
+const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
 const UPDATE_URL = `{% url 'dashboard:karaoke_menu_item_update' 0 %}`;
 const DELETE_URL = `{% url 'dashboard:karaoke_menu_item_delete' 0 %}`;
 const TOGGLE_URL = `{% url 'dashboard:karaoke_menu_item_toggle' 0 %}`;
+const ADD_URL    = `{% url 'dashboard:karaoke_menu_item_add' venue.id %}`;
+const CAT_URL    = `{% url 'dashboard:karaoke_menu_cat_add' venue.id %}`;
 
 function iUrl(tmpl, id) { return tmpl.replace("/0/", `/${id}/`); }
 
-function renderMargin(id, margin, pct) {
+// ── Margins ────────────────────────────────────────────────────────────────
+function marginClass(m) { return m > 0 ? "pos" : m < 0 ? "neg" : "zero"; }
+function marginText(m, pct) {
+  if (m > 0) return `+${m} сом (${pct}%)`;
+  if (m < 0) return `${m} сом`;
+  return "0 сом";
+}
+function updateMarginBadge(id, price, cost) {
   const el = document.getElementById(`kmi-margin-${id}`);
   if (!el) return;
-  el.className = "kmi-margin " + (margin > 0 ? "pos" : margin < 0 ? "neg" : "zero");
-  el.textContent = margin > 0 ? `+${margin} сом (${pct}%)` : margin < 0 ? `${margin} сом` : "0 сом";
+  const m = price - cost, pct = price ? Math.round(m / price * 100) : 0;
+  el.className = "kmi-margin-badge " + marginClass(m);
+  el.textContent = marginText(m, pct);
 }
 
-// Compute margin from current inputs on page load
 document.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll("[data-field='price']").forEach(inp => {
-    const id = inp.dataset.id;
-    const cp = document.querySelector(`[data-field='cost_price'][data-id='${id}']`);
-    if (!cp) return;
-    const price = parseInt(inp.value) || 0;
-    const cost = parseInt(cp.value) || 0;
-    const margin = price - cost;
-    const pct = price ? Math.round(margin / price * 100) : 0;
-    renderMargin(id, margin, pct);
-  });
+  {% for cat in cats %}{% for item in cat.items.all %}
+  updateMarginBadge({{ item.id }}, {{ item.price|floatformat:0 }}, {{ item.cost_price|floatformat:0 }});
+  {% endfor %}{% endfor %}
 });
 
-async function saveField(id, field, inp) {
-  const fd = new FormData();
-  fd.append(field, field === "description" ? (inp.value || "") : (inp.value || 0));
-  const r = await fetch(iUrl(UPDATE_URL, id), {method:"POST",body:fd,headers:{"X-CSRFToken":csrf}});
-  const d = await r.json();
-  if (d.ok && d.margin !== undefined) renderMargin(id, d.margin, d.margin_pct);
+// ── Modal helpers ──────────────────────────────────────────────────────────
+function openModal(id) {
+  document.getElementById(id).classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove("open");
+  document.body.style.overflow = "";
+}
+function ovClose(e, id) {
+  if (e.target === document.getElementById(id)) closeModal(id);
+}
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") { closeModal("editOv"); closeModal("addOv"); }
+});
+
+// ── Edit modal ─────────────────────────────────────────────────────────────
+let editId = null;
+
+function openEditModal(id, name, desc, price, cost, photoUrl, isActive) {
+  editId = id;
+  document.getElementById("editTitle").textContent = "Редактировать: " + name;
+  document.getElementById("editName").value  = name;
+  document.getElementById("editDesc").value  = desc;
+  document.getElementById("editPrice").value = price;
+  document.getElementById("editCost").value  = cost;
+
+  const img   = document.getElementById("editPhotoImg");
+  const emoji = document.getElementById("editPhotoEmoji");
+  const delBtn = document.getElementById("editPhotoDelBtn");
+  if (photoUrl) {
+    img.src = photoUrl; img.style.display = "block"; emoji.style.display = "none";
+    delBtn.style.display = "inline-flex";
+  } else {
+    img.src = ""; img.style.display = "none"; emoji.style.display = "block";
+    delBtn.style.display = "none";
+  }
+
+  const m = price - cost, pct = price ? Math.round(m / price * 100) : 0;
+  document.getElementById("editMarginInfo").textContent =
+    `Маржа: ${marginText(m, pct)}`;
+
+  // live margin update
+  ["editPrice","editCost"].forEach(fid => {
+    document.getElementById(fid).oninput = () => {
+      const p = parseInt(document.getElementById("editPrice").value) || 0;
+      const c = parseInt(document.getElementById("editCost").value) || 0;
+      const mm = p - c, pp = p ? Math.round(mm / p * 100) : 0;
+      document.getElementById("editMarginInfo").textContent = `Маржа: ${marginText(mm, pp)}`;
+    };
+  });
+
+  document.getElementById("editPhotoFile").value = "";
+  openModal("editOv");
 }
 
-async function uploadPhoto(id, input) {
-  if (!input.files[0]) return;
-  const spin = document.getElementById(`kmi-spin-${id}`);
-  spin.style.display = "flex";
+async function saveEdit() {
+  if (!editId) return;
+  const name = document.getElementById("editName").value.trim();
+  if (!name) { document.getElementById("editName").focus(); return; }
   const fd = new FormData();
-  fd.append("photo", input.files[0]);
-  const r = await fetch(iUrl(UPDATE_URL, id), {method:"POST",body:fd,headers:{"X-CSRFToken":csrf}});
+  fd.append("name",        name);
+  fd.append("description", document.getElementById("editDesc").value.trim());
+  fd.append("price",       document.getElementById("editPrice").value || 0);
+  fd.append("cost_price",  document.getElementById("editCost").value || 0);
+
+  const r = await fetch(iUrl(UPDATE_URL, editId), {method:"POST",body:fd,headers:{"X-CSRFToken":csrf}});
+  const d = await r.json();
+  if (!d.ok) { alert(d.error || "Ошибка"); return; }
+
+  // update card
+  const price = parseInt(document.getElementById("editPrice").value) || 0;
+  const cost  = parseInt(document.getElementById("editCost").value) || 0;
+  document.getElementById(`kmi-name-${editId}`).textContent = d.name;
+  document.getElementById(`kmi-price-${editId}`).textContent = price + " сом";
+  updateMarginBadge(editId, price, cost);
+  const descEl = document.getElementById(`kmi-desc-${editId}`);
+  const desc = document.getElementById("editDesc").value.trim();
+  if (desc) { descEl.textContent = desc.length > 55 ? desc.slice(0,55) + "…" : desc; descEl.style.display = "block"; }
+  else { descEl.style.display = "none"; }
+
+  closeModal("editOv");
+}
+
+async function deleteEditItem() {
+  if (!editId || !confirm("Удалить блюдо?")) return;
+  const r = await fetch(iUrl(DELETE_URL, editId), {method:"POST",headers:{"X-CSRFToken":csrf}});
+  const d = await r.json();
+  if (d.ok) { document.getElementById(`kmi-${editId}`)?.remove(); closeModal("editOv"); }
+}
+
+// ── Photo in edit modal ────────────────────────────────────────────────────
+async function uploadEditPhoto(input) {
+  if (!input.files[0] || !editId) return;
+  const spin = document.getElementById("editPhotoSpin");
+  spin.style.display = "flex";
+  const fd = new FormData(); fd.append("photo", input.files[0]);
+  const r = await fetch(iUrl(UPDATE_URL, editId), {method:"POST",body:fd,headers:{"X-CSRFToken":csrf}});
   const d = await r.json();
   spin.style.display = "none";
   if (d.ok && d.photo_url) {
-    const el = document.getElementById(`kmi-img-${id}`);
-    if (el.tagName === "IMG") {
-      el.src = d.photo_url + "?t=" + Date.now();
-    } else {
-      // was emoji span — replace with img
-      const img = document.createElement("img");
-      img.id = `kmi-img-${id}`;
-      img.src = d.photo_url;
-      img.alt = "";
-      el.replaceWith(img);
+    const img = document.getElementById("editPhotoImg");
+    img.src = d.photo_url + "?t=" + Date.now();
+    img.style.display = "block";
+    document.getElementById("editPhotoEmoji").style.display = "none";
+    document.getElementById("editPhotoDelBtn").style.display = "inline-flex";
+    // update thumbnail in card
+    const th = document.getElementById(`kmi-img-${editId}`);
+    if (th) {
+      if (th.tagName === "IMG") { th.src = d.photo_url + "?t=" + Date.now(); }
+      else {
+        const img2 = document.createElement("img");
+        img2.id = `kmi-img-${editId}`; img2.src = d.photo_url; img2.alt = "";
+        th.replaceWith(img2);
+      }
     }
-    // show delete button
-    const del = document.getElementById(`kmi-del-btn-${id}`);
-    if (del) del.style.display = "flex";
   }
   input.value = "";
 }
 
-async function removePhoto(e, id) {
-  e.stopPropagation();
-  if (!confirm("Удалить фото?")) return;
-  const fd = new FormData();
-  fd.append("remove_photo", "1");
-  const r = await fetch(iUrl(UPDATE_URL, id), {method:"POST",body:fd,headers:{"X-CSRFToken":csrf}});
+async function removeEditPhoto() {
+  if (!editId || !confirm("Удалить фото?")) return;
+  const fd = new FormData(); fd.append("remove_photo", "1");
+  const r = await fetch(iUrl(UPDATE_URL, editId), {method:"POST",body:fd,headers:{"X-CSRFToken":csrf}});
   const d = await r.json();
   if (d.ok) {
-    const el = document.getElementById(`kmi-img-${id}`);
-    const span = document.createElement("span");
-    span.id = `kmi-img-${id}`;
-    span.textContent = "🍽️";
-    el.replaceWith(span);
-    e.currentTarget.style.display = "none";
+    document.getElementById("editPhotoImg").style.display = "none";
+    document.getElementById("editPhotoEmoji").style.display = "block";
+    document.getElementById("editPhotoDelBtn").style.display = "none";
+    // update thumbnail
+    const th = document.getElementById(`kmi-img-${editId}`);
+    if (th) { const span = document.createElement("span"); span.id = `kmi-img-${editId}`; span.textContent = "🍽️"; th.replaceWith(span); }
   }
 }
 
-function toggleAddForm(catId) {
-  document.getElementById(`addform-${catId}`).classList.toggle("open");
+// ── Add modal ──────────────────────────────────────────────────────────────
+let addCatId = null;
+
+function openAddModal(catId) {
+  addCatId = catId;
+  document.getElementById("addName").value  = "";
+  document.getElementById("addDesc").value  = "";
+  document.getElementById("addPrice").value = "0";
+  document.getElementById("addCost").value  = "0";
+  document.getElementById("addPhotoFile").value = "";
+  document.getElementById("addPhotoImg").style.display = "none";
+  document.getElementById("addPhotoEmoji").style.display = "block";
+  document.getElementById("addPhotoEmoji").textContent = "📷 Нажмите для выбора";
+  openModal("addOv");
 }
 
-async function addCat() {
-  const name = document.getElementById("newCatName").value.trim();
-  if (!name) return;
-  const fd = new FormData(); fd.append("name", name);
-  const r = await fetch("{% url 'dashboard:karaoke_menu_cat_add' venue.id %}", {method:"POST",body:fd,headers:{"X-CSRFToken":csrf}});
-  const d = await r.json();
-  if (d.ok) location.reload();
+function previewAddPhoto(input) {
+  if (!input.files[0]) return;
+  const url = URL.createObjectURL(input.files[0]);
+  const img = document.getElementById("addPhotoImg");
+  img.src = url; img.style.display = "block";
+  document.getElementById("addPhotoEmoji").style.display = "none";
 }
 
-async function addItem(catId) {
-  const name = document.getElementById(`iname-${catId}`).value.trim();
-  const price = document.getElementById(`iprice-${catId}`).value;
-  const cost = document.getElementById(`icost-${catId}`).value;
-  const desc = document.getElementById(`idesc-${catId}`).value.trim();
-  const photoInput = document.getElementById(`iphoto-${catId}`);
-  if (!name) { alert("Введите название"); return; }
+async function saveAdd() {
+  const name = document.getElementById("addName").value.trim();
+  if (!name) { document.getElementById("addName").focus(); return; }
   const fd = new FormData();
-  fd.append("name", name); fd.append("price", price); fd.append("cost_price", cost);
-  fd.append("description", desc); fd.append("cat_id", catId);
-  if (photoInput.files[0]) fd.append("photo", photoInput.files[0]);
-  const r = await fetch("{% url 'dashboard:karaoke_menu_item_add' venue.id %}", {method:"POST",body:fd,headers:{"X-CSRFToken":csrf}});
+  fd.append("name",        name);
+  fd.append("description", document.getElementById("addDesc").value.trim());
+  fd.append("price",       document.getElementById("addPrice").value || 0);
+  fd.append("cost_price",  document.getElementById("addCost").value || 0);
+  fd.append("cat_id",      addCatId);
+  const photo = document.getElementById("addPhotoFile").files[0];
+  if (photo) fd.append("photo", photo);
+  const r = await fetch(ADD_URL, {method:"POST",body:fd,headers:{"X-CSRFToken":csrf}});
   const d = await r.json();
-  if (d.ok) location.reload();
+  if (d.ok) { location.reload(); }
   else alert(d.error || "Ошибка");
 }
 
-async function deleteItem(id) {
-  if (!confirm("Удалить позицию?")) return;
-  const r = await fetch(iUrl(DELETE_URL, id), {method:"POST",headers:{"X-CSRFToken":csrf}});
-  const d = await r.json();
-  if (d.ok) document.getElementById(`kmi-${id}`)?.remove();
-}
-
+// ── Toggle visible ─────────────────────────────────────────────────────────
 async function toggleItem(id, btn) {
   const r = await fetch(iUrl(TOGGLE_URL, id), {method:"POST",headers:{"X-CSRFToken":csrf}});
   const d = await r.json();
   if (d.ok) {
-    const row = document.getElementById(`kmi-${id}`);
-    if (d.is_active) { btn.textContent="👁"; row.style.opacity="1"; }
-    else { btn.textContent="🚫"; row.style.opacity=".45"; }
+    const card = document.getElementById(`kmi-${id}`);
+    if (d.is_active) { btn.textContent = "👁"; card.classList.remove("inactive"); }
+    else             { btn.textContent = "🚫"; card.classList.add("inactive"); }
   }
+}
+
+// ── Add category ───────────────────────────────────────────────────────────
+async function addCat() {
+  const name = document.getElementById("newCatName").value.trim();
+  if (!name) return;
+  const fd = new FormData(); fd.append("name", name);
+  const r = await fetch(CAT_URL, {method:"POST",body:fd,headers:{"X-CSRFToken":csrf}});
+  const d = await r.json();
+  if (d.ok) location.reload();
 }
 </script>
 {% endblock %}
