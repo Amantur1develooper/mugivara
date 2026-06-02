@@ -390,6 +390,7 @@ def karaoke_menu_item_add(request, venue_id):
     item.name = (request.POST.get("name") or "").strip()
     item.price = request.POST.get("price") or 0
     item.cost_price = request.POST.get("cost_price") or 0
+    item.description = (request.POST.get("description") or "").strip()
     cat_id = request.POST.get("cat_id")
     item.category_id = int(cat_id) if cat_id and cat_id.isdigit() else None
     if "photo" in request.FILES:
@@ -445,6 +446,9 @@ def karaoke_menu_item_update(request, item_id):
             fields.append("cost_price")
         except (ValueError, TypeError):
             pass
+    if "description" in request.POST:
+        item.description = request.POST["description"].strip()
+        fields.append("description")
     if "photo" in request.FILES:
         item.photo = request.FILES["photo"]
         fields.append("photo")
