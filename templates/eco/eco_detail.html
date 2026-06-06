@@ -260,6 +260,103 @@
 {% endblock %}
 
 {% block content %}
+
+<!-- ══ SPLASH SCREEN ══ -->
+<div id="ecoSplash" style="
+  position:fixed;inset:0;z-index:9999;
+  background:#052e16;
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:0;
+  transition:opacity .5s ease;
+">
+
+  <!-- Webordo logo (shown first) -->
+  <div id="splashWebordo" style="
+    display:flex;flex-direction:column;align-items:center;gap:16px;
+    opacity:0;transform:scale(.88);
+    transition:opacity .45s ease, transform .45s ease;
+  ">
+    <div style="
+      font-family:'Unbounded',sans-serif;font-weight:900;font-size:38px;
+      letter-spacing:-1.5px;
+      background:linear-gradient(135deg,#ff4d1c,#ff8a00);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      line-height:1;
+    ">Web<span style="-webkit-text-fill-color:#00b896">o</span>rdo</div>
+    <div style="font-size:12px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.35)">powered by</div>
+  </div>
+
+  <!-- Eco project logo (shown second) -->
+  <div id="splashProject" style="
+    display:flex;flex-direction:column;align-items:center;gap:16px;
+    opacity:0;transform:scale(.88);
+    transition:opacity .45s ease, transform .45s ease;
+    position:absolute;
+  ">
+    <div style="
+      width:96px;height:96px;border-radius:22px;overflow:hidden;
+      background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);
+      display:flex;align-items:center;justify-content:center;font-size:44px;
+    ">
+      {% if project.logo %}<img src="{{ project.logo.url }}" alt="" style="width:100%;height:100%;object-fit:cover">
+      {% else %}🌿{% endif %}
+    </div>
+    <div style="
+      font-family:'Unbounded',sans-serif;font-weight:900;font-size:20px;
+      color:#fff;text-align:center;max-width:260px;line-height:1.25;
+    ">{{ project.name }}</div>
+    <div style="
+      display:flex;align-items:center;gap:6px;
+      font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+      color:rgba(74,222,128,.7);
+    ">♻️ ЭКО-ПРОЕКТ</div>
+  </div>
+
+  <!-- Progress dots -->
+  <div style="position:absolute;bottom:48px;display:flex;gap:8px;" id="splashDots">
+    <div id="dot1" style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.6);transition:background .3s"></div>
+    <div id="dot2" style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);transition:background .3s"></div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const splash   = document.getElementById("ecoSplash");
+  const wb       = document.getElementById("splashWebordo");
+  const proj     = document.getElementById("splashProject");
+  const dot1     = document.getElementById("dot1");
+  const dot2     = document.getElementById("dot2");
+
+  // Prevent body scroll while splash is visible
+  document.body.style.overflow = "hidden";
+
+  // Step 1 — show Webordo logo
+  requestAnimationFrame(() => {
+    wb.style.opacity = "1";
+    wb.style.transform = "scale(1)";
+  });
+
+  // Step 2 — crossfade to project logo
+  setTimeout(() => {
+    wb.style.opacity = "0";
+    wb.style.transform = "scale(.92)";
+    dot1.style.background = "rgba(255,255,255,.2)";
+    dot2.style.background = "rgba(255,255,255,.6)";
+    setTimeout(() => {
+      proj.style.opacity = "1";
+      proj.style.transform = "scale(1)";
+    }, 200);
+  }, 900);
+
+  // Step 3 — fade out splash, reveal page
+  setTimeout(() => {
+    splash.style.opacity = "0";
+    document.body.style.overflow = "";
+    setTimeout(() => splash.remove(), 520);
+  }, 2000);
+})();
+</script>
+
 <div class="ed-page">
 
   <a href="{% url 'eco:eco_list' %}" class="ed-back">← Все эко-проекты</a>
