@@ -120,8 +120,28 @@ class BranchAdmin(admin.ModelAdmin):
     search_fields       = ("name_ru", "name_ky", "name_en", "address", "phone")
     inlines             = (BranchMenuSetInline, BranchTelegramLinkInline, BranchItemInline)
     actions             = (sync_menu_action,)
-  
+    readonly_fields     = ("created_at", "updated_at")
+
     change_form_template = "admin/core/branch/change_form.html"
+
+    fieldsets = (
+        ("Основное", {"fields": (
+            "restaurant", "name_ru", "name_ky", "name_en",
+            "address", "phone", "map_url", "external_url",
+            "is_active",
+        )}),
+        ("Доставка", {"fields": (
+            "delivery_enabled", "min_order_amount", "delivery_fee",
+            "pos_delivery_fee_enabled", "free_delivery_from",
+        )}),
+        ("Оплата", {"fields": ("pay_cash_enabled", "pay_online_enabled")}),
+        ("Режим работы", {"fields": (
+            "is_open_24h", "open_time", "close_time", "work_days",
+        )}),
+        ("Медиа", {"fields": ("cover_photo", "promo_photo")}),
+        ("Координаты", {"fields": ("lat", "lon"), "classes": ("collapse",)}),
+        ("Служебное", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
 
     def save_formset(self, request, form, formset, change):
         # Сохраняем inline как обычно
