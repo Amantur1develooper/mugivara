@@ -1,7 +1,7 @@
+import secrets
 from django.contrib import admin
 from django import forms
 from django.utils.html import format_html
-from django.contrib import admin
 from .models import BranchStaffToken
 from .models import Floor, Place, Booking
 from django.utils.safestring import mark_safe
@@ -61,28 +61,46 @@ class FloorAdmin(admin.ModelAdmin):
 # -----------------------------
 @admin.register(Place)
 class PlaceAdmin(admin.ModelAdmin):
-    list_display = ("id", "title",'token',"type", "seats", "floor", "branch", "is_active", "photo_thumb", "created_at")
-    list_filter = ("type", "is_active", "floor__branch", "floor")
-    search_fields = ("title", "floor__name_ru", "floor__branch__name")
+    list_display = ("id", "title", "token", "type", "seats", "floor", "branch", "is_active", "photo_thumb", "created_at")
+    list_filter  = ("type", "is_active", "floor__branch", "floor")
+    search_fields = ("title", "token", "floor__name_ru", "floor__branch__name_ru")
     list_editable = ("is_active",)
     ordering = ("floor__sort_order", "id")
-
-    # если Floor/Branch большие — удобно включить автокомплит
     autocomplete_fields = ("floor",)
 
-    readonly_fields = ("photo_thumb_big", "created_at", "updated_at")
+    readonly_fields = ("photo_thumb_big", "menu_link", "created_at", "updated_at")
 
     fieldsets = (
-        ("Основное", {"fields": ("floor", 'token', "title", "type", "seats", "is_active")}),
+        ("QR / Токен", {"fields": ("token", "menu_link"), "description":
+            "Токен используется в QR-коде стола. Можно вручную ввести новый или оставить пустым — система сгенерирует автоматически."}),
+        ("Основное",  {"fields": ("floor", "title", "type", "seats", "is_active")}),
         ("План зала", {"fields": ("x", "y")}),
-        ("Фото", {"fields": ("photo_thumb_big", "photo")}),
+        ("Фото",      {"fields": ("photo_thumb_big", "photo")}),
         ("Служебное", {"fields": ("created_at", "updated_at")}),
     )
-    def open_menu_link(self, obj):
+
+    actions = ["regenerate_token"]
+
+    @admin.action(description="🔄 Сгенерировать новый QR-токен для выбранных столов")
+    def regenerate_token(self, request, queryset):
+        updated = 0
+        for place in queryset:
+            place.token = secrets.token_urlsafe(10)[:20]
+            place.save(update_fields=["token"])
+            updated += 1
+        self.message_user(request, f"Токен обновлён у {updated} стол(ов).")
+
+    @admin.display(description="Ссылка меню (QR)")
+    def menu_link(self, obj):
         if not obj.token:
-            return "-"
-        return mark_safe(f'<a href="/t/{obj.token}/menu/" target="_blank">Открыть меню</a>')
-    open_menu_link.short_description = "Меню стола"
+            return "—"
+        url = f"/t/{obj.token}/menu/"
+        return format_html(
+            '<a href="{}" target="_blank" style="font-family:monospace">{}</a>'
+            '&nbsp;&nbsp;<a href="{}" target="_blank" style="padding:3px 10px;background:#417690;color:#fff;border-radius:4px;font-size:12px;text-decoration:none">Открыть ↗</a>',
+            url, url, url,
+        )
+
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         return qs.select_related("floor", "floor__branch")
@@ -95,7 +113,7 @@ class PlaceAdmin(admin.ModelAdmin):
     def photo_thumb(self, obj: Place):
         if obj.photo:
             return format_html(
-                '<img src="{}" style="height:40px; width:40px; object-fit:cover; border-radius:8px;" />',
+                '<img src="{}" style="height:40px;width:40px;object-fit:cover;border-radius:8px;" />',
                 obj.photo.url,
             )
         return "—"
@@ -104,7 +122,7 @@ class PlaceAdmin(admin.ModelAdmin):
     def photo_thumb_big(self, obj: Place):
         if obj.photo:
             return format_html(
-                '<img src="{}" style="max-height:220px; width:auto; object-fit:cover; border-radius:14px;" />',
+                '<img src="{}" style="max-height:220px;width:auto;object-fit:cover;border-radius:14px;" />',
                 obj.photo.url,
             )
         return "—"
