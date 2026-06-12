@@ -2,6 +2,7 @@ import secrets
 from django.contrib import admin
 from django import forms
 from django.utils.html import format_html
+from django.urls import reverse
 from .models import BranchStaffToken
 from .models import Floor, Place, Booking
 from django.utils.safestring import mark_safe
@@ -33,7 +34,7 @@ class PlaceInline(admin.TabularInline):
 class FloorAdmin(admin.ModelAdmin):
     list_display = ("id", "branch", "name_ru", "sort_order", "is_active", "places_count", "created_at", "updated_at")
     list_filter = ("branch", "is_active")
-    search_fields = ("name_ru", "name_ky", "name_en", "branch__name")
+    search_fields = ("name_ru", "name_ky", "name_en", "branch__name_ru")
     list_editable = ("sort_order", "is_active")
     ordering = ("sort_order", "id")
     inlines = (PlaceInline,)
@@ -94,11 +95,14 @@ class PlaceAdmin(admin.ModelAdmin):
     def menu_link(self, obj):
         if not obj.token:
             return "—"
-        url = f"/t/{obj.token}/menu/"
+        try:
+            url = reverse("table_menu", kwargs={"token": obj.token})
+        except Exception:
+            url = f"/ru/t/{obj.token}/menu/"
         return format_html(
-            '<a href="{}" target="_blank" style="font-family:monospace">{}</a>'
+            '<code style="font-size:12px">{}</code>'
             '&nbsp;&nbsp;<a href="{}" target="_blank" style="padding:3px 10px;background:#417690;color:#fff;border-radius:4px;font-size:12px;text-decoration:none">Открыть ↗</a>',
-            url, url, url,
+            url, url,
         )
 
     def get_queryset(self, request):
@@ -169,7 +173,7 @@ class BookingAdmin(admin.ModelAdmin):
         "created_at",
     )
     list_filter = ("status", "branch", "place__floor", "started_at")
-    search_fields = ("customer_name", "customer_phone", "place__title", "branch__name")
+    search_fields = ("customer_name", "customer_phone", "place__title", "branch__name_ru")
     date_hierarchy = "started_at"
     ordering = ("-id",)
 
