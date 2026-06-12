@@ -57,7 +57,8 @@ urlpatterns = [
     path("branch/<int:branch_id>/tables/floor/add/", views.floor_add,   name="floor_add"),
     path("floor/<int:floor_id>/delete/",             views.floor_delete, name="floor_delete"),
     path("floor/<int:floor_id>/table/add/",          views.table_add,    name="table_add"),
-    path("table/<int:table_id>/delete/",             views.table_delete, name="table_delete"),
+    path("table/<int:table_id>/delete/",             views.table_delete,        name="table_delete"),
+    path("table/<int:table_id>/regen-token/",        views.table_regen_token,   name="table_regen_token"),
 
     path("analytics/", views.analytics,        name="analytics"),
     path("orders/",    views.orders_analytics, name="orders"),

@@ -163,6 +163,9 @@
       <div class="tbl-actions">
         <button class="tbl-action-btn" onclick="copyUrl('{{ place.token }}', this)">📋 Ссылка</button>
         <button class="tbl-action-btn" onclick="toggleQr({{ place.id }})">QR</button>
+        {% if request.user.is_superuser %}
+        <button class="tbl-action-btn" onclick="openTokenModal({{ place.id }}, '{{ place.title|escapejs }}', '{{ place.token }}')" title="Изменить токен">🔑</button>
+        {% endif %}
         <button class="tbl-action-btn del" onclick="deleteTable({{ place.id }})">🗑</button>
       </div>
     </div>
@@ -516,5 +519,87 @@ function copyTablePageUrl() {
     }
   });
 }
+
+{% if request.user.is_superuser %}
+/* ── Token modal (superuser only) ── */
+const REGEN_URL_TPL = '{% url "dashboard:table_regen_token" 0 %}';
+let _tokenTableId = null;
+
+function openTokenModal(id, title, currentToken) {
+  _tokenTableId = id;
+  document.getElementById('tokenModalTitle').textContent = '🔑 Токен: ' + title;
+  document.getElementById('tokenInput').value = currentToken;
+  document.getElementById('tokenCurrent').textContent = currentToken;
+  document.getElementById('tokenModal').style.display = 'flex';
+}
+function closeTokenModal() {
+  document.getElementById('tokenModal').style.display = 'none';
+  _tokenTableId = null;
+}
+async function saveToken() {
+  if (!_tokenTableId) return;
+  const newToken = document.getElementById('tokenInput').value.trim();
+  const d = await post(sUrl(REGEN_URL_TPL, _tokenTableId), { token: newToken });
+  if (!d.ok) { alert(d.error || 'Ошибка'); return; }
+
+  // обновить кнопку "Ссылка" в строке стола
+  const row = document.getElementById(`trow-${_tokenTableId}`);
+  if (row) {
+    const copyBtn = row.querySelector('[onclick^="copyUrl"]');
+    if (copyBtn) copyBtn.setAttribute('onclick', `copyUrl('${escJs(d.token)}',this)`);
+    const tokenBtn = row.querySelector('[onclick^="openTokenModal"]');
+    if (tokenBtn) tokenBtn.setAttribute('onclick', `openTokenModal(${_tokenTableId},'${escJs(row.querySelector('.tbl-title')?.textContent||'')}','${escJs(d.token)}')`);
+  }
+  // сбросить QR если был открыт (потребует перерисовки)
+  const qrWrap = document.getElementById(`qr-${_tokenTableId}`);
+  if (qrWrap) {
+    qrWrap.classList.remove('open');
+    const canvas = document.getElementById(`qrc-${_tokenTableId}`);
+    if (canvas) { canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height); delete canvas.dataset.drawn; }
+  }
+
+  document.getElementById('tokenCurrent').textContent = d.token;
+  document.getElementById('tokenInput').value = d.token;
+  document.getElementById('tokenSavedMsg').style.display = 'inline';
+  setTimeout(() => { document.getElementById('tokenSavedMsg').style.display = 'none'; }, 2500);
+}
+async function regenToken() {
+  if (!_tokenTableId) return;
+  document.getElementById('tokenInput').value = '';
+  await saveToken();
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTokenModal(); });
+{% endif %}
 </script>
+
+{% if request.user.is_superuser %}
+<!-- Token modal -->
+<div id="tokenModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.5);align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:24px;width:100%;max-width:440px;position:relative">
+    <div style="font-family:'Unbounded',sans-serif;font-size:14px;font-weight:800;color:var(--text);margin-bottom:16px" id="tokenModalTitle">Токен</div>
+
+    <div style="margin-bottom:10px">
+      <label class="db-label">Текущий токен</label>
+      <div style="font-family:monospace;font-size:13px;color:var(--muted);background:var(--bg);padding:8px 12px;border-radius:8px;border:1px solid var(--border);word-break:break-all" id="tokenCurrent"></div>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label class="db-label">Новый токен (оставьте пустым для авто-генерации)</label>
+      <input id="tokenInput" class="db-input" placeholder="my-custom-token или оставьте пустым"
+             onkeydown="if(event.key==='Enter') saveToken()">
+      <div style="font-size:11px;color:var(--muted);margin-top:5px">
+        ⚠️ Старый QR-код перестанет работать. Нужно будет распечатать новый QR.
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="db-btn db-btn-primary" onclick="saveToken()">💾 Сохранить</button>
+      <button class="db-btn db-btn-ghost" onclick="regenToken()">🔄 Авто-генерация</button>
+      <button class="db-btn db-btn-ghost" onclick="closeTokenModal()">Отмена</button>
+      <span id="tokenSavedMsg" style="display:none;font-size:12px;color:#00b896;font-weight:700">✅ Токен обновлён</span>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}

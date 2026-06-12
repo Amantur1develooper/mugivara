@@ -1,3 +1,4 @@
+import secrets as _secrets
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
@@ -1586,6 +1587,23 @@ def table_delete(request, table_id):
         return JsonResponse({"ok": False}, status=403)
     place.delete()
     return JsonResponse({"ok": True})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def table_regen_token(request, table_id):
+    if not request.user.is_superuser:
+        return JsonResponse({"ok": False, "error": "Только суперпользователь"}, status=403)
+    place = get_object_or_404(Place, id=table_id)
+    new_token = request.POST.get("token", "").strip()
+    if new_token:
+        if Place.objects.filter(token=new_token).exclude(id=table_id).exists():
+            return JsonResponse({"ok": False, "error": "Этот токен уже занят другим столом"})
+        place.token = new_token
+    else:
+        place.token = _secrets.token_urlsafe(10)[:20]
+    place.save(update_fields=["token"])
+    return JsonResponse({"ok": True, "token": place.token})
 
 
 # ══════════════════════════════════════════════════════════════════════════════
