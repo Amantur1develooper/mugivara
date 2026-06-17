@@ -26,7 +26,9 @@ _RESET = "\x03"
 
 def _ticket(order, items):
     """
-    Кухонный тикет.  items = [(name, qty), ...]
+    Кухонный тикет.
+    items = [(name, qty), ...] или [(name, qty, ingredient_lines), ...]
+    ingredient_lines — список строк с составом (для заказов «собери сам»).
     """
     now = timezone.localtime()
 
@@ -46,8 +48,13 @@ def _ticket(order, items):
         lines.append(f"  ! {order.comment}")
 
     lines.append(SEP)
-    for name, qty in items:
+    for row in items:
+        name, qty = row[0], row[1]
+        ingredient_lines = row[2] if len(row) > 2 else None
         lines.append(f"  {qty}x  {name}")
+        if ingredient_lines:
+            for ing_line in ingredient_lines:
+                lines.append(f"      {ing_line}")
     lines.append(SEP)
     lines.append("")
 
@@ -176,7 +183,15 @@ def create_print_jobs(order, new_item_ids=None, new_cx_ids=None):
             no_group.append((oi.item.name_ru, oi.qty))
 
     for coi in cx_qs:
-        no_group.append((coi.constructor_name_snapshot or "Конструктор", coi.qty))
+        ing_lines = []
+        for sel in (coi.ingredients_snapshot or []):
+            ings = sel.get("ings") or []
+            if ings:
+                gname = sel.get("gname", "")
+                names = ", ".join(i.get("name", "") for i in ings if i.get("name"))
+                if names:
+                    ing_lines.append(f"{gname}: {names}" if gname else names)
+        no_group.append((coi.constructor_name_snapshot or "Собери сам", coi.qty, ing_lines))
 
     # Позиции без группы → дефолтная группа
     if no_group:
