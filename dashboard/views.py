@@ -1988,6 +1988,14 @@ def pos_order_status(request, order_id):
         except Exception as e:
             print("PRINT create_print_jobs ERROR (accept):", e)
 
+    # При закрытии онлайн-заказа → печать итогового чека на кассовый принтер
+    if new_status == Order.Status.CLOSED and prev_status != Order.Status.CLOSED:
+        try:
+            from printing.jobs import create_receipt_job
+            create_receipt_job(order)
+        except Exception as e:
+            print("PRINT create_receipt_job ERROR (close):", e)
+
     return JsonResponse({
         "ok": True,
         "status": order.status,
