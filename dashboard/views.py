@@ -1980,6 +1980,14 @@ def pos_order_status(request, order_id):
         fields.append("updated_at")
         order.save(update_fields=fields)
 
+    # При принятии входящего заказа (new → accepted) — отправить на кухонный принтер
+    if prev_status == Order.Status.NEW and new_status == Order.Status.ACCEPTED:
+        try:
+            from printing.jobs import create_print_jobs
+            create_print_jobs(order)
+        except Exception as e:
+            print("PRINT create_print_jobs ERROR (accept):", e)
+
     return JsonResponse({
         "ok": True,
         "status": order.status,
