@@ -1145,10 +1145,20 @@ const STATUS_NEXT = {
 const STATUS_LABEL = { new:"Новый", accepted:"Принят", cooking:"Готовится", ready:"Готов" };
 
 async function setOrderStatus(orderId, status) {
+  // Open receipt window BEFORE await to avoid Chrome popup blocker
+  const receiptWin = (status === "accepted") ? window.open('', '_blank') : null;
+
   const fd = new FormData();
   fd.append("status", status);
   if (status === "closed") fd.append("payment_status", "paid");
-  await fetch(STATUS_URL.replace("{id}", orderId), { method:"POST", body:fd, headers:{"X-CSRFToken":CSRF()} });
+
+  try {
+    await fetch(STATUS_URL.replace("{id}", orderId), { method:"POST", body:fd, headers:{"X-CSRFToken":CSRF()} });
+    if (receiptWin) receiptWin.location.href = RECEIPT_URL.replace("{id}", orderId) + "?auto=1";
+  } catch(e) {
+    if (receiptWin) receiptWin.close();
+    console.warn("status error", e);
+  }
   loadQueue();
 }
 
