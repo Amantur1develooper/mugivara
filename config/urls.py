@@ -3,12 +3,29 @@ from django.urls import path, include
 from django.conf.urls.i18n import i18n_patterns
 from config import settings
 from public_site.views_table import table_call_waiter, table_cart_update, table_add_to_cart, table_create_order, table_menu, table_cart, table_checkout, table_success
-
 from django.conf.urls.static import static
+
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from rest_framework_simplejwt.views import TokenRefreshView
+from api.auth_views import register_view, login_view, me_view, change_password_view
 
 urlpatterns = [
     path("i18n/", __import__("django.conf.urls.i18n").conf.urls.i18n.set_language, name="set_language"),
-    path("api/print/", include("printing.urls")),
+    path("api/print/",   include("printing.urls")),
+
+    # Swagger / OpenAPI
+    path("api/schema/",  SpectacularAPIView.as_view(),                        name="schema"),
+    path("api/docs/",    SpectacularSwaggerView.as_view(url_name="schema"),   name="swagger-ui"),
+
+    # Auth
+    path("api/auth/register/",        register_view,              name="api-register"),
+    path("api/auth/login/",           login_view,                 name="api-login"),
+    path("api/auth/refresh/",         TokenRefreshView.as_view(), name="api-token-refresh"),
+    path("api/auth/me/",              me_view,                    name="api-me"),
+    path("api/auth/change-password/", change_password_view,       name="api-change-password"),
+
+    # REST API v1
+    path("api/v1/", include("api.v1.urls")),
 ]
 
 urlpatterns += i18n_patterns(

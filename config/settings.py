@@ -45,6 +45,8 @@ DEBUG = False
 # Application definition
 INSTALLED_APPS = [
     'jazzmin',
+    "corsheaders",
+    "drf_spectacular",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -77,6 +79,7 @@ INSTALLED_APPS = [
 # CELERY_TASK_EAGER_PROPAGATES = True
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
      "django.middleware.locale.LocaleMiddleware",
@@ -237,9 +240,30 @@ CELERY_RESULT_BACKEND = REDIS_URL
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
         "rest_framework.authentication.SessionAuthentication",
-        "rest_framework.authentication.BasicAuthentication",
     ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
+    ],
+}
+
+from datetime import timedelta
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME":  timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+    "AUTH_HEADER_TYPES":      ("Bearer",),
+    "USER_ID_FIELD":          "id",
+    "USER_ID_CLAIM":          "user_id",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE":       "Webordo API",
+    "DESCRIPTION": "REST API для мобильного приложения Webordo",
+    "VERSION":     "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
 }
 
 TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN", "")
@@ -254,6 +278,17 @@ TELEGRAM_ADMIN_CHAT_ID = "PASTE_CHAT_ID_HERE"  # можно группу
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  JAZZMIN — красивый админ
+# ─────────────────────────────────────────────────────────────────────────────
+# ── CORS (для мобильного приложения) ─────────────────────────────────────────
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:8081",    # Expo / React Native dev server
+    "https://webordo.kg",
+    "https://www.webordo.kg",
+]
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = False   # только явно указанные домены
+
 # ─────────────────────────────────────────────────────────────────────────────
 JAZZMIN_SETTINGS = {
     # ── Шапка / брендинг ──────────────────────────────────────────────────────

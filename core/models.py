@@ -264,3 +264,20 @@ class Banner(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class UserProfile(models.Model):
+    """Профиль мобильного пользователя — привязан 1:1 к User."""
+    user  = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="profile",
+    )
+    phone = models.CharField("Телефон", max_length=20, unique=True)
+
+    class Meta:
+        verbose_name        = "Профиль пользователя"
+        verbose_name_plural = "Профили пользователей"
+
+    def __str__(self):
+        return f"{self.user.username} ({self.phone})"
