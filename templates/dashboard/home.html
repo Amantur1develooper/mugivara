@@ -139,12 +139,15 @@
     <div class="pg-title">Мои заведения</div>
     <div class="pg-sub">Управляйте меню, ценами и заказами</div>
   </div>
+  {% if request.user.is_superuser %}
   <button onclick="document.getElementById('newRestModal').style.display='flex'" class="db-btn db-btn-primary">
     + Новый ресторан
   </button>
+  {% endif %}
 </div>
 
-<!-- Модалка создания ресторана -->
+<!-- Модалка создания ресторана (только для суперпользователя) -->
+{% if request.user.is_superuser %}
 <div id="newRestModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center">
   <div style="background:var(--card);border-radius:18px;padding:28px 24px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
     <div style="font-family:'Unbounded',sans-serif;font-size:16px;font-weight:900;margin-bottom:18px">🏪 Новый ресторан</div>
@@ -162,6 +165,7 @@
     </form>
   </div>
 </div>
+{% endif %}
 
 {% if data %}
   {% for item in data %}

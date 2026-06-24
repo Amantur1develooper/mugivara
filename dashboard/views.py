@@ -103,6 +103,10 @@ def home(request):
 @require_POST
 @login_required(login_url="dashboard:login")
 def restaurant_create(request):
+    if not request.user.is_superuser:
+        messages.error(request, "Недостаточно прав для создания ресторана.")
+        return redirect("dashboard:home")
+
     from django.utils.text import slugify
     import uuid
     from catalog.models import MenuSet, BranchMenuSet

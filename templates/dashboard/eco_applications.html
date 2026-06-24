@@ -1,0 +1,138 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Заявки — {{ project.name }}{% endblock %}
+{% block nav_eco %}active{% endblock %}
+
+{% block content %}
+<div class="pg-header">
+  <div>
+    <div class="pg-title">♻️ {{ project.name }}</div>
+    <div class="pg-sub">Заявки на эко-услуги</div>
+  </div>
+  <a href="{% url 'dashboard:eco_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
+</div>
+
+<!-- Счётчики по статусам -->
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+  <a href="?" style="text-decoration:none">
+    <div style="padding:10px 18px;border-radius:10px;border:1.5px solid var(--border);
+                background:{% if not status_filter %}var(--primary){% else %}var(--card){% endif %};
+                color:{% if not status_filter %}#fff{% else %}var(--text){% endif %};
+                font-size:13px;font-weight:600">
+      Все <span style="opacity:.7">({{ counts.all }})</span>
+    </div>
+  </a>
+  <a href="?status=new" style="text-decoration:none">
+    <div style="padding:10px 18px;border-radius:10px;border:1.5px solid var(--border);
+                background:{% if status_filter == 'new' %}#2563EB{% else %}var(--card){% endif %};
+                color:{% if status_filter == 'new' %}#fff{% else %}var(--text){% endif %};
+                font-size:13px;font-weight:600">
+      🆕 Новые <span style="opacity:.7">({{ counts.new }})</span>
+    </div>
+  </a>
+  <a href="?status=in_work" style="text-decoration:none">
+    <div style="padding:10px 18px;border-radius:10px;border:1.5px solid var(--border);
+                background:{% if status_filter == 'in_work' %}#D97706{% else %}var(--card){% endif %};
+                color:{% if status_filter == 'in_work' %}#fff{% else %}var(--text){% endif %};
+                font-size:13px;font-weight:600">
+      🔄 В работе <span style="opacity:.7">({{ counts.in_work }})</span>
+    </div>
+  </a>
+  <a href="?status=done" style="text-decoration:none">
+    <div style="padding:10px 18px;border-radius:10px;border:1.5px solid var(--border);
+                background:{% if status_filter == 'done' %}#16A34A{% else %}var(--card){% endif %};
+                color:{% if status_filter == 'done' %}#fff{% else %}var(--text){% endif %};
+                font-size:13px;font-weight:600">
+      ✅ Выполнены <span style="opacity:.7">({{ counts.done }})</span>
+    </div>
+  </a>
+  <a href="?status=cancelled" style="text-decoration:none">
+    <div style="padding:10px 18px;border-radius:10px;border:1.5px solid var(--border);
+                background:{% if status_filter == 'cancelled' %}#6B7280{% else %}var(--card){% endif %};
+                color:{% if status_filter == 'cancelled' %}#fff{% else %}var(--text){% endif %};
+                font-size:13px;font-weight:600">
+      ❌ Отменены <span style="opacity:.7">({{ counts.cancelled }})</span>
+    </div>
+  </a>
+</div>
+
+{% if applications %}
+<div style="display:flex;flex-direction:column;gap:12px">
+  {% for app in applications %}
+  <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:18px 20px">
+
+    <!-- Шапка заявки -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;
+                    color:var(--sub);margin-bottom:4px">
+          #{{ app.id }} · {{ app.created_at|date:"d.m.Y H:i" }}
+        </div>
+        <div style="font-size:15px;font-weight:700;color:var(--text)">{{ app.fio }}</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:6px">
+          {% if app.phone %}
+          <a href="tel:{{ app.phone }}" style="font-size:13px;color:var(--sub);text-decoration:none">
+            📞 {{ app.phone }}
+          </a>
+          {% endif %}
+          <span style="font-size:13px;color:var(--sub)">📍 {{ app.address }}</span>
+        </div>
+      </div>
+
+      <!-- Статус + смена статуса -->
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <span style="padding:5px 12px;border-radius:100px;font-size:12px;font-weight:700;
+          {% if app.status == 'new' %}background:#DBEAFE;color:#1D4ED8
+          {% elif app.status == 'in_work' %}background:#FEF3C7;color:#92400E
+          {% elif app.status == 'done' %}background:#DCFCE7;color:#15803D
+          {% else %}background:#F3F4F6;color:#6B7280{% endif %}">
+          {% if app.status == 'new' %}🆕 Новая
+          {% elif app.status == 'in_work' %}🔄 В работе
+          {% elif app.status == 'done' %}✅ Выполнена
+          {% else %}❌ Отменена{% endif %}
+        </span>
+
+        <!-- Выпадающий список смены статуса -->
+        <form method="post" action="{% url 'dashboard:eco_application_status' app.id %}" style="display:inline">
+          {% csrf_token %}
+          <select name="status" onchange="this.form.submit()"
+                  style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);
+                         background:var(--bg);color:var(--text);font-size:13px;cursor:pointer">
+            {% for val, label in statuses %}
+            <option value="{{ val }}" {% if val == app.status %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
+    </div>
+
+    <!-- Услуга -->
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+      <span style="display:inline-flex;align-items:center;gap:6px;
+                   padding:4px 12px;border-radius:100px;
+                   background:rgba(22,163,74,0.1);border:1px solid rgba(22,163,74,0.2);
+                   font-size:12px;font-weight:700;color:#16A34A">
+        ♻️ {{ app.service_name }}
+      </span>
+    </div>
+
+    {% if app.comment %}
+    <div style="margin-top:10px;font-size:13px;color:var(--sub);
+                background:var(--bg);border-radius:8px;padding:10px 12px">
+      💬 {{ app.comment }}
+    </div>
+    {% endif %}
+
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div style="text-align:center;padding:60px 24px;
+            background:var(--card);border:1.5px dashed var(--border);border-radius:16px;
+            color:var(--sub)">
+  <div style="font-size:40px;margin-bottom:12px">📋</div>
+  <div style="font-size:15px">Заявок пока нет</div>
+</div>
+{% endif %}
+
+{% endblock %}

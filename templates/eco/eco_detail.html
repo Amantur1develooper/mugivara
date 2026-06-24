@@ -446,6 +446,7 @@
         <div class="svc-price-note">{{ svc.price_note }}</div>
         {% endif %}
         <button class="svc-order-btn"
+                data-svc-id="{{ svc.id }}"
                 data-svc-name="{{ svc.name }}"
                 data-svc-price="{% if svc.price == 0 %}Бесплатно{% else %}{{ svc.price|floatformat:0 }} сом{% endif %}"
                 data-svc-note="{{ svc.price_note }}"
@@ -509,11 +510,14 @@
 </div>
 
 <script>
-let _phone = "", _svcName = "", _svcPrice = "", _svcNote = "", _orgName = "";
+let _phone = "", _svcId = "", _svcName = "", _svcPrice = "", _svcNote = "", _orgName = "";
+const _applyUrl = "{% url 'eco:eco_apply' project.slug %}";
+const _csrfToken = "{{ csrf_token }}";
 
 function openModal(btn) {
-  _phone   = btn.dataset.orgPhone;
-  _svcName = btn.dataset.svcName;
+  _phone    = btn.dataset.orgPhone;
+  _svcId    = btn.dataset.svcId || "";
+  _svcName  = btn.dataset.svcName;
   _svcPrice = btn.dataset.svcPrice;
   _svcNote  = btn.dataset.svcNote;
   _orgName  = btn.dataset.orgName;
@@ -553,8 +557,11 @@ function submitModal() {
   }
   if (!valid) return;
 
-  const priceStr = _svcNote ? `${_svcPrice} (${_svcNote})` : _svcPrice;
+  const submitBtn = document.querySelector(".modal-submit");
+  submitBtn.disabled = true;
+  submitBtn.style.opacity = "0.7";
 
+  const priceStr = _svcNote ? `${_svcPrice} (${_svcNote})` : _svcPrice;
   let msg = `♻️ Заявка на эко-услугу\n`;
   msg += `\nПроект: ${_orgName}`;
   msg += `\nУслуга: ${_svcName}`;
@@ -564,12 +571,33 @@ function submitModal() {
   msg += `\n📍 Адрес: ${address}`;
   if (comment) msg += `\n💬 Комментарий: ${comment}`;
 
-  const url = _phone
+  const waUrl = _phone
     ? `https://wa.me/${_phone}?text=${encodeURIComponent(msg)}`
     : `https://wa.me/?text=${encodeURIComponent(msg)}`;
 
-  closeModal();
-  window.open(url, "_blank", "noopener");
+  // Сохраняем заявку в БД, затем открываем WhatsApp
+  fetch(_applyUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": _csrfToken,
+    },
+    body: JSON.stringify({
+      service_id:   _svcId,
+      service_name: _svcName,
+      fio:          fio,
+      phone:        phone,
+      address:      address,
+      comment:      comment,
+    }),
+  })
+  .finally(() => {
+    // Открываем WhatsApp в любом случае — даже если сохранение упало
+    closeModal();
+    window.open(waUrl, "_blank", "noopener");
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = "1";
+  });
 }
 
 document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });

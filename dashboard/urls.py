@@ -7,6 +7,7 @@ from agency import dashboard_views as av
 from karaoke import dashboard_views as kv
 from barbershop import dashboard_views as bsv
 from dashboard import techcard_views as tcv
+from eco import dashboard_views as ev
 
 app_name = "dashboard"
 
@@ -218,4 +219,14 @@ urlpatterns = [
     path("legal/service/<int:svc_id>/edit/",            lv.legal_service_edit,   name="legal_service_edit"),
     path("legal/service/<int:svc_id>/toggle/",          lv.legal_service_toggle, name="legal_service_toggle"),
     path("legal/service/<int:svc_id>/delete/",          lv.legal_service_delete, name="legal_service_delete"),
+
+    # ── ECO ──────────────────────────────────────────────────────────────────
+    path("eco/",                                              ev.eco_home,                name="eco_home"),
+    path("eco/<int:project_id>/applications/",               ev.eco_applications,        name="eco_applications"),
+    path("eco/application/<int:app_id>/status/",             ev.eco_application_status,  name="eco_application_status"),
+    path("eco/<int:project_id>/services/",                   ev.eco_services,            name="eco_services"),
+    path("eco/<int:project_id>/services/add/",               ev.eco_service_add,         name="eco_service_add"),
+    path("eco/service/<int:service_id>/edit/",               ev.eco_service_edit,        name="eco_service_edit"),
+    path("eco/service/<int:service_id>/toggle/",             ev.eco_service_toggle,      name="eco_service_toggle"),
+    path("eco/service/<int:service_id>/delete/",             ev.eco_service_delete,      name="eco_service_delete"),
 ]
