@@ -2,6 +2,14 @@ from django.contrib import admin
 from .models import EcoProject, EcoService, EcoMembership, EcoApplication
 
 
+@admin.register(EcoService)
+class EcoServiceAdmin(admin.ModelAdmin):
+    list_display  = ("id", "project", "name", "price", "is_active", "sort_order")
+    list_filter   = ("project", "is_active")
+    search_fields = ("name", "project__name")
+    list_editable = ("is_active", "sort_order")
+
+
 class EcoServiceInline(admin.TabularInline):
     model   = EcoService
     extra   = 1
@@ -32,8 +40,13 @@ class EcoMembershipAdmin(admin.ModelAdmin):
 
 @admin.register(EcoApplication)
 class EcoApplicationAdmin(admin.ModelAdmin):
-    list_display  = ("id", "project", "service_name", "fio", "phone", "address", "status", "created_at")
-    list_filter   = ("project", "status")
-    list_editable = ("status",)
-    search_fields = ("fio", "phone", "address", "service_name")
-    readonly_fields = ("project", "service", "service_name", "fio", "phone", "address", "comment", "created_at")
+    list_display   = ("id", "project", "service_name", "fio", "phone", "address", "status", "created_at")
+    list_filter    = ("project", "status")
+    list_editable  = ("status",)
+    search_fields  = ("fio", "phone", "address", "service_name")
+    autocomplete_fields = ("service",)
+    fieldsets = (
+        (None, {"fields": ("project", "status", "created_at")}),
+        ("Услуга", {"fields": ("service", "service_name")}),
+        ("Клиент", {"fields": ("fio", "phone", "address", "comment")}),
+    )

@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 import re
 from core.models import TimeStampedModel
 
@@ -73,6 +74,8 @@ class EcoMembership(models.Model):
 
 class EcoApplication(TimeStampedModel):
     """Заявка на эко-услугу, поданная через сайт."""
+
+    created_at = models.DateTimeField("Дата создания", default=timezone.now, blank=True)
 
     class Status(models.TextChoices):
         NEW        = "new",        "Новая"
