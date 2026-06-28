@@ -358,13 +358,23 @@ def bs_appointments(request, shop_id):
         except Exception:
             pass
 
-    barbers = shop.barbers.filter(is_active=True).order_by("sort_order")
+    barbers = shop.barbers.filter(is_active=True).prefetch_related("barber_services__service").order_by("sort_order")
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+    base_qs = Appointment.objects.filter(barbershop=shop)
+    if barber_f:
+        base_qs = base_qs.filter(barber_id=barber_f)
     from .models import APPOINTMENT_STATUS
     return render(request, "dashboard/barbershop/appointments.html", {
         "shop": shop, "appointments": qs,
         "barbers": barbers,
         "statuses": APPOINTMENT_STATUS,
         "status_f": status_f, "barber_f": barber_f, "date_f": date_f,
+        "today_str":    today.strftime("%Y-%m-%d"),
+        "tomorrow_str": tomorrow.strftime("%Y-%m-%d"),
+        "count_today":    base_qs.filter(appt_date=today).exclude(status="cancelled").count(),
+        "count_tomorrow": base_qs.filter(appt_date=tomorrow).exclude(status="cancelled").count(),
+        "count_new":      base_qs.filter(status="new").count(),
     })
 
 
@@ -374,26 +384,39 @@ def bs_appointment_add(request, shop_id):
     shop = get_object_or_404(Barbershop, id=shop_id)
     if not _check(request.user, shop):
         return redirect("dashboard:bs_home")
+
     try:
-        barber  = Barber.objects.get(id=request.POST.get("barber_id"), barbershop=shop)
-        service = Service.objects.get(id=request.POST.get("service_id"), barbershop=shop)
+        barber    = Barber.objects.get(id=request.POST.get("barber_id"), barbershop=shop)
         appt_date = datetime.strptime(request.POST.get("appt_date"), "%Y-%m-%d").date()
         appt_time = datetime.strptime(request.POST.get("appt_time"), "%H:%M").time()
     except Exception:
         messages.error(request, "Некорректные данные")
         return redirect("dashboard:bs_appointments", shop_id=shop.id)
 
-    name   = (request.POST.get("customer_name") or "").strip() or "Клиент"
-    phone  = (request.POST.get("customer_phone") or "").strip()
-    pay_m  = request.POST.get("payment_method", "")
+    # Support multiple services: comma-separated or multiple values
+    raw_ids = request.POST.get("service_ids", request.POST.get("service_id", ""))
+    svc_ids = [int(x) for x in raw_ids.split(",") if x.strip().isdigit()]
+    services = list(Service.objects.filter(id__in=svc_ids, barbershop=shop))
+    if not services:
+        messages.error(request, "Выберите хотя бы одну услугу")
+        return redirect("dashboard:bs_appointments", shop_id=shop.id)
+
+    total_price    = sum(s.price for s in services)
+    total_duration = sum(s.duration_min for s in services)
+    service_name   = " + ".join(s.name for s in services)
+    primary        = services[0]
+
+    name    = (request.POST.get("customer_name") or "").strip() or "Клиент"
+    phone   = (request.POST.get("customer_phone") or "").strip()
+    pay_m   = request.POST.get("payment_method", "")
     is_paid = request.POST.get("is_paid") == "on"
     status  = request.POST.get("status", "confirmed")
     notes   = request.POST.get("notes", "").strip()
 
     appt = Appointment.objects.create(
-        barbershop=shop, barber=barber, service=service,
-        service_name=service.name, barber_name=barber.name,
-        price_snapshot=service.price, duration_min=service.duration_min,
+        barbershop=shop, barber=barber, service=primary,
+        service_name=service_name, barber_name=barber.name,
+        price_snapshot=total_price, duration_min=total_duration,
         customer_name=name, customer_phone=phone,
         appt_date=appt_date, appt_time=appt_time,
         status=status, source="offline",
@@ -402,12 +425,14 @@ def bs_appointment_add(request, shop_id):
 
     weekday_ru = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"]
     date_fmt = appt_date.strftime("%d.%m.%Y") + f" ({weekday_ru[appt_date.weekday()]})"
+    svc_lines = "\n".join(f"  • {s.name} — {int(s.price)} сом" for s in services)
     _tg_send(shop,
         f"✂️ <b>Запись офлайн #{appt.id}</b>\n"
-        f"📋 {service.name} — {int(service.price)} сом\n"
+        f"📋 Услуги:\n{svc_lines}\n"
+        f"💰 Итого: {int(total_price)} сом ({total_duration} мин)\n"
         f"👤 Мастер: {barber.name}\n"
         f"📅 {date_fmt} в {appt_time.strftime('%H:%M')}\n"
-        f"👤 {name} {phone}"
+        f"👤 {name}{' ' + phone if phone else ''}"
     )
     messages.success(request, f"Запись #{appt.id} создана")
     return redirect("dashboard:bs_appointments", shop_id=shop.id)
@@ -490,6 +515,26 @@ def bs_report(request, shop_id):
                      .annotate(cnt=Count("id"), rev=Sum("price_snapshot"))
                      .order_by("-cnt"))
 
+    # Daily shift: today's appointments grouped by barber
+    shift_qs = (Appointment.objects
+                .filter(barbershop=shop, appt_date=today)
+                .exclude(status="cancelled")
+                .select_related("barber")
+                .order_by("barber__sort_order", "appt_time"))
+    shift_by_barber = {}
+    for appt in shift_qs:
+        bname = appt.barber_name or "—"
+        if bname not in shift_by_barber:
+            shift_by_barber[bname] = {"appointments": [], "total": 0, "paid": 0, "count": 0}
+        shift_by_barber[bname]["appointments"].append(appt)
+        shift_by_barber[bname]["total"] += int(appt.price_snapshot)
+        shift_by_barber[bname]["count"] += 1
+        if appt.is_paid:
+            shift_by_barber[bname]["paid"] += int(appt.price_snapshot)
+    shift_total = sum(v["total"] for v in shift_by_barber.values())
+    shift_paid  = sum(v["paid"]  for v in shift_by_barber.values())
+    shift_count = sum(v["count"] for v in shift_by_barber.values())
+
     return render(request, "dashboard/barbershop/report.html", {
         "shop": shop, "period": period,
         "date_from": date_from, "date_to": date_to,
@@ -497,4 +542,7 @@ def bs_report(request, shop_id):
         "paid_revenue": paid_revenue,
         "online_rev": online_rev, "offline_rev": offline_rev,
         "barber_stats": barber_stats, "service_stats": service_stats,
+        "shift_by_barber": shift_by_barber,
+        "shift_total": shift_total, "shift_paid": shift_paid, "shift_count": shift_count,
+        "today": today,
     })

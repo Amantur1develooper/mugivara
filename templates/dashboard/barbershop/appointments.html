@@ -1,222 +1,573 @@
 {% extends "dashboard/base.html" %}
 {% block title %}{{ shop.name }} — Записи{% endblock %}
 {% block nav_barbershop %}active{% endblock %}
+
 {% block content %}
-<div class="db-topbar">
-  <div>
-    <div class="db-page-title">{{ shop.name }}</div>
-    <div class="db-breadcrumb"><a href="{% url 'dashboard:bs_home' %}">Барбершопы</a> / Записи</div>
+<style>
+/* ── Mobile-first appointments ── */
+.appt-topbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.appt-title{font-size:17px;font-weight:800;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.filter-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-bottom:14px}
+.filter-chips::-webkit-scrollbar{display:none}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:100px;border:1.5px solid var(--border);background:var(--card);font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer;text-decoration:none;color:var(--text2);transition:all .15s}
+.chip.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.chip-count{font-size:11px;opacity:.7}
+
+/* Cards */
+.appt-cards{display:flex;flex-direction:column;gap:10px}
+.appt-card{background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:14px 16px;position:relative;transition:box-shadow .15s}
+.appt-card:active{box-shadow:0 0 0 2px var(--primary)}
+.appt-time-badge{font-size:22px;font-weight:900;color:var(--text);line-height:1;letter-spacing:-1px}
+.appt-date-small{font-size:11px;color:var(--muted);margin-top:1px}
+.appt-client{font-size:15px;font-weight:700;color:var(--text)}
+.appt-phone{font-size:13px;color:var(--primary);text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+.appt-svc{font-size:13px;color:var(--muted);margin-top:2px}
+.appt-barber{font-size:12px;color:var(--muted)}
+.appt-meta-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+
+/* Status pill */
+.status-pill{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:100px;font-size:12px;font-weight:700;cursor:pointer;border:none;transition:all .15s}
+.s-new{background:#DBEAFE;color:#1D4ED8}
+.s-confirmed{background:#EDE9FE;color:#6D28D9}
+.s-done{background:#DCFCE7;color:#15803D}
+.s-cancelled{background:#FEE2E2;color:#B91C1C}
+.s-no_show{background:#F3F4F6;color:#6B7280}
+
+/* Pay button */
+.pay-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:100px;font-size:12px;font-weight:700;border:1.5px solid;cursor:pointer;background:none;transition:all .15s}
+.pay-btn.paid{border-color:rgba(0,184,150,.3);color:var(--teal);background:rgba(0,184,150,.07)}
+.pay-btn.unpaid{border-color:var(--border);color:var(--muted)}
+
+/* Price tag */
+.price-tag{font-size:14px;font-weight:800;color:var(--text);margin-left:auto}
+
+/* Delete btn */
+.del-btn{padding:5px 9px;border-radius:8px;border:none;background:none;color:var(--muted);font-size:15px;cursor:pointer;transition:color .15s}
+.del-btn:hover{color:#ef4444}
+
+/* Source badge */
+.src-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px}
+.src-offline{background:rgba(124,58,237,.1);color:#7C3AED}
+.src-online{background:rgba(14,165,233,.1);color:#0284C7}
+
+/* Status popover */
+.s-popup{display:none;position:absolute;top:100%;left:0;z-index:50;background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:6px;box-shadow:0 8px 32px rgba(0,0,0,.15);min-width:160px;margin-top:4px}
+.s-popup.open{display:block}
+.s-opt{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;border:none;background:none;width:100%;text-align:left;transition:background .12s}
+.s-opt:hover{background:var(--border)}
+
+/* FAB */
+.fab{position:fixed;bottom:24px;right:20px;width:56px;height:56px;border-radius:50%;background:var(--primary);color:#fff;border:none;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,.25);z-index:100;transition:transform .15s}
+.fab:active{transform:scale(.93)}
+
+/* Bottom sheet */
+.sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;align-items:flex-end;justify-content:center}
+.sheet-overlay.open{display:flex}
+.sheet{background:var(--card);border-radius:24px 24px 0 0;padding:20px 20px 36px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-handle{width:40px;height:4px;border-radius:4px;background:var(--border);margin:0 auto 18px}
+.sheet-title{font-size:16px;font-weight:800;margin-bottom:18px}
+.sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sheet-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:4px;display:block}
+
+/* Barber selector */
+.barber-btns{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:2px}
+.barber-btn{padding:8px 16px;border-radius:10px;border:2px solid var(--border);background:var(--bg);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.barber-btn.sel{border-color:var(--primary);background:rgba(99,102,241,.09);color:var(--primary)}
+
+/* Date quick buttons */
+.date-quick{display:flex;gap:6px;margin-bottom:10px}
+.dq-btn{flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s}
+.dq-btn.sel{border-color:var(--primary);background:rgba(99,102,241,.09);color:var(--primary)}
+
+/* Time slots */
+.time-slots{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.tslot{padding:8px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.tslot.sel{border-color:var(--primary);background:rgba(99,102,241,.09);color:var(--primary)}
+
+/* Empty state */
+.empty-state{text-align:center;padding:60px 24px;color:var(--muted)}
+.empty-icon{font-size:48px;margin-bottom:12px}
+
+/* Filters date row */
+.filters-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+</style>
+
+<!-- Top bar -->
+<div class="appt-topbar">
+  <div class="appt-title">✂️ {{ shop.name }}</div>
+  <select id="barber-filter" class="db-input" style="font-size:13px;padding:7px 10px;max-width:160px" onchange="applyBarberFilter(this.value)">
+    <option value="">Все мастера</option>
+    {% for b in barbers %}
+    <option value="{{ b.id }}" {% if barber_f == b.id|stringformat:'s' %}selected{% endif %}>{{ b.name }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+<!-- Date quick-filter chips -->
+<div class="filter-chips">
+  <a href="?date={{ today_str }}&barber={{ barber_f }}" class="chip {% if date_f == today_str %}active{% endif %}">Сегодня <span class="chip-count">({{ count_today }})</span></a>
+  <a href="?date={{ tomorrow_str }}&barber={{ barber_f }}" class="chip {% if date_f == tomorrow_str %}active{% endif %}">Завтра <span class="chip-count">({{ count_tomorrow }})</span></a>
+  <a href="?all=1&barber={{ barber_f }}" class="chip {% if not date_f %}active{% endif %}">Все записи</a>
+  <a href="?status=new&barber={{ barber_f }}" class="chip {% if status_f == 'new' %}active{% endif %}">🆕 Новые <span class="chip-count">({{ count_new }})</span></a>
+  <a href="?date={{ today_str }}&status=done&barber={{ barber_f }}" class="chip {% if status_f == 'done' %}active{% endif %}">✅ Готово</a>
+  <!-- Date input -->
+  <div style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:100px;border:1.5px solid var(--border);background:var(--card)">
+    <span style="font-size:12px;color:var(--muted)">📅</span>
+    <input type="date" id="date-pick" value="{{ date_f }}" style="border:none;background:none;color:var(--text2);font-size:13px;font-weight:600;outline:none;cursor:pointer" onchange="goDate(this.value)">
   </div>
-  <button onclick="document.getElementById('add-modal').style.display='flex'" class="db-btn db-btn-primary db-btn-sm">➕ Добавить офлайн</button>
 </div>
 
-<!-- Filters -->
-<div class="db-card" style="padding:16px 20px">
-  <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
-    <div>
-      <label class="db-label">Статус</label>
-      <select name="status" class="db-input" style="min-width:140px">
-        <option value="">Все</option>
+<!-- Appointment cards -->
+{% if appointments %}
+<div class="appt-cards">
+{% for appt in appointments %}
+<div class="appt-card" id="card-{{ appt.id }}">
+  <div style="display:flex;gap:12px;align-items:flex-start">
+
+    <!-- Time block -->
+    <div style="min-width:54px;text-align:center;background:var(--bg);border-radius:12px;padding:8px 6px">
+      <div class="appt-time-badge">{{ appt.appt_time|time:"H:i" }}</div>
+      <div class="appt-date-small">{{ appt.appt_date|date:"d.m" }}</div>
+    </div>
+
+    <!-- Info block -->
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span class="appt-client">{{ appt.customer_name }}</span>
+        {% if appt.source == 'offline' %}<span class="src-badge src-offline">офлайн</span>
+        {% else %}<span class="src-badge src-online">онлайн</span>{% endif %}
+      </div>
+      {% if appt.customer_phone %}
+      <a href="tel:{{ appt.customer_phone }}" class="appt-phone">📞 {{ appt.customer_phone }}</a>
+      {% endif %}
+      <div class="appt-svc">{{ appt.service_name }} · {{ appt.duration_min }} мин</div>
+      <div class="appt-barber">👤 {{ appt.barber_name }}</div>
+    </div>
+
+    <!-- Price -->
+    <div class="price-tag">{{ appt.price_snapshot|floatformat:0 }} сом</div>
+  </div>
+
+  <!-- Actions row -->
+  <div class="appt-meta-row">
+
+    <!-- Status pill with popup -->
+    <div style="position:relative">
+      <button class="status-pill s-{{ appt.status }}" onclick="toggleStatusPopup({{ appt.id }}, event)">
+        {% if appt.status == 'new' %}🆕 Новая
+        {% elif appt.status == 'confirmed' %}✅ Подтверждена
+        {% elif appt.status == 'done' %}🏁 Выполнена
+        {% elif appt.status == 'cancelled' %}❌ Отменена
+        {% elif appt.status == 'no_show' %}👻 Не пришёл
+        {% else %}{{ appt.status }}{% endif %}
+        <span style="font-size:10px;opacity:.6">▼</span>
+      </button>
+      <div class="s-popup" id="spop-{{ appt.id }}">
         {% for val,label in statuses %}
-        <option value="{{ val }}" {% if status_f == val %}selected{% endif %}>{{ label }}</option>
+        <button class="s-opt" onclick="setStatus({{ appt.id }}, '{{ val }}')">{{ label }}</button>
         {% endfor %}
-      </select>
+      </div>
     </div>
-    <div>
-      <label class="db-label">Мастер</label>
-      <select name="barber" class="db-input" style="min-width:140px">
-        <option value="">Все</option>
-        {% for b in barbers %}
-        <option value="{{ b.id }}" {% if barber_f == b.id|stringformat:'s' %}selected{% endif %}>{{ b.name }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div>
-      <label class="db-label">Дата</label>
-      <input type="date" name="date" value="{{ date_f }}" class="db-input">
-    </div>
-    <button type="submit" class="db-btn db-btn-ghost">Фильтр</button>
-    <a href="{% url 'dashboard:bs_appointments' shop.id %}?all=1" class="db-btn db-btn-ghost">Все записи</a>
-    <a href="{% url 'dashboard:bs_appointments' shop.id %}" class="db-btn db-btn-ghost">Сегодня</a>
-  </form>
-</div>
 
-<!-- Appointments table -->
-<div class="db-card" style="padding:0;overflow:hidden">
-  <table style="width:100%;border-collapse:collapse">
-    <thead>
-      <tr style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border)">
-        <th style="padding:14px 20px;text-align:left">#</th>
-        <th style="padding:14px 12px;text-align:left">Клиент</th>
-        <th style="padding:14px 12px;text-align:left">Услуга</th>
-        <th style="padding:14px 12px;text-align:left">Мастер</th>
-        <th style="padding:14px 12px;text-align:left">Дата / Время</th>
-        <th style="padding:14px 12px;text-align:center">Статус</th>
-        <th style="padding:14px 12px;text-align:center">Оплата</th>
-        <th style="padding:14px 12px;text-align:center">Действия</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for appt in appointments %}
-      <tr style="border-bottom:1px solid var(--border)" id="appt-{{ appt.id }}">
-        <td style="padding:12px 20px;font-size:13px;color:var(--muted)">#{{ appt.id }}</td>
-        <td style="padding:12px">
-          <div style="font-weight:600;font-size:14px">{{ appt.customer_name }}</div>
-          {% if appt.customer_phone %}<div style="font-size:12px;color:var(--muted)">{{ appt.customer_phone }}</div>{% endif %}
-          {% if appt.source == 'offline' %}<span style="font-size:10px;background:rgba(124,58,237,.1);color:#7C3AED;padding:2px 6px;border-radius:6px">офлайн</span>{% endif %}
-        </td>
-        <td style="padding:12px">
-          <div style="font-size:14px">{{ appt.service_name }}</div>
-          <div style="font-size:12px;color:var(--muted)">{{ appt.price_snapshot }} сом · {{ appt.duration_min }} мин</div>
-        </td>
-        <td style="padding:12px;font-size:14px">{{ appt.barber_name }}</td>
-        <td style="padding:12px">
-          <div style="font-size:14px;font-weight:600">{{ appt.appt_date|date:"d.m.Y" }}</div>
-          <div style="font-size:13px;color:var(--muted)">{{ appt.appt_time|time:"H:i" }}</div>
-        </td>
-        <td style="padding:12px;text-align:center">
-          <select onchange="updateStatus({{ appt.id }}, this.value)" style="padding:5px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);font-size:12px;font-weight:600;cursor:pointer;color:var(--text2)">
-            {% for val,label in statuses %}
-            <option value="{{ val }}" {% if appt.status == val %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </td>
-        <td style="padding:12px;text-align:center">
-          <button onclick="togglePayment({{ appt.id }}, this)"
-            style="padding:5px 12px;border-radius:8px;border:1.5px solid;font-size:12px;font-weight:600;cursor:pointer;background:none;
-                   {% if appt.is_paid %}background:rgba(0,184,150,.08);border-color:rgba(0,184,150,.3);color:var(--teal){% else %}border-color:var(--border);color:var(--muted){% endif %}">
-            {% if appt.is_paid %}✓ {{ appt.get_payment_method_display }}{% else %}Не оплачено{% endif %}
-          </button>
-        </td>
-        <td style="padding:12px;text-align:center">
-          <form method="post" action="{% url 'dashboard:bs_appointment_delete' appt.id %}" onsubmit="return confirm('Удалить запись?')" style="display:inline">
-            {% csrf_token %}
-            <button type="submit" class="db-btn db-btn-ghost db-btn-sm" style="color:var(--accent)">🗑</button>
-          </form>
-        </td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="8" style="padding:40px;text-align:center;color:var(--muted)">Нет записей</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
+    <!-- Payment -->
+    <button class="pay-btn {% if appt.is_paid %}paid{% else %}unpaid{% endif %}"
+            id="pay-{{ appt.id }}"
+            onclick="togglePay({{ appt.id }}, this)">
+      {% if appt.is_paid %}💳 {{ appt.get_payment_method_display }}{% else %}Не оплачено{% endif %}
+    </button>
 
-<!-- Offline booking modal -->
-<div id="add-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:20px">
-  <div style="background:var(--card);border-radius:20px;padding:28px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-      <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:16px">➕ Новая запись (офлайн)</div>
-      <button onclick="document.getElementById('add-modal').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)">×</button>
-    </div>
-    <form method="post" action="{% url 'dashboard:bs_appointment_add' shop.id %}">
+    <!-- WhatsApp quick message -->
+    {% if appt.customer_phone %}
+    <a href="https://wa.me/{{ appt.customer_phone|cut:'+' }}?text=Здравствуйте%2C+{{ appt.customer_name|urlencode }}!+Напоминаем+о+вашей+записи+{{ appt.appt_date|date:'d.m' }}+в+{{ appt.appt_time|time:'H:i' }}"
+       target="_blank" rel="noopener"
+       style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:100px;background:#25D366;color:#fff;font-size:11px;font-weight:700;text-decoration:none">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      WA
+    </a>
+    {% endif %}
+
+    <!-- Delete -->
+    <form method="post" action="{% url 'dashboard:bs_appointment_delete' appt.id %}"
+          onsubmit="return confirm('Удалить запись #{{ appt.id }}?')" style="margin-left:auto">
       {% csrf_token %}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="db-form-group">
-          <label class="db-label">Имя клиента</label>
-          <input class="db-input" name="customer_name" placeholder="Имя" required>
+      <button type="submit" class="del-btn">🗑</button>
+    </form>
+  </div>
+</div>
+{% endfor %}
+</div>
+
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">📋</div>
+  <div style="font-size:15px;font-weight:600;margin-bottom:6px">Записей нет</div>
+  <div style="font-size:13px">Нажмите + чтобы добавить</div>
+</div>
+{% endif %}
+
+<!-- FAB -->
+<button class="fab" onclick="openSheet()" title="Добавить запись">+</button>
+
+<!-- Bottom sheet: quick offline booking -->
+<div class="sheet-overlay" id="sheet-overlay" onclick="closeSheetOnBg(event)">
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">➕ Новая запись</div>
+
+    <form method="post" action="{% url 'dashboard:bs_appointment_add' shop.id %}" id="offline-form">
+      {% csrf_token %}
+      <input type="hidden" name="barber_id"   id="f-barber">
+      <input type="hidden" name="service_ids" id="f-service-ids">
+      <input type="hidden" name="appt_date"   id="f-date">
+      <input type="hidden" name="appt_time"   id="f-time">
+
+      <!-- 1. Мастер -->
+      <div style="margin-bottom:16px">
+        <span class="sheet-label">Мастер</span>
+        <div class="barber-btns" id="barber-btns">
+          {% for b in barbers %}
+          <button type="button" class="barber-btn" data-id="{{ b.id }}" onclick="selectBarber({{ b.id }}, this)">{{ b.name }}</button>
+          {% endfor %}
         </div>
-        <div class="db-form-group">
-          <label class="db-label">Телефон</label>
-          <input class="db-input" name="customer_phone" placeholder="+996...">
+      </div>
+
+      <!-- 2. Услуги (мульти) -->
+      <div style="margin-bottom:16px">
+        <span class="sheet-label">Услуги <span id="svc-count-label" style="color:var(--primary)"></span></span>
+        <div id="svc-chips" style="display:flex;flex-wrap:wrap;gap:7px;margin-top:6px">
+          <span style="font-size:13px;color:var(--muted)">— сначала выберите мастера —</span>
         </div>
-        <div class="db-form-group">
-          <label class="db-label">Мастер</label>
-          <select class="db-input" name="barber_id" id="modal-barber" onchange="loadModalServices()" required>
-            <option value="">— Выберите мастера —</option>
-            {% for b in barbers %}
-            <option value="{{ b.id }}">{{ b.name }}</option>
-            {% endfor %}
-          </select>
+        <!-- Basket -->
+        <div id="svc-basket" style="display:none;margin-top:10px;background:var(--bg);border-radius:10px;padding:10px 12px">
+          <div id="svc-basket-rows" style="font-size:13px;color:var(--muted)"></div>
+          <div style="display:flex;justify-content:space-between;font-weight:700;font-size:14px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
+            <span>Итого</span>
+            <span id="svc-total" style="color:var(--accent)"></span>
+          </div>
         </div>
-        <div class="db-form-group">
-          <label class="db-label">Услуга</label>
-          <select class="db-input" name="service_id" id="modal-service" required>
-            <option value="">— Сначала мастер —</option>
-          </select>
+      </div>
+
+      <!-- 3. Дата -->
+      <div style="margin-bottom:14px">
+        <span class="sheet-label">Дата</span>
+        <div class="date-quick">
+          <div class="dq-btn sel" id="dq-today" onclick="setDate('today', this)">Сегодня</div>
+          <div class="dq-btn" id="dq-tomorrow" onclick="setDate('tomorrow', this)">Завтра</div>
+          <input type="date" id="custom-date"
+                 style="flex:1;padding:9px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text2);font-size:13px;font-weight:600;outline:none"
+                 onchange="setCustomDate(this.value)">
         </div>
-        <div class="db-form-group">
-          <label class="db-label">Дата</label>
-          <input type="date" class="db-input" name="appt_date" required>
+      </div>
+
+      <!-- 4. Время -->
+      <div style="margin-bottom:16px">
+        <span class="sheet-label">Время</span>
+        <div class="time-slots" id="time-slots"></div>
+        <input type="time" id="custom-time"
+               style="margin-top:8px;width:100%;padding:10px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text2);font-size:15px;font-weight:600;outline:none"
+               onchange="setCustomTime(this.value)">
+      </div>
+
+      <!-- 5. Клиент -->
+      <div class="sheet-grid" style="margin-bottom:14px">
+        <div>
+          <span class="sheet-label">Имя клиента</span>
+          <input class="db-input" name="customer_name" placeholder="Имя" required style="font-size:15px;padding:11px 13px">
         </div>
-        <div class="db-form-group">
-          <label class="db-label">Время</label>
-          <input type="time" class="db-input" name="appt_time" required>
+        <div>
+          <span class="sheet-label">Телефон <span style="color:var(--muted);font-weight:400">(необяз.)</span></span>
+          <input class="db-input" name="customer_phone" id="sheet-phone" placeholder="+996 700 000 000" type="tel" style="font-size:15px;padding:11px 13px">
         </div>
-        <div class="db-form-group">
-          <label class="db-label">Статус</label>
+      </div>
+
+      <!-- 6. Статус + Оплата -->
+      <div class="sheet-grid" style="margin-bottom:14px">
+        <div>
+          <span class="sheet-label">Статус</span>
           <select class="db-input" name="status">
             {% for val,label in statuses %}
             <option value="{{ val }}" {% if val == 'confirmed' %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
         </div>
-        <div class="db-form-group">
-          <label class="db-label">Способ оплаты</label>
-          <select class="db-input" name="payment_method">
-            <option value="">—</option>
-            <option value="cash">Наличные</option>
-            <option value="transfer">Перевод</option>
-            <option value="card">Карта</option>
-            <option value="other">Другое</option>
+        <div>
+          <span class="sheet-label">Оплата</span>
+          <select class="db-input" name="payment_method" id="pay-method">
+            <option value="">Не оплачено</option>
+            <option value="cash">💵 Наличные</option>
+            <option value="transfer">📲 Перевод</option>
+            <option value="card">💳 Карта</option>
           </select>
         </div>
       </div>
-      <div class="db-form-group">
-        <label class="db-label">Заметки</label>
-        <textarea class="db-textarea" name="notes" style="min-height:50px"></textarea>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
-        <label class="db-switch"><input type="checkbox" name="is_paid" id="modal-paid"><span class="db-switch-slider"></span></label>
+
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <label class="db-switch"><input type="checkbox" name="is_paid" id="sheet-paid" onchange="syncPaidMethod()"><span class="db-switch-slider"></span></label>
         <span style="font-size:14px">Оплачено</span>
       </div>
-      <div style="display:flex;gap:10px">
-        <button type="submit" class="db-btn db-btn-primary">✓ Создать запись</button>
-        <button type="button" onclick="document.getElementById('add-modal').style.display='none'" class="db-btn db-btn-ghost">Отмена</button>
-      </div>
+
+      <!-- Summary bar -->
+      <div id="booking-summary" style="display:none;background:var(--bg);border-radius:12px;padding:12px 14px;margin:14px 0;font-size:13px;color:var(--muted)"></div>
+
+      <button type="submit" class="db-btn db-btn-primary" id="submit-btn" disabled style="width:100%;padding:15px;font-size:16px;border-radius:14px;margin-top:4px">
+        ✓ Создать запись
+      </button>
     </form>
   </div>
 </div>
 
 <script>
+const CSRF = '{{ csrf_token }}';
+const STATUS_URL = "{% url 'dashboard:bs_appointment_status' 9999 %}";
+const PAYMENT_URL = "{% url 'dashboard:bs_appointment_payment' 9999 %}";
+const SLOTS_URL = "{% url 'barbershop:slots_json' shop.slug %}";
+
 const SHOP_SERVICES = {
   {% for b in barbers %}
-  {{ b.id }}: [{% for bs in b.barber_services.all %}{"id":{{ bs.service.id }},"name":"{{ bs.service.name }}","price":{{ bs.service.price }}}{% if not forloop.last %},{% endif %}{% endfor %}],
+  {{ b.id }}: [{% for bs in b.barber_services.all %}{"id":{{ bs.service.id }},"name":"{{ bs.service.name|escapejs }}","price":{{ bs.service.price }},"dur":{{ bs.service.duration_min }}}{% if not forloop.last %},{% endif %}{% endfor %}],
   {% endfor %}
 };
 
-function loadModalServices(){
-  const bid = document.getElementById('modal-barber').value;
-  const sel = document.getElementById('modal-service');
-  sel.innerHTML = '<option value="">— Выберите услугу —</option>';
-  if(!bid || !SHOP_SERVICES[bid]) return;
-  SHOP_SERVICES[bid].forEach(s => {
-    const opt = document.createElement('option');
-    opt.value = s.id; opt.textContent = `${s.name} (${s.price} сом)`;
-    sel.appendChild(opt);
-  });
+/* ── Status popup ── */
+document.addEventListener('click', () => {
+  document.querySelectorAll('.s-popup.open').forEach(p => p.classList.remove('open'));
+});
+function toggleStatusPopup(id, e){
+  e.stopPropagation();
+  const pop = document.getElementById('spop-' + id);
+  document.querySelectorAll('.s-popup.open').forEach(p => { if(p !== pop) p.classList.remove('open'); });
+  pop.classList.toggle('open');
 }
 
-async function updateStatus(id, status){
-  await fetch("{% url 'dashboard:bs_appointment_status' 9999 %}".replace('9999',id),
-    {method:'POST', headers:{'X-CSRFToken':'{{ csrf_token }}','Content-Type':'application/x-www-form-urlencoded'},
-     body:'status='+status});
-}
+const STATUS_LABELS = {
+  new: '🆕 Новая', confirmed: '✅ Подтверждена', done: '🏁 Выполнена',
+  cancelled: '❌ Отменена', no_show: '👻 Не пришёл'
+};
+const STATUS_CLS = {
+  new:'s-new', confirmed:'s-confirmed', done:'s-done', cancelled:'s-cancelled', no_show:'s-no_show'
+};
 
-async function togglePayment(id, btn){
-  const r = await fetch("{% url 'dashboard:bs_appointment_payment' 9999 %}".replace('9999',id),
-    {method:'POST', headers:{'X-CSRFToken':'{{ csrf_token }}','Content-Type':'application/x-www-form-urlencoded'},
-     body:'payment_method=cash'});
+async function setStatus(id, status){
+  document.getElementById('spop-' + id).classList.remove('open');
+  const r = await fetch(STATUS_URL.replace('9999', id),
+    {method:'POST', headers:{'X-CSRFToken':CSRF,'Content-Type':'application/x-www-form-urlencoded'}, body:'status='+status});
   const d = await r.json();
   if(d.ok){
-    if(d.is_paid){
-      btn.style.background='rgba(0,184,150,.08)'; btn.style.borderColor='rgba(0,184,150,.3)';
-      btn.style.color='var(--teal)'; btn.textContent='✓ Наличные';
-    } else {
-      btn.style.background='none'; btn.style.borderColor='var(--border)';
-      btn.style.color='var(--muted)'; btn.textContent='Не оплачено';
-    }
+    const btn = document.querySelector(`#card-${id} .status-pill`);
+    btn.className = 'status-pill ' + (STATUS_CLS[status] || '');
+    btn.innerHTML = (STATUS_LABELS[status] || status) + ' <span style="font-size:10px;opacity:.6">▼</span>';
   }
 }
+
+/* ── Payment toggle ── */
+async function togglePay(id, btn){
+  const r = await fetch(PAYMENT_URL.replace('9999', id),
+    {method:'POST', headers:{'X-CSRFToken':CSRF,'Content-Type':'application/x-www-form-urlencoded'}, body:'payment_method=cash'});
+  const d = await r.json();
+  if(d.ok){
+    btn.className = 'pay-btn ' + (d.is_paid ? 'paid' : 'unpaid');
+    btn.textContent = d.is_paid ? '💳 Наличные' : 'Не оплачено';
+  }
+}
+
+/* ── Date filter ── */
+function goDate(v){ window.location = '?date=' + v + '&barber={{ barber_f }}'; }
+function applyBarberFilter(v){
+  const u = new URL(window.location.href);
+  u.searchParams.set('barber', v);
+  window.location = u.toString();
+}
+
+/* ── Bottom sheet ── */
+function openSheet(){
+  document.getElementById('sheet-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  // default date = today
+  const t = new Date();
+  sheetDate = t.toISOString().split('T')[0];
+  document.getElementById('custom-date').value = sheetDate;
+  document.getElementById('dq-today').classList.add('sel');
+  document.getElementById('dq-tomorrow').classList.remove('sel');
+  buildTimeSlots(null);
+}
+function closeSheet(){
+  document.getElementById('sheet-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function closeSheetOnBg(e){ if(e.target === document.getElementById('sheet-overlay')) closeSheet(); }
+
+/* ── Barber + multi-service ── */
+let sheetBarberId = null, sheetDate = null, sheetTime = null;
+let selectedSvcIds = new Set();
+
+function selectBarber(id, el){
+  sheetBarberId = id;
+  selectedSvcIds.clear();
+  document.querySelectorAll('.barber-btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('f-barber').value = id;
+  // build service chips
+  const wrap = document.getElementById('svc-chips');
+  const svcs = SHOP_SERVICES[id] || [];
+  if(!svcs.length){
+    wrap.innerHTML = '<span style="font-size:13px;color:var(--muted)">Нет услуг у мастера</span>';
+  } else {
+    wrap.innerHTML = svcs.map(s =>
+      `<div class="tslot" id="schip-${s.id}" data-id="${s.id}" data-price="${s.price}" data-dur="${s.dur}" data-name="${s.name.replace(/"/g,'&quot;')}"
+            onclick="toggleSvc(${s.id}, this)" style="font-size:13px">
+        ${s.name}<br><span style="font-size:11px;opacity:.7">${s.price} сом · ${s.dur} мин</span>
+       </div>`
+    ).join('');
+  }
+  updateSvcBasket();
+  loadSheetSlots();
+}
+
+function toggleSvc(id, el){
+  if(selectedSvcIds.has(id)){
+    selectedSvcIds.delete(id);
+    el.classList.remove('sel');
+  } else {
+    selectedSvcIds.add(id);
+    el.classList.add('sel');
+  }
+  updateSvcBasket();
+  loadSheetSlots();
+}
+
+function updateSvcBasket(){
+  const chips = document.querySelectorAll('#svc-chips .tslot');
+  const selected = [];
+  chips.forEach(c => {
+    if(selectedSvcIds.has(parseInt(c.dataset.id))) selected.push(c.dataset);
+  });
+  document.getElementById('f-service-ids').value = [...selectedSvcIds].join(',');
+  const lbl = document.getElementById('svc-count-label');
+  const basket = document.getElementById('svc-basket');
+  if(!selected.length){ lbl.textContent=''; basket.style.display='none'; updateSummary(); return; }
+  lbl.textContent = `(${selected.length} выбрано)`;
+  const totalP = selected.reduce((a,s)=>a+parseInt(s.price),0);
+  const totalD = selected.reduce((a,s)=>a+parseInt(s.dur),0);
+  document.getElementById('svc-basket-rows').innerHTML =
+    selected.map(s=>`<div>• ${s.name} — ${s.price} сом · ${s.dur} мин</div>`).join('');
+  document.getElementById('svc-total').textContent = `${totalP} сом · ${totalD} мин`;
+  basket.style.display = 'block';
+  updateSummary();
+}
+
+/* ── Date ── */
+function setDate(which, el){
+  document.querySelectorAll('.dq-btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+  const t = new Date();
+  if(which === 'tomorrow') t.setDate(t.getDate() + 1);
+  sheetDate = t.toISOString().split('T')[0];
+  document.getElementById('custom-date').value = sheetDate;
+  document.getElementById('f-date').value = sheetDate;
+  updateSummary();
+  loadSheetSlots();
+}
+function setCustomDate(v){
+  document.querySelectorAll('.dq-btn').forEach(b => b.classList.remove('sel'));
+  sheetDate = v;
+  document.getElementById('f-date').value = v;
+  updateSummary();
+  loadSheetSlots();
+}
+
+/* ── Time slots ── */
+function buildTimeSlots(slots){
+  const wrap = document.getElementById('time-slots');
+  if(!slots || !slots.length){
+    wrap.innerHTML = '<span style="font-size:12px;color:var(--muted)">Нет свободных окошек — укажите время вручную</span>';
+    return;
+  }
+  wrap.innerHTML = slots.map(t =>
+    `<div class="tslot" onclick="selectTime('${t}', this)">${t}</div>`
+  ).join('');
+}
+
+async function loadSheetSlots(){
+  if(!sheetBarberId || !sheetDate || !selectedSvcIds.size) return;
+  const ids = [...selectedSvcIds].join(',');
+  const url = `${SLOTS_URL}?barber=${sheetBarberId}&services=${ids}&date=${sheetDate}`;
+  try{
+    const r = await fetch(url);
+    const d = await r.json();
+    buildTimeSlots(d.slots || []);
+  } catch(e){ buildTimeSlots([]); }
+}
+
+function selectTime(t, el){
+  document.querySelectorAll('.tslot').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+  sheetTime = t;
+  document.getElementById('f-time').value = t;
+  document.getElementById('custom-time').value = t;
+  updateSummary();
+  checkSubmit();
+}
+function setCustomTime(v){
+  document.querySelectorAll('.tslot').forEach(b => b.classList.remove('sel'));
+  sheetTime = v;
+  document.getElementById('f-time').value = v;
+  updateSummary();
+  checkSubmit();
+}
+
+/* ── Paid sync ── */
+function syncPaidMethod(){
+  const paid = document.getElementById('sheet-paid').checked;
+  const pm = document.getElementById('pay-method');
+  if(paid && !pm.value) pm.value = 'cash';
+}
+
+/* ── Summary + submit ── */
+function updateSummary(){
+  document.getElementById('f-date').value = sheetDate || '';
+  document.getElementById('f-time').value = sheetTime || '';
+  const sbar = document.getElementById('booking-summary');
+  if(!sheetBarberId || !selectedSvcIds.size) { sbar.style.display='none'; checkSubmit(); return; }
+  const chips = document.querySelectorAll('#svc-chips .tslot.sel');
+  const totalP = [...chips].reduce((a,c)=>a+parseInt(c.dataset.price),0);
+  const totalD = [...chips].reduce((a,c)=>a+parseInt(c.dataset.dur),0);
+  const dateDisp = sheetDate ? new Date(sheetDate).toLocaleDateString('ru-RU',{day:'numeric',month:'short',weekday:'short'}) : '—';
+  sbar.style.display = 'block';
+  sbar.innerHTML = `💰 <b style="color:var(--text)">${totalP} сом · ${totalD} мин</b><br>📅 ${dateDisp} ${sheetTime ? 'в ' + sheetTime : '<span style="color:#f97316">— выберите время</span>'}`;
+  checkSubmit();
+}
+function checkSubmit(){
+  const ok = sheetBarberId && selectedSvcIds.size && sheetDate && sheetTime;
+  document.getElementById('submit-btn').disabled = !ok;
+}
+
+// Init default date hidden
+document.addEventListener('DOMContentLoaded', () => {
+  const t = new Date();
+  sheetDate = t.toISOString().split('T')[0];
+  document.getElementById('f-date').value = sheetDate;
+  buildTimeSlots(null);
+
+  // Phone mask in sheet
+  const ph = document.getElementById('sheet-phone');
+  const PREFIX = '+996 ';
+  ph.addEventListener('focus', () => { if(!ph.value) ph.value = PREFIX; });
+  ph.addEventListener('input', () => {
+    const d = ph.value.replace(/\D/g,'');
+    const loc = d.startsWith('996') ? d.slice(3) : d;
+    const s = loc.slice(0,9);
+    let out = PREFIX;
+    if(s.length>0) out += s.slice(0,3);
+    if(s.length>3) out += ' '+s.slice(3,6);
+    if(s.length>6) out += ' '+s.slice(6,9);
+    ph.value = out;
+  });
+  ph.addEventListener('keydown', e => {
+    if((e.key==='Backspace'||e.key==='Delete') && ph.selectionStart<=PREFIX.length && ph.selectionEnd<=PREFIX.length) e.preventDefault();
+  });
+  ph.addEventListener('blur', () => { if(ph.value===PREFIX) ph.value=''; });
+});
 </script>
+
 {% endblock %}

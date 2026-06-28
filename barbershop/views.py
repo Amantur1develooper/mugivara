@@ -77,6 +77,17 @@ def index(request):
     return render(request, "barbershop/index.html", {"shops": shops})
 
 
+def _today_free_slots(shop):
+    """Return sorted list of unique 'HH:MM' free slots across all barbers today (30-min probe)."""
+    today = date.today()
+    barbers = Barber.objects.filter(barbershop=shop, is_active=True)
+    all_slots = set()
+    for barber in barbers:
+        slots = _available_slots(barber, today, 30)
+        all_slots.update(slots)
+    return sorted(all_slots)
+
+
 def venue(request, slug):
     shop = get_object_or_404(Barbershop, slug=slug, is_active=True)
     categories = (ServiceCategory.objects
@@ -87,8 +98,12 @@ def venue(request, slug):
                .filter(barbershop=shop, is_active=True)
                .prefetch_related("barber_services__service")
                .order_by("sort_order", "id"))
+    free_slots = _today_free_slots(shop)
     return render(request, "barbershop/venue.html", {
         "shop": shop, "categories": categories, "barbers": barbers,
+        "free_slots": free_slots,
+        "free_first": free_slots[0] if free_slots else None,
+        "free_last":  free_slots[-1] if free_slots else None,
     })
 
 

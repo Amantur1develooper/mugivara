@@ -145,10 +145,15 @@
         <input type="text" name="name" placeholder="Имя" required>
       </div>
       <div class="field">
-        <label>Телефон</label>
-        <input type="tel" name="phone" placeholder="+996 700 000 000">
+        <label>Телефон *</label>
+        <input type="tel" name="phone" id="phone-input" placeholder="+996 700 000 000"
+               required autocomplete="tel"
+               style="letter-spacing:.5px">
+        <div id="phone-error" style="display:none;color:#ff4444;font-size:12px;margin-top:5px">
+          Введите номер в формате +996 700 000 000
+        </div>
       </div>
-      <button type="submit" class="btn-next">Подтвердить запись ✓</button>
+      <button type="submit" class="btn-next" onclick="return validatePhone(event)">Подтвердить запись ✓</button>
       <button type="button" class="btn-back" onclick="goStep(3)">← Назад</button>
     </form>
   </div>
@@ -338,6 +343,72 @@ document.getElementById('date-input').addEventListener('change', function () {
 });
 
 buildServices();
+
+/* ─── Phone mask +996 XXX XXX XXX ─── */
+(function () {
+  const inp = document.getElementById('phone-input');
+  const err = document.getElementById('phone-error');
+  const PREFIX = '+996 ';
+
+  function digits(v) { return v.replace(/\D/g, ''); }
+
+  function format(raw) {
+    // raw = digits after 996
+    const d = raw.slice(0, 9);
+    let out = PREFIX;
+    if (d.length > 0) out += d.slice(0, 3);
+    if (d.length > 3) out += ' ' + d.slice(3, 6);
+    if (d.length > 6) out += ' ' + d.slice(6, 9);
+    return out;
+  }
+
+  function applyMask(e) {
+    const raw = digits(inp.value);
+    // strip leading 996 if user typed it
+    const local = raw.startsWith('996') ? raw.slice(3) : raw;
+    const pos = inp.selectionStart;
+    inp.value = format(local);
+    // keep cursor at end during typing
+    const newPos = inp.value.length;
+    inp.setSelectionRange(newPos, newPos);
+    err.style.display = 'none';
+    inp.style.borderColor = '';
+  }
+
+  inp.addEventListener('focus', function () {
+    if (!inp.value) inp.value = PREFIX;
+    const l = inp.value.length;
+    inp.setSelectionRange(l, l);
+  });
+
+  inp.addEventListener('input', applyMask);
+
+  inp.addEventListener('keydown', function (e) {
+    // prevent deleting the prefix
+    if ((e.key === 'Backspace' || e.key === 'Delete') && inp.selectionStart <= PREFIX.length && inp.selectionEnd <= PREFIX.length) {
+      e.preventDefault();
+    }
+  });
+
+  inp.addEventListener('blur', function () {
+    if (inp.value === PREFIX) inp.value = '';
+  });
+
+  window.validatePhone = function (e) {
+    const d = digits(inp.value);
+    const local = d.startsWith('996') ? d.slice(3) : d;
+    if (local.length !== 9) {
+      e.preventDefault();
+      err.style.display = 'block';
+      inp.style.borderColor = '#ff4444';
+      inp.focus();
+      return false;
+    }
+    // normalize value sent to server
+    inp.value = '+996' + local;
+    return true;
+  };
+})();
 </script>
 </body>
 </html>
