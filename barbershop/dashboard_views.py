@@ -49,11 +49,19 @@ def _tg_send(shop, text):
 @login_required(login_url=LOGIN_URL)
 def bs_home(request):
     shops = _user_shops(request.user).prefetch_related("barbers")
+    today    = date.today()
+    tomorrow = today + timedelta(days=1)
+    week_end = today + timedelta(days=6)
     data = []
     for s in shops:
-        new_count = Appointment.objects.filter(barbershop=s, status="new").count()
-        today_count = Appointment.objects.filter(barbershop=s, appt_date=date.today()).exclude(status="cancelled").count()
-        data.append({"shop": s, "new_count": new_count, "today_count": today_count})
+        qs = Appointment.objects.filter(barbershop=s)
+        data.append({
+            "shop": s,
+            "new_count":      qs.filter(status="new").count(),
+            "today_count":    qs.filter(appt_date=today).exclude(status="cancelled").count(),
+            "tomorrow_count": qs.filter(appt_date=tomorrow).exclude(status="cancelled").count(),
+            "week_count":     qs.filter(appt_date__gte=today, appt_date__lte=week_end).exclude(status="cancelled").count(),
+        })
     return render(request, "dashboard/barbershop/home.html", {"data": data})
 
 

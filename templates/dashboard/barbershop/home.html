@@ -2,47 +2,120 @@
 {% block title %}Барбершопы{% endblock %}
 {% block nav_barbershop %}active{% endblock %}
 {% block content %}
-<div class="db-topbar">
-  <div>
-    <div class="db-page-title">✂️ Мои барбершопы</div>
-    <div class="db-breadcrumb">Управление записями, мастерами и финансами</div>
-  </div>
+<style>
+.bs-card{background:var(--card);border:1.5px solid var(--border);border-radius:20px;overflow:hidden;margin-bottom:14px}
+.bs-header{display:flex;align-items:center;gap:14px;padding:16px 18px}
+.bs-logo{width:54px;height:54px;border-radius:14px;overflow:hidden;background:var(--bg);border:1.5px solid rgba(255,107,53,.2);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0}
+.bs-logo img{width:100%;height:100%;object-fit:cover}
+.bs-name{font-family:'Unbounded',sans-serif;font-weight:800;font-size:15px;color:var(--text);line-height:1.2}
+.bs-addr{font-size:12px;color:var(--muted);margin-top:3px}
+
+/* Stats row */
+.bs-stats{display:flex;gap:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.bs-stat{flex:1;text-align:center;padding:12px 8px;position:relative}
+.bs-stat+.bs-stat::before{content:'';position:absolute;left:0;top:20%;height:60%;width:1px;background:var(--border)}
+.bs-stat-val{font-size:20px;font-weight:900;line-height:1;color:var(--text)}
+.bs-stat-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-top:3px}
+.bs-stat.accent .bs-stat-val{color:var(--accent)}
+.bs-stat.teal .bs-stat-val{color:var(--teal)}
+
+/* Actions grid */
+.bs-actions{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.bs-action{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:14px 8px;text-decoration:none;color:var(--text2);font-size:12px;font-weight:600;transition:background .15s;position:relative;border-top:1px solid var(--border)}
+.bs-action:active{background:var(--bg)}
+.bs-action+.bs-action{border-left:1px solid var(--border)}
+.bs-action:nth-child(3){border-left:none}
+.bs-action:nth-child(n+3){/* already has top border */}
+.bs-action-icon{font-size:22px;line-height:1}
+.bs-action.primary{color:var(--primary)}
+.bs-badge{position:absolute;top:10px;right:calc(50% - 22px);background:var(--accent);color:#fff;font-size:10px;font-weight:800;padding:2px 6px;border-radius:100px;min-width:18px;text-align:center}
+
+/* Extra row */
+.bs-footer{display:flex;align-items:center;gap:10px;padding:10px 18px;background:var(--bg);border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+</style>
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+  <div style="font-size:18px;font-weight:800;color:var(--text)">✂️ Барбершопы</div>
 </div>
+
 {% if not data %}
-<div class="db-card" style="text-align:center;padding:60px 24px">
-  <div style="font-size:48px;margin-bottom:16px">✂️</div>
-  <div style="font-size:16px;font-weight:600;color:var(--text2)">Нет доступных барбершопов</div>
-  <div style="font-size:13px;color:var(--muted);margin-top:8px">Обратитесь к администратору</div>
+<div style="text-align:center;padding:60px 24px;background:var(--card);border-radius:20px">
+  <div style="font-size:48px;margin-bottom:12px">✂️</div>
+  <div style="font-size:15px;font-weight:600;color:var(--text2)">Нет доступных барбершопов</div>
+  <div style="font-size:13px;color:var(--muted);margin-top:6px">Обратитесь к администратору</div>
 </div>
 {% endif %}
-<div style="display:flex;flex-direction:column;gap:16px">
+
 {% for row in data %}
 {% with shop=row.shop %}
-<div class="db-card" style="padding:0;overflow:hidden">
-  <div style="display:flex;align-items:center;gap:16px;padding:20px 24px;border-bottom:1px solid var(--border)">
-    <div style="width:52px;height:52px;border-radius:14px;overflow:hidden;background:#111;border:1.5px solid rgba(255,107,53,.2);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">
-      {% if shop.logo %}<img src="{{ shop.logo.url }}" style="width:100%;height:100%;object-fit:cover">{% else %}✂️{% endif %}
+<div class="bs-card">
+
+  <!-- Header -->
+  <div class="bs-header">
+    <div class="bs-logo">
+      {% if shop.logo %}<img src="{{ shop.logo.url }}" alt="">{% else %}✂️{% endif %}
     </div>
     <div style="flex:1;min-width:0">
-      <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:15px">{{ shop.name }}</div>
-      {% if shop.address %}<div style="font-size:13px;color:var(--muted);margin-top:3px">📍 {{ shop.address }}</div>{% endif %}
+      <div class="bs-name">{{ shop.name }}</div>
+      {% if shop.address %}<div class="bs-addr">📍 {{ shop.address }}</div>{% endif %}
     </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <a href="{% url 'dashboard:bs_appointments' shop.id %}" class="db-btn db-btn-primary db-btn-sm">📋 Записи{% if row.new_count %} <span style="background:rgba(255,255,255,.3);padding:1px 6px;border-radius:8px">{{ row.new_count }}</span>{% endif %}</a>
-      <a href="{% url 'dashboard:bs_barbers' shop.id %}" class="db-btn db-btn-ghost db-btn-sm">👤 Мастера</a>
-      <a href="{% url 'dashboard:bs_services' shop.id %}" class="db-btn db-btn-ghost db-btn-sm">📋 Услуги</a>
-      <a href="{% url 'dashboard:bs_report' shop.id %}" class="db-btn db-btn-ghost db-btn-sm">📊 Отчёт</a>
-      <a href="{% url 'dashboard:bs_venue_edit' shop.id %}" class="db-btn db-btn-ghost db-btn-sm">⚙️</a>
+    <a href="{% url 'dashboard:bs_venue_edit' shop.id %}" style="color:var(--muted);font-size:20px;text-decoration:none;padding:4px 8px">⚙️</a>
+  </div>
+
+  <!-- Stats -->
+  <div class="bs-stats">
+    <div class="bs-stat accent">
+      <div class="bs-stat-val">{{ row.today_count }}</div>
+      <div class="bs-stat-lbl">Сегодня</div>
+    </div>
+    <div class="bs-stat {% if row.new_count %}accent{% endif %}">
+      <div class="bs-stat-val">{{ row.new_count }}</div>
+      <div class="bs-stat-lbl">Новых</div>
+    </div>
+    <div class="bs-stat">
+      <div class="bs-stat-val">{{ row.tomorrow_count }}</div>
+      <div class="bs-stat-lbl">Завтра</div>
+    </div>
+    <div class="bs-stat teal">
+      <div class="bs-stat-val">{{ row.week_count }}</div>
+      <div class="bs-stat-lbl">Неделя</div>
     </div>
   </div>
-  <div style="display:flex;gap:24px;padding:12px 24px;background:var(--bg);font-size:13px;color:var(--muted)">
-    <span>📅 Сегодня: <b style="color:var(--text2)">{{ row.today_count }}</b> записей</span>
-    {% if row.new_count %}<span style="color:var(--accent)">🆕 Новых: <b>{{ row.new_count }}</b></span>{% endif %}
-    {% if shop.phone %}<span>📞 {{ shop.phone }}</span>{% endif %}
-    <a href="{% url 'barbershop:venue' shop.slug %}" target="_blank" style="color:var(--muted);text-decoration:none">🔗 Страница</a>
+
+  <!-- Actions 2×2 -->
+  <div class="bs-actions">
+    <a href="{% url 'dashboard:bs_appointments' shop.id %}" class="bs-action primary">
+      {% if row.new_count %}<span class="bs-badge">{{ row.new_count }}</span>{% endif %}
+      <span class="bs-action-icon">📋</span>
+      <span>Записи</span>
+    </a>
+    <a href="{% url 'dashboard:bs_appointments' shop.id %}?all=1" class="bs-action">
+      <span class="bs-action-icon">📅</span>
+      <span>Все записи</span>
+    </a>
+    <a href="{% url 'dashboard:bs_report' shop.id %}" class="bs-action">
+      <span class="bs-action-icon">📊</span>
+      <span>Отчёт</span>
+    </a>
+    <a href="{% url 'dashboard:bs_barbers' shop.id %}" class="bs-action">
+      <span class="bs-action-icon">👤</span>
+      <span>Мастера</span>
+    </a>
   </div>
+
+  <!-- Footer -->
+  <div class="bs-footer">
+    {% if shop.phone %}
+    <a href="tel:{{ shop.phone }}" style="color:var(--muted);text-decoration:none">📞 {{ shop.phone }}</a>
+    <span>·</span>
+    {% endif %}
+    <a href="{% url 'barbershop:venue' shop.slug %}" target="_blank" style="color:var(--primary);text-decoration:none;font-weight:600">🔗 Открыть страницу</a>
+    <span style="margin-left:auto">
+      <a href="{% url 'dashboard:bs_services' shop.id %}" style="color:var(--muted);text-decoration:none">📋 Услуги</a>
+    </span>
+  </div>
+
 </div>
 {% endwith %}
 {% endfor %}
-</div>
 {% endblock %}
