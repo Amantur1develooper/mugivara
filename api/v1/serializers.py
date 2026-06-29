@@ -28,15 +28,16 @@ class RestaurantSerializer(serializers.ModelSerializer):
 
 
 class BranchSerializer(serializers.ModelSerializer):
-    is_open_now  = serializers.SerializerMethodField()
-    cover_url    = serializers.SerializerMethodField()
-    restaurant   = serializers.StringRelatedField()
+    is_open_now   = serializers.SerializerMethodField()
+    cover_url     = serializers.SerializerMethodField()
+    promo_photo_url = serializers.SerializerMethodField()
+    restaurant    = serializers.StringRelatedField()
 
     class Meta:
         model = Branch
         fields = [
             "id", "restaurant", "name_ru", "name_ky", "name_en",
-            "address", "phone", "map_url", "cover_url",
+            "address", "phone", "map_url", "cover_url", "promo_photo_url",
             "lat", "lon", "is_open_now",
             "delivery_enabled", "min_order_amount", "delivery_fee",
             "free_delivery_from",
@@ -53,6 +54,13 @@ class BranchSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if obj.cover_photo and request:
             return request.build_absolute_uri(obj.cover_photo.url)
+        return None
+
+    @extend_schema_field(serializers.URLField(allow_null=True))
+    def get_promo_photo_url(self, obj):
+        request = self.context.get("request")
+        if obj.promo_photo and request:
+            return request.build_absolute_uri(obj.promo_photo.url)
         return None
 
 
@@ -149,22 +157,34 @@ class DishConstructorSerializer(serializers.ModelSerializer):
 
 class BannerSerializer(serializers.ModelSerializer):
     image_mobile_url = serializers.SerializerMethodField()
+    image_tablet_url = serializers.SerializerMethodField()
     image_wide_url   = serializers.SerializerMethodField()
 
     class Meta:
         model = Banner
-        fields = ["id", "title", "image_mobile_url", "image_wide_url", "link_url", "sort_order"]
+        fields = [
+            "id", "title",
+            "image_mobile_url", "image_tablet_url", "image_wide_url",
+            "link_url", "sort_order",
+        ]
+
+    def _abs(self, request, field):
+        if not field:
+            return None
+        return request.build_absolute_uri(field.url) if request else field.url
 
     @extend_schema_field(serializers.URLField(allow_null=True))
     def get_image_mobile_url(self, obj):
-        request = self.context.get("request")
-        if obj.image_mobile and request:
-            return request.build_absolute_uri(obj.image_mobile.url)
-        return None
+        return self._abs(self.context.get("request"), obj.image_mobile)
+
+    @extend_schema_field(serializers.URLField(allow_null=True))
+    def get_image_tablet_url(self, obj):
+        # fall back to mobile if tablet variant not uploaded
+        field = obj.image_tablet or obj.image_mobile
+        return self._abs(self.context.get("request"), field)
 
     @extend_schema_field(serializers.URLField(allow_null=True))
     def get_image_wide_url(self, obj):
-        request = self.context.get("request")
-        if obj.image_wide and request:
-            return request.build_absolute_uri(obj.image_wide.url)
-        return None
+        # fall back to tablet → mobile if wide variant not uploaded
+        field = obj.image_wide or obj.image_tablet or obj.image_mobile
+        return self._abs(self.context.get("request"), field)

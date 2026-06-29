@@ -24,12 +24,13 @@ _PromoSchema = inline_serializer("PromoCard", fields={
 })
 
 _BannerSchema = inline_serializer("BannerCard", fields={
-    "id":              serializers.IntegerField(),
-    "title":           serializers.CharField(),
+    "id":               serializers.IntegerField(),
+    "title":            serializers.CharField(),
     "image_mobile_url": serializers.URLField(allow_null=True),
+    "image_tablet_url": serializers.URLField(allow_null=True),
     "image_wide_url":   serializers.URLField(allow_null=True),
-    "link_url":        serializers.CharField(allow_blank=True),
-    "sort_order":      serializers.IntegerField(),
+    "link_url":         serializers.CharField(allow_blank=True),
+    "sort_order":       serializers.IntegerField(),
 })
 
 
@@ -85,7 +86,8 @@ def branch_promos(request, branch_id: int):
     summary="Баннеры главного экрана",
     description=(
         "Активные промо-баннеры для слайдера. "
-        "Возвращает URL для трёх форматов: mobile (850px), wide (2560px). "
+        "Возвращает абсолютные URL для трёх форматов: mobile (≤768px), tablet (≤1280px), wide (>1280px). "
+        "Если вариант не загружен — возвращается ближайший меньший. "
         "Клик по баннеру открывает `link_url`."
     ),
     responses={200: _BannerSchema},
@@ -96,14 +98,17 @@ def banner_list(request):
     banners = Banner.objects.filter(is_active=True).order_by("sort_order")
 
     def img_url(field):
-        return request.build_absolute_uri(field.url) if field else None
+        if not field:
+            return None
+        return request.build_absolute_uri(field.url)
 
     return Response([
         {
             "id":               b.id,
             "title":            b.title,
             "image_mobile_url": img_url(b.image_mobile),
-            "image_wide_url":   img_url(b.image_wide),
+            "image_tablet_url": img_url(b.image_tablet or b.image_mobile),
+            "image_wide_url":   img_url(b.image_wide or b.image_tablet or b.image_mobile),
             "link_url":         b.link_url or "",
             "sort_order":       b.sort_order,
         }
