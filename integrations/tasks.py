@@ -7,6 +7,7 @@ from decimal import Decimal
 from integrations.models import TelegramRecipient
 from integrations.telegram import send_message
 from orders.models import Order
+from reservations.models import Place
 
 
 def _tg_token() -> str:
@@ -309,26 +310,9 @@ def notify_order_status(self, order_id: int, old_status: str, new_status: str):
     return f"sent={sent}"
 # $mPx32u5
 
-from celery import shared_task
-from django.utils import timezone
-from django.conf import settings
-import requests
-
-from reservations.models import Place
-from integrations.models import TelegramRecipient
-
-def _tg_send(chat_id: str, text: str, message_thread_id=None, parse_mode: str = "HTML"):
-    if not getattr(settings, "TG_BOT_TOKEN", None):
-        return
-    url = f"https://api.telegram.org/bot{settings.TG_BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": chat_id, "text": text, "parse_mode": parse_mode}
-    if message_thread_id:
-        payload["message_thread_id"] = int(message_thread_id)
-    requests.post(url, json=payload, timeout=10)
-
-
 @shared_task
 def notify_call_waiter(place_id: int, note: str = ""):
+    from django.utils.html import escape as _esc
     place = Place.objects.select_related("floor__branch__restaurant").get(id=place_id)
     branch = place.floor.branch
     floor  = place.floor
@@ -344,16 +328,17 @@ def notify_call_waiter(place_id: int, note: str = ""):
     lines = [
         "🔔 <b>ВЫЗОВ ОФИЦИАНТА</b>",
         "",
-        f"🏢 <b>{escape(branch.name_ru)}</b>",
-        f"🍽️ Место: <b>{escape(place.title)}</b>",
+        f"🏢 <b>{_esc(branch.name_ru)}</b>",
+        f"🍽️ Место: <b>{_esc(place.title)}</b>",
     ]
-    if floor.name:
-        lines.append(f"📐 Зал: {escape(floor.name)}")
+    if floor.name_ru:
+        lines.append(f"📐 Зал: {_esc(floor.name_ru)}")
     if note:
-        lines.append(f"💬 <i>{escape(note)}</i>")
+        lines.append(f"💬 <i>{_esc(note)}</i>")
     lines.append(f"⏰ {t}")
 
     text = "\n".join(lines)
 
     for r in recs:
-        _tg_send(r.chat_id, text, r.message_thread_id)
+        send_message(chat_id=r.chat_id, text=text,
+                     message_thread_id=r.message_thread_id, parse_mode="HTML")
