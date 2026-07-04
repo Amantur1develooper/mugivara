@@ -1,0 +1,136 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Статистика — {{ center.name_ru }}{% endblock %}
+{% block nav_printshop %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .st-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:24px; }
+  .st-card { background:var(--card); border:1.5px solid var(--border); border-radius:16px; padding:18px; }
+  .st-label { font-size:12px; color:var(--muted); font-weight:600; }
+  .st-value { font-family:'Unbounded',sans-serif; font-size:24px; font-weight:900; color:var(--text); margin-top:6px; }
+  .st-count { font-size:12px; color:var(--muted); margin-top:4px; }
+  .top-table { width:100%; border-collapse:collapse; font-size:14px; }
+  .top-table th { text-align:left; padding:10px 14px; font-size:11px; font-weight:700; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--border); }
+  .top-table td { padding:10px 14px; border-bottom:1px solid var(--border); }
+  .top-table tr:last-child td { border-bottom:none; }
+  .chart-wrap { position:relative; height:260px; }
+  .st-status-row { display:flex; align-items:center; gap:12px; padding:8px 0; }
+  .st-status-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .st-status-label { width:120px; flex-shrink:0; font-size:13px; color:var(--text2); font-weight:600; }
+  .st-status-bar-wrap { flex:1; height:8px; border-radius:4px; background:rgba(0,0,0,.05); overflow:hidden; }
+  .st-status-bar { height:100%; border-radius:4px; transition:width .3s; }
+  .st-status-count { width:70px; flex-shrink:0; text-align:right; font-size:12px; color:var(--muted); font-weight:700; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">📊 Статистика продаж</div>
+    <div class="db-breadcrumb">{{ center.name_ru }}</div>
+  </div>
+  <a href="{% url 'dashboard:printshop_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
+</div>
+
+<div class="st-grid">
+  <div class="st-card">
+    <div class="st-label">Сегодня</div>
+    <div class="st-value">{{ rev.today.sum|floatformat:"0" }} сом</div>
+    <div class="st-count">{{ rev.today.count }} заказ(ов)</div>
+  </div>
+  <div class="st-card">
+    <div class="st-label">За неделю</div>
+    <div class="st-value">{{ rev.week.sum|floatformat:"0" }} сом</div>
+    <div class="st-count">{{ rev.week.count }} заказ(ов)</div>
+  </div>
+  <div class="st-card">
+    <div class="st-label">За месяц</div>
+    <div class="st-value">{{ rev.month.sum|floatformat:"0" }} сом</div>
+    <div class="st-count">{{ rev.month.count }} заказ(ов)</div>
+  </div>
+  <div class="st-card">
+    <div class="st-label">Всего</div>
+    <div class="st-value">{{ rev.all.sum|floatformat:"0" }} сом</div>
+    <div class="st-count">{{ rev.all.count }} заказ(ов)</div>
+  </div>
+</div>
+
+<div class="db-card" style="margin-bottom:20px">
+  <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px">📈 Выручка за последние 30 дней</div>
+  <div class="chart-wrap"><canvas id="revenueChart"></canvas></div>
+</div>
+
+<div class="db-card" style="margin-bottom:20px">
+  <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px">Заказы по статусам ({{ total_orders }} всего)</div>
+  {% if total_orders %}
+    {% for row in status_breakdown %}
+      {% if row.count %}
+      <div class="st-status-row">
+        <span class="st-status-dot" style="background:{{ row.color }}"></span>
+        <span class="st-status-label">{{ row.label }}</span>
+        <div class="st-status-bar-wrap"><div class="st-status-bar" style="width:{{ row.pct }}%;background:{{ row.color }}"></div></div>
+        <span class="st-status-count">{{ row.count }} ({{ row.pct }}%)</span>
+      </div>
+      {% endif %}
+    {% endfor %}
+  {% else %}
+    <div style="text-align:center;padding:20px;color:var(--muted);font-size:14px">Заказов пока нет</div>
+  {% endif %}
+</div>
+
+<div class="db-card">
+  <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px">Топ товаров по выручке</div>
+  {% if top_products %}
+  <div style="overflow-x:auto">
+    <table class="top-table">
+      <thead><tr><th>Товар</th><th>Продано, шт</th><th>Выручка</th></tr></thead>
+      <tbody>
+        {% for row in top_products %}
+        <tr>
+          <td>{{ row.items__product__name_ru }}</td>
+          <td>{{ row.qty }}</td>
+          <td>{{ row.revenue|floatformat:"0" }} сом</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+    <div style="text-align:center;padding:40px;color:var(--muted);font-size:14px">Пока нет данных о продажах</div>
+  {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+const ctx = document.getElementById('revenueChart').getContext('2d');
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: {{ daily_labels|safe }},
+    datasets: [{
+      label: 'Выручка',
+      data: {{ daily_values|safe }},
+      borderColor: '#FF4D1C',
+      backgroundColor: 'rgba(255,77,28,0.08)',
+      borderWidth: 2,
+      pointRadius: 3,
+      pointBackgroundColor: '#FF4D1C',
+      fill: true,
+      tension: 0.4,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (c) => c.parsed.y.toFixed(0) + ' сом' } },
+    },
+    scales: {
+      x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 11 }, maxRotation: 45 } },
+      y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 11 }, precision: 0 } }
+    }
+  }
+});
+</script>
+{% endblock %}

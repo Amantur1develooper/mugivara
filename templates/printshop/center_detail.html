@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ center.name_ru }} — Webordo{% endblock %}
+
+{% block content %}
+<style>
+  :root{
+    --bg: #f6f7fb; --card: #ffffff; --ink: #0f172a; --muted: #64748b;
+    --line: rgba(2,6,23,.08);
+    --shadow: 0 18px 45px rgba(2,6,23,.10);
+    --shadow2: 0 10px 24px rgba(2,6,23,.08);
+    --radius: 22px;
+  }
+  .page-wrap{ max-width: 1080px; margin: 0 auto; padding: 18px 14px 40px; }
+  .hero{
+    position: relative; overflow: hidden; border-radius: 28px; padding: 18px;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfbff 100%);
+    border: 1px solid var(--line); box-shadow: var(--shadow2);
+  }
+  .hero-inner{ display: grid; grid-template-columns: 1fr; gap: 14px; }
+  .hero h1{ margin: 0; font-family:'Unbounded',sans-serif; font-size: 26px; line-height: 1.15; color: var(--ink); letter-spacing: .2px; font-weight: 900; }
+  .hero p{ margin: 0; color: var(--muted); line-height: 1.5; font-size: 14px; }
+  .hero-badge{
+    display: inline-flex; align-items: center; gap: 8px; width: fit-content;
+    padding: 8px 10px; border-radius: 999px; border: 1px solid var(--line);
+    background: rgba(2,6,23,.03); color: var(--ink); font-weight: 700; font-size: 12px;
+  }
+  .hero-dot{ width: 8px; height: 8px; border-radius: 99px; background: #22c55e; box-shadow: 0 0 0 5px rgba(34,197,94,.15); }
+
+  .grid{ margin-top: 16px; display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 12px; }
+  @media (min-width: 640px){
+    .hero{ padding: 22px; } .hero h1{ font-size: 32px; } .hero p{ font-size: 15px; }
+    .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  }
+  @media (min-width: 1024px){ .grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; } }
+
+  .card{
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    overflow: hidden; box-shadow: 0 10px 25px rgba(2,6,23,.06);
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    text-decoration: none; color: inherit; display: flex; flex-direction: column; min-height: 100%;
+  }
+  .card:hover{ transform: translateY(-2px); box-shadow: var(--shadow); border-color: rgba(2,6,23,.14); }
+  .cover{ position: relative; aspect-ratio: 16/9; background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%); }
+  .cover img{ width: 100%; height: 100%; object-fit: cover; display: block; }
+  .card-body{ padding: 14px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .title-row{ display:flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .branch-name{ font-weight: 900; color: var(--ink); font-size: 16px; line-height: 1.25; }
+  .meta{ color: var(--muted); font-size: 13px; line-height: 1.35; }
+  .pills{ margin-top: 2px; display:flex; gap: 8px; flex-wrap: wrap; }
+  .pill{ display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: 999px; border: 1px solid var(--line); background: rgba(2,6,23,.03); color: #0f172a; font-weight: 700; font-size: 12px; white-space: nowrap; }
+  .pill.green{ background: rgba(34,197,94,.10); border-color: rgba(34,197,94,.25); }
+  .pill.orange{ background: rgba(249,115,22,.10); border-color: rgba(249,115,22,.25); }
+  .cta{ margin-top: auto; padding-top: 6px; display:flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap: 8px;
+    padding: 10px 12px; border-radius: 14px; font-weight: 900; font-size: 13px;
+    background: #0f172a; color: #fff; text-decoration: none; box-shadow: 0 10px 20px rgba(2,6,23,.15);
+  }
+
+  .tl-btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 999px;
+    font-size: 14px; font-weight: 700; text-decoration: none; border: none; cursor: pointer;
+    transition: transform .15s, box-shadow .15s; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,.12);
+  }
+  .tl-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,.18); }
+  .tl-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .tl-phone { background: #0f172a; color: #fff; }
+  .tl-wa    { background: #25D366; color: #fff; }
+  .tl-tg    { background: #2AABEE; color: #fff; }
+  .tl-map   { background: #1A73E8; color: #fff; }
+  .tl-web   { background: #fff; color: #0f172a; border: 1.5px solid rgba(2,6,23,.12); }
+  .empty{ margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; color: var(--muted); }
+</style>
+
+<div class="page-wrap">
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge"><span class="hero-dot"></span><span>Онлайн-каталог • Заказ в WhatsApp</span></div>
+      <div>
+        {% if center.logo %}
+          <img src="{{ center.logo.url }}" alt="{{ center.name_ru }}"
+               style="width:64px;height:64px;border-radius:16px;object-fit:cover;border:2px solid rgba(2,6,23,.08);margin-bottom:10px;display:block">
+        {% endif %}
+        <h1>{{ center.name_ru }}</h1>
+        {% if center.description_ru %}<p>{{ center.description_ru|truncatechars:160 }}</p>{% endif %}
+      </div>
+    </div>
+  </section>
+
+  <section class="grid">
+    {% for b in branches %}
+    <a class="card" href="{% url 'printshop:branch_catalog' center.slug b.id %}">
+      <div class="cover">
+        {% if b.banner %}<img src="{{ b.banner.url }}" alt="{{ b.name_ru }}" loading="lazy">{% endif %}
+      </div>
+      <div class="card-body">
+        <div class="title-row">
+          <div class="branch-name">{{ b.name_ru }}</div>
+          {% if b.is_open_now %}<span class="pill green">Открыто</span>{% else %}<span class="pill">Закрыто</span>{% endif %}
+        </div>
+        <div class="meta">{{ b.address }}</div>
+        <div class="pills">
+          {% if not b.is_open_24h and b.open_time and b.close_time %}
+            <span class="pill">{{ b.open_time|time:"H:i" }}–{{ b.close_time|time:"H:i" }}</span>
+          {% elif b.is_open_24h %}<span class="pill green">24/7</span>{% endif %}
+          {% if b.delivery_enabled %}<span class="pill orange">Доставка</span>{% endif %}
+        </div>
+        <div class="cta">
+          <span class="meta">Открыть каталог</span>
+          <span class="btn">Каталог →</span>
+        </div>
+      </div>
+    </a>
+    {% empty %}
+      <div class="empty">У центра пока нет активных филиалов.</div>
+    {% endfor %}
+  </section>
+</div>
+{% endblock %}

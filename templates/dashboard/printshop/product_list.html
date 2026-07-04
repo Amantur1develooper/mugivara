@@ -1,0 +1,203 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Товары — {{ center.name_ru }}{% endblock %}
+{% block nav_printshop %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .pl-wrap { max-width: 820px; }
+  .pl-add-card {
+    background:var(--card); border:1.5px solid var(--border); border-radius:16px;
+    padding:18px; margin-bottom:20px;
+  }
+  .pl-add-grid { display:grid; grid-template-columns:2fr 1fr 1fr auto; gap:10px; align-items:end; }
+  @media (max-width:700px) { .pl-add-grid { grid-template-columns:1fr; } }
+
+  .pl-list { background:var(--card); border:1.5px solid var(--border); border-radius:18px; overflow:hidden; }
+  .pl-row {
+    display:flex; align-items:center; gap:12px; padding:12px 16px;
+    border-bottom:1px solid var(--border);
+  }
+  .pl-row:last-child { border-bottom:none; }
+  .pl-move { display:flex; flex-direction:column; flex-shrink:0; }
+  .pl-move-btn {
+    width:28px; height:22px; border:none; background:transparent; cursor:pointer;
+    font-size:12px; color:var(--muted); border-radius:6px;
+  }
+  .pl-move-btn:hover { background:var(--bg); color:var(--text); }
+  .pl-thumb {
+    width:44px; height:44px; border-radius:10px; object-fit:cover; flex-shrink:0;
+    background:var(--bg); border:1px solid var(--border);
+  }
+  .pl-info { flex:1; min-width:0; }
+  .pl-name { font-size:14px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pl-meta { font-size:12px; color:var(--muted); margin-top:2px; }
+  .pl-badges { display:flex; gap:4px; flex-wrap:wrap; margin-top:4px; }
+  .pl-badge { font-size:10px; font-weight:700; padding:2px 8px; border-radius:100px; }
+  .pl-badge-new     { background:rgba(37,99,235,.1); color:#2563EB; }
+  .pl-badge-popular { background:rgba(249,115,22,.1); color:#ea580c; }
+  .pl-badge-promo   { background:rgba(220,38,38,.1); color:#dc2626; }
+  .pl-badge-off     { background:rgba(0,0,0,.06); color:var(--muted); }
+  .pl-actions { display:flex; gap:6px; flex-shrink:0; }
+  .pl-toggle-btn {
+    padding:5px 10px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;
+    border:1.5px solid var(--border); background:var(--bg); color:var(--text2);
+  }
+  .pl-toggle-btn.on { border-color:rgba(0,184,150,.35); background:rgba(0,184,150,.1); color:var(--teal); }
+  .pl-empty { text-align:center; padding:48px; color:var(--muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">📦 Товары</div>
+    <div class="db-breadcrumb">{{ center.name_ru }}</div>
+  </div>
+  <a href="{% url 'dashboard:printshop_category_list' center.id %}" class="db-btn db-btn-ghost db-btn-sm">📁 Категории</a>
+</div>
+
+<div class="pl-wrap">
+  <div class="pl-add-card">
+    <form method="post" action="{% url 'dashboard:printshop_product_add' center.id %}">
+      {% csrf_token %}
+      <div class="pl-add-grid">
+        <div>
+          <label class="db-label">Название</label>
+          <input class="db-input" type="text" name="name_ru" placeholder="Например: Визитки" required>
+        </div>
+        <div>
+          <label class="db-label">Категория</label>
+          <select class="db-input" name="category_id">
+            <option value="">Без категории</option>
+            {% for cat in categories %}
+              <option value="{{ cat.id }}">{{ cat.name_ru }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="db-label">Базовая цена</label>
+          <input class="db-input" type="number" name="base_price" min="0" step="1" value="0">
+        </div>
+        <button type="submit" class="db-btn db-btn-primary">＋ Добавить</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="pl-list" id="plList">
+    {% for section in cat_sections %}
+      {% for p in section.products %}
+      <div class="pl-row" data-product-id="{{ p.id }}">
+        <div class="pl-move">
+          <button class="pl-move-btn" onclick="moveUp(this)">▲</button>
+          <button class="pl-move-btn" onclick="moveDown(this)">▼</button>
+        </div>
+        {% if p.main_photo %}
+          <img class="pl-thumb" src="{{ p.main_photo.url }}">
+        {% else %}
+          <div class="pl-thumb" style="display:flex;align-items:center;justify-content:center">🖨️</div>
+        {% endif %}
+        <div class="pl-info">
+          <div class="pl-name">{{ p.name_ru }}</div>
+          <div class="pl-meta">{{ section.cat.name_ru }} · {{ p.display_price|floatformat:"0" }} сом{% if p.variants.count %} (от){% endif %}{% if p.sku %} · арт. {{ p.sku }}{% endif %}</div>
+          <div class="pl-badges">
+            {% if p.is_new %}<span class="pl-badge pl-badge-new">Новинка</span>{% endif %}
+            {% if p.is_popular %}<span class="pl-badge pl-badge-popular">Популярное</span>{% endif %}
+            {% if p.is_promo %}<span class="pl-badge pl-badge-promo">Акция</span>{% endif %}
+            {% if not p.is_available %}<span class="pl-badge pl-badge-off">Скрыт</span>{% endif %}
+          </div>
+        </div>
+        <div class="pl-actions">
+          <button class="pl-toggle-btn {% if p.is_available %}on{% endif %}" onclick="toggleField({{ p.id }},'is_available',this)">В наличии</button>
+          <a href="{% url 'dashboard:printshop_product_detail' p.id %}" class="db-btn db-btn-ghost db-btn-sm">✏️</a>
+          <form method="post" action="{% url 'dashboard:printshop_product_delete' p.id %}" onsubmit="return confirm('Удалить «{{ p.name_ru|escapejs }}»?')" style="display:inline">
+            {% csrf_token %}
+            <button type="submit" class="db-btn db-btn-ghost db-btn-sm" style="color:#dc2626">🗑</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    {% endfor %}
+    {% for p in uncat_products %}
+    <div class="pl-row" data-product-id="{{ p.id }}">
+      <div class="pl-move">
+        <button class="pl-move-btn" onclick="moveUp(this)">▲</button>
+        <button class="pl-move-btn" onclick="moveDown(this)">▼</button>
+      </div>
+      {% if p.main_photo %}
+        <img class="pl-thumb" src="{{ p.main_photo.url }}">
+      {% else %}
+        <div class="pl-thumb" style="display:flex;align-items:center;justify-content:center">🖨️</div>
+      {% endif %}
+      <div class="pl-info">
+        <div class="pl-name">{{ p.name_ru }}</div>
+        <div class="pl-meta">Без категории · {{ p.display_price|floatformat:"0" }} сом</div>
+        <div class="pl-badges">
+          {% if p.is_new %}<span class="pl-badge pl-badge-new">Новинка</span>{% endif %}
+          {% if p.is_popular %}<span class="pl-badge pl-badge-popular">Популярное</span>{% endif %}
+          {% if p.is_promo %}<span class="pl-badge pl-badge-promo">Акция</span>{% endif %}
+          {% if not p.is_available %}<span class="pl-badge pl-badge-off">Скрыт</span>{% endif %}
+        </div>
+      </div>
+      <div class="pl-actions">
+        <button class="pl-toggle-btn {% if p.is_available %}on{% endif %}" onclick="toggleField({{ p.id }},'is_available',this)">В наличии</button>
+        <a href="{% url 'dashboard:printshop_product_detail' p.id %}" class="db-btn db-btn-ghost db-btn-sm">✏️</a>
+        <form method="post" action="{% url 'dashboard:printshop_product_delete' p.id %}" onsubmit="return confirm('Удалить «{{ p.name_ru|escapejs }}»?')" style="display:inline">
+          {% csrf_token %}
+          <button type="submit" class="db-btn db-btn-ghost db-btn-sm" style="color:#dc2626">🗑</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if not cat_sections and not uncat_products %}
+    <div class="pl-empty">Пока нет товаров — добавьте первый выше</div>
+  {% endif %}
+</div>
+
+<div id="plUrls" style="display:none"
+  data-toggle="{% url 'dashboard:printshop_product_toggle' 0 %}"
+  data-reorder="{% url 'dashboard:printshop_product_reorder' center.id %}"
+></div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+const CSRF = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+const U    = document.getElementById('plUrls').dataset;
+const list = document.getElementById('plList');
+
+function post(url, data) {
+  const fd = new FormData();
+  for (const [k,v] of Object.entries(data)) fd.append(k,v);
+  return fetch(url,{method:'POST',body:fd,
+    headers:{'X-CSRFToken':CSRF,'X-Requested-With':'XMLHttpRequest'}
+  }).then(r=>r.json());
+}
+
+async function toggleField(id, field, btn) {
+  const d = await post(U.toggle.replace('/0/', `/${id}/`), {field});
+  if (!d.ok) return;
+  btn.classList.toggle('on', !!d.value);
+}
+
+function moveUp(btn) {
+  const row = btn.closest('.pl-row');
+  const prev = row.previousElementSibling;
+  if (prev) { list.insertBefore(row, prev); saveOrder(); }
+}
+function moveDown(btn) {
+  const row = btn.closest('.pl-row');
+  const next = row.nextElementSibling;
+  if (next) { list.insertBefore(next, row); saveOrder(); }
+}
+let _saveTimer;
+function saveOrder() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(async ()=>{
+    const ids = [...list.querySelectorAll('.pl-row[data-product-id]')].map(r=>r.dataset.productId);
+    await post(U.reorder, {order: ids.join(',')});
+  }, 400);
+}
+</script>
+{% endblock %}

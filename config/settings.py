@@ -74,6 +74,7 @@ INSTALLED_APPS = [
    "barbershop",
    "techcards.apps.TechCardsConfig",
    "printing.apps.PrintingConfig",
+   "printshop.apps.PrintshopConfig",
 ]
 # CELERY_TASK_ALWAYS_EAGER = True
 # CELERY_TASK_EAGER_PROPAGATES = True

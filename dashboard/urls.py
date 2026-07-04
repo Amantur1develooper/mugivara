@@ -8,6 +8,7 @@ from karaoke import dashboard_views as kv
 from barbershop import dashboard_views as bsv
 from dashboard import techcard_views as tcv
 from eco import dashboard_views as ev
+from printshop import dashboard_views as pv
 
 app_name = "dashboard"
 
@@ -229,4 +230,44 @@ urlpatterns = [
     path("eco/service/<int:service_id>/edit/",               ev.eco_service_edit,        name="eco_service_edit"),
     path("eco/service/<int:service_id>/toggle/",             ev.eco_service_toggle,      name="eco_service_toggle"),
     path("eco/service/<int:service_id>/delete/",             ev.eco_service_delete,      name="eco_service_delete"),
+
+    # ── PRINTSHOP (полиграфические центры) ──────────────────────────────────
+    path("printshop/",                                        pv.printshop_home,       name="printshop_home"),
+    path("printshop/<int:center_id>/edit/",                   pv.center_edit,          name="printshop_center_edit"),
+    path("printshop/branch/<int:branch_id>/edit/",            pv.branch_edit,          name="printshop_branch_edit"),
+    path("printshop/branch/<int:branch_id>/toggle/",          pv.branch_toggle,        name="printshop_branch_toggle"),
+
+    path("printshop/<int:center_id>/categories/",             pv.category_list,        name="printshop_category_list"),
+    path("printshop/<int:center_id>/categories/add/",         pv.category_add,         name="printshop_category_add"),
+    path("printshop/category/<int:category_id>/rename/",      pv.category_rename,      name="printshop_category_rename"),
+    path("printshop/category/<int:category_id>/delete/",      pv.category_delete,      name="printshop_category_delete"),
+    path("printshop/<int:center_id>/categories/reorder/",     pv.category_reorder,     name="printshop_category_reorder"),
+
+    path("printshop/<int:center_id>/products/",               pv.product_list,         name="printshop_product_list"),
+    path("printshop/<int:center_id>/products/add/",           pv.product_add,          name="printshop_product_add"),
+    path("printshop/<int:center_id>/products/reorder/",       pv.product_reorder,      name="printshop_product_reorder"),
+    path("printshop/product/<int:product_id>/",               pv.product_detail,       name="printshop_product_detail"),
+    path("printshop/product/<int:product_id>/toggle/",       pv.product_toggle,       name="printshop_product_toggle"),
+    path("printshop/product/<int:product_id>/delete/",       pv.product_delete,       name="printshop_product_delete"),
+
+    path("printshop/product/<int:product_id>/photo/add/",    pv.photo_upload,         name="printshop_photo_upload"),
+    path("printshop/photo/<int:photo_id>/delete/",            pv.photo_delete,         name="printshop_photo_delete"),
+
+    path("printshop/product/<int:product_id>/variant/add/",  pv.variant_add,          name="printshop_variant_add"),
+    path("printshop/variant/<int:variant_id>/edit/",          pv.variant_edit,         name="printshop_variant_edit"),
+    path("printshop/variant/<int:variant_id>/delete/",        pv.variant_delete,       name="printshop_variant_delete"),
+
+    path("printshop/product/<int:product_id>/option-group/add/", pv.option_group_add,     name="printshop_option_group_add"),
+    path("printshop/option-group/<int:group_id>/delete/",         pv.option_group_delete,  name="printshop_option_group_delete"),
+    path("printshop/option-group/<int:group_id>/value/add/",      pv.option_value_add,     name="printshop_option_value_add"),
+    path("printshop/option-value/<int:value_id>/delete/",         pv.option_value_delete,  name="printshop_option_value_delete"),
+
+    path("printshop/branch/<int:branch_id>/orders/",          pv.order_list,           name="printshop_order_list"),
+    path("printshop/order/<int:order_id>/status/",            pv.order_status,         name="printshop_order_status"),
+
+    path("printshop/branch/<int:branch_id>/promos/",          pv.promo_list,           name="printshop_promo_list"),
+    path("printshop/promo/<int:promo_id>/toggle/",            pv.promo_toggle,         name="printshop_promo_toggle"),
+    path("printshop/promo/<int:promo_id>/delete/",            pv.promo_delete,         name="printshop_promo_delete"),
+
+    path("printshop/<int:center_id>/stats/",                  pv.stats,                name="printshop_stats"),
 ]

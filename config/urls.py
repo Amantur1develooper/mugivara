@@ -40,6 +40,7 @@ urlpatterns += i18n_patterns(
     path("entertainment/karaoke/", include(("karaoke.urls", "karaoke"), namespace="karaoke")),
     path("barbershop/", include(("barbershop.urls", "barbershop"), namespace="barbershop")),
     path("eco/", include(("eco.urls", "eco"), namespace="eco")),
+    path("printshop/", include(("printshop.urls", "printshop"), namespace="printshop")),
     path("cabinet/", include(("dashboard.urls", "dashboard"), namespace="dashboard")),
     path("", include("public_site.urls")), 
     

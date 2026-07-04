@@ -422,6 +422,9 @@
     {% if barbershop_cards %}
     <a href="#services" class="cat-pill">{% trans "✂️ Барбершоп" %}</a>
     {% endif %}
+    {% if printshop_cards %}
+    <a href="#services" class="cat-pill">{% trans "🖨️ Полиграфия" %}</a>
+    {% endif %}
     {% if legal_cards or eco_cards or agency_cards %}
     <a href="#services" class="cat-pill" data-section="services">{% trans "⚡ Услуги" %}</a>
     {% endif %}
@@ -798,6 +801,35 @@
               <div class="svc-row-sub">{% if shop.address %}📍 {{ shop.address }}{% endif %}{% if shop.working_hours %} · {{ shop.working_hours }}{% endif %}</div>
             </div>
             <span class="svc-row-arrow" style="color:#b45309;">→</span>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if printshop_cards %}
+      <div class="svc-block" id="svc-printshop">
+        <div class="svc-block-head">
+          <div class="svc-block-icon" style="background:rgba(255,77,28,.08);border-color:rgba(255,77,28,.18);">🖨️</div>
+          <div>
+            <div class="svc-block-title">{% trans "Полиграфия" %}</div>
+            <div class="svc-block-sub">{% trans "Печать, визитки, баннеры, сувениры" %}</div>
+          </div>
+          <a href="{% url 'printshop:center_list' %}" class="svc-block-all" style="color:#FF4D1C;border-color:rgba(255,77,28,.3);">{% trans "Все →" %}</a>
+        </div>
+        <div class="svc-list">
+          {% for c in printshop_cards %}
+          <a href="{% url 'printshop:center_detail' c.slug %}" class="svc-row">
+            <div class="svc-row-icon">
+              {% if c.logo %}<img src="{{ c.logo.url }}" alt="{{ c.name_ru }}" loading="lazy"
+                   style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
+              {% else %}<span style="font-size:20px;">🖨️</span>{% endif %}
+            </div>
+            <div class="svc-row-info">
+              <div class="svc-row-name">{{ c.name_ru }}</div>
+              <div class="svc-row-sub">{{ c.branches.count }} филиал(ов)</div>
+            </div>
+            <span class="svc-row-arrow" style="color:#FF4D1C;">→</span>
           </a>
           {% endfor %}
         </div>

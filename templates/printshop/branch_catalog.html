@@ -1,0 +1,701 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ branch.name_ru }} — {{ center.name_ru }} · Webordo{% endblock %}
+{% block cta %}{% endblock %}
+
+{% block head_extra %}
+<style>
+:root{
+  --pc-bg: var(--bg, #F5F6FA); --pc-card: var(--card, #fff); --pc-card2: var(--card2, #F0F2F8);
+  --pc-accent: var(--accent, #FF4D1C); --pc-accent2: var(--accent2, #FF8A00);
+  --pc-teal: var(--teal, #00B896); --pc-text: var(--text, #0D1117); --pc-text2: var(--text2, #374151);
+  --pc-muted: var(--muted, #8B96A8); --pc-border: var(--border, rgba(0,0,0,.08)); --pc-glow: var(--glow, rgba(255,77,28,.18));
+}
+.pc-page{ max-width: 1200px; margin: 0 auto; }
+
+/* ── HERO ── */
+.pc-hero{ position: relative; overflow: hidden; min-height: 300px; display: flex; flex-direction: column; justify-content: flex-end; }
+.pc-hero-bg{ position: absolute; inset: 0; background: linear-gradient(135deg, #0D1117, #1c2535); }
+.pc-hero-photo{ position: absolute; inset: 0; background-size: cover; background-position: center; }
+.pc-hero-overlay{ position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.82) 0%, rgba(0,0,0,.35) 55%, rgba(0,0,0,.1) 100%); }
+.pc-hero-content{ position: relative; z-index: 1; padding: 32px 28px 24px; }
+.pc-hero-title{ font-family:'Unbounded',sans-serif; font-weight: 900; font-size: clamp(22px,4vw,42px); letter-spacing: -1.5px; color: #fff; line-height: 1.05; margin-bottom: 8px; }
+.pc-hero-desc{ color: rgba(255,255,255,.72); font-size: 14px; max-width: 640px; line-height: 1.5; margin-bottom: 16px; }
+.pc-hero-meta{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom: 16px; }
+.pc-pill{ display:inline-flex; align-items:center; gap:7px; padding:6px 14px; border-radius:100px; font-size:12px; font-weight:600; background: rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.14); color: rgba(255,255,255,.85); }
+.pc-pill.open{ background: rgba(0,184,150,.18); border-color: rgba(0,184,150,.3); color:#00CBA8; }
+.pc-pill.delivery{ background: rgba(255,138,0,.18); border-color: rgba(255,138,0,.3); color:#FFB347; }
+.pc-hero-btns{ display:flex; flex-wrap:wrap; gap:10px; }
+.pc-tl-btn{ display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:999px; font-size:13px; font-weight:700; text-decoration:none; border:none; cursor:pointer; box-shadow:0 4px 14px rgba(0,0,0,.25); transition: transform .15s; white-space:nowrap; }
+.pc-tl-btn:hover{ transform: translateY(-2px); }
+.pc-tl-btn svg{ width:16px; height:16px; flex-shrink:0; }
+.pc-tl-map{ background:#1A73E8; color:#fff; }
+.pc-tl-phone{ background:#0D1117; color:#fff; border:1px solid rgba(255,255,255,.2); }
+.pc-tl-wa{ background:#25D366; color:#fff; }
+.pc-tl-tg{ background:#2AABEE; color:#fff; }
+
+/* ── STICKY CATEGORY NAV ── */
+.pc-cats-sticky{ position: sticky; top: 64px; z-index: 100; background: rgba(255,255,255,.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--pc-border); box-shadow: 0 2px 16px rgba(0,0,0,.06); }
+.pc-cats-inner{ max-width: 1200px; margin:0 auto; padding: 10px 28px; overflow-x:auto; scrollbar-width:none; display:flex; gap:6px; }
+.pc-cats-inner::-webkit-scrollbar{ display:none; }
+.pc-cat-btn{ white-space:nowrap; padding:8px 18px; border-radius:100px; font-size:13px; font-weight:600; border:1.5px solid var(--pc-border); background: var(--pc-bg); color: var(--pc-muted); cursor:pointer; text-decoration:none; transition: all .2s; flex-shrink:0; }
+.pc-cat-btn:hover{ border-color: rgba(0,0,0,.15); color: var(--pc-text); }
+.pc-cat-btn.active{ background: var(--pc-text); border-color: var(--pc-text); color:#fff; }
+
+/* ── CONTENT ── */
+.pc-content{ max-width:1200px; margin:0 auto; padding: 28px 24px 140px; }
+.pc-cat-section{ scroll-margin-top: 130px; margin-bottom: 44px; }
+.pc-cat-header{ display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+.pc-cat-line{ flex:1; height:1px; background: var(--pc-border); }
+.pc-cat-title{ font-family:'Unbounded',sans-serif; font-weight:800; font-size: clamp(15px,2.5vw,21px); letter-spacing:-.6px; color: var(--pc-text); white-space:nowrap; }
+
+.pc-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(210px,1fr)); gap:16px; }
+
+.pc-card{ background: var(--pc-card); border:1.5px solid var(--pc-border); border-radius:20px; overflow:hidden; display:flex; flex-direction:column; box-shadow:0 3px 16px rgba(0,0,0,.06); transition: transform .22s ease, box-shadow .22s ease; cursor:pointer; position:relative; }
+.pc-card:hover{ transform: translateY(-4px); box-shadow:0 16px 40px rgba(0,0,0,.1); }
+.pc-card-photo{ position:relative; height:160px; background: var(--pc-card2); overflow:hidden; flex-shrink:0; }
+.pc-card-photo img{ width:100%; height:100%; object-fit:cover; display:block; transition: transform .4s; }
+.pc-card:hover .pc-card-photo img{ transform: scale(1.06); }
+.pc-card-photo-empty{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:44px; opacity:.2; background: linear-gradient(145deg,#FFF8F5,#FFEADF); }
+.pc-badges{ position:absolute; top:8px; left:8px; display:flex; flex-direction:column; gap:4px; }
+.pc-badge{ padding:3px 9px; border-radius:100px; font-size:10px; font-weight:700; color:#fff; backdrop-filter: blur(6px); }
+.pc-badge.new{ background: rgba(37,99,235,.85); }
+.pc-badge.popular{ background: rgba(249,115,22,.85); }
+.pc-badge.promo{ background: rgba(220,38,38,.85); }
+.pc-card-body{ padding:12px 14px 14px; display:flex; flex-direction:column; gap:8px; flex:1; }
+.pc-card-name{ font-family:'Unbounded',sans-serif; font-weight:700; font-size:13px; letter-spacing:-.2px; color: var(--pc-text); line-height:1.3; }
+.pc-card-footer{ margin-top:auto; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.pc-card-price{ font-family:'Unbounded',sans-serif; font-weight:800; font-size:15px; color: var(--pc-text); }
+.pc-card-price-sub{ font-size:9px; font-weight:500; color: var(--pc-muted); }
+.pc-add-btn{ width:36px; height:36px; border-radius:12px; border:none; cursor:pointer; background: linear-gradient(135deg, var(--pc-accent), var(--pc-accent2)); color:#fff; font-size:18px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px var(--pc-glow); flex-shrink:0; }
+
+/* ── FLOATING CART FAB ── */
+.pc-cart-fab{ position:fixed; bottom:20px; left:50%; transform: translateX(-50%); z-index:9000; display:inline-flex; align-items:center; gap:14px; padding:14px 22px; border-radius:20px; background: linear-gradient(135deg,#0D1117,#1c2535); border:1px solid rgba(255,255,255,.12); color:#fff; text-decoration:none; box-shadow:0 16px 48px rgba(0,0,0,.35); cursor:pointer; min-width:260px; max-width:min(92vw,480px); transition: transform .2s, opacity .2s; }
+.pc-cart-fab.hide{ opacity:0; pointer-events:none; transform: translateX(-50%) translateY(12px); }
+.pc-cart-fab-icon{ width:38px; height:38px; border-radius:12px; background: rgba(255,255,255,.1); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+.pc-cart-fab-info{ flex:1; min-width:0; }
+.pc-cart-fab-title{ font-size:11px; color: rgba(255,255,255,.6); }
+.pc-cart-fab-total{ font-family:'Unbounded',sans-serif; font-weight:800; font-size:15px; }
+.pc-cart-fab-badge{ padding:4px 10px; border-radius:100px; font-size:12px; font-weight:800; background: linear-gradient(135deg,var(--pc-accent),var(--pc-accent2)); flex-shrink:0; }
+
+/* ── BOTTOM-SHEET MODALS (product + cart) ── */
+.pc-backdrop{ position:fixed; inset:0; z-index:9500; background: rgba(0,0,0,.6); backdrop-filter: blur(6px); display:flex; align-items:flex-end; justify-content:center; opacity:0; pointer-events:none; transition: opacity .25s; }
+.pc-backdrop.open{ opacity:1; pointer-events:all; }
+.pc-sheet{ width:100%; max-width:560px; background: var(--pc-card); border-radius:24px 24px 0 0; max-height:94dvh; display:flex; flex-direction:column; transform: translateY(100%); transition: transform .32s cubic-bezier(.32,1,.32,1); overflow:hidden; }
+.pc-backdrop.open .pc-sheet{ transform: translateY(0); }
+@media(min-width:640px){ .pc-backdrop{ align-items:center; } .pc-sheet{ border-radius:24px; max-height:88vh; transform: translateY(24px) scale(.97); } .pc-backdrop.open .pc-sheet{ transform: translateY(0) scale(1); } }
+
+.pc-close{ position:absolute; top:12px; right:14px; z-index:20; width:32px; height:32px; border-radius:50%; border:none; background: rgba(0,0,0,.45); color:#fff; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+
+/* product modal */
+.pc-pm-gallery{ position:relative; width:100%; background: var(--pc-card2); flex-shrink:0; }
+.pc-pm-main{ width:100%; height:280px; object-fit:cover; display:block; cursor: zoom-in; }
+.pc-pm-main-empty{ width:100%; height:220px; display:flex; align-items:center; justify-content:center; font-size:64px; opacity:.18; background: linear-gradient(145deg,#FFF8F5,#FFEADF); }
+.pc-pm-thumbs{ display:flex; gap:8px; padding:10px 16px; overflow-x:auto; background: var(--pc-card); }
+.pc-pm-thumb{ width:52px; height:52px; border-radius:10px; object-fit:cover; flex-shrink:0; cursor:pointer; border:2px solid transparent; opacity:.6; transition: all .15s; }
+.pc-pm-thumb.active{ border-color: var(--pc-accent); opacity:1; }
+.pc-pm-body{ padding:18px 22px 24px; overflow-y:auto; display:flex; flex-direction:column; gap:14px; flex:1; }
+.pc-pm-name{ font-family:'Unbounded',sans-serif; font-size:18px; font-weight:800; color: var(--pc-text); letter-spacing:-.3px; }
+.pc-pm-desc{ font-size:13px; color: var(--pc-text2); line-height:1.6; }
+.pc-pm-section-label{ font-size:12px; font-weight:700; color: var(--pc-muted); text-transform:uppercase; letter-spacing:.4px; margin-bottom:8px; }
+.pc-pm-pills{ display:flex; flex-wrap:wrap; gap:8px; }
+.pc-pm-pill{ padding:9px 15px; border-radius:12px; border:1.5px solid var(--pc-border); font-size:13px; font-weight:600; cursor:pointer; transition: all .15s; background: var(--pc-bg); color: var(--pc-text2); }
+.pc-pm-pill.selected{ border-color: var(--pc-accent); background: rgba(255,77,28,.06); color: var(--pc-accent); }
+.pc-pm-qty{ display:flex; align-items:center; gap:0; border:1.5px solid var(--pc-border); border-radius:14px; overflow:hidden; width:fit-content; }
+.pc-pm-qty button{ width:40px; height:40px; border:none; cursor:pointer; background:transparent; font-size:18px; font-weight:700; color: var(--pc-text); }
+.pc-pm-qty button:hover{ background: var(--pc-card2); }
+.pc-pm-qty span{ min-width:36px; text-align:center; font-family:'Unbounded',sans-serif; font-weight:800; font-size:14px; }
+.pc-pm-comment{ width:100%; padding:12px 14px; border:1.5px solid var(--pc-border); border-radius:12px; font-size:13px; font-family:inherit; resize:vertical; min-height:56px; }
+.pc-pm-footer{ display:flex; align-items:center; justify-content:space-between; gap:14px; margin-top:auto; padding-top:14px; border-top:1px solid var(--pc-border); }
+.pc-pm-price{ font-family:'Unbounded',sans-serif; font-size:22px; font-weight:900; color: var(--pc-accent); }
+.pc-pm-add{ padding:0 30px; height:48px; border-radius:14px; border:none; background: linear-gradient(135deg,var(--pc-accent),var(--pc-accent2)); color:#fff; font-family:'Unbounded',sans-serif; font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 6px 20px var(--pc-glow); }
+
+/* lightbox */
+.pc-lb{ position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.92); display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition: opacity .2s; touch-action:pan-y; }
+.pc-lb.open{ opacity:1; pointer-events:all; }
+.pc-lb img{ max-width:92vw; max-height:80vh; object-fit:contain; user-select:none; transition: transform .2s; }
+.pc-lb-close{ position:absolute; top:18px; right:18px; width:40px; height:40px; border-radius:50%; border:none; background: rgba(255,255,255,.12); color:#fff; font-size:18px; cursor:pointer; }
+.pc-lb-nav{ position:absolute; top:50%; transform: translateY(-50%); width:46px; height:46px; border-radius:50%; border:none; background: rgba(255,255,255,.12); color:#fff; font-size:20px; cursor:pointer; }
+.pc-lb-prev{ left:14px; } .pc-lb-next{ right:14px; }
+.pc-lb-thumbs{ position:absolute; bottom:16px; left:0; right:0; display:flex; justify-content:center; gap:8px; }
+.pc-lb-thumbs img{ width:44px; height:44px; max-width:44px; max-height:44px; border-radius:8px; object-fit:cover; opacity:.5; cursor:pointer; border:2px solid transparent; }
+.pc-lb-thumbs img.active{ opacity:1; border-color:#fff; }
+
+/* cart modal */
+.pc-cm-header{ display:flex; align-items:center; justify-content:space-between; padding:18px 20px 14px; border-bottom:1px solid var(--pc-border); flex-shrink:0; }
+.pc-cm-title{ font-family:'Unbounded',sans-serif; font-weight:800; font-size:17px; }
+.pc-cm-body{ overflow-y:auto; padding:16px 20px 24px; flex:1; }
+.pc-cm-empty{ text-align:center; padding:40px 20px; color: var(--pc-muted); }
+.pc-cm-row{ background: var(--pc-bg); border:1.5px solid var(--pc-border); border-radius:14px; padding:12px 14px; display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.pc-cm-row-photo{ width:48px; height:48px; border-radius:10px; object-fit:cover; flex-shrink:0; background: var(--pc-card2); }
+.pc-cm-row-info{ flex:1; min-width:0; }
+.pc-cm-row-name{ font-size:13px; font-weight:700; color: var(--pc-text); }
+.pc-cm-row-meta{ font-size:11px; color: var(--pc-muted); margin-top:2px; }
+.pc-cm-row-total{ font-size:13px; font-weight:800; white-space:nowrap; }
+.pc-cm-qty{ display:flex; align-items:center; gap:4px; }
+.pc-cm-qty button{ width:26px; height:26px; border-radius:7px; border:1.5px solid var(--pc-border); background: var(--pc-card); font-size:14px; font-weight:700; cursor:pointer; }
+.pc-cm-qty span{ min-width:22px; text-align:center; font-size:12px; font-weight:700; }
+.pc-cm-remove{ width:26px; height:26px; border-radius:7px; border:none; background:transparent; color: var(--pc-muted); cursor:pointer; font-size:14px; }
+.pc-cm-remove:hover{ color:#ef4444; }
+
+.pc-free-banner{ border-radius:12px; padding:10px 14px; font-size:13px; font-weight:600; margin-bottom:14px; }
+.pc-free-hint{ background: rgba(255,138,0,.1); border:1.5px solid rgba(255,138,0,.25); color:#b45309; }
+.pc-free-hint-top{ display:flex; align-items:center; gap:6px; margin-bottom:8px; }
+.pc-free-bar-wrap{ height:6px; border-radius:3px; background: rgba(255,138,0,.18); overflow:hidden; }
+.pc-free-bar{ height:100%; border-radius:3px; background: linear-gradient(90deg,#f59e0b,#ef4444); transition: width .4s; }
+.pc-free-ok{ background: rgba(0,184,150,.12); border:1.5px solid rgba(0,184,150,.3); color:#047857; text-align:center; font-size:14px; }
+
+.pc-totals{ background: var(--pc-bg); border:1.5px solid var(--pc-border); border-radius:14px; padding:14px; margin-bottom:12px; }
+.pc-total-row{ display:flex; justify-content:space-between; font-size:13px; color: var(--pc-text2); padding:3px 0; }
+.pc-total-row.big{ font-family:'Unbounded',sans-serif; font-weight:800; font-size:16px; color: var(--pc-text); border-top:1px solid var(--pc-border); margin-top:8px; padding-top:10px; }
+
+.pc-promo{ border:1.5px solid var(--pc-border); border-radius:14px; margin-bottom:12px; padding:12px 14px; }
+.pc-promo-row{ display:flex; gap:8px; }
+.pc-promo-input{ flex:1; padding:10px 12px; border:1.5px solid var(--pc-border); border-radius:10px; font-size:13px; text-transform:uppercase; }
+.pc-promo-btn{ padding:10px 16px; border-radius:10px; border:none; background: var(--pc-text); color:#fff; font-weight:600; font-size:13px; cursor:pointer; }
+.pc-promo-msg{ margin-top:6px; font-size:12px; }
+
+.pc-field{ width:100%; padding:12px 14px; border:1.5px solid var(--pc-border); border-radius:12px; font-size:14px; margin-bottom:10px; box-sizing:border-box; }
+.pc-radio-group{ display:flex; gap:8px; margin-bottom:10px; }
+.pc-radio-opt{ display:flex; align-items:center; gap:7px; padding:9px 14px; border:1.5px solid var(--pc-border); border-radius:10px; cursor:pointer; font-size:13px; }
+.pc-radio-opt:has(input:checked){ border-color: var(--pc-accent); background: rgba(255,77,28,.04); }
+.pc-submit{ width:100%; padding:14px; border-radius:14px; border:none; background: linear-gradient(135deg,var(--pc-accent),var(--pc-accent2)); color:#fff; font-family:'Unbounded',sans-serif; font-size:14px; font-weight:700; cursor:pointer; box-shadow:0 6px 20px var(--pc-glow); }
+.pc-min-note{ font-size:11px; color: var(--pc-muted); margin: -4px 0 8px; }
+
+.pc-toast-wrap{ position:fixed; top:78px; left:50%; transform:translateX(-50%); z-index:9999; display:flex; flex-direction:column; gap:8px; align-items:center; }
+.pc-toast{ background:#111; color:#fff; padding:10px 18px; border-radius:12px; font-size:13px; font-weight:600; opacity:0; transform: translateY(-8px); transition: all .25s; }
+.pc-toast.show{ opacity:1; transform: translateY(0); }
+
+/* ── MOBILE ── */
+@media (max-width: 768px) {
+  .pc-hero-content{ padding: 20px 16px 20px; }
+  .pc-content{ padding: 20px 16px 120px; }
+  .pc-cats-inner{ padding: 8px 14px; }
+  .pc-grid{ grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: 12px; }
+  .pc-card-photo{ height: 130px; }
+  .pc-cart-fab{ padding: 12px 16px; left: 12px; right: 12px; transform: none; width: auto; max-width: none; min-width: 0; }
+  .pc-cart-fab.hide{ transform: translateY(12px); }
+}
+@media (max-width: 420px) {
+  .pc-grid{ grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .pc-card-photo{ height: 115px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pc-page">
+
+  <section class="pc-hero">
+    <div class="pc-hero-bg"></div>
+    {% if branch.banner %}<div class="pc-hero-photo" style="background-image:url('{{ branch.banner.url }}')"></div>{% endif %}
+    <div class="pc-hero-overlay"></div>
+    <div class="pc-hero-content">
+      <div class="pc-hero-title">{{ branch.name_ru }}</div>
+      {% if center.description_ru %}<div class="pc-hero-desc">{{ center.description_ru|truncatechars:160 }}</div>{% endif %}
+      <div class="pc-hero-meta">
+        {% if branch.is_open_now %}<span class="pc-pill open">🟢 Открыто</span>{% else %}<span class="pc-pill">🔴 Закрыто</span>{% endif %}
+        {% if branch.is_open_24h %}<span class="pc-pill open">24/7</span>
+        {% elif branch.open_time and branch.close_time %}<span class="pc-pill">{{ branch.open_time|time:"H:i" }}–{{ branch.close_time|time:"H:i" }}</span>{% endif %}
+        {% if branch.address %}<span class="pc-pill">📍 {{ branch.address }}</span>{% endif %}
+        {% if branch.delivery_enabled %}<span class="pc-pill delivery">🚚 Доставка</span>{% endif %}
+      </div>
+      <div class="pc-hero-btns">
+        {% if branch.map_url %}
+        <a href="{{ branch.map_url }}" target="_blank" rel="noopener" class="pc-tl-btn pc-tl-map">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+          Маршрут
+        </a>
+        {% endif %}
+        {% if branch.phone %}
+        <a href="tel:{{ branch.phone }}" class="pc-tl-btn pc-tl-phone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M2 6.5C2 14.5 9.5 22 17.5 22l1.5-3.5-3-1.5-1.5 2c-2-1-4-2.5-5.5-4.5L11 13l-1.5-3L6 8.5 2 6.5z"/></svg>
+          Позвонить
+        </a>
+        {% endif %}
+        {% if branch.phone or branch.whatsapp %}
+        <a href="https://wa.me/{{ branch.whatsapp|default:branch.phone|cut:' '|cut:'-'|cut:'+'|cut:'('|cut:')' }}" target="_blank" rel="noopener" class="pc-tl-btn pc-tl-wa">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          WhatsApp
+        </a>
+        {% endif %}
+        {% if branch.telegram %}
+        {% if branch.telegram|slice:":4" == "http" %}<a href="{{ branch.telegram }}" target="_blank" rel="noopener" class="pc-tl-btn pc-tl-tg">
+        {% else %}<a href="https://t.me/{{ branch.telegram|cut:'@' }}" target="_blank" rel="noopener" class="pc-tl-btn pc-tl-tg">{% endif %}
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+          Telegram
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+
+  {% if cat_sections or uncat_products %}
+  <div class="pc-cats-sticky">
+    <div class="pc-cats-inner" id="pcCats">
+      {% for section in cat_sections %}
+      <a href="#cat-{{ section.cat.id }}" class="pc-cat-btn" data-cat="cat-{{ section.cat.id }}">{{ section.cat.name_ru }}</a>
+      {% endfor %}
+      {% if uncat_products %}<a href="#cat-0" class="pc-cat-btn" data-cat="cat-0">Другое</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="pc-content">
+    {% for section in cat_sections %}
+    <div class="pc-cat-section" id="cat-{{ section.cat.id }}">
+      <div class="pc-cat-header"><div class="pc-cat-title">{{ section.cat.name_ru }}</div><div class="pc-cat-line"></div></div>
+      <div class="pc-grid">
+        {% for p in section.products %}{% include "printshop/_product_card.html" %}{% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+    {% if uncat_products %}
+    <div class="pc-cat-section" id="cat-0">
+      <div class="pc-cat-header"><div class="pc-cat-title">Другое</div><div class="pc-cat-line"></div></div>
+      <div class="pc-grid">
+        {% for p in uncat_products %}{% include "printshop/_product_card.html" %}{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    {% if not cat_sections and not uncat_products %}
+      <div style="text-align:center;padding:60px;color:var(--pc-muted)">Каталог пока пуст</div>
+    {% endif %}
+  </div>
+
+</div>
+
+{# ══ FLOATING CART ══ #}
+<div class="pc-cart-fab {% if not cart_qty %}hide{% endif %}" id="pcCartFab" onclick="pcOpenCart()">
+  <div class="pc-cart-fab-icon">🛒</div>
+  <div class="pc-cart-fab-info">
+    <div class="pc-cart-fab-title">Ваша корзина</div>
+    <div class="pc-cart-fab-total" id="pcCartTotal">{{ cart_total|floatformat:"0" }} сом</div>
+  </div>
+  <div class="pc-cart-fab-badge" id="pcCartBadge">{{ cart_qty }} шт</div>
+</div>
+
+{# ══ PRODUCT MODAL ══ #}
+<div id="pcProductModal" class="pc-backdrop" onclick="pcBackdropClose(event,'pcProductModal')">
+  <div class="pc-sheet" role="dialog">
+    <button class="pc-close" onclick="pcCloseModal('pcProductModal')">✕</button>
+    <div class="pc-pm-gallery">
+      <img id="pcPmMain" class="pc-pm-main" src="" alt="" onclick="pcOpenLightbox()">
+      <div id="pcPmMainEmpty" class="pc-pm-main-empty" style="display:none">🖨️</div>
+      <div id="pcPmThumbs" class="pc-pm-thumbs" style="display:none"></div>
+    </div>
+    <div class="pc-pm-body">
+      <div id="pcPmName" class="pc-pm-name"></div>
+      <div id="pcPmDesc" class="pc-pm-desc"></div>
+      <div id="pcPmVariants"></div>
+      <div id="pcPmOptions"></div>
+      <div>
+        <div class="pc-pm-section-label">Количество</div>
+        <div class="pc-pm-qty">
+          <button type="button" onclick="pcPmChangeQty(-1)">−</button>
+          <span id="pcPmQty">1</span>
+          <button type="button" onclick="pcPmChangeQty(1)">+</button>
+        </div>
+      </div>
+      <div>
+        <div class="pc-pm-section-label">Комментарий (необязательно)</div>
+        <textarea id="pcPmComment" class="pc-pm-comment" placeholder="Например: сделать срочно"></textarea>
+      </div>
+      <div class="pc-pm-footer">
+        <div class="pc-pm-price" id="pcPmPrice">0 сом</div>
+        <button type="button" class="pc-pm-add" onclick="pcAddToCart()">В корзину</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ══ LIGHTBOX ══ #}
+<div id="pcLightbox" class="pc-lb" onclick="pcCloseLightbox(event)">
+  <button class="pc-lb-close" onclick="pcCloseLightbox(event)">✕</button>
+  <button class="pc-lb-nav pc-lb-prev" onclick="pcLbNav(event,-1)">‹</button>
+  <img id="pcLbImg" src="" alt="">
+  <button class="pc-lb-nav pc-lb-next" onclick="pcLbNav(event,1)">›</button>
+  <div class="pc-lb-thumbs" id="pcLbThumbs"></div>
+</div>
+
+{# ══ CART MODAL ══ #}
+<div id="pcCartModal" class="pc-backdrop" onclick="pcBackdropClose(event,'pcCartModal')">
+  <div class="pc-sheet" role="dialog">
+    <div class="pc-cm-header">
+      <div class="pc-cm-title">Корзина</div>
+      <button class="pc-close" style="position:static" onclick="pcCloseModal('pcCartModal')">✕</button>
+    </div>
+    <div class="pc-cm-body" id="pcCmBody">Загрузка…</div>
+  </div>
+</div>
+
+<div id="pcUrls" style="display:none"
+  data-cart-json="{% url 'printshop:cart_json' branch.id %}"
+  data-cart-add="{% url 'printshop:cart_add' branch.id %}"
+  data-cart-update="{% url 'printshop:cart_update' branch.id 0 %}"
+  data-cart-remove="{% url 'printshop:cart_remove' branch.id 0 %}"
+  data-checkout="{% url 'printshop:checkout' branch.id %}"
+  data-delivery-enabled="{{ branch.delivery_enabled|yesno:'true,false' }}"
+></div>
+
+<div class="pc-toast-wrap" id="pcToastWrap"></div>
+{% endblock %}
+
+{% block page_scripts %}
+{{ products_json|json_script:"pcProductsData" }}
+<script>
+const PC_PRODUCTS = JSON.parse(document.getElementById('pcProductsData').textContent);
+const PC_CSRF = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+const PC_U = document.getElementById('pcUrls').dataset;
+
+function pcEsc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function pcPost(url, data) {
+  const fd = new FormData();
+  for (const [k, v] of Object.entries(data || {})) {
+    if (Array.isArray(v)) v.forEach(x => fd.append(k, x));
+    else fd.append(k, v);
+  }
+  return fetch(url, { method: 'POST', body: fd, headers: { 'X-CSRFToken': PC_CSRF, 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json());
+}
+function pcGet(url) {
+  return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.json());
+}
+
+function pcToast(msg) {
+  const wrap = document.getElementById('pcToastWrap');
+  const el = document.createElement('div');
+  el.className = 'pc-toast';
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 250); }, 1800);
+}
+
+/* ── sticky category active state ── */
+(function () {
+  const btns = [...document.querySelectorAll('.pc-cat-btn')];
+  const sections = btns.map(b => document.getElementById(b.dataset.cat)).filter(Boolean);
+  if (!sections.length) return;
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        btns.forEach(b => b.classList.remove('active'));
+        const btn = document.querySelector(`.pc-cat-btn[data-cat="${e.target.id}"]`);
+        if (btn) { btn.classList.add('active'); btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); }
+      }
+    });
+  }, { rootMargin: '-140px 0px -70% 0px' });
+  sections.forEach(s => obs.observe(s));
+})();
+
+/* ── PRODUCT MODAL ── */
+let pcCurrentProduct = null;
+let pcSelectedVariant = null;
+let pcSelectedOptions = {};   // group_id -> Set(value_id) for multi, or value_id for single
+let pcQty = 1;
+let pcLbIndex = 0;
+
+function pcAllPhotos(p) {
+  const list = p.main_photo ? [p.main_photo] : [];
+  return list.concat(p.photos.filter(u => u !== p.main_photo));
+}
+
+function pcOpenProduct(id) {
+  const p = PC_PRODUCTS[id];
+  if (!p) return;
+  pcCurrentProduct = p;
+  pcQty = 1;
+  pcSelectedOptions = {};
+  document.getElementById('pcPmQty').textContent = '1';
+  document.getElementById('pcPmComment').value = '';
+
+  document.getElementById('pcPmName').textContent = p.name;
+  document.getElementById('pcPmDesc').textContent = p.description || '';
+  document.getElementById('pcPmDesc').style.display = p.description ? '' : 'none';
+
+  const photos = pcAllPhotos(p);
+  const mainImg = document.getElementById('pcPmMain');
+  const emptyEl = document.getElementById('pcPmMainEmpty');
+  if (photos.length) {
+    mainImg.src = photos[0]; mainImg.style.display = ''; emptyEl.style.display = 'none';
+  } else {
+    mainImg.style.display = 'none'; emptyEl.style.display = 'flex';
+  }
+  const thumbsEl = document.getElementById('pcPmThumbs');
+  if (photos.length > 1) {
+    thumbsEl.style.display = 'flex';
+    thumbsEl.innerHTML = photos.map((u, i) => `<img class="pc-pm-thumb ${i===0?'active':''}" src="${u}" onclick="pcSelectPhoto(${i})">`).join('');
+  } else {
+    thumbsEl.style.display = 'none'; thumbsEl.innerHTML = '';
+  }
+
+  pcSelectedVariant = p.variants.find(v => v.is_default) || p.variants[0] || null;
+  const vWrap = document.getElementById('pcPmVariants');
+  if (p.variants.length) {
+    vWrap.innerHTML = `<div class="pc-pm-section-label">Вариант</div><div class="pc-pm-pills" id="pcVariantPills">` +
+      p.variants.map(v => `<div class="pc-pm-pill ${pcSelectedVariant && v.id===pcSelectedVariant.id?'selected':''}" data-vid="${v.id}" onclick="pcSelectVariant(${v.id})">${pcEsc(v.label)} · ${v.price} сом</div>`).join('') +
+      `</div>`;
+  } else { vWrap.innerHTML = ''; }
+
+  const oWrap = document.getElementById('pcPmOptions');
+  oWrap.innerHTML = p.option_groups.map(g => {
+    const items = g.values.map(v => {
+      const label = v.price_delta && v.price_delta !== '0' && v.price_delta !== '0.00' ? `${pcEsc(v.label)} (+${v.price_delta} сом)` : pcEsc(v.label);
+      return `<div class="pc-pm-pill" data-gid="${g.id}" data-vid="${v.id}" onclick="pcToggleOption(${g.id},${v.id},${g.allow_multiple})">${label}</div>`;
+    }).join('');
+    return `<div><div class="pc-pm-section-label">${pcEsc(g.name)}${g.is_required ? ' *' : ''}</div><div class="pc-pm-pills" data-group="${g.id}">${items}</div></div>`;
+  }).join('');
+  // apply defaults
+  p.option_groups.forEach(g => {
+    g.values.forEach(v => { if (v.is_default) pcToggleOption(g.id, v.id, g.allow_multiple, true); });
+  });
+
+  pcUpdatePmPrice();
+  pcOpenModal('pcProductModal');
+}
+
+function pcSelectPhoto(i) {
+  const p = pcCurrentProduct;
+  const photos = pcAllPhotos(p);
+  document.getElementById('pcPmMain').src = photos[i];
+  [...document.querySelectorAll('#pcPmThumbs img')].forEach((el, idx) => el.classList.toggle('active', idx === i));
+}
+
+function pcSelectVariant(vid) {
+  pcSelectedVariant = pcCurrentProduct.variants.find(v => v.id === vid);
+  [...document.querySelectorAll('#pcVariantPills .pc-pm-pill')].forEach(el => el.classList.toggle('selected', Number(el.dataset.vid) === vid));
+  pcUpdatePmPrice();
+}
+
+function pcToggleOption(gid, vid, allowMultiple, forceOn) {
+  const group = pcCurrentProduct.option_groups.find(g => g.id === gid);
+  const el = document.querySelector(`.pc-pm-pill[data-gid="${gid}"][data-vid="${vid}"]`);
+  if (!pcSelectedOptions[gid]) pcSelectedOptions[gid] = new Set();
+  const set = pcSelectedOptions[gid];
+
+  if (allowMultiple) {
+    if (forceOn) { set.add(vid); }
+    else if (set.has(vid)) { set.delete(vid); } else { set.add(vid); }
+  } else {
+    if (!forceOn || set.size === 0) { set.clear(); set.add(vid); }
+  }
+  // repaint this group
+  document.querySelectorAll(`.pc-pm-pill[data-gid="${gid}"]`).forEach(e => {
+    e.classList.toggle('selected', set.has(Number(e.dataset.vid)));
+  });
+  pcUpdatePmPrice();
+}
+
+function pcUpdatePmPrice() {
+  const p = pcCurrentProduct;
+  let price = pcSelectedVariant ? Number(pcSelectedVariant.price) : Number(p.base_price);
+  Object.entries(pcSelectedOptions).forEach(([gid, set]) => {
+    const group = p.option_groups.find(g => g.id === Number(gid));
+    if (!group) return;
+    set.forEach(vid => {
+      const val = group.values.find(v => v.id === vid);
+      if (val) price += Number(val.price_delta);
+    });
+  });
+  document.getElementById('pcPmPrice').textContent = (price * pcQty).toFixed(0) + ' сом';
+}
+
+function pcPmChangeQty(delta) {
+  pcQty = Math.max(1, Math.min(99, pcQty + delta));
+  document.getElementById('pcPmQty').textContent = pcQty;
+  pcUpdatePmPrice();
+}
+
+async function pcAddToCart() {
+  const optionIds = [];
+  Object.values(pcSelectedOptions).forEach(set => set.forEach(id => optionIds.push(id)));
+  const data = {
+    product_id: pcCurrentProduct.id,
+    variant_id: pcSelectedVariant ? pcSelectedVariant.id : '',
+    option_value_id: optionIds,
+    qty: pcQty,
+    comment: document.getElementById('pcPmComment').value,
+  };
+  const d = await pcPost(PC_U.cartAdd, data);
+  if (!d.ok) { pcToast('Ошибка добавления'); return; }
+  pcRenderCartBadge(d);
+  pcCloseModal('pcProductModal');
+  pcToast('Добавлено в корзину');
+}
+
+/* ── LIGHTBOX ── */
+function pcOpenLightbox() {
+  const p = pcCurrentProduct;
+  const photos = pcAllPhotos(p);
+  if (!photos.length) return;
+  pcLbIndex = [...document.querySelectorAll('#pcPmThumbs img')].findIndex(el => el.classList.contains('active'));
+  if (pcLbIndex < 0) pcLbIndex = 0;
+  pcRenderLightbox(photos);
+  document.getElementById('pcLightbox').classList.add('open');
+}
+function pcRenderLightbox(photos) {
+  document.getElementById('pcLbImg').src = photos[pcLbIndex];
+  const thumbs = document.getElementById('pcLbThumbs');
+  thumbs.style.display = photos.length > 1 ? 'flex' : 'none';
+  thumbs.innerHTML = photos.map((u, i) => `<img class="${i===pcLbIndex?'active':''}" src="${u}" onclick="pcLbGoto(event,${i})">`).join('');
+}
+function pcLbGoto(e, i) { e.stopPropagation(); const p = pcCurrentProduct; const photos = pcAllPhotos(p); pcLbIndex = i; pcRenderLightbox(photos); }
+function pcLbNav(e, dir) {
+  e.stopPropagation();
+  const p = pcCurrentProduct;
+  const photos = pcAllPhotos(p);
+  pcLbIndex = (pcLbIndex + dir + photos.length) % photos.length;
+  pcRenderLightbox(photos);
+}
+function pcCloseLightbox(e) {
+  if (e.target.id === 'pcLbImg') return;
+  document.getElementById('pcLightbox').classList.remove('open');
+}
+/* swipe support */
+(function () {
+  const lb = document.getElementById('pcLightbox');
+  let startX = null;
+  lb.addEventListener('touchstart', e => { startX = e.touches[0].clientX; });
+  lb.addEventListener('touchend', e => {
+    if (startX === null) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 40) pcLbNav(e, dx > 0 ? -1 : 1);
+    startX = null;
+  });
+  /* click-to-zoom toggle on image */
+  const img = document.getElementById('pcLbImg');
+  img.addEventListener('click', (e) => {
+    e.stopPropagation();
+    img.style.transform = img.style.transform === 'scale(1.8)' ? 'scale(1)' : 'scale(1.8)';
+  });
+})();
+
+/* ── MODAL HELPERS ── */
+function pcOpenModal(id) { document.getElementById(id).classList.add('open'); document.body.style.overflow = 'hidden'; }
+function pcCloseModal(id) { document.getElementById(id).classList.remove('open'); document.body.style.overflow = ''; }
+function pcBackdropClose(e, id) { if (e.target.id === id) pcCloseModal(id); }
+
+/* ── CART FAB + BADGE ── */
+function pcRenderCartBadge(d) {
+  const fab = document.getElementById('pcCartFab');
+  fab.classList.toggle('hide', !d.qty_total);
+  document.getElementById('pcCartBadge').textContent = d.qty_total + ' шт';
+  document.getElementById('pcCartTotal').textContent = Number(d.total).toFixed(0) + ' сом';
+}
+
+/* ── CART MODAL ── */
+function pcOpenCart() {
+  pcOpenModal('pcCartModal');
+  pcRefreshCart();
+}
+async function pcRefreshCart(promo) {
+  const url = promo !== undefined ? `${PC_U.cartJson}?promo=${encodeURIComponent(promo)}` : PC_U.cartJson;
+  const d = await pcGet(url);
+  pcRenderCartBadge(d);
+  const body = document.getElementById('pcCmBody');
+  if (!d.items.length) {
+    body.innerHTML = `<div class="pc-cm-empty"><div style="font-size:44px;margin-bottom:10px">🛒</div>Корзина пуста</div>`;
+    return;
+  }
+
+  let freeBanner = '';
+  if (d.free_delivery_reached) {
+    freeBanner = `<div class="pc-free-banner pc-free-ok">🎉 Поздравляем! Доставка будет бесплатной.</div>`;
+  } else if (d.free_delivery_from) {
+    const need = Math.max(0, Number(d.free_delivery_from) - Number(d.subtotal));
+    const pct = Math.min(100, Number(d.subtotal) / Number(d.free_delivery_from) * 100);
+    freeBanner = `<div class="pc-free-banner pc-free-hint">
+      <div class="pc-free-hint-top">🚚 До бесплатной доставки осталось заказать на <strong>${need.toFixed(0)} сом</strong>.</div>
+      <div class="pc-free-bar-wrap"><div class="pc-free-bar" style="width:${pct}%"></div></div>
+    </div>`;
+  }
+
+  const itemsHtml = d.items.map(it => {
+    const metaParts = [];
+    if (it.variant) metaParts.push(pcEsc(it.variant));
+    if (it.options.length) metaParts.push(it.options.map(pcEsc).join(', '));
+    if (it.comment) metaParts.push('💬 ' + pcEsc(it.comment));
+    return `<div class="pc-cm-row">
+      ${it.photo_url ? `<img class="pc-cm-row-photo" src="${it.photo_url}">` : `<div class="pc-cm-row-photo" style="display:flex;align-items:center;justify-content:center">🖨️</div>`}
+      <div class="pc-cm-row-info">
+        <div class="pc-cm-row-name">${pcEsc(it.name)}</div>
+        ${metaParts.length ? `<div class="pc-cm-row-meta">${metaParts.join(' · ')}</div>` : ''}
+        <div class="pc-cm-qty" style="margin-top:6px">
+          <button onclick="pcCartQty('${it.line_id}',${it.qty - 1})">−</button>
+          <span>${it.qty}</span>
+          <button onclick="pcCartQty('${it.line_id}',${it.qty + 1})">+</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <div class="pc-cm-row-total">${Number(it.line_total).toFixed(0)} сом</div>
+        <button class="pc-cm-remove" onclick="pcCartRemove('${it.line_id}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  const totalsHtml = `<div class="pc-totals">
+    <div class="pc-total-row"><span>Подытог</span><span>${Number(d.subtotal).toFixed(0)} сом</span></div>
+    ${d.delivery_enabled ? `<div class="pc-total-row"><span>Доставка</span><span>${Number(d.delivery_fee).toFixed(0)} сом</span></div>` : ''}
+    ${Number(d.discount) > 0 ? `<div class="pc-total-row" style="color:var(--pc-teal)"><span>Скидка</span><span>−${Number(d.discount).toFixed(0)} сом</span></div>` : ''}
+    <div class="pc-total-row big"><span>Итого</span><span>${Number(d.total).toFixed(0)} сом</span></div>
+  </div>`;
+
+  const appliedPromo = promo || '';
+  const promoHtml = `<div class="pc-promo">
+    <div class="pc-promo-row">
+      <input class="pc-promo-input" id="pcPromoInput" placeholder="Промокод" value="${pcEsc(appliedPromo)}">
+      <button class="pc-promo-btn" onclick="pcApplyPromo()">Применить</button>
+    </div>
+    <div class="pc-promo-msg" id="pcPromoMsg" style="color:${d.promo_valid ? 'var(--pc-teal)' : '#ef4444'}">${appliedPromo ? pcEsc(d.promo_msg || '') : ''}</div>
+  </div>`;
+
+  const minNote = (Number(d.min_order_amount) > 0 && Number(d.subtotal) < Number(d.min_order_amount))
+    ? `<div class="pc-min-note">Минимальная сумма заказа — ${Number(d.min_order_amount).toFixed(0)} сом</div>` : '';
+
+  const modeHtml = d.delivery_enabled ? `
+    <div class="pc-radio-group">
+      <label class="pc-radio-opt"><input type="radio" name="mode" value="delivery" checked> Доставка</label>
+      <label class="pc-radio-opt"><input type="radio" name="mode" value="pickup"> Самовывоз</label>
+    </div>` : `<input type="hidden" name="mode" value="pickup">`;
+
+  const formHtml = `<form method="post" action="${PC_U.checkout}">
+    <input type="hidden" name="csrfmiddlewaretoken" value="${PC_CSRF}">
+    <input type="hidden" name="promo_code" id="pcPromoHidden" value="${appliedPromo}">
+    <div class="pc-pm-section-label">Оформление заказа</div>
+    ${modeHtml}
+    <input class="pc-field" name="name" placeholder="Ваше имя">
+    <input class="pc-field" name="phone" placeholder="Телефон *" required>
+    <input class="pc-field" name="address" placeholder="Адрес (для доставки)">
+    <textarea class="pc-field" name="comment" placeholder="Комментарий к заказу" style="resize:vertical;min-height:48px"></textarea>
+    ${minNote}
+    <button type="submit" class="pc-submit">Оформить заказ</button>
+  </form>`;
+
+  body.innerHTML = freeBanner + `<div>${itemsHtml}</div>` + totalsHtml + promoHtml + formHtml;
+}
+
+async function pcCartQty(lineId, qty) {
+  const url = PC_U.cartUpdate.replace('/0/', `/${lineId}/`);
+  await pcPost(url, { qty });
+  pcRefreshCart();
+}
+async function pcCartRemove(lineId) {
+  const url = PC_U.cartRemove.replace('/0/', `/${lineId}/`);
+  await pcPost(url, {});
+  pcRefreshCart();
+}
+function pcApplyPromo() {
+  const code = document.getElementById('pcPromoInput').value.trim();
+  pcRefreshCart(code);
+}
+
+/* initial cart badge sync on load */
+(async function () {
+  const d = await pcGet(PC_U.cartJson);
+  pcRenderCartBadge(d);
+})();
+</script>
+{% endblock %}

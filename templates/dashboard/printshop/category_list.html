@@ -1,0 +1,287 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Категории — {{ center.name_ru }}{% endblock %}
+{% block nav_printshop %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+.cl-wrap { max-width: 560px; }
+.cl-add-form { display: flex; gap: 8px; margin-bottom: 20px; }
+.cl-add-input {
+  flex: 1; padding: 12px 16px; border-radius: 12px;
+  border: 1.5px solid var(--border); background: var(--card);
+  font-size: 14px; font-family: inherit; color: var(--text);
+  outline: none; transition: border-color .15s;
+}
+.cl-add-input:focus { border-color: var(--accent); }
+.cl-add-btn {
+  padding: 0 20px; height: 48px; border-radius: 12px; border: none;
+  cursor: pointer; font-weight: 800; font-size: 14px; font-family: inherit;
+  background: linear-gradient(135deg,var(--accent),var(--accent2,#ff8a00));
+  color: #fff; box-shadow: 0 4px 14px rgba(255,77,28,.25);
+  transition: opacity .15s;
+}
+.cl-add-btn:hover { opacity: .88; }
+.cl-list { background: var(--card); border: 1.5px solid var(--border); border-radius: 18px; overflow: hidden; }
+.cl-row { display: flex; align-items: center; border-bottom: 1px solid var(--border); min-height: 60px; transition: background .1s; }
+.cl-row:last-child { border-bottom: none; }
+.cl-row.drag-highlight { background: rgba(255,77,28,.06); }
+.cl-move { display: flex; flex-direction: column; gap: 0; flex-shrink: 0; padding: 4px 2px 4px 8px; }
+.cl-move-btn {
+  width: 32px; height: 26px; border: none; background: transparent;
+  cursor: pointer; font-size: 13px; color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; transition: background .1s, color .1s; line-height: 1;
+}
+.cl-move-btn:hover { background: var(--bg); color: var(--text); }
+.cl-move-btn:active { background: rgba(255,77,28,.1); color: var(--accent); }
+.cl-move-btn:disabled { opacity: .2; cursor: default; }
+.cl-handle {
+  width: 36px; height: 60px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--border); font-size: 18px; cursor: grab; user-select: none;
+}
+.cl-handle:active { cursor: grabbing; }
+.cl-row.dragging { opacity: .35; background: rgba(255,77,28,.04); }
+.cl-row.drop-above { border-top: 3px solid var(--accent); }
+.cl-row.drop-below { border-bottom: 3px solid var(--accent); }
+.cl-name-wrap { flex: 1; min-width: 0; padding: 0 4px; }
+.cl-name { font-size: 15px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 4px 0; cursor: text; }
+.cl-name-input {
+  width: 100%; font-size: 15px; font-weight: 600; font-family: inherit;
+  padding: 7px 10px; border-radius: 9px; border: 1.5px solid var(--accent); outline: none;
+  background: var(--card); color: var(--text); display: none; box-sizing: border-box;
+}
+.cl-count { padding: 3px 9px; border-radius: 100px; flex-shrink: 0; font-size: 11px; font-weight: 700; background: rgba(0,0,0,.05); color: var(--muted); margin-right: 2px; }
+.cl-btn {
+  width: 42px; height: 60px; flex-shrink: 0; border: none;
+  background: transparent; cursor: pointer; font-size: 16px;
+  color: var(--muted); display: flex; align-items: center; justify-content: center;
+  transition: color .12s, background .12s;
+}
+.cl-btn:hover { background: var(--bg); }
+.cl-btn-del:hover { color: #dc2626; background: rgba(239,68,68,.08); }
+.cl-btn-save { color: var(--accent); display: none; }
+.cl-btn-save:hover { background: rgba(255,77,28,.08); }
+.cl-toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: rgba(16,185,129,.95); color: #fff; padding: 10px 22px; border-radius: 12px;
+  font-size: 13px; font-weight: 700; opacity: 0; transition: all .22s ease;
+  pointer-events: none; z-index: 9999; white-space: nowrap;
+}
+.cl-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.cl-hint { margin-top: 10px; text-align: center; font-size: 12px; color: var(--muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">📁 Категории</div>
+    <div class="db-breadcrumb">{{ center.name_ru }}</div>
+  </div>
+  <a href="{% url 'dashboard:printshop_product_list' center.id %}" class="db-btn db-btn-ghost db-btn-sm">← Товары</a>
+</div>
+
+<div class="cl-wrap">
+  <form class="cl-add-form" onsubmit="addCat(event)">
+    <input class="cl-add-input" id="clNewName" type="text" placeholder="Название новой категории" autocomplete="off">
+    <button type="submit" class="cl-add-btn">＋ Добавить</button>
+  </form>
+
+  <div class="cl-list" id="clList">
+    {% for cat, count in cats_with_count %}
+    <div class="cl-row" id="clRow-{{ cat.id }}" data-cat-id="{{ cat.id }}">
+      <div class="cl-move">
+        <button class="cl-move-btn" onclick="moveUp(this)" title="Выше">▲</button>
+        <button class="cl-move-btn" onclick="moveDown(this)" title="Ниже">▼</button>
+      </div>
+      <div class="cl-handle" title="Перетащить (ПК)">⠿</div>
+      <div class="cl-name-wrap">
+        <div class="cl-name" id="clName-{{ cat.id }}" ondblclick="startRename({{ cat.id }})">{{ cat.name_ru }}</div>
+        <input class="cl-name-input" id="clInput-{{ cat.id }}" value="{{ cat.name_ru }}"
+               onkeydown="if(event.key==='Enter')saveRename({{ cat.id }});if(event.key==='Escape')cancelRename({{ cat.id }})">
+      </div>
+      <span class="cl-count" id="clCount-{{ cat.id }}">{{ count }}</span>
+      <button class="cl-btn cl-btn-save" id="clSaveBtn-{{ cat.id }}" onclick="saveRename({{ cat.id }})">✓</button>
+      <button class="cl-btn" onclick="startRename({{ cat.id }})">✏️</button>
+      <button class="cl-btn cl-btn-del" onclick="delCat({{ cat.id }},'{{ cat.name_ru|escapejs }}')">🗑</button>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="cl-hint">▲▼ — переместить · ✏️ — переименовать · двойной клик по названию</div>
+</div>
+
+<div class="cl-toast" id="clToast"></div>
+
+<div id="clUrls" style="display:none"
+  data-add="{% url 'dashboard:printshop_category_add' center.id %}"
+  data-rename="{% url 'dashboard:printshop_category_rename' 0 %}"
+  data-delete="{% url 'dashboard:printshop_category_delete' 0 %}"
+  data-reorder="{% url 'dashboard:printshop_category_reorder' center.id %}"
+></div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+const CSRF  = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+const U     = document.getElementById('clUrls').dataset;
+const list  = document.getElementById('clList');
+
+function post(url, data) {
+  const fd = new FormData();
+  for (const [k,v] of Object.entries(data)) fd.append(k,v);
+  return fetch(url,{method:'POST',body:fd,
+    headers:{'X-CSRFToken':CSRF,'X-Requested-With':'XMLHttpRequest'}
+  }).then(r=>r.json());
+}
+function sUrl(tmpl,id){ return tmpl.replace('/0/',`/${id}/`); }
+
+let _toastTimer;
+function toast(msg='✓ Сохранено') {
+  const el = document.getElementById('clToast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=>el.classList.remove('show'), 1800);
+}
+
+function moveUp(btn) {
+  const row = btn.closest('.cl-row');
+  const prev = row.previousElementSibling;
+  if (prev && prev.classList.contains('cl-row')) {
+    list.insertBefore(row, prev);
+    saveOrder();
+    row.classList.add('drag-highlight');
+    setTimeout(()=>row.classList.remove('drag-highlight'), 300);
+  }
+}
+function moveDown(btn) {
+  const row = btn.closest('.cl-row');
+  const next = row.nextElementSibling;
+  if (next && next.classList.contains('cl-row')) {
+    list.insertBefore(next, row);
+    saveOrder();
+    row.classList.add('drag-highlight');
+    setTimeout(()=>row.classList.remove('drag-highlight'), 300);
+  }
+}
+
+let _saveTimer;
+function saveOrder() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(async ()=>{
+    const ids = [...list.querySelectorAll('.cl-row[data-cat-id]')].map(r=>r.dataset.catId);
+    await post(U.reorder, {order: ids.join(',')});
+    toast('✓ Порядок сохранён');
+  }, 400);
+}
+
+async function addCat(e) {
+  e.preventDefault();
+  const inp = document.getElementById('clNewName');
+  const name = inp.value.trim();
+  if (!name) { inp.focus(); return; }
+  const d = await post(U.add, {name_ru: name});
+  if (!d.ok) { alert(d.error||'Ошибка'); return; }
+  inp.value = '';
+  const row = document.createElement('div');
+  row.className = 'cl-row'; row.id = `clRow-${d.id}`; row.dataset.catId = d.id;
+  row.innerHTML = rowHTML(d.id, d.name_ru, 0);
+  list.appendChild(row);
+  initDrag(row);
+  toast('✓ Категория добавлена');
+}
+
+function rowHTML(id, name, count) {
+  const n = name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return `
+  <div class="cl-move">
+    <button class="cl-move-btn" onclick="moveUp(this)" title="Выше">▲</button>
+    <button class="cl-move-btn" onclick="moveDown(this)" title="Ниже">▼</button>
+  </div>
+  <div class="cl-handle">⠿</div>
+  <div class="cl-name-wrap">
+    <div class="cl-name" id="clName-${id}" ondblclick="startRename(${id})">${n}</div>
+    <input class="cl-name-input" id="clInput-${id}" value="${n}"
+           onkeydown="if(event.key==='Enter')saveRename(${id});if(event.key==='Escape')cancelRename(${id})">
+  </div>
+  <span class="cl-count" id="clCount-${id}">${count}</span>
+  <button class="cl-btn cl-btn-save" id="clSaveBtn-${id}" onclick="saveRename(${id})">✓</button>
+  <button class="cl-btn" onclick="startRename(${id})">✏️</button>
+  <button class="cl-btn cl-btn-del" onclick="delCat(${id},'${n}')">🗑</button>`;
+}
+
+function startRename(id) {
+  document.getElementById(`clName-${id}`).style.display  = 'none';
+  const inp = document.getElementById(`clInput-${id}`);
+  const btn = document.getElementById(`clSaveBtn-${id}`);
+  inp.style.display = ''; btn.style.display = '';
+  inp.focus(); inp.select();
+}
+function cancelRename(id) {
+  document.getElementById(`clName-${id}`).style.display  = '';
+  document.getElementById(`clInput-${id}`).style.display = 'none';
+  document.getElementById(`clSaveBtn-${id}`).style.display = 'none';
+}
+async function saveRename(id) {
+  const name = document.getElementById(`clInput-${id}`).value.trim();
+  if (!name) return;
+  const d = await post(sUrl(U.rename,id), {name_ru: name});
+  if (!d.ok) { alert(d.error||'Ошибка'); return; }
+  document.getElementById(`clName-${id}`).textContent = d.name_ru;
+  document.getElementById(`clInput-${id}`).value = d.name_ru;
+  cancelRename(id);
+  toast('✓ Сохранено');
+}
+
+async function delCat(id, name) {
+  if (!confirm(`Удалить «${name}»?\nТовары останутся без категории.`)) return;
+  const d = await post(sUrl(U.delete,id), {});
+  if (!d.ok) { alert(d.error||'Ошибка'); return; }
+  document.getElementById(`clRow-${id}`)?.remove();
+  toast('✓ Удалено');
+}
+
+let _drag = null;
+function initDrag(row) {
+  const handle = row.querySelector('.cl-handle');
+  if (!handle) return;
+  handle.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    row.setAttribute('draggable','true');
+  });
+  row.addEventListener('dragstart', e => {
+    _drag = row; row.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain','');
+  });
+  row.addEventListener('dragend', () => {
+    row.classList.remove('dragging');
+    list.querySelectorAll('.cl-row').forEach(r=>{
+      r.classList.remove('drop-above','drop-below');
+      r.removeAttribute('draggable');
+    });
+    _drag = null;
+    saveOrder();
+  });
+}
+
+list.addEventListener('dragover', e => {
+  e.preventDefault();
+  if (!_drag) return;
+  const over = e.target.closest('.cl-row');
+  if (!over || over === _drag) return;
+  list.querySelectorAll('.cl-row').forEach(r=>r.classList.remove('drop-above','drop-below'));
+  const rect = over.getBoundingClientRect();
+  if (e.clientY < rect.top + rect.height / 2) {
+    over.classList.add('drop-above');
+    list.insertBefore(_drag, over);
+  } else {
+    over.classList.add('drop-below');
+    over.after(_drag);
+  }
+});
+
+document.querySelectorAll('#clList .cl-row').forEach(initDrag);
+</script>
+{% endblock %}

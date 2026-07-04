@@ -194,6 +194,7 @@ def home(request):
     from agency.models import Agency
     from karaoke.models import KaraokeVenue
     from barbershop.models import Barbershop
+    from printshop.models import PrintCenter
 
     # ── РЕСТОРАНЫ ────────────────────────────────────────────────────────────
     top_restaurants = list(
@@ -271,6 +272,14 @@ def home(request):
         Barbershop.objects.filter(is_active=True).order_by("sort_order", "name")[:12]
     )
 
+    # ── ПОЛИГРАФИЯ ───────────────────────────────────────────────────────────
+    printshop_cards = list(
+        PrintCenter.objects.filter(is_active=True, branches__is_active=True)
+        .distinct()
+        .prefetch_related("branches")
+        .order_by("name_ru")[:12]
+    )
+
     # ── СТАТИСТИКА ────────────────────────────────────────────────────────────
     stats = {
         "restaurant_count": Restaurant.objects.filter(is_active=True).count(),
@@ -283,6 +292,7 @@ def home(request):
         "agency_count":     Agency.objects.filter(is_active=True).count(),
         "karaoke_count":      KaraokeVenue.objects.filter(is_active=True).count(),
         "barbershop_count":   Barbershop.objects.filter(is_active=True).count(),
+        "printshop_count":    PrintCenter.objects.filter(is_active=True).count(),
         "branch_count": (
             Branch.objects.filter(is_active=True).count()
             + StoreBranch.objects.filter(is_active=True).count()
@@ -292,7 +302,7 @@ def home(request):
         stats["restaurant_count"] + stats["store_count"] + stats["pharmacy_count"]
         + stats["market_count"] + stats["hotel_count"] + stats["legal_count"]
         + stats["eco_count"] + stats["agency_count"] + stats["karaoke_count"]
-        + stats["barbershop_count"]
+        + stats["barbershop_count"] + stats["printshop_count"]
     )
 
     try:
@@ -355,6 +365,7 @@ def home(request):
         "agency_cards":     agency_cards,
         "karaoke_cards":      karaoke_cards,
         "barbershop_cards":   barbershop_cards,
+        "printshop_cards":    printshop_cards,
         "stats":            stats,
         "map_points_json":  _json.dumps(map_points, ensure_ascii=False),
     })

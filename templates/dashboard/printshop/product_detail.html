@@ -1,0 +1,232 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ product.name_ru }} — товар{% endblock %}
+{% block nav_printshop %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .pd-wrap { max-width: 760px; }
+  .pd-gallery { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+  .pd-photo { position:relative; width:88px; height:88px; border-radius:12px; overflow:hidden; border:1.5px solid var(--border); }
+  .pd-photo img { width:100%; height:100%; object-fit:cover; }
+  .pd-photo form { position:absolute; top:2px; right:2px; }
+  .pd-photo button {
+    width:22px; height:22px; border-radius:50%; border:none; background:rgba(0,0,0,.55); color:#fff;
+    font-size:12px; cursor:pointer; line-height:1;
+  }
+  .pd-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .pd-table th { text-align:left; padding:8px 10px; font-size:11px; font-weight:700; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--border); }
+  .pd-table td { padding:8px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
+  .pd-table tr:last-child td { border-bottom:none; }
+  .pd-inline-form { display:flex; gap:8px; flex-wrap:wrap; align-items:end; margin-top:10px; }
+  .pd-inline-form .db-form-group { margin-bottom:0; }
+  .pd-mini-input { width:110px; }
+  .pd-group-card { background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">✏️ {{ product.name_ru }}</div>
+    <div class="db-breadcrumb">{{ center.name_ru }}</div>
+  </div>
+  <a href="{% url 'dashboard:printshop_product_list' center.id %}" class="db-btn db-btn-ghost db-btn-sm">← Товары</a>
+</div>
+
+<div class="pd-wrap">
+
+  {# ── ОСНОВНЫЕ ПОЛЯ ── #}
+  <div class="db-form-card">
+    <div class="db-form-section-title">Основное</div>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="db-form-group">
+        <label class="db-label">Название</label>
+        <input class="db-input" type="text" name="name_ru" value="{{ product.name_ru }}" required>
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Описание</label>
+        <textarea class="db-input" name="description_ru" rows="3" style="resize:vertical">{{ product.description_ru }}</textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div class="db-form-group">
+          <label class="db-label">Категория</label>
+          <select class="db-input" name="category_id">
+            <option value="">Без категории</option>
+            {% for cat in categories %}
+              <option value="{{ cat.id }}" {% if product.category_id == cat.id %}selected{% endif %}>{{ cat.name_ru }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="db-form-group">
+          <label class="db-label">Артикул</label>
+          <input class="db-input" type="text" name="sku" value="{{ product.sku }}">
+        </div>
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Базовая цена (если нет вариантов)</label>
+        <input class="db-input" type="number" name="base_price" value="{{ product.base_price }}" min="0" step="1">
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Главное фото</label>
+        {% if product.main_photo %}
+          <img src="{{ product.main_photo.url }}" style="width:96px;height:96px;border-radius:12px;object-fit:cover;margin-bottom:8px;display:block">
+        {% endif %}
+        <input class="db-input" type="file" name="main_photo" accept="image/*">
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:16px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" name="is_available" {% if product.is_available %}checked{% endif %}> В наличии
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" name="is_new" {% if product.is_new %}checked{% endif %}> Новинка
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" name="is_popular" {% if product.is_popular %}checked{% endif %}> Популярное
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <input type="checkbox" name="is_promo" {% if product.is_promo %}checked{% endif %}> Акция
+        </label>
+      </div>
+      <button type="submit" class="db-btn db-btn-primary">💾 Сохранить</button>
+    </form>
+  </div>
+
+  {# ── ГАЛЕРЕЯ ФОТО (до 5) ── #}
+  <div class="db-form-card">
+    <div class="db-form-section-title">🖼️ Галерея фото ({{ photos.count }}/5)</div>
+    <div class="pd-gallery">
+      {% for photo in photos %}
+      <div class="pd-photo">
+        <img src="{{ photo.photo.url }}">
+        <form method="post" action="{% url 'dashboard:printshop_photo_delete' photo.id %}" onsubmit="return confirm('Удалить фото?')">
+          {% csrf_token %}
+          <button type="submit">✕</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+    {% if photos_left %}
+    <form method="post" action="{% url 'dashboard:printshop_photo_upload' product.id %}" enctype="multipart/form-data" class="pd-inline-form">
+      {% csrf_token %}
+      <input type="file" name="photo" accept="image/*" required>
+      <button type="submit" class="db-btn db-btn-ghost db-btn-sm">＋ Добавить фото</button>
+    </form>
+    {% else %}
+      <div style="font-size:12px;color:var(--muted)">Достигнут лимит — 5 фото на товар</div>
+    {% endif %}
+  </div>
+
+  {# ── ВАРИАНТЫ (размер/тираж) ── #}
+  <div class="db-form-card">
+    <div class="db-form-section-title">📐 Варианты (размер / тираж)</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Взаимоисключающие варианты со своей ценой — например размеры S/M/L или тираж 100/500/1000 шт. Если вариантов нет, используется базовая цена.</div>
+    {% if variants %}
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+      {% for v in variants %}
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--border)">
+        <form method="post" action="{% url 'dashboard:printshop_variant_edit' v.id %}" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1">
+          {% csrf_token %}
+          <input class="db-input pd-mini-input" type="text" name="label" value="{{ v.label }}">
+          <input class="db-input pd-mini-input" type="number" name="price" value="{{ v.price }}" min="0" step="1">
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer">
+            <input type="checkbox" name="is_default" {% if v.is_default %}checked{% endif %}> по умолч.
+          </label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer">
+            <input type="checkbox" name="is_active" {% if v.is_active %}checked{% endif %}> активен
+          </label>
+          <button type="submit" class="db-btn db-btn-ghost db-btn-sm">💾</button>
+        </form>
+        <form method="post" action="{% url 'dashboard:printshop_variant_delete' v.id %}" onsubmit="return confirm('Удалить вариант?')">
+          {% csrf_token %}
+          <button type="submit" class="db-btn db-btn-ghost db-btn-sm" style="color:#dc2626">🗑</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <form method="post" action="{% url 'dashboard:printshop_variant_add' product.id %}" class="pd-inline-form">
+      {% csrf_token %}
+      <div class="db-form-group">
+        <label class="db-label">Название</label>
+        <input class="db-input pd-mini-input" type="text" name="label" placeholder="S / 1×1 м" required>
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Цена</label>
+        <input class="db-input pd-mini-input" type="number" name="price" min="0" step="1" required>
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding-bottom:10px">
+        <input type="checkbox" name="is_default"> по умолч.
+      </label>
+      <button type="submit" class="db-btn db-btn-primary db-btn-sm">＋ Добавить вариант</button>
+    </form>
+  </div>
+
+  {# ── ДОП. ПАРАМЕТРЫ ── #}
+  <div class="db-form-card">
+    <div class="db-form-section-title">⚙️ Дополнительные параметры</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Группы аддитивных опций — например «Материал» (бумага/пластик/холст) или «Ламинация» (да/нет), каждое значение может менять цену.</div>
+
+    {% for group in option_groups %}
+    <div class="pd-group-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-weight:700;font-size:13px">
+          {{ group.name }}
+          {% if group.is_required %}<span style="font-size:10px;color:var(--accent);font-weight:700"> · обязательно</span>{% endif %}
+          {% if group.allow_multiple %}<span style="font-size:10px;color:var(--muted);font-weight:700"> · чекбоксы</span>{% endif %}
+        </div>
+        <form method="post" action="{% url 'dashboard:printshop_option_group_delete' group.id %}" onsubmit="return confirm('Удалить группу «{{ group.name|escapejs }}» со всеми значениями?')">
+          {% csrf_token %}
+          <button type="submit" class="db-btn db-btn-ghost db-btn-sm" style="color:#dc2626">🗑 Удалить группу</button>
+        </form>
+      </div>
+
+      {% if group.values.all %}
+      <div style="overflow-x:auto">
+      <table class="pd-table">
+        <thead><tr><th>Значение</th><th>Доплата</th><th></th></tr></thead>
+        <tbody>
+          {% for val in group.values.all %}
+          <tr>
+            <td>{{ val.label }}{% if val.is_default %} <span style="color:var(--muted);font-size:11px">(по умолч.)</span>{% endif %}</td>
+            <td>{{ val.price_delta|floatformat:"0" }} сом</td>
+            <td>
+              <form method="post" action="{% url 'dashboard:printshop_option_value_delete' val.id %}" onsubmit="return confirm('Удалить значение?')">
+                {% csrf_token %}
+                <button type="submit" class="db-btn db-btn-ghost db-btn-sm" style="color:#dc2626">🗑</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% endif %}
+
+      <form method="post" action="{% url 'dashboard:printshop_option_value_add' group.id %}" class="pd-inline-form">
+        {% csrf_token %}
+        <input class="db-input pd-mini-input" type="text" name="label" placeholder="Значение" required>
+        <input class="db-input pd-mini-input" type="number" name="price_delta" placeholder="Доплата" min="0" step="1" value="0">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding-bottom:10px">
+          <input type="checkbox" name="is_default"> по умолч.
+        </label>
+        <button type="submit" class="db-btn db-btn-ghost db-btn-sm">＋ Значение</button>
+      </form>
+    </div>
+    {% endfor %}
+
+    <form method="post" action="{% url 'dashboard:printshop_option_group_add' product.id %}" class="pd-inline-form">
+      {% csrf_token %}
+      <input class="db-input" type="text" name="name" placeholder="Название группы (Материал, Ламинация...)" required style="flex:1;min-width:200px">
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding-bottom:10px">
+        <input type="checkbox" name="is_required"> обязательно
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding-bottom:10px">
+        <input type="checkbox" name="allow_multiple"> чекбоксы (множественный выбор)
+      </label>
+      <button type="submit" class="db-btn db-btn-primary db-btn-sm">＋ Добавить группу</button>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

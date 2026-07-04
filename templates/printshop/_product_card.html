@@ -1,0 +1,24 @@
+<div class="pc-card" onclick="pcOpenProduct({{ p.id }})">
+  <div class="pc-card-photo">
+    {% if p.main_photo %}
+      <img src="{{ p.main_photo.url }}" alt="{{ p.name_ru }}" loading="lazy">
+    {% else %}
+      <div class="pc-card-photo-empty">🖨️</div>
+    {% endif %}
+    <div class="pc-badges">
+      {% if p.is_new %}<span class="pc-badge new">Новинка</span>{% endif %}
+      {% if p.is_popular %}<span class="pc-badge popular">Популярное</span>{% endif %}
+      {% if p.is_promo %}<span class="pc-badge promo">Акция</span>{% endif %}
+    </div>
+  </div>
+  <div class="pc-card-body">
+    <div class="pc-card-name">{{ p.name_ru }}</div>
+    <div class="pc-card-footer">
+      <div>
+        <div class="pc-card-price">{{ p.display_price|floatformat:"0" }} сом</div>
+        {% if p.variants.count %}<div class="pc-card-price-sub">от</div>{% endif %}
+      </div>
+      <button type="button" class="pc-add-btn" onclick="event.stopPropagation(); pcOpenProduct({{ p.id }})">+</button>
+    </div>
+  </div>
+</div>

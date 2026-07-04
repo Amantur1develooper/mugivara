@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Полиграфические центры — Webordo{% endblock %}
+
+{% block content %}
+<style>
+  :root{
+    --bg: #f6f7fb; --card: #ffffff; --ink: #0f172a; --muted: #64748b;
+    --line: rgba(2,6,23,.08);
+    --shadow: 0 18px 45px rgba(2,6,23,.10);
+    --shadow2: 0 10px 24px rgba(2,6,23,.08);
+    --radius: 22px;
+  }
+  .page-wrap{ max-width: 1080px; margin: 0 auto; padding: 18px 14px 40px; }
+  .hero{
+    border-radius: 28px; padding: 22px; background: linear-gradient(180deg, #ffffff 0%, #fbfbff 100%);
+    border: 1px solid var(--line); box-shadow: var(--shadow2); margin-bottom: 18px;
+  }
+  .hero h1{ margin: 0 0 6px; font-family:'Unbounded',sans-serif; font-size: 26px; color: var(--ink); font-weight: 900; }
+  .hero p{ margin: 0; color: var(--muted); font-size: 14px; }
+  .search-box{ margin-top: 14px; display:flex; gap:8px; }
+  .search-box input{ flex:1; padding: 12px 16px; border-radius: 14px; border: 1.5px solid var(--line); font-size: 14px; }
+  .search-box button{ padding: 0 20px; border-radius: 14px; border: none; background:#0f172a; color:#fff; font-weight:700; cursor:pointer; }
+
+  .grid{ display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 14px; }
+  @media (min-width: 640px){ .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 1024px){ .grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+  .card{
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    overflow: hidden; box-shadow: 0 10px 25px rgba(2,6,23,.06);
+    transition: transform .18s ease, box-shadow .18s ease;
+    text-decoration: none; color: inherit; display: flex; flex-direction: column;
+  }
+  .card:hover{ transform: translateY(-2px); box-shadow: var(--shadow); }
+  .card-body{ padding: 16px; display:flex; gap:12px; align-items:flex-start; }
+  .card-logo{ width:52px; height:52px; border-radius:14px; object-fit:cover; background:#eef2ff; flex-shrink:0; }
+  .card-logo-empty{ width:52px; height:52px; border-radius:14px; background:linear-gradient(135deg,#eef2ff,#f8fafc); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+  .card-name{ font-weight:900; font-size:16px; color: var(--ink); }
+  .card-desc{ font-size:13px; color: var(--muted); margin-top:4px; line-height:1.4; }
+  .card-branches{ font-size:12px; color: var(--muted); margin-top:6px; }
+  .empty{ padding: 40px; text-align:center; color: var(--muted); background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); }
+</style>
+
+<div class="page-wrap">
+  <div class="hero">
+    <h1>🖨️ Полиграфические центры</h1>
+    <p>Печать документов, визиток, баннеров, сувениров и многое другое — закажите онлайн.</p>
+    <form class="search-box" method="get">
+      <input type="text" name="q" value="{{ q }}" placeholder="Поиск по названию...">
+      <button type="submit">Найти</button>
+    </form>
+  </div>
+
+  {% if centers %}
+  <div class="grid">
+    {% for c in centers %}
+    <a class="card" href="{% url 'printshop:center_detail' c.slug %}">
+      <div class="card-body">
+        {% if c.logo %}<img class="card-logo" src="{{ c.logo.url }}" alt="{{ c.name_ru }}">
+        {% else %}<div class="card-logo-empty">🖨️</div>{% endif %}
+        <div>
+          <div class="card-name">{{ c.name_ru }}</div>
+          {% if c.description_ru %}<div class="card-desc">{{ c.description_ru|truncatechars:90 }}</div>{% endif %}
+          <div class="card-branches">{{ c.branches.count }} филиал(ов)</div>
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+    <div class="empty">Пока нет доступных полиграфических центров.</div>
+  {% endif %}
+</div>
+{% endblock %}
