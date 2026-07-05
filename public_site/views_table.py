@@ -240,6 +240,10 @@ def table_cx_update(request, token: str):
 
 
 def table_cart(request, token):
+    from django.utils import translation
+    translation.activate("ru")
+    request.LANGUAGE_CODE = "ru"
+
     place = get_object_or_404(Place, token=token, is_active=True)
     branch = place.floor.branch
 
@@ -263,6 +267,10 @@ def table_cart(request, token):
 
 @transaction.atomic
 def table_checkout(request, token):
+    from django.utils import translation
+    translation.activate("ru")
+    request.LANGUAGE_CODE = "ru"
+
     place = get_object_or_404(Place, token=token, is_active=True)
     branch = place.floor.branch
 
@@ -350,6 +358,10 @@ def table_success(request, token, order_id: int):
         "order": order,
     })
 def table_menu(request, token: str):
+    from django.utils import translation
+    translation.activate("ru")
+    request.LANGUAGE_CODE = "ru"
+
     place = get_object_or_404(Place, token=token, is_active=True)
     branch = place.floor.branch
 

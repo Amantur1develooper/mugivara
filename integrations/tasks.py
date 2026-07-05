@@ -139,7 +139,12 @@ def _order_text(order: Order, title_override: str = None) -> str:
 def _table_order_text(order: Order) -> str:
     """Short, clear format for dine-in table orders."""
     lines = []
-    lines.append(f"🪑 ЗАКАЗ — {order.table_place.title}")
+    place = order.table_place
+    floor_name = getattr(getattr(place, "floor", None), "name_ru", "") or ""
+    table_line = f"🪑 ЗАКАЗ — {place.title}"
+    if floor_name:
+        table_line += f"  ({floor_name})"
+    lines.append(table_line)
     lines.append(f"🏪 {getattr(order.branch, 'name_ru', str(order.branch))}")
 
     items = list(order.items.select_related("item").all())
@@ -183,7 +188,7 @@ def notify_new_order(order_id: int):
 
     order = (
         Order.objects
-        .select_related("branch", "table_place")
+        .select_related("branch", "table_place__floor")
         .prefetch_related("items__item", "constructor_items")
         .get(id=order_id)
     )
@@ -312,7 +317,10 @@ def notify_order_status(self, order_id: int, old_status: str, new_status: str):
 
 @shared_task
 def notify_call_waiter(place_id: int, note: str = ""):
-    from django.utils.html import escape as _esc
+    token = _tg_token()
+    if not token:
+        return "No TG token"
+
     place = Place.objects.select_related("floor__branch__restaurant").get(id=place_id)
     branch = place.floor.branch
     floor  = place.floor
@@ -322,23 +330,33 @@ def notify_call_waiter(place_id: int, note: str = ""):
         is_active=True,
         notify_new_orders=True,
     )
+    if not recs.exists():
+        return "No recipients"
 
     t = timezone.localtime().strftime("%d.%m.%Y %H:%M")
 
     lines = [
-        "🔔 <b>ВЫЗОВ ОФИЦИАНТА</b>",
+        "🔔 ВЫЗОВ ОФИЦИАНТА",
         "",
-        f"🏢 <b>{_esc(branch.name_ru)}</b>",
-        f"🍽️ Место: <b>{_esc(place.title)}</b>",
+        f"Ресторан: {branch.name_ru}",
+        f"Место: {place.title}",
     ]
     if floor.name_ru:
-        lines.append(f"📐 Зал: {_esc(floor.name_ru)}")
+        lines.append(f"Зал: {floor.name_ru}")
     if note:
-        lines.append(f"💬 <i>{_esc(note)}</i>")
-    lines.append(f"⏰ {t}")
+        lines.append(f"Заметка: {note}")
+    lines.append(f"Время: {t}")
 
     text = "\n".join(lines)
 
     for r in recs:
-        send_message(chat_id=r.chat_id, text=text,
-                     message_thread_id=r.message_thread_id, parse_mode="HTML")
+        try:
+            send_message(
+                bot_token=token,
+                chat_id=str(r.chat_id),
+                text=text,
+                parse_mode=None,
+                message_thread_id=r.message_thread_id,
+            )
+        except Exception as e:
+            print("TG call_waiter ERROR:", r.chat_id, e)

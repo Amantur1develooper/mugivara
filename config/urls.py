@@ -26,11 +26,21 @@ urlpatterns = [
 
     # REST API v1
     path("api/v1/", include("api.v1.urls")),
+
+    # ── QR-стол: без языкового префикса, без редиректа на язык браузера ──────
+    path("t/<str:token>/menu/",                       table_menu,         name="table_menu"),
+    path("t/<str:token>/cart/",                       table_cart,         name="table_cart"),
+    path("t/<str:token>/cart/update/",                table_cart_update,  name="table_cart_update"),
+    path("t/<str:token>/call-waiter/",                table_call_waiter,  name="table_call_waiter"),
+    path("t/<str:token>/add/<int:branch_item_id>/",   table_add_to_cart,  name="table_add_to_cart"),
+    path("t/<str:token>/checkout/",                   table_checkout,     name="table_checkout"),
+    path("t/<str:token>/success/<int:order_id>/",     table_success,      name="table_success"),
+    path("t/<str:token>/order/create/",               table_create_order, name="table_create_order"),
 ]
 
 urlpatterns += i18n_patterns(
     path("admin/", admin.site.urls),
-    
+
     path("pharmacy/", include(("pharmacy.urls", "pharmacy"), namespace="pharmacy")),
     path("shops/", include(("shops.urls", "shops"), namespace="shops")),
     path("hotels/", include(("hotels.urls", "hotels"), namespace="hotels")),
@@ -42,19 +52,7 @@ urlpatterns += i18n_patterns(
     path("eco/", include(("eco.urls", "eco"), namespace="eco")),
     path("printshop/", include(("printshop.urls", "printshop"), namespace="printshop")),
     path("cabinet/", include(("dashboard.urls", "dashboard"), namespace="dashboard")),
-    path("", include("public_site.urls")), 
-    
-    path("t/<str:token>/cart/update/", table_cart_update, name="table_cart_update"),
-    path("t/<str:token>/call-waiter/", table_call_waiter, name="table_call_waiter"),
-    path("t/<str:token>/menu/", table_menu, name="table_menu"),
-    path("t/<str:token>/add/<int:branch_item_id>/", table_add_to_cart, name="table_add_to_cart"),
-    path("t/<str:token>/cart/", table_cart, name="table_cart"),
-    path("t/<str:token>/checkout/", table_checkout, name="table_checkout"),
-    path("t/<str:token>/success/<int:order_id>/", table_success, name="table_success"),
-   # ✅ подтверждение заказа со стола
-    path("t/<str:token>/order/create/", table_create_order, name="table_create_order"),
-
-
+    path("", include("public_site.urls")),
 )
 
 
