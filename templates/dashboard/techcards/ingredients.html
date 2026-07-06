@@ -129,6 +129,9 @@
             <button class="action-link" onclick="openPurchaseModal({{ row.ing.id }},'{{ row.ing.name_ru|escapejs }}')">
               🛒 Закупка
             </button>
+            <button class="action-link" style="color:#ef4444" onclick="openDeleteModal({{ row.ing.id }},'{{ row.ing.name_ru|escapejs }}')">
+              🗑 Удалить
+            </button>
           </td>
         </tr>
         {% empty %}
@@ -195,6 +198,19 @@
   </div>
 </div>
 
+<!-- Delete Ingredient Modal -->
+<div class="modal-overlay" id="deleteIngModal">
+  <div class="modal-box">
+    <div class="modal-title" style="color:#ef4444">🗑 Удалить ингредиент?</div>
+    <p id="deleteIngName" style="font-size:14px;color:var(--text);margin-bottom:18px"></p>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:0">Ингредиент будет скрыт из склада. Технические карты с ним не изменятся.</p>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="btn-primary" style="background:#ef4444" onclick="confirmDelete()">Удалить</button>
+      <button class="btn-ghost" onclick="closeModal('deleteIngModal')">Отмена</button>
+    </div>
+  </div>
+</div>
+
 <!-- Purchase Modal -->
 <div class="modal-overlay" id="purchaseModal">
   <div class="modal-box">
@@ -245,6 +261,25 @@ function openPurchaseModal(id, name) {
   document.getElementById("purchaseModalTitle").textContent = "🛒 Закупка: " + name;
   document.getElementById("purchaseIngId").value = id;
   openModal("purchaseModal");
+}
+
+let _deleteIngId = null;
+function openDeleteModal(id, name) {
+  _deleteIngId = id;
+  document.getElementById("deleteIngName").textContent = name;
+  openModal("deleteIngModal");
+}
+function confirmDelete() {
+  if (!_deleteIngId) return;
+  const form = new FormData();
+  form.append("csrfmiddlewaretoken", "{{ csrf_token }}");
+  form.append("branch_id", "{{ branch.id }}");
+  const delUrl = "{% url 'dashboard:tc_ingredient_delete' 0 %}".replace("/0/", "/" + _deleteIngId + "/");
+  fetch(delUrl, { method: "POST", body: form })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) location.reload();
+    });
 }
 
 // Count zero-stock rows
