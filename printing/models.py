@@ -29,7 +29,7 @@ class RestaurantPrintConfig(models.Model):
         if not self.last_heartbeat:
             return False
         from django.utils import timezone
-        return (timezone.now() - self.last_heartbeat).total_seconds() < 120
+        return (timezone.now() - self.last_heartbeat).total_seconds() < 300
 
     def __str__(self):
         return f"{self.restaurant.name_ru} — печать"
