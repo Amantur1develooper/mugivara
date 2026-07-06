@@ -211,7 +211,20 @@ def qr_order_create(request, token: str):
     try:
         from printing.jobs import create_print_jobs
         from django.db import transaction as tx
-        tx.on_commit(lambda: create_print_jobs(order))
+        _oid = order.id
+        def _do_print_qr():
+            try:
+                from orders.models import Order as _Ord
+                create_print_jobs(
+                    _Ord.objects
+                    .select_related("table_place__floor", "branch__restaurant")
+                    .get(id=_oid)
+                )
+            except Exception as e:
+                import traceback
+                print("PRINT create_print_jobs ERROR (qr-api):", e)
+                traceback.print_exc()
+        tx.on_commit(_do_print_qr)
     except Exception:
         pass
 

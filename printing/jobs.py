@@ -162,9 +162,11 @@ def create_print_jobs(order, new_item_ids=None, new_cx_ids=None):
                     None = все позиции заказа (новый заказ).
     new_cx_ids    — список ID ConstructorOrderItem аналогично.
     """
+    print(f"PRINT DEBUG: create_print_jobs вызван для заказа #{order.id}")
     restaurant = order.branch.restaurant
 
     if not _print_enabled(restaurant):
+        print(f"PRINT DEBUG: печать отключена для ресторана '{restaurant}' — выходим")
         return
 
     item_group = _item_group_map(order.branch)
@@ -203,13 +205,15 @@ def create_print_jobs(order, new_item_ids=None, new_cx_ids=None):
     # Позиции без группы → дефолтная группа
     if no_group:
         default = _default_group(restaurant)
+        print(f"PRINT DEBUG: no_group={len(no_group)} позиций, default_group={default}")
         if default:
             by_group[default].extend(no_group)
 
     if not by_group:
+        print(f"PRINT DEBUG: by_group пустой — нет групп принтеров, PrintJob не создан")
         return
 
-    PrintJob.objects.bulk_create([
+    jobs = PrintJob.objects.bulk_create([
         PrintJob(
             restaurant=restaurant,
             order_id=order.id,
@@ -219,6 +223,7 @@ def create_print_jobs(order, new_item_ids=None, new_cx_ids=None):
         )
         for grp, items in by_group.items()
     ])
+    print(f"PRINT DEBUG: создано {len(jobs)} PrintJob для заказа #{order.id}, группы: {[str(grp) for grp in by_group]}")
 
 
 def _create_job(restaurant, order, group, content):
@@ -262,6 +267,7 @@ def create_cancel_job(order, item_name: str, item_qty: int, item_id: int = None)
 
 def create_receipt_job(order):
     """Печатает итоговый чек при закрытии стола."""
+    print(f"PRINT DEBUG: create_receipt_job вызван для заказа #{order.id}")
     restaurant = order.branch.restaurant
 
     try:
@@ -271,10 +277,13 @@ def create_receipt_job(order):
             .get(restaurant=restaurant, enabled=True)
         )
     except RestaurantPrintConfig.DoesNotExist:
+        print(f"PRINT DEBUG: RestaurantPrintConfig не найден или выключен для '{restaurant}' — чек не напечатан")
         return
 
     group = cfg.receipt_printer_group or _default_group(restaurant)
     if not group:
+        print(f"PRINT DEBUG: нет группы принтеров для чека у ресторана '{restaurant}'")
         return
 
+    print(f"PRINT DEBUG: создаём PrintJob чека для заказа #{order.id}, группа: {group}")
     _create_job(restaurant, order, group, _receipt_ticket(order, restaurant))

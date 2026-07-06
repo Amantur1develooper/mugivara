@@ -270,7 +270,20 @@ def branch_order_create(request, branch_id: int):
     # Печать на кухне
     try:
         from printing.jobs import create_print_jobs
-        transaction.on_commit(lambda: create_print_jobs(order))
+        _oid = order.id
+        def _do_print_order():
+            try:
+                from orders.models import Order as _Ord
+                create_print_jobs(
+                    _Ord.objects
+                    .select_related("table_place__floor", "branch__restaurant")
+                    .get(id=_oid)
+                )
+            except Exception as e:
+                import traceback
+                print("PRINT create_print_jobs ERROR (order-api):", e)
+                traceback.print_exc()
+        transaction.on_commit(_do_print_order)
     except Exception:
         pass
 
