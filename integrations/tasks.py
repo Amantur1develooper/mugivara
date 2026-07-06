@@ -141,9 +141,9 @@ def _table_order_text(order: Order) -> str:
     lines = []
     place = order.table_place
     floor_name = getattr(getattr(place, "floor", None), "name_ru", "") or ""
-    table_line = f"🪑 ЗАКАЗ — {place.title}"
+    table_line = f"🪑 ЗАКАЗ — Стол {place.title}"
     if floor_name:
-        table_line += f"  ({floor_name})"
+        table_line += f"  |  Зал {floor_name}"
     lines.append(table_line)
     lines.append(f"🏪 {getattr(order.branch, 'name_ru', str(order.branch))}")
 
@@ -245,10 +245,10 @@ def notify_extra_order(order_id: int, new_items: list):
         return "No recipients"
 
     place = order.table_place
-    place_title = place.title if place else "стол"
+    place_title = f"Стол {place.title}" if place else "стол"
     floor_name = getattr(getattr(place, "floor", None), "name_ru", "") or ""
     if floor_name:
-        place_title += f"  ({floor_name})"
+        place_title += f"  |  Зал {floor_name}"
 
     now = timezone.localtime().strftime("%H:%M")
     lines = [

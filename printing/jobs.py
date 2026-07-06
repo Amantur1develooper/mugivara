@@ -34,7 +34,11 @@ def _ticket(order, items):
 
     parts = [order.get_type_display()]
     if order.table_place:
-        parts.append(f"Стол {order.table_place.title}")
+        floor_name = getattr(getattr(order.table_place, "floor", None), "name_ru", "") or ""
+        table_str = f"Стол {order.table_place.title}"
+        if floor_name:
+            table_str += f"  |  Зал {floor_name}"
+        parts.append(table_str)
     info = "  |  ".join(parts)
 
     lines = [
