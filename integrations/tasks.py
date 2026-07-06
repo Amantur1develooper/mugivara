@@ -234,7 +234,7 @@ def notify_extra_order(order_id: int, new_items: list):
 
     order = (
         Order.objects
-        .select_related("branch", "table_place")
+        .select_related("branch", "table_place__floor")
         .get(id=order_id)
     )
 
@@ -244,9 +244,15 @@ def notify_extra_order(order_id: int, new_items: list):
     if not recipients.exists():
         return "No recipients"
 
+    place = order.table_place
+    place_title = place.title if place else "стол"
+    floor_name = getattr(getattr(place, "floor", None), "name_ru", "") or ""
+    if floor_name:
+        place_title += f"  ({floor_name})"
+
     now = timezone.localtime().strftime("%H:%M")
     lines = [
-        f"➕ ДОЗАКАЗ — {order.table_place.title if order.table_place else 'стол'}",
+        f"➕ ДОЗАКАЗ — {place_title}",
         f"🏪 {getattr(order.branch, 'name_ru', str(order.branch))}",
         f"🧾 Заказ №{order.id}",
         "",
