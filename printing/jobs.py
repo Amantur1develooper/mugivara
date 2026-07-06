@@ -33,12 +33,15 @@ def _ticket(order, items):
     now = timezone.localtime()
 
     parts = [order.get_type_display()]
-    if order.table_place:
-        floor_name = getattr(getattr(order.table_place, "floor", None), "name_ru", "") or ""
-        table_str = f"Стол {order.table_place.title}"
-        if floor_name:
-            table_str += f"  |  Зал {floor_name}"
-        parts.append(table_str)
+    try:
+        if order.table_place:
+            floor_name = getattr(getattr(order.table_place, "floor", None), "name_ru", "") or ""
+            table_str = f"Стол {order.table_place.title}"
+            if floor_name:
+                table_str += f"  |  Зал {floor_name}"
+            parts.append(table_str)
+    except Exception as e:
+        print("PRINT _ticket table_place ERROR:", e)
     info = "  |  ".join(parts)
 
     lines = [

@@ -329,9 +329,15 @@ def table_checkout(request, token):
             try:
                 from printing.jobs import create_print_jobs
                 from orders.models import Order as _Ord
-                create_print_jobs(_Ord.objects.get(id=_order_id))
+                create_print_jobs(
+                    _Ord.objects
+                    .select_related("table_place__floor", "branch__restaurant")
+                    .get(id=_order_id)
+                )
             except Exception as e:
+                import traceback
                 print("PRINT create_print_jobs ERROR (checkout):", e)
+                traceback.print_exc()
         transaction.on_commit(_do_print)
 
         return redirect("table_success", token=token, order_id=order.id)
@@ -635,7 +641,9 @@ def table_create_order(request, token):
         else:
             create_print_jobs(order)
     except Exception as e:
+        import traceback
         print("PRINT create_print_jobs ERROR (table):", e)
+        traceback.print_exc()
 
     # Telegram уведомление
     # Для нового заказа — сигнал integrations/signals.py отправляет уведомление автоматически.

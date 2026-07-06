@@ -1812,13 +1812,19 @@ def pos_order_create(request, branch_id):
         try:
             from printing.jobs import create_print_jobs
             from orders.models import Order as _Order
-            _order = _Order.objects.get(id=_order_id)
+            _order = (
+                _Order.objects
+                .select_related("table_place__floor", "branch__restaurant")
+                .get(id=_order_id)
+            )
             if _ex_order:
                 create_print_jobs(_order, new_item_ids=_new_oi_ids, new_cx_ids=[])
             else:
                 create_print_jobs(_order)
         except Exception as e:
+            import traceback
             print("PRINT create_print_jobs ERROR (pos):", e)
+            traceback.print_exc()
 
     transaction.on_commit(_do_print)
 
@@ -1990,7 +1996,9 @@ def pos_order_status(request, order_id):
             from printing.jobs import create_print_jobs
             create_print_jobs(order)
         except Exception as e:
+            import traceback
             print("PRINT create_print_jobs ERROR (accept):", e)
+            traceback.print_exc()
 
     # При закрытии онлайн-заказа → печать итогового чека на кассовый принтер
     if new_status == Order.Status.CLOSED and prev_status != Order.Status.CLOSED:
