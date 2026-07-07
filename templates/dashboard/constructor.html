@@ -172,6 +172,15 @@
   padding: 0; transition: color .12s, background .12s; flex-shrink: 0;
 }
 .cx-ing-del:hover { color: #ef4444; background: rgba(239,68,68,.08); }
+.cx-ing-stock {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: transparent; border: none;
+  color: var(--muted); cursor: pointer; font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; transition: color .12s, background .12s; flex-shrink: 0; opacity: .45;
+}
+.cx-ing-stock:hover { opacity: 1; background: rgba(16,185,129,.1); }
+.cx-ing-stock.cx-ing-stock-linked { opacity: 1; color: #10b981; }
 .cx-ings-empty { font-size: 12px; color: var(--muted); font-style: italic; align-self: center; }
 
 /* ── Add row (меню + ручной) ── */
@@ -328,6 +337,7 @@
   data-ing-menu       ="{% url 'dashboard:constructor_ingredient_from_menu' 99999 %}"
   data-ing-del        ="{% url 'dashboard:constructor_ingredient_delete' 99999 %}"
   data-ing-upd        ="{% url 'dashboard:constructor_ingredient_update' 99999 %}"
+  data-ing-stock      ="{% url 'dashboard:constructor_ingredient_stock_update' 99999 %}"
   data-cx-del         ="{% url 'dashboard:constructor_delete' 99999 %}"
   data-cx-toggle      ="{% url 'dashboard:constructor_toggle' 99999 %}"
   data-cx-photo       ="{% url 'dashboard:constructor_photo_update' 99999 %}">
@@ -451,6 +461,12 @@
                 <button class="cx-ing-price-save" onclick="savePrice({{ ing.id }})" title="Сохранить">✓</button>
               </span>
 
+              {# Кнопка привязки к складу #}
+              <button class="cx-ing-stock{% if ing.warehouse_ingredient_id %} cx-ing-stock-linked{% endif %}"
+                      onclick="openStockModal({{ ing.id }},'{{ ing.display_name|escapejs }}',{{ ing.warehouse_ingredient_id|default:'null' }},{{ ing.write_off_qty }})"
+                      title="{% if ing.warehouse_ingredient_id %}Склад: {{ ing.warehouse_ingredient.name_ru }} × {{ ing.write_off_qty }}{% else %}Привязать к складу{% endif %}">
+                📦
+              </button>
               <button class="cx-ing-del" onclick="deleteIng({{ ing.id }}, {{ g.id }}, '{{ ing.branch_item_id|default:'null' }}')" title="Убрать">×</button>
             </span>
             {% empty %}
@@ -563,6 +579,49 @@
 
 <div class="cx-toast" id="cxToast"></div>
 
+{# ── Модалка: привязка к складу ── #}
+<div class="cx-stock-modal-overlay" id="cxStockModal" onclick="if(event.target===this)closeCxStockModal()">
+  <div class="cx-stock-modal-box">
+    <div style="font-family:'Unbounded',sans-serif;font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px">📦 Привязка к складу</div>
+    <div id="cxStockIngName" style="font-size:12px;color:var(--muted);margin-bottom:18px"></div>
+
+    <div style="margin-bottom:12px">
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:5px">Ингредиент склада</label>
+      <select id="cxStockIngSelect" style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;outline:none;font-family:inherit">
+        <option value="">— Не привязан —</option>
+        {% for wi in warehouse_ingredients %}
+        <option value="{{ wi.id }}">{{ wi.name_ru }} ({{ wi.get_unit_display }})</option>
+        {% empty %}
+        <option disabled>Нет ингредиентов на складе</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="margin-bottom:18px">
+      <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:5px">Списывать на 1 шт</label>
+      <input type="number" id="cxStockQty" min="0.001" step="0.001" value="1"
+             style="width:100%;padding:9px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;outline:none;font-family:inherit;box-sizing:border-box">
+    </div>
+
+    <div style="display:flex;gap:8px">
+      <button onclick="saveCxStock()" style="flex:1;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:700;cursor:pointer">Сохранить</button>
+      <button onclick="closeCxStockModal()" style="background:var(--bg);color:var(--text2);border:1.5px solid var(--border);border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.cx-stock-modal-overlay {
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);
+  z-index:1000;align-items:center;justify-content:center;
+}
+.cx-stock-modal-overlay.open { display:flex; }
+.cx-stock-modal-box {
+  background:var(--card);border-radius:20px;padding:28px;
+  width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.25);
+}
+</style>
+
 <script>
 /* ── URL helper ── */
 const _m = document.getElementById('cx-url-map').dataset;
@@ -575,6 +634,7 @@ const U = {
   ingMenu:   id => _m.ingMenu.replace('99999', id),
   ingDel:    id => _m.ingDel.replace('99999', id),
   ingUpd:    id => _m.ingUpd.replace('99999', id),
+  ingStock:  id => _m.ingStock.replace('99999', id),
   cxDel:     id => _m.cxDel.replace('99999', id),
   cxToggle:  id => _m.cxToggle.replace('99999', id),
   cxPhoto:   id => _m.cxPhoto.replace('99999', id),
@@ -902,6 +962,43 @@ async function deleteIng(ingId, groupId, biId) {
 /* ── Util ── */
 function _esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ── Склад: привязка позиции конструктора ── */
+let _cxStockIngId = null;
+function openStockModal(ingId, ingName, wiId, writeOffQty) {
+  _cxStockIngId = ingId;
+  document.getElementById('cxStockIngName').textContent = ingName;
+  document.getElementById('cxStockIngSelect').value = wiId || '';
+  document.getElementById('cxStockQty').value = writeOffQty || 1;
+  document.getElementById('cxStockModal').classList.add('open');
+}
+function closeCxStockModal() {
+  document.getElementById('cxStockModal').classList.remove('open');
+  _cxStockIngId = null;
+}
+async function saveCxStock() {
+  if (!_cxStockIngId) return;
+  const wi_id = document.getElementById('cxStockIngSelect').value;
+  const qty   = document.getElementById('cxStockQty').value;
+  const d = await post(U.ingStock(_cxStockIngId), {
+    warehouse_ingredient_id: wi_id,
+    write_off_qty: qty,
+  });
+  if (!d.ok) { toast(d.error || 'Ошибка', 'err'); return; }
+  // Обновляем кнопку на чипе
+  const btn = document.querySelector(`#cxi-${_cxStockIngId} .cx-ing-stock`);
+  if (btn) {
+    if (d.wi_name) {
+      btn.classList.add('cx-ing-stock-linked');
+      btn.title = `Склад: ${d.wi_name} × ${d.write_off_qty}`;
+    } else {
+      btn.classList.remove('cx-ing-stock-linked');
+      btn.title = 'Привязать к складу';
+    }
+  }
+  closeCxStockModal();
+  toast('Склад сохранён', 'ok');
 }
 </script>
 {% endblock %}

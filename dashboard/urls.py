@@ -88,9 +88,10 @@ urlpatterns = [
     path("constructor/group/<int:group_id>/delete/",             views.constructor_group_delete,     name="constructor_group_delete"),
     path("constructor/group/<int:group_id>/ingredient/add/",         views.constructor_ingredient_add,        name="constructor_ingredient_add"),
     path("constructor/group/<int:group_id>/ingredient/from-menu/",  views.constructor_ingredient_from_menu,  name="constructor_ingredient_from_menu"),
-    path("constructor/ingredient/<int:ing_id>/delete/",             views.constructor_ingredient_delete,     name="constructor_ingredient_delete"),
-    path("constructor/ingredient/<int:ing_id>/update/",            views.constructor_ingredient_update,     name="constructor_ingredient_update"),
-    path("constructor/group/<int:group_id>/update/",               views.constructor_group_update,          name="constructor_group_update"),
+    path("constructor/ingredient/<int:ing_id>/delete/",             views.constructor_ingredient_delete,          name="constructor_ingredient_delete"),
+    path("constructor/ingredient/<int:ing_id>/update/",            views.constructor_ingredient_update,          name="constructor_ingredient_update"),
+    path("constructor/ingredient/<int:ing_id>/stock/",             views.constructor_ingredient_stock_update,    name="constructor_ingredient_stock_update"),
+    path("constructor/group/<int:group_id>/update/",               views.constructor_group_update,               name="constructor_group_update"),
 
     # ── SHOPS ───────────────────────────────────────────────────────────────
     path("shops/",                                          sv.shop_home,          name="shop_home"),

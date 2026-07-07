@@ -220,6 +220,22 @@ class ConstructorIngredient(TimeStampedModel):
     is_active   = models.BooleanField("Активен", default=True)
     sort_order  = models.PositiveSmallIntegerField("Порядок", default=0)
 
+    # Связь со складом: какой ингредиент списывать и в каком количестве на 1 шт
+    warehouse_ingredient = models.ForeignKey(
+        "techcards.Ingredient",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="constructor_lines",
+        verbose_name="Ингредиент склада",
+        help_text="Какой ингредиент списывать при закрытии заказа",
+    )
+    write_off_qty = models.DecimalField(
+        "Кол-во списания (на 1 шт)",
+        max_digits=10, decimal_places=3,
+        default=1,
+        help_text="Сколько единиц ингредиента списывать за каждую единицу этой позиции",
+    )
+
     class Meta:
         ordering = ["sort_order", "id"]
         verbose_name = "Позиция конструктора"

@@ -2119,17 +2119,25 @@ def constructor_list(request, branch_id):
     if not _has_branch_access(request.user, branch):
         return redirect("dashboard:home")
     constructors = branch.dish_constructors.prefetch_related(
-        "groups__ingredients__branch_item__item"
+        "groups__ingredients__branch_item__item",
+        "groups__ingredients__warehouse_ingredient",
     ).order_by("sort_order", "id")
     branch_items = (
         BranchItem.objects.select_related("item")
         .filter(branch=branch, is_available=True)
         .order_by("item__name_ru")
     )
+    from techcards.models import Ingredient as _Ingredient
+    warehouse_ingredients = (
+        _Ingredient.objects
+        .filter(restaurant=branch.restaurant, is_active=True)
+        .order_by("name_ru")
+    )
     return render(request, "dashboard/constructor.html", {
         "branch": branch,
         "constructors": constructors,
         "branch_items": branch_items,
+        "warehouse_ingredients": warehouse_ingredients,
     })
 
 
@@ -2296,6 +2304,32 @@ def constructor_ingredient_update(request, ing_id):
             ing.name = name
     ing.save()
     return JsonResponse({"ok": True, "price": str(ing.display_price), "name": ing.display_name})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def constructor_ingredient_stock_update(request, ing_id):
+    """Привязать позицию конструктора к ингредиенту склада."""
+    ing = get_object_or_404(ConstructorIngredient, id=ing_id)
+    if not _has_branch_access(request.user, ing.group.constructor.branch):
+        return JsonResponse({"ok": False}, status=403)
+    from techcards.models import Ingredient as _Ingredient
+    wi_id = request.POST.get("warehouse_ingredient_id", "").strip()
+    qty_raw = request.POST.get("write_off_qty", "1").strip() or "1"
+    if wi_id:
+        wi = get_object_or_404(_Ingredient, id=wi_id,
+                                restaurant=ing.group.constructor.branch.restaurant)
+        ing.warehouse_ingredient = wi
+    else:
+        ing.warehouse_ingredient = None
+    try:
+        ing.write_off_qty = Decimal(qty_raw)
+    except Exception:
+        ing.write_off_qty = Decimal("1")
+    ing.save(update_fields=["warehouse_ingredient", "write_off_qty"])
+    wi_name = ing.warehouse_ingredient.name_ru if ing.warehouse_ingredient else ""
+    return JsonResponse({"ok": True, "wi_name": wi_name,
+                         "write_off_qty": str(ing.write_off_qty)})
 
 
 @require_POST

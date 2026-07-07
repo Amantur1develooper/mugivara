@@ -116,8 +116,9 @@ class BranchItemAdmin(admin.ModelAdmin):
 class ConstructorIngredientInline(admin.TabularInline):
     model               = ConstructorIngredient
     extra               = 1
-    fields              = ("branch_item", "name", "description", "price", "photo", "is_active", "sort_order")
-    autocomplete_fields = ("branch_item",)
+    fields              = ("branch_item", "name", "description", "price", "photo",
+                           "warehouse_ingredient", "write_off_qty", "is_active", "sort_order")
+    autocomplete_fields = ("branch_item", "warehouse_ingredient")
 
 
 class ConstructorGroupInline(admin.TabularInline):
