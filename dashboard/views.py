@@ -55,6 +55,30 @@ def logout_view(request):
     return redirect("dashboard:login")
 
 
+@login_required(login_url="dashboard:login")
+def profile_view(request):
+    from core.models import UserProfile
+    profile, _ = UserProfile.objects.get_or_create(
+        user=request.user,
+        defaults={"phone": ""},
+    )
+    error = None
+    success = False
+    if request.method == "POST":
+        phone = request.POST.get("phone", "").strip()
+        if not phone.startswith("+996") or len(phone) < 10:
+            error = "Введите номер в формате +996XXXXXXXXX (минимум 10 символов)"
+        else:
+            profile.phone = phone
+            profile.save(update_fields=["phone"])
+            success = True
+    return render(request, "dashboard/profile.html", {
+        "profile": profile,
+        "error": error,
+        "success": success,
+    })
+
+
 # ── HOME ─────────────────────────────────────────────────────────────────────
 
 @login_required(login_url="dashboard:login")

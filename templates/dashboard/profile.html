@@ -1,0 +1,60 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Профиль — кабинет{% endblock %}
+
+{% block topbar_breadcrumb %}
+<a href="{% url 'dashboard:home' %}">Главная</a>
+<span class="sep">/</span>Профиль
+{% endblock %}
+
+{% block content %}
+<div style="max-width:480px;margin:0 auto">
+
+  <div class="db-page-title" style="margin-bottom:24px">👤 Мой профиль</div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:18px;padding:28px">
+
+    <div style="margin-bottom:22px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Логин</div>
+      <div style="font-size:15px;font-weight:700;color:var(--text)">{{ request.user.username }}</div>
+    </div>
+
+    {% if success %}
+    <div style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:10px;padding:11px 14px;font-size:13px;font-weight:600;color:#10b981;margin-bottom:18px">
+      ✓ Номер сохранён
+    </div>
+    {% endif %}
+
+    {% if error %}
+    <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:11px 14px;font-size:13px;font-weight:600;color:#ef4444;margin-bottom:18px">
+      {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div style="margin-bottom:18px">
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">
+          Рабочий номер телефона
+        </label>
+        <input
+          type="tel"
+          name="phone"
+          value="{{ profile.phone }}"
+          placeholder="+996 700 123 456"
+          style="width:100%;padding:11px 14px;border-radius:11px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:15px;outline:none;box-sizing:border-box;font-family:inherit;transition:border-color .15s"
+          onfocus="this.style.borderColor='var(--accent)'"
+          onblur="this.style.borderColor='var(--border)'"
+        >
+        <div style="margin-top:6px;font-size:11px;color:var(--muted)">
+          Формат: <strong>+996</strong>XXXXXXXXX — например +996 700 123 456
+        </div>
+      </div>
+
+      <button type="submit" class="db-btn db-btn-primary" style="width:100%;padding:12px">
+        Сохранить номер
+      </button>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

@@ -124,6 +124,9 @@
     <div class="db-breadcrumb">{{ branch.restaurant.name_ru }} — {{ branch.name_ru }}</div>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a href="{% url 'public_site:branch_tables' branch.id %}" target="_blank" class="db-btn db-btn-primary db-btn-sm">
+      🪑 Открыть столы
+    </a>
     <button class="db-btn db-btn-ghost db-btn-sm" onclick="copyTablePageUrl()" id="copyPageBtn">
       📋 Ссылка на все столы
     </button>

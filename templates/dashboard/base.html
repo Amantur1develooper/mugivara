@@ -364,6 +364,7 @@
     <div class="db-avatar">{{ request.user.username|slice:":1"|upper }}</div>
     <div style="flex:1;min-width:0">
       <div class="db-user-name">{{ request.user.username }}</div>
+      <a href="{% url 'dashboard:profile' %}" class="db-logout">Профиль</a>
       <a href="{% url 'dashboard:logout' %}" class="db-logout">Выйти →</a>
     </div>
   </div>

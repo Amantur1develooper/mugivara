@@ -13,9 +13,10 @@ from printshop import dashboard_views as pv
 app_name = "dashboard"
 
 urlpatterns = [
-    path("login/",  views.login_view,  name="login"),
-    path("logout/", views.logout_view, name="logout"),
-    path("",        views.home,        name="home"),
+    path("login/",   views.login_view,   name="login"),
+    path("logout/",  views.logout_view,  name="logout"),
+    path("",         views.home,         name="home"),
+    path("profile/", views.profile_view, name="profile"),
 
     path("restaurant/create/",                                     views.restaurant_create,             name="restaurant_create"),
     path("restaurant/<int:restaurant_id>/edit/",                   views.restaurant_edit,               name="restaurant_edit"),
