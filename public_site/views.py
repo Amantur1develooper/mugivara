@@ -977,7 +977,7 @@ def checkout_success(request, branch_id: int, order_id: int):
 
     msg = (
         f"🧾 Новый заказ #{order.id}\n"
-        f"Филиал: {getattr(branch, 'name_ru', None) or branch.name}\n"
+        f"Филиал: {branch.name_ru}\n"
         f"Тип: {type_text}\n"
         f"Имя: {order.customer_name}\n"
         f"Телефон: {order.customer_phone}\n"
@@ -995,7 +995,13 @@ def checkout_success(request, branch_id: int, order_id: int):
 
     encoded = quote(msg)
 
-    wa_number = "".join(ch for ch in (branch.phone or "") if ch.isdigit())
+    wa_raw = (
+        branch.restaurant.whatsapp
+        or branch.phone
+        or branch.restaurant.phone
+        or ""
+    )
+    wa_number = "".join(ch for ch in wa_raw if ch.isdigit())
 
     whatsapp_web_url = f"https://wa.me/{wa_number}?text={encoded}" if wa_number else f"https://wa.me/?text={encoded}"
     whatsapp_deeplink = f"whatsapp://send?phone={wa_number}&text={encoded}" if wa_number else f"whatsapp://send?text={encoded}"
