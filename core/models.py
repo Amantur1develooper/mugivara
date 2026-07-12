@@ -14,7 +14,47 @@ class TimeStampedModel(models.Model):
         abstract = True
 
 
+class PlaceCategory(models.Model):
+    """Категория платформы (Еда, Отели, Магазины …) — сердце безрелизности."""
+    slug        = models.SlugField(max_length=80, unique=True)
+    name_ru     = models.CharField(max_length=100)
+    name_ky     = models.CharField(max_length=100, blank=True, default="")
+    name_en     = models.CharField(max_length=100, blank=True, default="")
+    subtitle_ru = models.CharField(max_length=200, blank=True, default="")
+    subtitle_ky = models.CharField(max_length=200, blank=True, default="")
+    subtitle_en = models.CharField(max_length=200, blank=True, default="")
+    icon        = models.CharField("Иконка (эмодзи или URL)", max_length=200, blank=True, default="")
+    sort_order  = models.PositiveSmallIntegerField(default=0)
+    is_active   = models.BooleanField(default=True)
+
+    # Флаги поведения — приложение строит UI по ним
+    supports_catalog  = models.BooleanField("Есть каталог (меню/товары)", default=True)
+    supports_ordering = models.BooleanField("Есть заказ", default=True)
+    supports_booking  = models.BooleanField("Есть бронирование", default=False)
+
+    item_noun_ru = models.CharField("Позиции (рус)", max_length=50, default="Блюда")
+    item_noun_ky = models.CharField("Позиции (кыр)", max_length=50, blank=True, default="")
+    item_noun_en = models.CharField("Позиции (eng)", max_length=50, blank=True, default="")
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+        verbose_name = "Категория платформы"
+        verbose_name_plural = "Категории платформы"
+
+    def __str__(self):
+        return self.name_ru
+
+
 class Restaurant(TimeStampedModel):
+    place_category = models.ForeignKey(
+        PlaceCategory, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="places",
+        verbose_name="Категория платформы",
+    )
+    cover = models.ImageField(
+        "Обложка (для списка заведений)", upload_to="restaurants/covers/",
+        blank=True, null=True,
+    )
     name_ru = models.CharField(max_length=200)
     name_ky = models.CharField(max_length=200, blank=True, default="")
     name_en = models.CharField(max_length=200, blank=True, default="")

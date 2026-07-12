@@ -6,7 +6,7 @@ from django.urls import path
 from django import forms
 from django.contrib.admin.widgets import AutocompleteSelect
 from django.db import transaction
-from .models import Restaurant, Branch, Membership, PromoCode, Banner
+from .models import Restaurant, Branch, Membership, PromoCode, Banner, PlaceCategory
 from catalog.models import MenuSet, Item, BranchMenuSet, BranchItem
 from catalog.models import BranchItem as CatalogBranchItem
 from catalog.services import sync_branch_menu, ensure_links_for_branch_item
@@ -298,17 +298,43 @@ class BranchAdmin(admin.ModelAdmin):
         return render(request, "admin/core/branch/duplicate.html", context)
 
 
+@admin.register(PlaceCategory)
+class PlaceCategoryAdmin(admin.ModelAdmin):
+    list_display  = ("slug", "name_ru", "sort_order", "is_active",
+                     "supports_catalog", "supports_ordering", "supports_booking")
+    list_editable = ("sort_order", "is_active")
+    search_fields = ("slug", "name_ru")
+    ordering      = ("sort_order", "id")
+    fieldsets = (
+        (None, {"fields": (
+            ("slug", "sort_order", "is_active"),
+            ("name_ru", "name_ky", "name_en"),
+            ("subtitle_ru", "subtitle_ky", "subtitle_en"),
+            "icon",
+        )}),
+        ("Флаги поведения", {"fields": (
+            ("supports_catalog", "supports_ordering", "supports_booking"),
+            ("item_noun_ru", "item_noun_ky", "item_noun_en"),
+        )}),
+    )
+
+
 @admin.register(Restaurant)
 class RestaurantAdmin(admin.ModelAdmin):
-    list_display = ("id", "name_ru", "slug", "rating", "is_active")
+    list_display  = ("id", "name_ru", "slug", "place_category", "rating", "is_active")
     list_editable = ("rating",)
     search_fields = ("name_ru", "slug")
-    list_filter = ("is_active",)
-    ordering = ("-rating",)
+    list_filter   = ("is_active", "place_category")
+    ordering      = ("-rating",)
 
     fieldsets = (
-        (None, {"fields": ("name_ru","name_ky","name_en","slug","logo","is_active","rating")}),
-        ("О нас", {"fields": ("about_ru","about_ky","about_en")}),
+        (None, {"fields": (
+            ("name_ru", "name_ky", "name_en"),
+            ("slug", "place_category"),
+            ("logo", "cover"),
+            ("is_active", "rating"),
+        )}),
+        ("О нас", {"fields": ("about_ru", "about_ky", "about_en")}),
     )
 
 

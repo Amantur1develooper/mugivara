@@ -8,9 +8,22 @@ from api.v1.views.order import branch_order_create, promo_check
 from api.v1.views.history import order_history, order_detail
 from api.v1.views.reservation import branch_floors, branch_free_places, booking_create, booking_status
 from api.v1.views.promo import branch_promos, banner_list as promo_banner_list, banner_click
+from api.v1.views.categories import (
+    category_list, category_places, category_place_detail, category_place_branches,
+)
+from api.v1.views.search import search
 
 urlpatterns = [
-    # Рестораны и филиалы
+    # Категории платформы (§2, §3 API.md)
+    path("categories/",                                                  category_list,          name="api-category-list"),
+    path("categories/<slug:slug>/places/",                               category_places,        name="api-category-places"),
+    path("categories/<slug:slug>/places/<slug:place_slug>/",             category_place_detail,  name="api-category-place-detail"),
+    path("categories/<slug:slug>/places/<slug:place_slug>/branches/",    category_place_branches, name="api-category-place-branches"),
+
+    # Поиск (§6 API.md)
+    path("search/", search, name="api-search"),
+
+    # Рестораны и филиалы (старые пути — алиасы для совместимости)
     path("restaurants/",                      restaurant_list,   name="api-restaurant-list"),
     path("restaurants/<slug:slug>/",          restaurant_detail, name="api-restaurant-detail"),
     path("restaurants/<slug:slug>/branches/", branch_list,       name="api-branch-list"),

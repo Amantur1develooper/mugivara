@@ -1,30 +1,121 @@
 from typing import Optional
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
-from core.models import Restaurant, Branch, Banner
+from core.models import Restaurant, Branch, Banner, PlaceCategory
 from catalog.models import (
     BranchCategory, BranchCategoryItem, BranchItem,
     DishConstructor, ConstructorGroup, ConstructorIngredient,
 )
 
 
-class RestaurantSerializer(serializers.ModelSerializer):
-    logo_url = serializers.SerializerMethodField()
+# ── Категории платформы ───────────────────────────────────────────────────────
+
+class PlaceCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PlaceCategory
+        fields = [
+            "slug", "name_ru", "name_ky", "name_en",
+            "subtitle_ru", "subtitle_ky", "subtitle_en",
+            "icon", "sort_order", "is_active",
+            "supports_catalog", "supports_ordering", "supports_booking",
+            "item_noun_ru", "item_noun_ky", "item_noun_en",
+        ]
+
+
+# ── Заведения в категории (лёгкий список) ────────────────────────────────────
+
+class PlaceListSerializer(serializers.ModelSerializer):
+    logo_url       = serializers.SerializerMethodField()
+    cover_url      = serializers.SerializerMethodField()
+    is_open_now    = serializers.SerializerMethodField()
+    branches_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Restaurant
         fields = [
             "id", "slug", "name_ru", "name_ky", "name_en",
-            "logo_url", "about_ru", "phone", "whatsapp",
-            "instagram", "telegram", "map_url", "rating",
+            "logo_url", "cover_url",
+            "rating", "branches_count", "is_open_now",
         ]
+
+    def _abs(self, request, field):
+        if field and request:
+            return request.build_absolute_uri(field.url)
+        return None
 
     @extend_schema_field(serializers.URLField(allow_null=True))
     def get_logo_url(self, obj):
+        return self._abs(self.context.get("request"), obj.logo)
+
+    @extend_schema_field(serializers.URLField(allow_null=True))
+    def get_cover_url(self, obj):
         request = self.context.get("request")
-        if obj.logo and request:
-            return request.build_absolute_uri(obj.logo.url)
+        if obj.cover:
+            return self._abs(request, obj.cover)
+        # фолбэк на обложку первого активного филиала
+        branch = obj.branches.filter(is_active=True).exclude(cover_photo="").first()
+        if branch and branch.cover_photo:
+            return self._abs(request, branch.cover_photo)
         return None
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_is_open_now(self, obj):
+        return any(b.is_open_now() for b in obj.branches.filter(is_active=True))
+
+    @extend_schema_field(serializers.IntegerField())
+    def get_branches_count(self, obj):
+        return obj.branches.filter(is_active=True).count()
+
+
+# ── Ресторан (полная форма) ───────────────────────────────────────────────────
+
+class RestaurantSerializer(serializers.ModelSerializer):
+    logo_url            = serializers.SerializerMethodField()
+    cover_url           = serializers.SerializerMethodField()
+    is_open_now         = serializers.SerializerMethodField()
+    branches_count      = serializers.SerializerMethodField()
+    place_category_slug = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Restaurant
+        fields = [
+            "id", "slug", "name_ru", "name_ky", "name_en",
+            "logo_url", "cover_url",
+            "about_ru", "phone", "whatsapp", "instagram", "telegram", "map_url",
+            "rating", "branches_count", "is_open_now",
+            "place_category_slug",
+        ]
+
+    def _abs(self, request, field):
+        if field and request:
+            return request.build_absolute_uri(field.url)
+        return None
+
+    @extend_schema_field(serializers.URLField(allow_null=True))
+    def get_logo_url(self, obj):
+        return self._abs(self.context.get("request"), obj.logo)
+
+    @extend_schema_field(serializers.URLField(allow_null=True))
+    def get_cover_url(self, obj):
+        request = self.context.get("request")
+        if obj.cover:
+            return self._abs(request, obj.cover)
+        branch = obj.branches.filter(is_active=True).exclude(cover_photo="").first()
+        if branch and branch.cover_photo:
+            return self._abs(request, branch.cover_photo)
+        return None
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_is_open_now(self, obj):
+        return any(b.is_open_now() for b in obj.branches.filter(is_active=True))
+
+    @extend_schema_field(serializers.IntegerField())
+    def get_branches_count(self, obj):
+        return obj.branches.filter(is_active=True).count()
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_place_category_slug(self, obj):
+        return obj.place_category.slug if obj.place_category_id else None
 
 
 class BranchSerializer(serializers.ModelSerializer):
@@ -65,12 +156,14 @@ class BranchSerializer(serializers.ModelSerializer):
 
 
 class MenuItemSerializer(serializers.ModelSerializer):
-    item_id     = serializers.IntegerField(source="item.id")
-    name_ru     = serializers.CharField(source="item.name_ru")
-    name_ky     = serializers.CharField(source="item.name_ky")
-    name_en     = serializers.CharField(source="item.name_en")
-    description = serializers.CharField(source="item.description_ru")
-    photo_url   = serializers.SerializerMethodField()
+    item_id      = serializers.IntegerField(source="item.id")
+    name_ru      = serializers.CharField(source="item.name_ru")
+    name_ky      = serializers.CharField(source="item.name_ky")
+    name_en      = serializers.CharField(source="item.name_en")
+    description  = serializers.CharField(source="item.description_ru")
+    photo_url    = serializers.SerializerMethodField()
+    rating       = serializers.DecimalField(source="item.rating", max_digits=3, decimal_places=1)
+    orders_count = serializers.IntegerField(source="item.order_count")
 
     class Meta:
         model = BranchItem
@@ -79,6 +172,7 @@ class MenuItemSerializer(serializers.ModelSerializer):
             "name_ru", "name_ky", "name_en",
             "description", "photo_url",
             "price", "is_available",
+            "rating", "orders_count",
         ]
 
     @extend_schema_field(serializers.URLField(allow_null=True))
