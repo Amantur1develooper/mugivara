@@ -724,7 +724,10 @@ def checkout(request, branch_id: int):
     from django.db import transaction as db_transaction
     from catalog.models import DishConstructor
     from orders.models import ConstructorOrderItem
-    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    branch = get_object_or_404(
+        Branch.objects.select_related("restaurant"),
+        id=branch_id, is_active=True,
+    )
     cart = get_cart(request, branch.id)
     rows, subtotal, qty_total = cart_details(branch, cart)
     cx_cart = _get_branch_cx_cart(request, branch_id)
@@ -821,8 +824,14 @@ def checkout(request, branch_id: int):
             payment_status=Order.PaymentStatus.UNPAID,
         )
 
-        # увеличиваем рейтинг ресторана
-        Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
+        # увеличиваем рейтинг ресторана (cap 9.9 — max_digits=3,decimal_places=1)
+        from django.db.models import Case, When, Value
+        Restaurant.objects.filter(pk=branch.restaurant_id).update(
+            rating=Case(
+                When(rating__lt=Decimal("9.8"), then=F("rating") + Decimal("0.1")),
+                default=Decimal("9.9"),
+            )
+        )
 
         # учитываем использование промокода
         if promo:
@@ -918,7 +927,10 @@ from orders.models import Order, OrderItem, ConstructorOrderItem
 from core.models import Branch
 
 def checkout_success(request, branch_id: int, order_id: int):
-    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    branch = get_object_or_404(
+        Branch.objects.select_related("restaurant"),
+        id=branch_id, is_active=True,
+    )
     order = get_object_or_404(Order, id=order_id, branch=branch)
 
     items = (OrderItem.objects
