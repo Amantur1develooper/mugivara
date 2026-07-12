@@ -878,7 +878,7 @@ def checkout(request, branch_id: int):
     type_text = "Доставка" if order_type == Order.Type.DELIVERY else "Самовывоз"
     msg = (
         f"🧾 Новый заказ #{order.id}\n"
-        f"Филиал: {getattr(branch, 'name_ru', None) or branch.name}\n"
+        f"Филиал: {branch.name_ru}\n"
         f"Тип: {type_text}\n"
         f"Имя: {name}\n"
         f"Телефон: {phone}\n"
@@ -895,13 +895,21 @@ def checkout(request, branch_id: int):
         msg += f"\nДоставка: {delivery_fee} сом"
     msg += f"\nИтого: {total} сом"
 
-    # редирект в WhatsApp филиала
-    wa_number = "".join(ch for ch in (branch.phone or "") if ch.isdigit())
+    # Редирект в WhatsApp / WhatsApp Business:
+    # приоритет: whatsapp ресторана → телефон филиала → телефон ресторана
+    wa_raw = (
+        branch.restaurant.whatsapp
+        or branch.phone
+        or branch.restaurant.phone
+        or ""
+    )
+    wa_number = "".join(ch for ch in wa_raw if ch.isdigit())
     if wa_number:
+        # wa.me открывает и обычный WhatsApp, и WhatsApp Business — какое приложение установлено
         whatsapp_url = f"https://wa.me/{wa_number}?text={quote(msg)}"
         return redirect(whatsapp_url)
 
-    # если телефона нет — просто показываем страницу успеха (fallback)
+    # если номера нет — страница успеха
     return redirect("public_site:checkout_success", branch_id=branch.id, order_id=order.id)
 
 from urllib.parse import quote
