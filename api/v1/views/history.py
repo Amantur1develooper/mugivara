@@ -5,18 +5,26 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from orders.models import Order, OrderItem
+from orders.models import Order, OrderItem, ConstructorOrderItem
 from core.models import UserProfile
 
 
 # ── Схемы ─────────────────────────────────────────────────────────────────────
 
 _OrderItemSchema = inline_serializer("HistoryOrderItem", fields={
-    "item_id":   serializers.IntegerField(),
-    "name":      serializers.CharField(),
-    "qty":       serializers.IntegerField(),
-    "price":     serializers.DecimalField(max_digits=10, decimal_places=2),
+    "type":       serializers.ChoiceField(choices=["dish", "constructor"],
+                                          help_text="dish — обычное блюдо, constructor — собери сам"),
+    "item_id":    serializers.IntegerField(help_text="BranchItem.item_id для dish, DishConstructor.id для constructor"),
+    "name":       serializers.CharField(),
+    "qty":        serializers.IntegerField(),
+    "price":      serializers.DecimalField(max_digits=10, decimal_places=2),
     "line_total": serializers.DecimalField(max_digits=10, decimal_places=2),
+    "selections": serializers.ListField(
+        child=serializers.DictField(),
+        allow_null=True,
+        required=False,
+        help_text="null для dish; [{gname, ings:[{name,extra_price}]}] для constructor",
+    ),
 })
 
 _OrderSchema = inline_serializer("HistoryOrder", fields={
@@ -57,14 +65,26 @@ _TYPE_LABELS = {
 def _serialize_order(order):
     items_data = [
         {
+            "type":       "dish",
             "item_id":    oi.item_id,
             "name":       oi.item.name_ru,
             "qty":        oi.qty,
             "price":      str(oi.price_snapshot),
             "line_total": str(oi.line_total),
+            "selections": None,
         }
         for oi in order.items.select_related("item").all()
     ]
+    for coi in order.constructor_items.all():
+        items_data.append({
+            "type":       "constructor",
+            "item_id":    coi.constructor_id,
+            "name":       coi.constructor_name_snapshot,
+            "qty":        coi.qty,
+            "price":      str(coi.unit_price),
+            "line_total": str(coi.line_total),
+            "selections": coi.ingredients_snapshot or [],
+        })
     return {
         "id":               order.id,
         "type":             order.type,
@@ -131,6 +151,7 @@ def order_history(request):
     qs = (
         Order.objects
         .select_related("branch__restaurant")
+        .prefetch_related("constructor_items")
         .filter(customer_phone=phone)
         .order_by("-created_at")
     )
@@ -182,7 +203,7 @@ def order_detail(request, order_id: int):
         return Response({"detail": "Профиль не найден."}, status=404)
 
     order = get_object_or_404(
-        Order.objects.select_related("branch__restaurant"),
+        Order.objects.select_related("branch__restaurant").prefetch_related("constructor_items"),
         id=order_id,
     )
 
