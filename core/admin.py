@@ -334,6 +334,9 @@ class RestaurantAdmin(admin.ModelAdmin):
             ("logo", "cover"),
             ("is_active", "rating"),
         )}),
+        ("Контакты", {"fields": (
+            ("phone", "whatsapp"),
+        )}),
         ("О нас", {"fields": ("about_ru", "about_ky", "about_en")}),
     )
 
