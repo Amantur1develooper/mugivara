@@ -1042,6 +1042,10 @@ def checkout_success(request, branch_id: int, order_id: int):
 def about(request):
     return render(request, "public_site/about.html")
 
+
+def privacy(request):
+    return render(request, "public_site/privacy.html")
+
 from django.db.models import Prefetch
 from core.models import Restaurant, Branch
 
