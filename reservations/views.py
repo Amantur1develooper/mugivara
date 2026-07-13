@@ -199,19 +199,22 @@ from .models import Floor, Place, Booking
 from reservations.tasks import notify_new_booking
 
 def reservation_page(request, branch_id: int):
-    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    branch = get_object_or_404(
+        Branch.objects.select_related("restaurant__place_category"),
+        id=branch_id, is_active=True,
+    )
 
     floors = (Floor.objects
               .filter(branch=branch, is_active=True)
               .order_by("sort_order", "id")
               .prefetch_related("places"))
 
-    busy_ids = set(
-        Booking.objects.filter(
-            branch=branch,
-            status__in=[Booking.Status.ACTIVE, Booking.Status.ARRIVED],
-        ).values_list("place_id", flat=True)
-    )
+    active_bookings = Booking.objects.filter(
+        branch=branch,
+        status__in=[Booking.Status.ACTIVE, Booking.Status.ARRIVED],
+    ).select_related("place")
+
+    booking_by_place = {b.place_id: b for b in active_bookings}
 
     floors_data = []
     for f in floors:
@@ -219,9 +222,11 @@ def reservation_page(request, branch_id: int):
         for p in f.places.all():
             if not p.is_active:
                 continue
+            booking = booking_by_place.get(p.id)
             places.append({
                 "place": p,
-                "busy": p.id in busy_ids,
+                "busy": booking is not None,
+                "booking": booking,
             })
         floors_data.append({"floor": f, "places": places})
 
@@ -238,9 +243,13 @@ def reserve_create(request, branch_id: int, place_id: int):
 
     name = (request.POST.get("name") or "").strip()
     phone = (request.POST.get("phone") or "").strip()
-    guests = int(request.POST.get("guests") or 2)
+    guests = int(request.POST.get("guests") or 1)
     guests = max(1, min(guests, 99))
     comment = (request.POST.get("comment") or "").strip()
+    duration_str = (request.POST.get("duration") or "").strip()
+    duration_minutes = None
+    if duration_str.isdigit() and int(duration_str) > 0:
+        duration_minutes = min(int(duration_str), 600)
 
     try:
         booking = Booking.create_active_booking(
@@ -250,6 +259,7 @@ def reserve_create(request, branch_id: int, place_id: int):
             customer_phone=phone,
             guests_count=guests,
             comment=comment,
+            duration_minutes=duration_minutes,
         )
 
         # ✅ телега сразу после создания

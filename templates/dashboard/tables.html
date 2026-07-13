@@ -143,7 +143,45 @@
   data-floor-del-tpl="{% url 'dashboard:floor_delete' 0 %}"
   data-table-add-tpl="{% url 'dashboard:table_add' 0 %}"
   data-table-del-tpl="{% url 'dashboard:table_delete' 0 %}"
+  data-table-toggle-tpl="{% url 'dashboard:table_toggle_active' 0 %}"
+  data-booking-close-tpl="{% url 'dashboard:booking_close' 0 %}"
 ></div>
+
+{% if active_bookings %}
+<div style="background:#fff;border:1.5px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:20px;">
+  <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;background:var(--bg);border-bottom:1px solid var(--border);">
+    <span style="font-size:16px">🏎️</span>
+    <span style="font-size:14px;font-weight:800;color:var(--text)">Активные сессии</span>
+    <span id="activeCount" style="font-size:11px;color:var(--muted)">{{ active_bookings|length }}</span>
+  </div>
+  <div id="activeBookings">
+    {% for bk in active_bookings %}
+    <div class="tbl-row" id="bkrow-{{ bk.id }}" style="align-items:flex-start;flex-wrap:wrap;gap:8px">
+      <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#f97316,#ef4444);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">🏁</div>
+      <div style="flex:1;min-width:120px">
+        <div style="font-size:14px;font-weight:700;color:var(--text)">{{ bk.place.title }}</div>
+        <div style="font-size:11px;color:var(--muted)">{{ bk.place.floor.name_ru }}</div>
+        {% if bk.customer_name %}<div style="font-size:12px;color:var(--text2);margin-top:2px">👤 {{ bk.customer_name }}</div>{% endif %}
+        {% if bk.customer_phone %}<div style="font-size:12px;color:var(--text2)">📞 {{ bk.customer_phone }}</div>{% endif %}
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:12px;font-weight:700;color:#f97316">
+          ⏱ Начало: {{ bk.started_at|time:"H:i" }}
+        </div>
+        {% if bk.duration_minutes %}
+        <div style="font-size:11px;color:var(--muted)">{{ bk.duration_minutes }} мин</div>
+        {% if bk.ends_at %}
+        <div style="font-size:12px;font-weight:700;color:#16a34a">Конец ~{{ bk.ends_at|time:"H:i" }}</div>
+        {% endif %}
+        {% endif %}
+        <button class="tbl-action-btn" style="margin-top:6px;border-color:#dc2626;color:#dc2626"
+                onclick="closeBooking({{ bk.id }})">✅ Завершить</button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 
 <div class="tbl-wrap" id="tblWrap">
 
@@ -161,11 +199,17 @@
     {% for place in floor.places.all %}
     <div class="tbl-row" id="trow-{{ place.id }}">
       <div class="tbl-num">{{ forloop.counter }}</div>
-      <div class="tbl-title">{{ place.title }}</div>
+      <div class="tbl-title" style="{% if not place.is_active %}opacity:.45;text-decoration:line-through{% endif %}">{{ place.title }}</div>
       <div class="tbl-seats">👤 {{ place.seats }}</div>
       <div class="tbl-actions">
         <button class="tbl-action-btn" onclick="copyUrl('{{ place.token }}', this)">📋 Ссылка</button>
         <button class="tbl-action-btn" onclick="toggleQr({{ place.id }})">QR</button>
+        <button class="tbl-action-btn {% if not place.is_active %}copied{% endif %}"
+                id="stop-{{ place.id }}"
+                onclick="toggleStop({{ place.id }}, this)"
+                title="{% if place.is_active %}Остановить (снять с аренды){% else %}Запустить (вернуть в аренду){% endif %}">
+          {% if place.is_active %}🛑 Стоп{% else %}▶️ Запуск{% endif %}
+        </button>
         {% if request.user.is_superuser %}
         <button class="tbl-action-btn" onclick="openTokenModal({{ place.id }}, '{{ place.title|escapejs }}', '{{ place.token }}')" title="Изменить токен">🔑</button>
         {% endif %}
@@ -508,6 +552,35 @@ function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function escJs(s) { return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+/* ── Stop / start machine ── */
+async function toggleStop(id, btn) {
+  const d = await post(sUrl(URLS.tableToggleTpl, id), {});
+  if (!d.ok) { alert('Ошибка'); return; }
+  const row = document.getElementById(`trow-${id}`);
+  const title = row?.querySelector('.tbl-title');
+  if (d.is_active) {
+    btn.textContent = '🛑 Стоп';
+    btn.classList.remove('copied');
+    btn.title = 'Остановить (снять с аренды)';
+    if (title) { title.style.opacity=''; title.style.textDecoration=''; }
+  } else {
+    btn.textContent = '▶️ Запуск';
+    btn.classList.add('copied');
+    btn.title = 'Запустить (вернуть в аренду)';
+    if (title) { title.style.opacity='.45'; title.style.textDecoration='line-through'; }
+  }
+}
+
+/* ── Close (finish) booking ── */
+async function closeBooking(id) {
+  if (!confirm('Завершить сессию?')) return;
+  const d = await post(sUrl(URLS.bookingCloseTpl, id), {});
+  if (!d.ok) { alert('Ошибка'); return; }
+  document.getElementById(`bkrow-${id}`)?.remove();
+  const cnt = document.getElementById('activeCount');
+  if (cnt) { const n = parseInt(cnt.textContent||'0') - 1; cnt.textContent = n; }
+}
 
 /* ── Copy branch tables page URL ── */
 function copyTablePageUrl() {

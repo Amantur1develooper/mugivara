@@ -62,6 +62,8 @@ urlpatterns = [
     path("floor/<int:floor_id>/table/add/",          views.table_add,    name="table_add"),
     path("table/<int:table_id>/delete/",             views.table_delete,        name="table_delete"),
     path("table/<int:table_id>/regen-token/",        views.table_regen_token,   name="table_regen_token"),
+    path("table/<int:table_id>/toggle-active/",      views.table_toggle_active, name="table_toggle_active"),
+    path("booking/<int:booking_id>/close/",          views.booking_close,       name="booking_close"),
 
     path("analytics/", views.analytics,        name="analytics"),
     path("orders/",    views.orders_analytics, name="orders"),

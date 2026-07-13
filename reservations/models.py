@@ -69,20 +69,31 @@ class Booking(TimeStampedModel):
     customer_phone = models.CharField(max_length=80, blank=True, default="")
     guests_count = models.PositiveIntegerField(default=2)
     comment = models.CharField(max_length=300, blank=True, default="")
+    duration_minutes = models.PositiveIntegerField(
+        null=True, blank=True, verbose_name="Длительность сессии (мин)"
+    )
 
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
     started_at = models.DateTimeField(default=timezone.now)
     closed_at = models.DateTimeField(null=True, blank=True)
-    
+
+    @property
+    def ends_at(self):
+        if self.duration_minutes and self.started_at:
+            from datetime import timedelta
+            return self.started_at + timedelta(minutes=self.duration_minutes)
+        return None
+
     class Meta:
         ordering = ("-id",)
         verbose_name = "Бронь"
         verbose_name_plural = "Брони"
 
     @classmethod
-    def create_active_booking(cls, *, branch, place, customer_name="", customer_phone="", guests_count=2, comment=""):
+    def create_active_booking(cls, *, branch, place, customer_name="", customer_phone="",
+                               guests_count=2, comment="", duration_minutes=None):
         """
-        ✅ Делает бронь “занято для всех”, пока админ/кассир не снимет статус.
+        ✅ Делает бронь "занято для всех", пока админ/кассир не снимет статус.
         ✅ Защита от гонок: select_for_update.
         """
         with transaction.atomic():
@@ -105,6 +116,7 @@ class Booking(TimeStampedModel):
                 customer_phone=customer_phone,
                 guests_count=guests_count,
                 comment=comment,
+                duration_minutes=duration_minutes,
                 status=cls.Status.ACTIVE,
             )
 

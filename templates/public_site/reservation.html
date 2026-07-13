@@ -3,144 +3,262 @@
 {% block img %}
   <link rel="icon" type="image/jpg" sizes="32x32" href="{% static 'mini_logo.jpg' %}">
   <link rel="icon" type="image/jpg" sizes="16x16" href="{% static 'mini_logo.jpg' %}">
-  <link rel="apple-touch-icon" href="{{ branch.cover_photo.url }}' %}">
-  <link rel="shortcut icon" href="{{ branch.cover_photo.url }}">
 {% endblock img %}
 {% block content %}
 <style>
-  details summary { list-style: none; cursor: pointer; }
-  details summary::-webkit-details-marker { display: none; }
+  :root { --green:#16a34a; --red:#dc2626; --amber:#d97706; }
+
+  .res-hero {
+    background:#fff; border-radius:24px;
+    box-shadow:0 4px 24px rgba(0,0,0,.07);
+    padding:20px 22px; margin-bottom:20px;
+    display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+  }
+  .res-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    background:#0f172a; color:#fff;
+    border-radius:99px; padding:4px 12px;
+    font-size:12px; font-weight:700;
+  }
+  .res-h1 { font-size:22px; font-weight:900; color:#0f172a; margin:10px 0 2px; }
+  .res-addr { font-size:13px; color:#64748b; }
+  .res-legend {
+    display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;
+  }
+  .res-legend-item {
+    display:flex; align-items:center; gap:6px;
+    font-size:11px; font-weight:600; border-radius:99px; padding:4px 10px;
+  }
+  .dot { width:8px; height:8px; border-radius:50%; }
+  .dot-green { background:var(--green); }
+  .dot-red { background:var(--red); }
+  .dot-amber { background:var(--amber); }
+
+  .res-section { margin-bottom:28px; }
+  .res-section-title {
+    font-size:16px; font-weight:800; color:#0f172a;
+    margin-bottom:12px; padding-left:4px;
+  }
+  .res-grid {
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap:12px;
+  }
+
+  /* ── machine card ── */
+  .mc {
+    background:#fff; border-radius:18px;
+    box-shadow:0 2px 12px rgba(0,0,0,.06);
+    overflow:hidden; transition:.15s;
+    border:2px solid transparent;
+    cursor:pointer; user-select:none;
+  }
+  .mc:hover { box-shadow:0 4px 20px rgba(0,0,0,.11); }
+  .mc.mc-free { border-color:#bbf7d0; }
+  .mc.mc-busy { border-color:#fecaca; opacity:.85; cursor:default; }
+  .mc.mc-selected { border-color:var(--green); box-shadow:0 0 0 3px rgba(22,163,74,.18); }
+  .mc-photo { width:100%; height:110px; object-fit:cover; }
+  .mc-photo-placeholder { width:100%; height:110px; background:linear-gradient(135deg,#f1f5f9,#e2e8f0); display:flex; align-items:center; justify-content:center; font-size:36px; }
+  .mc-body { padding:12px; }
+  .mc-title { font-size:14px; font-weight:800; color:#0f172a; }
+  .mc-status { margin-top:6px; font-size:11px; font-weight:700; border-radius:99px; padding:3px 9px; display:inline-block; }
+  .mc-free-badge { background:#dcfce7; color:var(--green); }
+  .mc-busy-badge { background:#fee2e2; color:var(--red); }
+  .mc-free-at { font-size:10px; color:var(--amber); font-weight:600; margin-top:4px; }
+
+  /* ── booking form panel ── */
+  .res-form-panel {
+    background:#fff; border-radius:20px;
+    box-shadow:0 4px 24px rgba(0,0,0,.09);
+    padding:20px 22px; margin-top:20px;
+    display:none;
+  }
+  .res-form-panel.open { display:block; }
+  .res-form-title { font-size:16px; font-weight:800; margin-bottom:16px; color:#0f172a; }
+  .res-form-place { font-size:14px; font-weight:700; color:var(--green); margin-bottom:14px; }
+  .res-duration-grid {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(80px,1fr)); gap:8px;
+    margin-bottom:16px;
+  }
+  .dur-btn {
+    padding:8px 4px; border-radius:10px; font-size:12px; font-weight:700;
+    border:2px solid #e2e8f0; background:#f8fafc; color:#475569;
+    cursor:pointer; text-align:center; transition:.12s;
+  }
+  .dur-btn:hover { border-color:var(--green); color:var(--green); background:#f0fdf4; }
+  .dur-btn.active { border-color:var(--green); background:var(--green); color:#fff; }
+  .res-input {
+    width:100%; border:1.5px solid #e2e8f0; border-radius:10px;
+    padding:10px 12px; font-size:14px; outline:none; transition:.2s;
+    margin-bottom:10px; box-sizing:border-box;
+  }
+  .res-input:focus { border-color:var(--green); }
+  .res-submit {
+    width:100%; padding:13px; background:#0f172a; color:#fff;
+    border:none; border-radius:12px; font-size:15px; font-weight:700;
+    cursor:pointer; transition:.15s;
+  }
+  .res-submit:hover { background:#1e293b; }
+  .res-cancel {
+    width:100%; padding:10px; background:transparent; color:#94a3b8;
+    border:none; border-radius:12px; font-size:13px; font-weight:600;
+    cursor:pointer; margin-top:6px;
+  }
+
+  .msg-block { background:#fff; border-radius:12px; padding:12px 14px; margin-bottom:12px; font-size:13px; color:#334155; box-shadow:0 1px 4px rgba(0,0,0,.06); }
 </style>
 
-<div class="max-w-6xl mx-auto px-4 py-6">
+<div class="max-w-2xl mx-auto px-4 py-6">
 
-  <!-- HERO -->
-  <div class="rounded-[28px] overflow-hidden ring-1 ring-black/5 shadow-[0_18px_60px_rgba(15,23,42,.10)] bg-white/90 backdrop-blur">
-    <div class="p-5 sm:p-7 flex items-start justify-between gap-4">
-      <div class="min-w-0">
-        <div class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold bg-stone-900 text-white">
-          🗓️ {% trans "Бронирование" %}
+  <!-- hero -->
+  <div class="res-hero">
+    <div style="flex:1;min-width:0">
+      <div class="res-badge">🗓️ {% trans "Бронирование" %}</div>
+      <div class="res-h1">{{ branch.name_ru }}</div>
+      {% if branch.address %}<div class="res-addr">📍 {{ branch.address }}</div>{% endif %}
+      <div class="res-legend">
+        <div class="res-legend-item" style="background:#f0fdf4;color:var(--green)">
+          <span class="dot dot-green"></span> {% trans "Свободно" %}
         </div>
-
-        <h1 class="mt-3 text-2xl sm:text-3xl font-extrabold tracking-tight text-stone-900">
-          {{ branch.name_ru }}
-        </h1>
-        <div class="mt-1 text-stone-600 text-sm">
-          {{ branch.address }}
+        <div class="res-legend-item" style="background:#fef2f2;color:var(--red)">
+          <span class="dot dot-red"></span> {% trans "Занято" %}
         </div>
-
-        <div class="mt-4 flex flex-wrap gap-2 text-xs">
-          <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200">
-            <span class="h-2 w-2 rounded-full bg-emerald-500"></span> {% trans "Свободно" %}
-          </span>
-          <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 bg-rose-50 text-rose-800 ring-1 ring-rose-200">
-            <span class="h-2 w-2 rounded-full bg-rose-500"></span> {% trans "Занято" %}
-          </span>
-          <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 bg-white ring-1 ring-stone-200 text-stone-700">
-            ℹ️ {% trans "Место станет свободным, когда кассир/админ снимет бронь" %}
-          </span>
+        <div class="res-legend-item" style="background:#fffbeb;color:var(--amber)">
+          <span class="dot dot-amber"></span> {% trans "Скоро освободится" %}
         </div>
       </div>
-
-      <a href="{% url 'public_site:branch_menu' branch.id %}"
-         class="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white ring-1 ring-stone-200 hover:bg-stone-50 transition">
-        ← {% trans "Меню" %}
-      </a>
     </div>
+    <a href="{% url 'public_site:branch_menu' branch.id %}"
+       style="flex-shrink:0;padding:8px 14px;border-radius:12px;background:#f1f5f9;color:#475569;font-size:13px;font-weight:600;text-decoration:none">
+      ← {% trans "Меню" %}
+    </a>
   </div>
 
-  <!-- MESSAGES -->
   {% if messages %}
-    <div class="mt-4 space-y-2">
-      {% for m in messages %}
-        <div class="rounded-2xl p-3 ring-1 ring-stone-200 bg-white/90 backdrop-blur text-stone-800">
-          {{ m }}
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
-
-
-  {% if messages %}
-    <div class="mt-4 space-y-2">
-      {% for m in messages %}
-        <div class="rounded-2xl p-3 ring-1 ring-stone-200 bg-white">{{ m }}</div>
-      {% endfor %}
-    </div>
-  {% endif %}
-
-  <style>
-    .card{transition:.15s}
-    .card-busy{opacity:.6; filter: grayscale(.15);}
-    details summary { list-style: none; cursor:pointer; }
-    details summary::-webkit-details-marker { display:none; }
-  </style>
-
-  <div class="mt-6 space-y-8">
-    {% for f in floors_data %}
-      <section class="rounded-3xl bg-white ring-1 ring-stone-200 p-5">
-        <div class="flex items-center justify-between gap-3">
-          <h2 class="text-xl font-extrabold">{{ f.floor.name_ru }}</h2>
-        </div>
-
-        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {% for row in f.places %}
-            {% with p=row.place busy=row.busy %}
-              <div class="card rounded-2xl ring-1 ring-stone-200 overflow-hidden {% if busy %}card-busy bg-stone-50{% else %}bg-white{% endif %}">
-                {% if p.photo %}
-                  <img src="{{ p.photo.url }}" alt="" class="w-full h-40 object-cover" loading="lazy" decoding="async">
-                {% else %}
-                  <div class="w-full h-40 bg-stone-100"></div>
-                {% endif %}
-
-                <div class="p-4">
-                  <div class="font-extrabold">
-                    {{ p.title }}
-                    <span class="text-xs font-semibold text-stone-500">
-                      · {% if p.type == "cabin" %}{% trans "Кабинка" %}{% else %}{% trans "Стол" %}{% endif %}
-                    </span>
-                  </div>
-                  <div class="text-sm text-stone-500 mt-1">{% trans "Мест" %}: {{ p.seats }}</div>
-
-                  {% if busy %}
-                    <div class="mt-3 inline-flex px-3 py-2 rounded-xl bg-rose-600 text-white text-sm font-semibold">
-                      {% trans "Занято" %}
-                    </div>
-                  {% else %}
-                    <details class="mt-3">
-                      <summary class="inline-flex px-3 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold">
-                        {% trans "Забронировать" %}
-                      </summary>
-
-                      <form class="mt-3 grid gap-2" method="post"
-                            action="{% url 'public_site:reserve_create' branch.id p.id %}">
-                        {% csrf_token %}
-                        <input name="name" placeholder="{% trans 'ФИО (необязательно)' %}"
-                               class="w-full border border-stone-300 rounded-xl px-3 py-2">
-                        <input name="phone" placeholder="{% trans 'Телефон (необязательно)' %}"
-                               class="w-full border border-stone-300 rounded-xl px-3 py-2">
-                        <input name="guests" type="number" min="1" value="2"
-                               class="w-full border border-stone-300 rounded-xl px-3 py-2">
-                        <input name="comment" placeholder="{% trans 'Комментарий (необязательно)' %}"
-                               class="w-full border border-stone-300 rounded-xl px-3 py-2">
-
-                        <button class="px-4 py-3 rounded-2xl bg-stone-900 text-white font-semibold">
-                          {% trans "Подтвердить бронь" %}
-                        </button>
-                      </form>
-                    </details>
-                  {% endif %}
-                </div>
-              </div>
-            {% endwith %}
-          {% endfor %}
-        </div>
-      </section>
+    {% for m in messages %}
+      <div class="msg-block">{{ m }}</div>
     {% endfor %}
+  {% endif %}
+
+  <!-- floors + machines -->
+  {% for f in floors_data %}
+    <div class="res-section">
+      <div class="res-section-title">{{ f.floor.name_ru }}</div>
+      <div class="res-grid">
+        {% for row in f.places %}
+          {% with p=row.place busy=row.busy bk=row.booking %}
+            <div class="mc {% if busy %}mc-busy{% else %}mc-free{% endif %}"
+                 id="mc-{{ p.id }}"
+                 {% if not busy %}onclick="selectMachine({{ p.id }}, '{{ p.title|escapejs }}')"{% endif %}>
+              {% if p.photo %}
+                <img src="{{ p.photo.url }}" alt="" class="mc-photo">
+              {% else %}
+                <div class="mc-photo-placeholder">🏎️</div>
+              {% endif %}
+              <div class="mc-body">
+                <div class="mc-title">{{ p.title }}</div>
+                {% if busy %}
+                  <span class="mc-status mc-busy-badge">{% trans "Занято" %}</span>
+                  {% if bk.ends_at %}
+                    <div class="mc-free-at">
+                      ⏱ {% trans "Свободно ~" %}{{ bk.ends_at|time:"H:i" }}
+                    </div>
+                  {% endif %}
+                {% else %}
+                  <span class="mc-status mc-free-badge">{% trans "Свободно" %}</span>
+                {% endif %}
+              </div>
+            </div>
+          {% endwith %}
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+
+  <!-- booking form (shown on card click) -->
+  <div class="res-form-panel" id="formPanel">
+    <div class="res-form-title">🎮 {% trans "Забронировать место" %}</div>
+    <div class="res-form-place" id="formPlaceLabel"></div>
+
+    <form method="post" id="bookingForm">
+      {% csrf_token %}
+      <input type="hidden" name="duration" id="durationInput" value="">
+
+      <!-- duration buttons -->
+      <div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px">
+        {% trans "Длительность сессии" %}
+      </div>
+      <div class="res-duration-grid" id="durGrid">
+        <div class="dur-btn" onclick="pickDur(5,this)">5 мин</div>
+        <div class="dur-btn" onclick="pickDur(8,this)">8 мин</div>
+        <div class="dur-btn" onclick="pickDur(11,this)">11 мин</div>
+        <div class="dur-btn" onclick="pickDur(20,this)">20 мин</div>
+        <div class="dur-btn" onclick="pickDur(30,this)">30 мин</div>
+        <div class="dur-btn" onclick="pickDur(40,this)">40 мин</div>
+        <div class="dur-btn" onclick="pickDur(60,this)">60 мин</div>
+      </div>
+
+      <input name="name" placeholder="{% trans 'Имя (необязательно)' %}" class="res-input">
+      <input name="phone" type="tel" placeholder="{% trans 'Телефон (необязательно)' %}" class="res-input">
+      <input name="guests" type="hidden" value="1">
+      <input name="comment" placeholder="{% trans 'Комментарий (необязательно)' %}" class="res-input">
+
+      <button type="submit" class="res-submit" id="submitBtn" disabled>
+        {% trans "Подтвердить бронь" %}
+      </button>
+      <button type="button" class="res-cancel" onclick="closeForm()">{% trans "Отмена" %}</button>
+    </form>
   </div>
+
 </div>
+
+<script>
+let selectedPlaceId = null;
+
+function selectMachine(placeId, title) {
+  // deselect old
+  if (selectedPlaceId) {
+    document.getElementById('mc-' + selectedPlaceId)?.classList.remove('mc-selected');
+  }
+  selectedPlaceId = placeId;
+  document.getElementById('mc-' + placeId)?.classList.add('mc-selected');
+
+  // update form
+  document.getElementById('formPlaceLabel').textContent = '🏎️ ' + title;
+  document.getElementById('bookingForm').action = buildUrl(placeId);
+  document.getElementById('formPanel').classList.add('open');
+
+  // reset duration
+  document.getElementById('durationInput').value = '';
+  document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('submitBtn').disabled = true;
+
+  // scroll to form
+  document.getElementById('formPanel').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function closeForm() {
+  if (selectedPlaceId) {
+    document.getElementById('mc-' + selectedPlaceId)?.classList.remove('mc-selected');
+    selectedPlaceId = null;
+  }
+  document.getElementById('formPanel').classList.remove('open');
+}
+
+function pickDur(mins, btn) {
+  document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('durationInput').value = mins;
+  document.getElementById('submitBtn').disabled = false;
+}
+
+function buildUrl(placeId) {
+  const base = window.location.pathname.replace(/\/reservation\/?$/, '');
+  return base + '/reservation/' + placeId + '/create/';
+}
+</script>
+
 {% endblock %}
 {% block footer %}
-     <a href="{% url 'public_site:home' %}">Разработка Amantur agency
-</a>
+<a href="{% url 'public_site:home' %}">Разработка Amantur agency</a>
 {% endblock footer %}

@@ -1293,7 +1293,43 @@ def branch_tables(request, branch_id):
     if not _has_branch_access(request.user, branch):
         return redirect("dashboard:home")
     floors = branch.floors.prefetch_related("places").order_by("sort_order", "id")
-    return render(request, "dashboard/tables.html", {"branch": branch, "floors": floors})
+    from reservations.models import Booking
+    active_bookings = (
+        Booking.objects
+        .filter(branch=branch, status__in=[Booking.Status.ACTIVE, Booking.Status.ARRIVED])
+        .select_related("place__floor")
+        .order_by("-started_at")
+    )
+    return render(request, "dashboard/tables.html", {
+        "branch": branch,
+        "floors": floors,
+        "active_bookings": active_bookings,
+    })
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def table_toggle_active(request, table_id):
+    place = get_object_or_404(Place, id=table_id)
+    if not _has_branch_access(request.user, place.floor.branch):
+        return JsonResponse({"ok": False}, status=403)
+    place.is_active = not place.is_active
+    place.save(update_fields=["is_active"])
+    return JsonResponse({"ok": True, "is_active": place.is_active})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def booking_close(request, booking_id):
+    from reservations.models import Booking as Bk
+    from django.utils import timezone as tz
+    bk = get_object_or_404(Bk, id=booking_id)
+    if not _has_branch_access(request.user, bk.branch):
+        return JsonResponse({"ok": False}, status=403)
+    bk.status = Bk.Status.CLOSED
+    bk.closed_at = tz.now()
+    bk.save(update_fields=["status", "closed_at"])
+    return JsonResponse({"ok": True})
 
 
 @require_POST
