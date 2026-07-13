@@ -324,8 +324,12 @@ def table_checkout(request, token):
         Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
 
         # Кухонный чек — после коммита транзакции
+        # Если print_on_accept включён — печать только по нажатию «Принять заказ» кассиром
         _order_id = order.id
+        _print_on_accept = branch.print_on_accept
         def _do_print():
+            if _print_on_accept:
+                return
             try:
                 from printing.jobs import create_print_jobs
                 from orders.models import Order as _Ord
@@ -634,16 +638,18 @@ def table_create_order(request, token):
     _save_cx_cart(request, token, [])
 
     # Кухонный чек → облачная печать (только НОВЫЕ позиции, чтобы не дублировать)
-    try:
-        from printing.jobs import create_print_jobs
-        if existing_order:
-            create_print_jobs(order, new_item_ids=new_oi_ids, new_cx_ids=new_cx_ids)
-        else:
-            create_print_jobs(order)
-    except Exception as e:
-        import traceback
-        print("PRINT create_print_jobs ERROR (table):", e)
-        traceback.print_exc()
+    # Если print_on_accept — ждём подтверждения кассира, печать не нужна
+    if not branch.print_on_accept:
+        try:
+            from printing.jobs import create_print_jobs
+            if existing_order:
+                create_print_jobs(order, new_item_ids=new_oi_ids, new_cx_ids=new_cx_ids)
+            else:
+                create_print_jobs(order)
+        except Exception as e:
+            import traceback
+            print("PRINT create_print_jobs ERROR (table):", e)
+            traceback.print_exc()
 
     # Telegram уведомление
     # Для нового заказа — сигнал integrations/signals.py отправляет уведомление автоматически.
@@ -765,10 +771,14 @@ def table_order_json(request, order_id):
             })
         combined_total += o.total_amount
 
+    # Статус: NEW если хотя бы один заказ на столе ещё не принят
+    earliest_status = all_orders[0].status if all_orders else order.status
+
     return JsonResponse({
         "ok": True,
         "order": {
             "id": order.id,
+            "status": earliest_status,
             "total": float(combined_total),
             "comment": order.comment,
             "customer": order.customer_name,
@@ -776,6 +786,41 @@ def table_order_json(request, order_id):
             "items": items,
         },
     })
+
+
+@require_POST
+def table_waiter_accept(request, order_id):
+    """Кассир/официант принимает заказ: статус NEW → ACCEPTED, кухонный чек идёт в печать."""
+    order = get_object_or_404(Order, id=order_id)
+
+    _NEW = Order.Status.NEW
+    if order.table_place_id:
+        new_orders = list(
+            Order.objects
+            .select_related("table_place__floor", "branch__restaurant")
+            .filter(branch=order.branch, table_place_id=order.table_place_id, status=_NEW)
+        )
+    else:
+        new_orders = (
+            [Order.objects.select_related("table_place__floor", "branch__restaurant").get(id=order.id)]
+            if order.status == _NEW else []
+        )
+
+    if not new_orders:
+        return JsonResponse({"ok": False, "error": "Нет новых заказов для принятия"})
+
+    for o in new_orders:
+        o.status = Order.Status.ACCEPTED
+        o.save(update_fields=["status"])
+        try:
+            from printing.jobs import create_print_jobs
+            create_print_jobs(o)
+        except Exception as e:
+            import traceback
+            print("PRINT create_print_jobs ERROR (accept):", e)
+            traceback.print_exc()
+
+    return JsonResponse({"ok": True})
 
 
 @require_POST

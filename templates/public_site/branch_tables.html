@@ -189,6 +189,7 @@
     .foot-btn:active { opacity: .75; }
     .foot-btn:disabled { opacity: .4; cursor: not-allowed; }
     .foot-btn.enter  { background: #FF4D1C; color: #fff; }
+    .foot-btn.accept { background: #15803d; color: #fff; font-weight: 700; }
     .foot-btn.cash   { background: #166534; color: #bbf7d0; }
     .foot-btn.card   { background: #1e3a8a; color: #bfdbfe; }
     .foot-btn.add    { background: #f0f0f5; color: #1a1a1a; }
@@ -313,8 +314,10 @@
 <script>
 const ORDER_JSON_URL  = "{% url 'public_site:table_order_json'        0 %}".replace("/0/", "/{id}/");
 const CLOSE_URL       = "{% url 'public_site:table_waiter_close'      0 %}".replace("/0/", "/{id}/");
+const ACCEPT_URL      = "{% url 'public_site:table_waiter_accept'     0 %}".replace("/0/", "/{id}/");
 const CANCEL_ITEM_URL = "{% url 'public_site:table_waiter_cancel_item' 0 %}".replace("/0/", "/{id}/");
 const MENU_URL        = "{% url 'public_site:table_menu' token='TOKEN_PLACEHOLDER' %}";
+const PRINT_ON_ACCEPT = {{ branch.print_on_accept|yesno:"true,false" }};
 const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
 
 let curOrderId  = null;
@@ -452,11 +455,18 @@ function renderFoot() {
   }
   // Occupied table
   const total = loadedOrder ? Math.round(loadedOrder.total).toLocaleString("ru") : (curCard ? Math.round(parseFloat(curCard.dataset.orderTotal||0)).toLocaleString("ru") : "—");
+  const isNew = loadedOrder && loadedOrder.status === "new";
+  const acceptBtn = (PRINT_ON_ACCEPT && isNew)
+    ? `<div class="foot-btns">
+         <button class="foot-btn accept" id="acceptBtn" onclick="acceptOrder()">✅ Принять заказ → на кухню</button>
+       </div>`
+    : "";
   foot.innerHTML = `
     <div class="foot-total">
       <span class="foot-total-label">ИТОГО</span>
       <span class="foot-total-val">${total} сом</span>
     </div>
+    ${acceptBtn}
     <div class="foot-btns">
       <button class="foot-btn add" onclick="goMenu()">➕ Дозаказать</button>
     </div>
@@ -464,6 +474,26 @@ function renderFoot() {
       <button class="foot-btn cash" id="payBtnCash" onclick="closeTable('cash')">💵 Рассчитать (нал)</button>
       <button class="foot-btn card" id="payBtnCard" onclick="closeTable('online')">💳 По карте</button>
     </div>`;
+}
+
+// ── Accept order → print to kitchen ─────────────────────────────────────────
+async function acceptOrder() {
+  const btn = document.getElementById("acceptBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "⏳ Отправляю..."; }
+  try {
+    const r = await fetch(ACCEPT_URL.replace("{id}", curOrderId), {
+      method: "POST",
+      headers: { "X-CSRFToken": CSRF() },
+    });
+    const d = await r.json();
+    if (!d.ok) { showToast(d.error || "Ошибка", "err"); if (btn) { btn.disabled = false; btn.textContent = "✅ Принять заказ → на кухню"; } return; }
+    if (loadedOrder) loadedOrder.status = "accepted";
+    renderFoot();
+    showToast("✅ Заказ принят · чек отправлен на кухню", "ok");
+  } catch {
+    showToast("Ошибка сети", "err");
+    if (btn) { btn.disabled = false; btn.textContent = "✅ Принять заказ → на кухню"; }
+  }
 }
 
 // ── Tab switch ───────────────────────────────────────────────────────────────

@@ -130,6 +130,15 @@ class Branch(TimeStampedModel):
 
     pay_cash_enabled   = models.BooleanField("Наличные (касса)", default=True)
     pay_online_enabled = models.BooleanField("Онлайн / карта (касса)", default=True)
+
+    print_on_accept = models.BooleanField(
+        "Печать только после подтверждения кассиром",
+        default=False,
+        help_text=(
+            "Если включено — кухонный чек печатается не сразу при заказе через QR, "
+            "а только после того как кассир/официант нажмёт «Принять заказ» в панели столов."
+        ),
+    )
     lat = models.DecimalField("Широта",  max_digits=10, decimal_places=7, null=True, blank=True)
     lon = models.DecimalField("Долгота", max_digits=10, decimal_places=7, null=True, blank=True)
 

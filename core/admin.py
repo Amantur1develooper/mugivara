@@ -135,6 +135,7 @@ class BranchAdmin(admin.ModelAdmin):
             "pos_delivery_fee_enabled", "free_delivery_from",
         )}),
         ("Оплата", {"fields": ("pay_cash_enabled", "pay_online_enabled")}),
+        ("Печать", {"fields": ("print_on_accept",)}),
         ("Режим работы", {"fields": (
             "is_open_24h", "open_time", "close_time", "work_days",
         )}),

@@ -208,6 +208,28 @@
     </div>
   </div>
 
+  {# ── ПЕЧАТЬ ── #}
+  <div class="db-card">
+    <div class="db-card-title">🖨 Печать чеков</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px">
+      Управляет тем, когда кухонный чек уходит на принтер при QR-заказах со стола.
+    </div>
+    <div class="db-toggle-row">
+      <div>
+        <div class="db-toggle-label">Печать только после подтверждения</div>
+        <div class="db-toggle-desc">
+          Если выключено (по умолчанию) — чек идёт на кухню сразу после заказа гостя.<br>
+          Если включено — чек печатается только когда кассир/официант нажмёт
+          <strong>«Принять заказ»</strong> в панели столов.
+        </div>
+      </div>
+      <label class="db-switch">
+        <input type="checkbox" name="print_on_accept" {% if branch.print_on_accept %}checked{% endif %}>
+        <span class="db-switch-slider"></span>
+      </label>
+    </div>
+  </div>
+
   {# ── ВНЕШНИЙ САЙТ ── #}
   <div class="db-card">
     <div class="db-card-title">🌐 Внешний сайт / приложение</div>
