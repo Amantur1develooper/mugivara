@@ -110,7 +110,7 @@ def create_simracing(apps, schema_editor):
             item_noun_ru="Сессии",
             item_noun_ky="Сессиялар",
             item_noun_en="Sessions",
-            is_active=True,
+            is_active=False,   # hidden from main categories screen; venue accessible via direct URL
         ),
     )
 
