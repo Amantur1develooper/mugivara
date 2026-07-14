@@ -74,7 +74,8 @@ async function post(url) {
   return r.json();
 }
 async function toggleMachine(id, btn) {
-  const d = await post('/cabinet/sr/machine/' + id + '/toggle/');
+  const toggleUrl = '{% url "dashboard:sr_machine_toggle" machine_id=0 %}'.replace('/0/', '/' + id + '/');
+  const d = await post(toggleUrl);
   if (!d.ok) { alert('Ошибка'); return; }
   const title = document.querySelector(`#mrow-${id} div[style*="font-size:14px"]`);
   if (d.is_active) {
@@ -89,7 +90,8 @@ async function toggleMachine(id, btn) {
 }
 async function deleteMachine(id) {
   if (!confirm('Удалить машину? Все сессии останутся в истории.')) return;
-  const d = await post('/cabinet/sr/machine/' + id + '/delete/');
+  const delUrl = '{% url "dashboard:sr_machine_delete" machine_id=0 %}'.replace('/0/', '/' + id + '/');
+  const d = await post(delUrl);
   if (!d.ok) { alert(d.error || 'Ошибка'); return; }
   document.getElementById('mrow-' + id)?.remove();
 }

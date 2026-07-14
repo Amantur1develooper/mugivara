@@ -195,6 +195,7 @@ def home(request):
     from karaoke.models import KaraokeVenue
     from barbershop.models import Barbershop
     from printshop.models import PrintCenter
+    from simracing.models import SimRacingVenue
 
     # ── РЕСТОРАНЫ ────────────────────────────────────────────────────────────
     top_restaurants = list(
@@ -267,6 +268,11 @@ def home(request):
         KaraokeVenue.objects.filter(is_active=True).order_by("sort_order", "name")[:12]
     )
 
+    # ── СИМРЕЙСИНГ ───────────────────────────────────────────────────────────
+    simracing_cards = list(
+        SimRacingVenue.objects.filter(is_active=True).order_by("sort_order", "name")[:12]
+    )
+
     # ── БАРБЕРШОПЫ ────────────────────────────────────────────────────────────
     barbershop_cards = list(
         Barbershop.objects.filter(is_active=True).order_by("sort_order", "name")[:12]
@@ -291,6 +297,7 @@ def home(request):
         "eco_count":        EcoProject.objects.filter(is_active=True).count(),
         "agency_count":     Agency.objects.filter(is_active=True).count(),
         "karaoke_count":      KaraokeVenue.objects.filter(is_active=True).count(),
+        "simracing_count":    SimRacingVenue.objects.filter(is_active=True).count(),
         "barbershop_count":   Barbershop.objects.filter(is_active=True).count(),
         "printshop_count":    PrintCenter.objects.filter(is_active=True).count(),
         "branch_count": (
@@ -302,7 +309,7 @@ def home(request):
         stats["restaurant_count"] + stats["store_count"] + stats["pharmacy_count"]
         + stats["market_count"] + stats["hotel_count"] + stats["legal_count"]
         + stats["eco_count"] + stats["agency_count"] + stats["karaoke_count"]
-        + stats["barbershop_count"] + stats["printshop_count"]
+        + stats["simracing_count"] + stats["barbershop_count"] + stats["printshop_count"]
     )
 
     try:
@@ -364,6 +371,7 @@ def home(request):
         "eco_cards":        eco_cards,
         "agency_cards":     agency_cards,
         "karaoke_cards":      karaoke_cards,
+        "simracing_cards":    simracing_cards,
         "barbershop_cards":   barbershop_cards,
         "printshop_cards":    printshop_cards,
         "stats":            stats,

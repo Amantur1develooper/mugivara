@@ -154,7 +154,8 @@ async function startSession(machineId, venueId) {
   const stId  = stSel?.value;
   if (!stId) { stSel.style.border = '2px solid #dc2626'; setTimeout(() => stSel.style.border='', 1500); return; }
   const name = document.getElementById('name-' + machineId)?.value.trim() || '';
-  const url = '/cabinet/sr/venue/' + venueId + '/session/start/';
+  const tpl = '{% url "dashboard:sr_session_start" venue_id=0 %}'.replace('/0/', '/' + venueId + '/');
+  const url = tpl;
   const d = await post(url, {machine_id: machineId, session_type_id: stId, customer_name: name});
   if (!d.ok) { alert(d.error || 'Ошибка'); return; }
   // reload page to show live timer
@@ -163,7 +164,8 @@ async function startSession(machineId, venueId) {
 
 /* ── Close session ── */
 async function closeSession(sessionId, machineId) {
-  const d = await post('/cabinet/sr/session/' + sessionId + '/close/');
+  const closeUrl = '{% url "dashboard:sr_session_close" session_id=0 %}'.replace('/0/', '/' + sessionId + '/');
+  const d = await post(closeUrl);
   if (!d.ok) { alert(d.error || 'Ошибка'); return; }
   location.reload();
 }
@@ -171,7 +173,8 @@ async function closeSession(sessionId, machineId) {
 /* ── Cancel session ── */
 async function cancelSession(sessionId, machineId) {
   if (!confirm('Отменить сессию (без оплаты)?')) return;
-  const d = await post('/cabinet/sr/session/' + sessionId + '/cancel/');
+  const cancelUrl = '{% url "dashboard:sr_session_cancel" session_id=0 %}'.replace('/0/', '/' + sessionId + '/');
+  const d = await post(cancelUrl);
   if (!d.ok) { alert(d.error || 'Ошибка'); return; }
   location.reload();
 }

@@ -559,7 +559,7 @@
 {% endif %}
 
 <!-- ═══════════════════ УСЛУГИ ═══════════════════ -->
-{% if legal_cards or eco_cards or agency_cards or market_cards or hotel_cards or pharmacy_cards or karaoke_cards %}
+{% if legal_cards or eco_cards or agency_cards or market_cards or hotel_cards or pharmacy_cards or karaoke_cards or simracing_cards %}
 <section id="services" style="background:linear-gradient(160deg,rgba(37,99,235,.03) 0%,rgba(5,150,105,.04) 100%);">
   <div class="sec-wrap">
 
@@ -859,6 +859,34 @@
               <div class="svc-row-sub">🚪 {{ venue.rooms.count }} {% trans "кабинок" %}{% if venue.working_hours %} · {{ venue.working_hours }}{% endif %}</div>
             </div>
             <span class="svc-row-arrow" style="color:#a855f7;">→</span>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if simracing_cards %}
+      <div class="svc-block" id="svc-simracing">
+        <div class="svc-block-head">
+          <div class="svc-block-icon" style="background:rgba(249,115,22,.08);border-color:rgba(249,115,22,.2);">🏎️</div>
+          <div>
+            <div class="svc-block-title">{% trans "Симрейсинг" %}</div>
+            <div class="svc-block-sub">{% trans "Картинг и симуляторы" %}</div>
+          </div>
+        </div>
+        <div class="svc-list">
+          {% for venue in simracing_cards %}
+          <a href="{% url 'simracing:venue' venue.slug %}" class="svc-row">
+            <div class="svc-row-icon">
+              {% if venue.logo %}<img src="{{ venue.logo.url }}" alt="{{ venue.name }}" loading="lazy"
+                   style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
+              {% else %}<span style="font-size:20px;">🏎️</span>{% endif %}
+            </div>
+            <div class="svc-row-info">
+              <div class="svc-row-name">{{ venue.name }}</div>
+              <div class="svc-row-sub">🏁 {{ venue.machines.count }} {% trans "машин" %}{% if venue.working_hours %} · {{ venue.working_hours }}{% endif %}</div>
+            </div>
+            <span class="svc-row-arrow" style="color:#f97316;">→</span>
           </a>
           {% endfor %}
         </div>

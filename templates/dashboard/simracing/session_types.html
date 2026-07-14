@@ -64,7 +64,8 @@ const CSRF = (document.cookie.match(/csrftoken=([^;]+)/)||[])[1]||'';
 async function deleteType(id, btn) {
   if (!confirm('Удалить позицию?')) return;
   const fd = new FormData(); fd.append('csrfmiddlewaretoken', CSRF);
-  const r = await fetch('/cabinet/sr/session-type/' + id + '/delete/', {method:'POST', body:fd, headers:{'X-CSRFToken':CSRF}});
+  const delUrl = '{% url "dashboard:sr_session_type_delete" st_id=0 %}'.replace('/0/', '/' + id + '/');
+  const r = await fetch(delUrl, {method:'POST', body:fd, headers:{'X-CSRFToken':CSRF}});
   const d = await r.json();
   if (!d.ok) { alert('Ошибка'); return; }
   btn.closest('[style*="display:flex"]')?.remove();
