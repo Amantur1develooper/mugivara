@@ -1,0 +1,204 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Сессии — {{ venue.name }}{% endblock %}
+{% block head_extra %}
+<style>
+.sr-live{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px;}
+.sr-card{background:var(--card);border:1.5px solid var(--border);border-radius:16px;overflow:hidden;}
+.sr-card-head{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.sr-card-name{font-size:14px;font-weight:800;color:var(--text);flex:1;}
+.sr-card-body{padding:12px 14px;}
+.sr-timer{font-size:22px;font-weight:900;color:#f97316;font-variant-numeric:tabular-nums;}
+.sr-timer.overtime{color:#dc2626;}
+.sr-ends{font-size:11px;color:var(--muted);margin-top:2px;}
+.sr-customer{font-size:12px;color:var(--text2);margin-top:6px;}
+.sr-price{font-size:13px;font-weight:700;color:#00b896;margin-top:4px;}
+.sr-actions{display:flex;gap:6px;margin-top:10px;}
+
+.sr-free-card{background:var(--card);border:1.5px dashed var(--border);border-radius:16px;padding:14px;}
+.sr-free-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:10px;}
+.sr-free-actions{display:flex;flex-direction:column;gap:6px;}
+
+.sr-stopped{background:var(--bg);border:1.5px solid var(--border);border-radius:16px;padding:12px;opacity:.6;}
+
+.sr-hist-table{width:100%;border-collapse:collapse;font-size:13px;}
+.sr-hist-table th{text-align:left;padding:8px 10px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;border-bottom:1px solid var(--border);}
+.sr-hist-table td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text);}
+.sr-hist-table tr:last-child td{border:none;}
+
+.st-sel{border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;background:var(--bg);color:var(--text);font-family:inherit;outline:none;}
+.st-input{border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;background:var(--bg);color:var(--text);font-family:inherit;outline:none;width:100%;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">🏁 Касса / Сессии</div>
+    <div class="db-breadcrumb">{{ venue.name }}</div>
+  </div>
+  <a href="{% url 'dashboard:sr_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
+</div>
+
+<!-- LIVE MACHINES -->
+<div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:12px;">🚗 Машины сейчас</div>
+<div class="sr-live" id="liveGrid">
+
+{% for machine, session in live %}
+<div id="mc-card-{{ machine.id }}">
+{% if session %}
+  <!-- BUSY -->
+  <div class="sr-card" style="border-color:#fca5a5;">
+    <div class="sr-card-head" style="background:rgba(239,68,68,.05);">
+      <span style="font-size:16px;">🏎️</span>
+      <span class="sr-card-name">{{ machine.name }}</span>
+      <span style="font-size:10px;background:#fee2e2;color:#dc2626;border-radius:99px;padding:2px 8px;font-weight:700;">Занято</span>
+    </div>
+    <div class="sr-card-body">
+      <div class="sr-timer {% if session.is_overtime %}overtime{% endif %}" id="timer-{{ session.id }}"
+           data-ends="{{ session.ends_at|date:'U' }}">
+        —:——
+      </div>
+      <div class="sr-ends">До {{ session.ends_at|time:"H:i" }} · {{ session.duration_minutes }} мин</div>
+      {% if session.customer_name %}<div class="sr-customer">👤 {{ session.customer_name }}</div>{% endif %}
+      {% if session.customer_phone %}<div class="sr-customer">📞 {{ session.customer_phone }}</div>{% endif %}
+      <div class="sr-price">{{ session.price }} сом</div>
+      <div class="sr-actions">
+        <button class="db-btn db-btn-primary db-btn-sm" style="flex:1;"
+                onclick="closeSession({{ session.id }}, {{ machine.id }})">✅ Завершить</button>
+        <button class="db-btn db-btn-ghost db-btn-sm"
+                onclick="cancelSession({{ session.id }}, {{ machine.id }})">✕</button>
+      </div>
+    </div>
+  </div>
+
+{% else %}
+  <!-- FREE -->
+  <div class="sr-free-card" id="free-{{ machine.id }}">
+    <div class="sr-free-name">🏎️ {{ machine.name }}</div>
+    <div class="sr-free-actions">
+      <select class="st-sel" id="st-{{ machine.id }}">
+        <option value="">— Выбрать сессию —</option>
+        {% for st in session_types %}
+          {% if st.machine_type == machine.type %}
+            <option value="{{ st.id }}">{{ st.duration_minutes }} мин · {{ st.price }} сом</option>
+          {% endif %}
+        {% endfor %}
+      </select>
+      <input class="st-input" id="name-{{ machine.id }}" placeholder="Имя клиента (необяз.)">
+      <button class="db-btn db-btn-primary db-btn-sm"
+              onclick="startSession({{ machine.id }}, {{ venue.id }})">▶️ Запустить</button>
+    </div>
+  </div>
+{% endif %}
+</div>
+{% endfor %}
+
+</div>
+
+{% if stopped %}
+<div style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:8px;">⛔ На обслуживании</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;">
+{% for m in stopped %}
+  <div class="sr-stopped">🔴 {{ m.name }}</div>
+{% endfor %}
+</div>
+{% endif %}
+
+<!-- HISTORY -->
+<div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:12px;">📋 История сессий</div>
+<div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;overflow:hidden;">
+{% if history %}
+<table class="sr-hist-table">
+  <thead>
+    <tr>
+      <th>#</th><th>Машина</th><th>Мин</th><th>Сом</th><th>Клиент</th><th>Начало</th><th>Статус</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for s in history %}
+    <tr>
+      <td style="color:var(--muted);">{{ s.id }}</td>
+      <td style="font-weight:600;">{{ s.machine.name }}</td>
+      <td>{{ s.duration_minutes }}</td>
+      <td style="font-weight:700;color:#00b896;">{{ s.price }}</td>
+      <td>{{ s.customer_name|default:"—" }}</td>
+      <td>{{ s.started_at|time:"H:i" }}</td>
+      <td>
+        {% if s.status == "done" %}<span style="color:#16a34a;font-weight:700;">✅</span>
+        {% elif s.status == "canceled" %}<span style="color:#94a3b8;">✕</span>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  <div style="padding:20px;color:var(--muted);text-align:center;font-size:13px;">Нет завершённых сессий</div>
+{% endif %}
+</div>
+
+<script>
+const CSRF = (document.cookie.match(/csrftoken=([^;]+)/)||[])[1]||'';
+const LIVE = {{ live_json|safe }};
+
+async function post(url, data={}) {
+  const fd = new FormData();
+  for (const [k,v] of Object.entries(data)) fd.append(k,v);
+  const r = await fetch(url, {method:'POST', body:fd, headers:{'X-CSRFToken':CSRF}});
+  return r.json();
+}
+
+/* ── Start session ── */
+async function startSession(machineId, venueId) {
+  const stSel = document.getElementById('st-' + machineId);
+  const stId  = stSel?.value;
+  if (!stId) { stSel.style.border = '2px solid #dc2626'; setTimeout(() => stSel.style.border='', 1500); return; }
+  const name = document.getElementById('name-' + machineId)?.value.trim() || '';
+  const url = '/cabinet/sr/venue/' + venueId + '/session/start/';
+  const d = await post(url, {machine_id: machineId, session_type_id: stId, customer_name: name});
+  if (!d.ok) { alert(d.error || 'Ошибка'); return; }
+  // reload page to show live timer
+  location.reload();
+}
+
+/* ── Close session ── */
+async function closeSession(sessionId, machineId) {
+  const d = await post('/cabinet/sr/session/' + sessionId + '/close/');
+  if (!d.ok) { alert(d.error || 'Ошибка'); return; }
+  location.reload();
+}
+
+/* ── Cancel session ── */
+async function cancelSession(sessionId, machineId) {
+  if (!confirm('Отменить сессию (без оплаты)?')) return;
+  const d = await post('/cabinet/sr/session/' + sessionId + '/cancel/');
+  if (!d.ok) { alert(d.error || 'Ошибка'); return; }
+  location.reload();
+}
+
+/* ── Countdown timers ── */
+function startTimers() {
+  document.querySelectorAll('.sr-timer[data-ends]').forEach(el => {
+    const ends = parseInt(el.dataset.ends) * 1000;
+    function tick() {
+      const rem = Math.max(0, ends - Date.now());
+      if (rem <= 0) {
+        el.textContent = '⚠️ Время!';
+        el.classList.add('overtime');
+        return;
+      }
+      const m = Math.floor(rem / 60000);
+      const s = Math.floor((rem % 60000) / 1000);
+      el.textContent = m + ':' + String(s).padStart(2,'0');
+      el.classList.toggle('overtime', rem < 60000);
+      setTimeout(tick, 1000);
+    }
+    tick();
+  });
+}
+startTimers();
+
+// auto-refresh every 60 seconds
+setTimeout(() => location.reload(), 60000);
+</script>
+{% endblock %}

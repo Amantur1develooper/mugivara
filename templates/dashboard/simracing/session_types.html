@@ -1,0 +1,73 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Прайс-лист — {{ venue.name }}{% endblock %}
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">💰 Прайс-лист</div>
+    <div class="db-breadcrumb">{{ venue.name }}</div>
+  </div>
+  <a href="{% url 'dashboard:sr_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
+</div>
+
+{% regroup types by get_machine_type_display as type_groups %}
+{% for group in type_groups %}
+<div style="background:var(--card);border:1.5px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:16px;">
+  <div style="padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--border);font-size:14px;font-weight:800;color:var(--text);">
+    🏎️ {{ group.grouper }}
+  </div>
+  {% for st in group.list %}
+  <div style="display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--border);">
+    <div style="flex:1;font-size:14px;color:var(--text){% if not st.is_active %};opacity:.45{% endif %};">
+      {{ st.duration_minutes }} мин
+    </div>
+    <div style="font-size:15px;font-weight:800;color:#00b896;">{{ st.price }} сом</div>
+    <button class="db-btn db-btn-ghost db-btn-sm" style="color:#dc2626;"
+            onclick="deleteType({{ st.id }}, this)">🗑</button>
+  </div>
+  {% endfor %}
+</div>
+{% empty %}
+<div style="background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:20px;text-align:center;color:var(--muted);font-size:13px;margin-bottom:16px;">
+  Прайс-лист пуст — добавьте позиции ниже
+</div>
+{% endfor %}
+
+<!-- Add -->
+<div style="background:var(--card);border:1.5px dashed var(--border);border-radius:18px;padding:18px;">
+  <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:14px;">＋ Добавить позицию</div>
+  <form method="post" action="{% url 'dashboard:sr_session_type_add' venue.id %}">
+    {% csrf_token %}
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+      <div style="min-width:180px;">
+        <label class="db-label">Тип машины</label>
+        <select name="machine_type" class="db-input">
+          {% for val, label in machine_types %}
+            <option value="{{ val }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="width:100px;">
+        <label class="db-label">Минут</label>
+        <input name="duration_minutes" type="number" min="1" class="db-input" placeholder="5">
+      </div>
+      <div style="width:120px;">
+        <label class="db-label">Цена (сом)</label>
+        <input name="price" type="number" min="0" class="db-input" placeholder="390">
+      </div>
+      <button type="submit" class="db-btn db-btn-primary">Добавить</button>
+    </div>
+  </form>
+</div>
+
+<script>
+const CSRF = (document.cookie.match(/csrftoken=([^;]+)/)||[])[1]||'';
+async function deleteType(id, btn) {
+  if (!confirm('Удалить позицию?')) return;
+  const fd = new FormData(); fd.append('csrfmiddlewaretoken', CSRF);
+  const r = await fetch('/cabinet/sr/session-type/' + id + '/delete/', {method:'POST', body:fd, headers:{'X-CSRFToken':CSRF}});
+  const d = await r.json();
+  if (!d.ok) { alert('Ошибка'); return; }
+  btn.closest('[style*="display:flex"]')?.remove();
+}
+</script>
+{% endblock %}

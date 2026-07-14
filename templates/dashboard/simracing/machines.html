@@ -1,0 +1,97 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Машины — {{ venue.name }}{% endblock %}
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">🚗 Машины</div>
+    <div class="db-breadcrumb">{{ venue.name }}</div>
+  </div>
+  <a href="{% url 'dashboard:sr_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
+</div>
+
+<div style="background:var(--card);border:1.5px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:20px;">
+  {% for machine, active_session in machines_data %}
+  <div style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border);" id="mrow-{{ machine.id }}">
+    {% if machine.photo %}
+      <img src="{{ machine.photo.url }}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;">
+    {% else %}
+      <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#0f172a,#334155);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🏎️</div>
+    {% endif %}
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:14px;font-weight:700;color:var(--text){% if not machine.is_active %};opacity:.5;text-decoration:line-through{% endif %};">{{ machine.name }}</div>
+      <div style="font-size:11px;color:var(--muted);">{{ machine.get_type_display }}</div>
+      {% if active_session %}
+        <div style="font-size:11px;color:#f97316;font-weight:600;">🏁 Активная сессия</div>
+      {% endif %}
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button class="db-btn db-btn-sm {% if machine.is_active %}db-btn-ghost{% else %}db-btn-primary{% endif %}"
+              id="stop-{{ machine.id }}"
+              onclick="toggleMachine({{ machine.id }}, this)">
+        {% if machine.is_active %}🛑 Стоп{% else %}▶️ Запуск{% endif %}
+      </button>
+      <button class="db-btn db-btn-ghost db-btn-sm" style="color:#dc2626;"
+              onclick="deleteMachine({{ machine.id }})">🗑</button>
+    </div>
+  </div>
+  {% empty %}
+  <div style="padding:20px;color:var(--muted);text-align:center;font-size:13px;">Нет машин — добавьте ниже</div>
+  {% endfor %}
+</div>
+
+<!-- Add machine -->
+<div style="background:var(--card);border:1.5px dashed var(--border);border-radius:18px;padding:18px;">
+  <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:14px;">＋ Добавить машину</div>
+  <form method="post" action="{% url 'dashboard:sr_machine_add' venue.id %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+      <div style="flex:2;min-width:140px;">
+        <label class="db-label">Название</label>
+        <input name="name" class="db-input" placeholder="Карт №5, Симулятор №4…" required>
+      </div>
+      <div style="min-width:180px;">
+        <label class="db-label">Тип</label>
+        <select name="type" class="db-input">
+          {% for val, label in machine_types %}
+            <option value="{{ val }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="min-width:140px;">
+        <label class="db-label">Фото (необяз.)</label>
+        <input type="file" name="photo" accept="image/*" class="db-input" style="padding:6px;">
+      </div>
+      <button type="submit" class="db-btn db-btn-primary">Добавить</button>
+    </div>
+  </form>
+</div>
+
+<script>
+const CSRF = (document.cookie.match(/csrftoken=([^;]+)/)||[])[1]||'';
+async function post(url) {
+  const fd = new FormData(); fd.append('csrfmiddlewaretoken', CSRF);
+  const r = await fetch(url, {method:'POST', body:fd, headers:{'X-CSRFToken':CSRF}});
+  return r.json();
+}
+async function toggleMachine(id, btn) {
+  const d = await post('/cabinet/sr/machine/' + id + '/toggle/');
+  if (!d.ok) { alert('Ошибка'); return; }
+  const title = document.querySelector(`#mrow-${id} div[style*="font-size:14px"]`);
+  if (d.is_active) {
+    btn.textContent = '🛑 Стоп';
+    btn.className = 'db-btn db-btn-ghost db-btn-sm';
+    if (title) { title.style.opacity=''; title.style.textDecoration=''; }
+  } else {
+    btn.textContent = '▶️ Запуск';
+    btn.className = 'db-btn db-btn-primary db-btn-sm';
+    if (title) { title.style.opacity='.5'; title.style.textDecoration='line-through'; }
+  }
+}
+async function deleteMachine(id) {
+  if (!confirm('Удалить машину? Все сессии останутся в истории.')) return;
+  const d = await post('/cabinet/sr/machine/' + id + '/delete/');
+  if (!d.ok) { alert(d.error || 'Ошибка'); return; }
+  document.getElementById('mrow-' + id)?.remove();
+}
+</script>
+{% endblock %}

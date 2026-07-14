@@ -1,0 +1,58 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Симрейсинг{% endblock %}
+{% block content %}
+<div class="db-topbar">
+  <div class="db-page-title">🏎️ Симрейсинг</div>
+</div>
+
+{% for d in data %}
+{% with v=d.venue %}
+<div style="background:var(--card);border:1.5px solid var(--border);border-radius:20px;overflow:hidden;margin-bottom:20px;">
+
+  <!-- venue header -->
+  <div style="display:flex;align-items:center;gap:14px;padding:18px 20px;border-bottom:1px solid var(--border);">
+    {% if v.logo %}
+      <img src="{{ v.logo.url }}" style="width:48px;height:48px;border-radius:12px;object-fit:cover;">
+    {% else %}
+      <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#0f172a,#1e3a5f);display:flex;align-items:center;justify-content:center;font-size:22px;">🏎️</div>
+    {% endif %}
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:16px;font-weight:800;color:var(--text);">{{ v.name }}</div>
+      {% if v.address %}<div style="font-size:12px;color:var(--muted);">{{ v.address }}</div>{% endif %}
+    </div>
+    <a href="{% url 'simracing:venue' v.slug %}" target="_blank" class="db-btn db-btn-ghost db-btn-sm">🌐 Сайт</a>
+  </div>
+
+  <!-- stats -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);">
+    {% for label,value,color in d.active_count,d.today_count,d.today_revenue|zip %}{% endfor %}
+    <div style="background:var(--card);padding:16px;text-align:center;">
+      <div style="font-size:26px;font-weight:900;color:#f97316;">{{ d.active_count }}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px;">Активных сейчас</div>
+    </div>
+    <div style="background:var(--card);padding:16px;text-align:center;">
+      <div style="font-size:26px;font-weight:900;color:var(--accent);">{{ d.today_count }}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px;">Сессий сегодня</div>
+    </div>
+    <div style="background:var(--card);padding:16px;text-align:center;">
+      <div style="font-size:26px;font-weight:900;color:#00b896;">{{ d.today_revenue }}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px;">Выручка (сом)</div>
+    </div>
+  </div>
+
+  <!-- actions -->
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px;">
+    <a href="{% url 'dashboard:sr_sessions' v.id %}" class="db-btn db-btn-primary" style="justify-content:center;">
+      🏁 Касса / Сессии
+      {% if d.active_count %}<span style="background:#fff;color:#f97316;border-radius:99px;padding:1px 7px;font-size:11px;font-weight:800;margin-left:6px;">{{ d.active_count }}</span>{% endif %}
+    </a>
+    <a href="{% url 'dashboard:sr_machines' v.id %}" class="db-btn db-btn-ghost" style="justify-content:center;">🚗 Машины</a>
+    <a href="{% url 'dashboard:sr_session_types' v.id %}" class="db-btn db-btn-ghost" style="justify-content:center;">💰 Прайс</a>
+    <a href="{% url 'dashboard:sr_report' v.id %}" class="db-btn db-btn-ghost" style="justify-content:center;">📊 Отчёт</a>
+    <a href="{% url 'dashboard:sr_venue_edit' v.id %}" class="db-btn db-btn-ghost" style="justify-content:center;grid-column:1/-1;">⚙️ Настройки</a>
+  </div>
+
+</div>
+{% endwith %}
+{% endfor %}
+{% endblock %}

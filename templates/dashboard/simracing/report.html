@@ -1,0 +1,53 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Отчёт — {{ venue.name }}{% endblock %}
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">📊 Отчёт</div>
+    <div class="db-breadcrumb">{{ venue.name }} · {{ label }}</div>
+  </div>
+  <div style="display:flex;gap:6px;">
+    <a href="?period=today" class="db-btn db-btn-sm {% if period == 'today' %}db-btn-primary{% else %}db-btn-ghost{% endif %}">Сегодня</a>
+    <a href="?period=week"  class="db-btn db-btn-sm {% if period == 'week'  %}db-btn-primary{% else %}db-btn-ghost{% endif %}">Неделя</a>
+    <a href="?period=month" class="db-btn db-btn-sm {% if period == 'month' %}db-btn-primary{% else %}db-btn-ghost{% endif %}">Месяц</a>
+  </div>
+</div>
+
+<!-- summary -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+  <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:20px;text-align:center;">
+    <div style="font-size:32px;font-weight:900;color:#00b896;">{{ total_revenue }}</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px;">Выручка (сом)</div>
+  </div>
+  <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:20px;text-align:center;">
+    <div style="font-size:32px;font-weight:900;color:var(--accent);">{{ total_sessions }}</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px;">Сессий</div>
+  </div>
+</div>
+
+<!-- by type -->
+<div style="background:var(--card);border:1.5px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:16px;">
+  <div style="padding:12px 18px;border-bottom:1px solid var(--border);font-size:14px;font-weight:800;color:var(--text);">По типу</div>
+  {% for mtype, info in by_type.items %}
+  <div style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border);">
+    <div style="flex:1;font-size:14px;color:var(--text);">{{ info.name }}</div>
+    <div style="font-size:13px;color:var(--muted);">{{ info.count }} сессий</div>
+    <div style="font-size:15px;font-weight:800;color:#00b896;">{{ info.revenue }} сом</div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- by machine -->
+<div style="background:var(--card);border:1.5px solid var(--border);border-radius:18px;overflow:hidden;">
+  <div style="padding:12px 18px;border-bottom:1px solid var(--border);font-size:14px;font-weight:800;color:var(--text);">По машинам</div>
+  {% for row in by_machine %}
+  {% if row.count %}
+  <div style="display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--border);">
+    <div style="flex:1;font-size:14px;color:var(--text);">{{ row.machine.name }}</div>
+    <div style="font-size:13px;color:var(--muted);">{{ row.count }} сессий</div>
+    <div style="font-size:15px;font-weight:800;color:#00b896;">{{ row.revenue }} сом</div>
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
+{% endblock %}

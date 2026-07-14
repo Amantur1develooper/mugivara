@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% load i18n static %}
+{% block content %}
+<style>
+:root{--gr:#16a34a;--re:#dc2626;--am:#d97706;--bl:#0f172a;}
+*{box-sizing:border-box;}
+
+.sr-wrap{max-width:680px;margin:0 auto;padding:16px;}
+
+/* hero */
+.sr-hero{background:#fff;border-radius:24px;box-shadow:0 4px 24px rgba(0,0,0,.08);overflow:hidden;margin-bottom:20px;}
+.sr-hero-cover{width:100%;height:160px;object-fit:cover;display:block;}
+.sr-hero-cover-placeholder{height:120px;background:linear-gradient(135deg,#0f172a,#1e3a5f);display:flex;align-items:center;justify-content:center;font-size:48px;}
+.sr-hero-body{padding:18px 20px;}
+.sr-badge{display:inline-block;background:#0f172a;color:#fff;border-radius:99px;padding:4px 12px;font-size:11px;font-weight:700;margin-bottom:10px;}
+.sr-name{font-size:22px;font-weight:900;color:#0f172a;margin:0 0 4px;}
+.sr-meta{font-size:13px;color:#64748b;margin-bottom:14px;}
+.sr-contacts{display:flex;flex-wrap:wrap;gap:8px;}
+.sr-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:12px;font-size:13px;font-weight:600;text-decoration:none;transition:.15s;}
+.sr-btn-wa{background:#25D366;color:#fff;}
+.sr-btn-tel{background:#f1f5f9;color:#0f172a;}
+.sr-btn-map{background:#f1f5f9;color:#0f172a;}
+
+/* section */
+.sr-section{margin-bottom:24px;}
+.sr-section-title{font-size:15px;font-weight:800;color:#0f172a;margin:0 0 12px;padding-left:4px;}
+
+/* machine cards */
+.sr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;}
+.mc{background:#fff;border-radius:18px;box-shadow:0 2px 12px rgba(0,0,0,.06);overflow:hidden;border:2px solid transparent;transition:.15s;cursor:pointer;}
+.mc:hover{box-shadow:0 4px 20px rgba(0,0,0,.12);}
+.mc.free{border-color:#bbf7d0;}
+.mc.busy{border-color:#fecaca;opacity:.85;cursor:default;}
+.mc.stopped{border-color:#e2e8f0;opacity:.5;cursor:not-allowed;}
+.mc.selected{border-color:var(--gr);box-shadow:0 0 0 3px rgba(22,163,74,.18);}
+.mc-img{width:100%;height:100px;object-fit:cover;display:block;}
+.mc-img-ph{width:100%;height:100px;background:linear-gradient(135deg,#1e293b,#334155);display:flex;align-items:center;justify-content:center;font-size:32px;}
+.mc-body{padding:10px 12px;}
+.mc-name{font-size:13px;font-weight:800;color:#0f172a;}
+.mc-type{font-size:10px;color:#94a3b8;margin-top:1px;}
+.mc-badge{display:inline-block;border-radius:99px;padding:3px 8px;font-size:10px;font-weight:700;margin-top:6px;}
+.mc-free-badge{background:#dcfce7;color:var(--gr);}
+.mc-busy-badge{background:#fee2e2;color:var(--re);}
+.mc-stop-badge{background:#f1f5f9;color:#94a3b8;}
+.mc-timer{font-size:11px;color:var(--am);font-weight:700;margin-top:3px;}
+.mc-overtime{color:var(--re);}
+
+/* booking panel */
+.sr-panel{background:#fff;border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,.09);padding:20px;margin-top:20px;display:none;}
+.sr-panel.open{display:block;}
+.sr-panel-title{font-size:16px;font-weight:800;color:#0f172a;margin:0 0 4px;}
+.sr-panel-sub{font-size:13px;color:var(--gr);font-weight:700;margin-bottom:16px;}
+
+/* session type buttons */
+.st-grid{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
+.st-btn{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;cursor:pointer;transition:.12s;}
+.st-btn:hover{border-color:var(--gr);background:#f0fdf4;}
+.st-btn.active{border-color:var(--gr);background:var(--gr);}
+.st-btn.active .st-dur{color:#fff;}
+.st-btn.active .st-price{color:#fff;}
+.st-dur{font-size:14px;font-weight:700;color:#0f172a;}
+.st-price{font-size:14px;font-weight:800;color:var(--gr);}
+
+.sr-input{width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:14px;outline:none;margin-bottom:10px;transition:.2s;font-family:inherit;}
+.sr-input:focus{border-color:var(--gr);}
+.sr-submit{width:100%;padding:14px;background:#0f172a;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:.15s;}
+.sr-submit:hover{background:#1e293b;}
+.sr-submit:disabled{background:#94a3b8;cursor:not-allowed;}
+.sr-cancel{width:100%;padding:10px;background:transparent;color:#94a3b8;border:none;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px;}
+</style>
+
+<div class="sr-wrap">
+
+  <!-- HERO -->
+  <div class="sr-hero">
+    {% if venue.cover %}
+      <img src="{{ venue.cover.url }}" class="sr-hero-cover" alt="">
+    {% else %}
+      <div class="sr-hero-cover-placeholder">🏎️</div>
+    {% endif %}
+    <div class="sr-hero-body">
+      <span class="sr-badge">🎮 Симрейсинг</span>
+      <div class="sr-name">{{ venue.name }}</div>
+      <div class="sr-meta">
+        {% if venue.address %}📍 {{ venue.address }}{% endif %}
+        {% if venue.working_hours %} · ⏰ {{ venue.working_hours }}{% endif %}
+      </div>
+      <div class="sr-contacts">
+        {% if venue.whatsapp %}
+        <a href="https://wa.me/{{ venue.whatsapp }}" class="sr-btn sr-btn-wa" target="_blank">
+          💬 WhatsApp
+        </a>
+        {% endif %}
+        {% if venue.phone %}
+        <a href="tel:{{ venue.phone }}" class="sr-btn sr-btn-tel">📞 {{ venue.phone }}</a>
+        {% endif %}
+        {% if venue.map_url %}
+        <a href="{{ venue.map_url }}" class="sr-btn sr-btn-map" target="_blank">🗺️ Карта</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- MACHINES -->
+  {% regroup machines_data by machine.get_type_display as type_groups %}
+  {% for group in type_groups %}
+  <div class="sr-section">
+    <div class="sr-section-title">{{ group.grouper }}</div>
+    <div class="sr-grid">
+      {% for row in group.list %}
+        {% with m=row.machine s=row.active_session %}
+        {% if m.is_active %}
+          <div class="mc {% if s %}busy{% else %}free{% endif %}"
+               id="mc-{{ m.id }}"
+               data-id="{{ m.id }}"
+               data-name="{{ m.name|escapejs }}"
+               data-type="{{ m.type }}"
+               data-st='{{ row.session_types_json }}'
+               {% if not s %}onclick="selectMachine(this)"{% endif %}>
+        {% else %}
+          <div class="mc stopped" id="mc-{{ m.id }}" data-id="{{ m.id }}">
+        {% endif %}
+            {% if m.photo %}
+              <img src="{{ m.photo.url }}" class="mc-img" alt="">
+            {% else %}
+              <div class="mc-img-ph">🏎️</div>
+            {% endif %}
+            <div class="mc-body">
+              <div class="mc-name">{{ m.name }}</div>
+              <div class="mc-type">{{ m.get_type_display }}</div>
+              {% if not m.is_active %}
+                <span class="mc-badge mc-stop-badge">🔴 На обслуживании</span>
+              {% elif s %}
+                <span class="mc-badge mc-busy-badge">Занято</span>
+                <div class="mc-timer" id="timer-{{ m.id }}" data-ends="{{ s.ends_at|date:'U' }}">
+                  ⏱ Свободно ~{{ s.ends_at|time:"H:i" }}
+                </div>
+              {% else %}
+                <span class="mc-badge mc-free-badge">✅ Свободно</span>
+              {% endif %}
+            </div>
+          </div>
+        {% endwith %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- BOOKING PANEL -->
+  <div class="sr-panel" id="bookingPanel">
+    <div class="sr-panel-title">🎮 Забронировать</div>
+    <div class="sr-panel-sub" id="panelMachineName"></div>
+
+    <form method="post" action="{% url 'simracing:book' venue.slug %}" id="bookForm">
+      {% csrf_token %}
+      <input type="hidden" name="machine_id" id="fMachineId">
+      <input type="hidden" name="session_type_id" id="fSessionTypeId">
+
+      <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">
+        Выберите длительность
+      </div>
+      <div class="st-grid" id="stGrid"></div>
+
+      <input name="customer_name" placeholder="Имя (необязательно)" class="sr-input">
+      <input name="customer_phone" type="tel" placeholder="Телефон (необязательно)" class="sr-input">
+
+      <button type="submit" class="sr-submit" id="srSubmit" disabled>Подтвердить</button>
+      <button type="button" class="sr-cancel" onclick="closePanel()">Отмена</button>
+    </form>
+  </div>
+
+</div>
+
+<script>
+const ST_BY_TYPE = {{ st_by_type_json|safe }};
+let selMachineId = null;
+
+function selectMachine(el) {
+  if (el.classList.contains('busy') || el.classList.contains('stopped')) return;
+
+  // deselect prev
+  if (selMachineId) document.getElementById('mc-' + selMachineId)?.classList.remove('selected');
+  selMachineId = el.dataset.id;
+  el.classList.add('selected');
+
+  const name = el.dataset.name;
+  const type = el.dataset.type;
+
+  document.getElementById('fMachineId').value = selMachineId;
+  document.getElementById('panelMachineName').textContent = '🏎️ ' + name;
+
+  // fill session types
+  const sts = ST_BY_TYPE[type] || [];
+  const grid = document.getElementById('stGrid');
+  grid.innerHTML = '';
+  sts.forEach(st => {
+    const btn = document.createElement('div');
+    btn.className = 'st-btn';
+    btn.innerHTML = `<span class="st-dur">${st.duration} мин</span><span class="st-price">${parseInt(st.price)} сом</span>`;
+    btn.onclick = () => pickSt(st.id, btn);
+    grid.appendChild(btn);
+  });
+
+  document.getElementById('fSessionTypeId').value = '';
+  document.getElementById('srSubmit').disabled = true;
+  document.getElementById('bookingPanel').classList.add('open');
+  document.getElementById('bookingPanel').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function pickSt(id, btn) {
+  document.querySelectorAll('.st-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('fSessionTypeId').value = id;
+  document.getElementById('srSubmit').disabled = false;
+}
+
+function closePanel() {
+  if (selMachineId) { document.getElementById('mc-' + selMachineId)?.classList.remove('selected'); selMachineId = null; }
+  document.getElementById('bookingPanel').classList.remove('open');
+}
+
+// countdown timers
+document.querySelectorAll('.mc-timer[data-ends]').forEach(el => {
+  const ends = parseInt(el.dataset.ends) * 1000;
+  function tick() {
+    const rem = Math.max(0, ends - Date.now());
+    if (rem <= 0) {
+      el.textContent = '⚠️ Время вышло';
+      el.classList.add('mc-overtime');
+      return;
+    }
+    const m = Math.floor(rem / 60000);
+    const s = Math.floor((rem % 60000) / 1000);
+    el.textContent = `⏱ Осталось ${m}:${String(s).padStart(2,'0')}`;
+    setTimeout(tick, 1000);
+  }
+  tick();
+});
+</script>
+{% endblock %}
+{% block footer %}<a href="{% url 'public_site:home' %}">Разработка Amantur agency</a>{% endblock %}

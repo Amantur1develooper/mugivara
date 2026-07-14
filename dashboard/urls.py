@@ -5,6 +5,7 @@ from shops import dashboard_views as sv
 from legal import dashboard_views as lv
 from agency import dashboard_views as av
 from karaoke import dashboard_views as kv
+from simracing import dashboard_views as srv
 from barbershop import dashboard_views as bsv
 from dashboard import techcard_views as tcv
 from eco import dashboard_views as ev
@@ -215,6 +216,23 @@ urlpatterns = [
     path("branch/<int:branch_id>/writeoff/",                    tcv.tc_writeoff,               name="tc_writeoff"),
     path("branch/<int:branch_id>/stock-journal/",               tcv.tc_movement_journal,       name="tc_journal"),
     path("branch/<int:branch_id>/food-cost/",                   tcv.tc_report,                 name="tc_report"),
+
+    # ── SIMRACING ────────────────────────────────────────────────────────────
+    path("sr/",                                              srv.sr_home,                name="sr_home"),
+    path("sr/venue/<int:venue_id>/edit/",                    srv.sr_venue_edit,          name="sr_venue_edit"),
+    path("sr/venue/<int:venue_id>/machines/",                srv.sr_machines,            name="sr_machines"),
+    path("sr/venue/<int:venue_id>/machines/add/",            srv.sr_machine_add,         name="sr_machine_add"),
+    path("sr/machine/<int:machine_id>/toggle/",              srv.sr_machine_toggle,      name="sr_machine_toggle"),
+    path("sr/machine/<int:machine_id>/delete/",              srv.sr_machine_delete,      name="sr_machine_delete"),
+    path("sr/venue/<int:venue_id>/session-types/",           srv.sr_session_types,       name="sr_session_types"),
+    path("sr/venue/<int:venue_id>/session-types/add/",       srv.sr_session_type_add,    name="sr_session_type_add"),
+    path("sr/session-type/<int:st_id>/delete/",              srv.sr_session_type_delete, name="sr_session_type_delete"),
+    path("sr/session-type/<int:st_id>/toggle/",              srv.sr_session_type_toggle, name="sr_session_type_toggle"),
+    path("sr/venue/<int:venue_id>/sessions/",                srv.sr_sessions,            name="sr_sessions"),
+    path("sr/venue/<int:venue_id>/session/start/",           srv.sr_session_start,       name="sr_session_start"),
+    path("sr/session/<int:session_id>/close/",               srv.sr_session_close,       name="sr_session_close"),
+    path("sr/session/<int:session_id>/cancel/",              srv.sr_session_cancel,      name="sr_session_cancel"),
+    path("sr/venue/<int:venue_id>/report/",                  srv.sr_report,              name="sr_report"),
 
     # ── LEGAL ────────────────────────────────────────────────────────────────
     path("legal/",                                      lv.legal_home,           name="legal_home"),

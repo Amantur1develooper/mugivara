@@ -72,6 +72,7 @@ INSTALLED_APPS = [
    "agency",
    "karaoke",
    "barbershop",
+   "simracing.apps.SimracingConfig",
    "techcards.apps.TechCardsConfig",
    "printing.apps.PrintingConfig",
    "printshop.apps.PrintshopConfig",
