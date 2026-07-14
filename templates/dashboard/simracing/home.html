@@ -5,6 +5,14 @@
   <div class="db-page-title">🏎️ Симрейсинг</div>
 </div>
 
+{% if not data %}
+<div style="background:var(--card);border:1.5px dashed var(--border);border-radius:20px;padding:32px;text-align:center;color:var(--muted);">
+  <div style="font-size:40px;margin-bottom:12px;">🏎️</div>
+  <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:8px;">Площадка не создана</div>
+  <div style="font-size:13px;">Перейди в <a href="/admin/simracing/simracingvenue/add/" style="color:var(--accent);">Django Admin → Simracing → Add venue</a></div>
+</div>
+{% endif %}
+
 {% for d in data %}
 {% with v=d.venue %}
 <div style="background:var(--card);border:1.5px solid var(--border);border-radius:20px;overflow:hidden;margin-bottom:20px;">
@@ -25,7 +33,6 @@
 
   <!-- stats -->
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);">
-    {% for label,value,color in d.active_count,d.today_count,d.today_revenue|zip %}{% endfor %}
     <div style="background:var(--card);padding:16px;text-align:center;">
       <div style="font-size:26px;font-weight:900;color:#f97316;">{{ d.active_count }}</div>
       <div style="font-size:11px;color:var(--muted);margin-top:2px;">Активных сейчас</div>
