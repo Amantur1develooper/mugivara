@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .models import Machine, Session, SessionType, SimRacingMembership, SimRacingVenue
+from .models import Machine, Session, SessionType, SimRacingMembership, SimRacingVenue, SimRacingAppointment
 
 LOGIN_URL = "dashboard:login"
 
@@ -243,6 +243,15 @@ def sr_sessions(request, venue_id):
         .order_by("machine_type", "duration_minutes")
     )
 
+    # upcoming appointments (today + future, not canceled)
+    appointments = (
+        SimRacingAppointment.objects
+        .filter(venue=v, appt_date__gte=date.today())
+        .exclude(status=SimRacingAppointment.Status.CANCELED)
+        .select_related("session_type")
+        .order_by("appt_date", "appt_time")[:50]
+    )
+
     import json
     from django.utils import timezone as tz
     now_ts = int(tz.now().timestamp())
@@ -263,6 +272,7 @@ def sr_sessions(request, venue_id):
         "stopped": stopped,
         "history": history,
         "session_types": session_types,
+        "appointments": appointments,
         "live_json": json.dumps(live_json),
         "now_ts": now_ts,
     })
@@ -335,6 +345,28 @@ def sr_session_cancel(request, session_id):
     s.ended_at = timezone.now()
     s.save(update_fields=["status", "ended_at"])
     return JsonResponse({"ok": True})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def sr_appt_confirm(request, appt_id):
+    appt = get_object_or_404(SimRacingAppointment, id=appt_id)
+    if not _check(request.user, appt.venue):
+        return JsonResponse({"ok": False}, status=403)
+    appt.status = SimRacingAppointment.Status.CONFIRMED
+    appt.save(update_fields=["status"])
+    return JsonResponse({"ok": True, "status": "confirmed"})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def sr_appt_cancel(request, appt_id):
+    appt = get_object_or_404(SimRacingAppointment, id=appt_id)
+    if not _check(request.user, appt.venue):
+        return JsonResponse({"ok": False}, status=403)
+    appt.status = SimRacingAppointment.Status.CANCELED
+    appt.save(update_fields=["status"])
+    return JsonResponse({"ok": True, "status": "canceled"})
 
 
 # ─────────────────────────────────────────────────────────────────────────────

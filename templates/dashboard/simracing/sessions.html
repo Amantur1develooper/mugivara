@@ -104,6 +104,59 @@
 </div>
 {% endif %}
 
+<!-- APPOINTMENTS (online pre-bookings) -->
+{% if appointments %}
+<div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:12px;">📅 Предварительные записи</div>
+<div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:24px;">
+  <table class="sr-hist-table">
+    <thead>
+      <tr>
+        <th>#</th><th>Дата / Время</th><th>Тип</th><th>Сессия</th><th>Заездов</th><th>Итого</th><th>Клиент</th><th>Телефон</th><th>Статус</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for appt in appointments %}
+      <tr id="appt-row-{{ appt.id }}">
+        <td style="color:var(--muted);">{{ appt.id }}</td>
+        <td style="font-weight:600;white-space:nowrap;">
+          {{ appt.appt_date|date:"d.m" }}<br>
+          <span style="color:#f97316;font-weight:800;">{{ appt.appt_time|time:"H:i" }}</span>
+        </td>
+        <td style="font-size:12px;">{{ appt.get_machine_type_display }}</td>
+        <td style="font-size:12px;">
+          {% if appt.session_type %}{{ appt.session_type.duration_minutes }} мин{% else %}—{% endif %}
+          {% if appt.quantity > 1 %}<br><span style="color:var(--muted);">×{{ appt.quantity }}</span>{% endif %}
+        </td>
+        <td style="text-align:center;">{{ appt.quantity }}</td>
+        <td style="font-weight:700;color:#00b896;">{{ appt.total_price }} сом</td>
+        <td>{{ appt.customer_name|default:"—" }}</td>
+        <td>
+          {% if appt.customer_phone %}
+            <a href="tel:{{ appt.customer_phone }}" style="color:#f97316;text-decoration:none;">{{ appt.customer_phone }}</a>
+          {% else %}—{% endif %}
+        </td>
+        <td id="appt-status-{{ appt.id }}">
+          {% if appt.status == "new" %}
+            <span style="background:#fef3c7;color:#92400e;border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700;">Новая</span>
+          {% elif appt.status == "confirmed" %}
+            <span style="background:#d1fae5;color:#065f46;border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700;">✅ Подтверждена</span>
+          {% endif %}
+        </td>
+        <td style="white-space:nowrap;">
+          {% if appt.status == "new" %}
+            <button class="db-btn db-btn-primary db-btn-sm"
+                    onclick="confirmAppt({{ appt.id }})">✅ Подтвердить</button>
+          {% endif %}
+          <button class="db-btn db-btn-ghost db-btn-sm" style="color:#dc2626;"
+                  onclick="cancelAppt({{ appt.id }})">✕</button>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
 <!-- HISTORY -->
 <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:12px;">📋 История сессий</div>
 <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;overflow:hidden;">
@@ -203,5 +256,25 @@ startTimers();
 
 // auto-refresh every 60 seconds
 setTimeout(() => location.reload(), 60000);
+
+/* ── Appointment confirm / cancel ── */
+async function confirmAppt(id) {
+  const confirmUrl = '{% url "dashboard:sr_appt_confirm" appt_id=0 %}'.replace('/0/', '/' + id + '/');
+  const d = await post(confirmUrl);
+  if (!d.ok) { alert('Ошибка'); return; }
+  const statusCell = document.getElementById('appt-status-' + id);
+  if (statusCell) statusCell.innerHTML = '<span style="background:#d1fae5;color:#065f46;border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700;">✅ Подтверждена</span>';
+  // hide confirm button, keep cancel
+  const row = document.getElementById('appt-row-' + id);
+  row?.querySelectorAll('.db-btn-primary').forEach(b => b.remove());
+}
+
+async function cancelAppt(id) {
+  if (!confirm('Отменить запись?')) return;
+  const cancelUrl = '{% url "dashboard:sr_appt_cancel" appt_id=0 %}'.replace('/0/', '/' + id + '/');
+  const d = await post(cancelUrl);
+  if (!d.ok) { alert('Ошибка'); return; }
+  document.getElementById('appt-row-' + id)?.remove();
+}
 </script>
 {% endblock %}

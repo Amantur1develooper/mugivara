@@ -1,5 +1,6 @@
 import json
 from datetime import datetime, date, time, timedelta
+from urllib.parse import quote
 
 from django.conf import settings
 from django.http import JsonResponse
@@ -227,6 +228,21 @@ def book_appt(request, slug):
         f"Клиент: {customer_name or 'Гость'}\n"
         f"Телефон: {customer_phone or '—'}"
     )
+
+    # Redirect to WhatsApp with pre-filled text
+    wa_number = "".join(ch for ch in (v.whatsapp or v.phone or "") if ch.isdigit())
+    if wa_number:
+        wa_text = (
+            f"🏎️ Бронирование симрейсинг\n\n"
+            f"Тип: {type_label}\n"
+            f"Сессия: {st.duration_minutes} мин × {quantity} заезд(а) = {duration_total} мин\n"
+            f"Итого: {int(total_price)} сом\n"
+            f"Дата: {date_fmt} в {time_str}\n"
+            f"Клиент: {customer_name or 'Гость'}\n"
+            f"Телефон: {customer_phone or '—'}\n\n"
+            f"📋 Запись #{appt.id}"
+        )
+        return redirect(f"https://wa.me/{wa_number}?text={quote(wa_text)}")
 
     return redirect("simracing:appt_success", slug=slug, appt_id=appt.id)
 
