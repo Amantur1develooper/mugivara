@@ -1,241 +1,444 @@
-{% extends "base.html" %}
-{% load i18n static %}
-{% block content %}
-<style>
-:root{--gr:#16a34a;--re:#dc2626;--am:#d97706;--bl:#0f172a;}
-*{box-sizing:border-box;}
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ venue.name }} — Бронирование</title>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',sans-serif;background:#0d0d0d;color:#f0f0f0;min-height:100vh}
+    .page{max-width:640px;margin:0 auto;padding:0 0 80px}
 
-.sr-wrap{max-width:680px;margin:0 auto;padding:16px;}
+    /* Hero */
+    .hero{position:relative;height:200px;overflow:hidden;background:linear-gradient(135deg,#0f172a,#1e3a5f);}
+    .hero-cover{position:absolute;inset:0;object-fit:cover;width:100%;height:100%;opacity:.4;}
+    .hero-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 30%,#0d0d0d);}
+    .hero-content{position:relative;z-index:1;padding:20px 20px 0;display:flex;align-items:flex-end;height:100%;padding-bottom:20px;}
+    .hero-logo{width:56px;height:56px;border-radius:14px;object-fit:cover;border:2px solid rgba(255,255,255,.15);flex-shrink:0;}
+    .hero-logo-icon{width:56px;height:56px;border-radius:14px;background:rgba(249,115,22,.15);border:2px solid rgba(249,115,22,.3);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;}
+    .hero-info{margin-left:14px;}
+    .hero-name{font-family:'Unbounded',sans-serif;font-size:20px;font-weight:900;line-height:1.2;}
+    .hero-sub{font-size:12px;color:#aaa;margin-top:4px;}
 
-/* hero */
-.sr-hero{background:#fff;border-radius:24px;box-shadow:0 4px 24px rgba(0,0,0,.08);overflow:hidden;margin-bottom:20px;}
-.sr-hero-cover{width:100%;height:160px;object-fit:cover;display:block;}
-.sr-hero-cover-placeholder{height:120px;background:linear-gradient(135deg,#0f172a,#1e3a5f);display:flex;align-items:center;justify-content:center;font-size:48px;}
-.sr-hero-body{padding:18px 20px;}
-.sr-badge{display:inline-block;background:#0f172a;color:#fff;border-radius:99px;padding:4px 12px;font-size:11px;font-weight:700;margin-bottom:10px;}
-.sr-name{font-size:22px;font-weight:900;color:#0f172a;margin:0 0 4px;}
-.sr-meta{font-size:13px;color:#64748b;margin-bottom:14px;}
-.sr-contacts{display:flex;flex-wrap:wrap;gap:8px;}
-.sr-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:12px;font-size:13px;font-weight:600;text-decoration:none;transition:.15s;}
-.sr-btn-wa{background:#25D366;color:#fff;}
-.sr-btn-tel{background:#f1f5f9;color:#0f172a;}
-.sr-btn-map{background:#f1f5f9;color:#0f172a;}
+    .inner{padding:24px 20px 0;}
 
-/* section */
-.sr-section{margin-bottom:24px;}
-.sr-section-title{font-size:15px;font-weight:800;color:#0f172a;margin:0 0 12px;padding-left:4px;}
+    /* Steps indicator */
+    .steps{display:flex;gap:0;margin-bottom:28px;}
+    .step{flex:1;text-align:center;position:relative;}
+    .step-num{width:30px;height:30px;border-radius:50%;border:2px solid #333;background:#111;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 5px;transition:all .2s;}
+    .step.active .step-num{background:linear-gradient(135deg,#f97316,#ea580c);border-color:transparent;color:#fff;}
+    .step.done .step-num{background:#16a34a;border-color:transparent;color:#fff;}
+    .step-label{font-size:10px;color:#555;transition:color .2s;}
+    .step.active .step-label{color:#f97316;font-weight:600;}
+    .step::after{content:'';position:absolute;top:14px;right:-50%;width:100%;height:2px;background:#222;z-index:-1;}
+    .step:last-child::after{display:none;}
 
-/* machine cards */
-.sr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;}
-.mc{background:#fff;border-radius:18px;box-shadow:0 2px 12px rgba(0,0,0,.06);overflow:hidden;border:2px solid transparent;transition:.15s;cursor:pointer;}
-.mc:hover{box-shadow:0 4px 20px rgba(0,0,0,.12);}
-.mc.free{border-color:#bbf7d0;}
-.mc.busy{border-color:#fecaca;opacity:.85;cursor:default;}
-.mc.stopped{border-color:#e2e8f0;opacity:.5;cursor:not-allowed;}
-.mc.selected{border-color:var(--gr);box-shadow:0 0 0 3px rgba(22,163,74,.18);}
-.mc-img{width:100%;height:100px;object-fit:cover;display:block;}
-.mc-img-ph{width:100%;height:100px;background:linear-gradient(135deg,#1e293b,#334155);display:flex;align-items:center;justify-content:center;font-size:32px;}
-.mc-body{padding:10px 12px;}
-.mc-name{font-size:13px;font-weight:800;color:#0f172a;}
-.mc-type{font-size:10px;color:#94a3b8;margin-top:1px;}
-.mc-badge{display:inline-block;border-radius:99px;padding:3px 8px;font-size:10px;font-weight:700;margin-top:6px;}
-.mc-free-badge{background:#dcfce7;color:var(--gr);}
-.mc-busy-badge{background:#fee2e2;color:var(--re);}
-.mc-stop-badge{background:#f1f5f9;color:#94a3b8;}
-.mc-timer{font-size:11px;color:var(--am);font-weight:700;margin-top:3px;}
-.mc-overtime{color:var(--re);}
+    /* Panels */
+    .panel{display:none;}
+    .panel.active{display:block;}
 
-/* booking panel */
-.sr-panel{background:#fff;border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,.09);padding:20px;margin-top:20px;display:none;}
-.sr-panel.open{display:block;}
-.sr-panel-title{font-size:16px;font-weight:800;color:#0f172a;margin:0 0 4px;}
-.sr-panel-sub{font-size:13px;color:var(--gr);font-weight:700;margin-bottom:16px;}
+    /* Section label */
+    .section-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#555;margin-bottom:12px;margin-top:4px;}
 
-/* session type buttons */
-.st-grid{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;}
-.st-btn{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:12px;border:2px solid #e2e8f0;background:#f8fafc;cursor:pointer;transition:.12s;}
-.st-btn:hover{border-color:var(--gr);background:#f0fdf4;}
-.st-btn.active{border-color:var(--gr);background:var(--gr);}
-.st-btn.active .st-dur{color:#fff;}
-.st-btn.active .st-price{color:#fff;}
-.st-dur{font-size:14px;font-weight:700;color:#0f172a;}
-.st-price{font-size:14px;font-weight:800;color:var(--gr);}
+    /* Type cards */
+    .type-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:8px;}
+    .type-card{background:#1a1a1a;border:2px solid transparent;border-radius:16px;padding:18px 20px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:16px;}
+    .type-card:hover{border-color:rgba(249,115,22,.4);}
+    .type-card.selected{border-color:#f97316;background:rgba(249,115,22,.07);}
+    .type-icon{font-size:32px;flex-shrink:0;}
+    .type-name{font-size:15px;font-weight:700;}
+    .type-desc{font-size:12px;color:#777;margin-top:2px;}
+    .type-check{width:22px;height:22px;border-radius:50%;border:2px solid #444;background:#111;display:flex;align-items:center;justify-content:center;font-size:12px;margin-left:auto;flex-shrink:0;transition:all .15s;}
+    .type-card.selected .type-check{background:#f97316;border-color:#f97316;color:#fff;}
 
-.sr-input{width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:14px;outline:none;margin-bottom:10px;transition:.2s;font-family:inherit;}
-.sr-input:focus{border-color:var(--gr);}
-.sr-submit{width:100%;padding:14px;background:#0f172a;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:.15s;}
-.sr-submit:hover{background:#1e293b;}
-.sr-submit:disabled{background:#94a3b8;cursor:not-allowed;}
-.sr-cancel{width:100%;padding:10px;background:transparent;color:#94a3b8;border:none;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px;}
-</style>
+    /* Session option cards */
+    .session-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;}
+    .session-card{background:#1a1a1a;border:2px solid transparent;border-radius:14px;padding:16px 14px;cursor:pointer;transition:all .15s;text-align:center;}
+    .session-card:hover{border-color:rgba(249,115,22,.4);}
+    .session-card.selected{border-color:#f97316;background:rgba(249,115,22,.07);}
+    .session-dur{font-size:22px;font-weight:900;color:#f97316;}
+    .session-dur-label{font-size:11px;color:#777;margin-top:1px;}
+    .session-price{font-size:14px;font-weight:700;color:#fff;margin-top:8px;}
 
-<div class="sr-wrap">
+    /* Quantity */
+    .qty-row{display:flex;align-items:center;gap:16px;justify-content:center;margin:4px 0 8px;}
+    .qty-btn{width:44px;height:44px;border-radius:12px;background:#1a1a1a;border:2px solid #333;color:#f0f0f0;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;line-height:1;}
+    .qty-btn:hover{border-color:#f97316;color:#f97316;}
+    .qty-val{font-size:28px;font-weight:900;min-width:40px;text-align:center;}
+    .qty-total{background:#1a1a1a;border-radius:12px;padding:10px 16px;font-size:14px;font-weight:600;color:#f97316;text-align:center;margin-top:4px;}
 
-  <!-- HERO -->
-  <div class="sr-hero">
+    /* Date */
+    .date-input{width:100%;padding:14px 16px;background:#1a1a1a;border:2px solid #333;border-radius:12px;color:#f0f0f0;font-size:16px;outline:none;font-family:inherit;margin-bottom:14px;}
+    .date-input:focus{border-color:#f97316;}
+
+    /* Slots */
+    .slots-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;}
+    .slot{padding:10px 16px;background:#1a1a1a;border:2px solid #333;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;transition:all .15s;}
+    .slot:hover{border-color:rgba(249,115,22,.5);}
+    .slot.selected{border-color:#f97316;background:rgba(249,115,22,.1);color:#f97316;}
+    .slot-none{color:#555;font-size:14px;padding:16px 0;}
+
+    /* Contact */
+    .field{margin-bottom:14px;}
+    .field label{display:block;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#666;margin-bottom:6px;}
+    .field input{width:100%;padding:14px 16px;background:#1a1a1a;border:2px solid #333;border-radius:12px;color:#f0f0f0;font-size:15px;outline:none;font-family:inherit;transition:border-color .2s;}
+    .field input:focus{border-color:#f97316;}
+
+    /* Summary */
+    .summary{background:#1a1a1a;border-radius:16px;padding:18px;margin-bottom:18px;border:1px solid rgba(255,255,255,.06);}
+    .summary-row{display:flex;justify-content:space-between;font-size:14px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);}
+    .summary-row:last-child{border-bottom:none;font-weight:800;font-size:16px;padding-top:10px;margin-top:4px;color:#f97316;}
+
+    /* Buttons */
+    .btn-next{width:100%;padding:16px;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s;margin-top:18px;}
+    .btn-next:disabled{opacity:.4;cursor:not-allowed;}
+    .btn-back{background:none;border:2px solid #333;color:#aaa;width:100%;padding:13px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:10px;transition:border-color .2s;}
+    .btn-back:hover{border-color:#555;}
+
+    /* Info bar */
+    .info-bar{display:flex;gap:16px;flex-wrap:wrap;padding:14px 0;border-bottom:1px solid #1a1a1a;margin-bottom:24px;}
+    .info-item{display:flex;align-items:center;gap:6px;font-size:12px;color:#888;}
+    .info-item a{color:#f97316;text-decoration:none;}
+  </style>
+</head>
+<body>
+<div class="page">
+  <!-- Hero -->
+  <div class="hero">
     {% if venue.cover %}
-      <img src="{{ venue.cover.url }}" class="sr-hero-cover" alt="">
-    {% else %}
-      <div class="sr-hero-cover-placeholder">🏎️</div>
+      <img class="hero-cover" src="{{ venue.cover.url }}" alt="">
     {% endif %}
-    <div class="sr-hero-body">
-      <span class="sr-badge">🎮 Симрейсинг</span>
-      <div class="sr-name">{{ venue.name }}</div>
-      <div class="sr-meta">
-        {% if venue.address %}📍 {{ venue.address }}{% endif %}
-        {% if venue.working_hours %} · ⏰ {{ venue.working_hours }}{% endif %}
-      </div>
-      <div class="sr-contacts">
-        {% if venue.whatsapp %}
-        <a href="https://wa.me/{{ venue.whatsapp }}" class="sr-btn sr-btn-wa" target="_blank">
-          💬 WhatsApp
-        </a>
-        {% endif %}
-        {% if venue.phone %}
-        <a href="tel:{{ venue.phone }}" class="sr-btn sr-btn-tel">📞 {{ venue.phone }}</a>
-        {% endif %}
-        {% if venue.map_url %}
-        <a href="{{ venue.map_url }}" class="sr-btn sr-btn-map" target="_blank">🗺️ Карта</a>
-        {% endif %}
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      {% if venue.logo %}
+        <img class="hero-logo" src="{{ venue.logo.url }}" alt="{{ venue.name }}">
+      {% else %}
+        <div class="hero-logo-icon">🏎️</div>
+      {% endif %}
+      <div class="hero-info">
+        <div class="hero-name">{{ venue.name }}</div>
+        {% if venue.tagline %}<div class="hero-sub">{{ venue.tagline }}</div>{% endif %}
       </div>
     </div>
   </div>
 
-  <!-- MACHINES -->
-  {% regroup machines_data by machine.get_type_display as type_groups %}
-  {% for group in type_groups %}
-  <div class="sr-section">
-    <div class="sr-section-title">{{ group.grouper }}</div>
-    <div class="sr-grid">
-      {% for row in group.list %}
-        {% with m=row.machine s=row.active_session %}
-        {% if m.is_active %}
-          <div class="mc {% if s %}busy{% else %}free{% endif %}"
-               id="mc-{{ m.id }}"
-               data-id="{{ m.id }}"
-               data-name="{{ m.name|escapejs }}"
-               data-type="{{ m.type }}"
-               data-st='{{ row.session_types_json }}'
-               {% if not s %}onclick="selectMachine(this)"{% endif %}>
-        {% else %}
-          <div class="mc stopped" id="mc-{{ m.id }}" data-id="{{ m.id }}">
-        {% endif %}
-            {% if m.photo %}
-              <img src="{{ m.photo.url }}" class="mc-img" alt="">
-            {% else %}
-              <div class="mc-img-ph">🏎️</div>
-            {% endif %}
-            <div class="mc-body">
-              <div class="mc-name">{{ m.name }}</div>
-              <div class="mc-type">{{ m.get_type_display }}</div>
-              {% if not m.is_active %}
-                <span class="mc-badge mc-stop-badge">🔴 На обслуживании</span>
-              {% elif s %}
-                <span class="mc-badge mc-busy-badge">Занято</span>
-                <div class="mc-timer" id="timer-{{ m.id }}" data-ends="{{ s.ends_at|date:'U' }}">
-                  ⏱ Свободно ~{{ s.ends_at|time:"H:i" }}
-                </div>
-              {% else %}
-                <span class="mc-badge mc-free-badge">✅ Свободно</span>
-              {% endif %}
-            </div>
+  <div class="inner">
+    <!-- Info bar -->
+    {% if venue.address or venue.working_hours or venue.phone or venue.whatsapp %}
+    <div class="info-bar">
+      {% if venue.address %}<div class="info-item">📍 {{ venue.address }}</div>{% endif %}
+      {% if venue.working_hours %}<div class="info-item">🕐 {{ venue.working_hours }}</div>{% endif %}
+      {% if venue.phone %}<div class="info-item">📞 <a href="tel:{{ venue.phone }}">{{ venue.phone }}</a></div>{% endif %}
+      {% if venue.whatsapp %}<div class="info-item">💬 <a href="https://wa.me/{{ venue.whatsapp }}" target="_blank">WhatsApp</a></div>{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Steps -->
+    <div class="steps">
+      <div class="step active" id="step-ind-1"><div class="step-num">1</div><div class="step-label">Тип</div></div>
+      <div class="step" id="step-ind-2"><div class="step-num">2</div><div class="step-label">Сессия</div></div>
+      <div class="step" id="step-ind-3"><div class="step-num">3</div><div class="step-label">Заезды</div></div>
+      <div class="step" id="step-ind-4"><div class="step-num">4</div><div class="step-label">Дата/время</div></div>
+      <div class="step" id="step-ind-5"><div class="step-num">5</div><div class="step-label">Контакты</div></div>
+    </div>
+
+    <!-- Step 1: Machine type -->
+    <div class="panel active" id="panel-1">
+      <div class="section-label">Выберите тип</div>
+      <div class="type-grid" id="type-list"></div>
+      <button class="btn-next" id="btn1" disabled onclick="goStep(2)">Далее →</button>
+    </div>
+
+    <!-- Step 2: Session type -->
+    <div class="panel" id="panel-2">
+      <div class="section-label">Выберите сессию из прайс-листа</div>
+      <div class="session-grid" id="session-list"></div>
+      <div id="no-sessions" style="display:none" class="slot-none">Прайс-лист не настроен для этого типа</div>
+      <button class="btn-next" id="btn2" disabled onclick="goStep(3)">Далее →</button>
+      <button class="btn-back" onclick="goStep(1)">← Назад</button>
+    </div>
+
+    <!-- Step 3: Quantity -->
+    <div class="panel" id="panel-3">
+      <div class="section-label">Количество заездов</div>
+      <div class="qty-row">
+        <button class="qty-btn" onclick="changeQty(-1)">−</button>
+        <div class="qty-val" id="qty-display">1</div>
+        <button class="qty-btn" onclick="changeQty(+1)">+</button>
+      </div>
+      <div class="qty-total" id="qty-total">Итого: — сом · — мин</div>
+      <button class="btn-next" onclick="goStep(4)" style="margin-top:18px;">Далее →</button>
+      <button class="btn-back" onclick="goStep(2)">← Назад</button>
+    </div>
+
+    <!-- Step 4: Date + time -->
+    <div class="panel" id="panel-4">
+      <div class="section-label">Дата посещения</div>
+      <input type="date" class="date-input" id="date-input">
+      <div class="section-label" style="margin-top:4px;">Доступное время</div>
+      <div id="slots-wrap"><div class="slot-none">Выберите дату выше</div></div>
+      <button class="btn-next" id="btn4" disabled onclick="goStep(5)">Далее →</button>
+      <button class="btn-back" onclick="goStep(3)">← Назад</button>
+    </div>
+
+    <!-- Step 5: Contacts + confirm -->
+    <div class="panel" id="panel-5">
+      <div class="summary" id="summary"></div>
+      <form method="post" action="{% url 'simracing:book_appt' venue.slug %}">
+        {% csrf_token %}
+        <input type="hidden" name="machine_type"    id="f-mtype">
+        <input type="hidden" name="session_type_id" id="f-stid">
+        <input type="hidden" name="quantity"        id="f-qty">
+        <input type="hidden" name="appt_date"       id="f-date">
+        <input type="hidden" name="appt_time"       id="f-time">
+        <div class="field">
+          <label>Ваше имя</label>
+          <input type="text" name="name" placeholder="Имя">
+        </div>
+        <div class="field">
+          <label>Телефон *</label>
+          <input type="tel" name="phone" id="phone-input" placeholder="+996 700 000 000" required autocomplete="tel">
+          <div id="phone-error" style="display:none;color:#f97316;font-size:12px;margin-top:5px;">
+            Введите номер в формате +996 700 000 000
           </div>
-        {% endwith %}
-      {% endfor %}
+        </div>
+        <button type="submit" class="btn-next" onclick="return prepareAndValidate(event)">✅ Подтвердить запись</button>
+        <button type="button" class="btn-back" onclick="goStep(4)">← Назад</button>
+      </form>
     </div>
   </div>
-  {% endfor %}
-
-  <!-- BOOKING PANEL -->
-  <div class="sr-panel" id="bookingPanel">
-    <div class="sr-panel-title">🎮 Забронировать</div>
-    <div class="sr-panel-sub" id="panelMachineName"></div>
-
-    <form method="post" action="{% url 'simracing:book' venue.slug %}" id="bookForm">
-      {% csrf_token %}
-      <input type="hidden" name="machine_id" id="fMachineId">
-      <input type="hidden" name="session_type_id" id="fSessionTypeId">
-
-      <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">
-        Выберите длительность
-      </div>
-      <div class="st-grid" id="stGrid"></div>
-
-      <input name="customer_name" placeholder="Имя (необязательно)" class="sr-input">
-      <input name="customer_phone" type="tel" placeholder="Телефон (необязательно)" class="sr-input">
-
-      <button type="submit" class="sr-submit" id="srSubmit" disabled>Подтвердить</button>
-      <button type="button" class="sr-cancel" onclick="closePanel()">Отмена</button>
-    </form>
-  </div>
-
 </div>
 
 <script>
 const ST_BY_TYPE = {{ st_by_type_json|safe }};
-let selMachineId = null;
+const MACH_TYPES = {{ machine_types_json|safe }};
+const SLOTS_URL  = "{% url 'simracing:slots_json' venue.slug %}";
 
-function selectMachine(el) {
-  if (el.classList.contains('busy') || el.classList.contains('stopped')) return;
+const TYPE_META = {
+  kart_standard: { icon: "🏎️", desc: "Классические карты для всей семьи" },
+  kart_euro:     { icon: "🏁", desc: "Спортивные Евро-карты — больше скорости" },
+  simulator:     { icon: "🎮", desc: "Полноценный автосимулятор на большом экране" },
+};
 
-  // deselect prev
-  if (selMachineId) document.getElementById('mc-' + selMachineId)?.classList.remove('selected');
-  selMachineId = el.dataset.id;
-  el.classList.add('selected');
+let sel = { mtype: null, mtypeLabel: null, st: null, qty: 1, date: null, time: null };
 
-  const name = el.dataset.name;
-  const type = el.dataset.type;
-
-  document.getElementById('fMachineId').value = selMachineId;
-  document.getElementById('panelMachineName').textContent = '🏎️ ' + name;
-
-  // fill session types
-  const sts = ST_BY_TYPE[type] || [];
-  const grid = document.getElementById('stGrid');
-  grid.innerHTML = '';
-  sts.forEach(st => {
-    const btn = document.createElement('div');
-    btn.className = 'st-btn';
-    btn.innerHTML = `<span class="st-dur">${st.duration} мин</span><span class="st-price">${parseInt(st.price)} сом</span>`;
-    btn.onclick = () => pickSt(st.id, btn);
-    grid.appendChild(btn);
+/* ─── Step 1: Machine types ─── */
+function buildTypes() {
+  const wrap = document.getElementById('type-list');
+  if (!MACH_TYPES.length) {
+    wrap.innerHTML = '<div class="slot-none" style="padding:20px 0;">Машины не добавлены. Обратитесь к администратору.</div>';
+    return;
+  }
+  let html = '';
+  MACH_TYPES.forEach(t => {
+    const meta = TYPE_META[t.value] || { icon: '🏎️', desc: '' };
+    html += `<div class="type-card" id="tc-${t.value}" onclick="selectType('${t.value}','${t.label.replace(/'/g,"\\'")}')">
+      <div class="type-icon">${meta.icon}</div>
+      <div style="flex:1;">
+        <div class="type-name">${t.label}</div>
+        <div class="type-desc">${meta.desc}</div>
+      </div>
+      <div class="type-check" id="tcheck-${t.value}">✓</div>
+    </div>`;
   });
-
-  document.getElementById('fSessionTypeId').value = '';
-  document.getElementById('srSubmit').disabled = true;
-  document.getElementById('bookingPanel').classList.add('open');
-  document.getElementById('bookingPanel').scrollIntoView({behavior:'smooth', block:'nearest'});
+  wrap.innerHTML = html;
 }
 
-function pickSt(id, btn) {
-  document.querySelectorAll('.st-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('fSessionTypeId').value = id;
-  document.getElementById('srSubmit').disabled = false;
+function selectType(val, label) {
+  document.querySelectorAll('.type-card').forEach(el => el.classList.remove('selected'));
+  document.getElementById('tc-' + val)?.classList.add('selected');
+  sel.mtype = val;
+  sel.mtypeLabel = label;
+  sel.st = null; sel.qty = 1; sel.date = null; sel.time = null;
+  document.getElementById('btn1').disabled = false;
 }
 
-function closePanel() {
-  if (selMachineId) { document.getElementById('mc-' + selMachineId)?.classList.remove('selected'); selMachineId = null; }
-  document.getElementById('bookingPanel').classList.remove('open');
+/* ─── Step 2: Session types ─── */
+function buildSessions() {
+  const wrap  = document.getElementById('session-list');
+  const noSes = document.getElementById('no-sessions');
+  const types = ST_BY_TYPE[sel.mtype] || [];
+  wrap.innerHTML = '';
+  if (!types.length) {
+    noSes.style.display = 'block';
+    document.getElementById('btn2').disabled = true;
+    return;
+  }
+  noSes.style.display = 'none';
+  let html = '';
+  types.forEach(st => {
+    html += `<div class="session-card" id="sc-${st.id}" onclick="selectSession(${st.id},${st.duration},${st.price})">
+      <div class="session-dur">${st.duration}</div>
+      <div class="session-dur-label">минут</div>
+      <div class="session-price">${st.price.toLocaleString()} сом</div>
+    </div>`;
+  });
+  wrap.innerHTML = html;
+  document.getElementById('btn2').disabled = true;
 }
 
-// countdown timers
-document.querySelectorAll('.mc-timer[data-ends]').forEach(el => {
-  const ends = parseInt(el.dataset.ends) * 1000;
-  function tick() {
-    const rem = Math.max(0, ends - Date.now());
-    if (rem <= 0) {
-      el.textContent = '⚠️ Время вышло';
-      el.classList.add('mc-overtime');
+function selectSession(id, duration, price) {
+  document.querySelectorAll('.session-card').forEach(el => el.classList.remove('selected'));
+  document.getElementById('sc-' + id)?.classList.add('selected');
+  sel.st = { id, duration, price };
+  sel.date = null; sel.time = null;
+  document.getElementById('btn2').disabled = false;
+  updateQtyTotal();
+}
+
+/* ─── Step 3: Quantity ─── */
+function changeQty(delta) {
+  sel.qty = Math.max(1, Math.min(10, sel.qty + delta));
+  document.getElementById('qty-display').textContent = sel.qty;
+  updateQtyTotal();
+}
+
+function updateQtyTotal() {
+  const el = document.getElementById('qty-total');
+  if (!sel.st) { el.textContent = 'Итого: — сом · — мин'; return; }
+  const total = sel.st.price * sel.qty;
+  const mins  = sel.st.duration * sel.qty;
+  el.textContent = `Итого: ${total.toLocaleString()} сом · ${mins} мин`;
+}
+
+/* ─── Step 4: Date + Slots ─── */
+async function loadSlots(dateStr) {
+  sel.time = null;
+  document.getElementById('btn4').disabled = true;
+  const wrap = document.getElementById('slots-wrap');
+  wrap.innerHTML = '<div class="slot-none">Загрузка…</div>';
+  const params = new URLSearchParams({
+    machine_type: sel.mtype,
+    session_type_id: sel.st.id,
+    quantity: sel.qty,
+    date: dateStr,
+  });
+  try {
+    const r = await fetch(`${SLOTS_URL}?${params}`);
+    const d = await r.json();
+    if (!d.slots || !d.slots.length) {
+      wrap.innerHTML = '<div class="slot-none">Нет свободного времени на эту дату</div>';
       return;
     }
-    const m = Math.floor(rem / 60000);
-    const s = Math.floor((rem % 60000) / 1000);
-    el.textContent = `⏱ Осталось ${m}:${String(s).padStart(2,'0')}`;
-    setTimeout(tick, 1000);
+    let html = '<div class="slots-grid">';
+    d.slots.forEach(t => {
+      html += `<div class="slot" id="slot-${t.replace(':','-')}" onclick="selectSlot('${t}')">${t}</div>`;
+    });
+    html += '</div>';
+    wrap.innerHTML = html;
+  } catch(e) {
+    wrap.innerHTML = '<div class="slot-none">Ошибка загрузки — попробуйте ещё раз</div>';
   }
-  tick();
+}
+
+function selectSlot(t) {
+  document.querySelectorAll('.slot').forEach(el => el.classList.remove('selected'));
+  const sid = 'slot-' + t.replace(':','-');
+  document.getElementById(sid)?.classList.add('selected');
+  sel.time = t;
+  document.getElementById('btn4').disabled = false;
+}
+
+/* ─── Step 5: Summary + form fill ─── */
+function buildSummary() {
+  const total = sel.st.price * sel.qty;
+  const mins  = sel.st.duration * sel.qty;
+  const dateDisp = sel.date
+    ? new Date(sel.date + 'T12:00:00').toLocaleDateString('ru-RU', {day:'numeric', month:'long', weekday:'short'})
+    : '';
+  document.getElementById('summary').innerHTML = `
+    <div class="summary-row"><span>🏎️ Тип</span><span>${sel.mtypeLabel}</span></div>
+    <div class="summary-row"><span>⏱ Сессия</span><span>${sel.st.duration} мин · ${sel.st.price.toLocaleString()} сом</span></div>
+    <div class="summary-row"><span>🔁 Заездов</span><span>${sel.qty}</span></div>
+    <div class="summary-row"><span>📅 Дата и время</span><span>${dateDisp}, ${sel.time}</span></div>
+    <div class="summary-row"><span>⏳ Общая длительность</span><span>${mins} мин</span></div>
+    <div class="summary-row"><span>💰 К оплате</span><span>${total.toLocaleString()} сом</span></div>
+  `;
+  document.getElementById('f-mtype').value = sel.mtype;
+  document.getElementById('f-stid').value  = sel.st.id;
+  document.getElementById('f-qty').value   = sel.qty;
+  document.getElementById('f-date').value  = sel.date;
+  document.getElementById('f-time').value  = sel.time;
+}
+
+function prepareAndValidate(e) {
+  buildSummary();
+  const inp = document.getElementById('phone-input');
+  const err = document.getElementById('phone-error');
+  const d = inp.value.replace(/\D/g, '');
+  const local = d.startsWith('996') ? d.slice(3) : d;
+  if (inp.value && inp.value !== '+996 ' && local.length !== 9) {
+    e.preventDefault();
+    err.style.display = 'block';
+    inp.style.borderColor = '#f97316';
+    inp.focus();
+    return false;
+  }
+  if (local.length === 9) inp.value = '+996' + local;
+  return true;
+}
+
+/* ─── Navigation ─── */
+function goStep(n) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.step').forEach((s, i) => {
+    s.classList.remove('active', 'done');
+    if (i + 1 < n) s.classList.add('done');
+    if (i + 1 === n) s.classList.add('active');
+  });
+  document.getElementById('panel-' + n).classList.add('active');
+  window.scrollTo(0, 0);
+  if (n === 2) buildSessions();
+  if (n === 3) { document.getElementById('qty-display').textContent = sel.qty; updateQtyTotal(); }
+  if (n === 5) buildSummary();
+}
+
+/* ─── Date picker ─── */
+const todayStr = new Date().toISOString().split('T')[0];
+document.getElementById('date-input').min = todayStr;
+document.getElementById('date-input').addEventListener('change', function () {
+  sel.date = this.value;
+  sel.time = null;
+  document.getElementById('btn4').disabled = true;
+  if (sel.date && sel.mtype && sel.st) loadSlots(sel.date);
 });
+
+/* ─── Phone mask ─── */
+(function () {
+  const inp = document.getElementById('phone-input');
+  const err = document.getElementById('phone-error');
+  const PREFIX = '+996 ';
+  function fmt(raw) {
+    const d = (raw || '').replace(/\D/g, '').slice(0, 9);
+    let o = PREFIX;
+    if (d.length > 0) o += d.slice(0, 3);
+    if (d.length > 3) o += ' ' + d.slice(3, 6);
+    if (d.length > 6) o += ' ' + d.slice(6, 9);
+    return o;
+  }
+  inp.addEventListener('focus', function () {
+    if (!inp.value) inp.value = PREFIX;
+    const l = inp.value.length; inp.setSelectionRange(l, l);
+  });
+  inp.addEventListener('input', function () {
+    const raw = inp.value.replace(/\D/g, '');
+    const local = raw.startsWith('996') ? raw.slice(3) : raw;
+    inp.value = fmt(local);
+    const l = inp.value.length; inp.setSelectionRange(l, l);
+    err.style.display = 'none'; inp.style.borderColor = '';
+  });
+  inp.addEventListener('keydown', function (e) {
+    if ((e.key === 'Backspace' || e.key === 'Delete') &&
+        inp.selectionStart <= PREFIX.length && inp.selectionEnd <= PREFIX.length) {
+      e.preventDefault();
+    }
+  });
+  inp.addEventListener('blur', function () { if (inp.value === PREFIX) inp.value = ''; });
+})();
+
+buildTypes();
 </script>
-{% endblock %}
-{% block footer %}<a href="{% url 'public_site:home' %}">Разработка Amantur agency</a>{% endblock %}
+</body>
+</html>

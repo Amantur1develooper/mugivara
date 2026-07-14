@@ -174,3 +174,33 @@ class Session(models.Model):
             return 0
         delta = self.ends_at - timezone.now()
         return max(0, int(delta.total_seconds()))
+
+
+class SimRacingAppointment(models.Model):
+    class Status(models.TextChoices):
+        NEW       = "new",       "Новая"
+        CONFIRMED = "confirmed", "Подтверждена"
+        CANCELED  = "canceled",  "Отменена"
+
+    venue        = models.ForeignKey(SimRacingVenue, on_delete=models.CASCADE, related_name="appointments")
+    machine_type = models.CharField("Тип машины", max_length=20, choices=Machine.Type.choices)
+    session_type = models.ForeignKey(SessionType, on_delete=models.SET_NULL, null=True, blank=True,
+                                     verbose_name="Тип сессии")
+    quantity     = models.PositiveSmallIntegerField("Количество заездов", default=1)
+    appt_date    = models.DateField("Дата")
+    appt_time    = models.TimeField("Время")
+    customer_name  = models.CharField("Имя клиента", max_length=200, blank=True, default="")
+    customer_phone = models.CharField("Телефон", max_length=80, blank=True, default="")
+    total_price  = models.DecimalField("Итого (сом)", max_digits=10, decimal_places=0, default=0)
+    duration_minutes = models.PositiveIntegerField("Длительность (мин)", default=0)
+    status       = models.CharField("Статус", max_length=20, choices=Status.choices, default=Status.NEW)
+    notes        = models.TextField("Заметки", blank=True, default="")
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-appt_date", "-appt_time"]
+        verbose_name = "Предварительная запись"
+        verbose_name_plural = "Предварительные записи"
+
+    def __str__(self):
+        return f"#{self.id} {self.get_machine_type_display()} {self.appt_date} {self.appt_time}"
