@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n i18n_attrs %}
+{% load i18n i18n_attrs l10n %}
 
 {% block title %}{% t branch 'name' %} — Меню · Стол {{ place.title }}{% endblock %}
 {% block cta %}{% endblock %}
@@ -622,7 +622,7 @@ const CX_DATA = {
         max_select: {{ g.max_select }},
         ingredients: [
           {% for ing in g.ingredients.all %}{% if ing.is_active %}
-          { id: {{ ing.id }}, name: "{{ ing.display_name|escapejs }}", description: "{{ ing.display_description|escapejs }}", price: {{ ing.display_price }}, photo: "{{ ing.display_photo_url }}" },
+          { id: {{ ing.id }}, name: "{{ ing.display_name|escapejs }}", description: "{{ ing.display_description|escapejs }}", price: {% localize off %}{{ ing.display_price|default:0 }}{% endlocalize %}, photo: "{{ ing.display_photo_url }}" },
           {% endif %}{% endfor %}
         ]
       },
@@ -802,7 +802,7 @@ const WAITER_URL = "{% url 'public_site:table_call_waiter' token %}";
 
 /* ── CART STATE ── */
 let cartQty   = {{ cart_qty }};
-let cartTotal = {{ cart_total }};
+let cartTotal = {% localize off %}{{ cart_total }}{% endlocalize %};
 
 function post(url, body) {
   return fetch(url, {
@@ -924,7 +924,7 @@ const catObs = new IntersectionObserver(entries => {
 catSections.forEach(s => catObs.observe(s));
 
 /* ── FAB initial state ── */
-updateFab({{ cart_qty }}, {{ cart_total }});
+updateFab({{ cart_qty }}, {% localize off %}{{ cart_total }}{% endlocalize %});
 
 /* ── CALL WAITER ── */
 const modal       = document.getElementById("waiterModal");

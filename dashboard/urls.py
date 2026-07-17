@@ -235,6 +235,9 @@ urlpatterns = [
     path("sr/venue/<int:venue_id>/report/",                  srv.sr_report,              name="sr_report"),
     path("sr/appt/<int:appt_id>/confirm/",                   srv.sr_appt_confirm,        name="sr_appt_confirm"),
     path("sr/appt/<int:appt_id>/cancel/",                    srv.sr_appt_cancel,         name="sr_appt_cancel"),
+    path("sr/venue/<int:venue_id>/print/save/",              srv.sr_print_save,          name="sr_print_save"),
+    path("sr/venue/<int:venue_id>/print/config.json",        srv.sr_print_config_dl,     name="sr_print_config_dl"),
+    path("sr/venue/<int:venue_id>/print/agent.py",           srv.sr_print_agent_dl,      name="sr_print_agent_dl"),
 
     # ── LEGAL ────────────────────────────────────────────────────────────────
     path("legal/",                                      lv.legal_home,           name="legal_home"),

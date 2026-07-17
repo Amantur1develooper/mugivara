@@ -39,6 +39,19 @@
   <a href="{% url 'dashboard:sr_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
 </div>
 
+{% if print_cfg %}
+<div style="display:flex;align-items:center;gap:8px;background:var(--card);border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;margin-bottom:16px;font-size:13px;">
+  <div style="width:8px;height:8px;border-radius:50%;background:{% if print_cfg.is_agent_online %}#16a34a{% else %}#dc2626{% endif %};flex-shrink:0;"></div>
+  <span style="color:var(--text);font-weight:600;">🖨️ Принтер</span>
+  <span style="color:var(--muted);">
+    {% if print_cfg.is_agent_online %}онлайн — чеки печатаются автоматически
+    {% elif print_cfg.enabled %}офлайн — запустите sr_agent.py
+    {% else %}печать отключена
+    {% endif %}
+  </span>
+</div>
+{% endif %}
+
 <!-- LIVE MACHINES -->
 <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:12px;">🚗 Машины сейчас</div>
 <div class="sr-live" id="liveGrid">

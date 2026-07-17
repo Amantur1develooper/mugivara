@@ -8,7 +8,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .models import Machine, Session, SessionType, SimRacingMembership, SimRacingVenue, SimRacingAppointment
+from .models import (Machine, Session, SessionType, SimRacingMembership,
+                     SimRacingVenue, SimRacingAppointment,
+                     SimRacingPrintConfig, SimRacingPrintJob)
 
 LOGIN_URL = "dashboard:login"
 
@@ -87,7 +89,11 @@ def sr_venue_edit(request, venue_id):
             v.cover = request.FILES["cover"]
         v.save()
         return redirect("dashboard:sr_venue_edit", venue_id=v.id)
-    return render(request, "dashboard/simracing/venue_edit.html", {"venue": v})
+    try:
+        print_cfg = v.print_config
+    except SimRacingPrintConfig.DoesNotExist:
+        print_cfg = None
+    return render(request, "dashboard/simracing/venue_edit.html", {"venue": v, "print_cfg": print_cfg})
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -266,6 +272,11 @@ def sr_sessions(request, venue_id):
                 "remaining": s.remaining_seconds,
             }
 
+    try:
+        print_cfg = v.print_config
+    except SimRacingPrintConfig.DoesNotExist:
+        print_cfg = None
+
     return render(request, "dashboard/simracing/sessions.html", {
         "venue": v,
         "live": live,
@@ -273,6 +284,7 @@ def sr_sessions(request, venue_id):
         "history": history,
         "session_types": session_types,
         "appointments": appointments,
+        "print_cfg": print_cfg,
         "live_json": json.dumps(live_json),
         "now_ts": now_ts,
     })
@@ -332,6 +344,12 @@ def sr_session_close(request, session_id):
     s.status   = Session.Status.DONE
     s.ended_at = timezone.now()
     s.save(update_fields=["status", "ended_at"])
+    # Print receipt
+    try:
+        from .print_jobs import create_session_print_job
+        create_session_print_job(s)
+    except Exception:
+        pass
     return JsonResponse({"ok": True})
 
 
@@ -355,6 +373,12 @@ def sr_appt_confirm(request, appt_id):
         return JsonResponse({"ok": False}, status=403)
     appt.status = SimRacingAppointment.Status.CONFIRMED
     appt.save(update_fields=["status"])
+    # Print confirmation slip
+    try:
+        from .print_jobs import create_appt_print_job
+        create_appt_print_job(appt)
+    except Exception:
+        pass
     return JsonResponse({"ok": True, "status": "confirmed"})
 
 
@@ -367,6 +391,70 @@ def sr_appt_cancel(request, appt_id):
     appt.status = SimRacingAppointment.Status.CANCELED
     appt.save(update_fields=["status"])
     return JsonResponse({"ok": True, "status": "canceled"})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PRINT CONFIG
+# ─────────────────────────────────────────────────────────────────────────────
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def sr_print_save(request, venue_id):
+    v = get_object_or_404(SimRacingVenue, id=venue_id)
+    if not _check(request.user, v):
+        return redirect("dashboard:sr_home")
+    cfg, _ = SimRacingPrintConfig.objects.get_or_create(venue=v)
+    cfg.enabled         = request.POST.get("enabled") == "1"
+    cfg.windows_printer = request.POST.get("windows_printer", "").strip()
+    cfg.print_mode      = request.POST.get("print_mode", "image")
+    cfg.codepage        = request.POST.get("codepage", "cp866")
+    if request.POST.get("regen_token"):
+        import secrets
+        cfg.token = secrets.token_urlsafe(32)
+    cfg.save()
+    return redirect("dashboard:sr_venue_edit", venue_id=v.id)
+
+
+@login_required(login_url=LOGIN_URL)
+def sr_print_config_dl(request, venue_id):
+    """Download sr_config.json for the simracing printer agent."""
+    import json as _json
+    from django.http import HttpResponse
+    v = get_object_or_404(SimRacingVenue, id=venue_id)
+    if not _check(request.user, v):
+        return redirect("dashboard:sr_home")
+    cfg, _ = SimRacingPrintConfig.objects.get_or_create(venue=v)
+    server_url = request.scheme + "://" + request.get_host()
+    data = {
+        "server_url": server_url,
+        "token": cfg.token,
+        "printer": cfg.windows_printer or "XPrinter XP-80C",
+        "poll_interval": 3,
+        "heartbeat_interval": 30,
+        "print_mode": cfg.print_mode,
+        "codepage": cfg.codepage,
+        "print_width": 384,
+    }
+    content = _json.dumps(data, ensure_ascii=False, indent=2)
+    resp = HttpResponse(content, content_type="application/json")
+    resp["Content-Disposition"] = 'attachment; filename="sr_config.json"'
+    return resp
+
+
+@login_required(login_url=LOGIN_URL)
+def sr_print_agent_dl(request, venue_id):
+    """Download sr_agent.py."""
+    from django.http import FileResponse, HttpResponse
+    from pathlib import Path
+    v = get_object_or_404(SimRacingVenue, id=venue_id)
+    if not _check(request.user, v):
+        return redirect("dashboard:sr_home")
+    agent_path = Path(__file__).resolve().parent.parent.parent / "printer_agent" / "sr_agent.py"
+    if not agent_path.exists():
+        return HttpResponse("sr_agent.py not found on server", status=404)
+    resp = FileResponse(open(agent_path, "rb"), content_type="text/plain")
+    resp["Content-Disposition"] = 'attachment; filename="sr_agent.py"'
+    return resp
 
 
 # ─────────────────────────────────────────────────────────────────────────────

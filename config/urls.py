@@ -11,7 +11,8 @@ from api.auth_views import register_view, login_view, me_view, change_password_v
 
 urlpatterns = [
     path("i18n/", __import__("django.conf.urls.i18n").conf.urls.i18n.set_language, name="set_language"),
-    path("api/print/",   include("printing.urls")),
+    path("api/print/",    include("printing.urls")),
+    path("api/sr-print/", include("simracing.print_urls")),
 
     # Swagger / OpenAPI
     path("api/schema/",  SpectacularAPIView.as_view(),                        name="schema"),

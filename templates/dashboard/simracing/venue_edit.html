@@ -83,4 +83,109 @@
     <button type="submit" class="db-btn db-btn-primary" style="align-self:flex-start;">💾 Сохранить</button>
   </div>
 </form>
+
+<!-- ── Принтер чеков ───────────────────────────────────────────────────── -->
+<div style="margin-top:24px;">
+  <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:12px;">🖨️ Принтер чеков</div>
+  <div style="background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:20px;">
+
+    {% if print_cfg %}
+      <!-- Status -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+        <div style="width:10px;height:10px;border-radius:50%;background:{% if print_cfg.is_agent_online %}#16a34a{% else %}#dc2626{% endif %};"></div>
+        <span style="font-size:13px;color:var(--muted);">
+          Агент {% if print_cfg.is_agent_online %}онлайн{% else %}офлайн{% endif %}
+          {% if print_cfg.last_heartbeat %}· последний раз {{ print_cfg.last_heartbeat|timesince }} назад{% endif %}
+        </span>
+        <span style="margin-left:auto;font-size:11px;color:var(--muted);font-family:monospace;">
+          Токен: {{ print_cfg.token|truncatechars:16 }}…
+        </span>
+      </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'dashboard:sr_print_save' venue.id %}">
+      {% csrf_token %}
+      <div style="display:flex;flex-direction:column;gap:12px;">
+
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="checkbox" name="enabled" value="1" id="print-enabled"
+                 {% if print_cfg.enabled %}checked{% endif %}
+                 style="width:18px;height:18px;accent-color:var(--accent);">
+          <label for="print-enabled" class="db-label" style="margin:0;">Включить печать чеков</label>
+        </div>
+
+        <div>
+          <label class="db-label">Имя принтера в Windows</label>
+          <input name="windows_printer" class="db-input"
+                 value="{{ print_cfg.windows_printer|default:'' }}"
+                 placeholder="Например: XPrinter XP-80C">
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">
+            Точное имя как в Панель управления → Устройства и принтеры Windows
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label class="db-label">Режим печати</label>
+            <select name="print_mode" class="db-input">
+              <option value="image" {% if print_cfg.print_mode == "image" or not print_cfg %}selected{% endif %}>
+                Картинка (рекомендуется)
+              </option>
+              <option value="text" {% if print_cfg.print_mode == "text" %}selected{% endif %}>
+                Текст (ESC/POS)
+              </option>
+            </select>
+          </div>
+          <div>
+            <label class="db-label">Кодировка (для текстового режима)</label>
+            <select name="codepage" class="db-input">
+              <option value="cp866"  {% if print_cfg.codepage == "cp866"  or not print_cfg %}selected{% endif %}>cp866 (по умолчанию)</option>
+              <option value="cp1251" {% if print_cfg.codepage == "cp1251" %}selected{% endif %}>cp1251</option>
+              <option value="cp866_alt"  {% if print_cfg.codepage == "cp866_alt"  %}selected{% endif %}>cp866 alt</option>
+              <option value="cp1251_alt" {% if print_cfg.codepage == "cp1251_alt" %}selected{% endif %}>cp1251 alt</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="checkbox" name="regen_token" value="1" id="regen-tok"
+                 style="width:16px;height:16px;accent-color:#dc2626;">
+          <label for="regen-tok" class="db-label" style="margin:0;color:#dc2626;">
+            Перегенерировать токен (сбросит соединение агента)
+          </label>
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <button type="submit" class="db-btn db-btn-primary">💾 Сохранить</button>
+          {% if print_cfg %}
+            <a href="{% url 'dashboard:sr_print_config_dl' venue.id %}" class="db-btn db-btn-ghost">
+              ⬇️ Скачать sr_config.json
+            </a>
+            <a href="{% url 'dashboard:sr_print_agent_dl' venue.id %}" class="db-btn db-btn-ghost">
+              ⬇️ Скачать sr_agent.py
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+
+    {% if not print_cfg %}
+    <div style="margin-top:12px;font-size:13px;color:var(--muted);">
+      Сохраните настройки один раз — появится токен и кнопки скачивания агента.
+    </div>
+    {% endif %}
+
+    <div style="margin-top:16px;background:var(--bg);border-radius:12px;padding:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">📋 Инструкция</div>
+      <ol style="font-size:12px;color:var(--muted);padding-left:16px;line-height:1.8;">
+        <li>Включите печать и укажите имя принтера → <b>Сохранить</b></li>
+        <li>Скачайте <b>sr_config.json</b> и <b>sr_agent.py</b></li>
+        <li>Положите оба файла в одну папку на Windows-ПК с принтером</li>
+        <li>Установите зависимости: <code>pip install requests pywin32 pillow</code></li>
+        <li>Запустите: <code>python sr_agent.py</code></li>
+        <li>Агент автоматически печатает чек при закрытии сессии или подтверждении записи</li>
+      </ol>
+    </div>
+  </div>
+</div>
 {% endblock %}
