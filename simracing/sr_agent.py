@@ -201,14 +201,23 @@ LINE_SPACING = 4
 
 def _load_mono_font(bold):
     from PIL import ImageFont
-    names = (["consolab.ttf", "courbd.ttf", "DejaVuSansMono-Bold.ttf"] if bold
-             else ["consola.ttf", "cour.ttf", "DejaVuSansMono.ttf"])
-    for n in names:
-        try:
-            return ImageFont.truetype(n, FONT_SIZE)
-        except OSError:
-            continue
-    return ImageFont.load_default()
+    import os
+    mono = (["consolab.ttf", "courbd.ttf", "DejaVuSansMono-Bold.ttf", "arialbd.ttf", "tahomabd.ttf"] if bold
+            else ["consola.ttf", "cour.ttf", "DejaVuSansMono.ttf", "arial.ttf", "tahoma.ttf"])
+    cyrillic_fallback = ["arial.ttf", "tahoma.ttf", "verdana.ttf", "times.ttf"]
+    win_fonts = r"C:\Windows\Fonts"
+    candidates = mono + cyrillic_fallback
+    for n in candidates:
+        for path in [n, os.path.join(win_fonts, n)]:
+            try:
+                return ImageFont.truetype(path, FONT_SIZE)
+            except OSError:
+                continue
+    log.warning("Шрифт не найден — кириллица может не отображаться. Установите Consolas или Arial.")
+    try:
+        return ImageFont.load_default(size=FONT_SIZE)
+    except TypeError:
+        return ImageFont.load_default()
 
 
 def print_image_windows(printer_name, content, width_dots=384):
