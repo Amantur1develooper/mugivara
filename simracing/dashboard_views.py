@@ -449,7 +449,7 @@ def sr_print_agent_dl(request, venue_id):
     v = get_object_or_404(SimRacingVenue, id=venue_id)
     if not _check(request.user, v):
         return redirect("dashboard:sr_home")
-    agent_path = Path(__file__).resolve().parent.parent.parent / "printer_agent" / "sr_agent.py"
+    agent_path = Path(__file__).resolve().parent / "sr_agent.py"
     if not agent_path.exists():
         return HttpResponse("sr_agent.py not found on server", status=404)
     resp = FileResponse(open(agent_path, "rb"), content_type="text/plain")
