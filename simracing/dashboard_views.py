@@ -358,16 +358,6 @@ def sr_session_close(request, session_id):
     s.status   = Session.Status.DONE
     s.ended_at = timezone.now()
     s.save(update_fields=["status", "ended_at"])
-    # Print receipt on close
-    try:
-        from .print_jobs import create_session_print_job
-        job = create_session_print_job(s)
-        if job:
-            log.info(f"Print job #{job.id} created for session #{s.id} (close)")
-        else:
-            log.warning(f"Print job NOT created for session #{s.id} — print config missing or disabled")
-    except Exception as e:
-        log.error(f"Print job creation failed for session #{s.id}: {e}", exc_info=True)
     return JsonResponse({"ok": True})
 
 
