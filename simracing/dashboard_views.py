@@ -1,3 +1,4 @@
+import logging
 from datetime import date, timedelta
 from decimal import Decimal
 from django.conf import settings
@@ -7,6 +8,8 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+
+log = logging.getLogger("simracing.print")
 
 from .models import (Machine, Session, SessionType, SimRacingMembership,
                      SimRacingVenue, SimRacingAppointment,
@@ -323,6 +326,17 @@ def sr_session_start(request, venue_id):
         f"Длительность: {st.duration_minutes} мин — {int(st.price)} сом"
     )
 
+    # Print receipt on session start (client pays upfront)
+    try:
+        from .print_jobs import create_session_print_job
+        job = create_session_print_job(session)
+        if job:
+            log.info(f"Print job #{job.id} created for session #{session.id} (start)")
+        else:
+            log.warning(f"Print job NOT created for session #{session.id} — print config missing or disabled")
+    except Exception as e:
+        log.error(f"Print job creation failed for session #{session.id}: {e}", exc_info=True)
+
     from django.utils import timezone as tz
     return JsonResponse({
         "ok": True,
@@ -344,12 +358,16 @@ def sr_session_close(request, session_id):
     s.status   = Session.Status.DONE
     s.ended_at = timezone.now()
     s.save(update_fields=["status", "ended_at"])
-    # Print receipt
+    # Print receipt on close
     try:
         from .print_jobs import create_session_print_job
-        create_session_print_job(s)
-    except Exception:
-        pass
+        job = create_session_print_job(s)
+        if job:
+            log.info(f"Print job #{job.id} created for session #{s.id} (close)")
+        else:
+            log.warning(f"Print job NOT created for session #{s.id} — print config missing or disabled")
+    except Exception as e:
+        log.error(f"Print job creation failed for session #{s.id}: {e}", exc_info=True)
     return JsonResponse({"ok": True})
 
 
@@ -376,9 +394,13 @@ def sr_appt_confirm(request, appt_id):
     # Print confirmation slip
     try:
         from .print_jobs import create_appt_print_job
-        create_appt_print_job(appt)
-    except Exception:
-        pass
+        job = create_appt_print_job(appt)
+        if job:
+            log.info(f"Print job #{job.id} created for appt #{appt.id}")
+        else:
+            log.warning(f"Print job NOT created for appt #{appt.id} — print config missing or disabled")
+    except Exception as e:
+        log.error(f"Print job creation failed for appt #{appt.id}: {e}", exc_info=True)
     return JsonResponse({"ok": True, "status": "confirmed"})
 
 
