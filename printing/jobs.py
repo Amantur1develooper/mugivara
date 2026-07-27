@@ -6,10 +6,16 @@
 PostgreSQL не принимает NUL-байт (\x00), поэтому реальные ESC/POS
 коды подставляет агент непосредственно перед отправкой на принтер.
 """
-from collections import defaultdict
+from collections import Counter, defaultdict
 from django.utils import timezone
 
 from .models import PrintJob, RestaurantPrintConfig
+
+
+def _ing_names(ings):
+    """Join ingredient names, showing ×N for duplicates."""
+    counts = Counter(i.get("name", "") for i in ings if i.get("name"))
+    return ", ".join(f"{name} ×{n}" if n > 1 else name for name, n in counts.items())
 
 
 # ── Вспомогательные константы ────────────────────────────────────────────────
@@ -197,7 +203,7 @@ def create_print_jobs(order, new_item_ids=None, new_cx_ids=None):
             ings = sel.get("ings") or []
             if ings:
                 gname = sel.get("gname", "")
-                names = ", ".join(i.get("name", "") for i in ings if i.get("name"))
+                names = _ing_names(ings)
                 if names:
                     ing_lines.append(f"{gname}: {names}" if gname else names)
         no_group.append((coi.constructor_name_snapshot or "Собери сам", coi.qty, ing_lines))

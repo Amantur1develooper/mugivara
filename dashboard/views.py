@@ -1838,7 +1838,9 @@ def pos_live_orders(request, branch_id):
         for ci in o.constructor_items.all():
             ing_parts = []
             for sel in (ci.ingredients_snapshot or []):
-                ing_names = ", ".join(i["name"] for i in sel.get("ings", []))
+                from collections import Counter
+                counts = Counter(i["name"] for i in sel.get("ings", []) if i.get("name"))
+                ing_names = ", ".join(f"{n} ×{c}" if c > 1 else n for n, c in counts.items())
                 ing_parts.append(f"{sel['gname']}: {ing_names}")
             detail = " · ".join(ing_parts)
             items.append({

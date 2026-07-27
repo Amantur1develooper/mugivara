@@ -1,8 +1,16 @@
+from collections import Counter
+
 from celery import shared_task
 from django.conf import settings
 from django.utils import timezone
 from django.utils.html import escape
 from decimal import Decimal
+
+
+def _ing_names(ings):
+    """Join ingredient names, showing ×N for duplicates."""
+    counts = Counter(i.get("name", "") for i in ings if i.get("name"))
+    return ", ".join(f"{name} ×{n}" if n > 1 else name for name, n in counts.items())
 
 from integrations.models import TelegramRecipient
 from integrations.telegram import send_message
@@ -113,7 +121,7 @@ def _order_text(order: Order, title_override: str = None) -> str:
                 entry += f"  —  {_money(lt)}"
             # детали состава
             for sel in (coi.ingredients_snapshot or []):
-                ings = ", ".join(i["name"] for i in sel.get("ings", []) if i.get("name"))
+                ings = _ing_names(sel.get("ings", []))
                 if sel.get("gname") and ings:
                     entry += f"\n      {sel['gname']}: {ings}"
             lines.append(entry)
@@ -158,7 +166,7 @@ def _table_order_text(order: Order) -> str:
             cx_name = coi.constructor_name_snapshot or "Собери сам"
             entry = f"• 🧩 {cx_name}  ×{coi.qty}"
             for sel in (coi.ingredients_snapshot or []):
-                ings = ", ".join(i["name"] for i in sel.get("ings", []) if i.get("name"))
+                ings = _ing_names(sel.get("ings", []))
                 if sel.get("gname") and ings:
                     entry += f"\n    {sel['gname']}: {ings}"
             lines.append(entry)
