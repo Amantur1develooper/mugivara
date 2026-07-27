@@ -8,8 +8,12 @@ from decimal import Decimal
 
 
 def _ing_names(ings):
-    """Join ingredient names, showing ×N for duplicates."""
-    counts = Counter(i.get("name", "") for i in ings if i.get("name"))
+    """Join ingredient names with quantity.
+    Handles both formats: list of duplicate dicts, and dicts with a 'qty' field."""
+    counts = Counter()
+    for i in ings:
+        if i.get("name"):
+            counts[i["name"]] += int(i.get("qty", 1))
     return ", ".join(f"{name} ×{n}" if n > 1 else name for name, n in counts.items())
 
 from integrations.models import TelegramRecipient

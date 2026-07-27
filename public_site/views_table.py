@@ -1,6 +1,7 @@
 
 # public_site/views_table.py
 import json
+from collections import Counter
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
@@ -162,10 +163,12 @@ def table_add_constructor(request, token: str, cx_id: int):
         if g.max_select > 0 and len(chosen_ids) > g.max_select:
             return JsonResponse({"ok": False, "error": f"Максимум {g.max_select} в «{g.name}»"}, status=400)
 
+        id_counts = Counter(chosen_ids)
         ings_data = []
-        for ing in g.ingredients.select_related("branch_item__item").filter(is_active=True, id__in=chosen_ids):
-            ings_data.append({"id": ing.id, "name": ing.display_name, "price": str(ing.display_price)})
-            total_price += ing.display_price
+        for ing in g.ingredients.select_related("branch_item__item").filter(is_active=True, id__in=list(id_counts)):
+            for _ in range(id_counts[ing.id]):
+                ings_data.append({"id": ing.id, "name": ing.display_name, "price": str(ing.display_price)})
+                total_price += ing.display_price
 
         if ings_data:
             selections.append({"gid": g.id, "gname": g.name, "ings": ings_data})

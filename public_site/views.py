@@ -878,8 +878,15 @@ def checkout(request, branch_id: int):
                     ingredients_snapshot=cx_item.get("selections", []),
                 )
             n = len(lines) + 1
+            def _fmt_ings(ings):
+                from collections import Counter
+                c = Counter()
+                for i in ings:
+                    if i.get("name"):
+                        c[i["name"]] += int(i.get("qty", 1))
+                return ", ".join(f"{n} ×{q}" if q > 1 else n for n, q in c.items())
             detail_parts = [
-                f"  • {s['gname']}: {', '.join(i['name'] for i in s.get('ings', []))}"
+                f"  • {s['gname']}: {_fmt_ings(s.get('ings', []))}"
                 for s in cx_item.get("selections", [])
             ]
             entry = f"{n}) 🧩 {cx_item['cx_name']} × {qty} = {line_total} сом"
