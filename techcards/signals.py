@@ -27,10 +27,13 @@ def deduct_ingredients_on_close(sender, instance, **kwargs):
             net = (line.net_qty * scale).quantize(Decimal("0.001"))
             deductions[line.ingredient_id] = deductions.get(line.ingredient_id, Decimal("0")) + net
 
-    # ── Конструктор (Собери сам) — списание по прямой привязке ───────────────
+    # ── Конструктор (Собери сам) ──────────────────────────────────────────────
+    # Приоритет: 1) прямая привязка warehouse_ingredient + write_off_qty
+    #            2) техкарта привязанного branch_item (если есть)
     try:
         from catalog.models import ConstructorIngredient
         for coi in instance.constructor_items.all():
+            order_qty = Decimal(str(coi.qty))
             for sel in (coi.ingredients_snapshot or []):
                 for ing_entry in sel.get("ings", []):
                     ci_id = ing_entry.get("id")
@@ -38,17 +41,39 @@ def deduct_ingredients_on_close(sender, instance, **kwargs):
                         continue
                     try:
                         ci = ConstructorIngredient.objects.select_related(
-                            "warehouse_ingredient"
+                            "warehouse_ingredient",
+                            "branch_item__item",
                         ).get(id=ci_id)
                     except ConstructorIngredient.DoesNotExist:
                         continue
-                    if not ci.warehouse_ingredient_id:
-                        continue
+
                     ing_qty = Decimal(str(ing_entry.get("qty", 1)))
-                    total = (ci.write_off_qty * ing_qty * Decimal(str(coi.qty))).quantize(Decimal("0.001"))
-                    deductions[ci.warehouse_ingredient_id] = (
-                        deductions.get(ci.warehouse_ingredient_id, Decimal("0")) + total
-                    )
+
+                    if ci.warehouse_ingredient_id:
+                        # ── Вариант 1: прямое списание ────────────────────────
+                        total = (ci.write_off_qty * ing_qty * order_qty).quantize(Decimal("0.001"))
+                        deductions[ci.warehouse_ingredient_id] = (
+                            deductions.get(ci.warehouse_ingredient_id, Decimal("0")) + total
+                        )
+
+                    elif ci.branch_item_id:
+                        # ── Вариант 2: техкарта блюда из меню ────────────────
+                        try:
+                            tc = TechCard.objects.get(
+                                item=ci.branch_item.item,
+                                branch=instance.branch,
+                                is_active=True,
+                            )
+                        except TechCard.DoesNotExist:
+                            continue
+                        scale = (ing_qty * order_qty) / (tc.yield_qty or Decimal("1"))
+                        for line in tc.ingredients.select_related("ingredient").all():
+                            if not line.ingredient_id:
+                                continue
+                            net = (line.net_qty * scale).quantize(Decimal("0.001"))
+                            deductions[line.ingredient_id] = (
+                                deductions.get(line.ingredient_id, Decimal("0")) + net
+                            )
     except Exception:
         pass
 

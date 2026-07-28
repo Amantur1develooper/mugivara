@@ -173,14 +173,21 @@
 }
 .cx-ing-del:hover { color: #ef4444; background: rgba(239,68,68,.08); }
 .cx-ing-stock {
-  width: 18px; height: 18px; border-radius: 50%;
-  background: transparent; border: none;
-  color: var(--muted); cursor: pointer; font-size: 12px;
-  display: flex; align-items: center; justify-content: center;
-  padding: 0; transition: color .12s, background .12s; flex-shrink: 0; opacity: .45;
+  display: inline-flex; align-items: center; gap: 3px;
+  border: 1.5px dashed #f97316; border-radius: 8px;
+  background: rgba(249,115,22,.06); color: #f97316;
+  cursor: pointer; font-size: 11px; font-weight: 700;
+  padding: 2px 7px; flex-shrink: 0;
+  transition: background .15s, border-color .15s;
+  white-space: nowrap;
 }
-.cx-ing-stock:hover { opacity: 1; background: rgba(16,185,129,.1); }
-.cx-ing-stock.cx-ing-stock-linked { opacity: 1; color: #10b981; }
+.cx-ing-stock:hover { background: rgba(249,115,22,.13); }
+.cx-ing-stock.cx-ing-stock-linked {
+  border: 1.5px solid #10b981; border-style: solid;
+  background: rgba(16,185,129,.07); color: #059669;
+}
+.cx-ing-stock.cx-ing-stock-linked:hover { background: rgba(16,185,129,.14); }
+.cx-stock-label { font-size: 11px; }
 .cx-ings-empty { font-size: 12px; color: var(--muted); font-style: italic; align-self: center; }
 
 /* ── Add row (меню + ручной) ── */
@@ -418,7 +425,9 @@
 
           {# Шапка группы: название + лимиты + удалить #}
           <div class="cx-group-head">
-            <div class="cx-group-name">{{ g.name }}</div>
+            <div class="cx-group-name">{{ g.name }}
+              <span class="cx-grp-warn" id="cxgw-{{ g.id }}" style="display:none;font-size:10px;background:#fef3c7;color:#92400e;border-radius:6px;padding:1px 6px;font-weight:700;margin-left:6px;vertical-align:middle;"></span>
+            </div>
 
             <div class="cx-group-limits">
               <label>Мин</label>
@@ -461,11 +470,15 @@
                 <button class="cx-ing-price-save" onclick="savePrice({{ ing.id }})" title="Сохранить">✓</button>
               </span>
 
-              {# Кнопка привязки к складу #}
+              {# Бейдж склада #}
               <button class="cx-ing-stock{% if ing.warehouse_ingredient_id %} cx-ing-stock-linked{% endif %}"
-                      onclick="openStockModal({{ ing.id }},'{{ ing.display_name|escapejs }}',{{ ing.warehouse_ingredient_id|default:'null' }},{{ ing.write_off_qty }})"
-                      title="{% if ing.warehouse_ingredient_id %}Склад: {{ ing.warehouse_ingredient.name_ru }} × {{ ing.write_off_qty }}{% else %}Привязать к складу{% endif %}">
-                📦
+                      id="cxsb-{{ ing.id }}"
+                      onclick="openStockModal({{ ing.id }},'{{ ing.display_name|escapejs }}',{{ ing.warehouse_ingredient_id|default:'null' }},{{ ing.write_off_qty }})">
+                {% if ing.warehouse_ingredient_id %}
+                  ✅ <span class="cx-stock-label" id="cxsl-{{ ing.id }}">{{ ing.warehouse_ingredient.name_ru }} ×{{ ing.write_off_qty }}</span>
+                {% else %}
+                  ⚠️ <span class="cx-stock-label" id="cxsl-{{ ing.id }}">склад</span>
+                {% endif %}
               </button>
               <button class="cx-ing-del" onclick="deleteIng({{ ing.id }}, {{ g.id }}, '{{ ing.branch_item_id|default:'null' }}')" title="Убрать">×</button>
             </span>
@@ -964,6 +977,29 @@ function _esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+/* ── Счётчик непривязанных ингредиентов в группе ── */
+function refreshGroupWarnings() {
+  document.querySelectorAll('[id^="cxg-"]').forEach(grpEl => {
+    const gid = grpEl.id.replace('cxg-', '');
+    const total   = grpEl.querySelectorAll('.cx-ing-stock').length;
+    const unlinked = grpEl.querySelectorAll('.cx-ing-stock:not(.cx-ing-stock-linked)').length;
+    const warn = document.getElementById('cxgw-' + gid);
+    if (!warn) return;
+    if (unlinked > 0) {
+      warn.textContent = `⚠️ ${unlinked} из ${total} без склада`;
+      warn.style.display = 'inline';
+    } else if (total > 0) {
+      warn.textContent = '✅ склад настроен';
+      warn.style.background = '#d1fae5';
+      warn.style.color = '#065f46';
+      warn.style.display = 'inline';
+    } else {
+      warn.style.display = 'none';
+    }
+  });
+}
+document.addEventListener('DOMContentLoaded', refreshGroupWarnings);
+
 /* ── Склад: привязка позиции конструктора ── */
 let _cxStockIngId = null;
 function openStockModal(ingId, ingName, wiId, writeOffQty) {
@@ -986,18 +1022,22 @@ async function saveCxStock() {
     write_off_qty: qty,
   });
   if (!d.ok) { toast(d.error || 'Ошибка', 'err'); return; }
-  // Обновляем кнопку на чипе
-  const btn = document.querySelector(`#cxi-${_cxStockIngId} .cx-ing-stock`);
-  if (btn) {
+  // Обновляем бейдж на чипе
+  const btn = document.getElementById(`cxsb-${_cxStockIngId}`);
+  const lbl = document.getElementById(`cxsl-${_cxStockIngId}`);
+  if (btn && lbl) {
     if (d.wi_name) {
       btn.classList.add('cx-ing-stock-linked');
-      btn.title = `Склад: ${d.wi_name} × ${d.write_off_qty}`;
+      btn.childNodes[0].textContent = '✅ ';
+      lbl.textContent = `${d.wi_name} ×${d.write_off_qty}`;
     } else {
       btn.classList.remove('cx-ing-stock-linked');
-      btn.title = 'Привязать к складу';
+      btn.childNodes[0].textContent = '⚠️ ';
+      lbl.textContent = 'склад';
     }
   }
   closeCxStockModal();
+  refreshGroupWarnings();
   toast('Склад сохранён', 'ok');
 }
 </script>
