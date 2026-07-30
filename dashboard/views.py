@@ -305,7 +305,7 @@ def restaurant_print_download_agent(request, restaurant_id):
         return redirect("dashboard:home")
 
     from pathlib import Path as _Path
-    agent_path = _Path(__file__).resolve().parent.parent.parent / "printer_agent" / "agent.py"
+    agent_path = _Path(__file__).resolve().parent / "agent.py"
     try:
         content = agent_path.read_bytes()
     except FileNotFoundError:
