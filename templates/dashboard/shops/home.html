@@ -104,12 +104,6 @@
               <div style="font-size:11px;color:var(--teal);margin-top:2px;font-weight:600">🚚 Доставка включена</div>
             {% endif %}
           </div>
-          <form method="post" action="{% url 'dashboard:shop_branch_toggle' branch.id %}">
-            {% csrf_token %}
-            <button type="submit" class="toggle-btn {% if branch.is_active %}toggle-open{% else %}toggle-closed{% endif %}">
-              {% if branch.is_active %}Открыт{% else %}Закрыт{% endif %}
-            </button>
-          </form>
         </div>
 
         {# ── Статистика склада ── #}

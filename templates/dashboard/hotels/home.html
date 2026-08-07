@@ -74,13 +74,6 @@
               <div style="font-size:12px;color:var(--muted);margin-top:3px">📍 {{ branch.address }}</div>
             {% endif %}
           </div>
-          <form method="post" action="{% url 'dashboard:hotel_branch_toggle' branch.id %}" id="bt-{{ branch.id }}">
-            {% csrf_token %}
-            <button type="submit"
-                    class="toggle-btn {% if branch.is_active %}toggle-open{% else %}toggle-closed{% endif %}">
-              {% if branch.is_active %}🟢 Открыт{% else %}⛔ Закрыт{% endif %}
-            </button>
-          </form>
         </div>
         <hr class="h-sep">
         <div class="h-btns">

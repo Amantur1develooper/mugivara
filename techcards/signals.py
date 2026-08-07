@@ -4,10 +4,50 @@ from decimal import Decimal
 
 
 @receiver(post_save, sender="orders.Order")
-def deduct_ingredients_on_close(sender, instance, **kwargs):
-    """When an order is closed, deduct ingredients from stock."""
-    if instance.status != "closed":
+def handle_order_stock(sender, instance, **kwargs):
+    """Deduct ingredients on close; return them on cancellation."""
+    if instance.status == "cancelled":
+        _return_ingredients(instance)
+    elif instance.status == "closed":
+        _deduct_ingredients(instance)
+
+
+def _return_ingredients(order):
+    """Return ingredients to stock when an order is cancelled."""
+    from techcards.models import IngredientStock, StockMovement
+
+    # Prevent double-return if already processed
+    if StockMovement.objects.filter(order=order, move_type=StockMovement.TYPE_RETURN).exists():
         return
+
+    sale_movements = StockMovement.objects.filter(
+        order=order, move_type=StockMovement.TYPE_SALE
+    )
+    if not sale_movements.exists():
+        return
+
+    for movement in sale_movements:
+        return_qty = abs(movement.qty)
+        stock, _ = IngredientStock.objects.get_or_create(
+            branch=order.branch,
+            ingredient=movement.ingredient,
+            defaults={"qty": Decimal("0"), "cost_per_unit": Decimal("0")},
+        )
+        stock.qty += return_qty
+        stock.save(update_fields=["qty", "updated_at"])
+
+        StockMovement.objects.create(
+            branch=order.branch,
+            ingredient=movement.ingredient,
+            qty=return_qty,
+            move_type=StockMovement.TYPE_RETURN,
+            order=order,
+            note="Возврат при отмене заказа",
+        )
+
+
+def _deduct_ingredients(order):
+    """Deduct ingredients from stock when an order is closed."""
 
     from orders.models import OrderItem
     from techcards.models import TechCard, IngredientStock, StockMovement
@@ -15,9 +55,9 @@ def deduct_ingredients_on_close(sender, instance, **kwargs):
     deductions = {}  # ingredient_id -> Decimal qty
 
     # ── Обычные блюда через техкарты ─────────────────────────────────────────
-    for oi in instance.items.select_related("item").all():
+    for oi in order.items.select_related("item").all():
         try:
-            tc = TechCard.objects.get(item=oi.item, branch=instance.branch, is_active=True)
+            tc = TechCard.objects.get(item=oi.item, branch=order.branch, is_active=True)
         except TechCard.DoesNotExist:
             continue
         scale = Decimal(str(oi.qty)) / (tc.yield_qty or Decimal("1"))
@@ -32,7 +72,7 @@ def deduct_ingredients_on_close(sender, instance, **kwargs):
     #            2) техкарта привязанного branch_item (если есть)
     try:
         from catalog.models import ConstructorIngredient
-        for coi in instance.constructor_items.all():
+        for coi in order.constructor_items.all():
             order_qty = Decimal(str(coi.qty))
             for sel in (coi.ingredients_snapshot or []):
                 for ing_entry in sel.get("ings", []):
@@ -61,7 +101,7 @@ def deduct_ingredients_on_close(sender, instance, **kwargs):
                         try:
                             tc = TechCard.objects.get(
                                 item=ci.branch_item.item,
-                                branch=instance.branch,
+                                branch=order.branch,
                                 is_active=True,
                             )
                         except TechCard.DoesNotExist:
@@ -80,7 +120,7 @@ def deduct_ingredients_on_close(sender, instance, **kwargs):
     # ── Применяем списание ────────────────────────────────────────────────────
     for ing_id, qty in deductions.items():
         stock, _ = IngredientStock.objects.get_or_create(
-            branch=instance.branch,
+            branch=order.branch,
             ingredient_id=ing_id,
             defaults={"qty": Decimal("0"), "cost_per_unit": Decimal("0")},
         )
@@ -88,9 +128,9 @@ def deduct_ingredients_on_close(sender, instance, **kwargs):
         stock.save(update_fields=["qty", "updated_at"])
 
         StockMovement.objects.create(
-            branch=instance.branch,
+            branch=order.branch,
             ingredient_id=ing_id,
             qty=-qty,
             move_type=StockMovement.TYPE_SALE,
-            order=instance,
+            order=order,
         )

@@ -97,12 +97,6 @@
               <div style="font-size:11px;color:var(--teal);margin-top:2px;font-weight:600">🚚 Бесплатно от {{ branch.free_delivery_from|floatformat:"0" }} сом</div>
             {% endif %}
           </div>
-          <form method="post" action="{% url 'dashboard:printshop_branch_toggle' branch.id %}">
-            {% csrf_token %}
-            <button type="submit" class="toggle-btn {% if branch.is_active %}toggle-open{% else %}toggle-closed{% endif %}">
-              {% if branch.is_active %}Открыт{% else %}Закрыт{% endif %}
-            </button>
-          </form>
         </div>
 
         <div class="ps-btns">

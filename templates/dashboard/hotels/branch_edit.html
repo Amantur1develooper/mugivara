@@ -13,18 +13,7 @@
 </div>
 
 <div class="db-card">
-  <div class="db-card-title" style="display:flex;justify-content:space-between;align-items:center">
-    <span>⚙️ Настройки филиала</span>
-    <form method="post" action="{% url 'dashboard:hotel_branch_toggle' branch.id %}">
-      {% csrf_token %}
-      <button type="submit"
-              style="padding:7px 16px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid;
-                     {% if branch.is_active %}background:rgba(0,184,150,.08);border-color:rgba(0,184,150,.25);color:var(--teal)
-                     {% else %}background:var(--bg);border-color:var(--border);color:var(--muted){% endif %}">
-        {% if branch.is_active %}🟢 Открыт — закрыть{% else %}⛔ Закрыт — открыть{% endif %}
-      </button>
-    </form>
-  </div>
+  <div class="db-card-title">⚙️ Настройки филиала</div>
 
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
