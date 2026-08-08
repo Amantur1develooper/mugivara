@@ -389,7 +389,10 @@ def tc_ingredient_line_delete(request, line_id):
     _branch_or_403(request, line.tech_card.branch_id)
     tc = line.tech_card
     line.delete()
-    _save_version(tc, request.user)
+    try:
+        _save_version(tc, request.user)
+    except Exception:
+        pass
     return JsonResponse({"ok": True})
 
 

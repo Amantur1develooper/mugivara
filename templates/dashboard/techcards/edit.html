@@ -352,11 +352,31 @@ async function updateLineUnit(id, unit) {
 
 async function deleteLine(id, btn) {
   if (!confirm("Удалить ингредиент из техкарты?")) return;
-  const r = await fetch(DELETE_URL.replace("{id}", id), { method:"POST", headers:{"X-CSRFToken":CSRF()} });
-  const d = await r.json();
-  if (d.ok) {
-    document.getElementById("ing-row-" + id).remove();
-    recalcTotal();
+  btn.disabled = true;
+  try {
+    const r = await fetch(DELETE_URL.replace("{id}", id), {
+      method: "POST",
+      headers: {"X-CSRFToken": CSRF()},
+    });
+    if (!r.ok) {
+      const text = await r.text();
+      console.error("Delete failed", r.status, text);
+      alert("Ошибка при удалении: " + r.status + ". Проверьте консоль.");
+      btn.disabled = false;
+      return;
+    }
+    const d = await r.json();
+    if (d.ok) {
+      document.getElementById("ing-row-" + id).remove();
+      recalcTotal();
+    } else {
+      alert("Не удалось удалить: " + (d.error || "неизвестная ошибка"));
+      btn.disabled = false;
+    }
+  } catch(e) {
+    console.error("deleteLine error:", e);
+    alert("Ошибка: " + e.message);
+    btn.disabled = false;
   }
 }
 
