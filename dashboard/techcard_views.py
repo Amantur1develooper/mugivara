@@ -181,9 +181,11 @@ def tc_ingredient_list(request, branch_id):
 @require_POST
 def tc_ingredient_delete(request, ing_id):
     ing = get_object_or_404(Ingredient, pk=ing_id)
-    _branch_or_403(request, ing.restaurant.branches.filter(
-        id__in=request.POST.get("branch_id", "0")
-    ).values_list("id", flat=True).first() or 0)
+    try:
+        branch_id = int(request.POST.get("branch_id", 0))
+    except (ValueError, TypeError):
+        branch_id = 0
+    _branch_or_403(request, branch_id)
     ing.is_active = False
     ing.save(update_fields=["is_active"])
     return JsonResponse({"ok": True})
