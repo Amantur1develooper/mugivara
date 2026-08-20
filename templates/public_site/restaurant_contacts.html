@@ -9,7 +9,47 @@
 /* ════════════════════════════════
    RESTAURANT CONTACTS — mobile-first
 ════════════════════════════════ */
-.rc-page { max-width: 860px; margin: 0 auto; padding: 0 16px 80px; }
+.rc-page { max-width: 1200px; margin: 0 auto; padding: 0 16px 80px; }
+
+/* ── 2-COL LAYOUT desktop ── */
+.rc-layout { display: flex; flex-direction: column; gap: 32px; }
+@media (min-width: 860px) {
+  .rc-layout { flex-direction: row; align-items: flex-start; gap: 36px; }
+  .rc-main  { flex: 1; min-width: 0; }
+  .rc-aside { width: 340px; flex-shrink: 0; position: sticky; top: 108px; display: flex; flex-direction: column; gap: 16px; }
+}
+
+/* ── SIDEBAR QUICK-CONTACTS ── */
+.rc-qc {
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 24px; padding: 20px;
+  box-shadow: 0 2px 16px rgba(0,0,0,.06);
+}
+.rc-qc-title {
+  font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 13px;
+  color: var(--text); margin-bottom: 14px; letter-spacing: -.3px;
+}
+.rc-qc-link {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border-radius: 14px;
+  border: 1.5px solid var(--border); background: var(--bg);
+  color: var(--text); text-decoration: none; font-size: 13px; font-weight: 600;
+  transition: all .15s; margin-bottom: 8px;
+}
+.rc-qc-link:last-child { margin-bottom: 0; }
+.rc-qc-link:hover { background: var(--card2); border-color: rgba(0,0,0,.13); transform: translateY(-1px); }
+.rc-qc-link.wa  { background: #25D366; border-color: #25D366; color: #fff; box-shadow: 0 4px 14px rgba(37,211,102,.25); }
+.rc-qc-link.wa:hover { background: #1fba5a; }
+.rc-qc-link.ig  { background: rgba(168,4,183,.08); border-color: rgba(168,4,183,.2); color: #a804b7; }
+.rc-qc-link.ig:hover { background: rgba(168,4,183,.14); }
+.rc-qc-link.tg  { background: rgba(0,136,204,.08); border-color: rgba(0,136,204,.2); color: #0088cc; }
+.rc-qc-link.tg:hover { background: rgba(0,136,204,.14); }
+.rc-qc-link.map { background: rgba(255,77,28,.06); border-color: rgba(255,77,28,.2); color: var(--accent,#ff4d1c); }
+.rc-qc-link.map:hover { background: rgba(255,77,28,.12); }
+.rc-qc-icon {
+  width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+  background: rgba(0,0,0,.06); display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
 
 /* ── HERO ── */
 .rch-hero {
@@ -96,7 +136,10 @@
 }
 
 /* ── BRANCH CARDS ── */
-.bc-list { display: flex; flex-direction: column; gap: 16px; }
+.bc-list { display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media (min-width: 860px) {
+  .bc-list { grid-template-columns: 1fr 1fr; }
+}
 
 .bc {
   background: var(--card); border: 1.5px solid var(--border);
@@ -112,7 +155,7 @@
 
 /* Cover */
 .bc-cover {
-  position: relative; height: 180px;
+  position: relative; aspect-ratio: 3/1;
   background: var(--card2); overflow: hidden;
 }
 .bc-cover img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .4s ease; }
@@ -185,10 +228,11 @@
 .bc-btn:hover { background: var(--card2); border-color: rgba(0,0,0,.12); }
 
 .bc-btn.menu {
-  background: var(--text); border-color: var(--text); color: #fff;
-  box-shadow: 0 4px 16px rgba(0,0,0,.15);
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: transparent; color: #fff;
+  box-shadow: 0 4px 16px rgba(255,77,28,.3);
 }
-.bc-btn.menu:hover { opacity: .9; }
+.bc-btn.menu:hover { opacity: .9; transform: translateY(-1px); }
 
 .bc-btn.wa   { background: #25D366; border-color: #25D366; color: #fff; box-shadow: 0 4px 14px rgba(37,211,102,.3); }
 .bc-btn.wa:hover { background: #1fba5a; }
@@ -241,7 +285,7 @@
   .rch-title { font-size: 17px; letter-spacing: -.6px; margin-bottom: 5px; }
   .rch-back { top: 10px; left: 12px; padding: 5px 12px; font-size: 11px; }
 
-  .bc-cover { height: 150px; }
+  .bc-cover { aspect-ratio: 4/3; }
   .bc-cover-name { font-size: 13px; }
   .bc-cover-addr { display: none; }
   .bc-body { padding: 14px 14px 0; }
@@ -320,133 +364,160 @@
     </div>
   </div>
 
-  <!-- ══ ФИЛИАЛЫ ══ -->
-  <div class="rc-label">{% trans "Филиалы" %}</div>
-  <h2 class="rc-heading">{% trans "Выберите филиал" %}</h2>
+  <div class="rc-layout">
 
-  <div class="bc-list">
-    {% for b in branches %}
-    <div class="bc">
+    <!-- ══ ЛЕВАЯ КОЛОНКА: Филиалы ══ -->
+    <div class="rc-main">
+      <div class="rc-label">{% trans "Филиалы" %}</div>
+      <h2 class="rc-heading">{% trans "Выберите филиал" %}</h2>
 
-      <!-- Cover -->
-      <div class="bc-cover">
-        {% if b.cover_photo %}
-          <img src="{{ b.cover_photo.url }}" alt="{% t b 'name' %}" loading="lazy">
-        {% else %}
-          <div class="bc-cover-empty"><span class="bc-cover-empty-icon">🍽️</span></div>
-        {% endif %}
-        <div class="bc-cover-grad"></div>
-
-        <div class="bc-status {% if b.is_open_now %}open{% else %}closed{% endif %}">
-          <span class="bc-status-dot"></span>
-          {% if b.is_open_now %}{% trans "Открыто" %}{% else %}{% trans "Закрыто" %}{% endif %}
-        </div>
-
-        {% if b.is_open_24h %}
-          <span class="bc-hours">🌙 {% trans "Круглосуточно" %}</span>
-        {% elif b.open_time and b.close_time %}
-          <span class="bc-hours">{{ b.open_time|time:"H:i" }} – {{ b.close_time|time:"H:i" }}</span>
-        {% endif %}
-
-        <div class="bc-cover-bottom">
-          <div class="bc-cover-name">{% t b "name" %}</div>
-          {% if b.address %}<div class="bc-cover-addr">📍 {{ b.address }}</div>{% endif %}
-        </div>
-      </div>
-
-      <!-- Body -->
-      <div class="bc-body">
-        <div class="bc-chips">
-          {% if b.delivery_enabled %}
-            <span class="bc-chip delivery">🚚 {% trans "Доставка" %} · {{ b.delivery_fee|floatformat:"0" }} {% trans "сом" %}</span>
-            {% if b.min_order_amount %}
-              <span class="bc-chip">{% trans "Мин." %} {{ b.min_order_amount|floatformat:"0" }} {% trans "сом" %}</span>
+      <div class="bc-list">
+        {% for b in branches %}
+        <div class="bc">
+          <div class="bc-cover">
+            {% if b.cover_photo %}
+              <img src="{{ b.cover_photo.url }}" alt="{% t b 'name' %}" loading="lazy">
+            {% else %}
+              <div class="bc-cover-empty"><span class="bc-cover-empty-icon">🍽️</span></div>
             {% endif %}
-          {% else %}
-            <span class="bc-chip">🥡 {% trans "Самовывоз" %}</span>
-          {% endif %}
-          {% if b.is_open_24h %}
-            <span class="bc-chip allday">🌙 24/7</span>
-          {% endif %}
-        </div>
-
-        <div class="bc-actions">
-          <!-- Контакты: Позвонить + WhatsApp -->
-          {% if b.phone %}
-          <div class="bc-actions-row">
-            <a href="tel:{{ b.phone }}" class="bc-btn call">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
-              {% trans "Позвонить" %}
-            </a>
-            <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}"
-               target="_blank" rel="noopener" class="bc-btn wa">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-1-.3-.1-.5-.1-.7.1s-.8 1-.9 1.2-.3.2-.6 0c-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5s0-.4 0-.5c0-.2-.7-1.7-1-2.3C9.3 8.1 9 8.1 8.8 8.1H8.3c-.2 0-.5.1-.8.4C7.2 8.8 6.3 9.6 6.3 11.3s1.2 3.5 1.4 3.7c.2.2 2.4 3.7 5.9 5.2 2.3 1 3.2 1.1 4.3.9.7-.1 2.2-.9 2.5-1.7.3-.8.3-1.5.2-1.7-.1-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.9.5 3.7 1.4 5.3L2 22l4.9-1.3C8.3 21.5 10.1 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>
-              WhatsApp
-            </a>
+            <div class="bc-cover-grad"></div>
+            <div class="bc-status {% if b.is_open_now %}open{% else %}closed{% endif %}">
+              <span class="bc-status-dot"></span>
+              {% if b.is_open_now %}{% trans "Открыто" %}{% else %}{% trans "Закрыто" %}{% endif %}
+            </div>
+            {% if b.is_open_24h %}
+              <span class="bc-hours">🌙 {% trans "Круглосуточно" %}</span>
+            {% elif b.open_time and b.close_time %}
+              <span class="bc-hours">{{ b.open_time|time:"H:i" }} – {{ b.close_time|time:"H:i" }}</span>
+            {% endif %}
+            <div class="bc-cover-bottom">
+              <div class="bc-cover-name">{% t b "name" %}</div>
+              {% if b.address %}<div class="bc-cover-addr">📍 {{ b.address }}</div>{% endif %}
+            </div>
           </div>
-          {% endif %}
 
-          <!-- Маршрут + Бронирование -->
-          <div class="bc-actions-row">
-            {% if b.map_url %}
-            <a href="{{ b.map_url }}" target="_blank" rel="noopener" class="bc-btn map">📍 {% trans "Маршрут" %}</a>
-            {% endif %}
-            {% if b.phone %}
-              {% with wa=b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' %}
-              <a href="https://wa.me/{{ wa }}?text={% filter urlencode %}Здравствуйте! Хочу забронировать стол.
+          <div class="bc-body">
+            <div class="bc-chips">
+              {% if b.delivery_enabled %}
+                <span class="bc-chip delivery">🚚 {% trans "Доставка" %} · {{ b.delivery_fee|floatformat:"0" }} {% trans "сом" %}</span>
+                {% if b.min_order_amount %}
+                  <span class="bc-chip">{% trans "Мин." %} {{ b.min_order_amount|floatformat:"0" }} {% trans "сом" %}</span>
+                {% endif %}
+              {% else %}
+                <span class="bc-chip">🥡 {% trans "Самовывоз" %}</span>
+              {% endif %}
+              {% if b.is_open_24h %}<span class="bc-chip allday">🌙 24/7</span>{% endif %}
+            </div>
+            <div class="bc-actions">
+              {% if b.phone %}
+              <div class="bc-actions-row">
+                <a href="tel:{{ b.phone }}" class="bc-btn call">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+                  {% trans "Позвонить" %}
+                </a>
+                <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" rel="noopener" class="bc-btn wa">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-1-.3-.1-.5-.1-.7.1s-.8 1-.9 1.2-.3.2-.6 0c-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5s0-.4 0-.5c0-.2-.7-1.7-1-2.3C9.3 8.1 9 8.1 8.8 8.1H8.3c-.2 0-.5.1-.8.4C7.2 8.8 6.3 9.6 6.3 11.3s1.2 3.5 1.4 3.7c.2.2 2.4 3.7 5.9 5.2 2.3 1 3.2 1.1 4.3.9.7-.1 2.2-.9 2.5-1.7.3-.8.3-1.5.2-1.7-.1-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.9.5 3.7 1.4 5.3L2 22l4.9-1.3C8.3 21.5 10.1 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>
+                  WhatsApp
+                </a>
+              </div>
+              {% endif %}
+              <div class="bc-actions-row">
+                {% if b.map_url %}
+                <a href="{{ b.map_url }}" target="_blank" rel="noopener" class="bc-btn map">📍 {% trans "Маршрут" %}</a>
+                {% endif %}
+                {% if b.phone %}
+                  {% with wa=b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' %}
+                  <a href="https://wa.me/{{ wa }}?text={% filter urlencode %}Здравствуйте! Хочу забронировать стол.
 
 Филиал: {% t b "name" %}
 Дата: __.__.____
 Время: __:__
 Гостей: __
 Имя: __{% endfilter %}" target="_blank" rel="noopener" class="bc-btn book">🗓️ {% trans "Бронирование" %}</a>
-              {% endwith %}
+                  {% endwith %}
+                {% else %}
+                  <a href="{% url 'public_site:reservation' b.id %}" class="bc-btn book">🗓️ {% trans "Бронирование" %}</a>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div class="bc-cta-row">
+            {% if b.external_url %}
+            <a href="{{ b.external_url }}" target="_blank" rel="noopener" class="bc-btn menu" style="width:100%">🍽️ {% trans "Открыть меню" %} ↗</a>
             {% else %}
-              <a href="{% url 'public_site:reservation' b.id %}" class="bc-btn book">🗓️ {% trans "Бронирование" %}</a>
+            <a href="{% url 'public_site:branch_menu' b.id %}" class="bc-btn menu" style="width:100%">🍽️ {% trans "Открыть меню" %}</a>
             {% endif %}
           </div>
         </div>
+        {% empty %}
+        <div style="text-align:center;padding:60px 24px;background:var(--card);border:1.5px solid var(--border);border-radius:24px">
+          <div style="font-size:48px;margin-bottom:14px">🏗️</div>
+          <div style="font-family:'Unbounded',sans-serif;font-size:15px;font-weight:800;color:var(--text)">{% trans "Филиалы пока не добавлены" %}</div>
+        </div>
+        {% endfor %}
       </div>
+    </div>
 
-      <!-- Main CTA -->
-      <div class="bc-cta-row">
-        {% if b.external_url %}
-        <a href="{{ b.external_url }}" target="_blank" rel="noopener" class="bc-btn menu" style="width:100%">
-          🍽️ {% trans "Открыть меню" %} ↗
-        </a>
-        {% else %}
-        <a href="{% url 'public_site:branch_menu' b.id %}" class="bc-btn menu" style="width:100%">
-          🍽️ {% trans "Открыть меню" %}
-        </a>
+    <!-- ══ ПРАВАЯ КОЛОНКА: sidebar ══ -->
+    <div class="rc-aside">
+
+      <!-- Быстрые контакты -->
+      {% if restaurant.phone or restaurant.whatsapp or restaurant.instagram or restaurant.telegram or restaurant.map_url %}
+      <div class="rc-qc">
+        <div class="rc-qc-title">📞 {% trans "Контакты" %}</div>
+        {% if restaurant.phone %}
+          <a href="tel:{{ restaurant.phone }}" class="rc-qc-link">
+            <span class="rc-qc-icon">📞</span> {{ restaurant.phone }}
+          </a>
+        {% endif %}
+        {% if restaurant.whatsapp %}
+          <a href="https://wa.me/{{ restaurant.whatsapp|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" rel="noopener" class="rc-qc-link wa">
+            <span class="rc-qc-icon" style="background:rgba(255,255,255,.25)">💬</span> WhatsApp
+          </a>
+        {% elif restaurant.phone %}
+          <a href="https://wa.me/{{ restaurant.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" rel="noopener" class="rc-qc-link wa">
+            <span class="rc-qc-icon" style="background:rgba(255,255,255,.25)">💬</span> WhatsApp
+          </a>
+        {% endif %}
+        {% if restaurant.instagram %}
+          <a href="{{ restaurant.instagram }}" target="_blank" rel="noopener" class="rc-qc-link ig">
+            <span class="rc-qc-icon" style="background:rgba(168,4,183,.12)">📷</span> Instagram
+          </a>
+        {% endif %}
+        {% if restaurant.telegram %}
+          <a href="{% if restaurant.telegram|slice:':1' == '@' %}https://t.me/{{ restaurant.telegram|slice:'1:' }}{% elif 'http' in restaurant.telegram %}{{ restaurant.telegram }}{% else %}https://t.me/{{ restaurant.telegram }}{% endif %}" target="_blank" rel="noopener" class="rc-qc-link tg">
+            <span class="rc-qc-icon" style="background:rgba(0,136,204,.1)">✈️</span> Telegram
+          </a>
+        {% endif %}
+        {% if restaurant.map_url %}
+          <a href="{{ restaurant.map_url }}" target="_blank" rel="noopener" class="rc-qc-link map">
+            <span class="rc-qc-icon" style="background:rgba(255,77,28,.08)">📍</span> {% trans "На карте" %}
+          </a>
         {% endif %}
       </div>
-
-    </div>
-    {% empty %}
-    <div style="text-align:center;padding:60px 24px;background:var(--card);border:1.5px solid var(--border);border-radius:24px">
-      <div style="font-size:48px;margin-bottom:14px">🏗️</div>
-      <div style="font-family:'Unbounded',sans-serif;font-size:15px;font-weight:800;color:var(--text)">{% trans "Филиалы пока не добавлены" %}</div>
-    </div>
-    {% endfor %}
-  </div>
-
-  <!-- ══ О РЕСТОРАНЕ ══ -->
-  {% t restaurant "about" as about_text %}
-  <div class="rch-about reveal" style="margin-top:40px">
-    <div class="rch-about-header">
-      <div class="rch-about-label">{% trans "О заведении" %}</div>
-      <div class="rch-about-title">{% t restaurant "name" %}</div>
-    </div>
-    <div class="rch-about-body">
-      {% if about_text %}
-        <p class="rch-about-text">{{ about_text }}</p>
-      {% else %}
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="font-size:36px">✍️</div>
-          <div style="font-family:'Unbounded',sans-serif;font-size:15px;font-weight:800;color:var(--text)">{% trans "Описание не добавлено" %}</div>
-          <div style="font-size:13px;color:var(--muted);line-height:1.6">{% trans "Владелец может добавить информацию через панель управления" %}</div>
-        </div>
       {% endif %}
+
+      <!-- О ресторане -->
+      {% t restaurant "about" as about_text %}
+      <div class="rch-about reveal">
+        <div class="rch-about-header">
+          <div class="rch-about-label">{% trans "О заведении" %}</div>
+          <div class="rch-about-title">{% t restaurant "name" %}</div>
+        </div>
+        <div class="rch-about-body">
+          {% if about_text %}
+            <p class="rch-about-text">{{ about_text }}</p>
+          {% else %}
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="font-size:36px">✍️</div>
+              <div style="font-family:'Unbounded',sans-serif;font-size:15px;font-weight:800;color:var(--text)">{% trans "Описание не добавлено" %}</div>
+              <div style="font-size:13px;color:var(--muted);line-height:1.6">{% trans "Владелец может добавить информацию через панель управления" %}</div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
     </div>
   </div>
 

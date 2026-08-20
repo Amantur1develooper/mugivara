@@ -15,6 +15,7 @@
     position: relative; overflow: hidden;
     min-height: clamp(280px, 34vw, 420px);
     display: flex; flex-direction: column; justify-content: flex-end;
+    border-radius: 0 0 28px 28px;
   }
   .bm-hero-bg {
     position: absolute; inset: 0;
@@ -27,10 +28,14 @@
   }
   .bm-hero:hover .bm-hero-photo { transform: scale(1.03); }
 
-  /* ── бренд-бейдж: логотип + название ── */
+  /* ── бренд: лейбл + название ── */
   .bm-hero-brand {
-    display: flex; align-items: center; gap: 14px;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
     margin-bottom: 16px;
+  }
+  .bm-hero-menu-tag {
+    font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--accent); opacity: 0.9;
   }
   .bm-hero-logo {
     width: 60px; height: 60px; flex-shrink: 0; border-radius: 18px;
@@ -58,16 +63,19 @@
   }
   .bm-hero-content {
     position: relative; z-index: 1;
-    padding: 32px 40px 28px;
+    padding: 32px 40px 8px;
   }
   .bm-hero-back {
+    position: absolute; top: 20px; left: 40px; z-index: 2;
     display: inline-flex; align-items: center; gap: 8px;
     padding: 7px 16px; border-radius: 100px;
     font-size: 12px; font-weight: 600;
     background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
     color: rgba(255,255,255,0.75); text-decoration: none;
     backdrop-filter: blur(8px); transition: all 0.2s;
-    margin-bottom: 24px; display: inline-flex;
+  }
+  @media (max-width: 640px) {
+    .bm-hero-back { top: 6px; left: 14px; }
   }
   .bm-hero-back:hover { background: rgba(255,255,255,0.16); color: white; }
 
@@ -75,8 +83,9 @@
 
   .bm-hero-title {
     font-family: 'Unbounded', sans-serif; font-weight: 900;
-    font-size: clamp(24px, 4vw, 48px); letter-spacing: -2px;
+    font-size: clamp(26px, 4vw, 52px); letter-spacing: -2px;
     color: white; line-height: 1; margin-bottom: 12px;
+    text-shadow: 0 4px 24px rgba(0,0,0,0.4);
   }
   .bm-hero-brand .bm-hero-title { margin-bottom: 0; }
   .bm-hero-meta {
@@ -132,7 +141,7 @@
   ════════════════════════════════════════ */
   .bm-cats-sticky {
     position: sticky; top: 92px; z-index: 100;
-    padding: 14px 20px;
+    padding: 0 16px;
   }
   .bm-cats-row {
     max-width: 1200px; margin: 0 auto; position: relative;
@@ -482,8 +491,8 @@
      RESPONSIVE
   ════════════════════════════════════════ */
   @media (max-width: 768px) {
-    .bm-hero { min-height: clamp(200px, 46vw, 300px); }
-    .bm-hero-content { padding: 18px 16px 18px; }
+    .bm-hero { min-height: clamp(130px, 32vw, 180px); }
+    .bm-hero-content { padding: 12px 16px 2px; }
     .bm-hero-logo { width: 48px; height: 48px; border-radius: 14px; }
     .bm-hero-logo-fallback { font-size: 19px; }
     /* логотип и название — отдельно, друг под другом */
@@ -493,7 +502,7 @@
     .bm-hero-cart { display: none; }
     .bm-hero-row { align-items: flex-start; }
     .bm-content { padding: 20px 16px 120px; }
-    .bm-cats-sticky { padding: 10px 12px; }
+    .bm-cats-sticky { padding: 0 12px; }
     .bm-cats-inner { padding: 4px 4px 4px 10px; }
     .bm-grid { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 12px; }
     .dish-photo { height: 150px; }
@@ -505,7 +514,7 @@
   @media (max-width: 420px) {
     .bm-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .dish-photo { height: 130px; }
-    .bm-hero { min-height: clamp(180px, 48vw, 260px); }
+    .bm-hero { min-height: clamp(110px, 30vw, 150px); }
     .bm-hero-title { font-size: 22px; }
     .bm-hero-logo { width: 42px; height: 42px; border-radius: 12px; }
   }
@@ -534,30 +543,23 @@
     <div class="bm-hero-overlay"></div>
     <div class="bm-hero-dots"></div>
 
-    <div class="bm-hero-content">
-      {# назад #}
-      {% if restaurant_slug %}
-      <a href="{% url 'public_site:restaurant_detail' restaurant_slug %}" class="bm-hero-back">
-        ← {% t branch.restaurant "name" %}
-      </a>
-      {% else %}
-      <a href="{% url 'public_site:restaurant_detail' branch.restaurant.slug %}" class="bm-hero-back">
-        ← {% t branch.restaurant "name" %}
-      </a>
-      {% endif %}
+    {# назад — прямо в hero, чтобы absolute позиционировался от него #}
+    {% if restaurant_slug %}
+    <a href="{% url 'public_site:restaurant_detail' restaurant_slug %}" class="bm-hero-back">
+      ← {% t branch.restaurant "name" %}
+    </a>
+    {% else %}
+    <a href="{% url 'public_site:restaurant_detail' branch.restaurant.slug %}" class="bm-hero-back">
+      ← {% t branch.restaurant "name" %}
+    </a>
+    {% endif %}
 
+    <div class="bm-hero-content">
       <div class="bm-hero-row">
         <div>
           {% t branch.restaurant "name" as rest_name %}
           <div class="bm-hero-brand">
-            <div class="bm-hero-logo">
-              {% if branch.restaurant.logo %}
-                <img src="{{ branch.restaurant.logo.url }}" alt="{{ rest_name }}">
-              {% else %}
-                <div class="bm-hero-logo-fallback">{{ rest_name|slice:":1"|upper }}</div>
-              {% endif %}
-            </div>
-            <h1 class="bm-hero-title">{% t branch "name" %}</h1>
+            <span class="bm-hero-menu-tag">М Е Н Ю</span>
           </div>
           <div class="bm-hero-meta">
             {% if branch.is_open_now %}

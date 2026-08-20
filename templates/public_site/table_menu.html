@@ -11,32 +11,44 @@
   body { background: var(--bg); }
   .tm-wrap { max-width: 900px; margin: 0 auto; }
 
+  /* ── SUPPRESS MAIN NAV on table page ── */
+  .wb-nav-wrap, .wb-drawer { display: none !important; }
+  .wb-main { padding-top: 0 !important; }
+
   /* ── TOP BAR ── */
   .tm-topbar {
-    position: sticky; top: 92px; z-index: 110;
+    position: sticky; top: 0; z-index: 110;
     background: rgba(255,255,255,.97); backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--border);
     box-shadow: 0 2px 12px rgba(0,0,0,.06);
   }
   .tm-topbar-inner {
     max-width: 900px; margin: 0 auto;
-    padding: 10px 16px;
-    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px 4px;
+    display: flex; flex-direction: column; gap: 4px;
   }
+  .tm-tb-row1 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .tm-tb-row2 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  @media (min-width: 640px) {
+    .tm-topbar-inner { flex-direction: row; align-items: center; padding: 10px 16px; gap: 14px; }
+    .tm-tb-row1, .tm-tb-row2 { gap: 10px; }
+    .tm-tb-row2 { flex: 1; }
+  }
+
   .tm-place-info { flex: 1; min-width: 0; }
   .tm-place-name {
     font-family: 'Unbounded', sans-serif; font-weight: 800;
-    font-size: 14px; color: var(--text); letter-spacing: -.3px;
+    font-size: 13px; color: var(--text); letter-spacing: -.3px;
   }
   .tm-branch-name { font-size: 11px; color: var(--muted); margin-top: 1px; }
 
   /* ── CALL WAITER ── */
   .tm-call-btn {
-    display: inline-flex; align-items: center; gap: 7px;
-    padding: 10px 18px; border-radius: 12px; border: none; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 14px; border-radius: 12px; border: none; cursor: pointer;
     background: linear-gradient(135deg, #F59E0B, #D97706);
     color: white; font-family: 'Unbounded', sans-serif;
-    font-size: 12px; font-weight: 700; white-space: nowrap;
+    font-size: 11px; font-weight: 700; white-space: nowrap;
     box-shadow: 0 4px 14px rgba(245,158,11,.35);
     transition: transform .15s, box-shadow .15s;
   }
@@ -45,28 +57,91 @@
   .tm-call-btn.called { background: linear-gradient(135deg, #10B981, #059669); box-shadow: 0 4px 14px rgba(16,185,129,.35); }
 
   /* ── CAT NAV ── */
-  .tm-cats {
+  .tm-cats-wrap {
+    padding: 10px 16px 6px;
     max-width: 900px; margin: 0 auto;
-    padding: 8px 16px 10px;
-    display: flex; gap: 6px; overflow-x: auto;
-    scrollbar-width: none;
   }
-  .tm-cats::-webkit-scrollbar { display: none; }
+  .tm-cats-row {
+    display: flex; align-items: center;
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    box-shadow: 0 8px 24px rgba(13,17,23,0.08), 0 2px 8px rgba(13,17,23,0.04);
+    padding: 5px;
+    position: relative;
+  }
+  .tm-cats-inner {
+    flex: 1; min-width: 0;
+    padding: 3px 4px 3px 10px;
+    overflow-x: auto; scrollbar-width: none;
+    display: flex; gap: 4px; align-items: center;
+  }
+  .tm-cats-inner::-webkit-scrollbar { display: none; }
+  .tm-cats-more-btn {
+    flex-shrink: 0; width: 34px; height: 34px; margin-left: 2px;
+    border-radius: 50%; border: none;
+    background: var(--card2, #f5f5f5); color: var(--muted);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; transition: all .2s; position: relative; z-index: 1;
+  }
+  .tm-cats-more-btn:hover { color: var(--text); background: var(--border); }
+  .tm-cats-more-btn.open {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff; box-shadow: 0 4px 14px var(--glow);
+  }
+  .tm-cats-more-btn svg { transition: transform .25s; }
+  .tm-cats-more-btn.open svg { transform: rotate(180deg); }
+  .tm-cats-dropdown {
+    position: absolute;
+    top: calc(100% + 8px); right: 0; left: 0;
+    background: rgba(255,255,255,0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    box-shadow: 0 16px 48px rgba(13,17,23,0.13), 0 4px 16px rgba(13,17,23,0.06);
+    padding: 12px; z-index: 200;
+    display: flex; flex-wrap: wrap; gap: 7px;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transform: translateY(-6px) scale(0.98);
+    transition: opacity .2s, transform .2s, visibility .2s;
+  }
+  .tm-cats-dropdown.open {
+    opacity: 1; visibility: visible; pointer-events: auto;
+    transform: translateY(0) scale(1);
+  }
   .tm-cat-pill {
-    flex-shrink: 0; padding: 7px 16px; border-radius: 100px;
-    font-size: 12px; font-weight: 600; text-decoration: none;
-    border: 1.5px solid var(--border); background: var(--bg);
+    flex-shrink: 0; padding: 8px 16px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; font-family: 'Geologica', 'Unbounded', sans-serif;
+    border: 1.5px solid transparent; background: var(--card2, #f5f5f5);
     color: var(--text2); transition: all .18s; white-space: nowrap;
-    cursor: pointer;
+    cursor: pointer; text-decoration: none;
   }
-  .tm-cat-pill:hover { border-color: var(--accent); color: var(--accent); }
-  .tm-cat-pill.active { background: var(--text); border-color: var(--text); color: #fff; }
+  .tm-cat-pill:hover { background: var(--bg); color: var(--text); border-color: var(--border); }
+  .tm-cat-pill.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-color: transparent; color: #fff;
+    box-shadow: 0 5px 16px var(--glow);
+  }
+
+  /* ── TOPBAR BRANDING ── */
+  .tm-wb-logo {
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 900; font-size: 15px; letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 1px;
+    flex-shrink: 0;
+  }
+  .tm-wb-logo span { -webkit-text-fill-color: var(--teal); }
+  .tm-lang-row { display: flex; gap: 3px; }
+  .tm-lang-row .wb-lang-btn { padding: 4px 8px; font-size: 11px; }
 
   /* ── CONTENT ── */
   .tm-content { max-width: 900px; margin: 0 auto; padding: 20px 16px 140px; }
 
   /* ── CATEGORY SECTION ── */
-  .tm-cat-section { scroll-margin-top: 185px; margin-bottom: 40px; }
+  .tm-cat-section { scroll-margin-top: 160px; margin-bottom: 40px; }
   .tm-cat-header {
     display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
   }
@@ -115,7 +190,6 @@
     padding: 3px 9px; border-radius: 100px; font-size: 10px; font-weight: 700;
     background: rgba(255,77,28,.88); color: white; backdrop-filter: blur(4px);
   }
-  .tm-rating { display:inline-flex; align-items:center; gap:3px; font-size:11px; font-weight:700; color:#F59E0B; margin-top:2px; }
   .tm-dish-price-badge {
     position: absolute; bottom: 8px; right: 8px;
     padding: 4px 10px; border-radius: 100px;
@@ -194,6 +268,19 @@
     font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 800; color: white;
     box-shadow: 0 3px 10px var(--glow);
   }
+
+  /* ── SCROLL TO TOP ── */
+  .tm-top-btn {
+    position: fixed; bottom: 96px; right: 16px; z-index: 9000;
+    width: 46px; height: 46px; border-radius: 16px; cursor: pointer;
+    background: var(--card); border: 1.5px solid var(--border);
+    box-shadow: 0 8px 28px rgba(0,0,0,.12);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: var(--text);
+    transition: all .2s;
+  }
+  .tm-top-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 36px rgba(0,0,0,.15); }
+  .tm-top-btn.hide { opacity: 0; pointer-events: none; transform: translateY(8px); }
 
   /* ── ORDER BANNER ── */
   .tm-order-banner {
@@ -416,6 +503,77 @@
   .tm-cx-add-btn:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(255,77,28,.4); }
   .tm-cx-add-btn:disabled { opacity: .6; pointer-events: none; }
   .tm-cx-error { font-size: 12px; color: #EF4444; margin-top: 8px; text-align: center; min-height: 18px; }
+
+  /* ── DISH MODAL ── */
+  .tm-dish-clickable { cursor: pointer; }
+
+  .tmdm-backdrop {
+    position: fixed; inset: 0; z-index: 9500;
+    background: rgba(0,0,0,.6);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 100px; /* выше плавающей корзины */
+    opacity: 0; pointer-events: none;
+    transition: opacity .25s;
+  }
+  .tmdm-backdrop.open { opacity: 1; pointer-events: all; }
+
+  .tmdm-sheet {
+    position: relative;
+    width: 100%; max-width: 480px;
+    background: var(--card); border-radius: 24px;
+    max-height: calc(92dvh - 100px);
+    display: flex; flex-direction: column;
+    transform: translateY(calc(100% + 100px));
+    transition: transform .32s cubic-bezier(.32,1,.32,1);
+    overflow: hidden;
+  }
+  .tmdm-backdrop.open .tmdm-sheet { transform: translateY(0); }
+
+  @media (min-width: 640px) {
+    .tmdm-backdrop { align-items: center; padding-bottom: 0; }
+    .tmdm-sheet {
+      border-radius: 24px; max-height: 85vh; max-width: 560px;
+      transform: translateY(32px) scale(.96);
+    }
+    .tmdm-backdrop.open .tmdm-sheet { transform: translateY(0) scale(1); }
+  }
+
+  .tmdm-close {
+    position: absolute; top: 12px; right: 14px; z-index: 10;
+    width: 32px; height: 32px; border-radius: 50%; border: none;
+    background: rgba(0,0,0,.45); color: #fff;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px); transition: background .15s;
+  }
+  .tmdm-close:hover { background: rgba(0,0,0,.65); }
+
+  .tmdm-photo-wrap { position: relative; width: 100%; background: var(--card2); flex-shrink: 0; }
+  .tmdm-photo { width: 100%; height: auto; max-height: 70vh; object-fit: contain; display: block; }
+  .tmdm-photo-empty {
+    width: 100%; height: 220px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 72px; opacity: .18;
+    background: linear-gradient(145deg, #FFF8F5, #FFEADF);
+  }
+
+  .tmdm-body { padding: 20px 24px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  .tmdm-name {
+    font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 800;
+    color: var(--text); letter-spacing: -.4px; line-height: 1.3;
+  }
+  .tmdm-desc { font-size: 14px; color: var(--text2, var(--muted)); line-height: 1.7; }
+  .tmdm-footer {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border);
+  }
+  .tmdm-price { font-family: 'Unbounded', sans-serif; font-size: 22px; font-weight: 900; color: var(--accent); }
+  .tmdm-add-btn {
+    width: auto !important; padding: 0 28px !important; border-radius: 14px !important;
+    font-size: 14px; font-weight: 700; font-family: 'Unbounded', sans-serif;
+    white-space: nowrap; height: 46px;
+  }
 </style>
 {% endblock %}
 
@@ -437,29 +595,56 @@
 <!-- ── STICKY TOP BAR ── -->
 <div class="tm-topbar">
   <div class="tm-topbar-inner">
-    <div class="tm-place-info">
-      <div class="tm-place-name">🪑 {{ place.title }}</div>
-      <div class="tm-branch-name">{% t branch 'name' %}{% if branch.address %} · {{ branch.address }}{% endif %}</div>
+    <div class="tm-tb-row1">
+      <a class="tm-wb-logo" href="#">Web<span>o</span>rdo</a>
+      <div class="tm-lang-row">
+        <form action="{% url 'set_language' %}" method="post">
+          {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+          <button class="wb-lang-btn{% if LANGUAGE_CODE == 'ru' %} active{% endif %}" type="submit" name="language" value="ru">RU</button>
+        </form>
+        <form action="{% url 'set_language' %}" method="post">
+          {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+          <button class="wb-lang-btn{% if LANGUAGE_CODE == 'ky' %} active{% endif %}" type="submit" name="language" value="ky">KY</button>
+        </form>
+        <form action="{% url 'set_language' %}" method="post">
+          {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+          <button class="wb-lang-btn{% if LANGUAGE_CODE == 'en' %} active{% endif %}" type="submit" name="language" value="en">EN</button>
+        </form>
+      </div>
     </div>
-    <button class="tm-call-btn" id="callWaiterBtn" type="button">
-      🔔 Официант
-    </button>
+    <div class="tm-tb-row2">
+      <div class="tm-place-info">
+        <div class="tm-place-name">🪑 {{ place.title }}</div>
+        <div class="tm-branch-name">{% t branch 'name' %}</div>
+      </div>
+      <button class="tm-call-btn" id="callWaiterBtn" type="button">🔔 Официант</button>
+    </div>
   </div>
 
   <!-- Category pills -->
-  <div class="tm-cats" id="catsBar">
-    {% for c in menu %}
-      {% if c.items %}
-      <button class="tm-cat-pill{% if forloop.first %} active{% endif %}"
-              data-cat="{{ c.branch_category.id }}"
-              type="button">
-        {% t c.branch_category.category "name" %}
+  <div class="tm-cats-wrap">
+    <div class="tm-cats-row">
+      <div class="tm-cats-inner" id="catsBar">
+        {% for c in menu %}
+          {% if c.items %}
+          <button class="tm-cat-pill{% if forloop.first %} active{% endif %}"
+                  data-cat="{{ c.branch_category.id }}"
+                  type="button">
+            {% t c.branch_category.category "name" %}
+          </button>
+          {% endif %}
+        {% endfor %}
+        {% if constructors %}
+        <button class="tm-cat-pill" data-cat="constructors" type="button">🧩 Собери сам</button>
+        {% endif %}
+      </div>
+      <button class="tm-cats-more-btn" id="catsMoreBtn" onclick="toggleCatsDropdown()" type="button" aria-label="Все категории">
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+          <path d="M2 4.5L7 9.5L12 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </button>
-      {% endif %}
-    {% endfor %}
-    {% if constructors %}
-    <button class="tm-cat-pill" data-cat="constructors" type="button">🧩 Собери сам</button>
-    {% endif %}
+      <div class="tm-cats-dropdown" id="catsDropdown"></div>
+    </div>
   </div>
 </div>
 
@@ -516,10 +701,17 @@
       <div class="tm-grid">
         {% for row in c.items %}
         {% with bi=row.branch_item dish=row.branch_item.item %}
-        <div class="tm-dish" data-bi="{{ bi.id }}">
-          <div class="tm-dish-photo">
+        {% t dish "name" as dish_name %}
+        {% t dish "description" as desc %}
+        <div class="tm-dish" data-bi="{{ bi.id }}"
+             data-dish-name="{{ dish_name }}"
+             data-dish-desc="{{ desc }}"
+             data-dish-price="{{ bi.price|floatformat:0 }}"
+             data-dish-photo="{% if dish.photo %}{{ dish.photo.url }}{% endif %}"
+             data-dish-hot="{% if dish.order_count >= 10 %}{{ dish.order_count }}{% endif %}">
+          <div class="tm-dish-photo tm-dish-clickable">
             {% if dish.photo %}
-              <img src="{{ dish.photo.url }}" alt="{% t dish 'name' %}" loading="lazy">
+              <img src="{{ dish.photo.url }}" alt="{{ dish_name }}" loading="lazy">
             {% else %}
               <div class="tm-dish-photo-empty">🍽️</div>
             {% endif %}
@@ -527,13 +719,11 @@
             <div class="tm-dish-price-badge">{{ bi.price|floatformat:0 }} с</div>
           </div>
           <div class="tm-dish-body">
-            <div class="tm-dish-name">{% t dish "name" %}</div>
-            {% t dish "description" as desc %}
-            {% if desc %}<div class="tm-dish-desc">{{ desc }}</div>{% endif %}
+            <div class="tm-dish-name tm-dish-clickable">{{ dish_name }}</div>
+            {% if desc %}<div class="tm-dish-desc tm-dish-clickable">{{ desc }}</div>{% endif %}
             <div class="tm-dish-footer">
               <div>
                 <div class="tm-dish-price">{{ bi.price|floatformat:0 }} сом</div>
-                <div class="tm-rating">⭐ {{ dish.rating|floatformat:1 }}</div>
               </div>
               <div class="tm-qty-row" id="qty-row-{{ bi.id }}">
                 <button class="tm-qty-btn" data-action="dec" data-bi="{{ bi.id }}" type="button">−</button>
@@ -581,6 +771,28 @@
     </div>
   </div>
   {% endif %}
+</div>
+
+<!-- ── DISH MODAL ── -->
+<div id="tmDishModal" class="tmdm-backdrop" onclick="tmdmBackdropClose(event)">
+  <div class="tmdm-sheet" role="dialog" aria-label="Блюдо">
+    <button class="tmdm-close" onclick="closeTmDishModal()" aria-label="Закрыть">✕</button>
+    <div class="tmdm-photo-wrap">
+      <img id="tmdmPhoto" src="" alt="" class="tmdm-photo">
+      <div id="tmdmPhotoEmpty" class="tmdm-photo-empty" style="display:none">🍽️</div>
+      <div id="tmdmHot" class="tm-hot-badge" style="display:none;position:absolute;top:12px;left:12px"></div>
+    </div>
+    <div class="tmdm-body">
+      <div id="tmdmName" class="tmdm-name"></div>
+      <div id="tmdmDesc" class="tmdm-desc"></div>
+      <div class="tmdm-footer">
+        <div id="tmdmPrice" class="tmdm-price"></div>
+        <button id="tmdmAddBtn" class="tm-add-btn tmdm-add-btn" data-add="" type="button">
+          + В заказ
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ── CONSTRUCTOR MODAL ── -->
@@ -785,13 +997,15 @@ document.getElementById("cxModalBg").addEventListener("click", e => {
 
 <!-- ── FLOATING CART FAB ── -->
 <a href="{% url 'public_site:table_cart' token %}" class="tm-fab hide" id="cartFab">
-  <div class="tm-fab-icon">🧺</div>
+  <div class="tm-fab-icon">🍽️</div>
   <div class="tm-fab-info">
     <div class="tm-fab-label">Ваш заказ</div>
     <div class="tm-fab-total" id="fabTotal">{{ cart_total }} сом</div>
   </div>
   <div class="tm-fab-badge" id="fabQty">{{ cart_qty }}</div>
 </a>
+
+<button id="tm-top-btn" class="tm-top-btn hide" type="button" aria-label="Наверх">↑</button>
 
 <script>
 const TOKEN = "{{ token }}";
@@ -897,6 +1111,54 @@ document.addEventListener("click", async e => {
   }
 });
 
+/* ── CATEGORY DROPDOWN — только невидимые ── */
+const catsBar     = document.getElementById("catsBar");
+const catsMoreBtn = document.getElementById("catsMoreBtn");
+const catsDropdown= document.getElementById("catsDropdown");
+
+function buildDropdown() {
+  const barRect = catsBar.getBoundingClientRect();
+  const overflow = [];
+
+  catsBar.querySelectorAll(".tm-cat-pill").forEach(btn => {
+    const r = btn.getBoundingClientRect();
+    const fullyVisible = r.left >= barRect.left - 2 && r.right <= barRect.right + 2;
+    if (!fullyVisible) overflow.push(btn);
+  });
+
+  catsDropdown.innerHTML = "";
+  overflow.forEach(btn => {
+    const cl = btn.cloneNode(true);
+    if (btn.classList.contains("active")) cl.classList.add("active");
+    cl.addEventListener("click", () => {
+      closeCatsDropdown();
+      const sec = document.getElementById("cat-" + cl.dataset.cat);
+      if (!sec) return;
+      const topOffset = document.querySelector(".tm-topbar").offsetHeight + 64 + 8;
+      window.scrollTo({ top: sec.getBoundingClientRect().top + window.scrollY - topOffset, behavior: "smooth" });
+    });
+    catsDropdown.appendChild(cl);
+  });
+
+  catsMoreBtn.style.display = overflow.length ? "" : "none";
+}
+
+function toggleCatsDropdown() {
+  catsMoreBtn.classList.toggle("open");
+  catsDropdown.classList.toggle("open");
+}
+function closeCatsDropdown() {
+  catsMoreBtn.classList.remove("open");
+  catsDropdown.classList.remove("open");
+}
+document.addEventListener("click", e => {
+  if (!e.target.closest(".tm-cats-row")) closeCatsDropdown();
+});
+catsBar.addEventListener("scroll", buildDropdown);
+
+buildDropdown();
+window.addEventListener("resize", buildDropdown);
+
 /* ── CATEGORY PILLS ── */
 document.querySelectorAll("[data-cat]").forEach(btn => {
   btn.addEventListener("click", () => {
@@ -916,8 +1178,9 @@ const catObs = new IntersectionObserver(entries => {
     if (en.isIntersecting) {
       const id = en.target.id.replace("cat-", "");
       catPills.forEach(p => p.classList.toggle("active", p.dataset.cat === id));
-      const active = document.querySelector(`[data-cat="${id}"]`);
+      const active = document.querySelector(`#catsBar [data-cat="${id}"]`);
       if (active) active.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+      setTimeout(buildDropdown, 350);
     }
   });
 }, { rootMargin: "-20% 0px -70% 0px" });
@@ -970,5 +1233,91 @@ function closeBillModal(e) {
   if (!bg) return;
   if (!e || e.target === bg) bg.classList.remove("open");
 }
+</script>
+
+<script>
+// На странице стола лого Webordo не уводит на главную — скроллит к началу меню столика
+document.querySelectorAll(".wb-logo").forEach(function (a) {
+  a.addEventListener("click", function (e) {
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+});
+</script>
+
+<script>
+// ── МОДАЛЬНОЕ ОКНО БЛЮДА ──
+(function () {
+  const backdrop  = document.getElementById("tmDishModal");
+  const dmPhoto   = document.getElementById("tmdmPhoto");
+  const dmEmpty   = document.getElementById("tmdmPhotoEmpty");
+  const dmHot     = document.getElementById("tmdmHot");
+  const dmName    = document.getElementById("tmdmName");
+  const dmDesc    = document.getElementById("tmdmDesc");
+  const dmPrice   = document.getElementById("tmdmPrice");
+  const dmAddBtn  = document.getElementById("tmdmAddBtn");
+  if (!backdrop) return;
+
+  function openTmDishModal(card) {
+    const photoUrl = card.dataset.dishPhoto;
+    const hot      = card.dataset.dishHot;
+
+    if (photoUrl) {
+      dmPhoto.src = photoUrl;
+      dmPhoto.style.display = "block";
+      dmEmpty.style.display = "none";
+    } else {
+      dmPhoto.style.display = "none";
+      dmEmpty.style.display = "flex";
+    }
+
+    if (hot) {
+      dmHot.textContent = "🔥 " + hot;
+      dmHot.style.display = "flex";
+    } else {
+      dmHot.style.display = "none";
+    }
+
+    dmName.textContent  = card.dataset.dishName || "";
+    dmDesc.textContent  = card.dataset.dishDesc || "";
+    dmPrice.textContent = (card.dataset.dishPrice || "0") + " сом";
+    dmAddBtn.dataset.add = card.dataset.bi;
+
+    backdrop.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+
+  window.closeTmDishModal = function () {
+    backdrop.classList.remove("open");
+    document.body.style.overflow = "";
+  };
+
+  window.tmdmBackdropClose = function (e) {
+    if (e.target === backdrop) closeTmDishModal();
+  };
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && backdrop.classList.contains("open")) closeTmDishModal();
+  });
+
+  // клик по фото/названию/описанию блюда открывает модал
+  document.querySelectorAll(".tm-dish").forEach(card => {
+    card.querySelectorAll(".tm-dish-clickable").forEach(el => {
+      el.addEventListener("click", () => openTmDishModal(card));
+    });
+  });
+})();
+</script>
+
+<script>
+// ── КНОПКА «НАВЕРХ» ──
+(function () {
+  const btn = document.getElementById("tm-top-btn");
+  if (!btn) return;
+  window.addEventListener("scroll", () => {
+    btn.classList.toggle("hide", window.scrollY < 500);
+  }, { passive: true });
+  btn.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+})();
 </script>
 {% endblock %}

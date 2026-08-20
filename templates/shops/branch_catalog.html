@@ -2,6 +2,7 @@
 {% load i18n static %}
 
 {% block title %}{{ branch.name_ru }} — {{ store.name_ru }}{% endblock %}
+{% block cta %}{% endblock %}
 
 {% block head_extra %}
 <style>
@@ -927,8 +928,6 @@
 
                     {% if s.product.description_ru %}
                       <div class="sc-card-desc" onclick="openProductModal(this.closest('.sc-card'))">{{ s.product.description_ru }}</div>
-                    {% else %}
-                      <div class="sc-card-desc" onclick="openProductModal(this.closest('.sc-card'))">{% trans "Товар из каталога магазина с актуальной ценой и доступностью." %}</div>
                     {% endif %}
 
                     {# hidden span for full description (safe from HTML escaping) #}
