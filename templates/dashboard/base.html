@@ -303,32 +303,47 @@
 
   <nav class="db-nav">
 
+    {% if has_restaurants or has_hotels or has_shops or has_karaoke or has_barbershop or has_simracing or has_printshop %}
     <div class="db-nav-section">
       <span class="db-nav-label">Бизнес</span>
+      {% if has_restaurants %}
       <a href="{% url 'dashboard:home' %}" class="{% block nav_home %}{% endblock %}">
         <span class="db-nav-icon">🍽️</span> Рестораны
       </a>
+      {% endif %}
+      {% if has_hotels %}
       <a href="{% url 'dashboard:hotel_home' %}" class="{% block nav_hotels %}{% endblock %}">
         <span class="db-nav-icon">🏨</span> Отели
       </a>
+      {% endif %}
+      {% if has_shops %}
       <a href="{% url 'dashboard:shop_home' %}" class="{% block nav_shops %}{% endblock %}">
         <span class="db-nav-icon">🏪</span> Магазины
       </a>
+      {% endif %}
+      {% if has_karaoke %}
       <a href="{% url 'dashboard:karaoke_home' %}" class="{% block nav_karaoke %}{% endblock %}">
         <span class="db-nav-icon">🎤</span> Karaoke
       </a>
+      {% endif %}
+      {% if has_barbershop %}
       <a href="{% url 'dashboard:bs_home' %}" class="{% block nav_barbershop %}{% endblock %}">
         <span class="db-nav-icon">✂️</span> Барбершоп
       </a>
+      {% endif %}
+      {% if has_simracing %}
       <a href="{% url 'dashboard:sr_home' %}" class="{% block nav_simracing %}{% endblock %}">
         <span class="db-nav-icon">🏎️</span> Симрейсинг
       </a>
+      {% endif %}
+      {% if has_printshop %}
       <a href="{% url 'dashboard:printshop_home' %}" class="{% block nav_printshop %}{% endblock %}">
         <span class="db-nav-icon">🖨️</span> Полиграфия
       </a>
+      {% endif %}
     </div>
-
     <div class="db-nav-divider"></div>
+    {% endif %}
 
     <div class="db-nav-section">
       <span class="db-nav-label">Аналитика</span>
@@ -340,20 +355,28 @@
       </a>
     </div>
 
+    {% if has_legal or has_agency or has_eco %}
     <div class="db-nav-divider"></div>
 
     <div class="db-nav-section">
       <span class="db-nav-label">Услуги</span>
+      {% if has_legal %}
       <a href="{% url 'dashboard:legal_home' %}" class="{% block nav_legal %}{% endblock %}">
         <span class="db-nav-icon">⚖️</span> Юр. организации
       </a>
+      {% endif %}
+      {% if has_agency %}
       <a href="{% url 'dashboard:agency_home' %}" class="{% block nav_agency %}{% endblock %}">
         <span class="db-nav-icon">💻</span> IT Агентства
       </a>
+      {% endif %}
+      {% if has_eco %}
       <a href="{% url 'dashboard:eco_home' %}" class="{% block nav_eco %}{% endblock %}">
         <span class="db-nav-icon">♻️</span> Эко-проекты
       </a>
+      {% endif %}
     </div>
+    {% endif %}
 
     {% if sidebar_extra_items or block.super %}
     <div class="db-nav-divider"></div>

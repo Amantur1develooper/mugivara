@@ -1355,6 +1355,20 @@ def floor_delete(request, floor_id):
 
 @require_POST
 @login_required(login_url="dashboard:login")
+def floor_rename(request, floor_id):
+    floor = get_object_or_404(Floor, id=floor_id)
+    if not _has_branch_access(request.user, floor.branch):
+        return JsonResponse({"ok": False}, status=403)
+    name = request.POST.get("name", "").strip()
+    if not name:
+        return JsonResponse({"ok": False, "error": "Название не может быть пустым"})
+    floor.name_ru = name
+    floor.save(update_fields=["name_ru"])
+    return JsonResponse({"ok": True, "name": floor.name_ru})
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
 def table_add(request, floor_id):
     floor = get_object_or_404(Floor, id=floor_id)
     if not _has_branch_access(request.user, floor.branch):

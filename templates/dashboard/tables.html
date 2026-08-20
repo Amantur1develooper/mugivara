@@ -17,9 +17,6 @@
   padding:14px 18px; background:var(--bg);
   border-bottom:1px solid var(--border);
 }
-.tbl-floor-name {
-  flex:1; font-size:14px; font-weight:700; color:var(--text);
-}
 .tbl-floor-count { font-size:11px; color:var(--muted); }
 .tbl-floor-del {
   width:28px; height:28px; border-radius:8px; border:none;
@@ -97,6 +94,20 @@
 }
 .tbl-add-btn:hover { opacity:.88; }
 
+/* ── floor name inline edit ── */
+.tbl-floor-name {
+  flex:1; font-size:14px; font-weight:700; color:var(--text);
+  cursor:pointer; border-radius:6px; padding:2px 6px;
+  transition:background .15s;
+}
+.tbl-floor-name:hover { background:rgba(255,77,28,.07); }
+.tbl-floor-name-input {
+  flex:1; font-size:14px; font-weight:700; color:var(--text);
+  border:1.5px solid var(--accent); border-radius:6px; padding:2px 6px;
+  outline:none; background:var(--card); font-family:inherit;
+  min-width:0;
+}
+
 /* ── new floor bar ── */
 .tbl-new-floor {
   display:flex; gap:8px; align-items:center;
@@ -141,6 +152,7 @@
 <div id="tbl-urls" style="display:none"
   data-floor-add="{% url 'dashboard:floor_add' branch.id %}"
   data-floor-del-tpl="{% url 'dashboard:floor_delete' 0 %}"
+  data-floor-rename-tpl="{% url 'dashboard:floor_rename' 0 %}"
   data-table-add-tpl="{% url 'dashboard:table_add' 0 %}"
   data-table-del-tpl="{% url 'dashboard:table_delete' 0 %}"
   data-table-toggle-tpl="{% url 'dashboard:table_toggle_active' 0 %}"
@@ -190,7 +202,9 @@
 
   <div class="tbl-floor-head">
     <span style="font-size:16px">🏠</span>
-    <span class="tbl-floor-name">{{ floor.name_ru }}</span>
+    <span class="tbl-floor-name" id="fname-{{ floor.id }}"
+          onclick="editFloorName({{ floor.id }}, this)"
+          title="Нажмите для переименования">{{ floor.name_ru }}</span>
     <span class="tbl-floor-count" id="fcount-{{ floor.id }}">{{ floor.places.count }} столиков</span>
     <button class="tbl-floor-del" title="Удалить зал" onclick="deleteFloor({{ floor.id }}, '{{ floor.name_ru|escapejs }}')">🗑</button>
   </div>
@@ -212,8 +226,8 @@
         </button>
         {% if request.user.is_superuser %}
         <button class="tbl-action-btn" onclick="openTokenModal({{ place.id }}, '{{ place.title|escapejs }}', '{{ place.token }}')" title="Изменить токен">🔑</button>
+        <button class="tbl-action-btn del" onclick="deleteTable({{ place.id }})" title="Удалить (только суперпользователь)">🗑</button>
         {% endif %}
-        <button class="tbl-action-btn del" onclick="deleteTable({{ place.id }})">🗑</button>
       </div>
     </div>
     <div class="tbl-qr-wrap" id="qr-{{ place.id }}">
@@ -334,7 +348,7 @@ function appendFloor(id, name) {
   <div class="tbl-floor" id="floor-${id}" data-floor-id="${id}">
     <div class="tbl-floor-head">
       <span style="font-size:16px">🏠</span>
-      <span class="tbl-floor-name">${esc(name)}</span>
+      <span class="tbl-floor-name" id="fname-${id}" onclick="editFloorName(${id},this)" title="Нажмите для переименования">${esc(name)}</span>
       <span class="tbl-floor-count" id="fcount-${id}">0 столиков</span>
       <button class="tbl-floor-del" title="Удалить зал" onclick="deleteFloor(${id},'${escJs(name)}')">🗑</button>
     </div>
@@ -391,6 +405,38 @@ function appendFloor(id, name) {
   wrap.insertBefore(createEl(html), bar);
 }
 
+/* ── Floor rename ── */
+function editFloorName(id, span) {
+  const oldName = span.textContent.trim();
+  const inp = document.createElement('input');
+  inp.className = 'tbl-floor-name-input';
+  inp.value = oldName;
+  span.replaceWith(inp);
+  inp.focus();
+  inp.select();
+
+  async function save() {
+    const newName = inp.value.trim();
+    if (!newName || newName === oldName) {
+      inp.replaceWith(span);
+      return;
+    }
+    const d = await post(sUrl(URLS.floorRenameTpl, id), {name: newName});
+    if (!d.ok) { alert(d.error || 'Ошибка при переименовании'); inp.replaceWith(span); return; }
+    span.textContent = d.name;
+    // update delete button onclick to use new name
+    const delBtn = span.closest('.tbl-floor-head')?.querySelector('.tbl-floor-del');
+    if (delBtn) delBtn.setAttribute('onclick', `deleteFloor(${id},'${escJs(d.name)}')`);
+    inp.replaceWith(span);
+  }
+
+  inp.addEventListener('blur', save);
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
+    if (e.key === 'Escape') { inp.value = oldName; inp.removeEventListener('blur', save); inp.replaceWith(span); }
+  });
+}
+
 /* ── Floor delete ── */
 async function deleteFloor(id, name) {
   if (!confirm(`Удалить зал «${name}» со всеми столиками?`)) return;
@@ -441,7 +487,7 @@ function appendTableRow(floorId, t) {
     <div class="tbl-actions">
       <button class="tbl-action-btn" onclick="copyUrl('${escJs(t.token)}',this)">📋 Ссылка</button>
       <button class="tbl-action-btn" onclick="toggleQr(${t.id})">QR</button>
-      <button class="tbl-action-btn del" onclick="deleteTable(${t.id})">🗑</button>
+      <button class="tbl-action-btn" id="stop-${t.id}" onclick="toggleStop(${t.id},this)" title="Выключить стол">🛑 Стоп</button>
     </div>
   </div>
   <div class="tbl-qr-wrap" id="qr-${t.id}">
