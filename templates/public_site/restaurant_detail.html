@@ -1,478 +1,506 @@
 {% extends "base.html" %}
 {% load i18n static i18n_attrs %}
-{% block img %}
-  <link rel="icon" type="image/jpg" sizes="32x32" href="{% static 'mini_logo.jpg' %}">
-  <link rel="icon" type="image/jpg" sizes="16x16" href="{% static 'mini_logo.jpg' %}">
-  <link rel="apple-touch-icon" href="{{ branch.cover_photo.url }}' %}">
-  <link rel="shortcut icon" href="{{ branch.cover_photo.url }}">
-{% endblock img %}
-{% block title %}{% t restaurant 'name' %} — Санжи{% endblock %}
+
+{% block title %}{% t restaurant "name" %} — Webordo{% endblock %}
+{% block cta %}{% endblock %}
+
+{% block head_extra %}
+<style>
+/* ════════════════════════════════
+   RESTAURANT LANDING — same language as /r/<slug>/contacts/
+════════════════════════════════ */
+.rc-page { max-width: 860px; margin: 0 auto; padding: 0 16px 80px; }
+
+/* ── HERO ── */
+.rch-hero {
+  position: relative; border-radius: 0 0 24px 24px;
+  overflow: hidden; min-height: 190px;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 20px 24px; margin: 0 -16px 24px;
+}
+.rch-hero-bg {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, #0D1117 0%, #1c2535 100%);
+}
+.rch-hero-bg-img {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  filter: blur(20px) saturate(.55) brightness(.28); transform: scale(1.1);
+}
+.rch-hero-overlay {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 0% 110%, rgba(255,77,28,.22), transparent 60%),
+    linear-gradient(to top, rgba(0,0,0,.82) 0%, rgba(0,0,0,.15) 55%, transparent 100%);
+}
+.rch-hero-dots {
+  position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,.04) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse 100% 100% at 100% 0%, black 30%, transparent 70%);
+}
+.rch-back {
+  position: absolute; top: 16px; left: 20px; z-index: 3;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18);
+  color: rgba(255,255,255,.8); text-decoration: none;
+  backdrop-filter: blur(10px); transition: all .2s;
+}
+.rch-back:hover { background: rgba(255,255,255,.18); color: #fff; }
+
+.rch-hero-content {
+  position: relative; z-index: 2;
+  display: flex; align-items: flex-end; gap: 14px;
+}
+.rch-logo {
+  width: 60px; height: 60px; border-radius: 16px; flex-shrink: 0;
+  background: rgba(255,255,255,.1); border: 2px solid rgba(255,255,255,.2);
+  overflow: hidden; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 28px rgba(0,0,0,.4);
+}
+.rch-logo img { width: 100%; height: 100%; object-fit: cover; }
+.rch-logo-letter {
+  font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 24px;
+  background: linear-gradient(135deg, #ff4d1c, #ff8a00);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.rch-hero-info { flex: 1; min-width: 0; }
+.rch-eyebrow {
+  font-size: 9px; letter-spacing: 2.5px; text-transform: uppercase;
+  color: rgba(255,255,255,.4); font-weight: 600; margin-bottom: 3px;
+}
+.rch-title {
+  font-family: 'Unbounded', sans-serif; font-weight: 900;
+  font-size: clamp(17px, 3.2vw, 26px); letter-spacing: -1px;
+  color: #fff; line-height: 1.05; margin-bottom: 8px;
+}
+.rch-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.rch-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 15px; border-radius: 100px; font-size: 12px; font-weight: 700;
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14);
+  color: rgba(255,255,255,.85);
+}
+.rch-pill.open { background: rgba(0,200,140,.2); border-color: rgba(0,200,140,.35); color: #00c88c; }
+
+/* ── SEARCH ── */
+.rc-search {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 100px; padding: 12px 18px; margin-bottom: 24px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.05);
+}
+.rc-search svg { width: 18px; height: 18px; color: var(--muted); flex-shrink: 0; }
+.rc-search input {
+  width: 100%; border: 0; outline: 0; background: transparent;
+  font-family: 'Geologica', sans-serif; font-size: 14px; color: var(--text);
+}
+
+/* ── SECTION LABEL ── */
+.rc-label {
+  font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--accent,#ff4d1c); font-weight: 700; margin-bottom: 6px;
+}
+.rc-heading {
+  font-family: 'Unbounded', sans-serif; font-weight: 900;
+  font-size: clamp(18px, 3vw, 26px); letter-spacing: -1px;
+  color: var(--text); margin-bottom: 20px;
+}
+
+/* ── BRANCH CARDS ── */
+.bc-list { display: flex; flex-direction: column; gap: 16px; }
+
+.bc {
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 24px; overflow: hidden;
+  box-shadow: 0 2px 16px rgba(0,0,0,.06);
+  transition: box-shadow .25s, transform .25s, border-color .25s;
+  animation: bcIn .4s ease both;
+}
+.bc:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,.11); border-color: rgba(255,77,28,.2); }
+.bc:nth-child(1){animation-delay:.00s} .bc:nth-child(2){animation-delay:.07s}
+.bc:nth-child(3){animation-delay:.14s} .bc:nth-child(n+4){animation-delay:.20s}
+@keyframes bcIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+/* Cover */
+.bc-cover {
+  position: relative; height: 180px;
+  background: var(--card2); overflow: hidden;
+}
+.bc-cover img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .4s ease; }
+.bc:hover .bc-cover img { transform: scale(1.04); }
+.bc-cover-empty {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #fff1eb, #ffd6c8);
+}
+.bc-cover-empty-icon { font-size: 64px; opacity: .25; }
+.bc-cover-grad {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 30%, rgba(0,0,0,.65) 100%);
+}
+/* Status badge */
+.bc-status {
+  position: absolute; top: 12px; left: 12px;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 11px; border-radius: 100px; font-size: 11px; font-weight: 700;
+  backdrop-filter: blur(10px); border: 1px solid transparent;
+}
+.bc-status.open  { background: rgba(0,184,150,.2); border-color: rgba(0,184,150,.3); color: #00cba8; }
+.bc-status.closed { background: rgba(0,0,0,.45); border-color: rgba(255,255,255,.1); color: rgba(255,255,255,.7); }
+.bc-status-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.bc-status.open .bc-status-dot { animation: blink 2.5s infinite; box-shadow: 0 0 0 3px rgba(0,184,150,.3); }
+@keyframes blink {
+  0%,100% { box-shadow: 0 0 0 3px rgba(0,184,150,.3); }
+  50%      { box-shadow: 0 0 0 6px rgba(0,184,150,.08); }
+}
+/* Hours badge */
+.bc-hours {
+  position: absolute; top: 12px; right: 12px;
+  padding: 4px 10px; border-radius: 100px; font-size: 10px; font-weight: 700;
+  background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.12);
+  backdrop-filter: blur(10px); color: rgba(255,255,255,.85);
+}
+/* Name on photo */
+.bc-cover-bottom { position: absolute; bottom: 0; left: 0; right: 0; padding: 14px 16px; }
+.bc-cover-name {
+  font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 15px;
+  color: #fff; letter-spacing: -.3px; text-shadow: 0 2px 8px rgba(0,0,0,.5);
+}
+.bc-cover-addr { font-size: 11px; color: rgba(255,255,255,.65); margin-top: 3px; }
+
+/* Body */
+.bc-body { padding: 16px 18px 0; }
+
+/* Chips */
+.bc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.bc-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 100px; font-size: 11px; font-weight: 600;
+  border: 1.5px solid var(--border); background: var(--bg); color: var(--text2);
+  text-decoration: none; transition: all .15s;
+}
+.bc-chip:is(a):hover { background: var(--card2); }
+.bc-chip.delivery { background: rgba(255,138,0,.08); border-color: rgba(255,138,0,.25); color: #b86c00; }
+.bc-chip.allday   { background: rgba(0,184,150,.08); border-color: rgba(0,184,150,.25); color: var(--teal,#00cba8); }
+
+/* Actions — крупнее, чем на странице контактов */
+.bc-actions { display: flex; flex-direction: column; gap: 10px; }
+.bc-actions-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.bc-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px 18px; border-radius: 16px; font-size: 15px; font-weight: 800;
+  border: 1.5px solid var(--border); background: var(--card); color: var(--text2);
+  text-decoration: none; transition: all .15s; white-space: nowrap;
+}
+.bc-btn:hover { background: var(--card2); border-color: rgba(0,0,0,.12); transform: translateY(-1px); }
+.bc-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
+
+.bc-btn.menu {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: transparent; color: #fff; font-size: 16px; padding: 17px 18px;
+  box-shadow: 0 8px 24px var(--glow, rgba(255,77,28,.3));
+}
+.bc-btn.menu:hover { opacity: .95; transform: translateY(-2px); }
+
+.bc-btn.wa   { background: #25D366; border-color: #25D366; color: #fff; box-shadow: 0 4px 14px rgba(37,211,102,.3); }
+.bc-btn.wa:hover { background: #1fba5a; }
+.bc-btn.call { background: var(--bg); }
+.bc-btn.book { background: rgba(37,99,235,.06); border-color: rgba(37,99,235,.22); color: #2563eb; }
+.bc-btn.book:hover { background: rgba(37,99,235,.11); }
+.bc-btn.map  { background: rgba(255,77,28,.06); border-color: rgba(255,77,28,.2); color: var(--accent,#ff4d1c); }
+.bc-btn.map:hover { background: rgba(255,77,28,.11); }
+
+/* CTA divider */
+.bc-cta-row {
+  border-top: 1px solid var(--border);
+  margin-top: 16px;
+  padding: 16px 18px 18px;
+}
+
+/* ── ABOUT BLOCK ── */
+.rch-about {
+  margin-top: 44px;
+  border-radius: 24px; overflow: hidden;
+  background: var(--card); border: 1.5px solid var(--border);
+  box-shadow: 0 4px 24px rgba(0,0,0,.06);
+}
+.rch-about-header {
+  padding: 28px 24px;
+  background: linear-gradient(135deg, #0D1117 0%, #1c2535 100%);
+  position: relative; overflow: hidden;
+}
+.rch-about-header::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 70% 60% at 0% 100%, rgba(255,77,28,.22), transparent 60%);
+}
+.rch-about-label {
+  font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+  color: rgba(255,255,255,.38); font-weight: 600; margin-bottom: 8px; position: relative;
+}
+.rch-about-title {
+  font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 22px;
+  letter-spacing: -1px; color: #fff; position: relative;
+}
+.rch-about-body { padding: 24px; }
+.rch-about-text { font-size: 15px; line-height: 1.85; color: var(--text2); white-space: pre-line; }
+
+.rc-empty {
+  text-align: center; padding: 60px 24px;
+  background: var(--card); border: 1.5px solid var(--border); border-radius: 24px;
+}
+
+/* ════ MOBILE ════ */
+@media (max-width: 520px) {
+  .rch-hero { min-height: 160px; padding: 14px 14px; border-radius: 0 0 18px 18px; }
+  .rch-logo { width: 48px; height: 48px; border-radius: 13px; }
+  .rch-logo-letter { font-size: 19px; }
+  .rch-hero-content { gap: 12px; }
+  .rch-title { font-size: 17px; letter-spacing: -.6px; margin-bottom: 5px; }
+  .rch-back { top: 10px; left: 12px; padding: 5px 12px; font-size: 11px; }
+
+  .rc-search { padding: 10px 16px; margin-bottom: 20px; }
+
+  .bc-cover { height: 150px; }
+  .bc-cover-name { font-size: 13px; }
+  .bc-cover-addr { display: none; }
+  .bc-body { padding: 14px 14px 0; }
+  .bc-chip { font-size: 10px; padding: 4px 10px; }
+  .bc-btn { padding: 12px 14px; font-size: 13px; gap: 6px; }
+  .bc-btn.menu { font-size: 14px; padding: 15px 14px; }
+  .bc-cta-row { padding: 14px 14px 16px; }
+  .rch-about-body { padding: 18px; }
+  .rch-about-text { font-size: 14px; }
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<style>
-  :root{
-    --bg: #f6f7fb;
-    --card: #ffffff;
-    --ink: #0f172a;
-    --muted: #64748b;
-    --line: rgba(2,6,23,.08);
-    --shadow: 0 18px 45px rgba(2,6,23,.10);
-    --shadow2: 0 10px 24px rgba(2,6,23,.08);
-    --radius: 22px;
-  }
+<div class="rc-page">
 
-  .page-wrap{
-    max-width: 1080px;
-    margin: 0 auto;
-    padding: 18px 14px 40px;
-  }
+  <!-- ══ HERO ══ -->
+  <div class="rch-hero">
+    <div class="rch-hero-bg"></div>
+    {% if restaurant.cover %}
+      <div class="rch-hero-bg-img" style="background-image:url('{{ restaurant.cover.url }}')"></div>
+    {% elif restaurant.logo %}
+      <div class="rch-hero-bg-img" style="background-image:url('{{ restaurant.logo.url }}')"></div>
+    {% endif %}
+    <div class="rch-hero-overlay"></div>
+    <div class="rch-hero-dots"></div>
 
-  .hero{
-    position: relative;
-    overflow: hidden;
-    border-radius: 28px;
-    padding: 18px;
-    background: linear-gradient(180deg, #ffffff 0%, #fbfbff 100%);
-    border: 1px solid var(--line);
-    box-shadow: var(--shadow2);
-  }
-  .hero-inner{
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-  .hero h1{
-    margin: 0;
-    font-size: 26px;
-    line-height: 1.15;
-    color: var(--ink);
-    letter-spacing: .2px;
-    font-weight: 900;
-  }
-  .hero p{
-    margin: 0;
-    color: var(--muted);
-    line-height: 1.5;
-    font-size: 14px;
-  }
-  .hero-badge{
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    width: fit-content;
-    padding: 8px 10px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background: rgba(2,6,23,.03);
-    color: var(--ink);
-    font-weight: 700;
-    font-size: 12px;
-  }
-  .hero-dot{
-    width: 8px; height: 8px; border-radius: 99px;
-    background: #22c55e;
-    box-shadow: 0 0 0 5px rgba(34,197,94,.15);
-  }
+    <a href="{% url 'public_site:restaurants_list' %}" class="rch-back">← {% trans "Рестораны" %}</a>
 
-  .tools{
-    margin-top: 14px;
-    display:flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-
-  .search{
-    flex: 1;
-    min-width: 220px;
-    background: #fff;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: 10px 12px;
-    display:flex;
-    align-items: center;
-    gap: 10px;
-    box-shadow: 0 6px 16px rgba(2,6,23,.06);
-  }
-  .search input{
-    width: 100%;
-    border: 0;
-    outline: 0;
-    font-size: 14px;
-    color: var(--ink);
-    background: transparent;
-  }
-  .search svg{ width: 18px; height: 18px; color: var(--muted); }
-
-  .grid{
-    margin-top: 16px;
-    display: grid;
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-    gap: 12px;
-  }
-
-  @media (min-width: 640px){
-    .hero{ padding: 22px; }
-    .hero h1{ font-size: 32px; }
-    .hero p{ font-size: 15px; }
-    .grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-  }
-  @media (min-width: 1024px){
-    .grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-  }
-
-  .card{
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    overflow: hidden;
-    box-shadow: 0 10px 25px rgba(2,6,23,.06);
-    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-    text-decoration: none;
-    color: inherit;
-    display: flex;
-    flex-direction: column;
-    min-height: 100%;
-  }
-  .card:hover{
-    transform: translateY(-2px);
-    box-shadow: var(--shadow);
-    border-color: rgba(2,6,23,.14);
-  }
-
-  .cover{
-    position: relative;
-    aspect-ratio: 16 / 9;
-    background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
-  }
-  .cover img{
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    filter: saturate(1.02);
-  }
-  .cover::after{
-    content:"";
-    position:absolute;
-    inset:0;
-    background: linear-gradient(180deg, rgba(0,0,0,0) 35%, rgba(0,0,0,.40) 100%);
-    pointer-events:none;
-  }
-
-  .card-body{
-    padding: 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    flex: 1;
-  }
-
-  .title-row{
-    display:flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 10px;
-  }
-  .branch-name{
-    font-weight: 900;
-    color: var(--ink);
-    font-size: 16px;
-    line-height: 1.25;
-    letter-spacing: .15px;
-  }
-
-  .meta{
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.35;
-  }
-
-  .pills{
-    margin-top: 2px;
-    display:flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .pill{
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 10px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background: rgba(2,6,23,.03);
-    color: #0f172a;
-    font-weight: 700;
-    font-size: 12px;
-    white-space: nowrap;
-  }
-  .pill.green{ background: rgba(34,197,94,.10); border-color: rgba(34,197,94,.25); }
-  .pill.blue{ background: rgba(59,130,246,.10); border-color: rgba(59,130,246,.25); }
-  .pill.orange{ background: rgba(249,115,22,.10); border-color: rgba(249,115,22,.25); }
-
-  .cta{
-    margin-top: auto;
-    padding-top: 6px;
-    display:flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-  }
-  .btn{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    gap: 8px;
-    padding: 10px 12px;
-    border-radius: 14px;
-    font-weight: 900;
-    font-size: 13px;
-    background: #0f172a;
-    color: #fff;
-    text-decoration: none;
-    box-shadow: 0 10px 20px rgba(2,6,23,.15);
-    transition: transform .15s ease, opacity .15s ease;
-  }
-  .btn:hover{ transform: translateY(-1px); opacity: .95; }
-  .btn svg{ width: 16px; height: 16px; }
-
-  .empty{
-    margin-top: 14px;
-    padding: 14px;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    background: #fff;
-    color: var(--muted);
-  }
-
-  /* ── Taplink кнопки ── */
-  .tl-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 18px;
-    border-radius: 999px;
-    font-size: 14px;
-    font-weight: 700;
-    text-decoration: none;
-    border: none;
-    cursor: pointer;
-    transition: transform .15s, box-shadow .15s, filter .15s;
-    white-space: nowrap;
-    box-shadow: 0 4px 14px rgba(0,0,0,.12);
-  }
-  .tl-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 22px rgba(0,0,0,.18);
-    filter: brightness(1.06);
-  }
-  .tl-btn:active { transform: scale(.97); }
-  .tl-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
-
-  .tl-phone { background: #0f172a;           color: #fff; }
-  .tl-wa    { background: #25D366;           color: #fff; }
-  .tl-tg    { background: #2AABEE;           color: #fff; }
-  .tl-ig    { background: linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); color:#fff; }
-  .tl-map   { background: #1A73E8;           color: #fff; }
-  .tl-tt    { background: #010101;           color: #fff; }
-  .tl-web   { background: #fff; color: #0f172a; border: 1.5px solid rgba(2,6,23,.12); box-shadow:0 4px 14px rgba(0,0,0,.07); }
-
-  @media(max-width:480px){
-    .tl-btn { padding: 10px 14px; font-size: 13px; }
-  }
-</style>
-
-<div class="page-wrap">
-
-  <section class="hero">
-    <div class="hero-inner">
-      <div class="hero-badge">
-        <span class="hero-dot"></span>
-        <span>{% trans "Онлайн меню • QR заказы • Доставка/самовывоз" %}</span>
-      </div>
-      
-      <div>
-        {% t restaurant 'name' as rest_name %}
-        {% t restaurant 'about' as rest_about %}
+    <div class="rch-hero-content">
+      <div class="rch-logo">
         {% if restaurant.logo %}
-        <img src="{{ restaurant.logo.url }}" alt="{{ rest_name }}"
-             style="width:64px;height:64px;border-radius:16px;object-fit:cover;
-                    border:2px solid rgba(2,6,23,.08);margin-bottom:10px;display:block">
-        {% endif %}
-        <h1>{{ rest_name }}</h1>
-        {% if rest_about %}
-        <p>{{ rest_about|truncatechars:120 }}</p>
+          <img src="{{ restaurant.logo.url }}" alt="{% t restaurant 'name' %}" loading="lazy">
+        {% else %}
+          {% t restaurant "name" as rn %}
+          <span class="rch-logo-letter">{{ rn|slice:":1" }}</span>
         {% endif %}
       </div>
-
-      {# ── Taplink кнопки ── #}
-      {% with r=restaurant %}
-      {% if r.phone or r.whatsapp or r.instagram or r.telegram or r.map_url or r.tiktok or r.external_url %}
-      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
-
-        {% if r.phone %}
-        <a href="tel:{{ r.phone }}" class="tl-btn tl-phone">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path stroke-linecap="round" stroke-linejoin="round"
-                  d="M2 6.5C2 14.5 9.5 22 17.5 22l1.5-3.5-3-1.5-1.5 2c-2-1-4-2.5-5.5-4.5L11 13l-1.5-3L6 8.5 2 6.5z"/>
-          </svg>
-          {{ r.phone }}
-        </a>
-        {% endif %}
-
-        {% if r.whatsapp %}
-        <a href="https://wa.me/{{ r.whatsapp|cut:' '|cut:'-'|cut:'+'|cut:'(' |cut:')' }}" target="_blank" rel="noopener" class="tl-btn tl-wa">
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.570-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-          </svg>
-          WhatsApp
-        </a>
-        {% endif %}
-
-        {% if r.telegram %}
-          {% if r.telegram|slice:":4" == "http" %}
-          <a href="{{ r.telegram }}" target="_blank" rel="noopener" class="tl-btn tl-tg">
-          {% else %}
-          <a href="https://t.me/{{ r.telegram|cut:'@' }}" target="_blank" rel="noopener" class="tl-btn tl-tg">
+      <div class="rch-hero-info">
+        <div class="rch-eyebrow">{% trans "Ресторан · Webordo" %}</div>
+        <h1 class="rch-title">{% t restaurant "name" %}</h1>
+        <div class="rch-pills">
+          <span class="rch-pill">🏢 {{ branches|length }}
+            {% if branches|length == 1 %}{% trans "филиал" %}{% else %}{% trans "филиала" %}{% endif %}
+          </span>
+          {% if is_open %}
+            <span class="rch-pill open">
+              <span style="width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 2.5s infinite;flex-shrink:0"></span>
+              {% trans "Открыто" %}
+            </span>
           {% endif %}
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-          </svg>
-          Telegram
-          </a>
-        {% endif %}
-
-        {% if r.instagram %}
-        <a href="{{ r.instagram }}" target="_blank" rel="noopener" class="tl-btn tl-ig">
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
-          </svg>
-          Instagram
-        </a>
-        {% endif %}
-
-        {% if r.map_url %}
-        <a href="{{ r.map_url }}" target="_blank" rel="noopener" class="tl-btn tl-map">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round"
-                  d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/>
-          </svg>
-          На карте
-        </a>
-        {% endif %}
-
-        {% if r.tiktok %}
-        <a href="{{ r.tiktok }}" target="_blank" rel="noopener" class="tl-btn tl-tt">
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.89a8.17 8.17 0 004.77 1.52V7a4.85 4.85 0 01-1-.31z"/>
-          </svg>
-          TikTok
-        </a>
-        {% endif %}
-
-        {% if r.external_url %}
-        <a href="{{ r.external_url }}" target="_blank" rel="noopener" class="tl-btn tl-web">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"/>
-            <path stroke-linecap="round" d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/>
-          </svg>
-          Сайт
-        </a>
-        {% endif %}
-
-      </div>
-      {% endif %}
-      {% endwith %}
-
-      <div class="tools">
-        <div class="search">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M10 18a8 8 0 1 1 5.293-14.293A8 8 0 0 1 10 18Zm11.707 2.293-5.11-5.11a10 10 0 1 0-1.414 1.414l5.11 5.11a1 1 0 0 0 1.414-1.414Z"/>
-          </svg>
-          <input id="branchSearch" type="text" placeholder="{% trans 'Поиск филиала (адрес/название)...' %}" autocomplete="off">
+          {% if restaurant.phone %}
+            <a href="tel:{{ restaurant.phone }}" class="rch-pill" style="text-decoration:none">📞 {{ restaurant.phone }}</a>
+          {% endif %}
+          {% if restaurant.whatsapp %}
+            <a href="https://wa.me/{{ restaurant.whatsapp|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" rel="noopener" class="rch-pill" style="background:rgba(37,211,102,.18);border-color:rgba(37,211,102,.35);color:#4ee08a;text-decoration:none">
+              WhatsApp
+            </a>
+          {% endif %}
+          {% if restaurant.telegram %}
+            <a href="{% if restaurant.telegram|slice:':1' == '@' %}https://t.me/{{ restaurant.telegram|slice:'1:' }}{% elif 'http' in restaurant.telegram %}{{ restaurant.telegram }}{% else %}https://t.me/{{ restaurant.telegram }}{% endif %}"
+               target="_blank" rel="noopener" class="rch-pill" style="text-decoration:none">✈️ Telegram</a>
+          {% endif %}
+          {% if restaurant.instagram %}
+            <a href="{{ restaurant.instagram }}" target="_blank" rel="noopener" class="rch-pill" style="text-decoration:none">📷 Instagram</a>
+          {% endif %}
+          {% if restaurant.tiktok %}
+            <a href="{{ restaurant.tiktok }}" target="_blank" rel="noopener" class="rch-pill" style="text-decoration:none">🎵 TikTok</a>
+          {% endif %}
+          {% if restaurant.map_url %}
+            <a href="{{ restaurant.map_url }}" target="_blank" rel="noopener" class="rch-pill" style="text-decoration:none">📍 {% trans "На карте" %}</a>
+          {% endif %}
+          {% if restaurant.external_url %}
+            <a href="{{ restaurant.external_url }}" target="_blank" rel="noopener" class="rch-pill" style="background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.3);color:#fff;text-decoration:none">
+              🌐 {% trans "Сайт" %} ↗
+            </a>
+          {% endif %}
         </div>
       </div>
     </div>
-  </section>
+  </div>
 
-  <section class="grid" id="branchesGrid">
+  <!-- ══ ПОИСК ПО ФИЛИАЛАМ ══ -->
+  {% if branches|length > 1 %}
+  <div class="rc-search">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 18a8 8 0 1 1 5.293-14.293A8 8 0 0 1 10 18Zm11.707 2.293-5.11-5.11a10 10 0 1 0-1.414 1.414l5.11 5.11a1 1 0 0 0 1.414-1.414Z"/></svg>
+    <input id="branchSearch" type="text" placeholder="{% trans 'Поиск филиала — название или адрес' %}" autocomplete="off">
+  </div>
+  {% endif %}
+
+  <!-- ══ ФИЛИАЛЫ ══ -->
+  <div class="rc-label">{% trans "Филиалы" %}</div>
+  <h2 class="rc-heading">{% trans "Выберите филиал" %}</h2>
+
+  <div class="bc-list" id="branchesGrid">
     {% for b in branches %}
-      {% t b 'name' as b_name %}
-      <a class="card branch-card" data-name="{{ b_name|default:'' }} {{ b.address|default:'' }} {{ b.phone|default:'' }}"
-         href="{% url 'public_site:restaurant_branch_menu' restaurant.slug b.id %}">
-        <div class="cover">
-          {% if b.cover_photo %}
-            <img src="{{ b.cover_photo.url }}" alt="{{ b_name }}" loading="lazy" decoding="async">
+    {% t b "name" as b_name %}
+    <div class="bc branch-card" data-name="{{ b_name|default:'' }} {{ b.address|default:'' }}">
+
+      <!-- Cover -->
+      <div class="bc-cover">
+        {% if b.cover_photo %}
+          <img src="{{ b.cover_photo.url }}" alt="{{ b_name }}" loading="lazy">
+        {% else %}
+          <div class="bc-cover-empty"><span class="bc-cover-empty-icon">🍽️</span></div>
+        {% endif %}
+        <div class="bc-cover-grad"></div>
+
+        <div class="bc-status {% if b.is_open_now %}open{% else %}closed{% endif %}">
+          <span class="bc-status-dot"></span>
+          {% if b.is_open_now %}{% trans "Открыто" %}{% else %}{% trans "Закрыто" %}{% endif %}
+        </div>
+
+        {% if b.is_open_24h %}
+          <span class="bc-hours">🌙 {% trans "Круглосуточно" %}</span>
+        {% elif b.open_time and b.close_time %}
+          <span class="bc-hours">{{ b.open_time|time:"H:i" }} – {{ b.close_time|time:"H:i" }}</span>
+        {% endif %}
+
+        <div class="bc-cover-bottom">
+          <div class="bc-cover-name">{{ b_name }}</div>
+          {% if b.address %}<div class="bc-cover-addr">📍 {{ b.address }}</div>{% endif %}
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="bc-body">
+        <div class="bc-chips">
+          {% if b.delivery_enabled %}
+            <span class="bc-chip delivery">🚚 {% trans "Доставка" %} · {{ b.delivery_fee|floatformat:"0" }} {% trans "сом" %}</span>
+            {% if b.min_order_amount %}
+              <span class="bc-chip">{% trans "Мин." %} {{ b.min_order_amount|floatformat:"0" }} {% trans "сом" %}</span>
+            {% endif %}
           {% else %}
-            {# без фото — просто градиент #}
+            <span class="bc-chip">🥡 {% trans "Самовывоз" %}</span>
+          {% endif %}
+          {% if b.is_open_24h %}
+            <span class="bc-chip allday">🌙 24/7</span>
           {% endif %}
         </div>
 
-        <div class="card-body">
-          <div class="title-row">
-            <div class="branch-name">{{ b_name }}</div>
-            {% if b.is_open_24h %}
-              <span class="pill green">24/7</span>
-            {% endif %}
+        <div class="bc-actions">
+          {% if b.phone %}
+          <div class="bc-actions-row">
+            <a href="tel:{{ b.phone }}" class="bc-btn call">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+              {% trans "Позвонить" %}
+            </a>
+            <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}"
+               target="_blank" rel="noopener" class="bc-btn wa">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-1-.3-.1-.5-.1-.7.1s-.8 1-.9 1.2-.3.2-.6 0c-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5s0-.4 0-.5c0-.2-.7-1.7-1-2.3C9.3 8.1 9 8.1 8.8 8.1H8.3c-.2 0-.5.1-.8.4C7.2 8.8 6.3 9.6 6.3 11.3s1.2 3.5 1.4 3.7c.2.2 2.4 3.7 5.9 5.2 2.3 1 3.2 1.1 4.3.9.7-.1 2.2-.9 2.5-1.7.3-.8.3-1.5.2-1.7-.1-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.9.5 3.7 1.4 5.3L2 22l4.9-1.3C8.3 21.5 10.1 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>
+              WhatsApp
+            </a>
           </div>
+          {% endif %}
 
-          <div class="meta">
-            {% if b.address %}{{ b.address }}{% endif %}
-            {% if b.phone %}{% if b.address %} · {% endif %}{{ b.phone }}{% endif %}
-          </div>
-
-          <div class="pills">
-            {% if not b.is_open_24h and b.open_time and b.close_time %}
-              <span class="pill blue">
-                {{ b.open_time|time:"H:i" }}–{{ b.close_time|time:"H:i" }}
-              </span>
+          <div class="bc-actions-row">
+            {% if b.map_url %}
+            <a href="{{ b.map_url }}" target="_blank" rel="noopener" class="bc-btn map">📍 {% trans "Маршрут" %}</a>
             {% endif %}
+            {% if b.phone %}
+              {% with wa=b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' %}
+              <a href="https://wa.me/{{ wa }}?text={% filter urlencode %}Здравствуйте! Хочу забронировать стол.
 
-            {% if b.delivery_enabled %}
-              <span class="pill orange">{% trans "Доставка" %}</span>
-              <span class="pill">{% trans "Мин." %} {{ b.min_order_amount }}</span>
-              <span class="pill">{% trans "Дост." %} {{ b.delivery_fee }}</span>
+Филиал: {{ b_name }}
+Дата: __.__.____
+Время: __:__
+Гостей: __
+Имя: __{% endfilter %}" target="_blank" rel="noopener" class="bc-btn book">🗓️ {% trans "Бронирование" %}</a>
+              {% endwith %}
             {% else %}
-              <span class="pill">{% trans "Самовывоз" %}</span>
+              <a href="{% url 'public_site:reservation' b.id %}" class="bc-btn book">🗓️ {% trans "Бронирование" %}</a>
             {% endif %}
-          </div>
-
-          <div class="cta">
-            <span class="meta">{% trans "Открыть меню филиала" %}</span>
-            <span class="btn">
-              {% trans "Меню" %}
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M13.5 5.25a.75.75 0 0 0 0 1.5h3.19L7.72 15.72a.75.75 0 1 0 1.06 1.06l8.97-8.97V11a.75.75 0 0 0 1.5 0V5.25h-5.75Z"/>
-              </svg>
-            </span>
           </div>
         </div>
-      </a>
+      </div>
+
+      <!-- Main CTA -->
+      <div class="bc-cta-row">
+        {% if b.external_url %}
+        <a href="{{ b.external_url }}" target="_blank" rel="noopener" class="bc-btn menu" style="width:100%">
+          🍽️ {% trans "Открыть меню" %} ↗
+        </a>
+        {% else %}
+        <a href="{% url 'public_site:restaurant_branch_menu' restaurant.slug b.id %}" class="bc-btn menu" style="width:100%">
+          🍽️ {% trans "Открыть меню" %}
+        </a>
+        {% endif %}
+      </div>
+
+    </div>
     {% empty %}
-      <div class="empty">{% trans "У ресторана пока нет активных филиалов." %}</div>
+    <div class="rc-empty">
+      <div style="font-size:48px;margin-bottom:14px">🏗️</div>
+      <div style="font-family:'Unbounded',sans-serif;font-size:15px;font-weight:800;color:var(--text)">{% trans "У ресторана пока нет активных филиалов" %}</div>
+    </div>
     {% endfor %}
-  </section>
+  </div>
+
+  <!-- ══ О РЕСТОРАНЕ ══ -->
+  {% t restaurant "about" as about_text %}
+  <div class="rch-about reveal" style="margin-top:40px">
+    <div class="rch-about-header">
+      <div class="rch-about-label">{% trans "О заведении" %}</div>
+      <div class="rch-about-title">{% t restaurant "name" %}</div>
+    </div>
+    <div class="rch-about-body">
+      {% if about_text %}
+        <p class="rch-about-text">{{ about_text }}</p>
+      {% else %}
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:36px">✍️</div>
+          <div style="font-family:'Unbounded',sans-serif;font-size:15px;font-weight:800;color:var(--text)">{% trans "Описание не добавлено" %}</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.6">{% trans "Владелец может добавить информацию через панель управления" %}</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
 
 </div>
 
 <script>
-  (function(){
-    const input = document.getElementById("branchSearch");
-    const cards = Array.from(document.querySelectorAll(".branch-card"));
-    if(!input || !cards.length) return;
-
-    input.addEventListener("input", function(){
-      const q = (this.value || "").toLowerCase().trim();
-      cards.forEach(card => {
-        const hay = (card.getAttribute("data-name") || "").toLowerCase();
-        card.style.display = hay.includes(q) ? "" : "none";
-      });
+(function(){
+  const input = document.getElementById("branchSearch");
+  const cards = Array.from(document.querySelectorAll(".branch-card"));
+  if (!input || !cards.length) return;
+  input.addEventListener("input", function(){
+    const q = (this.value || "").toLowerCase().trim();
+    cards.forEach(card => {
+      const hay = (card.getAttribute("data-name") || "").toLowerCase();
+      card.style.display = hay.includes(q) ? "" : "none";
     });
-  })();
+  });
+})();
 </script>
 {% endblock %}
+
 {% block footer %}
-     <a href="{% url 'public_site:home' %}">Разработка Amantur agency
-</a>
+  <a href="{% url 'public_site:home' %}">Разработка Amantur agency</a>
 {% endblock footer %}

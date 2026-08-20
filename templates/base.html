@@ -61,16 +61,22 @@
     }
     .wb-logo span { -webkit-text-fill-color: var(--teal); }
 
-    /* ── NAV ── */
-    .wb-nav {
+    /* ── NAV — floating capsule ── */
+    .wb-nav-wrap {
       position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      padding: 14px 20px;
+    }
+    .wb-nav {
+      max-width: 1320px; margin: 0 auto;
       height: 64px;
-      padding: 0 40px;
+      padding: 0 28px;
       display: flex; align-items: center; justify-content: space-between;
-      background: rgba(255,255,255,0.92);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border);
-      box-shadow: 0 2px 16px var(--shadow);
+      background: rgba(255,255,255,0.9);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      box-shadow: 0 14px 36px rgba(13,17,23,0.09), 0 2px 10px rgba(13,17,23,0.05);
+      transition: box-shadow .2s ease;
     }
 
     .wb-nav-links { list-style: none; display: flex; gap: 28px; align-items: center; }
@@ -123,20 +129,15 @@
 
     .wb-dd-menu {
       position: absolute; top: calc(100% + 12px); left: 50%; transform: translateX(-50%);
-      width: 480px; background: white;
+      width: 280px; background: white;
       border: 1.5px solid var(--border); border-radius: 20px;
       box-shadow: 0 20px 60px rgba(0,0,0,.12);
-      padding: 20px; display: none; z-index: 500;
+      padding: 10px; display: none; z-index: 500;
       animation: ddFadeIn .18s ease;
     }
     .wb-dd.open .wb-dd-menu { display: block; }
     @keyframes ddFadeIn { from{opacity:0;transform:translateX(-50%) translateY(-6px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
 
-    .wb-dd-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .wb-dd-col-title {
-      font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
-      color: var(--muted); padding: 0 10px; margin-bottom: 6px;
-    }
     .wb-dd-item {
       display: flex; align-items: center; gap: 10px; padding: 10px 10px;
       border-radius: 12px; text-decoration: none; color: var(--text);
@@ -151,7 +152,6 @@
     }
     .wb-dd-item b { display: block; font-weight: 600; font-size: 13px; }
     .wb-dd-item span { display: block; font-size: 11px; color: var(--muted); margin-top: 1px; }
-    .wb-dd-divider { height: 1px; background: var(--border); margin: 8px 0; }
 
     /* ── MOBILE BURGER ── */
     .wb-burger {
@@ -198,7 +198,7 @@
     }
 
     /* ── MAIN CONTENT ── */
-    .wb-main { padding-top: 64px; }
+    .wb-main { padding-top: 92px; }
 
     /* ── BUTTONS ── */
     .btn-primary {
@@ -300,7 +300,8 @@
       .wb-nav-links { display: none; }
       .wb-nav-langs { display: none; }
       .wb-burger { display: flex; }
-      .wb-nav { padding: 0 20px; }
+      .wb-nav-wrap { padding: 14px 12px; }
+      .wb-nav { padding: 0 18px; }
       .wb-footer { flex-direction: column; text-align: center; padding: 32px 24px; }
       .wb-cta { padding: 80px 24px; }
       .wb-cta-btns { flex-direction: column; align-items: center; }
@@ -315,6 +316,7 @@
 <body>
 
   {# ── NAV ── #}
+  <div class="wb-nav-wrap">
   <nav class="wb-nav">
     <a class="wb-logo" href="{% url 'public_site:home' %}">Web<span>o</span>rdo</a>
 
@@ -327,10 +329,6 @@
           <span class="arrow">▾</span>
         </button>
         <div class="wb-dd-menu" id="navDdMenu" role="menu">
-          <div class="wb-dd-cols">
-            {# Левая колонка — Бизнес #}
-            <div>
-              <div class="wb-dd-col-title">🏢 Бизнес</div>
               <a class="wb-dd-item" href="{% url 'public_site:restaurants_list' %}">
                 <span class="dd-icon">🍽️</span>
                 <span><b>Еда</b><span>Меню, доставка, QR</span></span>
@@ -339,52 +337,14 @@
                 <span class="dd-icon">🛍️</span>
                 <span><b>Магазины</b><span>Товары и заказы</span></span>
               </a>
-              <a class="wb-dd-item" href="{% url 'markets:market_list' %}">
-                <span class="dd-icon">🛒</span>
-                <span><b>Рынки</b><span>Базары и торговля</span></span>
-              </a>
-              <a class="wb-dd-item" href="{% url 'hotels:hotel_list' %}">
-                <span class="dd-icon">🏨</span>
-                <span><b>Отели</b><span>Бронирование номеров</span></span>
-              </a>
-              <a class="wb-dd-item" href="{% url 'pharmacy:pharmacy_list' %}">
-                <span class="dd-icon">🏥</span>
-                <span><b>Аптеки</b><span>Лекарства и здоровье</span></span>
-              </a>
-            </div>
-
-            {# Правая колонка — Услуги #}
-            <div>
-              <div class="wb-dd-col-title">⚡ Услуги</div>
-              <a class="wb-dd-item" href="{% url 'legal:legal_list' %}">
-                <span class="dd-icon" style="background:rgba(37,99,235,.07);border-color:rgba(37,99,235,.15)">⚖️</span>
-                <span><b>Юридические</b><span>Консультации, услуги</span></span>
-              </a>
-              <a class="wb-dd-item" href="{% url 'eco:eco_list' %}">
-                <span class="dd-icon" style="background:rgba(5,150,105,.07);border-color:rgba(5,150,105,.15)">♻️</span>
-                <span><b>Эко-проекты</b><span>Вывоз мусора, озеленение</span></span>
-              </a>
               <a class="wb-dd-item" href="{% url 'public_site:home' %}#services">
                 <span class="dd-icon" style="background:rgba(124,58,237,.07);border-color:rgba(124,58,237,.15)">⚡</span>
-                <span><b>Все услуги</b><span>На главной странице</span></span>
+                <span><b>Услуги</b><span>Юристы, эко, барбершопы и другое</span></span>
               </a>
-              <a class="wb-dd-item" href="{% url 'agency:agency_list' %}">
-                <span class="dd-icon" style="background:rgba(99,102,241,.07);border-color:rgba(99,102,241,.15)">💻</span>
-                <span><b>IT Агентства</b><span>Разработка, дизайн, SEO</span></span>
-              </a>
-              <div class="wb-dd-divider"></div>
-              <div class="wb-dd-col-title" style="margin-top:4px">🎤 Развлечения</div>
-              <a class="wb-dd-item" href="{% url 'karaoke:karaoke_list' %}">
+              <a class="wb-dd-item" href="{% url 'public_site:home' %}#svc-karaoke">
                 <span class="dd-icon" style="background:rgba(168,85,247,.08);border-color:rgba(168,85,247,.2)">🎤</span>
-                <span><b>Karaoke</b><span>Бронирование кабинок</span></span>
+                <span><b>Развлечения</b><span>Караоке, симрейсинг</span></span>
               </a>
-              <div class="wb-dd-divider"></div>
-              <a class="wb-dd-item" href="{% url 'public_site:about' %}">
-                <span class="dd-icon">ℹ️</span>
-                <span><b>О платформе</b><span>Webordo для бизнеса</span></span>
-              </a>
-            </div>
-          </div>
         </div>
       </li>
 
@@ -419,6 +379,7 @@
       <span></span><span></span><span></span>
     </button>
   </nav>
+  </div>
 
   {# ── MOBILE DRAWER ── #}
   <div class="wb-drawer" id="drawer">
@@ -436,20 +397,9 @@
                   color:var(--muted);padding:10px 4px 4px;">🏢 Бизнес</div>
       <a class="wb-drawer-link" href="{% url 'public_site:restaurants_list' %}">🍽️ Еда</a>
       <a class="wb-drawer-link" href="{% url 'shops:store_list' %}">🛍️ Магазины</a>
-      <a class="wb-drawer-link" href="{% url 'markets:market_list' %}">🛒 Рынки</a>
-      <a class="wb-drawer-link" href="{% url 'hotels:hotel_list' %}">🏨 Отели</a>
-      <a class="wb-drawer-link" href="{% url 'pharmacy:pharmacy_list' %}">🏥 Аптеки</a>
 
-      {# Услуги #}
-      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
-                  color:var(--muted);padding:10px 4px 4px;">⚡ Услуги</div>
-      <a class="wb-drawer-link" href="{% url 'legal:legal_list' %}">⚖️ Юридические</a>
-      <a class="wb-drawer-link" href="{% url 'eco:eco_list' %}" style="color:#059669;">♻️ Эко-проекты</a>
-
-      {# Развлечения #}
-      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
-                  color:var(--muted);padding:10px 4px 4px;">🎤 Развлечения</div>
-      <a class="wb-drawer-link" href="{% url 'karaoke:karaoke_list' %}" style="color:#a855f7;">🎤 Karaoke</a>
+      <a class="wb-drawer-link" href="{% url 'public_site:home' %}#services">⚡ Услуги</a>
+      <a class="wb-drawer-link" href="{% url 'public_site:home' %}#svc-karaoke">🎤 Развлечения</a>
 
       <a class="wb-drawer-link" href="{% url 'public_site:about' %}" style="margin-top:4px;">ℹ️ О нас</a>
       <a class="wb-drawer-link" href="https://wa.me/996558212040" target="_blank" rel="noopener"
@@ -519,8 +469,8 @@
     const btn  = document.getElementById('burgerBtn');
     const draw = document.getElementById('drawer');
     if(btn && draw){
-      const open  = () => { draw.classList.add('open');  document.documentElement.style.overflow='hidden'; };
-      const close = () => { draw.classList.remove('open'); document.documentElement.style.overflow=''; };
+      const open  = () => { draw.classList.add('open');  document.documentElement.style.overflow='hidden'; document.body.classList.add('wb-drawer-open'); };
+      const close = () => { draw.classList.remove('open'); document.documentElement.style.overflow=''; document.body.classList.remove('wb-drawer-open'); };
       btn.addEventListener('click', open);
       draw.addEventListener('click', e => { if(e.target.closest('[data-close]')) close(); });
       draw.querySelectorAll('a').forEach(a => a.addEventListener('click', close));

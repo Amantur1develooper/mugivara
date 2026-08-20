@@ -13,7 +13,7 @@
  
   .bm-hero {
     position: relative; overflow: hidden;
-    min-height: 320px;
+    min-height: clamp(280px, 34vw, 420px);
     display: flex; flex-direction: column; justify-content: flex-end;
   }
   .bm-hero-bg {
@@ -26,6 +26,24 @@
     transition: transform 6s ease;
   }
   .bm-hero:hover .bm-hero-photo { transform: scale(1.03); }
+
+  /* ── бренд-бейдж: логотип + название ── */
+  .bm-hero-brand {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 16px;
+  }
+  .bm-hero-logo {
+    width: 60px; height: 60px; flex-shrink: 0; border-radius: 18px;
+    overflow: hidden; background: var(--card);
+    border: 2px solid rgba(255,255,255,0.85);
+    box-shadow: 0 10px 28px rgba(0,0,0,0.4);
+  }
+  .bm-hero-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .bm-hero-logo-fallback {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 24px; color: #fff;
+  }
   .bm-hero-overlay {
     position: absolute; inset: 0;
     background:
@@ -60,6 +78,7 @@
     font-size: clamp(24px, 4vw, 48px); letter-spacing: -2px;
     color: white; line-height: 1; margin-bottom: 12px;
   }
+  .bm-hero-brand .bm-hero-title { margin-bottom: 0; }
   .bm-hero-meta {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   }
@@ -109,34 +128,78 @@
   }
 
   /* ════════════════════════════════════════
-     STICKY CATEGORY NAV
+     STICKY CATEGORY NAV — floating capsule
   ════════════════════════════════════════ */
   .bm-cats-sticky {
-    position: sticky; top: 64px; z-index: 100;
-    background: rgba(255,255,255,0.95);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border);
-    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    position: sticky; top: 92px; z-index: 100;
+    padding: 14px 20px;
+  }
+  .bm-cats-row {
+    max-width: 1200px; margin: 0 auto; position: relative;
+    display: flex; align-items: center;
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    box-shadow: 0 14px 36px rgba(13,17,23,0.09), 0 2px 10px rgba(13,17,23,0.05);
+    padding: 6px;
   }
   .bm-cats-inner {
-    max-width: 1200px; margin: 0 auto;
-    padding: 10px 32px;
+    flex: 1; min-width: 0;
+    padding: 4px 4px 4px 14px;
     overflow-x: auto; scrollbar-width: none;
     display: flex; gap: 6px; align-items: center;
   }
   .bm-cats-inner::-webkit-scrollbar { display: none; }
 
-  .bm-cat-btn {
-    white-space: nowrap; padding: 8px 18px; border-radius: 100px;
-    font-size: 13px; font-weight: 600; font-family: 'Geologica', sans-serif;
-    border: 1.5px solid var(--border); background: var(--bg);
-    color: var(--muted); cursor: pointer; text-decoration: none;
-    transition: all 0.2s; flex-shrink: 0;
+  /* ── Кнопка дропдауна ── */
+  .bm-cats-more-btn {
+    flex-shrink: 0; width: 38px; height: 38px; margin-left: 2px;
+    border-radius: 50%; border: none;
+    background: var(--card2); color: var(--muted);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; transition: all .2s ease; position: relative; z-index: 1;
   }
-  .bm-cat-btn:hover { border-color: rgba(0,0,0,0.15); color: var(--text); background: var(--card2); }
+  .bm-cats-more-btn:hover { color: var(--text); background: var(--border); }
+  .bm-cats-more-btn.open {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff; box-shadow: 0 4px 14px var(--glow);
+  }
+  .bm-cats-more-btn svg { transition: transform .25s; }
+  .bm-cats-more-btn.open svg { transform: rotate(180deg); }
+
+  /* ── Дропдаун ── */
+  .bm-cats-dropdown {
+    position: absolute;
+    top: calc(100% + 10px); right: 0; left: 0;
+    background: rgba(255,255,255,0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    box-shadow: 0 20px 56px rgba(13,17,23,0.14), 0 4px 16px rgba(13,17,23,0.06);
+    padding: 14px; z-index: 200;
+    display: flex; flex-wrap: wrap; gap: 8px;
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transform: translateY(-8px) scale(0.98);
+    transition: opacity .2s ease, transform .2s ease, visibility .2s;
+  }
+  .bm-cats-dropdown.open {
+    opacity: 1; visibility: visible; pointer-events: auto;
+    transform: translateY(0) scale(1);
+  }
+
+  .bm-cat-btn {
+    white-space: nowrap; padding: 9px 18px; border-radius: 999px;
+    font-size: 13px; font-weight: 600; font-family: 'Geologica', sans-serif;
+    border: 1.5px solid transparent; background: var(--card2);
+    color: var(--text2); cursor: pointer; text-decoration: none;
+    transition: all 0.2s ease; flex-shrink: 0;
+  }
+  .bm-cat-btn:hover { background: var(--bg); color: var(--text); border-color: var(--border); }
   .bm-cat-btn.active {
-    background: var(--text); border-color: var(--text); color: white;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-color: transparent; color: #fff;
+    box-shadow: 0 6px 18px var(--glow);
   }
 
   /* ════════════════════════════════════════
@@ -148,7 +211,7 @@
   }
 
   /* категория */
-  .bm-cat-section { scroll-margin-top: 130px; margin-bottom: 48px; }
+  .bm-cat-section { scroll-margin-top: 176px; margin-bottom: 48px; }
 
   .bm-cat-header {
     display: flex; align-items: center; gap: 16px;
@@ -341,7 +404,8 @@
     min-width: 280px; max-width: min(92vw, 480px);
   }
   .cart-fab:hover { transform: translateX(-50%) translateY(-3px); box-shadow: 0 24px 60px rgba(0,0,0,0.4); }
-  .cart-fab.hide { opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(12px); }
+  .cart-fab.hide,
+  body.wb-drawer-open .cart-fab { opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(12px); }
 
   .cart-fab-icon {
     width: 42px; height: 42px; border-radius: 14px; flex-shrink: 0;
@@ -402,7 +466,8 @@
     transition: all 0.2s;
   }
   .bm-top-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(0,0,0,0.15); }
-  .bm-top-btn.hide { opacity: 0; pointer-events: none; transform: translateY(8px); }
+  .bm-top-btn.hide,
+  body.wb-drawer-open .bm-top-btn { opacity: 0; pointer-events: none; transform: translateY(8px); }
 
   /* ════════════════════════════════════════
      EMPTY STATE
@@ -417,9 +482,19 @@
      RESPONSIVE
   ════════════════════════════════════════ */
   @media (max-width: 768px) {
-    .bm-hero-content { padding: 20px 16px 20px; }
+    .bm-hero { min-height: clamp(200px, 46vw, 300px); }
+    .bm-hero-content { padding: 18px 16px 18px; }
+    .bm-hero-logo { width: 48px; height: 48px; border-radius: 14px; }
+    .bm-hero-logo-fallback { font-size: 19px; }
+    /* логотип и название — отдельно, друг под другом */
+    .bm-hero-brand { flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+    /* статус/адрес/режим работы и кнопка корзины в шапке на мобиле не нужны — корзина есть плавающей кнопкой снизу */
+    .bm-hero-meta,
+    .bm-hero-cart { display: none; }
+    .bm-hero-row { align-items: flex-start; }
     .bm-content { padding: 20px 16px 120px; }
-    .bm-cats-inner { padding: 8px 14px; }
+    .bm-cats-sticky { padding: 10px 12px; }
+    .bm-cats-inner { padding: 4px 4px 4px 10px; }
     .bm-grid { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 12px; }
     .dish-photo { height: 150px; }
     .dish-body { padding: 12px 12px 14px; }
@@ -430,7 +505,9 @@
   @media (max-width: 420px) {
     .bm-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .dish-photo { height: 130px; }
+    .bm-hero { min-height: clamp(180px, 48vw, 260px); }
     .bm-hero-title { font-size: 22px; }
+    .bm-hero-logo { width: 42px; height: 42px; border-radius: 12px; }
   }
 </style>
 {% endblock %}
@@ -471,7 +548,17 @@
 
       <div class="bm-hero-row">
         <div>
-          <h1 class="bm-hero-title">{% t branch "name" %}</h1>
+          {% t branch.restaurant "name" as rest_name %}
+          <div class="bm-hero-brand">
+            <div class="bm-hero-logo">
+              {% if branch.restaurant.logo %}
+                <img src="{{ branch.restaurant.logo.url }}" alt="{{ rest_name }}">
+              {% else %}
+                <div class="bm-hero-logo-fallback">{{ rest_name|slice:":1"|upper }}</div>
+              {% endif %}
+            </div>
+            <h1 class="bm-hero-title">{% t branch "name" %}</h1>
+          </div>
           <div class="bm-hero-meta">
             {% if branch.is_open_now %}
               <span class="bm-hero-pill open">
@@ -516,19 +603,45 @@
 
 
 
-  <div class="bm-cats-sticky">
-    <div class="bm-cats-inner" id="catsBar">
-      <a href="#bm-top" class="bm-cat-btn active" data-cat-link="bm-top">Все</a>
-      {% if constructors %}
-        <a href="#cat-constructors" class="bm-cat-btn" data-cat-link="cat-constructors">🧩 Собери сам</a>
-      {% endif %}
-      {% for c in menu %}
-        <a href="#cat-{{ c.branch_category.id }}"
-           class="bm-cat-btn"
-           data-cat-link="cat-{{ c.branch_category.id }}">
-          {% t c.branch_category.category "name" %}
-        </a>
-      {% endfor %}
+  <div class="bm-cats-sticky" id="catsStickyBar">
+    <div class="bm-cats-row">
+      <!-- Скролл-полоса категорий -->
+      <div class="bm-cats-inner" id="catsBar">
+        <a href="#bm-top" class="bm-cat-btn active" data-cat-link="bm-top">Все</a>
+        {% if constructors %}
+          <a href="#cat-constructors" class="bm-cat-btn" data-cat-link="cat-constructors">🧩 Собери сам</a>
+        {% endif %}
+        {% for c in menu %}
+          <a href="#cat-{{ c.branch_category.id }}"
+             class="bm-cat-btn"
+             data-cat-link="cat-{{ c.branch_category.id }}">
+            {% t c.branch_category.category "name" %}
+          </a>
+        {% endfor %}
+      </div>
+
+      <!-- Кнопка стрелка вниз -->
+      <button class="bm-cats-more-btn" id="catsMoreBtn" onclick="toggleCatsDropdown()" aria-label="Все категории">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M2 4.5L7 9.5L12 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <!-- Дропдаун: сюда JS переносит только те категории, что не влезли в полосу -->
+      <div class="bm-cats-dropdown" id="catsDropdown">
+        <a href="#bm-top" class="bm-cat-btn" data-cat-link="bm-top" onclick="closeCatsDropdown()">Все</a>
+        {% if constructors %}
+          <a href="#cat-constructors" class="bm-cat-btn" data-cat-link="cat-constructors" onclick="closeCatsDropdown()">🧩 Собери сам</a>
+        {% endif %}
+        {% for c in menu %}
+          <a href="#cat-{{ c.branch_category.id }}"
+             class="bm-cat-btn"
+             data-cat-link="cat-{{ c.branch_category.id }}"
+             onclick="closeCatsDropdown()">
+            {% t c.branch_category.category "name" %}
+          </a>
+        {% endfor %}
+      </div>
     </div>
   </div>
 
@@ -1946,6 +2059,77 @@ document.addEventListener('submit', async (e) => {
     const top = sections[0].getBoundingClientRect().top;
     if (top > 200) setActive('bm-top');
   }, { passive: true });
+})();
+</script>
+
+<script>
+// ── Dropdown категорий ──────────────────────────────────────
+function toggleCatsDropdown() {
+  const btn = document.getElementById('catsMoreBtn');
+  const dd  = document.getElementById('catsDropdown');
+  const open = dd.classList.toggle('open');
+  btn.classList.toggle('open', open);
+}
+function closeCatsDropdown() {
+  document.getElementById('catsDropdown')?.classList.remove('open');
+  document.getElementById('catsMoreBtn')?.classList.remove('open');
+}
+// Клик вне — закрываем
+document.addEventListener('click', e => {
+  const bar = document.getElementById('catsStickyBar');
+  if (bar && !bar.contains(e.target)) closeCatsDropdown();
+});
+// Полоса категорий всегда скроллится целиком (свайп/колесо работают всегда).
+// В дропдаун попадают только те категории, что сейчас не видны в полосе —
+// список пересчитывается на скролле, ресайзе и при открытии дропдауна.
+(function() {
+  const bar = document.getElementById('catsBar');
+  const btn = document.getElementById('catsMoreBtn');
+  const dd  = document.getElementById('catsDropdown');
+  if (!bar || !btn || !dd) return;
+
+  const chips = Array.from(bar.querySelectorAll('[data-cat-link]'));
+  const ddByKey = {};
+  dd.querySelectorAll('[data-cat-link]').forEach(a => { ddByKey[a.dataset.catLink] = a; });
+
+  function recalc() {
+    Object.values(ddByKey).forEach(a => { a.style.display = 'none'; });
+
+    const barRect = bar.getBoundingClientRect();
+    let hidden = 0;
+    chips.forEach((chip, i) => {
+      if (i === 0) return; // «Все» — всегда в полосе, в дропдаун не дублируем
+      const r = chip.getBoundingClientRect();
+      const visible = r.left >= barRect.left - 1 && r.right <= barRect.right + 1;
+      if (!visible) {
+        const ddItem = ddByKey[chip.dataset.catLink];
+        if (ddItem) { ddItem.style.display = ''; hidden++; }
+      }
+    });
+
+    btn.style.display = hidden > 0 ? 'flex' : 'none';
+    if (!hidden) closeCatsDropdown();
+  }
+
+  let ticking = false;
+  bar.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => { recalc(); ticking = false; });
+  }, { passive: true });
+
+  let resizeT;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(recalc, 120);
+  }, { passive: true });
+
+  window.addEventListener('load', recalc);
+  recalc();
+
+  // на всякий случай обновляем список сразу при открытии дропдауна
+  const origToggle = toggleCatsDropdown;
+  window.toggleCatsDropdown = function() { recalc(); origToggle(); };
 })();
 </script>
 

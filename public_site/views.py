@@ -202,7 +202,7 @@ def home(request):
         Restaurant.objects
         .filter(is_active=True, branches__is_active=True)
         .distinct()
-        .only("id", "name_ru", "name_ky", "name_en", "slug", "logo", "rating")
+        .only("id", "name_ru", "name_ky", "name_en", "slug", "logo", "cover", "rating")
         .prefetch_related("branches")
         .order_by("-rating", "name_ru")[:8]
     )
@@ -465,7 +465,10 @@ def restaurants_list(request):
 def restaurant_detail(request, slug):
     restaurant = get_object_or_404(Restaurant, slug=slug, is_active=True)
     branches = restaurant.branches.filter(is_active=True).order_by("name_ru")
-    return render(request, "public_site/restaurant_detail.html", {"restaurant": restaurant, "branches": branches})
+    is_open = any(b.is_open_now() for b in branches)
+    return render(request, "public_site/restaurant_detail.html", {
+        "restaurant": restaurant, "branches": branches, "is_open": is_open,
+    })
 
 
 
@@ -1143,10 +1146,12 @@ from core.models import Restaurant
 def restaurant_contacts(request, slug: str):
     restaurant = get_object_or_404(Restaurant, slug=slug, is_active=True)
     branches = restaurant.branches.filter(is_active=True).order_by("name_ru")
+    is_open = any(b.is_open_now() for b in branches)
 
     return render(request, "public_site/restaurant_contacts.html", {
         "restaurant": restaurant,
         "branches": branches,
+        "is_open": is_open,
     })
 
 from django.shortcuts import render, get_object_or_404

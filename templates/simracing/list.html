@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load i18n static %}
+{% block title %}Развлечения — Симрейсинг{% endblock %}
+{% block cta %}{% endblock %}
+{% block head_extra %}
+<style>
+  :root{--sr-bg:#0c0f14;--sr-card:#171b22;--sr-border:rgba(255,77,28,.22);--sr-text:#f5f6fa;--sr-muted:rgba(245,246,250,.65);--sr-red:#ff4d1c;--sr-yellow:#ffb347;--sr-grad:linear-gradient(135deg,#ff4d1c,#ffb347);}
+  body{background:var(--sr-bg);color:var(--sr-text);}
+  .sr-page{max-width:1100px;margin:0 auto;padding:0 24px 80px;}
+  .sr-hero{position:relative;overflow:hidden;background:linear-gradient(135deg,#1a1015,#0c0f14);padding:80px 40px 60px;margin:0 -24px 52px;border-bottom:1px solid var(--sr-border);}
+  .sr-hero-glow{position:absolute;inset:0;background:radial-gradient(ellipse 50% 80% at 10% 60%,rgba(255,77,28,.2),transparent 55%),radial-gradient(ellipse 40% 50% at 90% 20%,rgba(255,179,71,.12),transparent 55%);}
+  .sr-hero-grid{position:absolute;inset:0;opacity:.04;background-image:linear-gradient(rgba(255,77,28,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,77,28,1) 1px,transparent 1px);background-size:48px 48px;}
+  .sr-back{position:absolute;top:24px;left:40px;z-index:2;display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:100px;font-size:13px;font-weight:600;background:rgba(255,77,28,.1);border:1px solid rgba(255,77,28,.25);color:rgba(255,138,60,.9);text-decoration:none;}
+  .sr-hero-ew{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--sr-red);font-weight:700;margin-bottom:14px;position:relative;display:flex;align-items:center;gap:10px;}
+  .sr-hero-ew::before{content:'';width:32px;height:1.5px;background:var(--sr-red);display:block;}
+  .sr-hero-title{font-family:'Unbounded',sans-serif;font-weight:900;font-size:clamp(30px,5vw,52px);letter-spacing:-2px;color:var(--sr-text);line-height:1.05;margin-bottom:14px;position:relative;}
+  .sr-hero-title span{background:var(--sr-grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .sr-hero-sub{font-size:15px;color:var(--sr-muted);max-width:480px;line-height:1.7;position:relative;}
+  .sr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px;}
+  .sr-card{background:var(--sr-card);border:1px solid var(--sr-border);border-radius:20px;overflow:hidden;text-decoration:none;color:inherit;transition:transform .3s,border-color .3s,box-shadow .3s;}
+  .sr-card:hover{transform:translateY(-6px);border-color:rgba(255,77,28,.35);box-shadow:0 20px 50px rgba(255,77,28,.15);}
+  .sr-card-cover{height:180px;background:linear-gradient(135deg,#211318,#150e12);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative;overflow:hidden;}
+  .sr-card-cover img{width:100%;height:100%;object-fit:cover;opacity:.85;transition:transform .4s;}
+  .sr-card:hover .sr-card-cover img{transform:scale(1.05);}
+  .sr-card-body{padding:20px;}
+  .sr-card-name{font-family:'Unbounded',sans-serif;font-weight:800;font-size:15px;color:var(--sr-text);margin-bottom:6px;}
+  .sr-card-tag{font-size:13px;color:var(--sr-muted);}
+  .sr-card-meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;}
+  .sr-card-meta span{font-size:12px;color:var(--sr-muted);}
+  .sr-card-btn{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:16px;padding:12px;border-radius:12px;background:var(--sr-grad);color:#fff;font-size:13px;font-weight:800;box-shadow:0 4px 18px rgba(255,77,28,.3);}
+  .sr-empty{text-align:center;padding:80px 24px;background:var(--sr-card);border:1px solid var(--sr-border);border-radius:24px;}
+  @media(max-width:640px){.sr-hero{padding:64px 20px 48px;margin:0 -16px 40px;}.sr-back{left:20px;}.sr-page{padding:0 16px 60px;}}
+</style>
+{% endblock %}
+{% block content %}
+<div style="background:var(--sr-bg);min-height:100vh">
+<div class="sr-page">
+  <div class="sr-hero">
+    <div class="sr-hero-glow"></div>
+    <div class="sr-hero-grid"></div>
+    <a href="/" class="sr-back">← Главная</a>
+    <div class="sr-hero-ew">WEBORDO · РАЗВЛЕЧЕНИЯ</div>
+    <div class="sr-hero-title">🏎️ <span>Симрейсинг</span></div>
+    <div class="sr-hero-sub">Выберите клуб, забронируйте карт и почувствуйте скорость</div>
+  </div>
+  {% if venues %}
+  <div class="sr-grid">
+    {% for v in venues %}
+    <a href="{% url 'simracing:venue' v.slug %}" class="sr-card">
+      <div class="sr-card-cover">
+        {% if v.cover %}<img src="{{ v.cover.url }}" alt="{{ v.name }}" loading="lazy">{% else %}🏎️{% endif %}
+      </div>
+      <div class="sr-card-body">
+        <div class="sr-card-name">{{ v.name }}</div>
+        {% if v.tagline %}<div class="sr-card-tag">{{ v.tagline }}</div>{% endif %}
+        <div class="sr-card-meta">
+          {% if v.address %}<span>📍 {{ v.address|truncatechars:30 }}</span>{% endif %}
+          {% if v.working_hours %}<span>🕐 {{ v.working_hours }}</span>{% endif %}
+          <span>🏁 {{ v.machines.count }} карт</span>
+        </div>
+        <div class="sr-card-btn">Забронировать →</div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="sr-empty">
+    <div style="font-size:56px;margin-bottom:16px">🏎️</div>
+    <div style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:800;margin-bottom:8px">Скоро появятся</div>
+    <div style="font-size:14px;color:var(--sr-muted)">Клубы добавляются администратором</div>
+  </div>
+  {% endif %}
+</div>
+</div>
+{% endblock %}

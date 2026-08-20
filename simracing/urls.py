@@ -4,6 +4,7 @@ from . import views
 app_name = "simracing"
 
 urlpatterns = [
+    path("",                                          views.venues_list,     name="venues_list"),
     path("<slug:slug>/",                              views.venue,           name="venue"),
     path("<slug:slug>/book/",                         views.book,            name="book"),
     path("<slug:slug>/success/<int:session_id>/",     views.success,         name="success"),

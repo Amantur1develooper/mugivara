@@ -14,7 +14,7 @@
     position:relative; overflow:hidden;
     background:var(--card);
     border-bottom:1px solid var(--border);
-    padding:52px 24px 40px;
+    padding:28px 24px 20px;
     text-align:center;
   }
   .hero-bg {
@@ -41,17 +41,17 @@
   .hero h1 {
     font-family:'Unbounded',sans-serif; font-weight:900;
     font-size:clamp(32px,7vw,72px); line-height:1; letter-spacing:-2px;
-    margin-bottom:16px; color:var(--text);
+    margin-bottom:10px; color:var(--text);
   }
   .hero h1 .grad {
     background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 50%,#F59E0B 100%);
     -webkit-background-clip:text; -webkit-text-fill-color:transparent;
   }
   .hero-sub {
-    max-width:480px; margin:0 auto 28px; font-size:15px;
+    max-width:480px; margin:0 auto 12px; font-size:15px;
     line-height:1.7; color:var(--muted);
   }
-  .hero-cta { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:36px; }
+  .hero-cta { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-bottom:0; }
 
   /* ═══ STATS ═══ */
   .stats-row {
@@ -74,30 +74,35 @@
   }
   .stat-label { font-size:10px; color:var(--muted); letter-spacing:.3px; }
 
-  /* ═══ STICKY CAT NAV ═══ */
+  /* ═══ CAT NAV — floating capsule ═══ */
   .cat-nav-wrap {
-    position:sticky; top:0; z-index:100;
-    background:var(--card); border-bottom:1px solid var(--border);
-    box-shadow:0 2px 12px rgba(0,0,0,0.06);
+    position:sticky; top:92px; z-index:100;
+    padding:14px 20px;
   }
   .cat-nav {
-    display:flex; gap:6px; overflow-x:auto; padding:12px 16px;
-    max-width:1280px; margin:0 auto; justify-content:center;
+    display:flex; gap:6px; align-items:center; overflow-x:auto;
+    padding:6px; justify-content:center;
+    max-width:1280px; margin:0 auto;
+    background:rgba(255,255,255,0.9);
+    backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+    border:1px solid var(--border);
+    border-radius:999px;
+    box-shadow:0 14px 36px rgba(13,17,23,0.09), 0 2px 10px rgba(13,17,23,0.05);
   }
   .cat-nav::-webkit-scrollbar { display:none; }
   .cat-nav { -ms-overflow-style:none; scrollbar-width:none; }
   .cat-pill {
     flex-shrink:0; display:inline-flex; align-items:center; gap:6px;
-    padding:8px 18px; border-radius:100px;
+    padding:9px 18px; border-radius:999px;
     font-size:13px; font-weight:600; text-decoration:none;
-    border:1.5px solid var(--border); background:var(--bg); color:var(--text2);
-    transition:all .2s; white-space:nowrap;
+    border:1.5px solid transparent; background:var(--card2); color:var(--text2);
+    transition:all .2s ease; white-space:nowrap;
   }
-  .cat-pill:hover { border-color:var(--accent); color:var(--accent); }
+  .cat-pill:hover { background:var(--bg); color:var(--text); border-color:var(--border); }
   .cat-pill.active {
     background:linear-gradient(135deg,var(--accent),var(--accent2));
     border-color:transparent; color:#fff;
-    box-shadow:0 4px 14px rgba(255,77,28,.3);
+    box-shadow:0 6px 18px rgba(255,77,28,.3);
   }
 
   /* ═══ SECTIONS ═══ */
@@ -170,7 +175,7 @@
   .cards-grid-2 .biz-card { width:auto; }
 
   .biz-img {
-    position:relative; height:160px;
+    position:relative; height:190px;
     background:var(--bg); overflow:hidden;
   }
   .biz-img img {
@@ -200,46 +205,32 @@
   .badge-open   { background:rgba(0,184,150,.2); color:var(--teal); }
   .badge-closed { background:rgba(0,0,0,.35); color:rgba(255,255,255,.85); }
 
-  .biz-body { padding:10px 14px 14px; }
-  .biz-pills { display:flex; gap:6px; flex-wrap:wrap; }
-  .biz-pill {
-    display:inline-flex; align-items:center; gap:4px;
-    padding:3px 10px; border-radius:100px; font-size:10px; font-weight:600;
-    background:var(--bg); border:1px solid var(--border); color:var(--text2);
+  /* ═══ SERVICE CARD — photo + name, same language as biz-card ═══ */
+  .svc-cards-grid {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr));
+    gap:10px; padding:14px;
   }
-  .biz-cta {
-    margin-top:10px; display:flex; align-items:center; justify-content:space-between;
-  }
-  .biz-cta-text {
-    font-family:'Unbounded',sans-serif; font-size:10px; font-weight:700; color:var(--accent);
-  }
-
-  /* ═══ MARKET/LEGAL/ECO CARD — no image, icon style ═══ */
-  .icon-card {
-    flex-shrink:0; width:200px;
-    background:var(--card); border:1.5px solid var(--border);
-    border-radius:20px; padding:20px;
+  .svc-card {
+    display:flex; flex-direction:column;
     text-decoration:none; color:inherit;
-    transition:all .25s; box-shadow:0 2px 10px rgba(0,0,0,.05);
-    display:flex; flex-direction:column; gap:8px;
+    border-radius:14px; overflow:hidden;
+    background:var(--card); border:1px solid var(--border);
+    transition:transform .2s, box-shadow .2s;
   }
-  .icon-card:hover { transform:translateY(-5px); box-shadow:0 16px 40px rgba(0,0,0,.1); border-color:var(--accent); }
-  @media (min-width:700px) { .icon-card { width:auto; } }
-
-  .icon-card-emoji { font-size:36px; }
-  .icon-card-name {
-    font-family:'Unbounded',sans-serif; font-size:12px; font-weight:700;
-    color:var(--text); letter-spacing:-.3px; line-height:1.3;
+  .svc-card:hover { transform:translateY(-3px); box-shadow:0 10px 24px rgba(0,0,0,.1); }
+  .svc-card-img {
+    height:84px; background:var(--card2,#f0f2f8); position:relative; overflow:hidden;
   }
-  .icon-card-sub { font-size:11px; color:var(--muted); line-height:1.5; }
-  .icon-card-arrow {
-    margin-top:auto; align-self:flex-end;
-    width:28px; height:28px; border-radius:50%;
-    background:var(--bg); border:1px solid var(--border);
-    display:flex; align-items:center; justify-content:center;
-    font-size:12px; transition:all .2s;
+  .svc-card-img img { width:100%; height:100%; object-fit:cover; display:block; }
+  .svc-card-img-ph {
+    width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+    font-size:26px;
   }
-  .icon-card:hover .icon-card-arrow { background:var(--accent); color:#fff; border-color:transparent; }
+  .svc-card-name {
+    padding:8px 10px 10px; font-size:11.5px; font-weight:700; line-height:1.3;
+    color:var(--text); font-family:'Unbounded',sans-serif; letter-spacing:-.2px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
 
   /* ═══ SECTION DIVIDER ═══ */
   .sec-divider { height:1px; background:var(--border); max-width:1280px; margin:0 auto; }
@@ -349,27 +340,6 @@
     flex-shrink:0;
   }
 
-  .svc-list { display:flex; flex-direction:column; }
-  .svc-row {
-    display:flex; align-items:center; gap:12px; padding:13px 18px;
-    border-bottom:1px solid var(--border); text-decoration:none; color:inherit;
-    transition:background .15s;
-  }
-  .svc-row:last-child { border-bottom:none; }
-  .svc-row:hover { background:var(--bg); }
-  .svc-row-icon {
-    width:36px; height:36px; border-radius:10px;
-    background:var(--bg); border:1px solid var(--border);
-    display:flex; align-items:center; justify-content:center;
-    flex-shrink:0; overflow:hidden;
-  }
-  .svc-row-name { font-size:13px; font-weight:600; color:var(--text); }
-  .svc-row-sub  { font-size:11px; color:var(--muted); margin-top:2px; }
-  .svc-row-arrow {
-    margin-left:auto; font-size:14px; color:var(--accent);
-    opacity:.6; flex-shrink:0;
-  }
-  .svc-row:hover .svc-row-arrow { opacity:1; }
 </style>
 {% endblock %}
 
@@ -385,14 +355,13 @@
       {% trans "🇰🇬 Цифровая экосистема Кыргызстана" %}
     </div>
 
-    <h1>{% trans "Всё в одном —" %}<br><span class="grad">Webordo</span></h1>
+    <h1><span class="grad">Webordo</span></h1>
 
     <p class="hero-sub">
       {% trans "Рестораны, магазины, отели, аптеки — в единой платформе Кыргызстана. QR-заказы, онлайн-бронирование и доставка." %}
     </p>
 
     <div class="hero-cta">
-      <a class="btn-primary" href="#restaurants">{% trans "🚀 Открыть платформу" %}</a>
       <a class="btn-ghost" href="#platform" style="display:none" id="howItWorks">Как работает</a>
     </div>
   </div>
@@ -407,28 +376,10 @@
     {% if store_cards %}
     <a href="#stores" class="cat-pill" data-section="stores">{% trans "🛍️ Магазины" %}</a>
     {% endif %}
-    {% if karaoke_cards %}
-    <a href="#services" class="cat-pill">🎤 {% trans "Karaoke" %}</a>
-    {% endif %}
-    {% if market_cards %}
-    <a href="#services" class="cat-pill" data-section="services">{% trans "🛒 Рынки" %}</a>
-    {% endif %}
-    {% if hotel_cards %}
-    <a href="#services" class="cat-pill">{% trans "🏨 Отели" %}</a>
-    {% endif %}
-    {% if pharmacy_cards %}
-    <a href="#services" class="cat-pill">{% trans "🏥 Аптеки" %}</a>
-    {% endif %}
-    {% if barbershop_cards %}
-    <a href="#services" class="cat-pill">{% trans "✂️ Барбершоп" %}</a>
-    {% endif %}
-    {% if printshop_cards %}
-    <a href="#services" class="cat-pill">{% trans "🖨️ Полиграфия" %}</a>
-    {% endif %}
-    {% if legal_cards or eco_cards or agency_cards %}
+    {% if karaoke_cards or market_cards or hotel_cards or pharmacy_cards or barbershop_cards or printshop_cards or legal_cards or eco_cards or agency_cards %}
     <a href="#services" class="cat-pill" data-section="services">{% trans "⚡ Услуги" %}</a>
     {% endif %}
-    
+
   </nav>
 </div>
 
@@ -483,7 +434,9 @@
       {% for card in restaurant_cards %}
       <a href="{% url 'public_site:restaurant_contacts' card.obj.slug %}" class="biz-card">
         <div class="biz-img">
-          {% if card.obj.logo %}
+          {% if card.obj.cover %}
+            <img src="{{ card.obj.cover.url }}" alt="{% t card.obj 'name' %}" loading="lazy">
+          {% elif card.obj.logo %}
             <img src="{{ card.obj.logo.url }}" alt="{% t card.obj 'name' %}" loading="lazy">
           {% else %}
             <div class="biz-img-ph">🍽️</div>
@@ -493,18 +446,6 @@
             {% if card.is_open %}{% trans "● Открыто" %}{% else %}{% trans "● Закрыто" %}{% endif %}
           </div>
           <div class="biz-name-over">{% t card.obj 'name' %}</div>
-        </div>
-        <div class="biz-body">
-          <div class="biz-pills">
-            {% if card.has_delivery %}
-              <span class="biz-pill">{% trans "🚚 Доставка" %}</span>
-            {% else %}
-              <span class="biz-pill">{% trans "🥡 Самовывоз" %}</span>
-            {% endif %}
-          </div>
-          <div class="biz-cta">
-            <span class="biz-cta-text">{% trans "Открыть меню →" %}</span>
-          </div>
         </div>
       </a>
       {% endfor %}
@@ -537,18 +478,6 @@
           {% endif %}
           <div class="biz-overlay"></div>
           <div class="biz-name-over">{% t card.obj 'name' %}</div>
-        </div>
-        <div class="biz-body">
-          <div class="biz-pills">
-            {% if card.has_delivery %}
-              <span class="biz-pill">{% trans "🚚 Доставка" %}</span>
-            {% else %}
-              <span class="biz-pill">{% trans "🏪 Самовывоз" %}</span>
-            {% endif %}
-          </div>
-          <div class="biz-cta">
-            <span class="biz-cta-text">{% trans "Перейти →" %}</span>
-          </div>
         </div>
       </a>
       {% endfor %}
@@ -585,23 +514,14 @@
           </div>
           <a href="{% url 'legal:legal_list' %}" class="svc-block-all">{% trans "Все →" %}</a>
         </div>
-        <div class="svc-list">
+        <div class="svc-cards-grid">
           {% for org in legal_cards %}
-          <a href="{% url 'legal:legal_detail' org.slug %}" class="svc-row" id="legal-{{ org.slug }}">
-            <div class="svc-row-icon">
-              {% if org.logo %}<img src="{{ org.logo.url }}" alt="{{ org.name }}" loading="lazy"
-                   style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
-              {% else %}<span style="font-size:20px;">⚖️</span>{% endif %}
+          <a href="{% url 'legal:legal_detail' org.slug %}" class="svc-card" id="legal-{{ org.slug }}">
+            <div class="svc-card-img">
+              {% if org.logo %}<img src="{{ org.logo.url }}" alt="{{ org.name }}" loading="lazy">
+              {% else %}<div class="svc-card-img-ph">⚖️</div>{% endif %}
             </div>
-            <div class="svc-row-info">
-              <div class="svc-row-name">{{ org.name }}</div>
-              {% if org.address %}
-              <div class="svc-row-sub">📍 {{ org.address|truncatechars:32 }}</div>
-              {% elif org.working_hours %}
-              <div class="svc-row-sub">⏰ {{ org.working_hours }}</div>
-              {% endif %}
-            </div>
-            <span class="svc-row-arrow">→</span>
+            <div class="svc-card-name">{{ org.name }}</div>
           </a>
           {% endfor %}
         </div>
@@ -619,21 +539,14 @@
           </div>
           <a href="{% url 'eco:eco_list' %}" class="svc-block-all" style="color:#059669;border-color:rgba(5,150,105,.3);">{% trans "Все →" %}</a>
         </div>
-        <div class="svc-list">
+        <div class="svc-cards-grid">
           {% for proj in eco_cards %}
-          <a href="{% url 'eco:eco_detail' proj.slug %}" class="svc-row" id="eco-{{ proj.slug }}">
-            <div class="svc-row-icon">
-              {% if proj.logo %}<img src="{{ proj.logo.url }}" alt="{{ proj.name }}" loading="lazy"
-                   style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
-              {% else %}<span style="font-size:20px;">♻️</span>{% endif %}
+          <a href="{% url 'eco:eco_detail' proj.slug %}" class="svc-card" id="eco-{{ proj.slug }}">
+            <div class="svc-card-img">
+              {% if proj.logo %}<img src="{{ proj.logo.url }}" alt="{{ proj.name }}" loading="lazy">
+              {% else %}<div class="svc-card-img-ph">♻️</div>{% endif %}
             </div>
-            <div class="svc-row-info">
-              <div class="svc-row-name">{{ proj.name }}</div>
-              {% if proj.description %}
-              <div class="svc-row-sub">{{ proj.description|truncatechars:40 }}</div>
-              {% endif %}
-            </div>
-            <span class="svc-row-arrow" style="color:#059669;">→</span>
+            <div class="svc-card-name">{{ proj.name }}</div>
           </a>
           {% endfor %}
         </div>
@@ -651,23 +564,14 @@
           </div>
           <a href="{% url 'markets:market_list' %}" class="svc-block-all" style="color:#D97706;border-color:rgba(245,158,11,.3);">{% trans "Все →" %}</a>
         </div>
-        <div class="svc-list">
+        <div class="svc-cards-grid">
           {% for market in market_cards %}
-          <a href="{% url 'markets:market_detail' market.slug %}" class="svc-row">
-            <div class="svc-row-icon">
-              {% if market.logo %}<img src="{{ market.logo.url }}" alt="{% t market 'name' %}" loading="lazy"
-                   style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
-              {% else %}<span style="font-size:20px;">🛒</span>{% endif %}
+          <a href="{% url 'markets:market_detail' market.slug %}" class="svc-card">
+            <div class="svc-card-img">
+              {% if market.logo %}<img src="{{ market.logo.url }}" alt="{% t market 'name' %}" loading="lazy">
+              {% else %}<div class="svc-card-img-ph">🛒</div>{% endif %}
             </div>
-            <div class="svc-row-info">
-              <div class="svc-row-name">{% t market 'name' %}</div>
-              {% if market.address %}
-              <div class="svc-row-sub">📍 {{ market.address|truncatechars:32 }}</div>
-              {% elif market.working_hours %}
-              <div class="svc-row-sub">⏰ {{ market.working_hours }}</div>
-              {% endif %}
-            </div>
-            <span class="svc-row-arrow" style="color:#D97706;">→</span>
+            <div class="svc-card-name">{% t market 'name' %}</div>
           </a>
           {% endfor %}
         </div>
@@ -685,23 +589,14 @@
           </div>
           <a href="{% url 'hotels:hotel_list' %}" class="svc-block-all" style="color:#0284C7;border-color:rgba(14,165,233,.3);">{% trans "Все →" %}</a>
         </div>
-        <div class="svc-list">
+        <div class="svc-cards-grid">
           {% for hotel in hotel_cards %}
-          <a href="{% url 'hotels:hotel_detail' hotel.slug %}" class="svc-row">
-            <div class="svc-row-icon">
-              {% if hotel.logo %}<img src="{{ hotel.logo.url }}" alt="{% t hotel 'name' %}" loading="lazy"
-                   style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
-              {% else %}<span style="font-size:20px;">🏨</span>{% endif %}
+          <a href="{% url 'hotels:hotel_detail' hotel.slug %}" class="svc-card">
+            <div class="svc-card-img">
+              {% if hotel.logo %}<img src="{{ hotel.logo.url }}" alt="{% t hotel 'name' %}" loading="lazy">
+              {% else %}<div class="svc-card-img-ph">🏨</div>{% endif %}
             </div>
-            <div class="svc-row-info">
-              <div class="svc-row-name">{% t hotel 'name' %}</div>
-              {% if hotel.rating %}
-              <div class="svc-row-sub">⭐ {{ hotel.rating }} · {% trans "бронирование" %}</div>
-              {% else %}
-              <div class="svc-row-sub">{% trans "🛏 Проживание" %}</div>
-              {% endif %}
-            </div>
-            <span class="svc-row-arrow" style="color:#0284C7;">→</span>
+            <div class="svc-card-name">{% t hotel 'name' %}</div>
           </a>
           {% endfor %}
         </div>
@@ -719,23 +614,14 @@
           </div>
           <a href="{% url 'pharmacy:pharmacy_list' %}" class="svc-block-all" style="color:#DC2626;border-color:rgba(239,68,68,.3);">{% trans "Все →" %}</a>
         </div>
-        <div class="svc-list">
+        <div class="svc-cards-grid">
           {% for ph in pharmacy_cards %}
-          <a href="{% url 'pharmacy:pharmacy_detail' ph.slug %}" class="svc-row">
-            <div class="svc-row-icon">
-              {% if ph.logo %}<img src="{{ ph.logo.url }}" alt="{% t ph 'name' %}" loading="lazy"
-                   style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
-              {% else %}<span style="font-size:20px;">🏥</span>{% endif %}
+          <a href="{% url 'pharmacy:pharmacy_detail' ph.slug %}" class="svc-card">
+            <div class="svc-card-img">
+              {% if ph.logo %}<img src="{{ ph.logo.url }}" alt="{% t ph 'name' %}" loading="lazy">
+              {% else %}<div class="svc-card-img-ph">🏥</div>{% endif %}
             </div>
-            <div class="svc-row-info">
-              <div class="svc-row-name">{% t ph 'name' %}</div>
-              {% if ph.address %}
-              <div class="svc-row-sub">📍 {{ ph.address|truncatechars:32 }}</div>
-              {% else %}
-              <div class="svc-row-sub">{% trans "💊 Лекарства" %}</div>
-              {% endif %}
-            </div>
-            <span class="svc-row-arrow" style="color:#DC2626;">→</span>
+            <div class="svc-card-name">{% t ph 'name' %}</div>
           </a>
           {% endfor %}
         </div>
@@ -753,23 +639,15 @@
           </div>
           <a href="{% url 'agency:agency_list' %}" class="svc-block-all" style="color:#6366f1;border-color:rgba(99,102,241,.3);">{% trans "Все →" %}</a>
         </div>
-        <div class="svc-list">
+        <div class="svc-cards-grid">
           {% for ag in agency_cards %}
-          <a href="{% url 'agency:agency_detail' ag.slug %}" class="svc-row" id="agency-{{ ag.slug }}">
-            <div class="svc-row-icon">
-              {% if ag.logo %}<img src="{{ ag.logo.url }}" alt="{{ ag.name }}" loading="lazy"
-                   style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
-              {% else %}<span style="font-size:20px;">💻</span>{% endif %}
+          <a href="{% url 'agency:agency_detail' ag.slug %}" class="svc-card" id="agency-{{ ag.slug }}">
+            <div class="svc-card-img">
+              {% if ag.cover %}<img src="{{ ag.cover.url }}" alt="{{ ag.name }}" loading="lazy">
+              {% elif ag.logo %}<img src="{{ ag.logo.url }}" alt="{{ ag.name }}" loading="lazy">
+              {% else %}<div class="svc-card-img-ph">💻</div>{% endif %}
             </div>
-            <div class="svc-row-info">
-              <div class="svc-row-name">{{ ag.name }}</div>
-              {% if ag.tagline %}
-              <div class="svc-row-sub">{{ ag.tagline|truncatechars:36 }}</div>
-              {% elif ag.website %}
-              <div class="svc-row-sub">🌐 {{ ag.website|slice:"8:36" }}</div>
-              {% endif %}
-            </div>
-            <span class="svc-row-arrow" style="color:#6366f1;">→</span>
+            <div class="svc-card-name">{{ ag.name }}</div>
           </a>
           {% endfor %}
         </div>
@@ -788,19 +666,15 @@
           </div>
           <a href="{% url 'barbershop:index' %}" class="svc-block-all" style="color:#b45309;border-color:rgba(180,83,9,.3);">{% trans "Все →" %}</a>
         </div>
-        <div class="svc-list">
+        <div class="svc-cards-grid">
           {% for shop in barbershop_cards %}
-          <a href="{% url 'barbershop:venue' shop.slug %}" class="svc-row">
-            <div class="svc-row-icon">
-              {% if shop.logo %}<img src="{{ shop.logo.url }}" alt="{{ shop.name }}" loading="lazy"
-                   style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
-              {% else %}<span style="font-size:20px;">✂️</span>{% endif %}
+          <a href="{% url 'barbershop:venue' shop.slug %}" class="svc-card">
+            <div class="svc-card-img">
+              {% if shop.cover %}<img src="{{ shop.cover.url }}" alt="{{ shop.name }}" loading="lazy">
+              {% elif shop.logo %}<img src="{{ shop.logo.url }}" alt="{{ shop.name }}" loading="lazy">
+              {% else %}<div class="svc-card-img-ph">✂️</div>{% endif %}
             </div>
-            <div class="svc-row-info">
-              <div class="svc-row-name">{{ shop.name }}</div>
-              <div class="svc-row-sub">{% if shop.address %}📍 {{ shop.address }}{% endif %}{% if shop.working_hours %} · {{ shop.working_hours }}{% endif %}</div>
-            </div>
-            <span class="svc-row-arrow" style="color:#b45309;">→</span>
+            <div class="svc-card-name">{{ shop.name }}</div>
           </a>
           {% endfor %}
         </div>
@@ -817,19 +691,14 @@
           </div>
           <a href="{% url 'printshop:center_list' %}" class="svc-block-all" style="color:#FF4D1C;border-color:rgba(255,77,28,.3);">{% trans "Все →" %}</a>
         </div>
-        <div class="svc-list">
+        <div class="svc-cards-grid">
           {% for c in printshop_cards %}
-          <a href="{% url 'printshop:center_detail' c.slug %}" class="svc-row">
-            <div class="svc-row-icon">
-              {% if c.logo %}<img src="{{ c.logo.url }}" alt="{{ c.name_ru }}" loading="lazy"
-                   style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
-              {% else %}<span style="font-size:20px;">🖨️</span>{% endif %}
+          <a href="{% url 'printshop:center_detail' c.slug %}" class="svc-card">
+            <div class="svc-card-img">
+              {% if c.logo %}<img src="{{ c.logo.url }}" alt="{{ c.name_ru }}" loading="lazy">
+              {% else %}<div class="svc-card-img-ph">🖨️</div>{% endif %}
             </div>
-            <div class="svc-row-info">
-              <div class="svc-row-name">{{ c.name_ru }}</div>
-              <div class="svc-row-sub">{{ c.branches.count }} филиал(ов)</div>
-            </div>
-            <span class="svc-row-arrow" style="color:#FF4D1C;">→</span>
+            <div class="svc-card-name">{{ c.name_ru }}</div>
           </a>
           {% endfor %}
         </div>
@@ -846,19 +715,15 @@
           </div>
           <a href="{% url 'karaoke:karaoke_list' %}" class="svc-block-all" style="color:#a855f7;border-color:rgba(168,85,247,.3);">{% trans "Все →" %}</a>
         </div>
-        <div class="svc-list">
+        <div class="svc-cards-grid">
           {% for venue in karaoke_cards %}
-          <a href="{% url 'karaoke:karaoke_detail' venue.slug %}" class="svc-row">
-            <div class="svc-row-icon">
-              {% if venue.logo %}<img src="{{ venue.logo.url }}" alt="{{ venue.name }}" loading="lazy"
-                   style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
-              {% else %}<span style="font-size:20px;">🎤</span>{% endif %}
+          <a href="{% url 'karaoke:karaoke_detail' venue.slug %}" class="svc-card">
+            <div class="svc-card-img">
+              {% if venue.cover %}<img src="{{ venue.cover.url }}" alt="{{ venue.name }}" loading="lazy">
+              {% elif venue.logo %}<img src="{{ venue.logo.url }}" alt="{{ venue.name }}" loading="lazy">
+              {% else %}<div class="svc-card-img-ph">🎤</div>{% endif %}
             </div>
-            <div class="svc-row-info">
-              <div class="svc-row-name">{{ venue.name }}</div>
-              <div class="svc-row-sub">🚪 {{ venue.rooms.count }} {% trans "кабинок" %}{% if venue.working_hours %} · {{ venue.working_hours }}{% endif %}</div>
-            </div>
-            <span class="svc-row-arrow" style="color:#a855f7;">→</span>
+            <div class="svc-card-name">{{ venue.name }}</div>
           </a>
           {% endfor %}
         </div>
@@ -874,19 +739,15 @@
             <div class="svc-block-sub">{% trans "Картинг и симуляторы" %}</div>
           </div>
         </div>
-        <div class="svc-list">
+        <div class="svc-cards-grid">
           {% for venue in simracing_cards %}
-          <a href="{% url 'simracing:venue' venue.slug %}" class="svc-row">
-            <div class="svc-row-icon">
-              {% if venue.logo %}<img src="{{ venue.logo.url }}" alt="{{ venue.name }}" loading="lazy"
-                   style="width:36px;height:36px;border-radius:10px;object-fit:cover;">
-              {% else %}<span style="font-size:20px;">🏎️</span>{% endif %}
+          <a href="{% url 'simracing:venue' venue.slug %}" class="svc-card">
+            <div class="svc-card-img">
+              {% if venue.cover %}<img src="{{ venue.cover.url }}" alt="{{ venue.name }}" loading="lazy">
+              {% elif venue.logo %}<img src="{{ venue.logo.url }}" alt="{{ venue.name }}" loading="lazy">
+              {% else %}<div class="svc-card-img-ph">🏎️</div>{% endif %}
             </div>
-            <div class="svc-row-info">
-              <div class="svc-row-name">{{ venue.name }}</div>
-              <div class="svc-row-sub">🏁 {{ venue.machines.count }} {% trans "машин" %}{% if venue.working_hours %} · {{ venue.working_hours }}{% endif %}</div>
-            </div>
-            <span class="svc-row-arrow" style="color:#f97316;">→</span>
+            <div class="svc-card-name">{{ venue.name }}</div>
           </a>
           {% endfor %}
         </div>
@@ -936,7 +797,7 @@ document.querySelectorAll('.cat-pill').forEach(pill => {
     const target = document.querySelector(pill.getAttribute('href'));
     if (!target) return;
     const navH = document.getElementById('catNav').offsetHeight;
-    const top = target.getBoundingClientRect().top + window.scrollY - navH - 8;
+    const top = target.getBoundingClientRect().top + window.scrollY - navH - 92 - 8;
     window.scrollTo({top, behavior:'smooth'});
   });
 });

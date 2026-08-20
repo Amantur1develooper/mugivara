@@ -68,6 +68,11 @@ def _generate_slots(open_t, close_t, duration_total, appt_date, booked_intervals
     return slots
 
 
+def venues_list(request):
+    venues = SimRacingVenue.objects.filter(is_active=True).order_by("sort_order", "id")
+    return render(request, "simracing/list.html", {"venues": venues})
+
+
 def venue(request, slug):
     v = get_object_or_404(SimRacingVenue, slug=slug, is_active=True)
 
