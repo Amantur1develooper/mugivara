@@ -5,6 +5,11 @@ from core.models import TimeStampedModel
 
 
 class LegalOrg(TimeStampedModel):
+    place_category = models.ForeignKey(
+        "core.PlaceCategory", null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="legal_orgs",
+        verbose_name="Категория платформы",
+    )
     name          = models.CharField("Название", max_length=200)
     slug          = models.SlugField(max_length=220, unique=True)
     description   = models.TextField("Описание", blank=True, default="")

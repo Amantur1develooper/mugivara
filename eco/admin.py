@@ -25,7 +25,7 @@ class EcoProjectAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
     inlines             = [EcoServiceInline]
     fieldsets = (
-        (None, {"fields": ("name", "slug", "is_active", "sort_order")}),
+        (None, {"fields": ("place_category", "name", "slug", "is_active", "sort_order")}),
         ("Контакты", {"fields": ("address", "phone", "working_hours", "map_url")}),
         ("Описание и медиа", {"fields": ("description", "logo")}),
     )

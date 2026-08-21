@@ -17,7 +17,7 @@ class LegalOrgAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
     inlines             = [LegalServiceInline]
     fieldsets = (
-        (None,              {"fields": ("name", "slug", "is_active", "sort_order")}),
+        (None,              {"fields": ("place_category", "name", "slug", "is_active", "sort_order")}),
         ("Контакты",        {"fields": ("address", "phone", "working_hours", "map_url")}),
         ("Описание и медиа",{"fields": ("description", "logo")}),
         ("Telegram",        {"fields": ("tg_chat_id", "tg_thread_id"),

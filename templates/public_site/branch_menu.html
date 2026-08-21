@@ -1169,6 +1169,17 @@ const CX_CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
 }
 .cxm-add-btn:hover { box-shadow:0 6px 20px rgba(255,77,28,.38); }
 .cxm-add-btn:disabled { background:var(--border);color:var(--muted);box-shadow:none;pointer-events:none; }
+.cxm-add-btn.ready {
+  background:linear-gradient(135deg,#00C896,#00A87A);
+  box-shadow:0 4px 16px rgba(0,184,150,.4);
+  animation:cxmReadyPulse 1s ease 1;
+}
+.cxm-add-btn.ready:hover { box-shadow:0 6px 22px rgba(0,184,150,.5); }
+@keyframes cxmReadyPulse {
+  0%   { transform:scale(1); }
+  40%  { transform:scale(1.06); }
+  100% { transform:scale(1); }
+}
 .cxm-error {
   font-size:12px;color:#ef4444;text-align:center;
   margin-top:6px;min-height:16px;
@@ -1421,6 +1432,11 @@ function _updateTotal() {
     });
   });
   document.getElementById('cxTotal').textContent = total + ' сом';
+
+  // блюдо собрано полностью (все обязательные группы заполнены) — подсвечиваем кнопку зелёным
+  const ready = cx.groups.every(g => g.min <= 0 || _cxGroupTotal(g.id) >= g.min);
+  const addBtn = document.getElementById('cxAddBtn');
+  if (addBtn) addBtn.classList.toggle('ready', ready);
 }
 
 /* ── Step navigation ── */

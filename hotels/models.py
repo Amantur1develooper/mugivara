@@ -15,6 +15,11 @@ class TimeStampedModel(models.Model):
 
 
 class Hotel(TimeStampedModel):
+    place_category = models.ForeignKey(
+        "core.PlaceCategory", null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="hotels",
+        verbose_name="Категория платформы",
+    )
     name_ru = models.CharField("Название (RU)", max_length=200)
     name_ky = models.CharField("Название (KY)", max_length=200, blank=True, default="")
     name_en = models.CharField("Название (EN)", max_length=200, blank=True, default="")

@@ -16,6 +16,11 @@ SERVICE_TYPE_CHOICES = [
 
 
 class Agency(TimeStampedModel):
+    place_category = models.ForeignKey(
+        "core.PlaceCategory", null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="agencies",
+        verbose_name="Категория платформы",
+    )
     name          = models.CharField("Название агентства", max_length=200)
     slug          = models.SlugField(max_length=220, unique=True)
     tagline       = models.CharField("Слоган", max_length=300, blank=True, default="")

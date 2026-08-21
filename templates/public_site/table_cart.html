@@ -116,6 +116,9 @@
   .tc-modal-note:focus { border-color: #F59E0B; }
   .tc-modal-send { width: 100%; padding: 14px; border-radius: 14px; border: none; cursor: pointer; background: linear-gradient(135deg, #F59E0B, #D97706); color: white; font-family: 'Unbounded', sans-serif; font-size: 14px; font-weight: 700; box-shadow: 0 6px 20px rgba(245,158,11,.35); }
   .tc-modal-cancel { width: 100%; padding: 12px; border-radius: 14px; border: 1.5px solid var(--border); background: var(--bg); color: var(--text2); font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 8px; font-family: inherit; }
+
+  /* ── На странице корзины стола скрываем «Категории» и «Подключить бизнес» из шапки/сайдбара ── */
+  #navDd, .wb-nav-cta, .wb-drawer-cta { display: none !important; }
 </style>
 {% endblock %}
 
@@ -361,6 +364,15 @@ waiterSend.addEventListener("click", async () => {
     waiterSend.disabled = false;
     waiterSend.textContent = "🔔 Вызвать официанта";
   }
+});
+</script>
+
+<script>
+// На странице корзины стола лого Webordo никуда не уводит
+document.querySelectorAll(".wb-logo").forEach(function (a) {
+  a.addEventListener("click", function (e) {
+    e.preventDefault();
+  });
 });
 </script>
 

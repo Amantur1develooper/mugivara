@@ -37,6 +37,11 @@ class TimeStampedModel(models.Model):
         abstract = True
 
 class Store(models.Model):
+    place_category = models.ForeignKey(
+        "core.PlaceCategory", null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="stores",
+        verbose_name="Категория платформы",
+    )
     name_ru = models.CharField(max_length=200)
     name_ky = models.CharField(max_length=200, blank=True, default="")
     name_en = models.CharField(max_length=200, blank=True, default="")

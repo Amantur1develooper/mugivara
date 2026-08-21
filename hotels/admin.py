@@ -37,7 +37,7 @@ class HotelAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name_ru",)}
     inlines = (HotelBranchInline, HotelMembershipInline)
     fieldsets = (
-        (None, {"fields": ("name_ru", "name_ky", "name_en", "slug", "logo", "is_active", "rating")}),
+        (None, {"fields": ("place_category", "name_ru", "name_ky", "name_en", "slug", "logo", "is_active", "rating")}),
         ("О нас", {"fields": ("about_ru", "external_url")}),
     )
 

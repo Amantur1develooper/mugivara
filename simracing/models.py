@@ -27,6 +27,11 @@ def _compress(field, max_side=900, quality=82):
 
 
 class SimRacingVenue(models.Model):
+    place_category = models.ForeignKey(
+        "core.PlaceCategory", null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="simracing_venues",
+        verbose_name="Категория платформы",
+    )
     name         = models.CharField("Название", max_length=200)
     slug         = models.SlugField(max_length=220, unique=True)
     tagline      = models.CharField("Слоган", max_length=300, blank=True, default="")

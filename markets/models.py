@@ -28,6 +28,11 @@ def _compress_photo(image_field, size=(1200, 800), quality=85):
 
 
 class Market(TimeStampedModel):
+    place_category = models.ForeignKey(
+        "core.PlaceCategory", null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="markets",
+        verbose_name="Категория платформы",
+    )
     name_ru        = models.CharField("Название", max_length=200)
     slug           = models.SlugField(max_length=220, unique=True)
     description_ru = models.TextField("Описание", blank=True, default="")

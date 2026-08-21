@@ -31,14 +31,12 @@
 
   .sc-page{ max-width:1200px; margin:0 auto; }
 
+  /* ── HERO — чистое фото-баннер, без наложенного текста ── */
   .sc-hero{
     position:relative;
     overflow:hidden;
-    min-height:330px;
-    border-radius:0 0 30px 30px;
-    display:flex;
-    flex-direction:column;
-    justify-content:flex-end;
+    min-height:190px;
+    border-radius:0 0 28px 28px;
     background:linear-gradient(135deg,var(--sc-dark),var(--sc-dark-2));
   }
   .sc-hero-bg,
@@ -54,98 +52,115 @@
   .sc-hero:hover .sc-hero-photo{ transform:scale(1.06); }
   .sc-hero-overlay{
     background:
-      linear-gradient(to top, rgba(0,0,0,.84) 0%, rgba(0,0,0,.48) 48%, rgba(0,0,0,.18) 100%),
-      radial-gradient(ellipse 72% 54% at 0% 100%, rgba(255,106,26,.2), transparent 58%),
-      radial-gradient(ellipse 46% 40% at 100% 0%, rgba(7,180,136,.14), transparent 58%);
+      linear-gradient(to bottom, rgba(0,0,0,.4) 0%, rgba(0,0,0,.05) 55%, transparent 100%),
+      radial-gradient(ellipse 60% 60% at 0% 0%, rgba(255,106,26,.18), transparent 60%);
   }
   .sc-hero-dots{
     background-image: radial-gradient(circle, rgba(255,255,255,.05) 1px, transparent 1px);
     background-size: 24px 24px;
     mask-image: radial-gradient(ellipse 100% 100% at 100% 0%, black 8%, transparent 68%);
   }
-  .sc-hero-content{
-    position:relative;
-    z-index:2;
-    padding:26px 32px 28px;
-  }
   .sc-back-btn{
+    position:absolute; top:16px; left:20px; z-index:3;
     display:inline-flex;
     align-items:center;
     gap:8px;
     padding:8px 16px;
     border-radius:999px;
-    border:1px solid rgba(255,255,255,.16);
-    background:rgba(255,255,255,.1);
-    color:rgba(255,255,255,.82);
+    border:1px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.14);
+    color:#fff;
     text-decoration:none;
     backdrop-filter:blur(12px);
     -webkit-backdrop-filter:blur(12px);
     font-size:12px;
     font-weight:700;
-    margin-bottom:20px;
     cursor:pointer;
   }
-  .sc-back-btn:hover{ color:#fff; background:rgba(255,255,255,.16); }
+  .sc-back-btn:hover{ background:rgba(255,255,255,.22); }
 
-  .sc-hero-row{
-    display:flex;
-    align-items:flex-end;
-    justify-content:space-between;
-    gap:20px;
-    flex-wrap:wrap;
+  /* ── INFO CARD — вся информация под фото, светлая карточка ── */
+  .sc-info-card{
+    position:relative; z-index:2;
+    margin:-36px 20px 0;
+    background:var(--sc-card);
+    border:1px solid var(--sc-border);
+    border-radius:26px;
+    padding:24px 26px;
+    box-shadow:var(--sc-shadow-lg);
   }
-  .sc-hero-main{ max-width:760px; }
+  .sc-brand-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-bottom:14px;
+  }
+  .sc-logo{
+    width:60px; height:60px; flex-shrink:0;
+    border-radius:17px; overflow:hidden;
+    background:#fff;
+    border:1.5px solid var(--sc-border);
+    box-shadow:0 10px 26px rgba(16,24,40,.14);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .sc-logo img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .sc-logo-letter{
+    font-family:'Unbounded',sans-serif; font-weight:900; font-size:24px;
+    background:linear-gradient(135deg,var(--sc-accent),var(--sc-accent-2));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  }
+
   .sc-kicker{
     display:inline-flex;
     align-items:center;
     gap:8px;
-    padding:7px 12px;
+    padding:6px 12px;
     border-radius:999px;
-    background:rgba(255,255,255,.1);
-    border:1px solid rgba(255,255,255,.14);
-    color:rgba(255,255,255,.82);
-    font-size:12px;
-    font-weight:700;
-    margin-bottom:14px;
+    background:rgba(255,106,26,.08);
+    border:1px solid rgba(255,106,26,.16);
+    color:var(--sc-accent);
+    font-size:11px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    margin-bottom:12px;
   }
   .sc-title{
     font-family:'Unbounded',sans-serif;
-    font-size:clamp(26px, 4vw, 46px);
-    line-height:1;
-    letter-spacing:-1.8px;
+    font-size:clamp(22px, 3.4vw, 34px);
+    line-height:1.05;
+    letter-spacing:-1.2px;
     font-weight:900;
-    color:#fff;
-    margin:0 0 12px;
+    color:var(--sc-text);
+    margin:0 0 8px;
   }
   .sc-address{
-    color:rgba(255,255,255,.86);
-    font-size:14px;
+    color:var(--sc-muted);
+    font-size:13px;
     line-height:1.6;
     max-width:62ch;
   }
   .sc-hero-meta{
     display:flex;
     align-items:center;
-    gap:10px;
+    gap:8px;
     flex-wrap:wrap;
-    margin-top:16px;
+    margin-top:14px;
   }
   .sc-pill{
     display:inline-flex;
     align-items:center;
-    gap:8px;
-    padding:7px 14px;
+    gap:7px;
+    padding:6px 13px;
     border-radius:999px;
-    font-size:12px;
+    font-size:11.5px;
     font-weight:700;
-    border:1px solid rgba(255,255,255,.14);
-    background:rgba(255,255,255,.1);
-    color:rgba(255,255,255,.82);
-    backdrop-filter:blur(10px);
-    -webkit-backdrop-filter:blur(10px);
+    border:1px solid var(--sc-border);
+    background:#f6f7fb;
+    color:#475467;
   }
-  .sc-pill.open{ background:var(--sc-green-bg); color:#9dffe7; border-color:var(--sc-green-br); }
-  .sc-pill.mode{ background:rgba(255,138,0,.16); color:#ffd29f; border-color:rgba(255,138,0,.24); }
+  .sc-pill.open{ background:var(--sc-green-bg); color:#03876a; border-color:var(--sc-green-br); }
+  .sc-pill.mode{ background:rgba(255,138,0,.1); color:#c2660a; border-color:rgba(255,138,0,.22); }
   .sc-pill-dot{ width:7px; height:7px; border-radius:50%; background:currentColor; }
 
   .sc-hero-actions{
@@ -153,101 +168,56 @@
     gap:10px;
     flex-wrap:wrap;
     align-items:center;
-    justify-content:flex-end;
+    margin-top:18px;
   }
-  .sc-cart-btn,
   .sc-call-btn,
   .sc-wa-btn{
     display:inline-flex;
     align-items:center;
     justify-content:center;
     gap:8px;
-    min-height:50px;
+    min-height:46px;
     padding:0 18px;
-    border-radius:18px;
+    border-radius:16px;
     text-decoration:none;
     font-size:13px;
     font-weight:800;
     transition:transform .18s ease, box-shadow .18s ease, background .18s ease;
     white-space:nowrap;
   }
-  .sc-cart-btn:hover,
   .sc-call-btn:hover,
   .sc-wa-btn:hover{ transform:translateY(-2px); }
   .sc-call-btn{
-    background:rgba(255,255,255,.12);
-    color:#fff;
-    border:1px solid rgba(255,255,255,.16);
-    backdrop-filter:blur(12px);
-    -webkit-backdrop-filter:blur(12px);
+    background:#f2f4f7;
+    color:var(--sc-text);
+    border:1.5px solid var(--sc-border);
   }
   .sc-wa-btn{
     background:#25D366;
     color:#fff;
-    box-shadow:0 10px 28px rgba(37,211,102,.22);
-  }
-  .sc-cart-btn{
-    background:linear-gradient(135deg,var(--sc-accent),var(--sc-accent-2));
-    color:#fff;
-    box-shadow:0 12px 28px var(--sc-glow);
-  }
-  .sc-cart-btn-badge{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    min-width:28px;
-    height:28px;
-    padding:0 9px;
-    border-radius:999px;
-    background:rgba(255,255,255,.18);
-    font-size:12px;
-    font-weight:900;
-  }
-
-  .sc-info-strip{
-    display:grid;
-    grid-template-columns:repeat(3, minmax(0,1fr));
-    gap:14px;
-    margin:18px 20px 0;
-  }
-  .sc-info-card{
-    background:rgba(255,255,255,.92);
-    border:1px solid var(--sc-border);
-    border-radius:24px;
-    padding:16px 18px;
-    box-shadow:var(--sc-shadow);
-  }
-  .sc-info-label{
-    font-size:11px;
-    text-transform:uppercase;
-    letter-spacing:.08em;
-    color:#98a2b3;
-    font-weight:800;
-  }
-  .sc-info-value{
-    margin-top:7px;
-    font-size:15px;
-    font-weight:900;
-    color:var(--sc-text);
-    line-height:1.45;
+    box-shadow:0 10px 24px rgba(37,211,102,.25);
   }
 
   .sc-cats-sticky{
     position:sticky;
     top:92px;
     z-index:100;
-    background:rgba(246,247,251,.88);
-    backdrop-filter:blur(16px);
-    -webkit-backdrop-filter:blur(16px);
-    border-bottom:1px solid rgba(16,24,40,.06);
+    padding:14px 20px;
     margin-top:18px;
   }
   .sc-cats-inner{
     max-width:1200px;
     margin:0 auto;
-    padding:10px 20px;
+    padding:6px;
     display:flex;
-    gap:8px;
+    gap:6px;
+    align-items:center;
+    background:rgba(255,255,255,.9);
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+    border:1px solid var(--sc-border);
+    border-radius:999px;
+    box-shadow:0 14px 36px rgba(16,24,40,.09), 0 2px 10px rgba(16,24,40,.05);
     overflow-x:auto;
     scrollbar-width:none;
   }
@@ -259,8 +229,8 @@
     white-space:nowrap;
     padding:9px 16px;
     border-radius:999px;
-    background:#fff;
-    border:1.5px solid var(--sc-border);
+    background:#f6f7fb;
+    border:1.5px solid transparent;
     color:var(--sc-muted);
     text-decoration:none;
     font-size:13px;
@@ -268,12 +238,12 @@
     transition:all .18s ease;
     flex-shrink:0;
   }
-  .sc-cat-btn:hover{ color:var(--sc-text); border-color:var(--sc-border-strong); transform:translateY(-1px); }
+  .sc-cat-btn:hover{ background:#eef0f4; color:var(--sc-text); }
   .sc-cat-btn.active{
-    background:var(--sc-text);
+    background:linear-gradient(135deg,var(--sc-accent),var(--sc-accent-2));
     color:#fff;
-    border-color:var(--sc-text);
-    box-shadow:0 10px 28px rgba(16,24,40,.14);
+    border-color:transparent;
+    box-shadow:0 8px 22px var(--sc-glow);
   }
 
   .sc-content{
@@ -281,7 +251,7 @@
     margin:0 auto;
     padding:28px 20px 120px;
   }
-  .sc-cat-section{ scroll-margin-top:128px; margin-bottom:42px; }
+  .sc-cat-section{ scroll-margin-top:154px; margin-bottom:42px; }
   .sc-cat-header{
     display:flex;
     align-items:center;
@@ -600,7 +570,7 @@
 
   .sc-toast-wrap{
     position:fixed;
-    top:82px;
+    top:104px;
     right:20px;
     z-index:9999;
     display:flex;
@@ -629,16 +599,18 @@
   .sc-toast-dot{ width:8px; height:8px; border-radius:50%; background:var(--sc-green); flex-shrink:0; }
 
   @media (max-width: 960px){
-    .sc-info-strip{ grid-template-columns:1fr; margin-left:16px; margin-right:16px; }
-    .sc-hero-content{ padding:22px 18px 22px; }
-    .sc-hero-actions{ justify-content:flex-start; }
+    .sc-info-card{ padding:20px 20px; }
   }
 
   @media (max-width: 768px){
-    .sc-hero{ min-height:360px; border-radius:0 0 24px 24px; }
-    .sc-title{ font-size:28px; }
-    .sc-cats-sticky{ top:56px; }
-    .sc-cats-inner{ padding:9px 14px; }
+    .sc-hero{ min-height:140px; border-radius:0 0 22px 22px; }
+    .sc-back-btn{ top:12px; left:14px; padding:7px 14px; font-size:11px; }
+    .sc-info-card{ margin:-28px 14px 0; padding:18px 18px; border-radius:22px; }
+    .sc-logo{ width:52px; height:52px; border-radius:15px; }
+    .sc-logo-letter{ font-size:20px; }
+    .sc-title{ font-size:22px; }
+    .sc-cats-sticky{ top:92px; margin-top:16px; padding:10px 12px; }
+    .sc-cat-btn{ padding:8px 14px; font-size:12px; }
     .sc-content{ padding:22px 14px 120px; }
     .sc-grid{ grid-template-columns:repeat(auto-fill, minmax(168px,1fr)); gap:12px; }
     .sc-card-media{ height:148px; }
@@ -649,16 +621,18 @@
   }
 
   @media (max-width: 480px){
-    .sc-hero-content{ padding:18px 14px 18px; }
-    .sc-hero-row{ gap:16px; }
+    .sc-hero{ min-height:120px; }
+    .sc-info-card{ margin:-24px 10px 0; padding:16px 16px; }
+    .sc-brand-row{ gap:10px; margin-bottom:10px; }
+    .sc-logo{ width:44px; height:44px; border-radius:13px; }
+    .sc-logo-letter{ font-size:17px; }
     .sc-hero-actions{ width:100%; display:grid; grid-template-columns:1fr 1fr; }
-    .sc-cart-btn{ grid-column:1 / -1; }
     .sc-grid{ grid-template-columns:repeat(2,1fr); gap:10px; }
     .sc-card-media{ height:132px; }
     .sc-card-footer{ flex-direction:column; align-items:stretch; }
     .sc-add-btn,.sc-sold-out{ width:100%; }
     .sc-top-btn{ right:14px; bottom:96px; }
-    .sc-toast-wrap{ right:12px; top:76px; }
+    .sc-toast-wrap{ right:12px; top:100px; }
   }
 
   /* ── Product modal ───────────────────────────────────── */
@@ -788,84 +762,62 @@
     <div class="sc-hero-overlay"></div>
     <div class="sc-hero-dots"></div>
 
-    <div class="sc-hero-content">
-      <a class="sc-back-btn" href="#" onclick="history.back(); return false;">← {% trans "Назад" %}</a>
-
-      <div class="sc-hero-row">
-        <div class="sc-hero-main">
-          <div class="sc-kicker">{{ store.name_ru }} · {% trans "Каталог филиала" %}</div>
-          <h1 class="sc-title">{{ branch.name_ru }}</h1>
-
-          {% if branch.address %}
-            <div class="sc-address">{{ branch.address }}</div>
-          {% endif %}
-
-          <div class="sc-hero-meta">
-            <span class="sc-pill mode">
-              {% if mode == "delivery" %}🚚 {% trans "Доставка" %}{% else %}🏬 {% trans "Покупка в магазине" %}{% endif %}
-            </span>
-
-            {% if mode == "delivery" and branch.delivery_enabled %}
-              {% if branch.min_order_amount %}
-                <span class="sc-pill">🛵 {% trans "Мин. заказ" %} · {{ branch.min_order_amount|floatformat:"0" }} {% trans "сом" %}</span>
-              {% endif %}
-              <span class="sc-pill">💸 {% trans "Доставка" %} · {{ branch.delivery_fee|floatformat:"0" }} {% trans "сом" %}</span>
-            {% endif %}
-
-            {% if branch.phone %}
-              <span class="sc-pill">📞 {{ branch.phone }}</span>
-            {% endif %}
-
-            {% if store.order_phone %}
-              <span class="sc-pill" style="background:rgba(124,58,237,.12);border-color:rgba(124,58,237,.22);color:#c4b5fd;">✨ Инд. заказы: {{ store.order_phone }}</span>
-            {% endif %}
-
-            <span class="sc-pill open"><span class="sc-pill-dot"></span>{% trans "Каталог открыт" %}</span>
-          </div>
-        </div>
-
-        <div class="sc-hero-actions">
-          {% if branch.phone %}
-            <a href="tel:{{ branch.phone }}" class="sc-call-btn">📞 {% trans "Позвонить" %}</a>
-            <a href="https://wa.me/{{ branch.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" rel="noopener" class="sc-wa-btn">WhatsApp</a>
-          {% endif %}
-          {% if store.order_phone %}
-            <a href="tel:{{ store.order_phone }}"
-               class="sc-call-btn" style="background:rgba(124,58,237,.18);border-color:rgba(124,58,237,.3);color:#ddd6fe;">✨ Инд. заказ</a>
-          {% endif %}
-          <a href="{% url 'shops:cart_detail' branch.id %}" class="sc-cart-btn" id="heroCartBtn">
-            🧺 {% trans "Корзина" %}
-            <span class="sc-cart-btn-badge" data-cart-qty>{{ cart_qty|default:0 }}</span>
-            <span data-cart-total>{{ cart_total|default:0 }} {% trans "сом" %}</span>
-          </a>
-        </div>
-      </div>
-    </div>
+    <a class="sc-back-btn" href="#" onclick="history.back(); return false;">← {% trans "Назад" %}</a>
   </section>
 
-  <section class="sc-info-strip">
-    <div class="sc-info-card">
-      <div class="sc-info-label">{% trans "Формат" %}</div>
-      <div class="sc-info-value">{% if mode == "delivery" %}{% trans "Заказ с доставкой" %}{% else %}{% trans "Покупка в магазине" %}{% endif %}</div>
-    </div>
-    <div class="sc-info-card">
-      <div class="sc-info-label">{% trans "Адрес" %}</div>
-      <div class="sc-info-value">{% if branch.address %}{{ branch.address }}{% else %}{% trans "Адрес скоро добавим" %}{% endif %}</div>
-    </div>
-    <div class="sc-info-card">
-      <div class="sc-info-label">{% trans "Контакт" %}</div>
-      <div class="sc-info-value">{% if branch.phone %}{{ branch.phone }}{% else %}{% trans "Уточняется" %}{% endif %}</div>
-    </div>
-    {% if store.order_phone %}
-    <div class="sc-info-card" style="border-color:rgba(124,58,237,.18)">
-      <div class="sc-info-label" style="color:#a78bfa">✨ Индивидуальные заказы</div>
-      <div class="sc-info-value">
-        <a href="tel:{{ store.order_phone }}"
-           style="color:#7c3aed;text-decoration:none;font-weight:900">{{ store.order_phone }}</a>
+  <div class="sc-info-card">
+    <div class="sc-brand-row">
+      <div class="sc-logo">
+        {% if store.logo %}
+          <img src="{{ store.logo.url }}" alt="{{ store.name_ru }}">
+        {% else %}
+          <span class="sc-logo-letter">{{ store.name_ru|slice:":1"|upper }}</span>
+        {% endif %}
+      </div>
+      <div>
+        <div class="sc-kicker">{{ store.name_ru }} · {% trans "Каталог филиала" %}</div>
+        <h1 class="sc-title" style="margin:0">{{ branch.name_ru }}</h1>
       </div>
     </div>
+
+    {% if branch.address %}
+      <div class="sc-address">{{ branch.address }}</div>
     {% endif %}
-  </section>
+
+    <div class="sc-hero-meta">
+      <span class="sc-pill mode">
+        {% if mode == "delivery" %}🚚 {% trans "Доставка" %}{% else %}🏬 {% trans "Покупка в магазине" %}{% endif %}
+      </span>
+
+      {% if mode == "delivery" and branch.delivery_enabled %}
+        {% if branch.min_order_amount %}
+          <span class="sc-pill">🛵 {% trans "Мин. заказ" %} · {{ branch.min_order_amount|floatformat:"0" }} {% trans "сом" %}</span>
+        {% endif %}
+        <span class="sc-pill">💸 {% trans "Доставка" %} · {{ branch.delivery_fee|floatformat:"0" }} {% trans "сом" %}</span>
+      {% endif %}
+
+      {% if branch.phone %}
+        <span class="sc-pill">📞 {{ branch.phone }}</span>
+      {% endif %}
+
+      {% if store.order_phone %}
+        <span class="sc-pill" style="background:rgba(124,58,237,.08);border-color:rgba(124,58,237,.2);color:#7c3aed;">✨ Инд. заказы: {{ store.order_phone }}</span>
+      {% endif %}
+
+      <span class="sc-pill open"><span class="sc-pill-dot"></span>{% trans "Каталог открыт" %}</span>
+    </div>
+
+    <div class="sc-hero-actions">
+      {% if branch.phone %}
+        <a href="tel:{{ branch.phone }}" class="sc-call-btn">📞 {% trans "Позвонить" %}</a>
+        <a href="https://wa.me/{{ branch.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" rel="noopener" class="sc-wa-btn">WhatsApp</a>
+      {% endif %}
+      {% if store.order_phone %}
+        <a href="tel:{{ store.order_phone }}"
+           class="sc-call-btn" style="background:rgba(124,58,237,.1);border-color:rgba(124,58,237,.24);color:#7c3aed;">✨ Инд. заказ</a>
+      {% endif %}
+    </div>
+  </div>
 
   <div class="sc-cats-sticky">
     <div class="sc-cats-inner" id="scCatsBar">

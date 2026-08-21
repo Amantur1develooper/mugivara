@@ -20,7 +20,7 @@ class StoreAdmin(admin.ModelAdmin):
     list_display = ("name_ru", "slug", "is_active")
     search_fields = ("name_ru", "name_ky", "name_en", "slug")
     prepopulated_fields = {"slug": ("name_ru",)}
-    fields = ("name_ru", "name_ky", "name_en", "slug", "logo", "about_ru",
+    fields = ("place_category", "name_ru", "name_ky", "name_en", "slug", "logo", "about_ru",
               "youtube_url", "instagram_url", "instagram_url_2", "order_phone", "is_active")
 
 

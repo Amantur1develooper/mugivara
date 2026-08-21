@@ -20,6 +20,11 @@ ORDER_STATUS = [
 # ── ЗАВЕДЕНИЕ ──────────────────────────────────────────────────────────────────
 
 class KaraokeVenue(TimeStampedModel):
+    place_category = models.ForeignKey(
+        "core.PlaceCategory", null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="karaoke_venues",
+        verbose_name="Категория платформы",
+    )
     name          = models.CharField("Название", max_length=200)
     slug          = models.SlugField(max_length=220, unique=True)
     tagline       = models.CharField("Слоган", max_length=300, blank=True, default="")
