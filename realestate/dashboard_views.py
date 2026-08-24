@@ -1,5 +1,8 @@
+from decimal import Decimal, InvalidOperation
+
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
@@ -7,8 +10,25 @@ from django.contrib import messages
 
 from .models import RealtyAgency, RealtyMembership, Apartment, ApartmentPhoto
 
+
+def _apply_search(qs, q):
+    if not q:
+        return qs
+    filters = Q(address__icontains=q) | Q(district__icontains=q) | Q(city__icontains=q)
+    try:
+        filters |= Q(area=Decimal(q.strip().replace(",", ".")))
+    except (InvalidOperation, ValueError):
+        pass
+    return qs.filter(filters)
+
 LOGIN_URL = "rcabinet:login"
 MAX_PHOTOS = 10
+
+
+def _decimal(raw):
+    """Принимает '10,5', '7 142,86', '10.5' -> '10.5'; пусто -> None."""
+    raw = (raw or "").strip().replace("\xa0", "").replace(" ", "").replace(",", ".")
+    return raw or None
 
 
 def _user_agencies(user):
@@ -79,13 +99,48 @@ def home(request):
         messages.error(request, "У вас нет доступа ни к одному агентству.")
         return render(request, "rcabinet/home.html", {"agency": None, "apartments": []})
 
+    q = request.GET.get("q", "").strip()
     apartments = _visible_apartments(request.user, agency).select_related("realtor__user").prefetch_related("photos")
+    apartments = _apply_search(apartments, q)
     return render(request, "rcabinet/home.html", {
         "agency": agency,
         "apartments": apartments,
+        "q": q,
         "is_director": _is_director(request.user, agency),
         "statuses": Apartment.Status.choices,
     })
+
+
+# ── НАСТРОЙКИ АГЕНТСТВА ────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def agency_settings(request, agency_id):
+    agency = get_object_or_404(RealtyAgency, id=agency_id)
+    if not _is_director(request.user, agency):
+        messages.error(request, "Настройки агентства доступны только директору.")
+        return redirect("rcabinet:home")
+
+    if request.method == "POST":
+        agency.name        = request.POST.get("name", agency.name).strip()
+        agency.phone       = request.POST.get("phone", "").strip()
+        agency.address     = request.POST.get("address", "").strip()
+        agency.description = request.POST.get("description", "").strip()
+
+        if "logo" in request.FILES:
+            agency.logo = request.FILES["logo"]
+        elif request.POST.get("logo_clear"):
+            agency.logo = None
+
+        if "cover" in request.FILES:
+            agency.cover = request.FILES["cover"]
+        elif request.POST.get("cover_clear"):
+            agency.cover = None
+
+        agency.save()
+        messages.success(request, "Настройки агентства обновлены.")
+        return redirect("rcabinet:agency_settings", agency_id=agency.id)
+
+    return render(request, "rcabinet/agency_settings.html", {"agency": agency})
 
 
 # ── КВАРТИРЫ ─────────────────────────────────────────────────────────────────
@@ -106,8 +161,7 @@ def apartment_add(request, agency_id):
         apt.city          = request.POST.get("city", "").strip()
         apt.district      = request.POST.get("district", "").strip()
         apt.address       = request.POST.get("address", "").strip()
-        area              = request.POST.get("area", "").strip()
-        apt.area          = area or None
+        apt.area          = _decimal(request.POST.get("area"))
         rooms             = request.POST.get("rooms", "").strip()
         apt.rooms         = int(rooms) if rooms.isdigit() else None
         floor             = request.POST.get("floor", "").strip()
@@ -115,8 +169,9 @@ def apartment_add(request, agency_id):
         floors_total      = request.POST.get("floors_total", "").strip()
         apt.floors_total  = int(floors_total) if floors_total.isdigit() else None
         apt.renovation    = request.POST.get("renovation", "").strip()
-        price             = request.POST.get("price", "").strip()
-        apt.price         = price or None
+        apt.price         = _decimal(request.POST.get("price"))
+        apt.price_per_sqm = _decimal(request.POST.get("price_per_sqm"))
+        apt.currency      = request.POST.get("currency", Apartment.Currency.KGS)
         apt.status        = request.POST.get("status", Apartment.Status.FREE)
         apt.description   = request.POST.get("description", "").strip()
         apt.review_url_1  = request.POST.get("review_url_1", "").strip()
@@ -160,8 +215,7 @@ def apartment_edit(request, apartment_id):
         apt.city          = request.POST.get("city", "").strip()
         apt.district      = request.POST.get("district", "").strip()
         apt.address       = request.POST.get("address", "").strip()
-        area              = request.POST.get("area", "").strip()
-        apt.area          = area or None
+        apt.area          = _decimal(request.POST.get("area"))
         rooms             = request.POST.get("rooms", "").strip()
         apt.rooms         = int(rooms) if rooms.isdigit() else None
         floor             = request.POST.get("floor", "").strip()
@@ -169,8 +223,9 @@ def apartment_edit(request, apartment_id):
         floors_total      = request.POST.get("floors_total", "").strip()
         apt.floors_total  = int(floors_total) if floors_total.isdigit() else None
         apt.renovation    = request.POST.get("renovation", "").strip()
-        price             = request.POST.get("price", "").strip()
-        apt.price         = price or None
+        apt.price         = _decimal(request.POST.get("price"))
+        apt.price_per_sqm = _decimal(request.POST.get("price_per_sqm"))
+        apt.currency      = request.POST.get("currency", apt.currency)
         apt.status        = request.POST.get("status", apt.status)
         apt.description   = request.POST.get("description", "").strip()
         apt.review_url_1  = request.POST.get("review_url_1", "").strip()

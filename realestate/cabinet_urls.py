@@ -8,6 +8,7 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path("",        views.home,        name="home"),
 
+    path("agency/<int:agency_id>/settings/",       views.agency_settings, name="agency_settings"),
     path("agency/<int:agency_id>/apartment/add/", views.apartment_add, name="apartment_add"),
     path("apartment/<int:apartment_id>/edit/",     views.apartment_edit,   name="apartment_edit"),
     path("apartment/<int:apartment_id>/status/",   views.apartment_status, name="apartment_status"),

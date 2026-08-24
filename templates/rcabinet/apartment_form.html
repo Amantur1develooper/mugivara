@@ -73,7 +73,7 @@
       <div class="row3">
         <div class="field">
           <label>Площадь, м²</label>
-          <input type="number" step="0.1" name="area" value="{{ apartment.area|default:'' }}">
+          <input type="text" inputmode="decimal" name="area" value="{{ apartment.area|default:'' }}" placeholder="10,5">
         </div>
         <div class="field">
           <label>Комнат</label>
@@ -102,20 +102,32 @@
         </div>
       </div>
 
-      <div class="row2">
+      <div class="row3">
         <div class="field">
-          <label>Цена продажи, сом</label>
-          <input type="number" name="price" value="{{ apartment.price|default:'' }}">
+          <label>Цена продажи</label>
+          <input type="text" inputmode="decimal" name="price" value="{{ apartment.price|default:'' }}" placeholder="7500000">
         </div>
         <div class="field">
-          <label>Статус</label>
-          <select name="status">
-            <option value="free" {% if apartment.status == "free" or not apartment %}selected{% endif %}>Свободна</option>
-            <option value="booked" {% if apartment.status == "booked" %}selected{% endif %}>Забронирована</option>
-            <option value="sold" {% if apartment.status == "sold" %}selected{% endif %}>Продана</option>
-            <option value="removed" {% if apartment.status == "removed" %}selected{% endif %}>Снята с продажи</option>
+          <label>Цена за м²</label>
+          <input type="text" inputmode="decimal" name="price_per_sqm" value="{{ apartment.price_per_sqm|default:'' }}" placeholder="120000">
+        </div>
+        <div class="field">
+          <label>Валюта</label>
+          <select name="currency">
+            <option value="KGS" {% if apartment.currency == "KGS" or not apartment %}selected{% endif %}>сом</option>
+            <option value="USD" {% if apartment.currency == "USD" %}selected{% endif %}>$ (доллар)</option>
           </select>
         </div>
+      </div>
+
+      <div class="field">
+        <label>Статус</label>
+        <select name="status">
+          <option value="free" {% if apartment.status == "free" or not apartment %}selected{% endif %}>Свободна</option>
+          <option value="booked" {% if apartment.status == "booked" %}selected{% endif %}>Забронирована</option>
+          <option value="sold" {% if apartment.status == "sold" %}selected{% endif %}>Продана</option>
+          <option value="removed" {% if apartment.status == "removed" %}selected{% endif %}>Снята с продажи</option>
+        </select>
       </div>
 
       {% if is_director %}

@@ -50,6 +50,17 @@
     }
     .card-actions .danger{color:#B91C1C}
     .empty{text-align:center;padding:60px 24px;background:#fff;border:1px solid var(--border);border-radius:18px;color:var(--muted);font-size:14px}
+    .search-row{display:flex;gap:8px;margin-bottom:20px}
+    .search-row input{
+      flex:1;padding:12px 16px;border-radius:100px;border:1.5px solid var(--border);
+      font-family:'Geologica',sans-serif;font-size:14px;color:#0D1117;background:#fff;outline:none;
+    }
+    .search-row input:focus{border-color:rgba(255,77,28,.4)}
+    .search-row button{
+      padding:12px 20px;border-radius:100px;border:none;background:#0D1117;color:#fff;
+      font-size:13px;font-weight:600;cursor:pointer;
+    }
+    .search-clear{font-size:12px;color:var(--muted);text-decoration:none;align-self:center}
   </style>
 </head>
 <body>
@@ -58,7 +69,14 @@
     <div class="brand">Webordo</div>
     {% if agency %}<div class="agency-name">{{ agency.name }}</div>{% endif %}
   </div>
-  <a class="logout" href="{% url 'rcabinet:logout' %}">Выйти</a>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div style="text-align:right">
+      <div style="font-size:13px;font-weight:600">{{ request.user.get_full_name|default:request.user.username }}</div>
+      {% if agency %}<div style="font-size:11px;color:var(--muted)">{% if is_director %}Директор{% else %}Риэлтор{% endif %}</div>{% endif %}
+    </div>
+    {% if agency and is_director %}<a class="logout" href="{% url 'rcabinet:agency_settings' agency.id %}">Настройки агентства</a>{% endif %}
+    <a class="logout" href="{% url 'rcabinet:logout' %}">Выйти</a>
+  </div>
 </div>
 
 <div class="wrap">
@@ -71,6 +89,12 @@
     <div class="head-title">Квартиры{% if not is_director %} (мои){% endif %}</div>
     <a class="btn" href="{% url 'rcabinet:apartment_add' agency.id %}">+ Добавить квартиру</a>
   </div>
+
+  <form method="get" class="search-row">
+    <input type="text" name="q" value="{{ q }}" placeholder="Поиск по адресу, району, площади...">
+    <button type="submit">Найти</button>
+    {% if q %}<a href="{% url 'rcabinet:home' %}" class="search-clear">Сбросить</a>{% endif %}
+  </form>
 
   {% if apartments %}
   <div class="grid">
@@ -87,7 +111,7 @@
           {% if apt.area %}{{ apt.area }} м²{% endif %}{% if apt.rooms %} · {{ apt.rooms }}-комн.{% endif %}{% if apt.floor %} · {{ apt.floor }}{% if apt.floors_total %}/{{ apt.floors_total }}{% endif %} эт.{% endif %}
           {% if apt.district %} · {{ apt.district }}{% endif %}
         </div>
-        <div class="card-price">{% if apt.price %}{{ apt.price|floatformat:0 }} сом{% else %}Цена не указана{% endif %}</div>
+        <div class="card-price">{{ apt.price_display|default:"Цена не указана" }}</div>
         {% if is_director and apt.realtor %}
           <div class="card-realtor">Риэлтор: {{ apt.realtor.user.get_full_name|default:apt.realtor.user.username }}</div>
         {% endif %}
@@ -108,7 +132,7 @@
     {% endfor %}
   </div>
   {% else %}
-  <div class="empty">Пока нет квартир. Добавьте первую.</div>
+  <div class="empty">{% if q %}Ничего не найдено по запросу «{{ q }}».{% else %}Пока нет квартир. Добавьте первую.{% endif %}</div>
   {% endif %}
 
   {% else %}

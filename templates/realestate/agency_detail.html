@@ -14,8 +14,15 @@
   .re-page { max-width: 1140px; margin: 0 auto; padding: 0 24px 80px; }
   .re-hero { position: relative; background: linear-gradient(135deg, #e6fbf7, #fef3e9); padding: 60px 40px 40px; margin: 0 -24px 40px; border-bottom: 1px solid var(--re-border); }
   .re-back { position: absolute; top: 20px; left: 40px; display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600; background: rgba(255,255,255,0.75); border: 1px solid var(--re-border); color: var(--re-teal); text-decoration: none; }
-  .re-title { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: clamp(24px, 4vw, 36px); letter-spacing: -1px; margin-top: 24px; }
+  .re-hero-top { display: flex; align-items: center; gap: 16px; margin-top: 24px; flex-wrap: wrap; }
+  .re-logo { width: 64px; height: 64px; border-radius: 16px; overflow: hidden; flex-shrink: 0; border: 2px solid rgba(13,148,136,0.18); background: #fff; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 4px 16px rgba(13,148,136,0.12); }
+  .re-logo img { width: 100%; height: 100%; object-fit: cover; }
+  .re-title { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: clamp(24px, 4vw, 36px); letter-spacing: -1px; }
   .re-sub { font-size: 14px; color: var(--re-muted); margin-top: 8px; }
+  .re-contact-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+  .re-contact-chip { display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600; background: rgba(255,255,255,0.8); border: 1px solid var(--re-border); color: var(--re-text); text-decoration: none; }
+  .re-wa-chip { background: #25D366; border-color: #25D366; color: #fff; }
+  .re-wa-chip:hover { background: #1fb955; }
 
   .re-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
   .re-card { background: var(--re-card); border: 1px solid var(--re-border); border-radius: 18px; overflow: hidden; text-decoration: none; color: inherit; box-shadow: 0 2px 10px rgba(13,148,136,0.06); transition: transform .2s, box-shadow .2s; }
@@ -29,6 +36,24 @@
   .re-card-meta { font-size: 12px; color: var(--re-muted); margin-bottom: 10px }
   .re-card-price { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 17px; color: var(--re-teal) }
   .re-empty { text-align: center; padding: 70px 24px; border: 1px solid var(--re-border); border-radius: 20px; background: var(--re-card); }
+  .re-search-row { display: flex; gap: 8px; margin-bottom: 24px; }
+  .re-search-row input { flex: 1; padding: 13px 18px; border-radius: 100px; border: 1.5px solid var(--re-border); font-size: 14px; color: var(--re-text); background: #fff; outline: none; }
+  .re-search-row input:focus { border-color: rgba(13,148,136,.4); }
+  .re-search-row button { padding: 13px 22px; border-radius: 100px; border: none; background: var(--re-grad); color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .re-search-clear { font-size: 12px; color: var(--re-muted); text-decoration: none; align-self: center; white-space: nowrap; }
+
+  @media (max-width: 640px) {
+    .re-page { padding: 0 8px 60px; }
+    .re-hero { margin: 0 -8px 28px; padding: 52px 14px 24px; }
+    .re-back { left: 14px; }
+    .re-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .re-card-photo { height: 130px; font-size: 28px; }
+    .re-card-body { padding: 12px; }
+    .re-card-addr { font-size: 13px; margin-bottom: 4px; line-height: 1.3; }
+    .re-card-meta { font-size: 11px; margin-bottom: 7px; }
+    .re-card-price { font-size: 14px; }
+    .re-status-badge { font-size: 9px; padding: 3px 7px; top: 6px; left: 6px; }
+  }
 </style>
 {% endblock %}
 
@@ -37,9 +62,28 @@
 <div class="re-page">
   <div class="re-hero">
     <a href="{% url 'realestate:agency_list' %}" class="re-back">← Все агентства</a>
-    <div class="re-title">{{ agency.name }}</div>
+    <div class="re-hero-top">
+      <div class="re-logo">
+        {% if agency.logo %}<img src="{{ agency.logo.url }}" alt="{{ agency.name }}">{% else %}🏢{% endif %}
+      </div>
+      <div class="re-title">{{ agency.name }}</div>
+    </div>
     {% if agency.address %}<div class="re-sub">📍 {{ agency.address }}</div>{% endif %}
+    {% if agency.phone %}
+    <div class="re-contact-row">
+      <a href="tel:{{ agency.phone }}" class="re-contact-chip">📞 {{ agency.phone }}</a>
+      {% with digits=agency.phone|cut:"+"|cut:" "|cut:"-"|cut:"("|cut:")" %}
+      <a href="https://wa.me/{{ digits }}" target="_blank" rel="noopener" class="re-contact-chip re-wa-chip">💬 Написать в WhatsApp</a>
+      {% endwith %}
+    </div>
+    {% endif %}
   </div>
+
+  <form method="get" class="re-search-row">
+    <input type="text" name="q" value="{{ q }}" placeholder="Поиск по адресу, району, площади...">
+    <button type="submit">Найти</button>
+    {% if q %}<a href="{% url 'realestate:agency_detail' agency.slug %}" class="re-search-clear">Сбросить</a>{% endif %}
+  </form>
 
   {% if apartments %}
   <div class="re-grid">
@@ -56,7 +100,7 @@
         <div class="re-card-meta">
           {% if apt.area %}{{ apt.area }} м²{% endif %}{% if apt.rooms %} · {{ apt.rooms }}-комн.{% endif %}{% if apt.district %} · {{ apt.district }}{% endif %}
         </div>
-        <div class="re-card-price">{% if apt.price %}{{ apt.price|floatformat:0 }} сом{% else %}Цена не указана{% endif %}</div>
+        <div class="re-card-price">{{ apt.price_display|default:"Цена не указана" }}</div>
       </div>
     </a>
     {% endfor %}
@@ -64,8 +108,13 @@
   {% else %}
   <div class="re-empty">
     <div style="font-size:52px;margin-bottom:14px">🏠</div>
+    {% if q %}
+    <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:17px;margin-bottom:6px">Ничего не найдено</div>
+    <div style="font-size:14px;color:var(--re-muted)">По запросу «{{ q }}» квартир не найдено</div>
+    {% else %}
     <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:17px;margin-bottom:6px">Пока нет квартир</div>
     <div style="font-size:14px;color:var(--re-muted)">Агентство скоро добавит предложения</div>
+    {% endif %}
   </div>
   {% endif %}
 </div>

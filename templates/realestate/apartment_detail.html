@@ -121,7 +121,8 @@
 
     <div class="re-sidebar">
       <div class="re-price-card">
-        <div class="re-price">{% if apartment.price %}{{ apartment.price|floatformat:0 }} сом{% else %}Цена по запросу{% endif %}</div>
+        <div class="re-price">{{ apartment.price_display|default:"Цена по запросу" }}</div>
+        {% if apartment.price_per_sqm_display %}<div style="font-size:13px;color:var(--re-muted);margin:-12px 0 18px">{{ apartment.price_per_sqm_display }}</div>{% endif %}
         {% if apartment.status == "sold" or apartment.status == "removed" %}
           <a class="re-buy-btn re-buy-disabled">Недоступно</a>
         {% elif apartment.whatsapp_url %}

@@ -11,7 +11,7 @@ class ApartmentPhotoInline(admin.TabularInline):
 
 @admin.register(Apartment)
 class ApartmentAdmin(admin.ModelAdmin):
-    list_display  = ("id", "address", "agency", "realtor", "price", "status", "is_active", "sort_order")
+    list_display  = ("id", "address", "agency", "realtor", "price", "currency", "status", "is_active", "sort_order")
     list_filter   = ("agency", "status", "renovation", "is_active")
     search_fields = ("address", "city", "district")
     list_editable = ("status", "is_active", "sort_order")
@@ -20,7 +20,7 @@ class ApartmentAdmin(admin.ModelAdmin):
         (None, {"fields": ("agency", "realtor", "status", "is_active", "sort_order")}),
         ("Адрес", {"fields": ("city", "district", "address")}),
         ("Параметры", {"fields": ("area", "rooms", "floor", "floors_total", "renovation")}),
-        ("Цена и описание", {"fields": ("price", "description")}),
+        ("Цена и описание", {"fields": ("price", "price_per_sqm", "currency", "description")}),
         ("Обзоры", {"fields": ("review_url_1", "review_url_2")}),
     )
 
