@@ -53,7 +53,9 @@ urlpatterns += i18n_patterns(
     path("simracing/", include(("simracing.urls", "simracing"), namespace="simracing")),
     path("eco/", include(("eco.urls", "eco"), namespace="eco")),
     path("printshop/", include(("printshop.urls", "printshop"), namespace="printshop")),
+    path("realty/", include(("realestate.urls", "realestate"), namespace="realestate")),
     path("cabinet/", include(("dashboard.urls", "dashboard"), namespace="dashboard")),
+    path("rcabinet/", include(("realestate.cabinet_urls", "rcabinet"), namespace="rcabinet")),
     path("", include("public_site.urls")),
 )
 

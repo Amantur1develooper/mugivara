@@ -76,6 +76,7 @@ INSTALLED_APPS = [
    "techcards.apps.TechCardsConfig",
    "printing.apps.PrintingConfig",
    "printshop.apps.PrintshopConfig",
+   "realestate",
 ]
 # CELERY_TASK_ALWAYS_EAGER = True
 # CELERY_TASK_EAGER_PROPAGATES = True

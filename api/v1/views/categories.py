@@ -17,6 +17,7 @@ from barbershop.models import Barbershop
 from printshop.models import PrintCenter
 from karaoke.models import KaraokeVenue
 from simracing.models import SimRacingVenue
+from realestate.models import RealtyAgency
 
 from api.v1.serializers import (
     PlaceCategorySerializer, RestaurantSerializer, BranchSerializer,
@@ -38,6 +39,7 @@ PLACE_TYPES = {
     "barbershop": (Barbershop, None),
     "karaoke":    (KaraokeVenue, None),
     "simracing":  (SimRacingVenue, None),
+    "realestate": (RealtyAgency, None),
 }
 
 def _category_place_item_serializer(**kwargs):
@@ -45,7 +47,7 @@ def _category_place_item_serializer(**kwargs):
         name="CategoryPlaceItem",
         fields={
             "id":             serializers.IntegerField(),
-            "place_type":     serializers.CharField(help_text="Тип заведения: restaurant, store, hotel, pharmacy, printshop, market, legal, eco, agency, barbershop, karaoke, simracing"),
+            "place_type":     serializers.CharField(help_text="Тип заведения: restaurant, store, hotel, pharmacy, printshop, market, legal, eco, agency, barbershop, karaoke, simracing, realestate"),
             "slug":           serializers.SlugField(),
             "name_ru":        serializers.CharField(),
             "name_ky":        serializers.CharField(),

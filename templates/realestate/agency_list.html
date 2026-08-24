@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}Риэлторские агентства — Webordo{% endblock %}
+{% block cta %}{% endblock %}
+
+{% block head_extra %}
+<style>
+  :root {
+    --re-bg: #f2fbf9; --re-card: #fff; --re-border: rgba(13,148,136,0.14);
+    --re-text: #0f1120; --re-muted: #64748b; --re-teal: #0d9488; --re-orange: #FF7A45;
+    --re-grad: linear-gradient(135deg, #0d9488, #14b8a6);
+  }
+  .re-page { max-width: 1140px; margin: 0 auto; padding: 0 24px 80px; }
+  .re-hero {
+    position: relative; overflow: hidden; background: linear-gradient(135deg, #e6fbf7, #fef3e9);
+    padding: 80px 40px 64px; margin: 0 -24px 56px; border-bottom: 1px solid var(--re-border);
+  }
+  .re-back {
+    position: absolute; top: 24px; left: 40px; z-index: 2; display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;
+    background: rgba(255,255,255,0.75); border: 1px solid var(--re-border); color: var(--re-teal); text-decoration: none;
+  }
+  .re-eyebrow { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: var(--re-teal); font-weight: 700; margin-bottom: 16px; }
+  .re-hero-title { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: clamp(30px, 5vw, 50px); letter-spacing: -2px; color: var(--re-text); line-height: 1.05; margin-bottom: 16px; }
+  .re-hero-title span { background: var(--re-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .re-hero-sub { font-size: 15px; color: var(--re-muted); max-width: 500px; line-height: 1.7; }
+
+  .re-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
+  .re-card {
+    background: var(--re-card); border: 1px solid var(--re-border); border-radius: 20px; overflow: hidden;
+    text-decoration: none; color: inherit; box-shadow: 0 2px 12px rgba(13,148,136,0.06);
+    transition: transform 0.25s, box-shadow 0.25s; display: flex; flex-direction: column;
+  }
+  .re-card:hover { transform: translateY(-5px); box-shadow: 0 16px 40px rgba(13,148,136,0.14); }
+  .re-card-cover { height: 150px; background: linear-gradient(135deg, #e6fbf7, #fef3e9); display: flex; align-items: center; justify-content: center; font-size: 44px; overflow: hidden; }
+  .re-card-cover img { width: 100%; height: 100%; object-fit: cover; }
+  .re-card-body { padding: 20px; flex: 1; }
+  .re-card-name { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 16px; margin-bottom: 6px; }
+  .re-card-meta { font-size: 12px; color: var(--re-muted); }
+  .re-card-footer { padding: 0 20px 20px; }
+  .re-detail-btn { display: block; text-align: center; padding: 12px; border-radius: 12px; background: var(--re-grad); color: #fff; font-size: 13px; font-weight: 800; text-decoration: none; }
+  .re-empty { text-align: center; padding: 80px 24px; border: 1px solid var(--re-border); border-radius: 24px; background: var(--re-card); }
+  @media (max-width: 640px) { .re-hero { padding: 64px 20px 48px; margin: 0 -16px 40px; } .re-back { left: 20px; } .re-page { padding: 0 16px 60px; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="background:var(--re-bg);min-height:100vh">
+<div class="re-page">
+  <div class="re-hero">
+    <a href="/" class="re-back">← Главная</a>
+    <div class="re-eyebrow">WEBORDO · НЕДВИЖИМОСТЬ</div>
+    <div class="re-hero-title">Риэлторские<br><span>агентства</span></div>
+    <div class="re-hero-sub">Квартиры от проверенных риэлторских агентств — с фото, ценами и прямой связью с риэлтором</div>
+  </div>
+
+  {% if agencies %}
+  <div class="re-grid">
+    {% for agency in agencies %}
+    <a href="{% url 'realestate:agency_detail' agency.slug %}" class="re-card">
+      <div class="re-card-cover">
+        {% if agency.cover %}<img src="{{ agency.cover.url }}" alt="{{ agency.name }}">{% else %}🏢{% endif %}
+      </div>
+      <div class="re-card-body">
+        <div class="re-card-name">{{ agency.name }}</div>
+        {% if agency.address %}<div class="re-card-meta">📍 {{ agency.address }}</div>{% endif %}
+      </div>
+      <div class="re-card-footer">
+        <span class="re-detail-btn">Смотреть квартиры →</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="re-empty">
+    <div style="font-size:56px;margin-bottom:16px">🏢</div>
+    <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:18px;margin-bottom:8px">Скоро появятся</div>
+    <div style="font-size:14px;color:var(--re-muted)">Риэлторские агентства добавляются администратором</div>
+  </div>
+  {% endif %}
+</div>
+</div>
+{% endblock %}

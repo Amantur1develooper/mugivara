@@ -196,6 +196,7 @@ def home(request):
     from barbershop.models import Barbershop
     from printshop.models import PrintCenter
     from simracing.models import SimRacingVenue
+    from realestate.models import RealtyAgency
 
     # ── РЕСТОРАНЫ ────────────────────────────────────────────────────────────
     top_restaurants = list(
@@ -286,6 +287,11 @@ def home(request):
         .order_by("name_ru")[:12]
     )
 
+    # ── РИЭЛТОРСКИЕ АГЕНТСТВА ────────────────────────────────────────────────
+    realty_cards = list(
+        RealtyAgency.objects.filter(is_active=True).order_by("sort_order", "name")[:12]
+    )
+
     # ── СТАТИСТИКА ────────────────────────────────────────────────────────────
     stats = {
         "restaurant_count": Restaurant.objects.filter(is_active=True).count(),
@@ -300,6 +306,7 @@ def home(request):
         "simracing_count":    SimRacingVenue.objects.filter(is_active=True).count(),
         "barbershop_count":   Barbershop.objects.filter(is_active=True).count(),
         "printshop_count":    PrintCenter.objects.filter(is_active=True).count(),
+        "realty_count":       RealtyAgency.objects.filter(is_active=True).count(),
         "branch_count": (
             Branch.objects.filter(is_active=True).count()
             + StoreBranch.objects.filter(is_active=True).count()
@@ -310,6 +317,7 @@ def home(request):
         + stats["market_count"] + stats["hotel_count"] + stats["legal_count"]
         + stats["eco_count"] + stats["agency_count"] + stats["karaoke_count"]
         + stats["simracing_count"] + stats["barbershop_count"] + stats["printshop_count"]
+        + stats["realty_count"]
     )
 
     try:
@@ -374,6 +382,7 @@ def home(request):
         "simracing_cards":    simracing_cards,
         "barbershop_cards":   barbershop_cards,
         "printshop_cards":    printshop_cards,
+        "realty_cards":       realty_cards,
         "stats":            stats,
         "map_points_json":  _json.dumps(map_points, ensure_ascii=False),
     })

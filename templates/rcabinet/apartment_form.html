@@ -1,0 +1,172 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if apartment %}Изменить{% else %}Добавить{% endif %} квартиру — {{ agency.name }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800;900&family=Geologica:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--accent:#FF4D1C;--accent2:#FF8A00;--border:rgba(0,0,0,0.09);--bg:#F4F6FB;--muted:#8B96A8}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);font-family:'Geologica',sans-serif;font-weight:300;color:#0D1117}
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:#fff;border-bottom:1px solid var(--border)}
+    .brand{font-family:'Unbounded',sans-serif;font-weight:900;font-size:18px;letter-spacing:-1px;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .back{font-size:13px;color:var(--muted);text-decoration:none}
+    .wrap{max-width:640px;margin:0 auto;padding:24px 20px 80px}
+    .card{background:#fff;border:1px solid var(--border);border-radius:20px;padding:28px}
+    .title{font-family:'Unbounded',sans-serif;font-weight:800;font-size:19px;margin-bottom:22px}
+    .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+    .field{margin-bottom:16px}
+    label{display:block;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+    input,select,textarea{
+      width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid var(--border);
+      font-family:'Geologica',sans-serif;font-size:14px;color:#0D1117;background:#F8F9FC;outline:none;
+    }
+    input:focus,select:focus,textarea:focus{border-color:rgba(255,77,28,.4);background:#fff}
+    textarea{min-height:90px;resize:vertical}
+    .photos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:10px;margin-bottom:12px}
+    .photo-item{position:relative;border-radius:10px;overflow:hidden;height:90px;border:1px solid var(--border)}
+    .photo-item img{width:100%;height:100%;object-fit:cover}
+    .photo-del{position:absolute;top:4px;right:4px;display:flex;align-items:center;gap:4px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;padding:3px 6px;border-radius:6px}
+    .photo-del input{width:auto;padding:0}
+    .hint{font-size:12px;color:var(--muted);margin-bottom:10px}
+    .btn-submit{
+      width:100%;padding:14px;border-radius:100px;border:none;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
+      font-family:'Geologica',sans-serif;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px;
+      box-shadow:0 4px 20px rgba(255,77,28,.28);
+    }
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">Webordo</div>
+  <a class="back" href="{% url 'rcabinet:home' %}">← К списку квартир</a>
+</div>
+
+<div class="wrap">
+  <div class="card">
+    <div class="title">{% if apartment %}Изменить квартиру{% else %}Добавить квартиру{% endif %}</div>
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <div class="field">
+        <label>Адрес</label>
+        <input type="text" name="address" value="{{ apartment.address|default:'' }}" placeholder="ул. Ахунбаева 12, кв. 34">
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>Город</label>
+          <input type="text" name="city" value="{{ apartment.city|default:'' }}" placeholder="Бишкек">
+        </div>
+        <div class="field">
+          <label>Район</label>
+          <input type="text" name="district" value="{{ apartment.district|default:'' }}" placeholder="Восток-5">
+        </div>
+      </div>
+
+      <div class="row3">
+        <div class="field">
+          <label>Площадь, м²</label>
+          <input type="number" step="0.1" name="area" value="{{ apartment.area|default:'' }}">
+        </div>
+        <div class="field">
+          <label>Комнат</label>
+          <input type="number" name="rooms" value="{{ apartment.rooms|default:'' }}">
+        </div>
+        <div class="field">
+          <label>Ремонт</label>
+          <select name="renovation">
+            <option value="" {% if not apartment.renovation %}selected{% endif %}>— не указан —</option>
+            <option value="none" {% if apartment.renovation == "none" %}selected{% endif %}>Без ремонта</option>
+            <option value="cosmetic" {% if apartment.renovation == "cosmetic" %}selected{% endif %}>Косметический</option>
+            <option value="euro" {% if apartment.renovation == "euro" %}selected{% endif %}>Евроремонт</option>
+            <option value="designer" {% if apartment.renovation == "designer" %}selected{% endif %}>Дизайнерский</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>Этаж</label>
+          <input type="number" name="floor" value="{{ apartment.floor|default:'' }}">
+        </div>
+        <div class="field">
+          <label>Этажность дома</label>
+          <input type="number" name="floors_total" value="{{ apartment.floors_total|default:'' }}">
+        </div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>Цена продажи, сом</label>
+          <input type="number" name="price" value="{{ apartment.price|default:'' }}">
+        </div>
+        <div class="field">
+          <label>Статус</label>
+          <select name="status">
+            <option value="free" {% if apartment.status == "free" or not apartment %}selected{% endif %}>Свободна</option>
+            <option value="booked" {% if apartment.status == "booked" %}selected{% endif %}>Забронирована</option>
+            <option value="sold" {% if apartment.status == "sold" %}selected{% endif %}>Продана</option>
+            <option value="removed" {% if apartment.status == "removed" %}selected{% endif %}>Снята с продажи</option>
+          </select>
+        </div>
+      </div>
+
+      {% if is_director %}
+      <div class="field">
+        <label>Ответственный риэлтор</label>
+        <select name="realtor_id">
+          <option value="">— не назначен —</option>
+          {% for r in realtors %}
+            <option value="{{ r.id }}" {% if apartment.realtor_id == r.id %}selected{% endif %}>
+              {{ r.user.get_full_name|default:r.user.username }} ({{ r.get_role_display }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <div class="field">
+        <label>Описание</label>
+        <textarea name="description" placeholder="Дополнительная информация о квартире">{{ apartment.description|default:'' }}</textarea>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>Ссылка на обзор 1</label>
+          <input type="url" name="review_url_1" value="{{ apartment.review_url_1|default:'' }}" placeholder="https://youtube.com/...">
+        </div>
+        <div class="field">
+          <label>Ссылка на обзор 2</label>
+          <input type="url" name="review_url_2" value="{{ apartment.review_url_2|default:'' }}" placeholder="https://instagram.com/...">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Фото (до {{ max_photos }})</label>
+        {% if apartment and apartment.photos.all %}
+        <div class="photos-grid">
+          {% for ph in apartment.photos.all %}
+          <div class="photo-item">
+            <img src="{{ ph.photo.url }}" alt="">
+            <label class="photo-del"><input type="checkbox" name="delete_photo" value="{{ ph.id }}"> убрать</label>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <input type="file" name="photos" accept="image/*" multiple>
+        <div class="hint">Можно выбрать сразу несколько файлов.</div>
+      </div>
+
+      <button type="submit" class="btn-submit">{% if apartment %}Сохранить{% else %}Добавить квартиру{% endif %} →</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>
