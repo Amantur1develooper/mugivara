@@ -64,6 +64,11 @@ class Item(TimeStampedModel):
     order_count = models.PositiveIntegerField("Кол-во заказов", default=0, db_index=True)
     rating      = models.DecimalField("Рейтинг", max_digits=3, decimal_places=1, default=1.0)
 
+    calories = models.PositiveSmallIntegerField("Калории, ккал", null=True, blank=True)
+    protein  = models.DecimalField("Белки, г", max_digits=5, decimal_places=1, null=True, blank=True)
+    fat      = models.DecimalField("Жиры, г", max_digits=5, decimal_places=1, null=True, blank=True)
+    carbs    = models.DecimalField("Углеводы, г", max_digits=5, decimal_places=1, null=True, blank=True)
+
     def save(self, *args, **kwargs):
         _compress_photo(self.photo)
         super().save(*args, **kwargs)

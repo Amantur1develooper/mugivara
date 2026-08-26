@@ -21,6 +21,21 @@ from catalog.services import ensure_links_for_branch_item
 from reservations.models import Floor, Place
 
 
+def _int_or_none(raw):
+    raw = (raw or "").strip()
+    return int(raw) if raw.isdigit() else None
+
+
+def _decimal_or_none(raw):
+    raw = (raw or "").strip().replace(",", ".")
+    if not raw:
+        return None
+    try:
+        return Decimal(raw)
+    except InvalidOperation:
+        return None
+
+
 def _user_restaurants(user):
     ids = Membership.objects.filter(user=user).values_list("restaurant_id", flat=True)
     return Restaurant.objects.filter(id__in=ids)
@@ -513,6 +528,10 @@ def item_add(request, branch_id):
             description_ky=request.POST.get("description_ky", "").strip(),
             description_en=request.POST.get("description_en", "").strip(),
             base_price=price,
+            calories=_int_or_none(request.POST.get("calories")),
+            protein=_decimal_or_none(request.POST.get("protein")),
+            fat=_decimal_or_none(request.POST.get("fat")),
+            carbs=_decimal_or_none(request.POST.get("carbs")),
         )
         if photo:
             item.photo = photo
@@ -612,6 +631,10 @@ def item_edit(request, branch_item_id):
         item.description_ru = request.POST.get("description_ru", "").strip()
         item.description_ky = request.POST.get("description_ky", "").strip()
         item.description_en = request.POST.get("description_en", "").strip()
+        item.calories = _int_or_none(request.POST.get("calories"))
+        item.protein = _decimal_or_none(request.POST.get("protein"))
+        item.fat = _decimal_or_none(request.POST.get("fat"))
+        item.carbs = _decimal_or_none(request.POST.get("carbs"))
 
         try:
             bi.price = Decimal(request.POST.get("price") or "0")

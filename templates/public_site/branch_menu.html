@@ -337,6 +337,15 @@
     overflow: hidden;
   }
 
+  .dish-macros { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .dish-macro-pill {
+    display: inline-flex; align-items: center; gap: 3px;
+    padding: 3px 8px; border-radius: 100px; font-size: 10px; font-weight: 700;
+    background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.15);
+    color: #6366f1; white-space: nowrap;
+  }
+  .dish-macro-pill .dish-macro-label { opacity: 0.65; font-weight: 500; }
+
   /* нижняя строка: цена + кнопка */
   .dish-footer {
     margin-top: auto;
@@ -714,7 +723,11 @@
               data-dish-desc="{{ dish_desc }}"
               data-dish-price="{{ bi.price|floatformat:'0' }}"
               data-dish-photo="{% if dish.photo %}{{ dish.photo.url }}{% endif %}"
-              data-dish-hot="{% if dish.order_count >= 10 %}{{ dish.order_count }}{% endif %}">
+              data-dish-hot="{% if dish.order_count >= 10 %}{{ dish.order_count }}{% endif %}"
+              data-dish-calories="{{ dish.calories|default:'' }}"
+              data-dish-protein="{{ dish.protein|default:'' }}"
+              data-dish-fat="{{ dish.fat|default:'' }}"
+              data-dish-carbs="{{ dish.carbs|default:'' }}">
 
               {# ФОТО — кликабельное #}
               <div class="dish-photo dish-clickable">
@@ -739,6 +752,15 @@
 
                 {% if dish_desc %}
                   <div class="dish-desc dish-clickable">{{ dish_desc }}</div>
+                {% endif %}
+
+                {% if dish.calories or dish.protein or dish.fat or dish.carbs %}
+                <div class="dish-macros">
+                  {% if dish.calories %}<span class="dish-macro-pill"><span class="dish-macro-label">К</span> {{ dish.calories }}</span>{% endif %}
+                  {% if dish.protein %}<span class="dish-macro-pill"><span class="dish-macro-label">Б</span> {{ dish.protein }}</span>{% endif %}
+                  {% if dish.fat %}<span class="dish-macro-pill"><span class="dish-macro-label">Ж</span> {{ dish.fat }}</span>{% endif %}
+                  {% if dish.carbs %}<span class="dish-macro-pill"><span class="dish-macro-label">У</span> {{ dish.carbs }}</span>{% endif %}
+                </div>
                 {% endif %}
 
                 <div class="dish-footer">
@@ -1598,6 +1620,7 @@ function _showErr(msg) {
     <div class="dm-body">
       <div id="dmName" class="dm-name"></div>
       <div id="dmDesc" class="dm-desc"></div>
+      <div id="dmMacros" class="dish-macros" style="display:none"></div>
       <div class="dm-footer">
         <div id="dmPrice" class="dm-price"></div>
         <form id="dmForm" method="post" data-add-to-cart>
@@ -2673,6 +2696,7 @@ document.addEventListener('click', e => {
   const dmHot    = document.getElementById('dmHot');
   const dmName   = document.getElementById('dmName');
   const dmDesc   = document.getElementById('dmDesc');
+  const dmMacros = document.getElementById('dmMacros');
   const dmPrice  = document.getElementById('dmPrice');
   const dmForm   = document.getElementById('dmForm');
   const topBtn   = document.getElementById('bm-top-btn');
@@ -2700,6 +2724,21 @@ document.addEventListener('click', e => {
     dmName.textContent  = card.dataset.dishName  || '';
     dmDesc.textContent  = card.dataset.dishDesc  || '';
     dmPrice.textContent = (card.dataset.dishPrice || '0') + ' сом';
+
+    const macros = [
+      ['К', card.dataset.dishCalories],
+      ['Б', card.dataset.dishProtein],
+      ['Ж', card.dataset.dishFat],
+      ['У', card.dataset.dishCarbs],
+    ].filter(([, v]) => v);
+    if (macros.length) {
+      dmMacros.innerHTML = macros.map(([l, v]) =>
+        `<span class="dish-macro-pill"><span class="dish-macro-label">${l}</span> ${v}</span>`
+      ).join('');
+      dmMacros.style.display = 'flex';
+    } else {
+      dmMacros.style.display = 'none';
+    }
 
     // подставляем URL формы из карточки
     const biId = card.dataset.biId;

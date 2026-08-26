@@ -95,6 +95,16 @@
         </div>
 
         <div class="db-form-group">
+          <label class="db-label">КБЖУ на порцию (необязательно)</label>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+            <input class="db-input" name="calories" type="number" min="0" placeholder="Ккал" value="{{ item.calories|default:'' }}">
+            <input class="db-input" name="protein" type="text" inputmode="decimal" placeholder="Белки, г" value="{{ item.protein|default:'' }}">
+            <input class="db-input" name="fat" type="text" inputmode="decimal" placeholder="Жиры, г" value="{{ item.fat|default:'' }}">
+            <input class="db-input" name="carbs" type="text" inputmode="decimal" placeholder="Углев., г" value="{{ item.carbs|default:'' }}">
+          </div>
+        </div>
+
+        <div class="db-form-group">
           <label class="db-label" for="branch_category_id">Категория</label>
           <select class="db-input" id="branch_category_id" name="branch_category_id">
             <option value="">— Без категории —</option>
