@@ -149,6 +149,11 @@
         <textarea name="description" placeholder="Дополнительная информация о квартире">{{ apartment.description|default:'' }}</textarea>
       </div>
 
+      <div class="field">
+        <label>Телефон хозяина квартиры <span style="text-transform:none;font-weight:400">(виден только в кабинете, не публично)</span></label>
+        <input type="text" name="owner_phone" value="{{ apartment.owner_phone|default:'' }}" placeholder="+996 XXX XXX XXX">
+      </div>
+
       <div class="row2">
         <div class="field">
           <label>Ссылка на обзор 1</label>

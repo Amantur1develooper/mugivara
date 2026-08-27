@@ -22,6 +22,7 @@ class ApartmentAdmin(admin.ModelAdmin):
         ("Параметры", {"fields": ("area", "rooms", "floor", "floors_total", "renovation")}),
         ("Цена и описание", {"fields": ("price", "price_per_sqm", "currency", "description")}),
         ("Обзоры", {"fields": ("review_url_1", "review_url_2")}),
+        ("Хозяин квартиры (не публично)", {"fields": ("owner_phone",)}),
     )
 
 

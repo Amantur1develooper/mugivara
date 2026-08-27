@@ -43,6 +43,10 @@
     }
     .status-free{color:#047857}.status-booked{color:#B45309}.status-sold{color:#6B7280}.status-removed{color:#B91C1C}
     .card-realtor{font-size:11px;color:var(--muted);margin-bottom:10px}
+    .owner-row{display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:6px 8px;background:#FFF7ED;border:1px solid rgba(180,83,9,.15);border-radius:10px}
+    .owner-label{flex:1;font-size:11px;font-weight:600;color:#9A3412;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .owner-btn{width:26px;height:26px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none;font-size:13px;background:#fff;border:1px solid rgba(180,83,9,.2)}
+    .owner-btn-wa{background:#25D366;border-color:#25D366}
     .card-actions{display:flex;gap:8px}
     .card-actions a, .card-actions button{
       flex:1;text-align:center;padding:8px;border-radius:10px;font-size:12px;font-weight:600;
@@ -114,6 +118,13 @@
         <div class="card-price">{{ apt.price_display|default:"Цена не указана" }}</div>
         {% if is_director and apt.realtor %}
           <div class="card-realtor">Риэлтор: {{ apt.realtor.user.get_full_name|default:apt.realtor.user.username }}</div>
+        {% endif %}
+        {% if apt.owner_phone %}
+        <div class="owner-row">
+          <span class="owner-label">👤 Хозяин: {{ apt.owner_phone }}</span>
+          <a href="tel:{{ apt.owner_phone }}" class="owner-btn" title="Позвонить">📞</a>
+          <a href="{{ apt.owner_whatsapp_url }}" target="_blank" rel="noopener" class="owner-btn owner-btn-wa" title="WhatsApp">💬</a>
+        </div>
         {% endif %}
         <select class="status-select status-{{ apt.status }}" onchange="setStatus({{ apt.id }}, this.value, this)">
           {% for val, label in statuses %}

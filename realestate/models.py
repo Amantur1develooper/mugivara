@@ -96,6 +96,8 @@ class Apartment(TimeStampedModel):
     agency       = models.ForeignKey(RealtyAgency, on_delete=models.CASCADE, related_name="apartments")
     realtor      = models.ForeignKey(RealtyMembership, on_delete=models.SET_NULL, null=True, blank=True,
                                      related_name="apartments", verbose_name="Ответственный риэлтор")
+    owner_phone  = models.CharField("Телефон хозяина квартиры", max_length=50, blank=True, default="",
+                                    help_text="Виден только в кабинете агентства, не показывается публично")
 
     city         = models.CharField("Город", max_length=120, blank=True, default="")
     district     = models.CharField("Район", max_length=120, blank=True, default="")
@@ -158,6 +160,13 @@ class Apartment(TimeStampedModel):
         if self.realtor and self.realtor.phone:
             return self.realtor.phone
         return self.agency.phone
+
+    @property
+    def owner_whatsapp_url(self):
+        digits = "".join(ch for ch in (self.owner_phone or "") if ch.isdigit())
+        if not digits:
+            return ""
+        return f"https://wa.me/{digits}"
 
     @property
     def whatsapp_url(self):

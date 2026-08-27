@@ -176,6 +176,7 @@ def apartment_add(request, agency_id):
         apt.description   = request.POST.get("description", "").strip()
         apt.review_url_1  = request.POST.get("review_url_1", "").strip()
         apt.review_url_2  = request.POST.get("review_url_2", "").strip()
+        apt.owner_phone   = request.POST.get("owner_phone", "").strip()
 
         if is_director:
             realtor_id = request.POST.get("realtor_id")
@@ -230,6 +231,7 @@ def apartment_edit(request, apartment_id):
         apt.description   = request.POST.get("description", "").strip()
         apt.review_url_1  = request.POST.get("review_url_1", "").strip()
         apt.review_url_2  = request.POST.get("review_url_2", "").strip()
+        apt.owner_phone   = request.POST.get("owner_phone", "").strip()
 
         if is_director:
             realtor_id = request.POST.get("realtor_id")
