@@ -122,11 +122,11 @@
 {# ── FILTERS ─────────────────────────────────────────────────────────────── #}
 <form method="get" id="filter-form">
   <div class="ord-filters">
-    <a href="?period=1{% if restaurant_id %}&restaurant={{ restaurant_id }}{% endif %}"   class="period-tab {% if period == 1 %}active{% endif %}">Сегодня</a>
-    <a href="?period=7{% if restaurant_id %}&restaurant={{ restaurant_id }}{% endif %}"   class="period-tab {% if period == 7 %}active{% endif %}">7 дней</a>
-    <a href="?period=30{% if restaurant_id %}&restaurant={{ restaurant_id }}{% endif %}"  class="period-tab {% if period == 30 %}active{% endif %}">30 дней</a>
-    <a href="?period=90{% if restaurant_id %}&restaurant={{ restaurant_id }}{% endif %}"  class="period-tab {% if period == 90 %}active{% endif %}">Квартал</a>
-    <a href="?period=365{% if restaurant_id %}&restaurant={{ restaurant_id }}{% endif %}" class="period-tab {% if period == 365 %}active{% endif %}">Год</a>
+    <a href="?period=1{% if restaurant_id %}&restaurant={{ restaurant_id }}{% endif %}{% if otype != 'all' %}&otype={{ otype }}{% endif %}" class="period-tab {% if period == 1 %}active{% endif %}">Сегодня</a>
+    <a href="?period=7{% if restaurant_id %}&restaurant={{ restaurant_id }}{% endif %}{% if otype != 'all' %}&otype={{ otype }}{% endif %}" class="period-tab {% if period == 7 %}active{% endif %}">7 дней</a>
+    <a href="?period=30{% if restaurant_id %}&restaurant={{ restaurant_id }}{% endif %}{% if otype != 'all' %}&otype={{ otype }}{% endif %}" class="period-tab {% if period == 30 %}active{% endif %}">30 дней</a>
+    <a href="?period=90{% if restaurant_id %}&restaurant={{ restaurant_id }}{% endif %}{% if otype != 'all' %}&otype={{ otype }}{% endif %}" class="period-tab {% if period == 90 %}active{% endif %}">Квартал</a>
+    <a href="?period=365{% if restaurant_id %}&restaurant={{ restaurant_id }}{% endif %}{% if otype != 'all' %}&otype={{ otype }}{% endif %}" class="period-tab {% if period == 365 %}active{% endif %}">Год</a>
 
     {% if is_super %}
     <select name="restaurant" class="ord-select" onchange="this.form.submit()">
@@ -136,7 +136,14 @@
       {% endfor %}
     </select>
     <input type="hidden" name="period" value="{{ period }}">
+    {% if otype != 'all' %}<input type="hidden" name="otype" value="{{ otype }}">{% endif %}
     {% endif %}
+  </div>
+
+  <div class="ord-filters" style="margin-top:-14px">
+    <a href="?period={{ period }}{% if restaurant_id %}&restaurant={{ restaurant_id }}{% endif %}" class="period-tab {% if otype == 'all' %}active{% endif %}">Все</a>
+    <a href="?period={{ period }}{% if restaurant_id %}&restaurant={{ restaurant_id }}{% endif %}&otype=delivery" class="period-tab {% if otype == 'delivery' %}active{% endif %}">🛵 Доставка ({{ delivery_count }})</a>
+    <a href="?period={{ period }}{% if restaurant_id %}&restaurant={{ restaurant_id }}{% endif %}&otype=inplace" class="period-tab {% if otype == 'inplace' %}active{% endif %}">🏠 В заведении ({{ inplace_count }})</a>
   </div>
 </form>
 
@@ -198,7 +205,8 @@
 {# ── ORDERS TABLE ────────────────────────────────────────────────────────── #}
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
   <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:15px;color:var(--text)">
-    Все заказы <span style="font-size:12px;color:var(--muted);font-family:'Geologica',sans-serif;font-weight:400">({{ page_obj.paginator.count }})</span>
+    {% if otype == 'delivery' %}🛵 Заказы на доставку{% elif otype == 'inplace' %}🏠 Заказы в заведении{% else %}Все заказы{% endif %}
+    <span style="font-size:12px;color:var(--muted);font-family:'Geologica',sans-serif;font-weight:400">({{ page_obj.paginator.count }})</span>
   </div>
 </div>
 
@@ -275,17 +283,17 @@
 {% if page_obj.has_other_pages %}
 <div class="pg">
   {% if page_obj.has_previous %}
-  <a href="?period={{ period }}{% if restaurant_id %}&restaurant={{ restaurant_id }}{% endif %}&page={{ page_obj.previous_page_number }}">‹</a>
+  <a href="?period={{ period }}{% if restaurant_id %}&restaurant={{ restaurant_id }}{% endif %}{% if otype != 'all' %}&otype={{ otype }}{% endif %}&page={{ page_obj.previous_page_number }}">‹</a>
   {% endif %}
   {% for num in page_obj.paginator.page_range %}
     {% if page_obj.number == num %}
     <span class="cur">{{ num }}</span>
     {% elif num >= page_obj.number|add:"-3" and num <= page_obj.number|add:"3" %}
-    <a href="?period={{ period }}{% if restaurant_id %}&restaurant={{ restaurant_id }}{% endif %}&page={{ num }}">{{ num }}</a>
+    <a href="?period={{ period }}{% if restaurant_id %}&restaurant={{ restaurant_id }}{% endif %}{% if otype != 'all' %}&otype={{ otype }}{% endif %}&page={{ num }}">{{ num }}</a>
     {% endif %}
   {% endfor %}
   {% if page_obj.has_next %}
-  <a href="?period={{ period }}{% if restaurant_id %}&restaurant={{ restaurant_id }}{% endif %}&page={{ page_obj.next_page_number }}">›</a>
+  <a href="?period={{ period }}{% if restaurant_id %}&restaurant={{ restaurant_id }}{% endif %}{% if otype != 'all' %}&otype={{ otype }}{% endif %}&page={{ page_obj.next_page_number }}">›</a>
   {% endif %}
 </div>
 {% endif %}

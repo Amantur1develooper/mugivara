@@ -960,6 +960,18 @@ def orders_analytics(request):
     # ── применяем фильтр по периоду ───────────────────────────────────────────
     order_qs_period = order_qs.filter(created_at__gte=since)
 
+    # ── разделение: доставка / в заведении ───────────────────────────────────
+    delivery_count = order_qs_period.filter(type=Order.Type.DELIVERY).count()
+    inplace_count  = order_qs_period.exclude(type=Order.Type.DELIVERY).count()
+
+    otype = request.GET.get("otype", "all")
+    if otype == "delivery":
+        order_qs_period = order_qs_period.filter(type=Order.Type.DELIVERY)
+    elif otype == "inplace":
+        order_qs_period = order_qs_period.exclude(type=Order.Type.DELIVERY)
+    else:
+        otype = "all"
+
     # ── KPI ──────────────────────────────────────────────────────────────────
     total_orders  = order_qs_period.count()
     # Выручка — только стоимость блюд (без доставки)
@@ -986,9 +998,13 @@ def orders_analytics(request):
     # ── динамика по дням ──────────────────────────────────────────────────────
     chart_days  = min(days, 60)
     chart_since = now - timedelta(days=chart_days)
+    chart_qs = order_qs.filter(created_at__gte=chart_since)
+    if otype == "delivery":
+        chart_qs = chart_qs.filter(type=Order.Type.DELIVERY)
+    elif otype == "inplace":
+        chart_qs = chart_qs.exclude(type=Order.Type.DELIVERY)
     daily_qs = (
-        order_qs
-        .filter(created_at__gte=chart_since)
+        chart_qs
         .extra(select={"day": 'DATE("orders_order"."created_at")'})
         .values("day")
         .annotate(cnt=Count("id", distinct=True), revenue=Sum("items__line_total"))
@@ -1025,6 +1041,9 @@ def orders_analytics(request):
         "chart_orders":  chart_orders,
         "chart_revenue": chart_revenue,
         "page_obj":      page_obj,
+        "otype":          otype,
+        "delivery_count": delivery_count,
+        "inplace_count":  inplace_count,
     })
 
 
