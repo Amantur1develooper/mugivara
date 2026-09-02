@@ -172,6 +172,7 @@ urlpatterns = [
     path("hotels/room/<int:room_id>/toggle/",             hv.hotel_room_toggle,   name="hotel_room_toggle"),
     path("hotels/branch/<int:branch_id>/bookings/",       hv.hotel_bookings,      name="hotel_bookings"),
     path("hotels/branch/<int:branch_id>/chess/",          hv.hotel_chessboard,    name="hotel_chessboard"),
+    path("hotels/branch/<int:branch_id>/chess/book/",     hv.hotel_chess_book,    name="hotel_chess_book"),
     path("hotels/booking/<int:booking_id>/status/",       hv.hotel_booking_status, name="hotel_booking_status"),
     path("hotels/booking/<int:booking_id>/checkin/",      hv.hotel_booking_checkin, name="hotel_booking_checkin"),
     path("hotels/booking/<int:booking_id>/checkout/",     hv.hotel_booking_checkout, name="hotel_booking_checkout"),

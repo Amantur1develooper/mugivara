@@ -323,9 +323,24 @@ def hotel_chessboard(request, branch_id):
 
     date_set = set(date_list)
     cell_map = {}
+    bookings_json = {}
     for b in bookings:
         if not b.checkin_date or not b.checkout_date:
             continue
+        bookings_json[b.id] = {
+            "id": b.id,
+            "name": b.customer_name,
+            "phone": b.customer_phone,
+            "room": b.room.name_ru,
+            "checkin": b.checkin_date.strftime("%d.%m.%Y"),
+            "checkout": b.checkout_date.strftime("%d.%m.%Y"),
+            "nights": b.nights,
+            "guests": b.guests,
+            "total": int(b.total or 0),
+            "status": b.status,
+            "inhouse": bool(b.actual_checkin_at and not b.actual_checkout_at),
+            "done": bool(b.actual_checkout_at),
+        }
         d = b.checkin_date
         while d < b.checkout_date:
             if d in date_set:
@@ -333,10 +348,18 @@ def hotel_chessboard(request, branch_id):
             d += timedelta(days=1)
 
     grid = []
+    rooms_meta = []
     for room in rooms:
         grid.append({
             "room": room,
             "cells": [{"date": d, "booking": cell_map.get((room.id, d))} for d in date_list],
+        })
+        rooms_meta.append({
+            "id": room.id,
+            "name": room.name_ru,
+            "price": int(room.price_per_night),
+            "extra": int(room.price_per_extra_guest),
+            "max_guests": room.max_guests,
         })
 
     return render(request, "dashboard/hotels/chessboard.html", {
@@ -344,6 +367,8 @@ def hotel_chessboard(request, branch_id):
         "hotel": branch.hotel,
         "date_list": date_list,
         "grid": grid,
+        "rooms_meta": rooms_meta,
+        "bookings_json": bookings_json,
         "today": date.today(),
         "prev_start": (start - timedelta(days=days)).isoformat(),
         "next_start": (start + timedelta(days=days)).isoformat(),
@@ -351,12 +376,91 @@ def hotel_chessboard(request, branch_id):
     })
 
 
-def _booking_redirect(request, booking):
-    """Вернуться на страницу, с которой пришёл запрос (шахматка / список), с фолбэком на список."""
-    nxt = request.POST.get("next")
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def hotel_chess_book(request, branch_id):
+    """Создать бронь/заселение прямо из шахматки."""
+    from datetime import datetime, timedelta, date
+
+    branch = get_object_or_404(HotelBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:hotel_home")
+
+    fallback = _safe_next(request) or redirect("dashboard:hotel_chessboard", branch_id=branch.id)
+
+    room = Room.objects.filter(id=request.POST.get("room") or 0, branch=branch).first()
+    if not room:
+        messages.error(request, "Номер не найден")
+        return fallback
+
+    name    = (request.POST.get("name") or "").strip()
+    phone   = (request.POST.get("phone") or "").strip()
+    comment = (request.POST.get("comment") or "").strip()
+    book_type = request.POST.get("book_type", HotelBooking.BookType.BOOKING)
+    if book_type not in dict(HotelBooking.BookType.choices):
+        book_type = HotelBooking.BookType.BOOKING
+
+    try:
+        checkin_date = datetime.strptime(request.POST.get("checkin", ""), "%Y-%m-%d").date()
+    except ValueError:
+        checkin_date = date.today()
+    try:
+        nights = max(1, int(request.POST.get("nights") or 1))
+    except (TypeError, ValueError):
+        nights = 1
+    try:
+        guests = max(1, int(request.POST.get("guests") or 1))
+    except (TypeError, ValueError):
+        guests = 1
+    checkout_date = checkin_date + timedelta(days=nights)
+
+    if not name or not phone:
+        messages.error(request, "Укажите имя и телефон гостя")
+        return fallback
+
+    clash = (
+        HotelBooking.objects
+        .filter(branch=branch, room=room,
+                checkin_date__lt=checkout_date, checkout_date__gt=checkin_date)
+        .exclude(status=HotelBooking.Status.CANCELLED)
+        .exists()
+    )
+    if clash:
+        messages.error(request, f"{room.name_ru}: на эти даты уже есть бронь")
+        return fallback
+
+    price_per_night = room.price_per_night + room.price_per_extra_guest * max(0, guests - 1)
+    total = price_per_night * nights
+
+    is_checkin = book_type == HotelBooking.BookType.CHECKIN
+    HotelBooking.objects.create(
+        branch=branch, room=room, book_type=book_type,
+        customer_name=name, customer_phone=phone,
+        checkin_date=checkin_date, checkout_date=checkout_date,
+        nights=nights, guests=guests, rooms_count=1,
+        price_per_night=price_per_night, total=total, comment=comment,
+        status=HotelBooking.Status.CHECKEDIN if is_checkin else HotelBooking.Status.NEW,
+        actual_checkin_at=timezone.now() if is_checkin else None,
+    )
+    messages.success(
+        request,
+        f"{'Заселён' if is_checkin else 'Бронь создана'}: {name} · {room.name_ru} · "
+        f"{checkin_date:%d.%m}–{checkout_date:%d.%m}"
+    )
+    return fallback
+
+
+def _safe_next(request):
+    """redirect на ?next=, если он ведёт на этот же хост; иначе None."""
+    nxt = request.POST.get("next") or request.GET.get("next")
     if nxt and url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}):
         return redirect(nxt)
-    return redirect("dashboard:hotel_bookings", branch_id=booking.branch_id)
+    return None
+
+
+def _booking_redirect(request, booking):
+    """Вернуться на страницу, с которой пришёл запрос (шахматка / список), с фолбэком на список."""
+    return _safe_next(request) or redirect("dashboard:hotel_bookings", branch_id=booking.branch_id)
 
 
 @require_POST

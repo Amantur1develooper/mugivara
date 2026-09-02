@@ -3,13 +3,14 @@
 
 {% block head_extra %}
 <style>
-  .chess-nav{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+  .chess-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
   .chess-nav a, .chess-nav button{
     padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;
     text-decoration:none;border:1.5px solid var(--border);color:var(--text2);
     background:var(--bg);cursor:pointer;
   }
   .chess-nav a:hover, .chess-nav button:hover{background:rgba(37,99,235,.08);border-color:rgba(37,99,235,.3);color:#2563EB}
+  .chess-hint{font-size:12px;color:var(--muted);margin-bottom:14px}
   .chess-legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;font-size:12px;color:var(--muted)}
   .chess-legend span{display:inline-flex;align-items:center;gap:5px}
   .chess-dot{width:10px;height:10px;border-radius:3px;display:inline-block}
@@ -26,9 +27,13 @@
     padding:6px 4px;font-size:11px;font-weight:700;min-width:44px;background:var(--card);
   }
   .chess-date-th.today{color:#2563EB}
+  .chess-date-th.we{color:var(--accent)}
   .chess-dow{display:block;font-size:9px;font-weight:500;color:var(--muted);text-transform:uppercase}
-  .chess-cell{height:40px;min-width:44px;cursor:default}
+  .chess-cell{height:40px;min-width:44px;padding:0}
   .chess-cell.today-col{background:rgba(37,99,235,.04)}
+  .chess-cell.free{cursor:pointer}
+  .chess-cell.free:hover{background:rgba(37,99,235,.12)}
+  .chess-cell.sel{background:rgba(37,99,235,.30)!important}
   .chess-block{
     height:100%;width:100%;display:flex;align-items:center;justify-content:center;
     font-size:10px;font-weight:700;color:#fff;cursor:pointer;overflow:hidden;
@@ -44,15 +49,36 @@
     align-items:center;justify-content:center;padding:16px;
   }
   .bm-backdrop.open{display:flex}
-  .bm-sheet{background:var(--card);border-radius:16px;padding:24px;width:100%;max-width:380px;position:relative}
+  .bm-sheet{background:var(--card);border-radius:16px;padding:24px;width:100%;max-width:400px;position:relative;max-height:92vh;overflow-y:auto}
   .bm-close{position:absolute;top:12px;right:12px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted)}
   .bm-title{font-weight:700;font-size:16px;margin-bottom:4px}
+  .bm-sub{font-size:12px;color:var(--muted);margin-bottom:14px}
   .bm-row{font-size:13px;color:var(--text2);margin-bottom:8px}
   .bm-row a{color:inherit}
-  .bm-status-form select{
-    width:100%;padding:8px 10px;border-radius:8px;font-size:13px;font-weight:600;
-    border:1.5px solid var(--border);background:var(--bg);color:var(--text);margin-top:6px;
+  .bm-field{margin-bottom:12px}
+  .bm-field label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px}
+  .bm-field input, .bm-field textarea, .bm-status-form select{
+    width:100%;padding:9px 11px;border-radius:8px;font-size:13px;
+    border:1.5px solid var(--border);background:var(--bg);color:var(--text);
   }
+  .bm-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .bm-seg{display:flex;gap:8px;margin-bottom:12px}
+  .bm-seg label{
+    flex:1;text-align:center;padding:8px;border-radius:8px;font-size:12px;font-weight:600;
+    border:1.5px solid var(--border);cursor:pointer;color:var(--text2);
+  }
+  .bm-seg input{display:none}
+  .bm-seg input:checked + span{color:#2563EB}
+  .bm-seg label:has(input:checked){border-color:#2563EB;background:rgba(37,99,235,.08)}
+  .bm-total{font-size:14px;font-weight:700;margin:6px 0 14px}
+  .bm-btn{
+    width:100%;padding:11px;border-radius:9px;font-size:13px;font-weight:700;
+    border:none;cursor:pointer;color:#fff;background:#2563EB;
+  }
+  .bm-btn.green{background:#10B981}
+  .bm-btn.ghost{background:var(--bg);color:var(--text2);border:1.5px solid var(--border)}
+  .bm-actions{display:flex;gap:8px;margin-top:6px}
+  .bm-actions form{flex:1}
 </style>
 {% endblock %}
 
@@ -74,6 +100,8 @@
   <a href="{% url 'dashboard:hotel_bookings' branch.id %}">Список броней</a>
 </div>
 
+<div class="chess-hint">💡 Кликните или протяните по свободным клеткам — создадите бронь или заселение. Клик по брони — карточка гостя.</div>
+
 <div class="chess-legend">
   <span><span class="chess-dot" style="background:#F59E0B"></span> Новая</span>
   <span><span class="chess-dot" style="background:#2563EB"></span> Подтверждена</span>
@@ -87,7 +115,7 @@
       <tr>
         <th class="chess-room-col">Номер</th>
         {% for d in date_list %}
-        <th class="chess-date-th {% if d == today %}today{% endif %}">
+        <th class="chess-date-th {% if d == today %}today{% endif %} {% if d|date:'w' == '0' or d|date:'w' == '6' %}we{% endif %}">
           <span class="chess-dow">{{ d|date:"D" }}</span>{{ d|date:"d.m" }}
         </th>
         {% endfor %}
@@ -101,11 +129,12 @@
           {% if row.room.category %}<span class="chess-room-cat">{{ row.room.category.name_ru }}</span>{% endif %}
         </td>
         {% for cell in row.cells %}
-        <td class="chess-cell {% if cell.date == today %}today-col{% endif %}">
+        <td class="chess-cell {% if cell.date == today %}today-col{% endif %} {% if not cell.booking %}free{% endif %}"
+            data-room="{{ row.room.id }}" data-idx="{{ forloop.counter0 }}" data-date="{{ cell.date|date:'Y-m-d' }}">
           {% if cell.booking %}
           <div class="chess-block b-{{ cell.booking.status }}"
-               onclick="openBooking({{ cell.booking.id }}, '{{ cell.booking.customer_name|escapejs }}', '{{ cell.booking.customer_phone|escapejs }}', '{{ row.room.name_ru|escapejs }}', '{{ cell.booking.checkin_date|date:'d.m.Y' }}', '{{ cell.booking.checkout_date|date:'d.m.Y' }}', '{{ cell.booking.total|floatformat:'0' }}', '{{ cell.booking.status }}')"
-               title="{{ cell.booking.customer_name }} · {{ cell.booking.checkin_date|date:'d.m' }}–{{ cell.booking.checkout_date|date:'d.m' }}">
+               onclick="openInfo({{ cell.booking.id }})"
+               title="{{ cell.booking.customer_name }} · {{ cell.booking.checkin_date|date:'d.m' }}–{{ cell.booking.checkout_date|date:'d.m' }} · {{ cell.booking.guests }} гост.">
             {{ cell.booking.customer_name|truncatechars:10 }}
           </div>
           {% endif %}
@@ -120,46 +149,210 @@
   </table>
 </div>
 
-<div class="bm-backdrop" id="bmBackdrop" onclick="if(event.target===this)closeBooking()">
+{{ rooms_meta|json_script:"roomsData" }}
+{{ bookings_json|json_script:"bookingsData" }}
+
+<!-- ── Модалка: новая бронь / заселение ── -->
+<div class="bm-backdrop" id="bookBackdrop" onclick="if(event.target===this)closeBook()">
   <div class="bm-sheet">
-    <button class="bm-close" onclick="closeBooking()">✕</button>
-    <div class="bm-title" id="bmName"></div>
-    <div class="bm-row">📞 <a id="bmPhone" href="#"></a></div>
-    <div class="bm-row" id="bmRoom"></div>
-    <div class="bm-row" id="bmDates"></div>
-    <div class="bm-row">💰 <span id="bmTotal"></span> сом</div>
-    <form class="bm-status-form" method="post" id="bmForm"
+    <button class="bm-close" onclick="closeBook()">✕</button>
+    <div class="bm-title" id="bkTitle">Новая бронь</div>
+    <div class="bm-sub" id="bkSub"></div>
+    <form method="post" action="{% url 'dashboard:hotel_chess_book' branch.id %}" id="bkForm">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <input type="hidden" name="room" id="bkRoom">
+
+      <div class="bm-seg">
+        <label><input type="radio" name="book_type" value="booking" checked onchange="recalc()"><span>📋 Бронь</span></label>
+        <label><input type="radio" name="book_type" value="checkin" onchange="recalc()"><span>🔑 Заселить сейчас</span></label>
+      </div>
+
+      <div class="bm-2">
+        <div class="bm-field">
+          <label>Заезд</label>
+          <input type="date" name="checkin" id="bkCheckin" required onchange="recalc()">
+        </div>
+        <div class="bm-field">
+          <label>Ночей</label>
+          <input type="number" name="nights" id="bkNights" min="1" value="1" required onchange="recalc()" oninput="recalc()">
+        </div>
+      </div>
+      <div class="bm-field">
+        <label>Гостей</label>
+        <input type="number" name="guests" id="bkGuests" min="1" value="1" required onchange="recalc()" oninput="recalc()">
+      </div>
+      <div class="bm-field">
+        <label>Имя гостя</label>
+        <input type="text" name="name" id="bkName" required>
+      </div>
+      <div class="bm-field">
+        <label>Телефон</label>
+        <input type="tel" name="phone" id="bkPhone" placeholder="0700 000 000" required>
+      </div>
+      <div class="bm-field">
+        <label>Комментарий</label>
+        <input type="text" name="comment" id="bkComment">
+      </div>
+
+      <div class="bm-total" id="bkTotal"></div>
+      <button type="submit" class="bm-btn" id="bkSubmit">Создать бронь</button>
+    </form>
+  </div>
+</div>
+
+<!-- ── Модалка: существующая бронь ── -->
+<div class="bm-backdrop" id="infoBackdrop" onclick="if(event.target===this)closeInfo()">
+  <div class="bm-sheet">
+    <button class="bm-close" onclick="closeInfo()">✕</button>
+    <div class="bm-title" id="inName"></div>
+    <div class="bm-sub" id="inRoom"></div>
+    <div class="bm-row">📞 <a id="inPhone" href="#"></a></div>
+    <div class="bm-row" id="inDates"></div>
+    <div class="bm-row" id="inGuests"></div>
+    <div class="bm-row">💰 <span id="inTotal"></span> сом</div>
+
+    <form class="bm-status-form" method="post" id="inStatusForm"
           data-action-tpl="{% url 'dashboard:hotel_booking_status' 0 %}">
       {% csrf_token %}
       <input type="hidden" name="next" value="{{ request.get_full_path }}">
-      <select name="status" id="bmStatus">
+      <select name="status" id="inStatus" onchange="this.form.submit()">
         {% for val, label in statuses %}
         <option value="{{ val }}">{{ label }}</option>
         {% endfor %}
       </select>
     </form>
+
+    <div class="bm-actions">
+      <form method="post" id="inCheckinForm" data-action-tpl="{% url 'dashboard:hotel_booking_checkin' 0 %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button type="submit" class="bm-btn green">🔑 Заселить</button>
+      </form>
+      <form method="post" id="inCheckoutForm" data-action-tpl="{% url 'dashboard:hotel_booking_checkout' 0 %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button type="submit" class="bm-btn ghost">🏁 Выселить</button>
+      </form>
+    </div>
   </div>
 </div>
 
 <script>
-function openBooking(id, name, phone, room, checkin, checkout, total, status) {
-  document.getElementById("bmName").textContent = name;
-  const phoneEl = document.getElementById("bmPhone");
-  phoneEl.textContent = phone;
-  phoneEl.href = "tel:" + phone;
-  document.getElementById("bmRoom").textContent = "🏨 " + room;
-  document.getElementById("bmDates").textContent = "📅 " + checkin + " – " + checkout;
-  document.getElementById("bmTotal").textContent = total;
-  document.getElementById("bmStatus").value = status;
-  const form = document.getElementById("bmForm");
-  form.action = form.dataset.actionTpl.replace("/booking/0/", "/booking/" + id + "/");
-  document.getElementById("bmBackdrop").classList.add("open");
+const ROOMS = JSON.parse(document.getElementById("roomsData").textContent);
+const BOOKINGS = JSON.parse(document.getElementById("bookingsData").textContent);
+const ROOM_BY_ID = {};
+ROOMS.forEach(r => ROOM_BY_ID[r.id] = r);
+
+/* ═══ Новая бронь: выбор диапазона по клеткам ═══ */
+let dragRoom = null, dragStart = -1, dragEnd = -1, dragging = false;
+
+function cell(room, idx){
+  return document.querySelector('.chess-cell[data-room="'+room+'"][data-idx="'+idx+'"]');
 }
-function closeBooking() {
-  document.getElementById("bmBackdrop").classList.remove("open");
+function clearSel(){
+  document.querySelectorAll('.chess-cell.sel').forEach(c => c.classList.remove('sel'));
 }
-document.getElementById("bmStatus").addEventListener("change", function() {
-  document.getElementById("bmForm").submit();
+function paintSel(){
+  clearSel();
+  if (dragRoom === null) return;
+  const lo = Math.min(dragStart, dragEnd), hi = Math.max(dragStart, dragEnd);
+  for (let i = lo; i <= hi; i++){
+    const c = cell(dragRoom, i);
+    if (c && c.classList.contains('free')) c.classList.add('sel');
+    else break;  // упёрлись в занятую — дальше не тянем
+  }
+}
+
+document.querySelectorAll('.chess-cell.free').forEach(c => {
+  c.addEventListener('mousedown', e => {
+    e.preventDefault();
+    dragRoom = c.dataset.room;
+    dragStart = dragEnd = +c.dataset.idx;
+    dragging = true;
+    paintSel();
+  });
+  c.addEventListener('mouseenter', () => {
+    if (!dragging || c.dataset.room !== dragRoom) return;
+    dragEnd = +c.dataset.idx;
+    paintSel();
+  });
 });
+
+document.addEventListener('mouseup', () => {
+  if (!dragging) return;
+  dragging = false;
+  const sel = [...document.querySelectorAll('.chess-cell.sel')];
+  if (!sel.length){ dragRoom = null; return; }
+  const dates = sel.map(c => c.dataset.date).sort();
+  openBook(+dragRoom, dates[0], dates.length);
+  clearSel();
+  dragRoom = null;
+});
+
+/* ═══ Модалка новой брони ═══ */
+function openBook(roomId, checkinISO, nights){
+  const room = ROOM_BY_ID[roomId];
+  if (!room) return;
+  document.getElementById("bkRoom").value = roomId;
+  document.getElementById("bkSub").textContent = room.name;
+  document.getElementById("bkCheckin").value = checkinISO;
+  document.getElementById("bkNights").value = nights;
+  const g = document.getElementById("bkGuests");
+  g.max = room.max_guests;
+  if (+g.value > room.max_guests) g.value = room.max_guests;
+  document.querySelector('#bkForm input[name="book_type"][value="booking"]').checked = true;
+  document.getElementById("bkName").value = "";
+  document.getElementById("bkPhone").value = "";
+  document.getElementById("bkComment").value = "";
+  recalc();
+  document.getElementById("bookBackdrop").classList.add("open");
+}
+function closeBook(){ document.getElementById("bookBackdrop").classList.remove("open"); }
+
+function recalc(){
+  const room = ROOM_BY_ID[+document.getElementById("bkRoom").value];
+  if (!room) return;
+  const nights = Math.max(1, +document.getElementById("bkNights").value || 1);
+  const guests = Math.max(1, +document.getElementById("bkGuests").value || 1);
+  const perNight = room.price + room.extra * Math.max(0, guests - 1);
+  const total = perNight * nights;
+  document.getElementById("bkTotal").textContent =
+    "💰 " + total.toLocaleString("ru-RU") + " сом  (" + perNight.toLocaleString("ru-RU") + " × " + nights + " ноч.)";
+  const isCheckin = document.querySelector('#bkForm input[name="book_type"]:checked').value === "checkin";
+  const btn = document.getElementById("bkSubmit");
+  btn.textContent = isCheckin ? "Заселить" : "Создать бронь";
+  btn.classList.toggle("green", isCheckin);
+  document.getElementById("bkTitle").textContent = isCheckin ? "Заселение" : "Новая бронь";
+}
+
+/* ═══ Модалка существующей брони ═══ */
+function openInfo(id){
+  const b = BOOKINGS[id];
+  if (!b) return;
+  document.getElementById("inName").textContent = b.name;
+  document.getElementById("inRoom").textContent = "🏨 " + b.room;
+  const p = document.getElementById("inPhone");
+  p.textContent = b.phone; p.href = "tel:" + b.phone;
+  document.getElementById("inDates").textContent = "📅 " + b.checkin + " – " + b.checkout + " (" + b.nights + " ноч.)";
+  document.getElementById("inGuests").textContent = "👤 " + b.guests + " гост.";
+  document.getElementById("inTotal").textContent = b.total.toLocaleString("ru-RU");
+  document.getElementById("inStatus").value = b.status;
+
+  setAction("inStatusForm", id);
+  setAction("inCheckinForm", id);
+  setAction("inCheckoutForm", id);
+
+  // какие кнопки показывать
+  document.getElementById("inCheckinForm").style.display  = (!b.inhouse && !b.done) ? "" : "none";
+  document.getElementById("inCheckoutForm").style.display = b.inhouse ? "" : "none";
+
+  document.getElementById("infoBackdrop").classList.add("open");
+}
+function closeInfo(){ document.getElementById("infoBackdrop").classList.remove("open"); }
+function setAction(formId, id){
+  const f = document.getElementById(formId);
+  f.action = f.dataset.actionTpl.replace("/booking/0/", "/booking/" + id + "/");
+}
 </script>
 {% endblock %}
