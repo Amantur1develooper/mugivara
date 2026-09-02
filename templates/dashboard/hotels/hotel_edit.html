@@ -27,11 +27,6 @@
     </div>
 
     <div class="db-form-group">
-      <label class="db-label">Внешний сайт</label>
-      <input class="db-input" name="external_url" type="url" value="{{ hotel.external_url }}" placeholder="https://...">
-    </div>
-
-    <div class="db-form-group">
       <label class="db-label">Логотип</label>
       {% if hotel.logo %}
         <img src="{{ hotel.logo.url }}" style="width:80px;height:80px;border-radius:12px;object-fit:cover;margin-bottom:8px;display:block">

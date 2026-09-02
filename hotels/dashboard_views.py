@@ -66,7 +66,6 @@ def hotel_edit(request, hotel_id):
         if name:
             hotel.name_ru = name
         hotel.about_ru    = request.POST.get("about_ru", "").strip()
-        hotel.external_url = request.POST.get("external_url", "").strip()
         hotel.is_active   = request.POST.get("is_active") == "on"
         if request.FILES.get("logo"):
             hotel.logo = request.FILES["logo"]
