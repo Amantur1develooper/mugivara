@@ -1,0 +1,131 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Посещаемость — {{ agency.name|default:"Риэлтор-кабинет" }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800;900&family=Geologica:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--accent:#FF4D1C;--accent2:#FF8A00;--border:rgba(0,0,0,0.09);--bg:#F4F6FB;--muted:#8B96A8}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);font-family:'Geologica',sans-serif;font-weight:300;color:#0D1117}
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10}
+    .brand{font-family:'Unbounded',sans-serif;font-weight:900;font-size:18px;letter-spacing:-1px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .agency-name{font-size:13px;color:var(--muted);margin-top:2px}
+    .logout{font-size:13px;color:var(--muted);text-decoration:none}
+    .wrap{max-width:960px;margin:0 auto;padding:24px 20px 80px}
+    .head-title{font-family:'Unbounded',sans-serif;font-weight:800;font-size:20px;letter-spacing:-.5px;margin-bottom:16px}
+
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}
+    .tabs a{padding:8px 16px;border-radius:100px;font-size:13px;font-weight:600;text-decoration:none;border:1.5px solid var(--border);background:#fff;color:#374151}
+    .tabs a.active{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent;color:#fff}
+
+    .kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-bottom:24px}
+    .kpi{background:#fff;border:1.5px solid var(--border);border-radius:16px;padding:18px}
+    .kpi .l{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:7px}
+    .kpi .v{font-family:'Unbounded',sans-serif;font-weight:900;font-size:26px;letter-spacing:-1px}
+    .kpi .s{font-size:12px;color:var(--muted);margin-top:4px}
+
+    .card{background:#fff;border:1.5px solid var(--border);border-radius:18px;padding:20px 22px;margin-bottom:18px}
+    .card h3{font-size:14px;font-weight:700;margin-bottom:16px}
+
+    .bars{display:flex;align-items:flex-end;gap:3px;height:120px}
+    .bar{flex:1;min-width:4px;background:linear-gradient(180deg,var(--accent),var(--accent2));border-radius:3px 3px 0 0;position:relative}
+    .bar span{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--muted);white-space:nowrap}
+    .bars-wrap{padding-bottom:20px}
+
+    .apt-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+    .apt-row:last-child{border-bottom:none}
+    .apt-name{flex:1;min-width:0;font-weight:500}
+    .apt-bar-wrap{width:120px;height:6px;background:var(--bg);border-radius:3px;flex-shrink:0}
+    .apt-bar{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+    .apt-v{font-family:'Unbounded',sans-serif;font-weight:800;font-size:13px;min-width:44px;text-align:right}
+    .empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px}
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <div>
+    <div class="brand">Webordo</div>
+    {% if agency %}<div class="agency-name">{{ agency.name }}</div>{% endif %}
+  </div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <a class="logout" href="{% url 'rcabinet:home' %}">← Квартиры</a>
+    <a class="logout" href="{% url 'rcabinet:logout' %}">Выйти</a>
+  </div>
+</div>
+
+<div class="wrap">
+  {% if not agency %}
+  <div class="empty">Нет доступа к агентству</div>
+  {% else %}
+  <div class="head-title">📊 Посещаемость публичной страницы</div>
+
+  <div class="tabs">
+    <a href="?period=7"   class="{% if period == 7 %}active{% endif %}">7 дней</a>
+    <a href="?period=30"  class="{% if period == 30 %}active{% endif %}">30 дней</a>
+    <a href="?period=90"  class="{% if period == 90 %}active{% endif %}">90 дней</a>
+    <a href="?period=365" class="{% if period == 365 %}active{% endif %}">Год</a>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi">
+      <div class="l">Просмотров</div>
+      <div class="v">{{ total_views }}</div>
+      <div class="s">за {{ period }} дн.</div>
+    </div>
+    <div class="kpi">
+      <div class="l">Уник. посетителей</div>
+      <div class="v">{{ total_unique }}</div>
+      <div class="s">разных людей</div>
+    </div>
+    <div class="kpi">
+      <div class="l">Страница агентства</div>
+      <div class="v">{{ agency_page_views }}</div>
+      <div class="s">открытий</div>
+    </div>
+    <div class="kpi">
+      <div class="l">Карточки квартир</div>
+      <div class="v">{{ apt_views_total }}</div>
+      <div class="s">открытий</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Просмотры по дням</h3>
+    {% if chart %}
+    <div class="bars-wrap">
+      <div class="bars">
+        {% for d in chart %}
+        <div class="bar" style="height:{% widthratio d.c chart_max 100 %}%" title="{{ d.day }}: {{ d.c }}">
+          {% if chart|length <= 20 %}<span>{{ d.day }}</span>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% else %}
+    <div class="empty">Пока нет данных — посещения появятся автоматически</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3>Самые просматриваемые квартиры</h3>
+    {% for row in apt_rows %}
+    <div class="apt-row">
+      <div class="apt-name">
+        {% if row.apt %}{{ row.apt.address|default:row.apt.district|default:"Квартира" }}{% if row.apt.rooms %} · {{ row.apt.rooms }}-комн.{% endif %}{% else %}Квартира (удалена){% endif %}
+      </div>
+      <div class="apt-bar-wrap">
+        <div class="apt-bar" style="width:{% widthratio row.views apt_rows.0.views 100 %}%"></div>
+      </div>
+      <div class="apt-v">{{ row.views }}</div>
+    </div>
+    {% empty %}
+    <div class="empty">Карточки квартир пока не открывали</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+</body>
+</html>
