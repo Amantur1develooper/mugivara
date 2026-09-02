@@ -181,6 +181,14 @@
               {% elif row.section == "hotels" %}🏨
               {% elif row.section == "pharmacy" %}💊
               {% elif row.section == "restaurant" %}🍽
+              {% elif row.section == "barbershop" %}✂️
+              {% elif row.section == "karaoke" %}🎤
+              {% elif row.section == "simracing" %}🏎️
+              {% elif row.section == "printshop" %}🖨️
+              {% elif row.section == "realty" %}🏢
+              {% elif row.section == "agency" %}🤝
+              {% elif row.section == "legal" %}⚖️
+              {% elif row.section == "eco" %}🌱
               {% elif row.section == "home" %}🏠
               {% else %}📄{% endif %}
             </span>
@@ -210,7 +218,7 @@
 </div>
 
 <!-- ── ORDERS ── -->
-<div class="an-section-label">История заказов</div>
+<div class="an-section-label">Заказы и записи по бизнесам</div>
 <div class="orders-grid">
   {% for sec in order_sections %}
   <div class="ord-section">
@@ -234,7 +242,7 @@
             <div class="ord-org-name">{{ row.name }}</div>
           </td>
           <td style="text-align:right">
-            <div class="ord-cnt">{{ row.cnt }} зак.</div>
+            <div class="ord-cnt">{{ row.cnt }} шт.</div>
             {% if row.revenue %}
             <div class="ord-rev">{{ row.revenue|floatformat:0 }} сом</div>
             {% endif %}
