@@ -360,6 +360,9 @@
       <a href="{% url 'dashboard:orders' %}" class="{% block nav_orders %}{% endblock %}">
         <span class="db-nav-icon">🧾</span> Заказы
       </a>
+      <a href="{% url 'dashboard:clients' %}" class="{% block nav_clients %}{% endblock %}">
+        <span class="db-nav-icon">👥</span> Клиенты
+      </a>
     </div>
 
     <div class="db-nav-divider"{% if not has_legal and not has_agency and not has_eco %} style="display:none"{% endif %}></div>

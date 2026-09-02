@@ -939,6 +939,121 @@ def analytics(request):
     })
 
 
+# ── БАЗА КЛИЕНТОВ ────────────────────────────────────────────────────────────
+
+@login_required(login_url="dashboard:login")
+def clients(request):
+    """Единая база клиентов по всем бизнесам пользователя. Суперадмин — все клиенты."""
+    import re
+    from django.db.models import Q, F, Func, Value
+    from orders.models import Order
+    from shops.models import StoreOrder, StoreMembership
+    from pharmacy.models import PharmacyOrder, PharmacyMembership
+    from hotels.models import HotelBooking, HotelMembership
+    from barbershop.models import Appointment as BarberAppointment, BarbershopMembership
+    from karaoke.models import KaraokeBooking, KaraokeMembership
+    from simracing.models import SimRacingAppointment, SimRacingMembership
+    from printshop.models import PrintOrder, PrintMembership
+
+    user = request.user
+    is_super = user.is_superuser
+    q = (request.GET.get("q") or "").strip()
+    digits = re.sub(r"\D", "", q)
+    # локальный номер (последние 9 цифр) — чтобы «+996 700…», «0700…», «700…» совпадали
+    phone_tail = digits[-9:] if len(digits) >= 9 else digits
+
+    if is_super:
+        ids = {}
+    else:
+        ids = {
+            "rest":   list(Membership.objects.filter(user=user).values_list("restaurant_id", flat=True)),
+            "shop":   list(StoreMembership.objects.filter(user=user).values_list("store_id", flat=True)),
+            "ph":     list(PharmacyMembership.objects.filter(user=user).values_list("pharmacy_id", flat=True)),
+            "hotel":  list(HotelMembership.objects.filter(user=user).values_list("hotel_id", flat=True)),
+            "barber": list(BarbershopMembership.objects.filter(user=user).values_list("barbershop_id", flat=True)),
+            "krk":    list(KaraokeMembership.objects.filter(user=user).values_list("venue_id", flat=True)),
+            "sim":    list(SimRacingMembership.objects.filter(user=user).values_list("venue_id", flat=True)),
+            "print":  list(PrintMembership.objects.filter(user=user).values_list("center_id", flat=True)),
+        }
+
+    #  key,      label,        icon, Model,               scope_field,             name,            phone,            amount,           org_name
+    SOURCES = [
+        ("rest",  "Ресторан",   "🍽",  Order,               "branch__restaurant_id", "customer_name", "customer_phone", "total_amount",   "branch__restaurant__name_ru"),
+        ("shop",  "Магазин",    "🏪",  StoreOrder,          "branch__store_id",      "name",          "phone",          "total",          "branch__store__name_ru"),
+        ("ph",    "Аптека",     "💊",  PharmacyOrder,       "branch__pharmacy_id",   "customer_name", "customer_phone", "total_amount",   "branch__pharmacy__name_ru"),
+        ("hotel", "Отель",      "🏨",  HotelBooking,        "branch__hotel_id",      "customer_name", "customer_phone", "total",          "branch__hotel__name_ru"),
+        ("barber","Барбершоп",  "✂️",  BarberAppointment,   "barbershop_id",         "customer_name", "customer_phone", "price_snapshot", "barbershop__name"),
+        ("krk",   "Караоке",    "🎤",  KaraokeBooking,      "venue_id",              "customer_name", "customer_phone", None,             "venue__name"),
+        ("sim",   "Симрейсинг", "🏎️",  SimRacingAppointment,"venue_id",              "customer_name", "customer_phone", "total_price",    "venue__name"),
+        ("print", "Полиграфия", "🖨️",  PrintOrder,          "branch__center_id",     "name",          "phone",          "total",          "branch__center__name_ru"),
+    ]
+
+    cap = 400 if q else 120
+    cmap = {}
+    for key, label, icon, Model, scope_field, nf, pf, af, orgf in SOURCES:
+        if not is_super and not ids.get(key):
+            continue
+        qs = Model.objects.all() if is_super else Model.objects.filter(**{f"{scope_field}__in": ids[key]})
+        if q:
+            if len(digits) >= 3:
+                # сравниваем только цифры телефона — чтобы «+996 700…», «0700…», «700…» находились одинаково
+                qs = qs.annotate(_pd=Func(F(pf), Value(r"[^0-9]"), Value(""), Value("g"),
+                                          function="regexp_replace"))
+                qs = qs.filter(Q(**{f"{nf}__icontains": q}) | Q(_pd__icontains=phone_tail))
+            else:
+                qs = qs.filter(Q(**{f"{nf}__icontains": q}) | Q(**{f"{pf}__icontains": q}))
+        vals = [nf, pf, "created_at", orgf, "id", "status"]
+        if af:
+            vals.append(af)
+        for r in qs.order_by("-created_at").values(*vals)[:cap]:
+            name  = (r.get(nf) or "").strip()
+            phone = (r.get(pf) or "").strip()
+            pdig  = re.sub(r"\D", "", phone)[-9:]
+            gkey  = pdig or ("n:" + name.lower())
+            if not name and not pdig:
+                continue
+            c = cmap.setdefault(gkey, {"phone": "", "names": set(), "orgs": set(),
+                                       "count": 0, "sum": 0.0, "last": None, "records": []})
+            if name:
+                c["names"].add(name)
+            if phone and not c["phone"]:
+                c["phone"] = phone
+            org = r.get(orgf) or "—"
+            c["orgs"].add(f"{icon} {org}")
+            amt = float(r.get(af) or 0) if af else 0.0
+            c["count"] += 1
+            c["sum"]   += amt
+            dt = r.get("created_at")
+            if dt and (c["last"] is None or dt > c["last"]):
+                c["last"] = dt
+            c["records"].append({"biz": label, "icon": icon, "org": org,
+                                 "date": dt, "amount": amt, "status": r.get("status") or ""})
+
+    def _ts(d):
+        return d.timestamp() if d else 0
+
+    clients_list = []
+    for gkey, c in cmap.items():
+        c["records"].sort(key=lambda x: _ts(x["date"]), reverse=True)
+        clients_list.append({
+            "phone":   c["phone"] or "—",
+            "name":    " / ".join(sorted(c["names"])[:3]) or "Без имени",
+            "orgs":    sorted(c["orgs"]),
+            "count":   c["count"],
+            "sum":     c["sum"],
+            "last":    c["last"],
+            "records": c["records"][:60],
+        })
+    clients_list.sort(key=lambda x: _ts(x["last"]), reverse=True)
+
+    return render(request, "dashboard/clients.html", {
+        "q": q,
+        "is_super": is_super,
+        "clients": clients_list[:100],
+        "total_found": len(clients_list),
+    })
+
+
 # ── ORDERS ANALYTICS ─────────────────────────────────────────────────────────
 
 @login_required(login_url="dashboard:login")
