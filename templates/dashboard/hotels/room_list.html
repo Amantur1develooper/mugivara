@@ -94,7 +94,8 @@
             <td style="white-space:nowrap">
               <a href="{% url 'dashboard:hotel_room_edit' room.id %}" class="db-btn db-btn-ghost db-btn-sm">✏️ Изменить</a>
               <button class="db-btn db-btn-ghost db-btn-sm" type="button"
-                      onclick="openRoomQr('{{ room.public_code }}', '{{ room.name_ru|escapejs }}')">🛎 QR в номер</button>
+                      data-roomurl="{{ request.scheme }}://{{ request.get_host }}/room/{{ room.public_code }}/"
+                      onclick="openRoomQr(this, '{{ room.name_ru|escapejs }}')">🛎 Ссылка / QR в номер</button>
             </td>
           </tr>
           {% endfor %}
@@ -128,7 +129,8 @@
             <td style="white-space:nowrap">
               <a href="{% url 'dashboard:hotel_room_edit' room.id %}" class="db-btn db-btn-ghost db-btn-sm">✏️ Изменить</a>
               <button class="db-btn db-btn-ghost db-btn-sm" type="button"
-                      onclick="openRoomQr('{{ room.public_code }}', '{{ room.name_ru|escapejs }}')">🛎 QR в номер</button>
+                      data-roomurl="{{ request.scheme }}://{{ request.get_host }}/room/{{ room.public_code }}/"
+                      onclick="openRoomQr(this, '{{ room.name_ru|escapejs }}')">🛎 Ссылка / QR в номер</button>
             </td>
           </tr>
           {% endfor %}
@@ -146,48 +148,54 @@
 
 <div id="js-csrf" data-token="{{ csrf_token }}" style="display:none"></div>
 
-<!-- ── QR в номер ── -->
+<!-- ── Ссылка / QR в номер ── -->
 <div id="rqBackdrop" onclick="if(event.target===this)closeRoomQr()"
      style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:16px">
-  <div style="background:var(--card);border-radius:16px;padding:24px;max-width:340px;width:100%;text-align:center;position:relative">
+  <div style="background:var(--card);border-radius:16px;padding:24px;max-width:360px;width:100%;text-align:center;position:relative">
     <button onclick="closeRoomQr()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted)">✕</button>
     <div id="rqTitle" style="font-weight:800;font-size:15px;margin-bottom:4px"></div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Гость сканирует QR → заказ услуг в номер и вызов сотрудника</div>
-    <div id="rqCanvas" style="display:flex;justify-content:center;margin-bottom:12px"></div>
-    <div id="rqUrl" style="font-size:11px;color:var(--muted);word-break:break-all;background:var(--bg);padding:8px 10px;border-radius:8px;margin-bottom:12px"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Ссылку разместите в номере (QR / табличка). Гость → заказ услуг и вызов сотрудника.</div>
+
+    <img id="rqImg" alt="QR" width="180" height="180"
+         style="margin:0 auto 12px;display:block;border-radius:10px" onerror="this.style.display='none'">
+
+    <input id="rqUrl" readonly onclick="this.select()"
+           style="width:100%;font-size:12px;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);text-align:center;margin-bottom:10px">
+
     <div style="display:flex;gap:8px">
       <button class="db-btn db-btn-ghost db-btn-sm" style="flex:1" onclick="copyRoomUrl(this)">📋 Копировать</button>
-      <button class="db-btn db-btn-ghost db-btn-sm" style="flex:1" onclick="downloadRoomQr()">⬇ PNG</button>
-      <button class="db-btn db-btn-ghost db-btn-sm" style="flex:1" onclick="window.print()">🖨</button>
+      <a id="rqOpen" class="db-btn db-btn-ghost db-btn-sm" style="flex:1" target="_blank" rel="noopener">↗ Открыть</a>
+      <button class="db-btn db-btn-ghost db-btn-sm" style="flex:1" onclick="window.print()">🖨 Печать</button>
     </div>
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSe2sIy6jPXoB2VfjMivJFGAJUPeyhAEHtMg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 let _rqUrl = '';
-function roomUrl(code){ return location.origin + '/room/' + code + '/'; }
-function openRoomQr(code, name){
-  if (!code){ alert('У номера ещё нет кода — откройте «Изменить» и сохраните номер.'); return; }
-  _rqUrl = roomUrl(code);
-  document.getElementById('rqTitle').textContent = name;
-  document.getElementById('rqUrl').textContent = _rqUrl;
-  const box = document.getElementById('rqCanvas');
-  box.innerHTML = '';
-  new QRCode(box, {text: _rqUrl, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M});
+function openRoomQr(btn, name){
+  _rqUrl = btn.dataset.roomurl || '';
+  if (!_rqUrl || _rqUrl.indexOf('/room//') !== -1){
+    alert('У номера ещё нет кода. Откройте «Изменить» и сохраните номер — код создастся автоматически.');
+    return;
+  }
+  document.getElementById('rqTitle').textContent = 'Номер: ' + name;
+  document.getElementById('rqUrl').value = _rqUrl;
+  document.getElementById('rqOpen').href = _rqUrl;
+  const img = document.getElementById('rqImg');
+  img.style.display = 'block';
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=0&data=' + encodeURIComponent(_rqUrl);
   document.getElementById('rqBackdrop').style.display = 'flex';
 }
 function closeRoomQr(){ document.getElementById('rqBackdrop').style.display = 'none'; }
 function copyRoomUrl(btn){
-  navigator.clipboard.writeText(_rqUrl).then(() => { btn.textContent = '✓ Скопировано'; setTimeout(()=>btn.textContent='📋 Копировать', 1500); });
-}
-function downloadRoomQr(){
-  const img = document.querySelector('#rqCanvas img') || document.querySelector('#rqCanvas canvas');
-  if (!img) return;
-  const a = document.createElement('a');
-  a.download = 'qr-room.png';
-  a.href = img.src || img.toDataURL('image/png');
-  a.click();
+  const done = () => { btn.textContent = '✓ Скопировано'; setTimeout(() => btn.textContent = '📋 Копировать', 1500); };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(_rqUrl).then(done).catch(fallback);
+  } else { fallback(); }
+  function fallback(){
+    const i = document.getElementById('rqUrl');
+    i.select(); i.setSelectionRange(0, 999); try { document.execCommand('copy'); done(); } catch(e){}
+  }
 }
 </script>
 
