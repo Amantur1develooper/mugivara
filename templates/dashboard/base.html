@@ -260,23 +260,37 @@
     .db-msg.success { background: rgba(0,184,150,.1); color: #047857; border: 1px solid rgba(0,184,150,.25); }
     .db-msg.error   { background: rgba(220,38,38,.08); color: #B91C1C; border: 1px solid rgba(220,38,38,.2); }
 
+    /* Кнопка сворачивания меню (в топбаре, всегда видна) */
+    .db-mobile-toggle {
+      display: flex; width: 36px; height: 36px; border-radius: 9px;
+      background: var(--card); border: 1px solid var(--border);
+      align-items: center; justify-content: center; cursor: pointer;
+      flex-shrink: 0; color: var(--text2); transition: all .13s;
+    }
+    .db-mobile-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* плавное сворачивание */
+    .db-sidebar   { transition: transform .22s ease; }
+    .db-main      { transition: margin-left .22s ease; }
+    .db-topbar-fixed { transition: left .22s ease; }
+
+    /* Свёрнутое меню на десктопе */
+    @media (min-width: 769px) {
+      html.sidebar-collapsed .db-sidebar    { transform: translateX(-100%); box-shadow: none; }
+      html.sidebar-collapsed .db-main       { margin-left: 0; }
+      html.sidebar-collapsed .db-topbar-fixed { left: 0; }
+    }
+
     /* ══════════════════════════════════════════
        MOBILE
     ══════════════════════════════════════════ */
     @media (max-width: 768px) {
-      .db-sidebar { transform: translateX(-100%); transition: transform .25s; box-shadow: 4px 0 24px rgba(0,0,0,.1); }
+      .db-sidebar { transform: translateX(-100%); box-shadow: 4px 0 24px rgba(0,0,0,.1); }
       .db-sidebar.open { transform: translateX(0); }
       .db-main { margin-left: 0; padding: calc(var(--header-h) + 16px) 16px 60px; }
       .db-topbar-fixed { left: 0; padding: 0 16px; }
-      .db-mobile-toggle {
-        display: flex; width: 36px; height: 36px; border-radius: 9px;
-        background: var(--card); border: 1px solid var(--border);
-        align-items: center; justify-content: center; cursor: pointer;
-        flex-shrink: 0;
-      }
       .db-topbar-btn span { display: none; }
     }
-    @media (min-width: 769px) { .db-mobile-toggle { display: none; } }
 
     /* ══════════════════════════════════════════
        OVERLAY (mobile)
@@ -287,6 +301,14 @@
     }
     .db-overlay.show { display: block; }
   </style>
+  <script>
+    // применяем сохранённое состояние меню до отрисовки — без «прыжка»
+    try {
+      if (localStorage.getItem('db_sidebar_collapsed') === '1') {
+        document.documentElement.classList.add('sidebar-collapsed');
+      }
+    } catch (e) {}
+  </script>
   {% block head_extra %}{% endblock %}
 </head>
 <body>
@@ -374,7 +396,7 @@
 
 {# ══ TOP BAR ══ #}
 <div class="db-topbar-fixed">
-  <button class="db-mobile-toggle" onclick="toggleSidebar()" aria-label="Меню">
+  <button class="db-mobile-toggle" onclick="toggleSidebar()" aria-label="Свернуть / развернуть меню" title="Свернуть / развернуть меню">
     <svg width="16" height="16" fill="none" viewBox="0 0 18 18">
       <path d="M2 4h14M2 9h14M2 14h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
     </svg>
@@ -409,8 +431,15 @@
 
 <script>
 function toggleSidebar() {
-  document.getElementById('dbSidebar').classList.toggle('open');
-  document.getElementById('dbOverlay').classList.toggle('show');
+  if (window.matchMedia('(min-width: 769px)').matches) {
+    // десктоп — сворачиваем/разворачиваем боковое меню, запоминаем выбор
+    var collapsed = document.documentElement.classList.toggle('sidebar-collapsed');
+    try { localStorage.setItem('db_sidebar_collapsed', collapsed ? '1' : '0'); } catch (e) {}
+  } else {
+    // мобильный — выезжающее меню
+    document.getElementById('dbSidebar').classList.toggle('open');
+    document.getElementById('dbOverlay').classList.toggle('show');
+  }
 }
 function closeSidebar() {
   document.getElementById('dbSidebar').classList.remove('open');
