@@ -309,8 +309,9 @@ def room_request_page(request, code):
     room = _get_room_by_code(code)
     if not room:
         return render(request, "hotels/room_request.html", {"not_found": True}, status=404)
+    # на странице номера — независимо от «показывать на сайте», только галочка show_in_room
     services = HotelService.objects.filter(
-        branch=room.branch, is_active=True, show_in_room=True
+        branch=room.branch, show_in_room=True
     ).order_by("sort_order", "id")
     return render(request, "hotels/room_request.html", {
         "room": room,
@@ -335,7 +336,7 @@ def room_request_submit(request, code):
 
     service_ids = request.POST.getlist("services")
     services = list(HotelService.objects.filter(
-        id__in=service_ids, branch=branch, is_active=True, show_in_room=True
+        id__in=service_ids, branch=branch, show_in_room=True
     )) if kind == RoomRequest.Kind.SERVICE else []
 
     if kind == RoomRequest.Kind.SERVICE and not services and not comment:
