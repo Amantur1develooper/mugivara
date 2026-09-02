@@ -588,6 +588,7 @@ def hotel_service_edit(request, branch_id=None, service_id=None):
         service.description_ru = request.POST.get("description_ru", "").strip()
         service.price = _dec(request.POST.get("price"))
         service.is_active = request.POST.get("is_active") == "on"
+        service.show_in_room = request.POST.get("show_in_room") == "on"
         try:
             service.sort_order = int(request.POST.get("sort_order") or 0)
         except (ValueError, TypeError):

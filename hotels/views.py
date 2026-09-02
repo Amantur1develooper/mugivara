@@ -309,7 +309,9 @@ def room_request_page(request, code):
     room = _get_room_by_code(code)
     if not room:
         return render(request, "hotels/room_request.html", {"not_found": True}, status=404)
-    services = HotelService.objects.filter(branch=room.branch, is_active=True).order_by("sort_order", "id")
+    services = HotelService.objects.filter(
+        branch=room.branch, is_active=True, show_in_room=True
+    ).order_by("sort_order", "id")
     return render(request, "hotels/room_request.html", {
         "room": room,
         "branch": room.branch,
@@ -332,7 +334,9 @@ def room_request_submit(request, code):
     comment = (request.POST.get("comment") or "").strip()[:500]
 
     service_ids = request.POST.getlist("services")
-    services = list(HotelService.objects.filter(id__in=service_ids, branch=branch, is_active=True)) if kind == RoomRequest.Kind.SERVICE else []
+    services = list(HotelService.objects.filter(
+        id__in=service_ids, branch=branch, is_active=True, show_in_room=True
+    )) if kind == RoomRequest.Kind.SERVICE else []
 
     if kind == RoomRequest.Kind.SERVICE and not services and not comment:
         messages.error(request, "Выберите услугу или напишите, что нужно")

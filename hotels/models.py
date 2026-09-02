@@ -175,8 +175,10 @@ class HotelService(TimeStampedModel):
     photo1      = models.ImageField("Фото 1", upload_to="hotels/services/", blank=True, null=True)
     photo2      = models.ImageField("Фото 2", upload_to="hotels/services/", blank=True, null=True)
     photo3      = models.ImageField("Фото 3", upload_to="hotels/services/", blank=True, null=True)
-    is_active   = models.BooleanField("Активна", default=True)
-    sort_order  = models.PositiveIntegerField("Порядок", default=0)
+    is_active     = models.BooleanField("Активна", default=True)
+    show_in_room  = models.BooleanField("Показывать гостям в номере (QR)", default=True,
+                                        help_text="Услуга доступна для заказа на странице номера по QR")
+    sort_order    = models.PositiveIntegerField("Порядок", default=0)
 
     class Meta:
         verbose_name = "Услуга отеля"
