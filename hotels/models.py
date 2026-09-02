@@ -257,7 +257,8 @@ class HotelBooking(TimeStampedModel):
     book_type       = models.CharField("Тип", max_length=10, choices=BookType.choices, default=BookType.BOOKING)
     customer_name   = models.CharField("Имя", max_length=200)
     customer_phone  = models.CharField("Телефон", max_length=50)
-    checkin_date    = models.CharField("Дата заезда", max_length=20, blank=True)
+    checkin_date    = models.DateField("Дата заезда", null=True, blank=True)
+    checkout_date   = models.DateField("Дата выезда", null=True, blank=True)
     nights          = models.PositiveSmallIntegerField("Ночей", default=1)
     guests          = models.PositiveSmallIntegerField("Гостей", default=1)
     rooms_count     = models.PositiveSmallIntegerField("Кол-во номеров", default=1)
@@ -266,6 +267,9 @@ class HotelBooking(TimeStampedModel):
     comment         = models.TextField("Комментарий", blank=True)
     status          = models.CharField("Статус", max_length=20, choices=Status.choices, default=Status.NEW)
 
+    actual_checkin_at  = models.DateTimeField("Фактически заселён", null=True, blank=True)
+    actual_checkout_at = models.DateTimeField("Фактически выселен", null=True, blank=True)
+
     class Meta:
         verbose_name = "Бронирование"
         verbose_name_plural = "Бронирования"
@@ -273,3 +277,13 @@ class HotelBooking(TimeStampedModel):
 
     def __str__(self):
         return f"#{self.id} {self.customer_name} → {self.room}"
+
+    @property
+    def is_in_house(self):
+        return bool(self.actual_checkin_at and not self.actual_checkout_at)
+
+    def save(self, *args, **kwargs):
+        if self.checkin_date and not self.checkout_date:
+            from datetime import timedelta
+            self.checkout_date = self.checkin_date + timedelta(days=self.nights or 1)
+        super().save(*args, **kwargs)

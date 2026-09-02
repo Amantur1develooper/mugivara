@@ -154,12 +154,18 @@ def room_book(request, room_id):
     price_per_night = room.price_per_night + room.price_per_extra_guest * max(0, guests_int - 1)
     total = price_per_night * nights_int * rooms_int
 
-    # Формат даты: дд.мм.гггг
+    # Дата заезда: форма присылает YYYY-MM-DD. Для «заселиться сейчас» без даты — сегодня.
+    from datetime import datetime, timedelta, date as _date
+    checkin_date = None
     try:
-        from datetime import datetime
-        checkin_fmt = datetime.strptime(str(checkin), "%Y-%m-%d").strftime("%d.%m.%Y")
-    except Exception:
-        checkin_fmt = str(checkin)
+        checkin_date = datetime.strptime(checkin, "%Y-%m-%d").date()
+    except ValueError:
+        if book_type == "checkin":
+            checkin_date = _date.today()
+    checkout_date = checkin_date + timedelta(days=nights_int) if checkin_date else None
+
+    # Формат даты для сообщения: дд.мм.гггг
+    checkin_fmt = checkin_date.strftime("%d.%m.%Y") if checkin_date else (checkin or "—")
 
     nights_word = "ночь" if nights_int == 1 else ("ночи" if 2 <= nights_int <= 4 else "ночей")
     guests_word = "гость" if guests_int == 1 else ("гостя" if 2 <= guests_int <= 4 else "гостей")
@@ -200,7 +206,8 @@ def room_book(request, room_id):
         book_type=book_type,
         customer_name=name,
         customer_phone=phone,
-        checkin_date=checkin,
+        checkin_date=checkin_date,
+        checkout_date=checkout_date,
         nights=nights_int,
         guests=guests_int,
         rooms_count=rooms_int,

@@ -4,6 +4,8 @@ from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
+from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from .models import (
     Hotel, HotelBranch, HotelMembership, RoomCategory, Room, HotelBooking,
@@ -270,13 +272,91 @@ def hotel_bookings(request, branch_id):
     if status_filter:
         qs = qs.filter(status=status_filter)
 
+    in_house_qs = HotelBooking.objects.filter(
+        branch=branch, actual_checkin_at__isnull=False, actual_checkout_at__isnull=True,
+    )
+    in_house_guests = sum(b.guests for b in in_house_qs)
+    in_house_rooms = in_house_qs.count()
+
     return render(request, "dashboard/hotels/bookings.html", {
         "branch": branch,
         "hotel": branch.hotel,
         "bookings": qs,
         "status_filter": status_filter,
         "statuses": HotelBooking.Status.choices,
+        "in_house_guests": in_house_guests,
+        "in_house_rooms": in_house_rooms,
     })
+
+
+@login_required(login_url=LOGIN_URL)
+def hotel_chessboard(request, branch_id):
+    from datetime import date, timedelta
+
+    branch = get_object_or_404(HotelBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:hotel_home")
+
+    days = 14
+    try:
+        start = date.fromisoformat(request.GET.get("start", ""))
+    except ValueError:
+        start = date.today()
+    date_list = [start + timedelta(days=i) for i in range(days)]
+
+    rooms = (
+        Room.objects.filter(branch=branch)
+        .select_related("category")
+        .order_by("category__sort_order", "sort_order", "id")
+    )
+
+    bookings = (
+        HotelBooking.objects.filter(
+            branch=branch,
+            room__isnull=False,
+            checkin_date__lt=date_list[-1] + timedelta(days=1),
+            checkout_date__gt=date_list[0],
+        )
+        .exclude(status=HotelBooking.Status.CANCELLED)
+        .select_related("room")
+    )
+
+    date_set = set(date_list)
+    cell_map = {}
+    for b in bookings:
+        if not b.checkin_date or not b.checkout_date:
+            continue
+        d = b.checkin_date
+        while d < b.checkout_date:
+            if d in date_set:
+                cell_map[(b.room_id, d)] = b
+            d += timedelta(days=1)
+
+    grid = []
+    for room in rooms:
+        grid.append({
+            "room": room,
+            "cells": [{"date": d, "booking": cell_map.get((room.id, d))} for d in date_list],
+        })
+
+    return render(request, "dashboard/hotels/chessboard.html", {
+        "branch": branch,
+        "hotel": branch.hotel,
+        "date_list": date_list,
+        "grid": grid,
+        "today": date.today(),
+        "prev_start": (start - timedelta(days=days)).isoformat(),
+        "next_start": (start + timedelta(days=days)).isoformat(),
+        "statuses": HotelBooking.Status.choices,
+    })
+
+
+def _booking_redirect(request, booking):
+    """Вернуться на страницу, с которой пришёл запрос (шахматка / список), с фолбэком на список."""
+    nxt = request.POST.get("next")
+    if nxt and url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}):
+        return redirect(nxt)
+    return redirect("dashboard:hotel_bookings", branch_id=booking.branch_id)
 
 
 @require_POST
@@ -288,9 +368,43 @@ def hotel_booking_status(request, booking_id):
     new_status = request.POST.get("status", "")
     if new_status in dict(HotelBooking.Status.choices):
         booking.status = new_status
-        booking.save(update_fields=["status", "updated_at"])
+        fields = ["status", "updated_at"]
+        # держим фактические отметки заезда/выезда в согласии со статусом
+        if new_status == HotelBooking.Status.CHECKEDIN and not booking.actual_checkin_at:
+            booking.actual_checkin_at = timezone.now()
+            fields.append("actual_checkin_at")
+        if new_status == HotelBooking.Status.COMPLETED and not booking.actual_checkout_at:
+            booking.actual_checkout_at = timezone.now()
+            fields.append("actual_checkout_at")
+        booking.save(update_fields=fields)
         messages.success(request, "Статус обновлён")
-    return redirect("dashboard:hotel_bookings", branch_id=booking.branch_id)
+    return _booking_redirect(request, booking)
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def hotel_booking_checkin(request, booking_id):
+    booking = get_object_or_404(HotelBooking, id=booking_id)
+    if not _has_branch_access(request.user, booking.branch):
+        return redirect("dashboard:hotel_home")
+    booking.actual_checkin_at = timezone.now()
+    booking.status = HotelBooking.Status.CHECKEDIN
+    booking.save(update_fields=["actual_checkin_at", "status", "updated_at"])
+    messages.success(request, f"{booking.customer_name} заселён(а) — {timezone.localtime(booking.actual_checkin_at):%d.%m %H:%M}")
+    return _booking_redirect(request, booking)
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def hotel_booking_checkout(request, booking_id):
+    booking = get_object_or_404(HotelBooking, id=booking_id)
+    if not _has_branch_access(request.user, booking.branch):
+        return redirect("dashboard:hotel_home")
+    booking.actual_checkout_at = timezone.now()
+    booking.status = HotelBooking.Status.COMPLETED
+    booking.save(update_fields=["actual_checkout_at", "status", "updated_at"])
+    messages.success(request, f"{booking.customer_name} выселен(а) — {timezone.localtime(booking.actual_checkout_at):%d.%m %H:%M}")
+    return _booking_redirect(request, booking)
 
 
 # ── HOTEL SERVICES ────────────────────────────────────────────────────────────
