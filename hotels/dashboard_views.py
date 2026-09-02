@@ -89,7 +89,6 @@ def hotel_branch_edit(request, branch_id):
         branch.address     = request.POST.get("address", "").strip()
         branch.phone       = request.POST.get("phone", "").strip()
         branch.map_url     = request.POST.get("map_url", "").strip()
-        branch.external_url = request.POST.get("external_url", "").strip()
         branch.is_active   = request.POST.get("is_active") == "on"
         branch.tg_chat_id  = request.POST.get("tg_chat_id", "").strip()
         tgt = request.POST.get("tg_thread_id", "").strip()
