@@ -287,3 +287,109 @@ class HotelBooking(TimeStampedModel):
             from datetime import timedelta
             self.checkout_date = self.checkin_date + timedelta(days=self.nights or 1)
         super().save(*args, **kwargs)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  ФИНАНСЫ / ДДС (движение денежных средств) — отдельно по каждому филиалу
+# ─────────────────────────────────────────────────────────────────────────────
+
+class FinanceAccount(TimeStampedModel):
+    """Счёт / касса филиала: наличные, расчётный счёт, карта…"""
+    class Kind(models.TextChoices):
+        CASH  = "cash",  "Наличная касса"
+        BANK  = "bank",  "Расчётный счёт"
+        CARD  = "card",  "Карта"
+        OTHER = "other", "Другое"
+
+    branch          = models.ForeignKey(HotelBranch, on_delete=models.CASCADE, related_name="fin_accounts")
+    name            = models.CharField("Название", max_length=100)
+    kind            = models.CharField("Тип", max_length=10, choices=Kind.choices, default=Kind.CASH)
+    opening_balance = models.DecimalField("Начальный остаток", max_digits=14, decimal_places=2, default=0)
+    is_default      = models.BooleanField("Касса по умолчанию", default=False,
+                                          help_text="Сюда зачисляется автодоход от броней")
+    is_active       = models.BooleanField("Активен", default=True)
+    sort_order      = models.PositiveIntegerField("Порядок", default=0)
+
+    class Meta:
+        verbose_name = "Счёт / касса"
+        verbose_name_plural = "Счета / кассы"
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return f"{self.name} ({self.branch})"
+
+    def balance_on(self, until=None):
+        """Остаток на счёте (опц. на дату включительно)."""
+        from django.db.models import Sum
+        out_q = self.txns.all()
+        in_q  = self.txns_in.all()
+        if until:
+            out_q = out_q.filter(date__lte=until)
+            in_q  = in_q.filter(date__lte=until)
+
+        def _s(qs, kind):
+            return qs.filter(kind=kind).aggregate(s=Sum("amount"))["s"] or 0
+
+        inc    = _s(out_q, FinanceTxn.Kind.INCOME)
+        exp    = _s(out_q, FinanceTxn.Kind.EXPENSE)
+        tr_out = _s(out_q, FinanceTxn.Kind.TRANSFER)
+        tr_in  = _s(in_q,  FinanceTxn.Kind.TRANSFER)
+        return self.opening_balance + inc - exp - tr_out + tr_in
+
+    @property
+    def balance(self):
+        return self.balance_on()
+
+
+class FinanceCategory(TimeStampedModel):
+    """Статья дохода / расхода."""
+    class Flow(models.TextChoices):
+        IN  = "in",  "Доход"
+        OUT = "out", "Расход"
+
+    branch     = models.ForeignKey(HotelBranch, on_delete=models.CASCADE, related_name="fin_categories")
+    name       = models.CharField("Статья", max_length=120)
+    flow       = models.CharField("Тип", max_length=3, choices=Flow.choices, default=Flow.OUT)
+    is_active  = models.BooleanField("Активна", default=True)
+    sort_order = models.PositiveIntegerField("Порядок", default=0)
+
+    class Meta:
+        verbose_name = "Статья ДДС"
+        verbose_name_plural = "Статьи ДДС"
+        ordering = ["flow", "sort_order", "id"]
+
+    def __str__(self):
+        return f"{self.get_flow_display()}: {self.name}"
+
+
+class FinanceTxn(TimeStampedModel):
+    """Операция ДДС: приход, расход или перевод между счетами."""
+    class Kind(models.TextChoices):
+        INCOME   = "income",   "Приход"
+        EXPENSE  = "expense",  "Расход"
+        TRANSFER = "transfer", "Перевод"
+
+    branch     = models.ForeignKey(HotelBranch, on_delete=models.CASCADE, related_name="fin_txns")
+    kind       = models.CharField("Тип", max_length=10, choices=Kind.choices)
+    date       = models.DateField("Дата")
+    amount     = models.DecimalField("Сумма", max_digits=14, decimal_places=2)
+    account    = models.ForeignKey(FinanceAccount, on_delete=models.PROTECT, related_name="txns",
+                                   verbose_name="Счёт (откуда / куда)")
+    to_account = models.ForeignKey(FinanceAccount, on_delete=models.PROTECT, related_name="txns_in",
+                                   null=True, blank=True, verbose_name="Счёт зачисления (для перевода)")
+    category   = models.ForeignKey(FinanceCategory, on_delete=models.SET_NULL, null=True, blank=True,
+                                   related_name="txns", verbose_name="Статья")
+    comment    = models.CharField("Комментарий", max_length=255, blank=True)
+    booking    = models.ForeignKey(HotelBooking, on_delete=models.SET_NULL, null=True, blank=True,
+                                   related_name="fin_txns", verbose_name="Бронь")
+    is_auto    = models.BooleanField("Автооперация", default=False)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                   null=True, blank=True, related_name="+")
+
+    class Meta:
+        verbose_name = "Операция ДДС"
+        verbose_name_plural = "Операции ДДС"
+        ordering = ["-date", "-id"]
+
+    def __str__(self):
+        return f"{self.get_kind_display()} {self.amount} ({self.date})"

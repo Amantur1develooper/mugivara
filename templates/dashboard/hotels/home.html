@@ -87,6 +87,7 @@
             {% with cnt=branch.bookings.count %}{% if cnt %} ({{ cnt }}){% endif %}{% endwith %}
           </a>
           <a href="{% url 'dashboard:hotel_chessboard' branch.id %}" class="btn-s">♟ Шахматка</a>
+          <a href="{% url 'dashboard:hotel_finance' branch.id %}" class="btn-s">💰 Финансы</a>
         </div>
       </div>
       {% endfor %}
