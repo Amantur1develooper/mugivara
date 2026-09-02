@@ -14,9 +14,12 @@ from .models import RealtyAgency, RealtyMembership, Apartment, ApartmentPhoto
 def _apply_search(qs, q):
     if not q:
         return qs
+    q = q.strip()
     filters = Q(address__icontains=q) | Q(district__icontains=q) | Q(city__icontains=q)
+    if q.isdigit():
+        filters |= Q(rooms=int(q))
     try:
-        filters |= Q(area=Decimal(q.strip().replace(",", ".")))
+        filters |= Q(area=Decimal(q.replace(",", ".")))
     except (InvalidOperation, ValueError):
         pass
     return qs.filter(filters)

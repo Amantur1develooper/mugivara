@@ -1,5 +1,6 @@
 import os
 import urllib.parse
+from decimal import Decimal
 from io import BytesIO
 
 from django.conf import settings
@@ -64,8 +65,6 @@ class RealtyMembership(TimeStampedModel):
                                related_name="realty_memberships")
     agency = models.ForeignKey(RealtyAgency, on_delete=models.CASCADE, related_name="memberships")
     role   = models.CharField("Роль", max_length=20, choices=Role.choices, default=Role.REALTOR)
-    phone  = models.CharField("WhatsApp риэлтора", max_length=50, blank=True, default="",
-                              help_text="На этот номер ведёт кнопка «Купить» на карточках его квартир")
 
     class Meta:
         verbose_name        = "Доступ к агентству"
@@ -139,6 +138,7 @@ class Apartment(TimeStampedModel):
 
     @staticmethod
     def _fmt(value):
+        value = value if isinstance(value, Decimal) else Decimal(str(value))
         if value == value.to_integral_value():
             return f"{int(value):,}".replace(",", " ")
         return f"{value:,.2f}".replace(",", " ")
@@ -157,8 +157,6 @@ class Apartment(TimeStampedModel):
 
     @property
     def whatsapp_phone(self):
-        if self.realtor and self.realtor.phone:
-            return self.realtor.phone
         return self.agency.phone
 
     @property

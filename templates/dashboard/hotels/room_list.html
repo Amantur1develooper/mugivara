@@ -91,8 +91,11 @@
                 {% if room.is_available %}✓ Свободен{% else %}✗ Занято{% endif %}
               </button>
             </td>
-            <td>
+            <td style="white-space:nowrap">
               <a href="{% url 'dashboard:hotel_room_edit' room.id %}" class="db-btn db-btn-ghost db-btn-sm">✏️ Изменить</a>
+              <button class="db-btn db-btn-ghost db-btn-sm" type="button"
+                      data-roomurl="{{ request.scheme }}://{{ request.get_host }}/room/{{ room.public_code }}/"
+                      onclick="openRoomQr(this, '{{ room.name_ru|escapejs }}')">🛎 Ссылка / QR в номер</button>
             </td>
           </tr>
           {% endfor %}
@@ -123,8 +126,11 @@
                 {% if room.is_available %}✓ Свободен{% else %}✗ Занято{% endif %}
               </button>
             </td>
-            <td>
+            <td style="white-space:nowrap">
               <a href="{% url 'dashboard:hotel_room_edit' room.id %}" class="db-btn db-btn-ghost db-btn-sm">✏️ Изменить</a>
+              <button class="db-btn db-btn-ghost db-btn-sm" type="button"
+                      data-roomurl="{{ request.scheme }}://{{ request.get_host }}/room/{{ room.public_code }}/"
+                      onclick="openRoomQr(this, '{{ room.name_ru|escapejs }}')">🛎 Ссылка / QR в номер</button>
             </td>
           </tr>
           {% endfor %}
@@ -141,6 +147,57 @@
 </div>
 
 <div id="js-csrf" data-token="{{ csrf_token }}" style="display:none"></div>
+
+<!-- ── Ссылка / QR в номер ── -->
+<div id="rqBackdrop" onclick="if(event.target===this)closeRoomQr()"
+     style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:16px">
+  <div style="background:var(--card);border-radius:16px;padding:24px;max-width:360px;width:100%;text-align:center;position:relative">
+    <button onclick="closeRoomQr()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted)">✕</button>
+    <div id="rqTitle" style="font-weight:800;font-size:15px;margin-bottom:4px"></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Ссылку разместите в номере (QR / табличка). Гость → заказ услуг и вызов сотрудника.</div>
+
+    <img id="rqImg" alt="QR" width="180" height="180"
+         style="margin:0 auto 12px;display:block;border-radius:10px" onerror="this.style.display='none'">
+
+    <input id="rqUrl" readonly onclick="this.select()"
+           style="width:100%;font-size:12px;padding:9px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);text-align:center;margin-bottom:10px">
+
+    <div style="display:flex;gap:8px">
+      <button class="db-btn db-btn-ghost db-btn-sm" style="flex:1" onclick="copyRoomUrl(this)">📋 Копировать</button>
+      <a id="rqOpen" class="db-btn db-btn-ghost db-btn-sm" style="flex:1" target="_blank" rel="noopener">↗ Открыть</a>
+      <button class="db-btn db-btn-ghost db-btn-sm" style="flex:1" onclick="window.print()">🖨 Печать</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let _rqUrl = '';
+function openRoomQr(btn, name){
+  _rqUrl = btn.dataset.roomurl || '';
+  if (!_rqUrl || _rqUrl.indexOf('/room//') !== -1){
+    alert('У номера ещё нет кода. Откройте «Изменить» и сохраните номер — код создастся автоматически.');
+    return;
+  }
+  document.getElementById('rqTitle').textContent = 'Номер: ' + name;
+  document.getElementById('rqUrl').value = _rqUrl;
+  document.getElementById('rqOpen').href = _rqUrl;
+  const img = document.getElementById('rqImg');
+  img.style.display = 'block';
+  img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=0&data=' + encodeURIComponent(_rqUrl);
+  document.getElementById('rqBackdrop').style.display = 'flex';
+}
+function closeRoomQr(){ document.getElementById('rqBackdrop').style.display = 'none'; }
+function copyRoomUrl(btn){
+  const done = () => { btn.textContent = '✓ Скопировано'; setTimeout(() => btn.textContent = '📋 Копировать', 1500); };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(_rqUrl).then(done).catch(fallback);
+  } else { fallback(); }
+  function fallback(){
+    const i = document.getElementById('rqUrl');
+    i.select(); i.setSelectionRange(0, 999); try { document.execCommand('copy'); done(); } catch(e){}
+  }
+}
+</script>
 
 <script>
 document.querySelectorAll('.avail-btn').forEach(btn => {

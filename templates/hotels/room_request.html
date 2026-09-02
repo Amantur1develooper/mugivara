@@ -1,0 +1,163 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>{% if not_found %}Номер не найден{% else %}{{ room.name_ru }} — заказ в номер{% endif %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#F2F4F8; --card:#fff; --text:#0D1117; --text2:#374151; --muted:#8B96A8;
+      --border:rgba(0,0,0,.08); --accent:#FF4D1C; --accent2:#FF8A00; --teal:#00B896;
+    }
+    body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;
+      min-height:100vh;padding:20px 16px 40px}
+    .wrap{max-width:440px;margin:0 auto}
+    .head{margin-bottom:18px}
+    .hotel{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+    .room{font-size:24px;font-weight:800;margin-top:2px}
+    .sub{font-size:13px;color:var(--muted);margin-top:4px}
+
+    .msg{padding:12px 14px;border-radius:12px;font-size:13px;font-weight:600;margin-bottom:14px}
+    .msg.ok{background:rgba(0,184,150,.12);color:#047857}
+    .msg.err{background:rgba(220,38,38,.1);color:#B91C1C}
+
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;margin-bottom:14px}
+    .card h2{font-size:15px;font-weight:800;margin-bottom:4px}
+    .card p.hint{font-size:12px;color:var(--muted);margin-bottom:12px}
+
+    .lobby-btn{
+      width:100%;border:none;cursor:pointer;border-radius:14px;padding:16px;
+      font-size:16px;font-weight:800;color:#fff;font-family:inherit;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      box-shadow:0 6px 18px rgba(255,77,28,.28);
+    }
+    .lobby-btn:active{transform:scale(.99)}
+
+    .svc{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);cursor:pointer}
+    .svc:last-of-type{border-bottom:none}
+    .svc input{width:20px;height:20px;accent-color:var(--accent);flex-shrink:0}
+    .svc .n{flex:1;font-size:14px;font-weight:600}
+    .svc .d{font-size:12px;color:var(--muted);font-weight:400}
+    .svc .p{font-size:13px;font-weight:700;white-space:nowrap}
+
+    .field{margin-top:12px}
+    .field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px}
+    .field input,.field textarea{
+      width:100%;padding:11px 13px;border-radius:11px;font-size:14px;font-family:inherit;
+      border:1.5px solid var(--border);background:var(--bg);color:var(--text);
+    }
+    .field textarea{min-height:64px;resize:vertical}
+
+    .total{display:flex;justify-content:space-between;font-size:15px;font-weight:800;margin:14px 0 12px}
+    .submit{
+      width:100%;border:none;cursor:pointer;border-radius:14px;padding:15px;
+      font-size:15px;font-weight:800;color:#fff;font-family:inherit;background:var(--teal);
+    }
+    .submit:disabled{opacity:.5}
+    .foot{text-align:center;font-size:11px;color:var(--muted);margin-top:22px}
+    .nf{text-align:center;padding:60px 20px}
+    .nf .big{font-size:40px;margin-bottom:10px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+{% if not_found %}
+  <div class="nf">
+    <div class="big">🔑</div>
+    <h2>Номер не найден</h2>
+    <p class="sub">Похоже, ссылка устарела. Обратитесь на ресепшн.</p>
+  </div>
+{% else %}
+  <div class="head">
+    <div class="hotel">{{ hotel.name_ru }}</div>
+    <div class="room">{{ room.name_ru }}</div>
+    <div class="sub">Заказ услуг в номер и вызов сотрудника</div>
+  </div>
+
+  {% if messages %}
+    {% for m in messages %}
+    <div class="msg {% if m.tags == 'error' %}err{% else %}ok{% endif %}">{{ m }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card">
+    <h2>Позвать сотрудника</h2>
+    <p class="hint">Нужна помощь, уборка, полотенца — нажмите, и к вам подойдут.</p>
+    <form method="post" action="{% url 'hotel_room_request_submit' room.public_code %}">
+      {% csrf_token %}
+      <input type="hidden" name="kind" value="lobby">
+      <button type="submit" class="lobby-btn">🛎 Позвать сотрудника</button>
+    </form>
+  </div>
+
+  {% if services %}
+  <div class="card">
+    <h2>Услуги в номер</h2>
+    <p class="hint">Отметьте нужное — заявка уйдёт на ресепшн.</p>
+    <form method="post" action="{% url 'hotel_room_request_submit' room.public_code %}" id="svcForm">
+      {% csrf_token %}
+      <input type="hidden" name="kind" value="service">
+
+      {% for s in services %}
+      <label class="svc">
+        <input type="checkbox" name="services" value="{{ s.id }}" data-price="{{ s.price|floatformat:0 }}" onchange="recalc()">
+        <span class="n">{{ s.name_ru }}{% if s.description_ru %}<span class="d"> · {{ s.description_ru }}</span>{% endif %}</span>
+        <span class="p">{{ s.price|floatformat:0 }} сом</span>
+      </label>
+      {% endfor %}
+
+      <div class="field">
+        <label>Ваше имя (необязательно)</label>
+        <input type="text" name="guest_name" maxlength="120">
+      </div>
+      <div class="field">
+        <label>Комментарий (например: 2 бутылки воды, без сахара…)</label>
+        <textarea name="comment" maxlength="500"></textarea>
+      </div>
+
+      <div class="total"><span>Итого</span><span id="total">0 сом</span></div>
+      <button type="submit" class="submit">Отправить заявку</button>
+    </form>
+  </div>
+  {% else %}
+  <div class="card">
+    <h2>Услуги в номер</h2>
+    <p class="hint">Опишите, что нужно — заявка уйдёт на ресепшн.</p>
+    <form method="post" action="{% url 'hotel_room_request_submit' room.public_code %}">
+      {% csrf_token %}
+      <input type="hidden" name="kind" value="service">
+      <div class="field">
+        <label>Ваше имя (необязательно)</label>
+        <input type="text" name="guest_name" maxlength="120">
+      </div>
+      <div class="field">
+        <label>Что нужно?</label>
+        <textarea name="comment" maxlength="500" required></textarea>
+      </div>
+      <button type="submit" class="submit" style="margin-top:12px">Отправить заявку</button>
+    </form>
+  </div>
+  {% endif %}
+
+  <div class="foot">Powered by Webordo</div>
+{% endif %}
+
+</div>
+
+{% if services %}
+<script>
+function recalc(){
+  let sum = 0;
+  document.querySelectorAll('#svcForm input[name="services"]:checked').forEach(c => {
+    sum += parseInt(c.dataset.price || '0', 10);
+  });
+  document.getElementById('total').textContent = sum.toLocaleString('ru-RU') + ' сом';
+}
+</script>
+{% endif %}
+</body>
+</html>

@@ -1,0 +1,285 @@
+{% extends "dashboard/base.html" %}
+{% load dashboard_extras %}
+{% block title %}Финансы (ДДС) — {{ branch.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+  .fin-nav{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  .fin-nav a,.fin-nav button{
+    padding:7px 13px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;
+    border:1.5px solid var(--border);color:var(--text2);background:var(--bg);cursor:pointer;
+  }
+  .fin-nav a:hover{background:rgba(37,99,235,.08);border-color:rgba(37,99,235,.3);color:#2563EB}
+  .fin-range{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+  .fin-range input{padding:6px 8px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:12px}
+
+  .fin-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:18px}
+  .fin-card{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px}
+  .fin-card .lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:6px}
+  .fin-card .val{font-size:19px;font-weight:800;font-family:'Unbounded',sans-serif}
+  .fin-card .sub{font-size:11px;color:var(--muted);margin-top:4px}
+  .pos{color:var(--teal)} .neg{color:var(--accent)}
+
+  .fin-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+  @media(max-width:720px){.fin-cols{grid-template-columns:1fr}}
+  .fin-box{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:16px}
+  .fin-box h3{font-size:13px;margin:0 0 10px;font-weight:800}
+  .fin-cat{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border)}
+  .fin-cat:last-child{border-bottom:none}
+  .fin-cat .n{color:var(--text2)}
+
+  .fin-acc{display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)}
+  .fin-acc:last-child{border-bottom:none}
+
+  .fin-table{width:100%;border-collapse:collapse;font-size:13px}
+  .fin-table th{text-align:left;padding:9px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border)}
+  .fin-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+  .fin-table tr:last-child td{border-bottom:none}
+  .k-income{color:var(--teal);font-weight:700}
+  .k-expense{color:var(--accent);font-weight:700}
+  .k-transfer{color:var(--muted);font-weight:700}
+  .fin-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px}
+  .fin-del:hover{color:var(--accent)}
+  .fin-auto{font-size:10px;background:rgba(37,99,235,.1);color:#2563EB;padding:1px 6px;border-radius:5px;font-weight:700}
+
+  .btn-add{padding:9px 16px;border-radius:9px;font-size:13px;font-weight:700;border:none;cursor:pointer;color:#fff;background:linear-gradient(135deg,#2563EB,#1D4ED8)}
+
+  .fm-backdrop{display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:16px}
+  .fm-backdrop.open{display:flex}
+  .fm-sheet{background:var(--card);border-radius:16px;padding:24px;width:100%;max-width:420px;position:relative;max-height:92vh;overflow-y:auto}
+  .fm-close{position:absolute;top:12px;right:12px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted)}
+  .fm-title{font-weight:800;font-size:16px;margin-bottom:14px}
+  .fm-seg{display:flex;gap:6px;margin-bottom:14px}
+  .fm-seg label{flex:1;text-align:center;padding:8px;border-radius:8px;font-size:12px;font-weight:700;border:1.5px solid var(--border);cursor:pointer;color:var(--text2)}
+  .fm-seg input{display:none}
+  .fm-seg label:has(input:checked){border-color:#2563EB;background:rgba(37,99,235,.08);color:#2563EB}
+  .fm-field{margin-bottom:12px}
+  .fm-field label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px}
+  .fm-field input,.fm-field select,.fm-field textarea{width:100%;padding:9px 11px;border-radius:8px;font-size:13px;border:1.5px solid var(--border);background:var(--bg);color:var(--text)}
+  .fm-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .fm-btn{width:100%;padding:11px;border-radius:9px;font-size:13px;font-weight:800;border:none;cursor:pointer;color:#fff;background:#2563EB;margin-top:4px}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">Финансы · ДДС</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:hotel_home' %}">Мои отели</a> /
+      {{ hotel.name_ru }} / {{ branch.name_ru }}
+    </div>
+  </div>
+</div>
+
+<div class="fin-nav">
+  <a href="?from={{ period.prev_from }}&to={{ period.prev_to }}">← Пред. месяц</a>
+  <a href="{% url 'dashboard:hotel_finance' branch.id %}">Текущий месяц</a>
+  <a href="?from={{ period.next_from }}&to={{ period.next_to }}">След. месяц →</a>
+  <form method="get" class="fin-range">
+    <input type="date" name="from" value="{{ period.from|date:'Y-m-d' }}">
+    <span>—</span>
+    <input type="date" name="to" value="{{ period.to|date:'Y-m-d' }}">
+    <button type="submit">Показать</button>
+  </form>
+  <a href="{% url 'dashboard:hotel_finance_refs' branch.id %}">⚙️ Счета и статьи</a>
+</div>
+
+{% if not accounts %}
+<div class="db-card" style="padding:20px;margin-bottom:16px">
+  Сначала заведите хотя бы одну кассу —
+  <a href="{% url 'dashboard:hotel_finance_refs' branch.id %}" style="color:#2563EB;font-weight:700">Счета и статьи</a>.
+  После этого доход по заселённым/завершённым броням будет попадать сюда автоматически.
+</div>
+{% endif %}
+
+<div class="fin-cards">
+  <div class="fin-card">
+    <div class="lbl">Приход за период</div>
+    <div class="val pos">+{{ income_total|money }}</div>
+  </div>
+  <div class="fin-card">
+    <div class="lbl">Расход за период</div>
+    <div class="val neg">−{{ expense_total|money }}</div>
+  </div>
+  <div class="fin-card">
+    <div class="lbl">Чистый поток</div>
+    <div class="val {% if net_flow >= 0 %}pos{% else %}neg{% endif %}">{{ net_flow|money }}</div>
+  </div>
+  <div class="fin-card">
+    <div class="lbl">Остаток на конец</div>
+    <div class="val">{{ total_close|money }}</div>
+    <div class="sub">на начало: {{ total_open|money }}</div>
+  </div>
+</div>
+
+<div class="fin-cols">
+  <div class="fin-box">
+    <h3>По счетам</h3>
+    {% for r in acc_rows %}
+    <div class="fin-acc">
+      <span>{{ r.acc.name }} <span style="color:var(--muted)">· {{ r.acc.get_kind_display }}</span>{% if not r.acc.is_active %} <span style="color:var(--muted)">(скрыт)</span>{% endif %}</span>
+      <span><b>{{ r.closing|money }}</b> <span style="color:var(--muted)">(было {{ r.opening|money }})</span></span>
+    </div>
+    {% empty %}
+    <div style="color:var(--muted);font-size:12px">Нет счетов</div>
+    {% endfor %}
+  </div>
+  <div class="fin-box">
+    <h3>Расходы по статьям</h3>
+    {% for c in expense_by_cat %}
+    <div class="fin-cat"><span class="n">{{ c.name }}</span><span class="neg">−{{ c.sum|money }}</span></div>
+    {% empty %}
+    <div style="color:var(--muted);font-size:12px">Расходов за период нет</div>
+    {% endfor %}
+    {% if income_by_cat %}
+    <h3 style="margin-top:14px">Доходы по статьям</h3>
+    {% for c in income_by_cat %}
+    <div class="fin-cat"><span class="n">{{ c.name }}</span><span class="pos">+{{ c.sum|money }}</span></div>
+    {% endfor %}
+    {% endif %}
+  </div>
+</div>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+  <h3 style="margin:0;font-size:14px">Операции · {{ period.from|date:"d.m.Y" }} – {{ period.to|date:"d.m.Y" }}</h3>
+  <button class="btn-add" onclick="openTxn()" {% if not accounts %}disabled style="opacity:.5"{% endif %}>+ Операция</button>
+</div>
+
+<div class="db-card" style="padding:0;overflow:hidden">
+  <div style="overflow-x:auto">
+    <table class="fin-table">
+      <thead>
+        <tr><th>Дата</th><th>Тип</th><th>Статья / счёт</th><th>Комментарий</th><th style="text-align:right">Сумма</th><th></th></tr>
+      </thead>
+      <tbody>
+      {% for t in txns %}
+        <tr>
+          <td style="white-space:nowrap">{{ t.date|date:"d.m.Y" }}</td>
+          <td>
+            {% if t.kind == 'income' %}<span class="k-income">Приход</span>
+            {% elif t.kind == 'expense' %}<span class="k-expense">Расход</span>
+            {% else %}<span class="k-transfer">Перевод</span>{% endif %}
+            {% if t.is_auto %} <span class="fin-auto">авто</span>{% endif %}
+          </td>
+          <td>
+            {% if t.kind == 'transfer' %}
+              {{ t.account.name }} → {{ t.to_account.name }}
+            {% else %}
+              {{ t.category.name|default:"Без статьи" }}
+              <span style="color:var(--muted)">· {{ t.account.name }}</span>
+            {% endif %}
+          </td>
+          <td style="color:var(--text2)">
+            {{ t.comment }}
+            {% if t.booking_id %}<a href="{% url 'dashboard:hotel_bookings' branch.id %}" style="color:#2563EB">🔗</a>{% endif %}
+          </td>
+          <td style="text-align:right;white-space:nowrap;font-weight:700"
+              class="{% if t.kind == 'income' %}pos{% elif t.kind == 'expense' %}neg{% endif %}">
+            {% if t.kind == 'income' %}+{% elif t.kind == 'expense' %}−{% endif %}{{ t.amount|money }}
+          </td>
+          <td>
+            {% if not t.is_auto %}
+            <form method="post" action="{% url 'dashboard:hotel_finance_txn_delete' t.id %}"
+                  onsubmit="return confirm('Удалить операцию?')">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button class="fin-del" title="Удалить">✕</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" style="padding:28px;text-align:center;color:var(--muted)">За период операций нет</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Модалка новой операции ── -->
+<div class="fm-backdrop" id="txnBackdrop" onclick="if(event.target===this)closeTxn()">
+  <div class="fm-sheet">
+    <button class="fm-close" onclick="closeTxn()">✕</button>
+    <div class="fm-title">Новая операция</div>
+    <form method="post" action="{% url 'dashboard:hotel_finance_txn_add' branch.id %}" id="txnForm">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+      <div class="fm-seg">
+        <label><input type="radio" name="kind" value="income" onchange="txnMode()"><span>+ Приход</span></label>
+        <label><input type="radio" name="kind" value="expense" checked onchange="txnMode()"><span>− Расход</span></label>
+        <label><input type="radio" name="kind" value="transfer" onchange="txnMode()"><span>⇄ Перевод</span></label>
+      </div>
+
+      <div class="fm-2">
+        <div class="fm-field">
+          <label>Дата</label>
+          <input type="date" name="date" id="txnDate" required>
+        </div>
+        <div class="fm-field">
+          <label>Сумма</label>
+          <input type="number" name="amount" min="1" step="0.01" required>
+        </div>
+      </div>
+
+      <div class="fm-field">
+        <label id="txnAccLbl">Счёт списания</label>
+        <select name="account" required>
+          {% for a in accounts %}{% if a.is_active %}<option value="{{ a.id }}">{{ a.name }} ({{ a.get_kind_display }})</option>{% endif %}{% endfor %}
+        </select>
+      </div>
+
+      <div class="fm-field" id="txnToAccWrap" style="display:none">
+        <label>Счёт зачисления</label>
+        <select name="to_account" id="selToAcc" disabled>
+          {% for a in accounts %}{% if a.is_active %}<option value="{{ a.id }}">{{ a.name }} ({{ a.get_kind_display }})</option>{% endif %}{% endfor %}
+        </select>
+      </div>
+
+      <div class="fm-field" id="txnCatIn" style="display:none">
+        <label>Статья дохода</label>
+        <select name="category" id="selCatIn" disabled>
+          <option value="">— без статьи —</option>
+          {% for c in categories_in %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="fm-field" id="txnCatOut">
+        <label>Статья расхода</label>
+        <select name="category" id="selCatOut">
+          <option value="">— без статьи —</option>
+          {% for c in categories_out %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+
+      <div class="fm-field">
+        <label>Комментарий</label>
+        <input type="text" name="comment" maxlength="255">
+      </div>
+
+      <button type="submit" class="fm-btn">Добавить</button>
+    </form>
+  </div>
+</div>
+
+<script>
+function openTxn(){
+  document.getElementById("txnDate").value = new Date().toISOString().slice(0,10);
+  txnMode();
+  document.getElementById("txnBackdrop").classList.add("open");
+}
+function closeTxn(){ document.getElementById("txnBackdrop").classList.remove("open"); }
+function txnMode(){
+  const k = document.querySelector('#txnForm input[name="kind"]:checked').value;
+  const isTransfer = k === "transfer";
+  document.getElementById("txnToAccWrap").style.display = isTransfer ? "" : "none";
+  document.getElementById("txnCatIn").style.display  = (k === "income")  ? "" : "none";
+  document.getElementById("txnCatOut").style.display = (k === "expense") ? "" : "none";
+  // отправляется только активное поле (disabled не сериализуется)
+  document.getElementById("selToAcc").disabled  = !isTransfer;
+  document.getElementById("selCatIn").disabled  = (k !== "income");
+  document.getElementById("selCatOut").disabled = (k !== "expense");
+  document.getElementById("txnAccLbl").textContent = (k === "income") ? "Счёт зачисления" : "Счёт списания";
+}
+</script>
+{% endblock %}

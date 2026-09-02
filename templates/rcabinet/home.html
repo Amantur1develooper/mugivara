@@ -95,7 +95,7 @@
   </div>
 
   <form method="get" class="search-row">
-    <input type="text" name="q" value="{{ q }}" placeholder="Поиск по адресу, району, площади...">
+    <input type="text" name="q" value="{{ q }}" placeholder="Поиск по адресу, району, площади, комнатам...">
     <button type="submit">Найти</button>
     {% if q %}<a href="{% url 'rcabinet:home' %}" class="search-clear">Сбросить</a>{% endif %}
   </form>

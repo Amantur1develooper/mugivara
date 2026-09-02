@@ -86,6 +86,9 @@
             📋 Брони
             {% with cnt=branch.bookings.count %}{% if cnt %} ({{ cnt }}){% endif %}{% endwith %}
           </a>
+          <a href="{% url 'dashboard:hotel_chessboard' branch.id %}" class="btn-s">♟ Шахматка</a>
+          <a href="{% url 'dashboard:hotel_finance' branch.id %}" class="btn-s">💰 Финансы</a>
+          <a href="{% url 'dashboard:hotel_room_requests' branch.id %}" class="btn-s">🛎 Заявки из номеров</a>
         </div>
       </div>
       {% endfor %}

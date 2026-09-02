@@ -20,6 +20,8 @@ def agency_detail(request, slug):
     ).prefetch_related("photos")
     if q:
         filters = Q(address__icontains=q) | Q(district__icontains=q) | Q(city__icontains=q)
+        if q.isdigit():
+            filters |= Q(rooms=int(q))
         try:
             filters |= Q(area=Decimal(q.replace(",", ".")))
         except (InvalidOperation, ValueError):

@@ -29,7 +29,7 @@ class ApartmentAdmin(admin.ModelAdmin):
 class RealtyMembershipInline(admin.TabularInline):
     model = RealtyMembership
     extra = 1
-    fields = ("user", "role", "phone")
+    fields = ("user", "role")
     autocomplete_fields = ("user",)
 
 
@@ -49,7 +49,7 @@ class RealtyAgencyAdmin(admin.ModelAdmin):
 
 @admin.register(RealtyMembership)
 class RealtyMembershipAdmin(admin.ModelAdmin):
-    list_display  = ("user", "agency", "role", "phone")
+    list_display  = ("user", "agency", "role")
     list_filter   = ("agency", "role")
     autocomplete_fields = ("user",)
 

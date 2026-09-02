@@ -80,7 +80,7 @@
   </div>
 
   <form method="get" class="re-search-row">
-    <input type="text" name="q" value="{{ q }}" placeholder="Поиск по адресу, району, площади...">
+    <input type="text" name="q" value="{{ q }}" placeholder="Поиск по адресу, району, площади, комнатам...">
     <button type="submit">Найти</button>
     {% if q %}<a href="{% url 'realestate:agency_detail' agency.slug %}" class="re-search-clear">Сбросить</a>{% endif %}
   </form>

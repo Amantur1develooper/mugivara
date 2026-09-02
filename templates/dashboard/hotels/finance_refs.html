@@ -1,0 +1,142 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Счета и статьи — {{ branch.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+  .rf-box{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:18px;margin-bottom:18px}
+  .rf-box h3{margin:0 0 12px;font-size:14px;font-weight:800}
+  .rf-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--border)}
+  .rf-row:last-of-type{border-bottom:none}
+  .rf-row input[type=text],.rf-row input[type=number],.rf-row select{
+    padding:7px 9px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;
+  }
+  .rf-row input[type=text]{flex:1;min-width:130px}
+  .rf-row .chk{display:inline-flex;gap:4px;align-items:center;font-size:11px;color:var(--muted)}
+  .rf-btn{padding:7px 12px;border-radius:7px;font-size:12px;font-weight:700;border:none;cursor:pointer;color:#fff;background:#2563EB}
+  .rf-btn.ghost{background:var(--bg);color:var(--text2);border:1.5px solid var(--border)}
+  .rf-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:4px}
+  .rf-del:hover{color:var(--accent)}
+  .rf-add{margin-top:10px;padding-top:12px;border-top:2px dashed var(--border)}
+  .rf-hint{font-size:12px;color:var(--muted);margin-bottom:10px}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">Счета и статьи</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:hotel_home' %}">Мои отели</a> /
+      {{ hotel.name_ru }} / {{ branch.name_ru }} /
+      <a href="{% url 'dashboard:hotel_finance' branch.id %}">Финансы</a>
+    </div>
+  </div>
+</div>
+
+<!-- ── СЧЕТА / КАССЫ ── -->
+<div class="rf-box">
+  <h3>💳 Счета и кассы</h3>
+  <div class="rf-hint">Наличная касса, расчётный счёт, карта… Остаток по каждому считается автоматически.
+    «Касса по умолчанию» — куда падает автодоход от броней.</div>
+
+  {% for a in accounts %}
+  <div class="rf-row">
+    <form method="post" action="{% url 'dashboard:hotel_finance_account_save' branch.id %}"
+          style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex:1">
+      {% csrf_token %}
+      <input type="hidden" name="id" value="{{ a.id }}">
+      <input type="text" name="name" value="{{ a.name }}" required>
+      <select name="kind">
+        {% for val,label in account_kinds %}
+        <option value="{{ val }}" {% if a.kind == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <label class="chk" title="Начальный остаток">старт
+        <input type="number" name="opening_balance" value="{{ a.opening_balance|floatformat:'-2' }}" step="0.01" style="width:110px">
+      </label>
+      <label class="chk"><input type="checkbox" name="is_default" {% if a.is_default %}checked{% endif %}> по умолч.</label>
+      <label class="chk"><input type="checkbox" name="is_active" {% if a.is_active %}checked{% endif %}> активен</label>
+      <button class="rf-btn">Сохранить</button>
+    </form>
+    <form method="post" action="{% url 'dashboard:hotel_finance_account_delete' a.id %}"
+          onsubmit="return confirm('Удалить счёт? Если по нему были операции — он просто скроется.')">
+      {% csrf_token %}
+      <button class="rf-del" title="Удалить">✕</button>
+    </form>
+  </div>
+  {% empty %}
+  <div class="rf-hint">Пока нет ни одного счёта.</div>
+  {% endfor %}
+
+  <form method="post" action="{% url 'dashboard:hotel_finance_account_save' branch.id %}" class="rf-row rf-add">
+    {% csrf_token %}
+    <input type="text" name="name" placeholder="Название счёта" required>
+    <select name="kind">
+      {% for val,label in account_kinds %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+    </select>
+    <label class="chk">старт <input type="number" name="opening_balance" value="0" step="0.01" style="width:110px"></label>
+    <label class="chk"><input type="checkbox" name="is_default"> по умолч.</label>
+    <label class="chk"><input type="checkbox" name="is_active" checked> активен</label>
+    <button class="rf-btn">Добавить счёт</button>
+  </form>
+</div>
+
+<!-- ── СТАТЬИ РАСХОДА ── -->
+<div class="rf-box">
+  <h3>📉 Статьи расходов</h3>
+  {% for c in categories_out %}
+  <div class="rf-row">
+    <form method="post" action="{% url 'dashboard:hotel_finance_category_save' branch.id %}"
+          style="display:flex;gap:8px;align-items:center;flex:1">
+      {% csrf_token %}
+      <input type="hidden" name="id" value="{{ c.id }}">
+      <input type="text" name="name" value="{{ c.name }}" required>
+      <label class="chk"><input type="checkbox" name="is_active" {% if c.is_active %}checked{% endif %}> активна</label>
+      <button class="rf-btn">Сохранить</button>
+    </form>
+    <form method="post" action="{% url 'dashboard:hotel_finance_category_delete' c.id %}"
+          onsubmit="return confirm('Удалить статью?')">
+      {% csrf_token %}<button class="rf-del">✕</button>
+    </form>
+  </div>
+  {% empty %}
+  <div class="rf-hint">Например: Зарплата, Аренда, Коммуналка, Закупка, Уборка, Реклама…</div>
+  {% endfor %}
+  <form method="post" action="{% url 'dashboard:hotel_finance_category_save' branch.id %}" class="rf-row rf-add">
+    {% csrf_token %}
+    <input type="hidden" name="flow" value="out">
+    <input type="text" name="name" placeholder="Новая статья расхода" required>
+    <label class="chk"><input type="checkbox" name="is_active" checked> активна</label>
+    <button class="rf-btn">Добавить</button>
+  </form>
+</div>
+
+<!-- ── СТАТЬИ ДОХОДА ── -->
+<div class="rf-box">
+  <h3>📈 Статьи доходов</h3>
+  <div class="rf-hint">«Проживание» создаётся автоматически для автодохода по броням. Можно добавить: Услуги, Бар, Парковка…</div>
+  {% for c in categories_in %}
+  <div class="rf-row">
+    <form method="post" action="{% url 'dashboard:hotel_finance_category_save' branch.id %}"
+          style="display:flex;gap:8px;align-items:center;flex:1">
+      {% csrf_token %}
+      <input type="hidden" name="id" value="{{ c.id }}">
+      <input type="text" name="name" value="{{ c.name }}" required>
+      <label class="chk"><input type="checkbox" name="is_active" {% if c.is_active %}checked{% endif %}> активна</label>
+      <button class="rf-btn">Сохранить</button>
+    </form>
+    <form method="post" action="{% url 'dashboard:hotel_finance_category_delete' c.id %}"
+          onsubmit="return confirm('Удалить статью?')">
+      {% csrf_token %}<button class="rf-del">✕</button>
+    </form>
+  </div>
+  {% endfor %}
+  <form method="post" action="{% url 'dashboard:hotel_finance_category_save' branch.id %}" class="rf-row rf-add">
+    {% csrf_token %}
+    <input type="hidden" name="flow" value="in">
+    <input type="text" name="name" placeholder="Новая статья дохода" required>
+    <label class="chk"><input type="checkbox" name="is_active" checked> активна</label>
+    <button class="rf-btn">Добавить</button>
+  </form>
+</div>
+{% endblock %}

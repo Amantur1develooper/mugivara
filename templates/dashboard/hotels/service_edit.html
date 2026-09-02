@@ -51,6 +51,13 @@
       </label>
       <span class="db-label" style="margin:0">Показывать на сайте</span>
     </div>
+    <div class="db-form-group" style="display:flex;align-items:center;gap:10px">
+      <label class="db-switch">
+        <input type="checkbox" name="show_in_room" {% if service == None or service.show_in_room %}checked{% endif %}>
+        <span class="db-switch-slider"></span>
+      </label>
+      <span class="db-label" style="margin:0">Показывать гостям в номере (по QR)</span>
+    </div>
   </div>
 </div>
 

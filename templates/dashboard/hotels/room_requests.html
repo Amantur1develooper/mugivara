@@ -1,0 +1,76 @@
+{% extends "dashboard/base.html" %}
+{% load dashboard_extras %}
+{% block title %}Заявки из номеров — {{ branch.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+  .rq-filter{display:flex;gap:8px;margin-bottom:18px}
+  .rq-filter a{
+    padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;
+    border:1.5px solid var(--border);color:var(--text2);background:var(--bg);
+  }
+  .rq-filter a.active{background:rgba(37,99,235,.08);border-color:rgba(37,99,235,.3);color:#2563EB}
+  .rq{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start}
+  .rq.done{opacity:.55}
+  .rq-ico{font-size:22px;flex-shrink:0}
+  .rq-body{flex:1;min-width:0}
+  .rq-top{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .rq-room{font-weight:800;font-size:14px}
+  .rq-kind{font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px}
+  .k-lobby{background:rgba(255,77,28,.1);color:var(--accent)}
+  .k-service{background:rgba(0,184,150,.1);color:var(--teal)}
+  .rq-time{font-size:11px;color:var(--muted)}
+  .rq-svc{font-size:13px;color:var(--text2);margin-top:4px}
+  .rq-comment{font-size:13px;color:var(--text2);margin-top:4px;font-style:italic}
+  .rq-total{font-size:13px;font-weight:700;margin-top:4px}
+  .rq-btn{padding:7px 12px;border-radius:8px;font-size:12px;font-weight:700;border:1.5px solid var(--border);background:var(--bg);color:var(--text2);cursor:pointer;white-space:nowrap}
+  .rq-btn.done{background:var(--teal);color:#fff;border-color:transparent}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">Заявки из номеров</div>
+    <div class="db-breadcrumb">
+      <a href="{% url 'dashboard:hotel_home' %}">Мои отели</a> /
+      {{ hotel.name_ru }} / {{ branch.name_ru }}
+    </div>
+  </div>
+</div>
+
+<div class="rq-filter">
+  <a href="?show=new" class="{% if show == 'new' %}active{% endif %}">🔔 Новые{% if new_count %} ({{ new_count }}){% endif %}</a>
+  <a href="?show=all" class="{% if show == 'all' %}active{% endif %}">Все</a>
+</div>
+
+{% for r in requests %}
+<div class="rq {% if r.status == 'done' %}done{% endif %}">
+  <div class="rq-ico">{% if r.kind == 'lobby' %}🛎{% else %}🧺{% endif %}</div>
+  <div class="rq-body">
+    <div class="rq-top">
+      <span class="rq-room">{{ r.room.name_ru }}</span>
+      <span class="rq-kind {% if r.kind == 'lobby' %}k-lobby{% else %}k-service{% endif %}">{{ r.get_kind_display }}</span>
+      <span class="rq-time">{{ r.created_at|date:"d.m H:i" }}</span>
+    </div>
+    {% if r.services.all %}
+    <div class="rq-svc">{% for s in r.services.all %}{{ s.name_ru }} — {{ s.price|money }} сом{% if not forloop.last %} · {% endif %}{% endfor %}</div>
+    {% endif %}
+    {% if r.comment %}<div class="rq-comment">«{{ r.comment }}»</div>{% endif %}
+    {% if r.guest_name %}<div class="rq-svc">Гость: {{ r.guest_name }}</div>{% endif %}
+    {% if r.total %}<div class="rq-total">Итого: {{ r.total|money }} сом</div>{% endif %}
+  </div>
+  <form method="post" action="{% url 'dashboard:hotel_room_request_done' r.id %}">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <button class="rq-btn {% if r.status != 'done' %}done{% endif %}">
+      {% if r.status == 'done' %}Вернуть{% else %}✓ Выполнено{% endif %}
+    </button>
+  </form>
+</div>
+{% empty %}
+<div class="db-card" style="padding:28px;text-align:center;color:var(--muted)">
+  {% if show == 'new' %}Новых заявок нет{% else %}Заявок пока нет{% endif %}
+</div>
+{% endfor %}
+{% endblock %}

@@ -17,8 +17,8 @@
   .s-new{background:rgba(37,99,235,.1);color:#2563EB}
   .s-confirmed{background:rgba(0,184,150,.1);color:var(--teal)}
   .s-cancelled{background:rgba(255,77,28,.1);color:var(--accent)}
-  .s-checked_in{background:rgba(124,58,237,.1);color:#7C3AED}
-  .s-checked_out{background:rgba(0,0,0,.07);color:var(--muted)}
+  .s-checkedin{background:rgba(124,58,237,.1);color:#7C3AED}
+  .s-completed{background:rgba(0,0,0,.07);color:var(--muted)}
   .type-pill{
     display:inline-flex;align-items:center;padding:2px 8px;border-radius:6px;
     font-size:10px;font-weight:700;margin-left:6px;
@@ -53,12 +53,19 @@
   </div>
 </div>
 
+{% if in_house_guests %}
+<div class="db-card" style="padding:14px 18px;margin-bottom:16px;display:inline-flex;gap:8px;align-items:center">
+  <span style="font-size:20px">🏨</span>
+  <span><b>{{ in_house_guests }}</b> гост{{ in_house_guests|pluralize:"ь,я,ей" }} сейчас проживает в <b>{{ in_house_rooms }}</b> номер{{ in_house_rooms|pluralize:",а,ов" }}</span>
+</div>
+{% endif %}
+
 <div class="filter-bar">
   <a href="?status=" class="filter-btn {% if not status_filter %}active{% endif %}">Все</a>
   <a href="?status=new" class="filter-btn {% if status_filter == 'new' %}active{% endif %}">🆕 Новые</a>
   <a href="?status=confirmed" class="filter-btn {% if status_filter == 'confirmed' %}active{% endif %}">✅ Подтверждено</a>
-  <a href="?status=checked_in" class="filter-btn {% if status_filter == 'checked_in' %}active{% endif %}">🔑 Заселён</a>
-  <a href="?status=checked_out" class="filter-btn {% if status_filter == 'checked_out' %}active{% endif %}">🏁 Выехал</a>
+  <a href="?status=checkedin" class="filter-btn {% if status_filter == 'checkedin' %}active{% endif %}">🔑 Заселён</a>
+  <a href="?status=completed" class="filter-btn {% if status_filter == 'completed' %}active{% endif %}">🏁 Выехал</a>
   <a href="?status=cancelled" class="filter-btn {% if status_filter == 'cancelled' %}active{% endif %}">❌ Отменён</a>
 </div>
 
@@ -78,6 +85,7 @@
           <th>Сумма</th>
           <th>Тип</th>
           <th>Статус</th>
+          <th>Заселение</th>
           <th>Дата заявки</th>
         </tr>
       </thead>
@@ -114,11 +122,28 @@
               <select name="status" onchange="this.form.submit()">
                 <option value="new"        {% if b.status == 'new' %}selected{% endif %}>🆕 Новый</option>
                 <option value="confirmed"  {% if b.status == 'confirmed' %}selected{% endif %}>✅ Подтверждён</option>
-                <option value="checked_in" {% if b.status == 'checked_in' %}selected{% endif %}>🔑 Заселён</option>
-                <option value="checked_out"{% if b.status == 'checked_out' %}selected{% endif %}>🏁 Выехал</option>
+                <option value="checkedin" {% if b.status == 'checkedin' %}selected{% endif %}>🔑 Заселён</option>
+                <option value="completed"{% if b.status == 'completed' %}selected{% endif %}>🏁 Выехал</option>
                 <option value="cancelled"  {% if b.status == 'cancelled' %}selected{% endif %}>❌ Отменён</option>
               </select>
             </form>
+          </td>
+          <td style="white-space:nowrap">
+            {% if b.actual_checkout_at %}
+              <div style="font-size:11px;color:var(--muted)">🔑 {{ b.actual_checkin_at|date:"d.m H:i" }}</div>
+              <div style="font-size:11px;color:var(--muted)">🏁 {{ b.actual_checkout_at|date:"d.m H:i" }}</div>
+            {% elif b.actual_checkin_at %}
+              <div style="font-size:11px;color:var(--teal);font-weight:600;margin-bottom:4px">🔑 {{ b.actual_checkin_at|date:"d.m H:i" }}</div>
+              <form method="post" action="{% url 'dashboard:hotel_booking_checkout' b.id %}">
+                {% csrf_token %}
+                <button type="submit" class="filter-btn" style="padding:4px 10px">Выселить</button>
+              </form>
+            {% else %}
+              <form method="post" action="{% url 'dashboard:hotel_booking_checkin' b.id %}">
+                {% csrf_token %}
+                <button type="submit" class="filter-btn" style="padding:4px 10px">Заселить</button>
+              </form>
+            {% endif %}
           </td>
           <td style="font-size:12px;color:var(--muted);white-space:nowrap">{{ b.created_at|date:"d.m.Y H:i" }}</td>
         </tr>

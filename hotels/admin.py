@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import Hotel, HotelBranch, RoomCategory, Room, HotelMembership, HotelBooking
+from .models import (
+    Hotel, HotelBranch, RoomCategory, Room, HotelMembership, HotelBooking,
+    FinanceAccount, FinanceCategory, FinanceTxn, RoomRequest,
+)
 
 
 class RoomCategoryInline(admin.TabularInline):
@@ -85,3 +88,37 @@ class RoomAdmin(admin.ModelAdmin):
         ("Описание", {"fields": ("description_ru", "amenities_ru")}),
         ("Фотографии", {"fields": ("photo1", "photo2", "photo3")}),
     )
+
+
+@admin.register(FinanceAccount)
+class FinanceAccountAdmin(admin.ModelAdmin):
+    list_display  = ("name", "branch", "kind", "opening_balance", "is_default", "is_active")
+    list_filter   = ("branch__hotel", "kind", "is_active")
+    list_editable = ("is_default", "is_active")
+    search_fields = ("name", "branch__name_ru")
+
+
+@admin.register(FinanceCategory)
+class FinanceCategoryAdmin(admin.ModelAdmin):
+    list_display  = ("name", "branch", "flow", "is_active")
+    list_filter   = ("branch__hotel", "flow", "is_active")
+    list_editable = ("is_active",)
+    search_fields = ("name",)
+
+
+@admin.register(FinanceTxn)
+class FinanceTxnAdmin(admin.ModelAdmin):
+    list_display  = ("date", "kind", "amount", "account", "to_account", "category", "branch", "is_auto")
+    list_filter   = ("branch__hotel", "kind", "is_auto", "date")
+    search_fields = ("comment", "account__name")
+    readonly_fields = ("created_at", "updated_at")
+    autocomplete_fields = ("booking",)
+
+
+@admin.register(RoomRequest)
+class RoomRequestAdmin(admin.ModelAdmin):
+    list_display  = ("id", "kind", "room", "branch", "total", "status", "created_at")
+    list_filter   = ("branch__hotel", "kind", "status")
+    search_fields = ("room__name_ru", "guest_name", "comment")
+    filter_horizontal = ("services",)
+    readonly_fields = ("created_at", "updated_at")
