@@ -114,6 +114,79 @@ def home(request):
     })
 
 
+# ── АНАЛИТИКА ПОСЕЩАЕМОСТИ ────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def analytics(request):
+    import re
+    from datetime import timedelta
+    from django.utils import timezone
+    from django.db.models import Count
+    from core.models import PageView
+
+    agencies = _user_agencies(request.user)
+    agency = agencies.first()
+    if not agency:
+        messages.error(request, "У вас нет доступа ни к одному агентству.")
+        return render(request, "rcabinet/analytics.html", {"agency": None})
+
+    try:
+        days = int(request.GET.get("period", "30"))
+    except (TypeError, ValueError):
+        days = 30
+    days = max(1, min(days, 365))
+    now = timezone.now()
+    since = now - timedelta(days=days)
+
+    slug_re = rf"/realty/{re.escape(agency.slug)}(/|$)"
+    base = PageView.objects.filter(section="realty", path__regex=slug_re)
+    pv = base.filter(timestamp__gte=since)
+
+    total_views  = pv.count()
+    total_unique = pv.values("ip_hash").distinct().count()
+
+    # страница агентства vs карточки квартир
+    apt_re = re.compile(rf"/realty/{re.escape(agency.slug)}/(\d+)")
+    agency_page_views = 0
+    apt_counts = {}
+    for p in pv.values_list("path", flat=True):
+        m = apt_re.search(p)
+        if m:
+            aid = int(m.group(1))
+            apt_counts[aid] = apt_counts.get(aid, 0) + 1
+        else:
+            agency_page_views += 1
+
+    apts = {a.id: a for a in Apartment.objects.filter(agency=agency, id__in=list(apt_counts))}
+    apt_rows = sorted(
+        ({"apt": apts.get(aid), "views": c} for aid, c in apt_counts.items()),
+        key=lambda x: -x["views"],
+    )[:50]
+
+    # график по дням
+    chart_days = min(days, 45)
+    daily = (
+        base.filter(timestamp__gte=now - timedelta(days=chart_days))
+        .extra(select={"day": "DATE(timestamp)"})
+        .values("day").annotate(c=Count("id")).order_by("day")
+    )
+    chart = [{"day": str(r["day"])[5:], "c": r["c"]} for r in daily]
+    chart_max = max((r["c"] for r in chart), default=1)
+
+    return render(request, "rcabinet/analytics.html", {
+        "agency": agency,
+        "is_director": _is_director(request.user, agency),
+        "period": days,
+        "total_views": total_views,
+        "total_unique": total_unique,
+        "agency_page_views": agency_page_views,
+        "apt_views_total": sum(apt_counts.values()),
+        "apt_rows": apt_rows,
+        "chart": chart,
+        "chart_max": chart_max,
+    })
+
+
 # ── НАСТРОЙКИ АГЕНТСТВА ────────────────────────────────────────────────────
 
 @login_required(login_url=LOGIN_URL)

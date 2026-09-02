@@ -265,6 +265,12 @@ class PageView(models.Model):
         ("legal",      "Юристы"),
         ("eco",        "Эко-проекты"),
         ("restaurant", "Рестораны / меню"),
+        ("barbershop", "Барбершопы"),
+        ("karaoke",    "Караоке"),
+        ("simracing",  "Симрейсинг"),
+        ("printshop",  "Полиграфия"),
+        ("realty",     "Недвижимость"),
+        ("agency",     "Агентства"),
         ("other",      "Другое"),
     ]
 

@@ -781,6 +781,12 @@ def analytics(request):
     from shops.models import StoreOrder, StoreMembership
     from pharmacy.models import PharmacyOrder, PharmacyMembership
     from hotels.models import HotelBooking, HotelMembership
+    from barbershop.models import Appointment as BarberAppointment, BarbershopMembership
+    from karaoke.models import KaraokeBooking, KaraokeMembership
+    from simracing.models import SimRacingAppointment, SimRacingMembership
+    from printshop.models import PrintOrder, PrintMembership
+    from realestate.models import RealtyMembership
+    from agency.models import AgencyMembership
     from django.db.models import Sum
 
     user     = request.user
@@ -798,19 +804,19 @@ def analytics(request):
     # ── ID организаций пользователя ───────────────────────────────────────────
     if is_super:
         my_restaurant_ids = my_hotel_ids = my_store_ids = my_pharmacy_ids = None
+        my_barber_ids = my_karaoke_ids = my_simracing_ids = my_printshop_ids = None
+        my_realty_ids = my_agency_ids = None
     else:
-        my_restaurant_ids = list(
-            Membership.objects.filter(user=user).values_list("restaurant_id", flat=True)
-        )
-        my_hotel_ids = list(
-            HotelMembership.objects.filter(user=user).values_list("hotel_id", flat=True)
-        )
-        my_store_ids = list(
-            StoreMembership.objects.filter(user=user).values_list("store_id", flat=True)
-        )
-        my_pharmacy_ids = list(
-            PharmacyMembership.objects.filter(user=user).values_list("pharmacy_id", flat=True)
-        )
+        my_restaurant_ids = list(Membership.objects.filter(user=user).values_list("restaurant_id", flat=True))
+        my_hotel_ids      = list(HotelMembership.objects.filter(user=user).values_list("hotel_id", flat=True))
+        my_store_ids      = list(StoreMembership.objects.filter(user=user).values_list("store_id", flat=True))
+        my_pharmacy_ids   = list(PharmacyMembership.objects.filter(user=user).values_list("pharmacy_id", flat=True))
+        my_barber_ids     = list(BarbershopMembership.objects.filter(user=user).values_list("barbershop_id", flat=True))
+        my_karaoke_ids    = list(KaraokeMembership.objects.filter(user=user).values_list("venue_id", flat=True))
+        my_simracing_ids  = list(SimRacingMembership.objects.filter(user=user).values_list("venue_id", flat=True))
+        my_printshop_ids  = list(PrintMembership.objects.filter(user=user).values_list("center_id", flat=True))
+        my_realty_ids     = list(RealtyMembership.objects.filter(user=user).values_list("agency_id", flat=True))
+        my_agency_ids     = list(AgencyMembership.objects.filter(user=user).values_list("agency_id", flat=True))
 
     # ── Посещаемость ──────────────────────────────────────────────────────────
     pv_qs = PageView.objects.filter(timestamp__gte=since)
@@ -819,9 +825,15 @@ def analytics(request):
     if not is_super:
         allowed_sections = set()
         if my_restaurant_ids: allowed_sections.add("restaurant")
-        if my_hotel_ids:       allowed_sections.add("hotels")
-        if my_store_ids:       allowed_sections.add("shops")
-        if my_pharmacy_ids:    allowed_sections.add("pharmacy")
+        if my_hotel_ids:      allowed_sections.add("hotels")
+        if my_store_ids:      allowed_sections.add("shops")
+        if my_pharmacy_ids:   allowed_sections.add("pharmacy")
+        if my_barber_ids:     allowed_sections.add("barbershop")
+        if my_karaoke_ids:    allowed_sections.add("karaoke")
+        if my_simracing_ids:  allowed_sections.add("simracing")
+        if my_printshop_ids:  allowed_sections.add("printshop")
+        if my_realty_ids:     allowed_sections.add("realty")
+        if my_agency_ids:     allowed_sections.add("agency")
         if allowed_sections:
             pv_qs = pv_qs.filter(section__in=allowed_sections)
 
@@ -858,24 +870,24 @@ def analytics(request):
     daily_labels = [str(r["day"]) for r in daily_qs]
     daily_values = [r["cnt"] for r in daily_qs]
 
-    # ── Базовые queryset-ы заказов (уже отфильтрованы по доступу) ─────────────
-    if is_super:
-        rest_qs  = Order.objects.all()
-        shop_qs  = StoreOrder.objects.all()
-        ph_qs    = PharmacyOrder.objects.all()
-        hotel_qs = HotelBooking.objects.all()
-    else:
-        rest_qs  = Order.objects.filter(branch__restaurant_id__in=my_restaurant_ids)
-        shop_qs  = StoreOrder.objects.filter(branch__store_id__in=my_store_ids)
-        ph_qs    = PharmacyOrder.objects.filter(branch__pharmacy_id__in=my_pharmacy_ids)
-        hotel_qs = HotelBooking.objects.filter(branch__hotel_id__in=my_hotel_ids)
+    # ── Базовые queryset-ы заказов / записей (уже отфильтрованы по доступу) ───
+    def _scope(model, field, ids):
+        return model.objects.all() if is_super else model.objects.filter(**{f"{field}__in": ids or []})
+
+    rest_qs   = _scope(Order,                "branch__restaurant_id", my_restaurant_ids)
+    shop_qs   = _scope(StoreOrder,           "branch__store_id",      my_store_ids)
+    ph_qs     = _scope(PharmacyOrder,        "branch__pharmacy_id",   my_pharmacy_ids)
+    hotel_qs  = _scope(HotelBooking,         "branch__hotel_id",      my_hotel_ids)
+    barber_qs = _scope(BarberAppointment,    "barbershop_id",         my_barber_ids)
+    krk_qs    = _scope(KaraokeBooking,       "venue_id",              my_karaoke_ids)
+    sim_qs    = _scope(SimRacingAppointment, "venue_id",              my_simracing_ids)
+    print_qs  = _scope(PrintOrder,           "branch__center_id",     my_printshop_ids)
 
     def _agg(qs, name_field, revenue_field, period_since):
-        rows_all = list(
-            qs.values(name_field)
-              .annotate(cnt=Count("id"), revenue=Sum(revenue_field))
-              .order_by("-cnt")
-        )
+        ann = {"cnt": Count("id")}
+        if revenue_field:
+            ann["revenue"] = Sum(revenue_field)
+        rows_all = list(qs.values(name_field).annotate(**ann).order_by("-cnt"))
         total_all    = qs.count()
         total_period = qs.filter(created_at__gte=period_since).count()
         norm = [
@@ -884,19 +896,27 @@ def analytics(request):
         ]
         return norm, total_all, total_period
 
-    rest_rows,  rest_total_all,  rest_total_period  = _agg(rest_qs,  "branch__restaurant__name_ru", "total_amount", since)
-    shop_rows,  shop_total_all,  shop_total_period  = _agg(shop_qs,  "branch__store__name_ru",      "total",        since)
-    ph_rows,    ph_total_all,    ph_total_period    = _agg(ph_qs,    "branch__pharmacy__name_ru",   "total_amount", since)
-    hotel_rows, hotel_total_all, hotel_total_period = _agg(hotel_qs, "branch__hotel__name_ru",      "total",        since)
+    rest_rows,   rest_ta,   rest_tp   = _agg(rest_qs,   "branch__restaurant__name_ru",  "total_amount",   since)
+    shop_rows,   shop_ta,   shop_tp   = _agg(shop_qs,   "branch__store__name_ru",       "total",          since)
+    ph_rows,     ph_ta,     ph_tp     = _agg(ph_qs,     "branch__pharmacy__name_ru",    "total_amount",   since)
+    hotel_rows,  hotel_ta,  hotel_tp  = _agg(hotel_qs,  "branch__hotel__name_ru",       "total",          since)
+    barber_rows, barber_ta, barber_tp = _agg(barber_qs, "barbershop__name",             "price_snapshot", since)
+    krk_rows,    krk_ta,    krk_tp    = _agg(krk_qs,    "venue__name",                  None,             since)
+    sim_rows,    sim_ta,    sim_tp    = _agg(sim_qs,    "venue__name",                  "total_price",    since)
+    print_rows,  print_ta,  print_tp  = _agg(print_qs,  "branch__center__name_ru",      "total",          since)
 
-    grand_period = rest_total_period + shop_total_period + ph_total_period + hotel_total_period
-    grand_all    = rest_total_all    + shop_total_all    + ph_total_all    + hotel_total_all
+    grand_period = rest_tp + shop_tp + ph_tp + hotel_tp + barber_tp + krk_tp + sim_tp + print_tp
+    grand_all    = rest_ta + shop_ta + ph_ta + hotel_ta + barber_ta + krk_ta + sim_ta + print_ta
 
     all_order_sections = [
-        {"icon": "🍽",  "label": "Рестораны", "total_period": rest_total_period,  "total_all": rest_total_all,  "rows_all": rest_rows},
-        {"icon": "🏪",  "label": "Магазины",  "total_period": shop_total_period,  "total_all": shop_total_all,  "rows_all": shop_rows},
-        {"icon": "💊",  "label": "Аптеки",    "total_period": ph_total_period,    "total_all": ph_total_all,    "rows_all": ph_rows},
-        {"icon": "🏨",  "label": "Отели",     "total_period": hotel_total_period, "total_all": hotel_total_all, "rows_all": hotel_rows},
+        {"icon": "🍽",  "label": "Рестораны",  "total_period": rest_tp,   "total_all": rest_ta,   "rows_all": rest_rows},
+        {"icon": "🏪",  "label": "Магазины",   "total_period": shop_tp,   "total_all": shop_ta,   "rows_all": shop_rows},
+        {"icon": "💊",  "label": "Аптеки",     "total_period": ph_tp,     "total_all": ph_ta,     "rows_all": ph_rows},
+        {"icon": "🏨",  "label": "Отели",      "total_period": hotel_tp,  "total_all": hotel_ta,  "rows_all": hotel_rows},
+        {"icon": "✂️",  "label": "Барбершопы", "total_period": barber_tp, "total_all": barber_ta, "rows_all": barber_rows},
+        {"icon": "🎤",  "label": "Караоке",    "total_period": krk_tp,    "total_all": krk_ta,    "rows_all": krk_rows},
+        {"icon": "🏎️",  "label": "Симрейсинг", "total_period": sim_tp,    "total_all": sim_ta,    "rows_all": sim_rows},
+        {"icon": "🖨️",  "label": "Полиграфия", "total_period": print_tp,  "total_all": print_ta,  "rows_all": print_rows},
     ]
 
     # Обычный пользователь видит только разделы, к которым у него есть доступ и данные
@@ -916,6 +936,121 @@ def analytics(request):
         "order_sections": order_sections,
         "grand_period": grand_period,
         "grand_all": grand_all,
+    })
+
+
+# ── БАЗА КЛИЕНТОВ ────────────────────────────────────────────────────────────
+
+@login_required(login_url="dashboard:login")
+def clients(request):
+    """Единая база клиентов по всем бизнесам пользователя. Суперадмин — все клиенты."""
+    import re
+    from django.db.models import Q, F, Func, Value
+    from orders.models import Order
+    from shops.models import StoreOrder, StoreMembership
+    from pharmacy.models import PharmacyOrder, PharmacyMembership
+    from hotels.models import HotelBooking, HotelMembership
+    from barbershop.models import Appointment as BarberAppointment, BarbershopMembership
+    from karaoke.models import KaraokeBooking, KaraokeMembership
+    from simracing.models import SimRacingAppointment, SimRacingMembership
+    from printshop.models import PrintOrder, PrintMembership
+
+    user = request.user
+    is_super = user.is_superuser
+    q = (request.GET.get("q") or "").strip()
+    digits = re.sub(r"\D", "", q)
+    # локальный номер (последние 9 цифр) — чтобы «+996 700…», «0700…», «700…» совпадали
+    phone_tail = digits[-9:] if len(digits) >= 9 else digits
+
+    if is_super:
+        ids = {}
+    else:
+        ids = {
+            "rest":   list(Membership.objects.filter(user=user).values_list("restaurant_id", flat=True)),
+            "shop":   list(StoreMembership.objects.filter(user=user).values_list("store_id", flat=True)),
+            "ph":     list(PharmacyMembership.objects.filter(user=user).values_list("pharmacy_id", flat=True)),
+            "hotel":  list(HotelMembership.objects.filter(user=user).values_list("hotel_id", flat=True)),
+            "barber": list(BarbershopMembership.objects.filter(user=user).values_list("barbershop_id", flat=True)),
+            "krk":    list(KaraokeMembership.objects.filter(user=user).values_list("venue_id", flat=True)),
+            "sim":    list(SimRacingMembership.objects.filter(user=user).values_list("venue_id", flat=True)),
+            "print":  list(PrintMembership.objects.filter(user=user).values_list("center_id", flat=True)),
+        }
+
+    #  key,      label,        icon, Model,               scope_field,             name,            phone,            amount,           org_name
+    SOURCES = [
+        ("rest",  "Ресторан",   "🍽",  Order,               "branch__restaurant_id", "customer_name", "customer_phone", "total_amount",   "branch__restaurant__name_ru"),
+        ("shop",  "Магазин",    "🏪",  StoreOrder,          "branch__store_id",      "name",          "phone",          "total",          "branch__store__name_ru"),
+        ("ph",    "Аптека",     "💊",  PharmacyOrder,       "branch__pharmacy_id",   "customer_name", "customer_phone", "total_amount",   "branch__pharmacy__name_ru"),
+        ("hotel", "Отель",      "🏨",  HotelBooking,        "branch__hotel_id",      "customer_name", "customer_phone", "total",          "branch__hotel__name_ru"),
+        ("barber","Барбершоп",  "✂️",  BarberAppointment,   "barbershop_id",         "customer_name", "customer_phone", "price_snapshot", "barbershop__name"),
+        ("krk",   "Караоке",    "🎤",  KaraokeBooking,      "venue_id",              "customer_name", "customer_phone", None,             "venue__name"),
+        ("sim",   "Симрейсинг", "🏎️",  SimRacingAppointment,"venue_id",              "customer_name", "customer_phone", "total_price",    "venue__name"),
+        ("print", "Полиграфия", "🖨️",  PrintOrder,          "branch__center_id",     "name",          "phone",          "total",          "branch__center__name_ru"),
+    ]
+
+    cap = 400 if q else 120
+    cmap = {}
+    for key, label, icon, Model, scope_field, nf, pf, af, orgf in SOURCES:
+        if not is_super and not ids.get(key):
+            continue
+        qs = Model.objects.all() if is_super else Model.objects.filter(**{f"{scope_field}__in": ids[key]})
+        if q:
+            if len(digits) >= 3:
+                # сравниваем только цифры телефона — чтобы «+996 700…», «0700…», «700…» находились одинаково
+                qs = qs.annotate(_pd=Func(F(pf), Value(r"[^0-9]"), Value(""), Value("g"),
+                                          function="regexp_replace"))
+                qs = qs.filter(Q(**{f"{nf}__icontains": q}) | Q(_pd__icontains=phone_tail))
+            else:
+                qs = qs.filter(Q(**{f"{nf}__icontains": q}) | Q(**{f"{pf}__icontains": q}))
+        vals = [nf, pf, "created_at", orgf, "id", "status"]
+        if af:
+            vals.append(af)
+        for r in qs.order_by("-created_at").values(*vals)[:cap]:
+            name  = (r.get(nf) or "").strip()
+            phone = (r.get(pf) or "").strip()
+            pdig  = re.sub(r"\D", "", phone)[-9:]
+            gkey  = pdig or ("n:" + name.lower())
+            if not name and not pdig:
+                continue
+            c = cmap.setdefault(gkey, {"phone": "", "names": set(), "orgs": set(),
+                                       "count": 0, "sum": 0.0, "last": None, "records": []})
+            if name:
+                c["names"].add(name)
+            if phone and not c["phone"]:
+                c["phone"] = phone
+            org = r.get(orgf) or "—"
+            c["orgs"].add(f"{icon} {org}")
+            amt = float(r.get(af) or 0) if af else 0.0
+            c["count"] += 1
+            c["sum"]   += amt
+            dt = r.get("created_at")
+            if dt and (c["last"] is None or dt > c["last"]):
+                c["last"] = dt
+            c["records"].append({"biz": label, "icon": icon, "org": org,
+                                 "date": dt, "amount": amt, "status": r.get("status") or ""})
+
+    def _ts(d):
+        return d.timestamp() if d else 0
+
+    clients_list = []
+    for gkey, c in cmap.items():
+        c["records"].sort(key=lambda x: _ts(x["date"]), reverse=True)
+        clients_list.append({
+            "phone":   c["phone"] or "—",
+            "name":    " / ".join(sorted(c["names"])[:3]) or "Без имени",
+            "orgs":    sorted(c["orgs"]),
+            "count":   c["count"],
+            "sum":     c["sum"],
+            "last":    c["last"],
+            "records": c["records"][:60],
+        })
+    clients_list.sort(key=lambda x: _ts(x["last"]), reverse=True)
+
+    return render(request, "dashboard/clients.html", {
+        "q": q,
+        "is_super": is_super,
+        "clients": clients_list[:100],
+        "total_found": len(clients_list),
     })
 
 
@@ -960,6 +1095,18 @@ def orders_analytics(request):
     # ── применяем фильтр по периоду ───────────────────────────────────────────
     order_qs_period = order_qs.filter(created_at__gte=since)
 
+    # ── разделение: доставка / в заведении ───────────────────────────────────
+    delivery_count = order_qs_period.filter(type=Order.Type.DELIVERY).count()
+    inplace_count  = order_qs_period.exclude(type=Order.Type.DELIVERY).count()
+
+    otype = request.GET.get("otype", "all")
+    if otype == "delivery":
+        order_qs_period = order_qs_period.filter(type=Order.Type.DELIVERY)
+    elif otype == "inplace":
+        order_qs_period = order_qs_period.exclude(type=Order.Type.DELIVERY)
+    else:
+        otype = "all"
+
     # ── KPI ──────────────────────────────────────────────────────────────────
     total_orders  = order_qs_period.count()
     # Выручка — только стоимость блюд (без доставки)
@@ -986,9 +1133,13 @@ def orders_analytics(request):
     # ── динамика по дням ──────────────────────────────────────────────────────
     chart_days  = min(days, 60)
     chart_since = now - timedelta(days=chart_days)
+    chart_qs = order_qs.filter(created_at__gte=chart_since)
+    if otype == "delivery":
+        chart_qs = chart_qs.filter(type=Order.Type.DELIVERY)
+    elif otype == "inplace":
+        chart_qs = chart_qs.exclude(type=Order.Type.DELIVERY)
     daily_qs = (
-        order_qs
-        .filter(created_at__gte=chart_since)
+        chart_qs
         .extra(select={"day": 'DATE("orders_order"."created_at")'})
         .values("day")
         .annotate(cnt=Count("id", distinct=True), revenue=Sum("items__line_total"))
@@ -1025,6 +1176,9 @@ def orders_analytics(request):
         "chart_orders":  chart_orders,
         "chart_revenue": chart_revenue,
         "page_obj":      page_obj,
+        "otype":          otype,
+        "delivery_count": delivery_count,
+        "inplace_count":  inplace_count,
     })
 
 

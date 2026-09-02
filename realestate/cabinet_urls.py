@@ -6,7 +6,8 @@ app_name = "rcabinet"
 urlpatterns = [
     path("login/",  views.login_view,  name="login"),
     path("logout/", views.logout_view, name="logout"),
-    path("",        views.home,        name="home"),
+    path("",          views.home,      name="home"),
+    path("analytics/", views.analytics, name="analytics"),
 
     path("agency/<int:agency_id>/settings/",       views.agency_settings, name="agency_settings"),
     path("agency/<int:agency_id>/apartment/add/", views.apartment_add, name="apartment_add"),

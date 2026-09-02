@@ -78,6 +78,7 @@
       <div style="font-size:13px;font-weight:600">{{ request.user.get_full_name|default:request.user.username }}</div>
       {% if agency %}<div style="font-size:11px;color:var(--muted)">{% if is_director %}Директор{% else %}Риэлтор{% endif %}</div>{% endif %}
     </div>
+    {% if agency %}<a class="logout" href="{% url 'rcabinet:analytics' %}">📊 Посещаемость</a>{% endif %}
     {% if agency and is_director %}<a class="logout" href="{% url 'rcabinet:agency_settings' agency.id %}">Настройки агентства</a>{% endif %}
     <a class="logout" href="{% url 'rcabinet:logout' %}">Выйти</a>
   </div>

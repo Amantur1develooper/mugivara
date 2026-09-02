@@ -6,13 +6,20 @@ from django.utils.deprecation import MiddlewareMixin
 
 # Порядок важен: более специфичные пути первее
 _SECTION_PREFIXES = [
-    ("/markets",    "markets"),
-    ("/shops",      "shops"),
-    ("/hotels",     "hotels"),
-    ("/pharmacy",   "pharmacy"),
-    ("/legal",      "legal"),
-    ("/eco",        "eco"),
-    ("/t/",         "restaurant"),   # меню за столиком
+    ("/markets",                "markets"),
+    ("/shops",                  "shops"),
+    ("/hotels",                 "hotels"),
+    ("/pharmacy",               "pharmacy"),
+    ("/legal",                  "legal"),
+    ("/eco",                    "eco"),
+    ("/barbershop",             "barbershop"),
+    ("/entertainment/karaoke",  "karaoke"),
+    ("/simracing",              "simracing"),
+    ("/printshop",              "printshop"),
+    ("/realty",                 "realty"),
+    ("/agency",                 "agency"),
+    ("/room/",                  "hotels"),   # QR-страница номера отеля
+    ("/t/",                     "restaurant"),   # меню за столиком
     # публичные страницы ресторанов вида /ru/<slug>/
 ]
 
