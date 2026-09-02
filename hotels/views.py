@@ -6,7 +6,10 @@ from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.urls import reverse
 
-from .models import Hotel, HotelBranch, RoomCategory, Room, HotelBooking, HotelService, HotelServiceSession, HotelServiceBooking
+from .models import (
+    Hotel, HotelBranch, RoomCategory, Room, HotelBooking, HotelService,
+    HotelServiceSession, HotelServiceBooking, RoomRequest,
+)
 
 
 def _get_bot_token():
@@ -289,3 +292,77 @@ def service_book(request, service_id):
 
     messages.success(request, "Заявка принята! Мы свяжемся с вами.")
     return redirect("hotels:hotel_branch", branch_id=branch.id)
+
+
+# ── ЗАЯВКИ ИЗ НОМЕРА (услуги в номер / вызов сотрудника) ─────────────────────
+
+def _get_room_by_code(code):
+    return (
+        Room.objects
+        .select_related("branch", "branch__hotel")
+        .filter(public_code=code, branch__is_active=True)
+        .first()
+    )
+
+
+def room_request_page(request, code):
+    room = _get_room_by_code(code)
+    if not room:
+        return render(request, "hotels/room_request.html", {"not_found": True}, status=404)
+    services = HotelService.objects.filter(branch=room.branch, is_active=True).order_by("sort_order", "id")
+    return render(request, "hotels/room_request.html", {
+        "room": room,
+        "branch": room.branch,
+        "hotel": room.branch.hotel,
+        "services": services,
+    })
+
+
+@require_POST
+def room_request_submit(request, code):
+    room = _get_room_by_code(code)
+    if not room:
+        return render(request, "hotels/room_request.html", {"not_found": True}, status=404)
+    branch = room.branch
+
+    kind = request.POST.get("kind", "service")
+    if kind not in dict(RoomRequest.Kind.choices):
+        kind = RoomRequest.Kind.SERVICE
+    guest_name = (request.POST.get("guest_name") or "").strip()[:120]
+    comment = (request.POST.get("comment") or "").strip()[:500]
+
+    service_ids = request.POST.getlist("services")
+    services = list(HotelService.objects.filter(id__in=service_ids, branch=branch, is_active=True)) if kind == RoomRequest.Kind.SERVICE else []
+
+    if kind == RoomRequest.Kind.SERVICE and not services and not comment:
+        messages.error(request, "Выберите услугу или напишите, что нужно")
+        return redirect("hotel_room_request", code=code)
+
+    total = sum((s.price for s in services), 0)
+    req = RoomRequest.objects.create(
+        branch=branch, room=room, kind=kind,
+        guest_name=guest_name, comment=comment, total=total,
+        status=RoomRequest.Status.NEW,
+    )
+    if services:
+        req.services.set(services)
+
+    if kind == RoomRequest.Kind.LOBBY:
+        msg = f"🛎 Вызов сотрудника в номер\n\n"
+    else:
+        msg = f"🧺 Заявка на услуги в номер\n\n"
+    msg += f"{branch.hotel.name_ru} · {branch.name_ru}\n"
+    msg += f"Номер: {room.name_ru}\n"
+    if services:
+        msg += "\nУслуги:\n"
+        for s in services:
+            msg += f" • {s.name_ru} — {int(s.price):,} сом\n".replace(",", " ")
+        msg += f"Итого: {int(total):,} сом\n".replace(",", " ")
+    if guest_name:
+        msg += f"\nГость: {guest_name}\n"
+    if comment:
+        msg += f"Комментарий: {comment}\n"
+    _notify_hotel_booking(branch, msg)
+
+    messages.success(request, "Заявка отправлена! Скоро подойдём." if kind == RoomRequest.Kind.LOBBY else "Заявка отправлена! Скоро принесём.")
+    return redirect("hotel_room_request", code=code)

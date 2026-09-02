@@ -120,6 +120,9 @@ class Room(TimeStampedModel):
     is_available = models.BooleanField("Доступен", default=True)
     sort_order = models.PositiveIntegerField("Порядок", default=0)
 
+    public_code = models.CharField("Код для QR", max_length=12, unique=True, blank=True, null=True,
+                                   help_text="Ссылка/QR для гостя: заказ услуг в номер, вызов сотрудника")
+
     photo1 = models.ImageField("Фото 1 (главное)", upload_to="hotels/rooms/", blank=True, null=True)
     photo2 = models.ImageField("Фото 2", upload_to="hotels/rooms/", blank=True, null=True)
     photo3 = models.ImageField("Фото 3", upload_to="hotels/rooms/", blank=True, null=True)
@@ -133,6 +136,8 @@ class Room(TimeStampedModel):
         return f"{self.name_ru} ({self.branch})"
 
     def save(self, *args, **kwargs):
+        if not self.public_code:
+            self.public_code = self._gen_code()
         for fname in ("photo1", "photo2", "photo3"):
             field = getattr(self, fname)
             # Only compress new uploads (not already-saved files)
@@ -142,6 +147,16 @@ class Room(TimeStampedModel):
                     name, content = result
                     field.save(os.path.basename(name), content, save=False)
         super().save(*args, **kwargs)
+
+    @staticmethod
+    def _gen_code():
+        from django.utils.crypto import get_random_string
+        alphabet = "abcdefghjkmnpqrstuvwxyz23456789"
+        for _ in range(10):
+            code = get_random_string(7, alphabet)
+            if not Room.objects.filter(public_code=code).exists():
+                return code
+        return get_random_string(10, alphabet)
 
     @property
     def photos(self):
@@ -287,6 +302,35 @@ class HotelBooking(TimeStampedModel):
             from datetime import timedelta
             self.checkout_date = self.checkin_date + timedelta(days=self.nights or 1)
         super().save(*args, **kwargs)
+
+
+class RoomRequest(TimeStampedModel):
+    """Заявка гостя из номера: услуга(и) в номер или вызов сотрудника. Уходит в TG-группу отеля."""
+    class Kind(models.TextChoices):
+        SERVICE = "service", "Услуги в номер"
+        LOBBY   = "lobby",   "Вызов сотрудника"
+
+    class Status(models.TextChoices):
+        NEW  = "new",  "Новая"
+        DONE = "done", "Выполнена"
+
+    branch     = models.ForeignKey(HotelBranch, on_delete=models.CASCADE, related_name="room_requests")
+    room       = models.ForeignKey(Room, on_delete=models.CASCADE, related_name="requests")
+    kind       = models.CharField("Тип", max_length=10, choices=Kind.choices, default=Kind.SERVICE)
+    services   = models.ManyToManyField(HotelService, blank=True, related_name="room_requests",
+                                        verbose_name="Услуги")
+    guest_name = models.CharField("Имя гостя", max_length=120, blank=True)
+    comment    = models.CharField("Комментарий", max_length=500, blank=True)
+    total      = models.DecimalField("Сумма", max_digits=12, decimal_places=0, default=0)
+    status     = models.CharField("Статус", max_length=10, choices=Status.choices, default=Status.NEW)
+
+    class Meta:
+        verbose_name = "Заявка из номера"
+        verbose_name_plural = "Заявки из номеров"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"#{self.id} {self.get_kind_display()} — {self.room}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────

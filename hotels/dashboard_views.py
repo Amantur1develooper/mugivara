@@ -10,7 +10,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from .models import (
     Hotel, HotelBranch, HotelMembership, RoomCategory, Room, HotelBooking,
     HotelService, HotelServiceSession, HotelServiceBooking,
-    FinanceAccount, FinanceCategory, FinanceTxn,
+    FinanceAccount, FinanceCategory, FinanceTxn, RoomRequest,
 )
 
 LOGIN_URL = "dashboard:login"
@@ -286,6 +286,44 @@ def hotel_bookings(request, branch_id):
         "in_house_guests": in_house_guests,
         "in_house_rooms": in_house_rooms,
     })
+
+
+# ── ЗАЯВКИ ИЗ НОМЕРОВ ────────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def hotel_room_requests(request, branch_id):
+    branch = get_object_or_404(HotelBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:hotel_home")
+
+    show = request.GET.get("show", "new")
+    qs = (
+        RoomRequest.objects.filter(branch=branch)
+        .select_related("room").prefetch_related("services")
+        .order_by("-created_at")
+    )
+    if show == "new":
+        qs = qs.filter(status=RoomRequest.Status.NEW)
+
+    return render(request, "dashboard/hotels/room_requests.html", {
+        "branch": branch,
+        "hotel": branch.hotel,
+        "requests": qs[:200],
+        "show": show,
+        "new_count": RoomRequest.objects.filter(branch=branch, status=RoomRequest.Status.NEW).count(),
+    })
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def hotel_room_request_done(request, req_id):
+    req = get_object_or_404(RoomRequest, id=req_id)
+    if not _has_branch_access(request.user, req.branch):
+        return redirect("dashboard:hotel_home")
+    req.status = (RoomRequest.Status.NEW if req.status == RoomRequest.Status.DONE
+                  else RoomRequest.Status.DONE)
+    req.save(update_fields=["status", "updated_at"])
+    return _safe_next(request) or redirect("dashboard:hotel_room_requests", branch_id=req.branch_id)
 
 
 @login_required(login_url=LOGIN_URL)

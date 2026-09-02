@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Hotel, HotelBranch, RoomCategory, Room, HotelMembership, HotelBooking,
-    FinanceAccount, FinanceCategory, FinanceTxn,
+    FinanceAccount, FinanceCategory, FinanceTxn, RoomRequest,
 )
 
 
@@ -113,3 +113,12 @@ class FinanceTxnAdmin(admin.ModelAdmin):
     search_fields = ("comment", "account__name")
     readonly_fields = ("created_at", "updated_at")
     autocomplete_fields = ("booking",)
+
+
+@admin.register(RoomRequest)
+class RoomRequestAdmin(admin.ModelAdmin):
+    list_display  = ("id", "kind", "room", "branch", "total", "status", "created_at")
+    list_filter   = ("branch__hotel", "kind", "status")
+    search_fields = ("room__name_ru", "guest_name", "comment")
+    filter_horizontal = ("services",)
+    readonly_fields = ("created_at", "updated_at")

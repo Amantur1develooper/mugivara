@@ -8,6 +8,7 @@ from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import TokenRefreshView
 from api.auth_views import register_view, login_view, me_view, change_password_view
+from hotels.views import room_request_page, room_request_submit
 
 urlpatterns = [
     path("i18n/", __import__("django.conf.urls.i18n").conf.urls.i18n.set_language, name="set_language"),
@@ -37,6 +38,10 @@ urlpatterns = [
     path("t/<str:token>/checkout/",                   table_checkout,     name="table_checkout"),
     path("t/<str:token>/success/<int:order_id>/",     table_success,      name="table_success"),
     path("t/<str:token>/order/create/",               table_create_order, name="table_create_order"),
+
+    # ── QR в номере отеля: без языкового префикса ──────────────────────────
+    path("room/<str:code>/",        room_request_page,   name="hotel_room_request"),
+    path("room/<str:code>/submit/", room_request_submit, name="hotel_room_request_submit"),
 ]
 
 urlpatterns += i18n_patterns(
