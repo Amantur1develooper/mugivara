@@ -12,19 +12,7 @@ from .models import (
 )
 
 
-def _get_bot_token():
-    return (getattr(settings, "TG_BOT_TOKEN", "") or getattr(settings, "TELEGRAM_BOT_TOKEN", "") or "").strip()
-
-
-def _notify_hotel_booking(branch, msg):
-    token = _get_bot_token()
-    if not token or not branch.tg_chat_id:
-        return
-    try:
-        from integrations.telegram import send_message
-        send_message(token, branch.tg_chat_id, msg, message_thread_id=branch.tg_thread_id)
-    except Exception:
-        pass
+from .notify import get_bot_token as _get_bot_token, notify_branch as _notify_hotel_booking  # noqa: F401
 
 
 def hotel_list(request):
