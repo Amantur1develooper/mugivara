@@ -199,22 +199,30 @@ class Room(TimeStampedModel):
         for b in self._blocking_bookings():
             if b.checkin_date <= day < b.checkout_date:
                 return b
-        # физически заселён и ещё не выписан
+        # физически заселён и ещё не выписан (даже если плановые даты не заданы)
         for b in self.bookings.all():
-            if b.actual_checkin_at and not b.actual_checkout_at:
+            if b.actual_checkin_at and not b.actual_checkout_at and b.actual_checkin_at.date() <= day:
                 return b
         return None
 
     def is_free_between(self, checkin, checkout):
-        """Свободен ли номер на весь период [checkin, checkout)."""
+        """Свободен ли номер на весь период [checkin, checkout).
+
+        Пересечение с занятыми интервалами блокирует бронь; сам факт того, что
+        сейчас кто-то проживает, будущие свободные даты не блокирует.
+        """
         if not self.is_available:
             return False
         for b in self._blocking_bookings():
             if b.checkin_date < checkout and b.checkout_date > checkin:
                 return False
+        # заселён без плановых дат — считаем занятым «сегодня + ночь»
+        from datetime import timedelta
         for b in self.bookings.all():
-            if b.actual_checkin_at and not b.actual_checkout_at:
-                return False
+            if b.actual_checkin_at and not b.actual_checkout_at and not (b.checkin_date and b.checkout_date):
+                d0 = b.actual_checkin_at.date()
+                if d0 < checkout and (d0 + timedelta(days=1)) > checkin:
+                    return False
         return True
 
     @property

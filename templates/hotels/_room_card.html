@@ -57,8 +57,14 @@
       {% if room.public_available %}
         <button class="rc-btn rc-btn-blue" onclick="openBookDirect({{ room.id }}, 'booking')">📅 Забронировать</button>
         <button class="rc-btn rc-btn-green" onclick="openBookDirect({{ room.id }}, 'checkin')">🔑 Заселиться сейчас</button>
+      {% elif room.is_available %}
+        {# занят сегодня, но можно забронировать на свободные даты #}
+        <button class="rc-btn rc-btn-blue" onclick="openBookDirect({{ room.id }}, 'booking')">📅 Забронировать на др. даты</button>
+        {% if room.busy_until %}
+          <span class="rc-chip gray" style="align-self:center">Занят до {{ room.busy_until|date:"d.m" }}</span>
+        {% endif %}
       {% else %}
-        <button class="rc-btn rc-btn-disabled" disabled>{% if room.busy_until %}Занято до {{ room.busy_until|date:"d.m.Y" }}{% else %}Занято{% endif %}</button>
+        <button class="rc-btn rc-btn-disabled" disabled>Недоступно</button>
       {% endif %}
     </div>
 

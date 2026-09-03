@@ -74,8 +74,12 @@ def hotel_branch(request, branch_id):
             "amenities": r.amenities_list,
             "photos": [p.url for p in r.photos],
             "book_url": reverse("hotels:room_book", args=[r.id]),
+            # свободен ли для брони/заселения сегодня
             "available": r.public_available,
+            # можно ли вообще принимать брони (ручной тумблер «Доступен»)
+            "bookable": r.is_available,
             "busy_until": r.busy_until.strftime("%d.%m.%Y") if r.busy_until else None,
+            "busy_until_iso": r.busy_until.isoformat() if r.busy_until else None,
             # занятые интервалы — чтобы форма не давала выбрать пересекающиеся даты
             "busy_ranges": [
                 [b.checkin_date.isoformat(), b.checkout_date.isoformat()]

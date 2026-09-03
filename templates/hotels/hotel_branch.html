@@ -734,19 +734,23 @@ function openDetail(roomId) {
     tags.style.display = 'none';
   }
 
-  // кнопки брони — только если номер свободен
-  const busy = !cur.available;
-  $('dmBtnBook').style.display    = busy ? 'none' : '';
-  $('dmBtnCheckin').style.display = busy ? 'none' : '';
+  // «Заселиться сейчас» — только если свободен сегодня.
+  // «Забронировать» — доступно всегда, пока номер вообще принимает брони (на свободные даты).
+  const freeToday = cur.available;
+  $('dmBtnBook').style.display    = cur.bookable ? '' : 'none';
+  $('dmBtnCheckin').style.display = (cur.bookable && freeToday) ? '' : 'none';
   let note = document.getElementById('dmBusyNote');
-  if (busy) {
+  const showNote = cur.bookable && !freeToday;
+  if (showNote) {
     if (!note) {
       note = document.createElement('div');
       note.id = 'dmBusyNote';
-      note.style.cssText = 'margin-top:18px;padding:12px 14px;border-radius:12px;background:#FEF2F2;color:#B91C1C;font-size:13px;font-weight:600;text-align:center';
+      note.style.cssText = 'margin-top:18px;padding:12px 14px;border-radius:12px;background:#FFF7ED;color:#9A3412;font-size:13px;font-weight:600;text-align:center';
       $('dmBtnBook').parentElement.appendChild(note);
     }
-    note.textContent = cur.busy_until ? ('Номер занят до ' + cur.busy_until) : 'Номер сейчас занят';
+    note.textContent = cur.busy_until
+      ? ('Занят до ' + cur.busy_until + ' — можно забронировать на свободные даты')
+      : 'Сейчас занят — можно забронировать на свободные даты';
     note.style.display = '';
   } else if (note) {
     note.style.display = 'none';
@@ -780,13 +784,19 @@ function bookingConflict(checkinISO, nights) {
 
 function openBook(type) {
   if (!cur) return;
-  if (!cur.available) {
-    alert(cur.busy_until ? ('Этот номер занят до ' + cur.busy_until) : 'Этот номер сейчас занят');
+  const isCheckin = type === 'checkin';
+
+  if (isCheckin && !cur.available) {
+    alert(cur.busy_until
+      ? ('Заселиться сейчас нельзя — номер занят до ' + cur.busy_until + '. Забронируйте на свободные даты.')
+      : 'Заселиться сейчас нельзя — номер занят.');
+    return;
+  }
+  if (!cur.bookable) {
+    alert('Этот номер сейчас недоступен для брони.');
     return;
   }
   closeDetail();
-
-  const isCheckin = type === 'checkin';
 
   $('bmType').value = type;
   const badge = $('bmBadge');
@@ -808,11 +818,15 @@ function openBook(type) {
   $('bmGuestsLbl').textContent = `Гостей (макс. ${cur.max_guests})`;
   if (parseInt(guestInp.value) > cur.max_guests) guestInp.value = 1;
 
-  // today
+  // минимальная дата заезда: сегодня, либо — если номер занят — первая свободная дата
   const today = new Date().toISOString().slice(0, 10);
-  $('bmCheckin').min = today;
-  if (!$('bmCheckin').value || $('bmCheckin').value < today) {
-    $('bmCheckin').value = today;
+  let minDate = today;
+  if (!isCheckin && !cur.available && cur.busy_until_iso && cur.busy_until_iso > today) {
+    minDate = cur.busy_until_iso;
+  }
+  $('bmCheckin').min = minDate;
+  if (!$('bmCheckin').value || $('bmCheckin').value < minDate || bookingConflict($('bmCheckin').value, 1)) {
+    $('bmCheckin').value = minDate;
   }
 
   updateTotal();
