@@ -166,6 +166,54 @@ class Room(TimeStampedModel):
     def amenities_list(self):
         return [ln.strip() for ln in self.amenities_ru.splitlines() if ln.strip()]
 
+    # ── занятость номера (шахматка ↔ публичная часть) ────────────────────────
+
+    # статусы, при которых номер считается занятым для публичной брони
+    _BLOCKING_STATUSES = ("new", "confirmed", "checkedin")
+
+    def _blocking_bookings(self):
+        """Активные брони/заселения номера (не отменённые, не завершённые), с датами."""
+        return [
+            b for b in self.bookings.all()
+            if b.status in self._BLOCKING_STATUSES and b.checkin_date and b.checkout_date
+        ]
+
+    def occupied_on(self, day):
+        """Бронь, занимающая номер на дату `day` (или None)."""
+        for b in self._blocking_bookings():
+            if b.checkin_date <= day < b.checkout_date:
+                return b
+        # физически заселён и ещё не выписан
+        for b in self.bookings.all():
+            if b.actual_checkin_at and not b.actual_checkout_at:
+                return b
+        return None
+
+    def is_free_between(self, checkin, checkout):
+        """Свободен ли номер на весь период [checkin, checkout)."""
+        if not self.is_available:
+            return False
+        for b in self._blocking_bookings():
+            if b.checkin_date < checkout and b.checkout_date > checkin:
+                return False
+        for b in self.bookings.all():
+            if b.actual_checkin_at and not b.actual_checkout_at:
+                return False
+        return True
+
+    @property
+    def public_available(self):
+        """Показывать ли номер как доступный для брони на витрине (на сегодня)."""
+        from datetime import date
+        return self.is_available and self.occupied_on(date.today()) is None
+
+    @property
+    def busy_until(self):
+        """Дата, до которой номер занят текущей бронёй (для подписи на витрине)."""
+        from datetime import date
+        b = self.occupied_on(date.today())
+        return b.checkout_date if b else None
+
 
 class HotelService(TimeStampedModel):
     branch      = models.ForeignKey(HotelBranch, on_delete=models.CASCADE, related_name="services")

@@ -60,10 +60,14 @@ def hotel_branch(request, branch_id):
     categories = (
         RoomCategory.objects
         .filter(branch=branch)
-        .prefetch_related("rooms")
+        .prefetch_related("rooms__bookings")
         .order_by("sort_order", "id")
     )
-    uncategorized = branch.rooms.filter(category__isnull=True).order_by("sort_order", "id")
+    uncategorized = (
+        branch.rooms.filter(category__isnull=True)
+        .prefetch_related("bookings")
+        .order_by("sort_order", "id")
+    )
 
     # все номера -> JSON для JS-модалей
     all_rooms = []
@@ -82,7 +86,13 @@ def hotel_branch(request, branch_id):
             "amenities": r.amenities_list,
             "photos": [p.url for p in r.photos],
             "book_url": reverse("hotels:room_book", args=[r.id]),
-            "available": r.is_available,
+            "available": r.public_available,
+            "busy_until": r.busy_until.strftime("%d.%m.%Y") if r.busy_until else None,
+            # занятые интервалы — чтобы форма не давала выбрать пересекающиеся даты
+            "busy_ranges": [
+                [b.checkin_date.isoformat(), b.checkout_date.isoformat()]
+                for b in r._blocking_bookings()
+            ],
         }
         for r in all_rooms
     ], ensure_ascii=False)
@@ -166,6 +176,15 @@ def room_book(request, room_id):
         if book_type == "checkin":
             checkin_date = _date.today()
     checkout_date = checkin_date + timedelta(days=nights_int) if checkin_date else None
+
+    # Проверка занятости по шахматке: номер не должен быть уже забронирован/заселён на этот период
+    if checkin_date and checkout_date and not room.is_free_between(checkin_date, checkout_date):
+        busy = room.busy_until
+        if busy:
+            messages.error(request, f"«{room.name_ru}» занят до {busy:%d.%m.%Y}. Выберите другие даты или номер.")
+        else:
+            messages.error(request, f"«{room.name_ru}» уже забронирован на выбранные даты. Выберите другие даты или номер.")
+        return redirect("hotels:hotel_branch", branch_id=branch.id)
 
     # Формат даты для сообщения: дд.мм.гггг
     checkin_fmt = checkin_date.strftime("%d.%m.%Y") if checkin_date else (checkin or "—")

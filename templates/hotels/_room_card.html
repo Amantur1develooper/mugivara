@@ -14,8 +14,8 @@
       <div class="rc-photo-cnt">📷 {{ room.photos|length }}</div>
     {% endif %}
 
-    {% if not room.is_available %}
-      <div class="rc-photo-busy">Занято</div>
+    {% if not room.public_available %}
+      <div class="rc-photo-busy">{% if room.busy_until %}Занято до {{ room.busy_until|date:"d.m" }}{% else %}Занято{% endif %}</div>
     {% endif %}
 
     <div class="rc-photo-price">
@@ -54,11 +54,11 @@
     <div class="rc-actions">
       <button class="rc-btn rc-btn-ghost" onclick="openDetail({{ room.id }})">👁 Подробнее</button>
 
-      {% if room.is_available %}
+      {% if room.public_available %}
         <button class="rc-btn rc-btn-blue" onclick="openBookDirect({{ room.id }}, 'booking')">📅 Забронировать</button>
         <button class="rc-btn rc-btn-green" onclick="openBookDirect({{ room.id }}, 'checkin')">🔑 Заселиться сейчас</button>
       {% else %}
-        <button class="rc-btn rc-btn-disabled" disabled>Занято</button>
+        <button class="rc-btn rc-btn-disabled" disabled>{% if room.busy_until %}Занято до {{ room.busy_until|date:"d.m.Y" }}{% else %}Занято{% endif %}</button>
       {% endif %}
     </div>
 
