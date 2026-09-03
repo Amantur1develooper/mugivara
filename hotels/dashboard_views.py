@@ -12,6 +12,7 @@ from .models import (
     HotelService, HotelServiceSession, HotelServiceBooking,
     FinanceAccount, FinanceCategory, FinanceTxn, RoomRequest,
 )
+from .notify import notify_booking_event
 
 LOGIN_URL = "dashboard:login"
 
@@ -470,7 +471,7 @@ def hotel_chess_book(request, branch_id):
     total = price_per_night * nights
 
     is_checkin = book_type == HotelBooking.BookType.CHECKIN
-    HotelBooking.objects.create(
+    booking = HotelBooking.objects.create(
         branch=branch, room=room, book_type=book_type,
         customer_name=name, customer_phone=phone,
         checkin_date=checkin_date, checkout_date=checkout_date,
@@ -479,6 +480,8 @@ def hotel_chess_book(request, branch_id):
         status=HotelBooking.Status.CHECKEDIN if is_checkin else HotelBooking.Status.NEW,
         actual_checkin_at=timezone.now() if is_checkin else None,
     )
+    if is_checkin:
+        notify_booking_event(booking, "checkin")
     messages.success(
         request,
         f"{'Заселён' if is_checkin else 'Бронь создана'}: {name} · {room.name_ru} · "
@@ -510,14 +513,21 @@ def hotel_booking_status(request, booking_id):
     if new_status in dict(HotelBooking.Status.choices):
         booking.status = new_status
         fields = ["status", "updated_at"]
+        fire_checkin = fire_checkout = False
         # держим фактические отметки заезда/выезда в согласии со статусом
         if new_status == HotelBooking.Status.CHECKEDIN and not booking.actual_checkin_at:
             booking.actual_checkin_at = timezone.now()
             fields.append("actual_checkin_at")
+            fire_checkin = True
         if new_status == HotelBooking.Status.COMPLETED and not booking.actual_checkout_at:
             booking.actual_checkout_at = timezone.now()
             fields.append("actual_checkout_at")
+            fire_checkout = True
         booking.save(update_fields=fields)
+        if fire_checkin:
+            notify_booking_event(booking, "checkin")
+        if fire_checkout:
+            notify_booking_event(booking, "checkout")
         messages.success(request, "Статус обновлён")
     return _booking_redirect(request, booking)
 
@@ -531,6 +541,7 @@ def hotel_booking_checkin(request, booking_id):
     booking.actual_checkin_at = timezone.now()
     booking.status = HotelBooking.Status.CHECKEDIN
     booking.save(update_fields=["actual_checkin_at", "status", "updated_at"])
+    notify_booking_event(booking, "checkin")
     messages.success(request, f"{booking.customer_name} заселён(а) — {timezone.localtime(booking.actual_checkin_at):%d.%m %H:%M}")
     return _booking_redirect(request, booking)
 
@@ -544,6 +555,7 @@ def hotel_booking_checkout(request, booking_id):
     booking.actual_checkout_at = timezone.now()
     booking.status = HotelBooking.Status.COMPLETED
     booking.save(update_fields=["actual_checkout_at", "status", "updated_at"])
+    notify_booking_event(booking, "checkout")
     messages.success(request, f"{booking.customer_name} выселен(а) — {timezone.localtime(booking.actual_checkout_at):%d.%m %H:%M}")
     return _booking_redirect(request, booking)
 

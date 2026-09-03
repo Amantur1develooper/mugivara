@@ -734,6 +734,24 @@ function openDetail(roomId) {
     tags.style.display = 'none';
   }
 
+  // кнопки брони — только если номер свободен
+  const busy = !cur.available;
+  $('dmBtnBook').style.display    = busy ? 'none' : '';
+  $('dmBtnCheckin').style.display = busy ? 'none' : '';
+  let note = document.getElementById('dmBusyNote');
+  if (busy) {
+    if (!note) {
+      note = document.createElement('div');
+      note.id = 'dmBusyNote';
+      note.style.cssText = 'margin-top:18px;padding:12px 14px;border-radius:12px;background:#FEF2F2;color:#B91C1C;font-size:13px;font-weight:600;text-align:center';
+      $('dmBtnBook').parentElement.appendChild(note);
+    }
+    note.textContent = cur.busy_until ? ('Номер занят до ' + cur.busy_until) : 'Номер сейчас занят';
+    note.style.display = '';
+  } else if (note) {
+    note.style.display = 'none';
+  }
+
   $('detailOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
@@ -750,8 +768,22 @@ $('dmBtnBook').onclick    = () => openBook('booking');
 $('dmBtnCheckin').onclick = () => openBook('checkin');
 
 /* ─── BOOKING MODAL ─── */
+function bookingConflict(checkinISO, nights) {
+  if (!cur || !cur.busy_ranges || !checkinISO) return false;
+  const inD = new Date(checkinISO);
+  const outD = new Date(inD); outD.setDate(outD.getDate() + Math.max(1, nights));
+  return cur.busy_ranges.some(([bs, be]) => {
+    const s = new Date(bs), e = new Date(be);
+    return s < outD && e > inD;
+  });
+}
+
 function openBook(type) {
   if (!cur) return;
+  if (!cur.available) {
+    alert(cur.busy_until ? ('Этот номер занят до ' + cur.busy_until) : 'Этот номер сейчас занят');
+    return;
+  }
   closeDetail();
 
   const isCheckin = type === 'checkin';
@@ -828,11 +860,32 @@ function updateTotal() {
     lbl += ` · ${perNight.toLocaleString()} сом/ночь`;
   }
   $('bmNightsLbl').textContent = lbl;
+
+  // предупреждение о пересечении с существующей бронью
+  const conflict = bookingConflict($('bmCheckin').value, n);
+  let warn = document.getElementById('bmConflict');
+  if (!warn) {
+    warn = document.createElement('div');
+    warn.id = 'bmConflict';
+    warn.style.cssText = 'margin-top:10px;padding:10px 12px;border-radius:10px;background:#FEF2F2;color:#B91C1C;font-size:12px;font-weight:600';
+    $('bmNightsLbl').parentElement.appendChild(warn);
+  }
+  warn.style.display = conflict ? '' : 'none';
+  warn.textContent = 'На эти даты номер уже забронирован — выберите другие.';
+  $('bmSubmit').disabled = conflict;
+  $('bmSubmit').style.opacity = conflict ? '.5' : '';
 }
 
 $('bmNights').addEventListener('input', updateTotal);
 $('bmGuests').addEventListener('input', updateTotal);
 $('bmRooms').addEventListener('input', updateTotal);
+$('bmCheckin').addEventListener('input', updateTotal);
+$('bmForm').addEventListener('submit', e => {
+  if (bookingConflict($('bmCheckin').value, Math.max(1, parseInt($('bmNights').value) || 1))) {
+    e.preventDefault();
+    alert('На выбранные даты номер уже забронирован. Выберите другие даты.');
+  }
+});
 
 /* ─── phone prefix ─── */
 (function () {

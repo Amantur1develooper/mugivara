@@ -38,6 +38,10 @@ class Hotel(TimeStampedModel):
     def __str__(self):
         return self.name_ru
 
+    def save(self, *args, **kwargs):
+        _compress_image_fields(self, {"logo": ((512, 512), 85)})
+        super().save(*args, **kwargs)
+
 
 class HotelBranch(TimeStampedModel):
     hotel = models.ForeignKey(Hotel, on_delete=models.CASCADE, related_name="branches")
@@ -61,6 +65,10 @@ class HotelBranch(TimeStampedModel):
 
     def __str__(self):
         return f"{self.hotel.name_ru} — {self.name_ru}"
+
+    def save(self, *args, **kwargs):
+        _compress_image_fields(self, {"cover_photo": ((1600, 900), 82)})
+        super().save(*args, **kwargs)
 
 
 class RoomCategory(TimeStampedModel):
@@ -91,6 +99,17 @@ def _compress_photo(field, max_size=(1200, 900), quality=85):
         return name, ContentFile(buf.read())
     except Exception:
         return None
+
+
+def _compress_image_fields(instance, specs):
+    """Сжимает новые загрузки в WebP. specs: {"поле": (max_size, quality)}."""
+    for fname, (max_size, quality) in specs.items():
+        field = getattr(instance, fname, None)
+        if field and not getattr(field, "_committed", True):
+            result = _compress_photo(field, max_size=max_size, quality=quality)
+            if result:
+                name, content = result
+                field.save(os.path.basename(name), content, save=False)
 
 
 class Room(TimeStampedModel):
@@ -138,14 +157,11 @@ class Room(TimeStampedModel):
     def save(self, *args, **kwargs):
         if not self.public_code:
             self.public_code = self._gen_code()
-        for fname in ("photo1", "photo2", "photo3"):
-            field = getattr(self, fname)
-            # Only compress new uploads (not already-saved files)
-            if field and not getattr(field, "_committed", True):
-                result = _compress_photo(field)
-                if result:
-                    name, content = result
-                    field.save(os.path.basename(name), content, save=False)
+        _compress_image_fields(self, {
+            "photo1": ((1600, 1200), 82),
+            "photo2": ((1600, 1200), 82),
+            "photo3": ((1600, 1200), 82),
+        })
         super().save(*args, **kwargs)
 
     @staticmethod
@@ -165,6 +181,54 @@ class Room(TimeStampedModel):
     @property
     def amenities_list(self):
         return [ln.strip() for ln in self.amenities_ru.splitlines() if ln.strip()]
+
+    # ── занятость номера (шахматка ↔ публичная часть) ────────────────────────
+
+    # статусы, при которых номер считается занятым для публичной брони
+    _BLOCKING_STATUSES = ("new", "confirmed", "checkedin")
+
+    def _blocking_bookings(self):
+        """Активные брони/заселения номера (не отменённые, не завершённые), с датами."""
+        return [
+            b for b in self.bookings.all()
+            if b.status in self._BLOCKING_STATUSES and b.checkin_date and b.checkout_date
+        ]
+
+    def occupied_on(self, day):
+        """Бронь, занимающая номер на дату `day` (или None)."""
+        for b in self._blocking_bookings():
+            if b.checkin_date <= day < b.checkout_date:
+                return b
+        # физически заселён и ещё не выписан
+        for b in self.bookings.all():
+            if b.actual_checkin_at and not b.actual_checkout_at:
+                return b
+        return None
+
+    def is_free_between(self, checkin, checkout):
+        """Свободен ли номер на весь период [checkin, checkout)."""
+        if not self.is_available:
+            return False
+        for b in self._blocking_bookings():
+            if b.checkin_date < checkout and b.checkout_date > checkin:
+                return False
+        for b in self.bookings.all():
+            if b.actual_checkin_at and not b.actual_checkout_at:
+                return False
+        return True
+
+    @property
+    def public_available(self):
+        """Показывать ли номер как доступный для брони на витрине (на сегодня)."""
+        from datetime import date
+        return self.is_available and self.occupied_on(date.today()) is None
+
+    @property
+    def busy_until(self):
+        """Дата, до которой номер занят текущей бронёй (для подписи на витрине)."""
+        from datetime import date
+        b = self.occupied_on(date.today())
+        return b.checkout_date if b else None
 
 
 class HotelService(TimeStampedModel):
@@ -189,13 +253,11 @@ class HotelService(TimeStampedModel):
         return f"{self.name_ru} ({self.branch})"
 
     def save(self, *args, **kwargs):
-        for fname in ("photo1", "photo2", "photo3"):
-            field = getattr(self, fname)
-            if field and not getattr(field, "_committed", True):
-                result = _compress_photo(field)
-                if result:
-                    name, content = result
-                    field.save(os.path.basename(name), content, save=False)
+        _compress_image_fields(self, {
+            "photo1": ((1400, 1050), 82),
+            "photo2": ((1400, 1050), 82),
+            "photo3": ((1400, 1050), 82),
+        })
         super().save(*args, **kwargs)
 
     @property
