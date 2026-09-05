@@ -32,10 +32,13 @@ def _check(user, venue):
 
 
 def _view_pct(user, venue):
-    """Процент денежных сумм, который разрешено видеть этому пользователю (100 = всё).
+    """Процент билетов (завершённых сессий), которые разрешено видеть этому
+    пользователю (100 = все). Цена каждого показанного билета — всегда полная,
+    без урезания; урезается только КОЛИЧЕСТВО видимых билетов.
 
-    Гоночные аккаунты (SimRacingMembership.racing_account) видят только часть сумм
-    в отчёте и истории. Staff/superuser всегда видят 100%.
+    Гоночные аккаунты (SimRacingMembership.racing_account) видят только часть
+    завершённых сессий — самые дешёвые — в истории и в отчётах.
+    Staff/superuser всегда видят 100%.
     """
     if user.is_staff or user.is_superuser:
         return 100
@@ -43,11 +46,24 @@ def _view_pct(user, venue):
     return m.view_pct if m else 100
 
 
-def _scale(value, pct):
-    """Масштабирует денежную сумму под view_pct, возвращает int."""
+def _cheapest_ids(qs, pct):
+    """Из queryset Session возвращает id самых ДЕШЁВЫХ pct% записей.
+    None означает «без ограничений» (pct >= 100) — вызывающий код фильтровать не должен.
+    """
     if pct >= 100:
-        return int(value or 0)
-    return int(round((value or 0) * pct / 100))
+        return None
+    ids = list(qs.order_by("price").values_list("id", flat=True))
+    n_show = round(len(ids) * pct / 100)
+    return set(ids[:n_show])
+
+
+def _visible_done_qs(qs, pct):
+    """Оставляет в queryset (уже отфильтрованном по status=DONE и нужному периоду)
+    только самые дешёвые pct% сессий. При pct>=100 возвращает qs без изменений."""
+    ids = _cheapest_ids(qs, pct)
+    if ids is None:
+        return qs
+    return qs.filter(id__in=ids)
 
 
 def _tg_send(venue, text):
@@ -76,16 +92,19 @@ def sr_home(request):
     today = date.today()
     data = []
     for v in venues:
+        pct = _view_pct(request.user, v)
         active_count = Session.objects.filter(venue=v, status=Session.Status.ACTIVE).count()
-        today_count  = Session.objects.filter(venue=v, started_at__date=today).exclude(
-            status=Session.Status.CANCELED).count()
-        today_revenue = Session.objects.filter(venue=v, started_at__date=today,
-            status=Session.Status.DONE).aggregate(s=Sum("price"))["s"] or 0
+        today_done = _visible_done_qs(
+            Session.objects.filter(venue=v, started_at__date=today, status=Session.Status.DONE),
+            pct,
+        )
+        today_count = active_count + today_done.count()
+        today_revenue = today_done.aggregate(s=Sum("price"))["s"] or 0
         data.append({
             "venue": v,
             "active_count":  active_count,
             "today_count":   today_count,
-            "today_revenue": _scale(today_revenue, _view_pct(request.user, v)),
+            "today_revenue": int(today_revenue),
         })
     return render(request, "dashboard/simracing/home.html", {"data": data})
 
@@ -257,13 +276,28 @@ def sr_sessions(request, venue_id):
     # stopped machines with no active session
     stopped = v.machines.filter(is_active=False)
 
-    history = (
+    pct = _view_pct(request.user, v)
+
+    history_qs = (
         Session.objects
         .filter(venue=v)
         .exclude(status=Session.Status.ACTIVE)
         .select_related("machine", "session_type")
-        .order_by("-started_at")[:60]
     )
+    if pct >= 100:
+        history = list(history_qs.order_by("-started_at")[:60])
+    else:
+        # гоночный аккаунт: из недавних завершённых сессий показываем только
+        # самые дешёвые pct% билетов; отменённые (без выручки) видны всегда
+        recent_done_ids = list(
+            history_qs.filter(status=Session.Status.DONE)
+            .order_by("-started_at").values_list("id", flat=True)[:200]
+        )
+        visible_done_ids = _cheapest_ids(Session.objects.filter(id__in=recent_done_ids), pct) or set()
+        history = list(
+            history_qs.filter(Q(status=Session.Status.CANCELED) | Q(id__in=visible_done_ids))
+            .order_by("-started_at")[:60]
+        )
 
     # session types for starting from dashboard
     session_types = (
@@ -299,13 +333,11 @@ def sr_sessions(request, venue_id):
     except SimRacingPrintConfig.DoesNotExist:
         print_cfg = None
 
-    # ── ограниченный показ сумм для гоночных аккаунтов ──
-    pct = _view_pct(request.user, v)
-
+    # ── гоночным аккаунтам показываем не все билеты, но цена — всегда полная ──
     def _decorate(sess):
-        sess.disp_price = _scale(sess.price, pct)
-        sess.disp_base_price = _scale(sess.base_price, pct)
-        sess.disp_discount_amount = _scale(sess.discount_amount, pct)
+        sess.disp_price = int(sess.price or 0)
+        sess.disp_base_price = int(sess.base_price or 0)
+        sess.disp_discount_amount = int(sess.discount_amount or 0)
         return sess
 
     for s in history:
@@ -314,7 +346,7 @@ def sr_sessions(request, venue_id):
         if s:
             _decorate(s)
     for a in appointments:
-        a.disp_total_price = _scale(a.total_price, pct)
+        a.disp_total_price = int(a.total_price or 0)
 
     return render(request, "dashboard/simracing/sessions.html", {
         "venue": v,
@@ -561,11 +593,14 @@ def sr_report(request, venue_id):
         status=Session.Status.DONE,
     )
 
+    # ── гоночному аккаунту показываем не все билеты за период, а самые дешёвые
+    # pct% — но с их полной, неурезанной ценой ──
     pct = _view_pct(request.user, v)
+    qs = _visible_done_qs(qs, pct)
 
     agg = qs.aggregate(s=Sum("price"), b=Sum("base_price"))
-    total_revenue = _scale(agg["s"] or 0, pct)
-    total_discount = _scale((agg["b"] or 0) - (agg["s"] or 0), pct)
+    total_revenue = int(agg["s"] or 0)
+    total_discount = int((agg["b"] or 0) - (agg["s"] or 0))
     total_sessions = qs.count()
     discounted_count = qs.exclude(discount_type=Session.Discount.NONE).count()
 
@@ -575,7 +610,7 @@ def sr_report(request, venue_id):
         by_type[mtype] = {
             "name": mname,
             "count": type_qs.count(),
-            "revenue": _scale(type_qs.aggregate(s=Sum("price"))["s"] or 0, pct),
+            "revenue": int(type_qs.aggregate(s=Sum("price"))["s"] or 0),
         }
 
     by_machine = []
@@ -584,7 +619,7 @@ def sr_report(request, venue_id):
         by_machine.append({
             "machine": m,
             "count": mqs.count(),
-            "revenue": _scale(mqs.aggregate(s=Sum("price"))["s"] or 0, pct),
+            "revenue": int(mqs.aggregate(s=Sum("price"))["s"] or 0),
         })
 
     return render(request, "dashboard/simracing/report.html", {
@@ -633,18 +668,20 @@ def sr_bookkeeping(request, venue_id):
         started_at__date__gte=date_from,
         started_at__date__lte=date_to,
     )
-    done = in_range.filter(status=Session.Status.DONE)
+    # гоночному аккаунту — только самые дешёвые pct% завершённых сессий за период,
+    # но с полной ценой каждой из них
+    done = _visible_done_qs(in_range.filter(status=Session.Status.DONE), pct)
     canceled = in_range.filter(status=Session.Status.CANCELED)
 
     d_agg = done.aggregate(s=Sum("price"), b=Sum("base_price"))
-    gross      = _scale(d_agg["s"] or 0, pct)
-    by_price   = _scale(d_agg["b"] or 0, pct)
-    discounts  = _scale((d_agg["b"] or 0) - (d_agg["s"] or 0), pct)
+    gross      = int(d_agg["s"] or 0)
+    by_price   = int(d_agg["b"] or 0)
+    discounts  = int((d_agg["b"] or 0) - (d_agg["s"] or 0))
     sessions_n = done.count()
     avg_check  = int(round(gross / sessions_n)) if sessions_n else 0
 
     canceled_n   = canceled.count()
-    canceled_sum = _scale(canceled.aggregate(s=Sum("price"))["s"] or 0, pct)
+    canceled_sum = int(canceled.aggregate(s=Sum("price"))["s"] or 0)
 
     # по дням
     by_day = []
@@ -658,8 +695,8 @@ def sr_bookkeeping(request, venue_id):
         by_day.append({
             "date": r["d"],
             "count": r["cnt"],
-            "revenue": _scale(r["rev"] or 0, pct),
-            "discount": _scale((r["base"] or 0) - (r["rev"] or 0), pct),
+            "revenue": int(r["rev"] or 0),
+            "discount": int((r["base"] or 0) - (r["rev"] or 0)),
         })
 
     # касса / онлайн
@@ -669,7 +706,7 @@ def sr_bookkeeping(request, venue_id):
         by_source.append({
             "name": sname,
             "count": s_agg["c"] or 0,
-            "revenue": _scale(s_agg["s"] or 0, pct),
+            "revenue": int(s_agg["s"] or 0),
         })
 
     # по типу машины
@@ -680,7 +717,7 @@ def sr_bookkeeping(request, venue_id):
             by_type.append({
                 "name": mname,
                 "count": t_agg["c"],
-                "revenue": _scale(t_agg["s"] or 0, pct),
+                "revenue": int(t_agg["s"] or 0),
             })
 
     # по машинам
@@ -691,7 +728,7 @@ def sr_bookkeeping(request, venue_id):
             by_machine.append({
                 "name": m.name,
                 "count": m_agg["c"],
-                "revenue": _scale(m_agg["s"] or 0, pct),
+                "revenue": int(m_agg["s"] or 0),
             })
 
     ctx = {

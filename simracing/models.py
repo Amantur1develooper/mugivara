@@ -71,10 +71,12 @@ class SimRacingMembership(models.Model):
 
     racing_account  = models.BooleanField(
         "Гоночный аккаунт", default=False,
-        help_text="Ограниченный показ: суммы в отчёте и истории отображаются частично")
+        help_text="Ограниченный показ: в истории и отчёте видна только часть билетов "
+                   "(самые дешёвые), но их цена показывается полностью — без урезания.")
     racing_view_pct = models.PositiveSmallIntegerField(
-        "Показывать % от сумм", default=40,
-        help_text="Только для гоночного аккаунта. 40 = показывать 40% от реальных сумм")
+        "Показывать % билетов", default=40,
+        help_text="Только для гоночного аккаунта. 40 = показывать 4 из 10 самых дешёвых "
+                   "завершённых сессий, остальные скрыты целиком.")
 
     class Meta:
         verbose_name = "Доступ к симрейсингу"
@@ -86,7 +88,7 @@ class SimRacingMembership(models.Model):
 
     @property
     def view_pct(self):
-        """Процент от денежных сумм, который видит этот аккаунт (100 = всё)."""
+        """Процент билетов (сессий), которые видит этот аккаунт (100 = все)."""
         if self.racing_account:
             return max(0, min(100, self.racing_view_pct))
         return 100
