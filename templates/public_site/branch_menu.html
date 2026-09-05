@@ -264,6 +264,23 @@
     border-color: rgba(0,0,0,0.1);
   }
 
+  /* ── карточка со скидкой — ярче, чтобы бросалась в глаза ── */
+  .dish-card.on-promo {
+    border: 2px solid var(--accent);
+    box-shadow: 0 6px 24px rgba(255,77,28,.22), 0 0 0 4px rgba(255,77,28,.06);
+    animation: promoGlow 2.6s ease-in-out infinite;
+  }
+  .dish-card.on-promo:hover {
+    box-shadow: 0 20px 52px rgba(255,77,28,.32), 0 0 0 4px rgba(255,77,28,.1);
+  }
+  @keyframes promoGlow {
+    0%, 100% { box-shadow: 0 6px 24px rgba(255,77,28,.22), 0 0 0 4px rgba(255,77,28,.06); }
+    50%      { box-shadow: 0 6px 28px rgba(255,77,28,.4),  0 0 0 6px rgba(255,77,28,.12); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dish-card.on-promo { animation: none; }
+  }
+
   /* ── ФОТО БЛЮДА ── */
   .dish-photo {
     position: relative; height: 170px;
@@ -304,6 +321,31 @@
     backdrop-filter: blur(6px); letter-spacing: .2px;
     display: flex; align-items: center; gap: 4px;
   }
+  /* бейдж акции/скидки — угол карточки */
+  .dish-promo-badge {
+    position: absolute; top: 10px; right: 10px; z-index: 2;
+    padding: 5px 13px; border-radius: 100px;
+    font-size: 11.5px; font-weight: 900; letter-spacing: .3px; text-transform: uppercase;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white; box-shadow: 0 4px 14px rgba(255,77,28,.55);
+    border: 1.5px solid rgba(255,255,255,.35);
+    display: flex; align-items: center; gap: 4px;
+    overflow: hidden;
+  }
+  .dish-promo-badge::after {
+    content: '';
+    position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+    background: linear-gradient(115deg, transparent, rgba(255,255,255,.55), transparent);
+    animation: promoShine 2.6s ease-in-out infinite;
+  }
+  @keyframes promoShine {
+    0%   { left: -60%; }
+    55%  { left: 130%; }
+    100% { left: 130%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dish-promo-badge::after { animation: none; display: none; }
+  }
   /* рейтинг звёздами */
   .dish-rating {
     display: inline-flex; align-items: center; gap: 4px;
@@ -318,6 +360,10 @@
     font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 800;
     background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.15);
     backdrop-filter: blur(8px); color: white; letter-spacing: -0.3px;
+  }
+  .dish-price-badge.on-promo {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-color: transparent;
   }
 
   /* ── ТЕЛО КАРТОЧКИ ── */
@@ -355,6 +401,17 @@
     font-family: 'Unbounded', sans-serif; font-weight: 800;
     font-size: 16px; letter-spacing: -0.5px; color: var(--text);
     line-height: 1;
+  }
+  .dish-price.on-promo { color: var(--accent); font-size: 17px; }
+  .dish-price-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .dish-price-old {
+    font-size: 12px; font-weight: 600; color: var(--muted);
+    text-decoration: line-through; text-decoration-thickness: 1.5px;
+  }
+  .dish-discount-chip {
+    font-size: 10px; font-weight: 900; color: white; letter-spacing: .2px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 6px; padding: 1px 6px; line-height: 1.5;
   }
   .dish-price-sub { font-size: 10px; font-weight: 500; color: var(--muted); margin-top: 2px; }
 
@@ -718,10 +775,11 @@
             {% with bi=row.branch_item dish=row.branch_item.item %}
             {% t dish "name" as dish_name %}
             {% t dish "description" as dish_desc %}
-            <article class="dish-card" data-bi-id="{{ bi.id }}"
+            <article class="dish-card{% if bi.is_on_promo %} on-promo{% endif %}" data-bi-id="{{ bi.id }}"
               data-dish-name="{{ dish_name }}"
               data-dish-desc="{{ dish_desc }}"
               data-dish-price="{{ bi.price|floatformat:'0' }}"
+              data-dish-old-price="{% if bi.is_on_promo %}{{ bi.old_price|floatformat:'0' }}{% endif %}"
               data-dish-photo="{% if dish.photo %}{{ dish.photo.url }}{% endif %}"
               data-dish-hot="{% if dish.order_count >= 10 %}{{ dish.order_count }}{% endif %}"
               data-dish-calories="{{ dish.calories|default:'' }}"
@@ -743,7 +801,10 @@
                 {% if dish.order_count >= 10 %}
                 <div class="dish-hot-badge">🔥 {{ dish.order_count }}</div>
                 {% endif %}
-                <div class="dish-price-badge">{{ bi.price|floatformat:"0" }} сом</div>
+                {% if bi.is_on_promo %}
+                <div class="dish-promo-badge">🏷️ {{ bi.promo_badge_text }}{% if bi.discount_pct %} −{{ bi.discount_pct }}%{% endif %}</div>
+                {% endif %}
+                <div class="dish-price-badge{% if bi.is_on_promo %} on-promo{% endif %}">{{ bi.price|floatformat:"0" }} сом</div>
               </div>
 
               {# BODY #}
@@ -765,7 +826,15 @@
 
                 <div class="dish-footer">
                   <div>
+                    {% if bi.is_on_promo %}
+                    <div class="dish-price-row">
+                      <div class="dish-price on-promo">{{ bi.price|floatformat:"0" }} <span style="font-size:11px;font-weight:500;">сом</span></div>
+                      <div class="dish-price-old">{{ bi.old_price|floatformat:"0" }} сом</div>
+                      {% if bi.discount_pct %}<span class="dish-discount-chip">−{{ bi.discount_pct }}%</span>{% endif %}
+                    </div>
+                    {% else %}
                     <div class="dish-price">{{ bi.price|floatformat:"0" }} <span style="font-size:11px;font-weight:500;color:var(--muted);">сом</span></div>
+                    {% endif %}
                   </div>
 
                   {# форма добавления + кнопка #}
@@ -1939,6 +2008,12 @@ function _showErr(msg) {
   font-family: 'Unbounded', sans-serif;
   font-size: 22px; font-weight: 900;
   color: var(--accent, #ff4d1c);
+  display: flex; align-items: baseline; gap: 8px;
+}
+.dm-price-old {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px; font-weight: 600; color: var(--muted);
+  text-decoration: line-through;
 }
 .dm-add-btn {
   width: auto !important; padding: 0 32px !important;
@@ -2720,7 +2795,9 @@ document.addEventListener('click', e => {
 
     dmName.textContent  = card.dataset.dishName  || '';
     dmDesc.textContent  = card.dataset.dishDesc  || '';
-    dmPrice.textContent = (card.dataset.dishPrice || '0') + ' сом';
+    const oldPrice = card.dataset.dishOldPrice;
+    dmPrice.innerHTML = (oldPrice ? `<span class="dm-price-old">${oldPrice} сом</span>` : '')
+      + `<span>${card.dataset.dishPrice || '0'} сом</span>`;
 
     const macros = [
       ['К', card.dataset.dishCalories],

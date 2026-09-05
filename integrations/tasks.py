@@ -106,6 +106,7 @@ def _order_text(order: Order, title_override: str = None) -> str:
     # ── СОСТАВ ЗАКАЗА ─────────────────────────────────────────────────────────
     items = list(order.items.select_related("item").all())
     cx_items = list(order.constructor_items.all())
+    promo_savings = Decimal("0")
     if items or cx_items:
         lines.append("")
         lines.append("📋 Состав заказа:")
@@ -114,9 +115,13 @@ def _order_text(order: Order, title_override: str = None) -> str:
             qty = getattr(it, "qty", 1)
             lt = getattr(it, "line_total", None)
             if lt is not None:
-                lines.append(f"  • {name} × {qty}  —  {_money(lt)}")
+                line = f"  • {name} × {qty}  —  {_money(lt)}"
             else:
-                lines.append(f"  • {name} × {qty}")
+                line = f"  • {name} × {qty}"
+            if getattr(it, "is_on_promo", False):
+                line += f"  🏷️ (было {_money(it.old_price_snapshot * qty)})"
+                promo_savings += it.discount_amount
+            lines.append(line)
         for coi in cx_items:
             cx_name = coi.constructor_name_snapshot or "Конструктор"
             lt = getattr(coi, "line_total", None)
@@ -140,6 +145,8 @@ def _order_text(order: Order, title_override: str = None) -> str:
             items_total = Decimal(str(order.total_amount)) - Decimal(str(delivery_fee))
             lines.append(f"🛒 Блюда: {_money(items_total)}")
             lines.append(f"🚚 Доставка: {_money(delivery_fee)}")
+        if promo_savings > 0:
+            lines.append(f"🏷️ Скидка по акции: −{_money(promo_savings)}")
         lines.append(f"💰 ИТОГО: {_money(order.total_amount)}")
 
     created = timezone.localtime(order.created_at).strftime("%d.%m.%Y %H:%M")
@@ -165,7 +172,10 @@ def _table_order_text(order: Order) -> str:
         lines.append("")
         for it in items:
             name = getattr(it.item, "name_ru", None) or str(it.item)
-            lines.append(f"• {name}  ×{it.qty}")
+            line = f"• {name}  ×{it.qty}"
+            if getattr(it, "is_on_promo", False):
+                line += "  🏷️ акция"
+            lines.append(line)
         for coi in cx_items:
             cx_name = coi.constructor_name_snapshot or "Собери сам"
             entry = f"• 🧩 {cx_name}  ×{coi.qty}"

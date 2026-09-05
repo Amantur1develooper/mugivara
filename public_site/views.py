@@ -868,6 +868,7 @@ def checkout(request, branch_id: int):
                 item=bi.item,
                 qty=qty,
                 price_snapshot=bi.price,
+                old_price_snapshot=bi.old_price if bi.is_on_promo else None,
                 line_total=line_total,
             )
             item_name = getattr(bi.item, "name_ru", None) or str(bi.item)

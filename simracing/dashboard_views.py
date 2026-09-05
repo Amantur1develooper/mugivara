@@ -1,6 +1,6 @@
 import logging
 from datetime import date, timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Count, Q
@@ -29,6 +29,25 @@ def _check(user, venue):
     if user.is_staff or user.is_superuser:
         return True
     return SimRacingMembership.objects.filter(user=user, venue=venue).exists()
+
+
+def _view_pct(user, venue):
+    """Процент денежных сумм, который разрешено видеть этому пользователю (100 = всё).
+
+    Гоночные аккаунты (SimRacingMembership.racing_account) видят только часть сумм
+    в отчёте и истории. Staff/superuser всегда видят 100%.
+    """
+    if user.is_staff or user.is_superuser:
+        return 100
+    m = SimRacingMembership.objects.filter(user=user, venue=venue).first()
+    return m.view_pct if m else 100
+
+
+def _scale(value, pct):
+    """Масштабирует денежную сумму под view_pct, возвращает int."""
+    if pct >= 100:
+        return int(value or 0)
+    return int(round((value or 0) * pct / 100))
 
 
 def _tg_send(venue, text):
@@ -66,7 +85,7 @@ def sr_home(request):
             "venue": v,
             "active_count":  active_count,
             "today_count":   today_count,
-            "today_revenue": today_revenue,
+            "today_revenue": _scale(today_revenue, _view_pct(request.user, v)),
         })
     return render(request, "dashboard/simracing/home.html", {"data": data})
 
@@ -280,6 +299,23 @@ def sr_sessions(request, venue_id):
     except SimRacingPrintConfig.DoesNotExist:
         print_cfg = None
 
+    # ── ограниченный показ сумм для гоночных аккаунтов ──
+    pct = _view_pct(request.user, v)
+
+    def _decorate(sess):
+        sess.disp_price = _scale(sess.price, pct)
+        sess.disp_base_price = _scale(sess.base_price, pct)
+        sess.disp_discount_amount = _scale(sess.discount_amount, pct)
+        return sess
+
+    for s in history:
+        _decorate(s)
+    for _m, s in live:
+        if s:
+            _decorate(s)
+    for a in appointments:
+        a.disp_total_price = _scale(a.total_price, pct)
+
     return render(request, "dashboard/simracing/sessions.html", {
         "venue": v,
         "live": live,
@@ -306,25 +342,51 @@ def sr_session_start(request, venue_id):
     customer_name  = (request.POST.get("customer_name") or "").strip()
     customer_phone = (request.POST.get("customer_phone") or "").strip()
 
+    discount_type   = request.POST.get("discount_type", Session.Discount.NONE)
+    if discount_type not in Session.Discount.values:
+        discount_type = Session.Discount.NONE
+    try:
+        discount_value = Decimal(request.POST.get("discount_value") or "0")
+    except (InvalidOperation, TypeError):
+        discount_value = Decimal(0)
+    if discount_value < 0:
+        discount_value = Decimal(0)
+    discount_reason = (request.POST.get("discount_reason") or "").strip()[:200]
+
     machine = get_object_or_404(Machine, id=machine_id, venue=v, is_active=True)
     st      = get_object_or_404(SessionType, id=st_id, venue=v, is_active=True)
 
     if Session.objects.filter(machine=machine, status=Session.Status.ACTIVE).exists():
         return JsonResponse({"ok": False, "error": "Машина уже занята"})
 
+    final_price = Session.apply_discount(st.price, discount_type, discount_value)
+
     session = Session.objects.create(
         venue=v, machine=machine, session_type=st,
         customer_name=customer_name, customer_phone=customer_phone,
-        duration_minutes=st.duration_minutes, price=st.price,
+        duration_minutes=st.duration_minutes,
+        base_price=st.price, price=final_price,
+        discount_type=discount_type, discount_value=discount_value,
+        discount_reason=discount_reason,
         source="offline",
     )
 
-    _tg_send(
-        v,
+    msg = (
         f"🏁 <b>Сессия запущена</b> #{session.id} (касса)\n"
         f"Машина: {machine.name}\n"
-        f"Длительность: {st.duration_minutes} мин — {int(st.price)} сом"
+        f"Длительность: {st.duration_minutes} мин\n"
     )
+    if session.discount_type != Session.Discount.NONE and session.discount_amount:
+        msg += (
+            f"Цена: {int(st.price)} сом\n"
+            f"Скидка {session.discount_label}: −{int(session.discount_amount)} сом"
+        )
+        if discount_reason:
+            msg += f" ({discount_reason})"
+        msg += f"\n💰 К оплате: <b>{int(final_price)} сом</b>"
+    else:
+        msg += f"💰 К оплате: <b>{int(final_price)} сом</b>"
+    _tg_send(v, msg)
 
     # Print receipt on session start (client pays upfront)
     try:
@@ -499,8 +561,13 @@ def sr_report(request, venue_id):
         status=Session.Status.DONE,
     )
 
-    total_revenue = qs.aggregate(s=Sum("price"))["s"] or 0
+    pct = _view_pct(request.user, v)
+
+    agg = qs.aggregate(s=Sum("price"), b=Sum("base_price"))
+    total_revenue = _scale(agg["s"] or 0, pct)
+    total_discount = _scale((agg["b"] or 0) - (agg["s"] or 0), pct)
     total_sessions = qs.count()
+    discounted_count = qs.exclude(discount_type=Session.Discount.NONE).count()
 
     by_type = {}
     for mtype, mname in Machine.Type.choices:
@@ -508,7 +575,7 @@ def sr_report(request, venue_id):
         by_type[mtype] = {
             "name": mname,
             "count": type_qs.count(),
-            "revenue": type_qs.aggregate(s=Sum("price"))["s"] or 0,
+            "revenue": _scale(type_qs.aggregate(s=Sum("price"))["s"] or 0, pct),
         }
 
     by_machine = []
@@ -517,7 +584,7 @@ def sr_report(request, venue_id):
         by_machine.append({
             "machine": m,
             "count": mqs.count(),
-            "revenue": mqs.aggregate(s=Sum("price"))["s"] or 0,
+            "revenue": _scale(mqs.aggregate(s=Sum("price"))["s"] or 0, pct),
         })
 
     return render(request, "dashboard/simracing/report.html", {
@@ -528,6 +595,172 @@ def sr_report(request, venue_id):
         "today": today,
         "total_revenue": total_revenue,
         "total_sessions": total_sessions,
+        "total_discount": total_discount,
+        "discounted_count": discounted_count,
         "by_type": by_type,
         "by_machine": by_machine,
     })
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# BOOKKEEPING REPORT (бух. отчёт)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def sr_bookkeeping(request, venue_id):
+    from datetime import datetime as _dt
+    from django.db.models.functions import TruncDate
+
+    v = get_object_or_404(SimRacingVenue, id=venue_id)
+    if not _check(request.user, v):
+        return redirect("dashboard:sr_home")
+
+    today = date.today()
+    from_str = request.GET.get("from", str(today.replace(day=1)))
+    to_str   = request.GET.get("to",   str(today))
+    try:
+        date_from = _dt.strptime(from_str, "%Y-%m-%d").date()
+        date_to   = _dt.strptime(to_str,   "%Y-%m-%d").date()
+    except ValueError:
+        date_from, date_to = today.replace(day=1), today
+    if date_from > date_to:
+        date_from, date_to = date_to, date_from
+
+    pct = _view_pct(request.user, v)
+
+    in_range = Session.objects.filter(
+        venue=v,
+        started_at__date__gte=date_from,
+        started_at__date__lte=date_to,
+    )
+    done = in_range.filter(status=Session.Status.DONE)
+    canceled = in_range.filter(status=Session.Status.CANCELED)
+
+    d_agg = done.aggregate(s=Sum("price"), b=Sum("base_price"))
+    gross      = _scale(d_agg["s"] or 0, pct)
+    by_price   = _scale(d_agg["b"] or 0, pct)
+    discounts  = _scale((d_agg["b"] or 0) - (d_agg["s"] or 0), pct)
+    sessions_n = done.count()
+    avg_check  = int(round(gross / sessions_n)) if sessions_n else 0
+
+    canceled_n   = canceled.count()
+    canceled_sum = _scale(canceled.aggregate(s=Sum("price"))["s"] or 0, pct)
+
+    # по дням
+    by_day = []
+    day_rows = (
+        done.annotate(d=TruncDate("started_at"))
+        .values("d")
+        .annotate(cnt=Count("id"), rev=Sum("price"), base=Sum("base_price"))
+        .order_by("d")
+    )
+    for r in day_rows:
+        by_day.append({
+            "date": r["d"],
+            "count": r["cnt"],
+            "revenue": _scale(r["rev"] or 0, pct),
+            "discount": _scale((r["base"] or 0) - (r["rev"] or 0), pct),
+        })
+
+    # касса / онлайн
+    by_source = []
+    for src, sname in (("offline", "Касса"), ("online", "Онлайн")):
+        s_agg = done.filter(source=src).aggregate(c=Count("id"), s=Sum("price"))
+        by_source.append({
+            "name": sname,
+            "count": s_agg["c"] or 0,
+            "revenue": _scale(s_agg["s"] or 0, pct),
+        })
+
+    # по типу машины
+    by_type = []
+    for mtype, mname in Machine.Type.choices:
+        t_agg = done.filter(machine_type_snapshot=mtype).aggregate(c=Count("id"), s=Sum("price"))
+        if t_agg["c"]:
+            by_type.append({
+                "name": mname,
+                "count": t_agg["c"],
+                "revenue": _scale(t_agg["s"] or 0, pct),
+            })
+
+    # по машинам
+    by_machine = []
+    for m in v.machines.all():
+        m_agg = done.filter(machine=m).aggregate(c=Count("id"), s=Sum("price"))
+        if m_agg["c"]:
+            by_machine.append({
+                "name": m.name,
+                "count": m_agg["c"],
+                "revenue": _scale(m_agg["s"] or 0, pct),
+            })
+
+    ctx = {
+        "venue": v,
+        "date_from": date_from,
+        "date_to": date_to,
+        "gross": gross,
+        "by_price": by_price,
+        "discounts": discounts,
+        "sessions_n": sessions_n,
+        "avg_check": avg_check,
+        "canceled_n": canceled_n,
+        "canceled_sum": canceled_sum,
+        "by_day": by_day,
+        "by_source": by_source,
+        "by_type": by_type,
+        "by_machine": by_machine,
+    }
+
+    if request.GET.get("export") == "csv":
+        return _bookkeeping_csv(v, ctx)
+
+    return render(request, "dashboard/simracing/bookkeeping.html", ctx)
+
+
+def _bookkeeping_csv(venue, ctx):
+    import csv
+    from django.http import HttpResponse
+
+    resp = HttpResponse(content_type="text/csv; charset=utf-8")
+    fname = f"simracing_buhotchet_{venue.slug}_{ctx['date_from']}_{ctx['date_to']}.csv"
+    resp["Content-Disposition"] = f'attachment; filename="{fname}"'
+    resp.write("﻿")  # BOM для корректной кириллицы в Excel
+    w = csv.writer(resp, delimiter=";")
+
+    w.writerow([f"Бухгалтерский отчёт — {venue.name}"])
+    w.writerow([f"Период: {ctx['date_from']} — {ctx['date_to']}"])
+    w.writerow([])
+    w.writerow(["ИТОГО"])
+    w.writerow(["Выручка (к оплате), сом", ctx["gross"]])
+    w.writerow(["Выручка по прайсу, сом", ctx["by_price"]])
+    w.writerow(["Скидки предоставлено, сом", ctx["discounts"]])
+    w.writerow(["Завершённых сессий", ctx["sessions_n"]])
+    w.writerow(["Средний чек, сом", ctx["avg_check"]])
+    w.writerow(["Отменённых сессий", ctx["canceled_n"]])
+    w.writerow(["Сумма отменённых (по прайсу к оплате), сом", ctx["canceled_sum"]])
+    w.writerow([])
+
+    w.writerow(["ПО ДНЯМ"])
+    w.writerow(["Дата", "Сессий", "Выручка, сом", "Скидки, сом"])
+    for r in ctx["by_day"]:
+        w.writerow([r["date"], r["count"], r["revenue"], r["discount"]])
+    w.writerow([])
+
+    w.writerow(["КАССА / ОНЛАЙН"])
+    w.writerow(["Канал", "Сессий", "Выручка, сом"])
+    for r in ctx["by_source"]:
+        w.writerow([r["name"], r["count"], r["revenue"]])
+    w.writerow([])
+
+    w.writerow(["ПО ТИПУ МАШИНЫ"])
+    w.writerow(["Тип", "Сессий", "Выручка, сом"])
+    for r in ctx["by_type"]:
+        w.writerow([r["name"], r["count"], r["revenue"]])
+    w.writerow([])
+
+    w.writerow(["ПО МАШИНАМ"])
+    w.writerow(["Машина", "Сессий", "Выручка, сом"])
+    for r in ctx["by_machine"]:
+        w.writerow([r["name"], r["count"], r["revenue"]])
+
+    return resp

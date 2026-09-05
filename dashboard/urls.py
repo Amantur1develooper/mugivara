@@ -249,6 +249,7 @@ urlpatterns = [
     path("sr/session/<int:session_id>/close/",               srv.sr_session_close,       name="sr_session_close"),
     path("sr/session/<int:session_id>/cancel/",              srv.sr_session_cancel,      name="sr_session_cancel"),
     path("sr/venue/<int:venue_id>/report/",                  srv.sr_report,              name="sr_report"),
+    path("sr/venue/<int:venue_id>/bookkeeping/",             srv.sr_bookkeeping,         name="sr_bookkeeping"),
     path("sr/appt/<int:appt_id>/confirm/",                   srv.sr_appt_confirm,        name="sr_appt_confirm"),
     path("sr/appt/<int:appt_id>/cancel/",                    srv.sr_appt_cancel,         name="sr_appt_cancel"),
     path("sr/venue/<int:venue_id>/print/save/",              srv.sr_print_save,          name="sr_print_save"),

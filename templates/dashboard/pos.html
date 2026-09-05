@@ -112,6 +112,10 @@
   transform: translateY(-1px);
 }
 .pos-item:active { transform: scale(.97); }
+.pos-item.on-promo {
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 3px rgba(255,77,28,.08);
+}
 .pos-item-photo {
   width: 100%;
   height: 90px;
@@ -123,11 +127,19 @@
   justify-content: center;
   font-size: 28px;
   flex-shrink: 0;
+  position: relative;
 }
 .pos-item-photo img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+.pos-item-promo-badge {
+  position: absolute; top: 4px; right: 4px; z-index: 2;
+  padding: 2px 7px; border-radius: 100px;
+  font-size: 9px; font-weight: 900; letter-spacing: .2px; text-transform: uppercase;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: white; box-shadow: 0 2px 8px rgba(255,77,28,.5);
 }
 .pos-item-name {
   font-size: 12px;
@@ -135,10 +147,17 @@
   color: var(--text);
   line-height: 1.3;
 }
+.pos-item-price-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .pos-item-price {
   font-size: 13px;
   font-weight: 900;
   color: var(--accent);
+}
+.pos-item-price-old {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: line-through;
 }
 
 /* ── RIGHT: CART ── */
@@ -845,17 +864,21 @@
       {% for bci in bc.items_in_category.all %}
       {% with bi=bci.branch_item item=bci.branch_item.item %}
       {% if bi.is_available %}
-      <div class="pos-item" data-cat="{{ bc.id }}"
+      <div class="pos-item{% if bi.is_on_promo %} on-promo{% endif %}" data-cat="{{ bc.id }}"
            onclick="addToCart({{ bi.id }}, '{{ item.name_ru|escapejs }}', {{ bi.price|floatformat:0 }})"
            title="{{ item.name_ru }}">
         <div class="pos-item-photo">
           {% if item.photo %}
             <img src="{{ item.photo.url }}" alt="{{ item.name_ru }}" loading="lazy">
           {% else %}🍽️{% endif %}
+          {% if bi.is_on_promo %}<div class="pos-item-promo-badge">🏷️ {{ bi.promo_badge_text }}</div>{% endif %}
         </div>
         <div class="pos-item-name">{{ item.name_ru }}</div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
-          <div class="pos-item-price">{{ bi.price|floatformat:0 }} сом</div>
+          <div class="pos-item-price-row">
+            <div class="pos-item-price">{{ bi.price|floatformat:0 }} сом</div>
+            {% if bi.is_on_promo %}<div class="pos-item-price-old">{{ bi.old_price|floatformat:0 }}</div>{% endif %}
+          </div>
           {% if bi.stock is not None %}
           <div style="font-size:10px;font-weight:700;color:{% if bi.stock <= 3 %}#ff9500{% else %}var(--teal){% endif %};background:{% if bi.stock <= 3 %}rgba(255,149,0,.12){% else %}rgba(0,184,150,.10){% endif %};padding:2px 6px;border-radius:6px">{{ bi.stock }} шт</div>
           {% endif %}

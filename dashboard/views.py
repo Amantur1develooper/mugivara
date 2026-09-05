@@ -640,6 +640,17 @@ def item_edit(request, branch_item_id):
             bi.price = Decimal(request.POST.get("price") or "0")
         except InvalidOperation:
             pass
+
+        old_price_raw = (request.POST.get("old_price") or "").strip()
+        if old_price_raw:
+            try:
+                bi.old_price = Decimal(old_price_raw)
+            except InvalidOperation:
+                pass
+        else:
+            bi.old_price = None
+        bi.promo_label = request.POST.get("promo_label", "").strip()[:20]
+
         bi.is_available = request.POST.get("is_available") == "on"
 
         photo = request.FILES.get("photo")
@@ -647,7 +658,7 @@ def item_edit(request, branch_item_id):
             item.photo = photo
 
         item.save()
-        bi.save(update_fields=["price", "is_available", "updated_at"])
+        bi.save(update_fields=["price", "old_price", "promo_label", "is_available", "updated_at"])
 
         # Update category assignment
         new_cat_id = request.POST.get("branch_category_id", "").strip()
@@ -1744,7 +1755,9 @@ def pos_order_create(request, branch_id):
             for pit in prepared_items:
                 oi = OrderItem.objects.create(
                     order=order, item=pit["bi"].item,
-                    qty=pit["qty"], price_snapshot=pit["bi"].price, line_total=pit["line"],
+                    qty=pit["qty"], price_snapshot=pit["bi"].price,
+                    old_price_snapshot=pit["bi"].old_price if pit["bi"].is_on_promo else None,
+                    line_total=pit["line"],
                 )
                 new_oi_ids.append(oi.id)
                 bi = pit["bi"]
@@ -1769,7 +1782,9 @@ def pos_order_create(request, branch_id):
             for pit in prepared_items:
                 OrderItem.objects.create(
                     order=order, item=pit["bi"].item,
-                    qty=pit["qty"], price_snapshot=pit["bi"].price, line_total=pit["line"],
+                    qty=pit["qty"], price_snapshot=pit["bi"].price,
+                    old_price_snapshot=pit["bi"].old_price if pit["bi"].is_on_promo else None,
+                    line_total=pit["line"],
                 )
                 bi = pit["bi"]
                 if bi.stock is not None:
@@ -2175,6 +2190,19 @@ def pos_report(request, branch_id):
     cancelled_count = cancelled.count()
     cancelled_sum   = _revenue(cancelled)
 
+    # ── Скидки по акциям (BranchItem.old_price на момент заказа) ──
+    from django.db.models import ExpressionWrapper as _EW, F as _F, DecimalField as _DecF
+    promo_lines = (
+        _OI.objects
+        .filter(order__in=closed, old_price_snapshot__isnull=False, old_price_snapshot__gt=_F("price_snapshot"))
+        .annotate(discount_line=_EW(
+            (_F("old_price_snapshot") - _F("price_snapshot")) * _F("qty"),
+            output_field=_DecF(max_digits=10, decimal_places=2),
+        ))
+    )
+    promo_discount_sum   = promo_lines.aggregate(s=_Sum("discount_line"))["s"] or Decimal("0")
+    promo_items_count    = promo_lines.aggregate(s=_Sum("qty"))["s"] or 0
+
     # Сумма доставки по закрытым доставочным заказам
     total_delivery_fees = (
         closed.filter(type=Order.Type.DELIVERY)
@@ -2300,6 +2328,8 @@ def pos_report(request, branch_id):
         "top_items":             top_items,
         "daily":                 daily,
         "total_delivery_fees":   total_delivery_fees,
+        "promo_discount_sum":    promo_discount_sum,
+        "promo_items_count":     promo_items_count,
     })
 
 

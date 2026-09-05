@@ -69,6 +69,13 @@ class SimRacingMembership(models.Model):
                                related_name="simracing_memberships")
     venue = models.ForeignKey(SimRacingVenue, on_delete=models.CASCADE, related_name="memberships")
 
+    racing_account  = models.BooleanField(
+        "Гоночный аккаунт", default=False,
+        help_text="Ограниченный показ: суммы в отчёте и истории отображаются частично")
+    racing_view_pct = models.PositiveSmallIntegerField(
+        "Показывать % от сумм", default=40,
+        help_text="Только для гоночного аккаунта. 40 = показывать 40% от реальных сумм")
+
     class Meta:
         verbose_name = "Доступ к симрейсингу"
         verbose_name_plural = "Доступы к симрейсингу"
@@ -76,6 +83,13 @@ class SimRacingMembership(models.Model):
 
     def __str__(self):
         return f"{self.user} → {self.venue}"
+
+    @property
+    def view_pct(self):
+        """Процент от денежных сумм, который видит этот аккаунт (100 = всё)."""
+        if self.racing_account:
+            return max(0, min(100, self.racing_view_pct))
+        return 100
 
 
 class Machine(models.Model):
@@ -142,7 +156,19 @@ class Session(models.Model):
     customer_phone = models.CharField("Телефон", max_length=80, blank=True, default="")
 
     duration_minutes = models.PositiveIntegerField("Длительность (мин)")
-    price            = models.DecimalField("Цена (сом)", max_digits=8, decimal_places=0, default=0)
+    price            = models.DecimalField("Цена к оплате (сом)", max_digits=8, decimal_places=0, default=0)
+
+    class Discount(models.TextChoices):
+        NONE    = "none",    "Без скидки"
+        PERCENT = "percent", "Процент"
+        AMOUNT  = "amount",  "Сумма"
+
+    base_price      = models.DecimalField("Цена по прайсу (сом)", max_digits=8, decimal_places=0, default=0)
+    discount_type   = models.CharField("Тип скидки", max_length=10,
+                                       choices=Discount.choices, default=Discount.NONE)
+    discount_value  = models.DecimalField("Размер скидки", max_digits=8, decimal_places=0, default=0,
+                                          help_text="Проценты (0–100) или сумма в сомах")
+    discount_reason = models.CharField("Причина скидки", max_length=200, blank=True, default="")
     machine_type_snapshot = models.CharField(max_length=20, blank=True, default="")
     source           = models.CharField("Источник", max_length=10,
                                         choices=[("online","Онлайн"),("offline","Касса")],
@@ -164,6 +190,33 @@ class Session(models.Model):
         if self.machine_id and not self.machine_type_snapshot:
             self.machine_type_snapshot = self.machine.type
         super().save(*args, **kwargs)
+
+    @staticmethod
+    def apply_discount(base, dtype, value):
+        """Return the final price (Decimal) after applying a discount to `base`."""
+        base = Decimal(base or 0)
+        value = Decimal(value or 0)
+        if dtype == Session.Discount.PERCENT:
+            pct = max(Decimal(0), min(Decimal(100), value))
+            final = base * (Decimal(100) - pct) / Decimal(100)
+        elif dtype == Session.Discount.AMOUNT:
+            final = base - max(Decimal(0), value)
+        else:
+            final = base
+        return max(Decimal(0), final).quantize(Decimal("1"))
+
+    @property
+    def discount_amount(self):
+        """How many сом were taken off the base price."""
+        return max(Decimal(0), Decimal(self.base_price or 0) - Decimal(self.price or 0))
+
+    @property
+    def discount_label(self):
+        if self.discount_type == self.Discount.PERCENT:
+            return f"−{int(self.discount_value)}%"
+        if self.discount_type == self.Discount.AMOUNT:
+            return f"−{int(self.discount_value)} сом"
+        return ""
 
     @property
     def ends_at(self):

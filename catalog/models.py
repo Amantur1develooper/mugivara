@@ -136,13 +136,40 @@ class BranchItem(TimeStampedModel):
     sort_order = models.PositiveIntegerField(default=0)  # нумерация блюда в филиале
     delivery_available = models.BooleanField(default=True)
     stock = models.IntegerField(null=True, blank=True, default=None)  # None=∞, 0=нет, N=остаток
-    
+
+    # ── Акция / скидка ──────────────────────────────────────────────────────
+    old_price = models.DecimalField(
+        "Старая цена (до акции)", max_digits=10, decimal_places=2,
+        null=True, blank=True, default=None,
+        help_text="Заполните, чтобы запустить акцию: укажите прежнюю цену, а в поле "
+                   "«Цена» — новую. На сайте старая цена покажется зачёркнутой, "
+                   "новая — выделенной, на карточке появится бейдж.",
+    )
+    promo_label = models.CharField(
+        "Текст бейджа", max_length=20, blank=True, default="",
+        help_text="Например «Акция» или «Скидка». Если оставить пустым — «Акция».",
+    )
+
     class Meta:
         verbose_name = "Блюдо Филиал"
         verbose_name_plural = "Блюды Филиал"
-        
+
     def __str__(self):
         return f"{self.branch.name_ru} — {self.item.name_ru} "
+
+    @property
+    def is_on_promo(self):
+        return self.old_price is not None and self.old_price > self.price
+
+    @property
+    def discount_pct(self):
+        if not self.is_on_promo:
+            return 0
+        return int(round((1 - self.price / self.old_price) * 100))
+
+    @property
+    def promo_badge_text(self):
+        return self.promo_label.strip() or "Акция"
     
     
 class BranchCategoryItem(TimeStampedModel):

@@ -1,0 +1,129 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Бух. отчёт — {{ venue.name }}{% endblock %}
+{% block head_extra %}
+<style>
+.bk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px;}
+.bk-stat{background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:18px;text-align:center;}
+.bk-stat .v{font-size:26px;font-weight:900;color:var(--text);line-height:1.1;}
+.bk-stat .l{font-size:11px;color:var(--muted);margin-top:5px;}
+.bk-sect{background:var(--card);border:1.5px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:16px;}
+.bk-sect-h{padding:12px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:800;color:var(--text);}
+.bk-table{width:100%;border-collapse:collapse;font-size:13px;}
+.bk-table th{text-align:left;padding:9px 18px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;border-bottom:1px solid var(--border);}
+.bk-table td{padding:9px 18px;border-bottom:1px solid var(--border);color:var(--text);}
+.bk-table tr:last-child td{border:none;}
+.bk-table td.num,.bk-table th.num{text-align:right;font-variant-numeric:tabular-nums;}
+.bk-range{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:20px;}
+.bk-range label{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+.bk-range input{border:1.5px solid var(--border);border-radius:9px;padding:7px 10px;font-size:13px;background:var(--bg);color:var(--text);font-family:inherit;outline:none;}
+
+@media print{
+  .db-sidebar,.db-topbar-fixed,.db-overlay,.bk-range,.bk-noprint{display:none!important;}
+  .db-main{margin:0!important;padding:0!important;}
+  .bk-sect,.bk-stat{border-color:#ccc!important;box-shadow:none!important;}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">📒 Бухгалтерский отчёт</div>
+    <div class="db-breadcrumb">{{ venue.name }} · {{ date_from|date:"d.m.Y" }} — {{ date_to|date:"d.m.Y" }}</div>
+  </div>
+  <div style="display:flex;gap:6px;" class="bk-noprint">
+    <a href="?from={{ date_from|date:'Y-m-d' }}&to={{ date_to|date:'Y-m-d' }}&export=csv" class="db-btn db-btn-ghost db-btn-sm">⬇️ CSV / Excel</a>
+    <button onclick="window.print()" class="db-btn db-btn-ghost db-btn-sm">🖨️ Печать</button>
+    <a href="{% url 'dashboard:sr_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
+  </div>
+</div>
+
+<form method="get" class="bk-range bk-noprint">
+  <div>
+    <label>С даты</label>
+    <input type="date" name="from" value="{{ date_from|date:'Y-m-d' }}">
+  </div>
+  <div>
+    <label>По дату</label>
+    <input type="date" name="to" value="{{ date_to|date:'Y-m-d' }}">
+  </div>
+  <button type="submit" class="db-btn db-btn-primary db-btn-sm">Показать</button>
+</form>
+
+<!-- ИТОГО -->
+<div class="bk-grid">
+  <div class="bk-stat"><div class="v" style="color:#00b896;">{{ gross }}</div><div class="l">Выручка (к оплате), сом</div></div>
+  <div class="bk-stat"><div class="v">{{ by_price }}</div><div class="l">Выручка по прайсу, сом</div></div>
+  <div class="bk-stat"><div class="v" style="color:#f97316;">−{{ discounts }}</div><div class="l">Скидки, сом</div></div>
+  <div class="bk-stat"><div class="v">{{ sessions_n }}</div><div class="l">Завершённых сессий</div></div>
+  <div class="bk-stat"><div class="v">{{ avg_check }}</div><div class="l">Средний чек, сом</div></div>
+  <div class="bk-stat"><div class="v" style="color:#94a3b8;">{{ canceled_n }} / {{ canceled_sum }}</div><div class="l">Отмен / сумма, сом</div></div>
+</div>
+
+<!-- ПО ДНЯМ -->
+<div class="bk-sect">
+  <div class="bk-sect-h">По дням</div>
+  <table class="bk-table">
+    <thead><tr><th>Дата</th><th class="num">Сессий</th><th class="num">Выручка</th><th class="num">Скидки</th></tr></thead>
+    <tbody>
+      {% for r in by_day %}
+      <tr>
+        <td>{{ r.date|date:"d.m.Y (D)" }}</td>
+        <td class="num">{{ r.count }}</td>
+        <td class="num" style="font-weight:700;color:#00b896;">{{ r.revenue }}</td>
+        <td class="num" style="color:#f97316;">{% if r.discount %}−{{ r.discount }}{% else %}—{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:16px;">Нет данных за период</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- КАССА / ОНЛАЙН -->
+<div class="bk-sect">
+  <div class="bk-sect-h">Касса / Онлайн</div>
+  <table class="bk-table">
+    <thead><tr><th>Канал</th><th class="num">Сессий</th><th class="num">Выручка</th></tr></thead>
+    <tbody>
+      {% for r in by_source %}
+      <tr><td>{{ r.name }}</td><td class="num">{{ r.count }}</td><td class="num" style="font-weight:700;color:#00b896;">{{ r.revenue }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- ПО ТИПУ -->
+{% if by_type %}
+<div class="bk-sect">
+  <div class="bk-sect-h">По типу машины</div>
+  <table class="bk-table">
+    <thead><tr><th>Тип</th><th class="num">Сессий</th><th class="num">Выручка</th></tr></thead>
+    <tbody>
+      {% for r in by_type %}
+      <tr><td>{{ r.name }}</td><td class="num">{{ r.count }}</td><td class="num" style="font-weight:700;color:#00b896;">{{ r.revenue }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- ПО МАШИНАМ -->
+{% if by_machine %}
+<div class="bk-sect">
+  <div class="bk-sect-h">По машинам</div>
+  <table class="bk-table">
+    <thead><tr><th>Машина</th><th class="num">Сессий</th><th class="num">Выручка</th></tr></thead>
+    <tbody>
+      {% for r in by_machine %}
+      <tr><td>{{ r.name }}</td><td class="num">{{ r.count }}</td><td class="num" style="font-weight:700;color:#00b896;">{{ r.revenue }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div style="font-size:11px;color:var(--muted);margin-top:8px;" class="bk-noprint">
+  Отчёт по завершённым сессиям за выбранный период. Суммы — фактически к оплате (с учётом скидок).
+</div>
+{% endblock %}

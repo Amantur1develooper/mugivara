@@ -45,6 +45,10 @@
   }
   .lang-tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
   .lang-panel{display:none}.lang-panel.active{display:block}
+  .promo-box{
+    background:rgba(255,77,28,.05);border:1.5px solid rgba(255,77,28,.18);
+    border-radius:14px;padding:14px;
+  }
 </style>
 {% endblock %}
 
@@ -92,6 +96,36 @@
           <label class="db-label" for="price">Цена (сом)</label>
           <input class="db-input" id="price" name="price" type="number"
                  min="0" value="{{ bi.price|floatformat:'0' }}">
+        </div>
+
+        <div class="db-form-group promo-box">
+          <label class="db-label">🔥 Акция / скидка</label>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <label class="db-switch">
+              <input type="checkbox" id="promoToggle" {% if bi.old_price %}checked{% endif %}>
+              <span class="db-switch-slider"></span>
+            </label>
+            <span style="font-size:13px;color:var(--text2);">Запустить акцию на это блюдо</span>
+          </div>
+          <div id="promoFields" style="display:{% if bi.old_price %}block{% else %}none{% endif %};">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label class="db-label" for="old_price" style="font-size:10px;">Старая цена (зачёркнутая)</label>
+                <input class="db-input" id="old_price" name="old_price" type="number" min="0"
+                       placeholder="напр. {{ bi.price|floatformat:'0' }}"
+                       value="{{ bi.old_price|default_if_none:''|floatformat:'0' }}">
+              </div>
+              <div>
+                <label class="db-label" for="promo_label" style="font-size:10px;">Текст бейджа</label>
+                <input class="db-input" id="promo_label" name="promo_label" type="text" maxlength="20"
+                       placeholder="Акция" value="{{ bi.promo_label }}">
+              </div>
+            </div>
+            <div class="db-hint">
+              Цена выше в поле «Цена» — это новая (акционная). Здесь — прежняя цена, она
+              покажется на сайте зачёркнутой. Оставьте поле пустым, чтобы выключить акцию.
+            </div>
+          </div>
         </div>
 
         <div class="db-form-group">
@@ -193,5 +227,20 @@ function switchLang(group, lang, tab) {
   tab.classList.add('active');
   document.getElementById(group + '-' + lang).classList.add('active');
 }
+
+/* ── Акция / скидка ── */
+const promoToggle = document.getElementById('promoToggle');
+const promoFields  = document.getElementById('promoFields');
+const oldPriceInp  = document.getElementById('old_price');
+promoToggle.addEventListener('change', () => {
+  promoFields.style.display = promoToggle.checked ? 'block' : 'none';
+  if (promoToggle.checked && !oldPriceInp.value) {
+    // подставляем текущую цену как отправную точку для "старой цены"
+    oldPriceInp.value = document.getElementById('price').value;
+  }
+  if (!promoToggle.checked) {
+    oldPriceInp.value = '';
+  }
+});
 </script>
 {% endblock %}

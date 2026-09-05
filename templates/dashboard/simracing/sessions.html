@@ -74,7 +74,13 @@
       <div class="sr-ends">До {{ session.ends_at|time:"H:i" }} · {{ session.duration_minutes }} мин</div>
       {% if session.customer_name %}<div class="sr-customer">👤 {{ session.customer_name }}</div>{% endif %}
       {% if session.customer_phone %}<div class="sr-customer">📞 {{ session.customer_phone }}</div>{% endif %}
-      <div class="sr-price">{{ session.price }} сом</div>
+      <div class="sr-price">{{ session.disp_price }} сом
+        {% if session.discount_type != "none" and session.discount_amount %}
+          <span style="color:var(--muted);font-weight:600;font-size:11px;">
+            ({% if session.discount_type == "percent" %}{{ session.discount_label }}{% else %}−{{ session.disp_discount_amount }} сом{% endif %} с {{ session.disp_base_price }})
+          </span>
+        {% endif %}
+      </div>
       <div class="sr-actions">
         <button class="db-btn db-btn-primary db-btn-sm" style="flex:1;"
                 onclick="closeSession({{ session.id }}, {{ machine.id }})">✅ Завершить</button>
@@ -98,6 +104,18 @@
         {% endfor %}
       </select>
       <input class="st-input" id="name-{{ machine.id }}" placeholder="Имя клиента (необяз.)">
+      <div style="display:flex;gap:6px;">
+        <select class="st-sel" id="disc-type-{{ machine.id }}" style="flex:0 0 90px;"
+                onchange="onDiscType({{ machine.id }})">
+          <option value="none">Без скидки</option>
+          <option value="percent">%</option>
+          <option value="amount">сом</option>
+        </select>
+        <input class="st-input" id="disc-val-{{ machine.id }}" type="number" min="0" step="1"
+               placeholder="Скидка" style="display:none;">
+      </div>
+      <input class="st-input" id="disc-reason-{{ machine.id }}"
+             placeholder="Причина скидки (необяз.)" style="display:none;">
       <button class="db-btn db-btn-primary db-btn-sm"
               onclick="startSession({{ machine.id }}, {{ venue.id }})">▶️ Запустить</button>
     </div>
@@ -141,7 +159,7 @@
           {% if appt.quantity > 1 %}<br><span style="color:var(--muted);">×{{ appt.quantity }}</span>{% endif %}
         </td>
         <td style="text-align:center;">{{ appt.quantity }}</td>
-        <td style="font-weight:700;color:#00b896;">{{ appt.total_price }} сом</td>
+        <td style="font-weight:700;color:#00b896;">{{ appt.disp_total_price }} сом</td>
         <td>{{ appt.customer_name|default:"—" }}</td>
         <td>
           {% if appt.customer_phone %}
@@ -186,7 +204,11 @@
       <td style="color:var(--muted);">{{ s.id }}</td>
       <td style="font-weight:600;">{{ s.machine.name }}</td>
       <td>{{ s.duration_minutes }}</td>
-      <td style="font-weight:700;color:#00b896;">{{ s.price }}</td>
+      <td style="font-weight:700;color:#00b896;">{{ s.disp_price }}
+        {% if s.discount_type != "none" and s.discount_amount %}
+          <br><span style="color:var(--muted);font-weight:600;font-size:11px;">{% if s.discount_type == "percent" %}{{ s.discount_label }}{% else %}−{{ s.disp_discount_amount }} сом{% endif %}{% if s.discount_reason %} · {{ s.discount_reason }}{% endif %}</span>
+        {% endif %}
+      </td>
       <td>{{ s.customer_name|default:"—" }}</td>
       <td>{{ s.started_at|time:"H:i" }}</td>
       <td>
@@ -214,15 +236,32 @@ async function post(url, data={}) {
   return r.json();
 }
 
+/* ── Discount field toggle ── */
+function onDiscType(machineId) {
+  const t = document.getElementById('disc-type-' + machineId)?.value;
+  const val = document.getElementById('disc-val-' + machineId);
+  const reason = document.getElementById('disc-reason-' + machineId);
+  const show = t && t !== 'none';
+  if (val)    { val.style.display = show ? '' : 'none'; if (!show) val.value = ''; }
+  if (reason) { reason.style.display = show ? '' : 'none'; if (!show) reason.value = ''; }
+  if (val) val.placeholder = t === 'percent' ? 'Скидка, %' : 'Скидка, сом';
+}
+
 /* ── Start session ── */
 async function startSession(machineId, venueId) {
   const stSel = document.getElementById('st-' + machineId);
   const stId  = stSel?.value;
   if (!stId) { stSel.style.border = '2px solid #dc2626'; setTimeout(() => stSel.style.border='', 1500); return; }
   const name = document.getElementById('name-' + machineId)?.value.trim() || '';
+  const discType   = document.getElementById('disc-type-' + machineId)?.value || 'none';
+  const discValue  = document.getElementById('disc-val-' + machineId)?.value || '0';
+  const discReason = document.getElementById('disc-reason-' + machineId)?.value.trim() || '';
   const tpl = '{% url "dashboard:sr_session_start" venue_id=0 %}'.replace('/0/', '/' + venueId + '/');
   const url = tpl;
-  const d = await post(url, {machine_id: machineId, session_type_id: stId, customer_name: name});
+  const d = await post(url, {
+    machine_id: machineId, session_type_id: stId, customer_name: name,
+    discount_type: discType, discount_value: discValue, discount_reason: discReason,
+  });
   if (!d.ok) { alert(d.error || 'Ошибка'); return; }
   // reload page to show live timer
   location.reload();

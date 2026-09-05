@@ -22,9 +22,15 @@ class SessionTypeAdmin(admin.ModelAdmin):
 
 @admin.register(Session)
 class SessionAdmin(admin.ModelAdmin):
-    list_display = ("id", "machine", "duration_minutes", "price", "status", "started_at")
-    list_filter = ("status", "machine__venue")
+    list_display = ("id", "machine", "duration_minutes", "base_price", "discount_type",
+                    "discount_value", "price", "status", "started_at")
+    list_filter = ("status", "discount_type", "machine__venue")
     date_hierarchy = "started_at"
 
 
-admin.site.register(SimRacingMembership)
+@admin.register(SimRacingMembership)
+class SimRacingMembershipAdmin(admin.ModelAdmin):
+    list_display = ("user", "venue", "racing_account", "racing_view_pct")
+    list_filter = ("venue", "racing_account")
+    list_editable = ("racing_account", "racing_view_pct")
+    search_fields = ("user__username",)

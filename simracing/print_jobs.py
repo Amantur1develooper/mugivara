@@ -54,8 +54,14 @@ def _session_receipt(session):
     if session.customer_phone:
         lines.append(f"Тел: {session.customer_phone}")
 
+    lines.append(SEP)
+    if getattr(session, "discount_type", "none") != "none" and session.discount_amount:
+        lines.append(_row("Цена:", f"{int(session.base_price)} сом"))
+        disc_label = f"Скидка {session.discount_label}:"
+        lines.append(_row(disc_label, f"-{int(session.discount_amount)} сом"))
+        if session.discount_reason:
+            lines.append(f"({session.discount_reason})")
     lines += [
-        SEP,
         B + _row("ИТОГО:", f"{int(session.price)} сом") + b,
         SEP,
         _center("Спасибо! Приходите ещё!"),

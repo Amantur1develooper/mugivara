@@ -10,6 +10,7 @@
     <a href="?period=today" class="db-btn db-btn-sm {% if period == 'today' %}db-btn-primary{% else %}db-btn-ghost{% endif %}">Сегодня</a>
     <a href="?period=week"  class="db-btn db-btn-sm {% if period == 'week'  %}db-btn-primary{% else %}db-btn-ghost{% endif %}">Неделя</a>
     <a href="?period=month" class="db-btn db-btn-sm {% if period == 'month' %}db-btn-primary{% else %}db-btn-ghost{% endif %}">Месяц</a>
+    <a href="{% url 'dashboard:sr_bookkeeping' venue.id %}" class="db-btn db-btn-sm db-btn-ghost">📒 Бух. отчёт</a>
   </div>
 </div>
 
@@ -22,6 +23,14 @@
   <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:20px;text-align:center;">
     <div style="font-size:32px;font-weight:900;color:var(--accent);">{{ total_sessions }}</div>
     <div style="font-size:12px;color:var(--muted);margin-top:4px;">Сессий</div>
+  </div>
+  <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:20px;text-align:center;">
+    <div style="font-size:32px;font-weight:900;color:#f97316;">−{{ total_discount }}</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px;">Скидки (сом)</div>
+  </div>
+  <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:20px;text-align:center;">
+    <div style="font-size:32px;font-weight:900;color:var(--text);">{{ discounted_count }}</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px;">Сессий со скидкой</div>
   </div>
 </div>
 

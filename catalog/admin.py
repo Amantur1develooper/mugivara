@@ -102,13 +102,18 @@ class ItemAdmin(admin.ModelAdmin):
 
 @admin.register(BranchItem)
 class BranchItemAdmin(admin.ModelAdmin):
-    list_display        = ("id", "branch", "item", "price", "is_available", "sort_order")
+    list_display        = ("id", "branch", "item", "old_price", "price", "is_on_promo",
+                           "is_available", "sort_order")
     list_filter         = ("branch__restaurant", "branch", "is_available")
     list_select_related = ("branch", "branch__restaurant", "item")
-    list_editable       = ("price", "is_available")
+    list_editable       = ("old_price", "price", "is_available")
     list_per_page       = 50
     search_fields       = ("item__name_ru", "item__name_ky", "branch__name_ru")
     ordering            = ("branch", "sort_order", "item__name_ru")
+
+    @admin.display(boolean=True, description="Акция")
+    def is_on_promo(self, obj):
+        return obj.is_on_promo
 
 
 # ── КОНСТРУКТОР БЛЮД ──────────────────────────────────────────────────────────

@@ -200,6 +200,7 @@ def qr_order_create(request, token: str):
                 item=bi.item,
                 qty=qty,
                 price_snapshot=bi.price,
+                old_price_snapshot=bi.old_price if bi.is_on_promo else None,
                 line_total=line,
             ))
 

@@ -8,7 +8,7 @@ class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
     can_delete = False
-    readonly_fields = ("item", "qty", "price_snapshot", "line_total", "created_at")
+    readonly_fields = ("item", "qty", "price_snapshot", "old_price_snapshot", "line_total", "created_at")
 
 
 class ConstructorOrderItemInline(admin.TabularInline):

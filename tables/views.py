@@ -73,6 +73,7 @@ def table_create_order(request, token: str):
             item=bi.item,
             qty=qty,
             price_snapshot=price,
+            old_price_snapshot=bi.old_price if bi.is_on_promo else None,
             line_total=line_total
         )
 

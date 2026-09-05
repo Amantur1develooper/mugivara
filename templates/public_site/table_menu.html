@@ -177,6 +177,20 @@
   }
   .tm-dish:hover { transform: translateY(-4px); box-shadow: 0 14px 36px rgba(0,0,0,.1); }
 
+  /* ── карточка со скидкой — ярче ── */
+  .tm-dish.on-promo {
+    border: 2px solid var(--accent);
+    box-shadow: 0 5px 18px rgba(255,77,28,.22), 0 0 0 3px rgba(255,77,28,.06);
+    animation: tmPromoGlow 2.6s ease-in-out infinite;
+  }
+  @keyframes tmPromoGlow {
+    0%, 100% { box-shadow: 0 5px 18px rgba(255,77,28,.22), 0 0 0 3px rgba(255,77,28,.06); }
+    50%      { box-shadow: 0 5px 20px rgba(255,77,28,.4),  0 0 0 5px rgba(255,77,28,.12); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tm-dish.on-promo { animation: none; }
+  }
+
   .tm-dish-photo { position: relative; height: 140px; background: var(--card2); overflow: hidden; }
   .tm-dish-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s; }
   .tm-dish:hover .tm-dish-photo img { transform: scale(1.06); }
@@ -190,12 +204,39 @@
     padding: 3px 9px; border-radius: 100px; font-size: 10px; font-weight: 700;
     background: rgba(255,77,28,.88); color: white; backdrop-filter: blur(4px);
   }
+  .tm-promo-badge {
+    position: absolute; top: 8px; right: 8px; z-index: 2;
+    padding: 4px 10px; border-radius: 100px; font-size: 10px; font-weight: 900;
+    letter-spacing: .2px; text-transform: uppercase;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white; box-shadow: 0 4px 12px rgba(255,77,28,.55);
+    border: 1.5px solid rgba(255,255,255,.35);
+    overflow: hidden;
+  }
+  .tm-promo-badge::after {
+    content: '';
+    position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+    background: linear-gradient(115deg, transparent, rgba(255,255,255,.55), transparent);
+    animation: tmPromoShine 2.6s ease-in-out infinite;
+  }
+  @keyframes tmPromoShine {
+    0%   { left: -60%; }
+    55%  { left: 130%; }
+    100% { left: 130%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tm-promo-badge::after { animation: none; display: none; }
+  }
   .tm-dish-price-badge {
     position: absolute; bottom: 8px; right: 8px;
     padding: 4px 10px; border-radius: 100px;
     font-family: 'Unbounded', sans-serif; font-size: 12px; font-weight: 800;
     background: rgba(0,0,0,.55); backdrop-filter: blur(6px);
     color: white; border: 1px solid rgba(255,255,255,.15);
+  }
+  .tm-dish-price-badge.on-promo {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-color: transparent;
   }
 
   .tm-dish-body { padding: 12px 12px 14px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
@@ -210,6 +251,17 @@
   /* ── ADD CONTROLS ── */
   .tm-dish-footer { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
   .tm-dish-price { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 14px; color: var(--text); }
+  .tm-dish-price.on-promo { color: var(--accent); }
+  .tm-dish-price-row { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .tm-dish-price-old {
+    font-size: 10px; font-weight: 600; color: var(--muted);
+    text-decoration: line-through;
+  }
+  .tm-discount-chip {
+    font-size: 9px; font-weight: 900; color: white;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 5px; padding: 1px 5px; line-height: 1.5;
+  }
 
   .tm-add-btn {
     width: 36px; height: 36px; border-radius: 12px; border: none; cursor: pointer;
@@ -568,7 +620,8 @@
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
     margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border);
   }
-  .tmdm-price { font-family: 'Unbounded', sans-serif; font-size: 22px; font-weight: 900; color: var(--accent); }
+  .tmdm-price { font-family: 'Unbounded', sans-serif; font-size: 22px; font-weight: 900; color: var(--accent); display: flex; align-items: baseline; gap: 8px; }
+  .tmdm-price-old { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: line-through; }
   .tmdm-add-btn {
     width: auto !important; padding: 0 28px !important; border-radius: 14px !important;
     font-size: 14px; font-weight: 700; font-family: 'Unbounded', sans-serif;
@@ -703,10 +756,11 @@
         {% with bi=row.branch_item dish=row.branch_item.item %}
         {% t dish "name" as dish_name %}
         {% t dish "description" as desc %}
-        <div class="tm-dish" data-bi="{{ bi.id }}"
+        <div class="tm-dish{% if bi.is_on_promo %} on-promo{% endif %}" data-bi="{{ bi.id }}"
              data-dish-name="{{ dish_name }}"
              data-dish-desc="{{ desc }}"
              data-dish-price="{{ bi.price|floatformat:0 }}"
+             data-dish-old-price="{% if bi.is_on_promo %}{{ bi.old_price|floatformat:0 }}{% endif %}"
              data-dish-photo="{% if dish.photo %}{{ dish.photo.url }}{% endif %}"
              data-dish-hot="{% if dish.order_count >= 10 %}{{ dish.order_count }}{% endif %}">
           <div class="tm-dish-photo tm-dish-clickable">
@@ -716,14 +770,23 @@
               <div class="tm-dish-photo-empty">🍽️</div>
             {% endif %}
             {% if dish.order_count >= 10 %}<div class="tm-hot-badge">🔥 {{ dish.order_count }}</div>{% endif %}
-            <div class="tm-dish-price-badge">{{ bi.price|floatformat:0 }} с</div>
+            {% if bi.is_on_promo %}<div class="tm-promo-badge">🏷️ {{ bi.promo_badge_text }}</div>{% endif %}
+            <div class="tm-dish-price-badge{% if bi.is_on_promo %} on-promo{% endif %}">{{ bi.price|floatformat:0 }} с</div>
           </div>
           <div class="tm-dish-body">
             <div class="tm-dish-name tm-dish-clickable">{{ dish_name }}</div>
             {% if desc %}<div class="tm-dish-desc tm-dish-clickable">{{ desc }}</div>{% endif %}
             <div class="tm-dish-footer">
               <div>
+                {% if bi.is_on_promo %}
+                <div class="tm-dish-price-row">
+                  <div class="tm-dish-price on-promo">{{ bi.price|floatformat:0 }} сом</div>
+                  <div class="tm-dish-price-old">{{ bi.old_price|floatformat:0 }}</div>
+                  {% if bi.discount_pct %}<span class="tm-discount-chip">−{{ bi.discount_pct }}%</span>{% endif %}
+                </div>
+                {% else %}
                 <div class="tm-dish-price">{{ bi.price|floatformat:0 }} сом</div>
+                {% endif %}
               </div>
               <div class="tm-qty-row" id="qty-row-{{ bi.id }}">
                 <button class="tm-qty-btn" data-action="dec" data-bi="{{ bi.id }}" type="button">−</button>
@@ -1280,7 +1343,9 @@ document.querySelectorAll(".wb-logo").forEach(function (a) {
 
     dmName.textContent  = card.dataset.dishName || "";
     dmDesc.textContent  = card.dataset.dishDesc || "";
-    dmPrice.textContent = (card.dataset.dishPrice || "0") + " сом";
+    const oldPrice = card.dataset.dishOldPrice;
+    dmPrice.innerHTML = (oldPrice ? `<span class="tmdm-price-old">${oldPrice} сом</span>` : "")
+      + `<span>${card.dataset.dishPrice || "0"} сом</span>`;
     dmAddBtn.dataset.add = card.dataset.bi;
 
     backdrop.classList.add("open");

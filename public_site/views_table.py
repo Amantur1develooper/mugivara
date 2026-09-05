@@ -317,6 +317,7 @@ def table_checkout(request, token):
                 item=bi.item,
                 qty=qty,
                 price_snapshot=bi.price,
+                old_price_snapshot=bi.old_price if bi.is_on_promo else None,
                 line_total=line_total,
             )
 
@@ -576,6 +577,7 @@ def table_create_order(request, token):
                     item=row["bi"].item,
                     qty=row["qty"],
                     price_snapshot=row["bi"].price,
+                    old_price_snapshot=row["bi"].old_price if row["bi"].is_on_promo else None,
                     line_total=row["line_total"],
                 )
                 new_oi_ids.append(oi.id)
@@ -617,6 +619,7 @@ def table_create_order(request, token):
                     item=row["bi"].item,
                     qty=row["qty"],
                     price_snapshot=row["bi"].price,
+                    old_price_snapshot=row["bi"].old_price if row["bi"].is_on_promo else None,
                     line_total=row["line_total"],
                 )
 

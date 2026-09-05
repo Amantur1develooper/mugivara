@@ -64,8 +64,23 @@ class OrderItem(TimeStampedModel):
     item = models.ForeignKey(Item, on_delete=models.PROTECT)
     qty = models.PositiveIntegerField(default=1)
     price_snapshot = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    old_price_snapshot = models.DecimalField(
+        "Старая цена на момент заказа", max_digits=10, decimal_places=2,
+        null=True, blank=True, default=None,
+        help_text="Заполняется, если блюдо было по акции в момент заказа",
+    )
 
     line_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    @property
+    def is_on_promo(self):
+        return self.old_price_snapshot is not None and self.old_price_snapshot > self.price_snapshot
+
+    @property
+    def discount_amount(self):
+        if not self.is_on_promo:
+            return 0
+        return (self.old_price_snapshot - self.price_snapshot) * self.qty
 
 
 class ConstructorOrderItem(TimeStampedModel):
