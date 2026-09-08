@@ -2,6 +2,7 @@
 {% load static i18n i18n_attrs %}
 
 {% block title %}Webordo — Цифровая экосистема Кыргызстана{% endblock %}
+{% block body_class %}kg-ethno{% endblock %}
 
 {% block head_extra %}
 <style>
@@ -340,30 +341,215 @@
     flex-shrink:0;
   }
 
+  /* ═══ ЭТНО-ФОН: слой и орнаменты берутся из _webordo_ethno.html.
+         Здесь — только чуть более тёплый подсвет фона на витрине. ═══ */
+  body.kg-ethno .kg-ethno-bg::after {
+    background:
+      radial-gradient(ellipse 58% 44% at 6% 0%,   rgba(255,122,26,.12), transparent 62%),
+      radial-gradient(ellipse 55% 45% at 96% 100%, rgba(255,77,28,.10), transparent 62%),
+      radial-gradient(ellipse 80% 60% at 50% 50%, rgba(255,138,0,.03), transparent 70%);
+  }
+  /* главная: герой вплотную к верху, уходит под фикс-меню */
+  body.kg-ethno .wb-main { padding-top:0; }
+
+  /* ═══════════════════════════════════════════════════════════════
+     APPLE SKIN — премиальная эстетика: системная типографика,
+     воздух, мягкие тени, один акцент. Орнамент — фоном.
+     ═══════════════════════════════════════════════════════════════ */
+  body.kg-ethno {
+    --ink:   #1d1d1f;
+    --ink-2: #52525b;
+    --ink-3: #86868b;
+    --hair:  rgba(0,0,0,.10);
+    --brand: #FF4D1C;
+    --ease:  cubic-bezier(.16,1,.3,1);
+    --sf: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", "Inter", Arial, sans-serif;
+    color:var(--ink); font-family:var(--sf);
+  }
+  body.kg-ethno .wb-main { font-family:var(--sf); }
+
+  body.kg-ethno .reveal { opacity:0; transform:translateY(26px); transition:opacity 1s var(--ease), transform 1s var(--ease); }
+  body.kg-ethno .reveal.in { opacity:1; transform:none; }
+  @media (prefers-reduced-motion:reduce) { body.kg-ethno .reveal { opacity:1 !important; transform:none !important; } }
+
+  /* ── HERO ── */
+  body.kg-ethno .hero {
+    background:rgba(251,251,253,.5);
+    -webkit-backdrop-filter:blur(10px) saturate(1.1); backdrop-filter:blur(10px) saturate(1.1);
+    border-bottom:1px solid var(--hair);
+    padding:clamp(118px,17vh,188px) 24px clamp(58px,10vh,112px);
+  }
+  body.kg-ethno .hero-bg {
+    background:radial-gradient(ellipse 58% 48% at 50% 0%, rgba(255,77,28,.11), transparent 72%);
+  }
+  body.kg-ethno .hero-inner { position:relative; max-width:840px; margin:0 auto; }
+  body.kg-ethno .hero-badge {
+    background:rgba(255,77,28,.08); border:1px solid rgba(255,77,28,.16);
+    padding:6px 14px; border-radius:980px; margin-bottom:26px; gap:8px;
+    color:var(--brand); font-size:12px; font-weight:600; letter-spacing:.01em; text-transform:none;
+  }
+  body.kg-ethno .hero-badge span { width:6px; height:6px; background:var(--brand); }
+  body.kg-ethno .hero-title {
+    font-family:var(--sf); font-weight:700;
+    font-size:clamp(54px,11.5vw,108px); line-height:1.01; letter-spacing:-.04em; margin:0 0 24px;
+    background:linear-gradient(135deg,#FF4D1C 0%,#FF8A00 100%);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent; color:#FF5A20;
+  }
+  body.kg-ethno .hero-sub {
+    max-width:560px; margin:0 auto; color:var(--ink-3);
+    font-size:clamp(15px,1.7vw,19px); font-weight:400; line-height:1.55;
+  }
+  body.kg-ethno .hero-cta { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+  body.kg-ethno .hero-btn {
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:13px 27px; border-radius:980px; font-size:16px; font-weight:500;
+    letter-spacing:-.01em; text-decoration:none;
+    transition:transform .4s var(--ease), background .4s var(--ease), box-shadow .4s var(--ease);
+  }
+  body.kg-ethno .hero-btn--primary {
+    background:linear-gradient(135deg,#FF4D1C,#FF8A00); color:#fff;
+    box-shadow:0 10px 30px rgba(255,77,28,.32);
+  }
+  body.kg-ethno .hero-btn--primary:hover { transform:translateY(-1px); box-shadow:0 16px 40px rgba(255,77,28,.4); }
+  body.kg-ethno .hero-btn--ghost { background:transparent; color:var(--brand); box-shadow:inset 0 0 0 1px rgba(255,77,28,.28); }
+  body.kg-ethno .hero-btn--ghost:hover { box-shadow:inset 0 0 0 1px var(--brand); transform:translateY(-1px); }
+
+  /* ── CATEGORY NAV — компактная капсула-сегментед-контрол ── */
+  body.kg-ethno .cat-nav-wrap { padding:22px 20px 6px; }
+  body.kg-ethno .cat-nav {
+    width:max-content; max-width:100%;
+    background:rgba(255,255,255,.82);
+    -webkit-backdrop-filter:blur(24px) saturate(1.7); backdrop-filter:blur(24px) saturate(1.7);
+    border:1px solid var(--hair);
+    box-shadow:0 12px 34px rgba(0,0,0,.10), 0 2px 8px rgba(0,0,0,.05);
+    padding:5px;
+  }
+  body.kg-ethno .cat-pill {
+    background:transparent; border:0; color:var(--ink-2); font-weight:550; font-size:14px;
+    padding:9px 20px; transition:color .3s var(--ease), background .3s var(--ease);
+  }
+  body.kg-ethno .cat-pill:hover { background:rgba(0,0,0,.05); color:var(--ink); border:0; }
+  body.kg-ethno .cat-pill.active {
+    background:linear-gradient(135deg,#FF4D1C,#FF8A00); color:#fff;
+    box-shadow:0 6px 18px rgba(255,77,28,.3);
+  }
+
+  /* ── SECTIONS ── */
+  body.kg-ethno .sec-wrap { padding:clamp(66px,10vw,116px) 24px; }
+  body.kg-ethno .sec-head { align-items:flex-end; margin-bottom:44px; }
+  body.kg-ethno .sec-tag {
+    background:transparent !important; border:0 !important; padding:0; border-radius:0; text-transform:none;
+    color:var(--brand) !important; font-size:13px; font-weight:600; letter-spacing:.01em; margin-bottom:10px;
+  }
+  body.kg-ethno .sec-title {
+    font-family:var(--sf); font-weight:700; color:var(--ink);
+    font-size:clamp(30px,4.6vw,52px); letter-spacing:-.03em; line-height:1.05;
+  }
+  body.kg-ethno .sec-all { font-family:var(--sf); font-size:16px; font-weight:500; color:var(--brand); border:0; padding:0; }
+  body.kg-ethno .sec-all:hover { border:0; opacity:.65; }
+  body.kg-ethno #services { background:transparent !important; }
+  body.kg-ethno .sec-alt { background:transparent; }
+  body.kg-ethno .sec-divider { max-width:1100px; height:1px; background:var(--hair); opacity:.5; }
+
+  /* ── BIZ / SERVICE CARDS ── */
+  body.kg-ethno .cards-grid-2 { gap:18px; }
+  @media (min-width:700px){ body.kg-ethno .cards-grid-2 { gap:22px; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); } }
+  body.kg-ethno .biz-card {
+    border:1px solid var(--hair); border-radius:24px; background:#fff;
+    box-shadow:0 2px 10px rgba(0,0,0,.04);
+    transition:transform .5s var(--ease), box-shadow .5s var(--ease);
+  }
+  body.kg-ethno .biz-card:hover { transform:translateY(-4px); box-shadow:0 22px 50px rgba(0,0,0,.12); }
+  body.kg-ethno .biz-img { height:212px; }
+  body.kg-ethno .biz-name-over { font-family:var(--sf); font-weight:600; font-size:15px; letter-spacing:-.01em; }
+  body.kg-ethno .biz-badge { font-weight:600; letter-spacing:0; backdrop-filter:blur(10px); }
+  body.kg-ethno .badge-open { background:rgba(255,255,255,.9); color:#1d1d1f; }
+  body.kg-ethno .badge-closed { background:rgba(0,0,0,.5); color:#fff; }
+  body.kg-ethno .svc-block {
+    border:1px solid var(--hair); border-radius:24px; background:#fff;
+    box-shadow:0 2px 10px rgba(0,0,0,.04);
+  }
+  body.kg-ethno .svc-block-head { background:transparent; border-bottom:1px solid var(--hair); padding:18px 20px; }
+  body.kg-ethno .svc-block-icon { border-radius:14px; }
+  body.kg-ethno .svc-block-title { font-family:var(--sf); font-weight:650; font-size:15px; letter-spacing:-.01em; }
+  body.kg-ethno .svc-block-sub { color:var(--ink-3); font-size:12px; }
+  body.kg-ethno .svc-block-all { font-family:var(--sf); font-weight:500; color:var(--brand) !important; border:0 !important; }
+  /* услуги: всегда аккуратные карточки-строки — одинаково при 1 и при многих */
+  body.kg-ethno .svc-cards-grid { display:flex; flex-direction:column; align-items:center; gap:8px; padding:14px; }
+  body.kg-ethno .svc-card {
+    width:100%; max-width:620px;
+    flex-direction:row; align-items:center; gap:14px; padding:10px 14px 10px 10px;
+    border:1px solid var(--hair); border-radius:16px; position:relative;
+    transition:transform .4s var(--ease), box-shadow .4s var(--ease), border-color .3s var(--ease);
+  }
+  body.kg-ethno .svc-card:hover { transform:translateY(-2px); box-shadow:0 12px 26px rgba(0,0,0,.1); border-color:rgba(0,0,0,.16); }
+  body.kg-ethno .svc-card-img { width:76px; height:76px; border-radius:12px; flex-shrink:0; }
+  body.kg-ethno .svc-card-name {
+    font-family:var(--sf); font-weight:600; font-size:14px; letter-spacing:-.01em; color:var(--ink);
+    padding:0; flex:1; min-width:0; -webkit-line-clamp:2;
+  }
+  body.kg-ethno .svc-card::after {
+    content:'→'; color:var(--ink-3); font-size:15px; flex-shrink:0;
+    transition:transform .3s var(--ease), color .3s var(--ease);
+  }
+  body.kg-ethno .svc-card:hover::after { color:var(--brand); transform:translateX(3px); }
+
+  /* ── STATS ── */
+  body.kg-ethno .stats-row {
+    border:1px solid var(--hair); border-radius:22px; background:rgba(255,255,255,.7);
+    -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); box-shadow:0 2px 16px rgba(0,0,0,.04);
+  }
+  body.kg-ethno .stat-cell { border-color:var(--hair); padding:26px 14px; }
+  body.kg-ethno .stat-num {
+    font-family:var(--sf); font-weight:600; font-size:32px; letter-spacing:-.03em;
+    background:none; -webkit-text-fill-color:currentColor; color:var(--ink);
+  }
+  body.kg-ethno .stat-label { color:var(--ink-3); font-size:12px; letter-spacing:0; margin-top:4px; }
+
+  /* ── CTA ── */
+  body.kg-ethno .cta-banner {
+    background:linear-gradient(135deg,#FF4D1C 0%,#FF8A00 100%);
+    border-radius:32px; max-width:1100px !important;
+    margin:clamp(56px,9vw,104px) auto !important; padding:clamp(58px,9vw,100px) 40px;
+    box-shadow:0 30px 70px rgba(255,77,28,.28);
+  }
+  body.kg-ethno .cta-banner::before, body.kg-ethno .cta-banner::after { display:none; }
+  body.kg-ethno .cta-banner h2 {
+    font-family:var(--sf); font-weight:700; letter-spacing:-.03em; color:#fff;
+    font-size:clamp(26px,4vw,44px); margin-bottom:14px;
+  }
+  body.kg-ethno .cta-banner p { color:rgba(255,255,255,.82); font-size:18px; margin-bottom:32px; }
+  body.kg-ethno .cta-banner a {
+    background:#fff; color:var(--brand); font-family:var(--sf); font-weight:600; font-size:16px;
+    padding:14px 30px; border-radius:980px; box-shadow:0 8px 24px rgba(0,0,0,.14);
+  }
+  body.kg-ethno .cta-banner a:hover { transform:translateY(-1px); background:#fff; box-shadow:0 14px 34px rgba(0,0,0,.2); }
+
+  /* ── AD BANNERS ── */
+  body.kg-ethno .ad-banner { border-radius:24px; box-shadow:0 2px 16px rgba(0,0,0,.06); }
+  body.kg-ethno .ad-banner__btn { font-family:var(--sf); font-weight:500; border-radius:980px; }
+
 </style>
 {% endblock %}
+
 
 {% block content %}
 
 <!-- ═══════════════════ HERO ═══════════════════ -->
 <section class="hero">
   <div class="hero-bg"></div>
-  <div class="hero-dots"></div>
-  <div style="position:relative">
+  <div class="hero-inner">
     <div class="hero-badge">
       <span></span>
       {% trans "🇰🇬 Цифровая экосистема Кыргызстана" %}
     </div>
 
-    <h1><span class="grad">Webordo</span></h1>
+    <h1 class="hero-title">Webordo</h1>
 
     <p class="hero-sub">
-      {% trans "Рестораны, магазины, отели, аптеки — в единой платформе Кыргызстана. QR-заказы, онлайн-бронирование и доставка." %}
+      {% trans "Рестораны, магазины, отели и услуги. Заказы по QR, брони и доставка — в одной платформе." %}
     </p>
-
-    <div class="hero-cta">
-      <a class="btn-ghost" href="#platform" style="display:none" id="howItWorks">Как работает</a>
-    </div>
   </div>
 </section>
 
@@ -501,7 +687,7 @@
       </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;margin-top:4px;" class="services-grid">
+    <div style="display:grid;grid-template-columns:1fr;gap:16px;margin:4px auto 0;max-width:900px;" class="services-grid">
 
       <!-- Юридические -->
       {% if legal_cards %}
@@ -862,6 +1048,20 @@ document.querySelectorAll('.stat-num[data-target]').forEach(el => {
     if (current >= target) clearInterval(timer);
   }, 40);
 });
+
+/* ── Apple-style scroll reveal ── */
+(function () {
+  if (!('IntersectionObserver' in window)) return;
+  const targets = document.querySelectorAll(
+    '#restaurants .sec-wrap, #stores .sec-wrap, #services .sec-wrap, .cta-banner, .stats-row, .hm-map-section, .ad-banners-wrap'
+  );
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  }, { rootMargin: '0px 0px -8% 0px' });
+  targets.forEach((el) => { el.classList.add('reveal'); io.observe(el); });
+})();
 </script>
 
 <!-- ══ MAP SECTION ══ -->

@@ -357,10 +357,80 @@
     input, textarea, select { font-size: max(16px, 1em) !important; }
   </style>
 
+  {# ════════════ WEBORDO · APPLE-ЭСТЕТИКА + КЫРГЫЗСКИЙ ЭТНО — платформенный скин ════════════ #}
+  <style>
+    :root{
+      --wb-ink:#1d1d1f; --wb-ink2:#52525b; --wb-ink3:#86868b;
+      --wb-hair:rgba(0,0,0,.10); --wb-brand:#FF4D1C; --wb-brand2:#FF8A00;
+      --wb-ease:cubic-bezier(.16,1,.3,1);
+      --wb-sf:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue","Inter",Arial,sans-serif;
+    }
+    body{
+      background:#fbfbfd !important;
+      font-family:var(--wb-sf) !important; font-weight:400 !important;
+      color:var(--wb-ink);
+      -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+    }
+    h1,h2,h3,h4{ font-family:var(--wb-sf) !important; letter-spacing:-.028em; }
+    .section-title,.wb-cta h2{ font-family:var(--wb-sf) !important; letter-spacing:-.03em !important; }
+    .section-tag{ letter-spacing:.02em !important; text-transform:none !important; color:var(--wb-brand) !important; }
+
+    /* этно-фон (слой + орнаменты) подключается партиалом _webordo_ethno.html после <body> */
+    .wb-main{ background:transparent; }
+
+    /* ── Apple-рефайн общих компонентов base.html ── */
+    .wb-nav{
+      background:rgba(255,255,255,.72) !important;
+      -webkit-backdrop-filter:blur(24px) saturate(1.7); backdrop-filter:blur(24px) saturate(1.7);
+      border:1px solid var(--wb-hair) !important;
+      box-shadow:0 10px 30px rgba(0,0,0,.06) !important;
+    }
+    .wb-nav-links a,.wb-dd-btn{ font-family:var(--wb-sf); font-size:14px; color:var(--wb-ink2); }
+    .wb-nav-links a:hover,.wb-dd-btn:hover{ color:var(--wb-ink); }
+    .wb-nav-cta{
+      background:linear-gradient(135deg,var(--wb-brand),var(--wb-brand2)) !important;
+      border-radius:980px !important; font-family:var(--wb-sf); font-weight:500 !important;
+      box-shadow:0 8px 22px rgba(255,77,28,.3) !important;
+    }
+    .btn-primary{
+      background:linear-gradient(135deg,var(--wb-brand),var(--wb-brand2));
+      font-family:var(--wb-sf); font-weight:500; border-radius:980px;
+      box-shadow:0 10px 30px rgba(255,77,28,.3);
+      transition:transform .4s var(--wb-ease), box-shadow .4s var(--wb-ease);
+    }
+    .btn-primary:hover{ transform:translateY(-1px); box-shadow:0 16px 40px rgba(255,77,28,.4); }
+    .btn-ghost{
+      font-family:var(--wb-sf); border-radius:980px; color:var(--wb-ink);
+      border:1px solid var(--wb-hair); box-shadow:none;
+      background:rgba(255,255,255,.72);
+      transition:transform .4s var(--wb-ease), border-color .3s var(--wb-ease);
+    }
+    .btn-ghost:hover{ transform:translateY(-1px); border-color:rgba(0,0,0,.2); box-shadow:none; }
+    .wb-dd-menu,.wb-drawer-panel{
+      border-radius:24px !important; border:1px solid var(--wb-hair) !important;
+      box-shadow:0 24px 60px rgba(0,0,0,.14) !important;
+    }
+    .wb-dd-item{ font-family:var(--wb-sf); }
+
+    .wb-cta{ background:linear-gradient(135deg,var(--wb-brand),var(--wb-brand2)) !important; border-top:0 !important; }
+    .wb-cta::before{ display:none !important; }
+    .wb-cta h2{ color:#fff !important; font-weight:700 !important; }
+    .wb-cta p{ color:rgba(255,255,255,.82) !important; font-family:var(--wb-sf); }
+    .wb-cta .btn-primary{ background:#fff !important; color:var(--wb-brand) !important; box-shadow:0 10px 30px rgba(0,0,0,.16) !important; }
+    .wb-cta .btn-ghost{ background:transparent !important; color:#fff !important; border-color:rgba(255,255,255,.45) !important; }
+
+    .wb-footer{ background:#fff !important; border-top:1px solid var(--wb-hair) !important; }
+    .wb-footer, .wb-footer *{ font-family:var(--wb-sf) !important; }
+  </style>
+
   {% block head_extra %}{% endblock %}
 </head>
 
-<body>
+<body class="{% block body_class %}{% endblock %}">
+{% block body_top %}{% endblock %}
+
+{# ════════ КЫРГЫЗСКИЙ ЭТНО-ФОН — на всех страницах платформы ════════ #}
+{% block ethno_bg %}{% include "_webordo_ethno.html" %}{% endblock %}
 
   {# ── NAV ── #}
   <div class="wb-nav-wrap">

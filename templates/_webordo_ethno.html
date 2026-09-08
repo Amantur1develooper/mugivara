@@ -1,0 +1,101 @@
+{% comment %}
+  Кыргызский этно-фон Webordo — орнаменты вразнобой, разного размера,
+  с разной скоростью вращения. Подключается на всех страницах платформы
+  сразу после <body>. Слой на z-index:-1 — контенту менять ничего не нужно.
+{% endcomment %}
+<style>
+  .kg-ethno-bg{
+    position:fixed; inset:0; z-index:-1; pointer-events:none; overflow:hidden;
+    color:#FF6A17; filter:blur(1px);
+  }
+  .kg-ethno-bg::after{
+    content:''; position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse 55% 42% at 5% 0%, rgba(255,122,26,.10), transparent 62%),
+      radial-gradient(ellipse 55% 45% at 96% 100%, rgba(255,77,28,.08), transparent 62%);
+  }
+  .kg-orn{ position:absolute; will-change:transform; animation:kg-drift 32s ease-in-out infinite; }
+  .kg-orn > i{ display:block; width:100%; height:100%; animation:kg-spin 120s linear infinite; }
+  .kg-orn svg{ width:100%; height:100%; display:block; overflow:visible; }
+
+  .kg-orn.a{ width:300px;height:300px; top:-80px;  left:-90px;  opacity:.14; animation-duration:31s; }
+  .kg-orn.a > i{ animation-duration:118s; }
+  .kg-orn.b{ width:165px;height:165px; top:7%;   left:25%;   opacity:.09; animation-delay:-6s;  animation-duration:25s; }
+  .kg-orn.b > i{ animation-duration:54s;  animation-direction:reverse; }
+  .kg-orn.c{ width:210px;height:210px; top:3%;   right:9%;   opacity:.11;  animation-delay:-13s; animation-duration:35s; }
+  .kg-orn.c > i{ animation-duration:96s; }
+  .kg-orn.d{ width:270px;height:270px; top:37%;  left:-70px; opacity:.12;  animation-delay:-4s;  animation-duration:41s; }
+  .kg-orn.d > i{ animation-duration:150s; animation-direction:reverse; }
+  .kg-orn.e{ width:360px;height:360px; top:calc(46% - 180px); left:calc(50% - 180px); opacity:.06; animation-delay:-20s; animation-duration:49s; }
+  .kg-orn.e > i{ animation-duration:230s; }
+  .kg-orn.f{ width:220px;height:220px; top:53%;  right:-55px; opacity:.11; animation-delay:-9s;  animation-duration:27s; }
+  .kg-orn.f > i{ animation-duration:68s;  animation-direction:reverse; }
+  .kg-orn.g{ width:185px;height:185px; top:75%;  left:5%;    opacity:.09;  animation-delay:-17s; animation-duration:33s; }
+  .kg-orn.g > i{ animation-duration:84s; }
+  .kg-orn.h{ width:260px;height:120px; top:88%;  left:41%;   opacity:.08;  animation-delay:-11s; animation-duration:37s; }
+  .kg-orn.h > i{ animation:none; }
+  .kg-orn.i{ width:290px;height:290px; bottom:-90px; right:-70px; opacity:.12; animation-delay:-25s; animation-duration:39s; }
+  .kg-orn.i > i{ animation-duration:162s; animation-direction:reverse; }
+  .kg-orn.j{ width:145px;height:145px; top:19%;  right:3%;   opacity:.08;  animation-delay:-7s;  animation-duration:23s; }
+  .kg-orn.j > i{ animation-duration:59s; }
+
+  @keyframes kg-spin{ to{ transform:rotate(360deg); } }
+  @keyframes kg-drift{ 0%,100%{transform:translate(0,0);} 50%{transform:translate(20px,-24px);} }
+
+  @media (max-width:640px){
+    .kg-ethno-bg{ filter:blur(1.2px); }
+    .kg-orn.b,.kg-orn.g,.kg-orn.j,.kg-orn.h{ display:none; }
+    .kg-orn.a{ width:210px;height:210px; top:-60px; left:-70px; }
+    .kg-orn.c{ width:150px;height:150px; }
+    .kg-orn.d{ width:200px;height:200px; left:-60px; }
+    .kg-orn.e{ width:260px;height:260px; top:calc(42% - 130px); left:calc(50% - 130px); }
+    .kg-orn.f{ width:160px;height:160px; }
+    .kg-orn.i{ width:200px;height:200px; bottom:-60px; right:-50px; }
+  }
+  @media (prefers-reduced-motion:reduce){ .kg-orn,.kg-orn > i{ animation:none !important; } }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="kg-koshkor" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M120 185 C120 150 108 140 94 136 C58 124 40 92 52 62 C60 40 92 34 106 56 C116 72 104 92 84 86 C72 82 72 66 84 62"/>
+    <path d="M120 185 C120 150 132 140 146 136 C182 124 200 92 188 62 C180 40 148 34 134 56 C124 72 136 92 156 86 C168 82 168 66 156 62"/>
+    <path d="M120 185 C120 158 116 148 120 132 C124 148 120 158 120 185"/>
+    <path d="M120 138 C108 124 132 124 120 138"/>
+    <circle cx="84" cy="62" r="4.5"/><circle cx="156" cy="62" r="4.5"/>
+  </g>
+  <g id="kg-tunduk" fill="none" stroke="currentColor" stroke-linecap="round">
+    <circle cx="100" cy="100" r="80" stroke-width="7" stroke-dasharray="1.5 13"/>
+    <circle cx="100" cy="100" r="60" stroke-width="3.5"/>
+    <circle cx="100" cy="100" r="42" stroke-width="3.5"/>
+    <path d="M58 100 A42 42 0 0 1 142 100" stroke-width="3.5"/>
+    <path d="M58 100 A42 42 0 0 0 142 100" stroke-width="3.5"/>
+    <path d="M100 58 A42 42 0 0 1 100 142" stroke-width="3.5"/>
+    <path d="M100 58 A42 42 0 0 0 100 142" stroke-width="3.5"/>
+    <circle cx="100" cy="100" r="15" stroke-width="3.5"/>
+  </g>
+  <g id="kg-kyial" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M80 140 C80 100 40 104 40 70 C40 44 68 40 76 60 C82 74 68 84 60 74"/>
+    <path d="M80 140 C80 100 120 104 120 70 C120 44 92 40 84 60 C78 74 92 84 100 74"/>
+    <path d="M80 116 C80 96 78 88 80 76 C82 88 80 96 80 116"/>
+  </g>
+  <g id="kg-omurtka" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 78 C8 42 56 42 56 78 C56 102 28 102 34 80"/>
+    <path d="M64 78 C64 42 112 42 112 78 C112 102 84 102 90 80"/>
+    <path d="M120 78 C120 42 168 42 168 78 C168 102 140 102 146 80"/>
+    <path d="M176 78 C176 42 224 42 224 78 C224 102 196 102 202 80"/>
+    <path d="M232 78 C232 54 252 54 252 78"/>
+  </g>
+</defs></svg>
+
+<div class="kg-ethno-bg" aria-hidden="true">
+  <div class="kg-orn a"><i><svg viewBox="0 0 240 220"><use href="#kg-koshkor"/></svg></i></div>
+  <div class="kg-orn b"><i><svg viewBox="0 0 160 160"><use href="#kg-kyial"/></svg></i></div>
+  <div class="kg-orn c"><i><svg viewBox="0 0 200 200"><use href="#kg-tunduk"/></svg></i></div>
+  <div class="kg-orn d"><i><svg viewBox="0 0 240 220"><use href="#kg-koshkor"/></svg></i></div>
+  <div class="kg-orn e"><i><svg viewBox="0 0 200 200"><use href="#kg-tunduk"/></svg></i></div>
+  <div class="kg-orn f"><i><svg viewBox="0 0 160 160"><use href="#kg-kyial"/></svg></i></div>
+  <div class="kg-orn g"><i><svg viewBox="0 0 200 200"><use href="#kg-tunduk"/></svg></i></div>
+  <div class="kg-orn h"><i><svg viewBox="0 0 260 120"><use href="#kg-omurtka"/></svg></i></div>
+  <div class="kg-orn i"><i><svg viewBox="0 0 240 220"><use href="#kg-koshkor"/></svg></i></div>
+  <div class="kg-orn j"><i><svg viewBox="0 0 160 160"><use href="#kg-kyial"/></svg></i></div>
+</div>
