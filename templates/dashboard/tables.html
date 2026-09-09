@@ -56,6 +56,12 @@
   background:rgba(0,0,0,.01);
 }
 .tbl-qr-wrap.open { display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap; }
+.tbl-qr-preview {
+  width:150px; height:200px; flex-shrink:0;
+  border-radius:16px; border:1px solid var(--border);
+  box-shadow:0 8px 28px rgba(0,0,0,.08);
+  background:#fbfbfd;
+}
 .tbl-qr-info { font-size:12px; color:var(--muted); line-height:1.6; }
 .tbl-qr-url {
   font-size:12px; font-family:monospace;
@@ -157,6 +163,7 @@
   data-table-del-tpl="{% url 'dashboard:table_delete' 0 %}"
   data-table-toggle-tpl="{% url 'dashboard:table_toggle_active' 0 %}"
   data-booking-close-tpl="{% url 'dashboard:booking_close' 0 %}"
+  data-venue-name="{{ branch.restaurant.name_ru|default:branch.name_ru }}"
 ></div>
 
 {% if active_bookings %}
@@ -230,14 +237,15 @@
         {% endif %}
       </div>
     </div>
-    <div class="tbl-qr-wrap" id="qr-{{ place.id }}">
-      <canvas id="qrc-{{ place.id }}" width="128" height="128"
-              style="border-radius:10px;flex-shrink:0"></canvas>
+    <div class="tbl-qr-wrap" id="qr-{{ place.id }}"
+         data-token="{{ place.token }}" data-title="{{ place.title|escapejs }}">
+      <canvas id="qrc-{{ place.id }}" class="tbl-qr-preview"></canvas>
       <div class="tbl-qr-info">
-        <div><b>{{ place.title }}</b></div>
-        <div>Гость сканирует QR → открывается меню прямо на столике.</div>
-        <div style="margin-top:6px">
-          <button class="tbl-action-btn" onclick="downloadQr({{ place.id }}, '{{ place.title|escapejs }}')">⬇ Скачать PNG</button>
+        <div style="font-weight:700;color:var(--text);font-size:13px">{{ place.title }}</div>
+        <div>Гость наводит камеру на код — откроется меню этого столика.</div>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+          <button class="tbl-action-btn" onclick="downloadQrCard({{ place.id }}, true)">⬇ Карточка «{{ place.title }}»</button>
+          <button class="tbl-action-btn" onclick="downloadQrCard({{ place.id }}, false)">⬇ Без номера</button>
         </div>
         <div class="tbl-qr-url" id="qr-url-{{ place.id }}"></div>
       </div>
@@ -312,7 +320,7 @@
 
 </div>{# /tblWrap #}
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSe2sIy6jPXoB2VfjMivJFGAJUPeyhAEHtMg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 const CSRF = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
 const URLS = document.getElementById('tbl-urls').dataset;
@@ -490,13 +498,14 @@ function appendTableRow(floorId, t) {
       <button class="tbl-action-btn" id="stop-${t.id}" onclick="toggleStop(${t.id},this)" title="Выключить стол">🛑 Стоп</button>
     </div>
   </div>
-  <div class="tbl-qr-wrap" id="qr-${t.id}">
-    <canvas id="qrc-${t.id}" width="128" height="128" style="border-radius:10px;flex-shrink:0"></canvas>
+  <div class="tbl-qr-wrap" id="qr-${t.id}" data-token="${escJs(t.token)}" data-title="${escJs(t.title)}">
+    <canvas id="qrc-${t.id}" class="tbl-qr-preview"></canvas>
     <div class="tbl-qr-info">
-      <div><b>${esc(t.title)}</b></div>
-      <div>Гость сканирует QR → открывается меню прямо на столике.</div>
-      <div style="margin-top:6px">
-        <button class="tbl-action-btn" onclick="downloadQr(${t.id},'${escJs(t.title)}')">⬇ Скачать PNG</button>
+      <div style="font-weight:700;color:var(--text);font-size:13px">${esc(t.title)}</div>
+      <div>Гость наводит камеру на код — откроется меню этого столика.</div>
+      <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="tbl-action-btn" onclick="downloadQrCard(${t.id}, true)">⬇ Карточка «${esc(t.title)}»</button>
+        <button class="tbl-action-btn" onclick="downloadQrCard(${t.id}, false)">⬇ Без номера</button>
       </div>
       <div class="tbl-qr-url" id="qr-url-${t.id}"></div>
     </div>
@@ -529,38 +538,163 @@ function copyUrl(token, btn) {
 }
 
 /* ── QR toggle ── */
+const VENUE_NAME = (URLS.venueName || 'Меню').trim();
+
 function toggleQr(id) {
   const wrap = document.getElementById(`qr-${id}`);
   if (!wrap) return;
   const opening = !wrap.classList.contains('open');
   wrap.classList.toggle('open');
-  if (opening) {
-    const canvas = document.getElementById(`qrc-${id}`);
-    const urlEl  = document.getElementById(`qr-url-${id}`);
-    // find token from row's copy button
-    const row = document.getElementById(`trow-${id}`);
-    const copyBtn = row?.querySelector('[onclick^="copyUrl"]');
-    const token = copyBtn?.getAttribute('onclick')?.match(/copyUrl\('([^']+)'/)?.[1];
-    if (!token) return;
-    const url = tableUrl(token);
-    if (urlEl) urlEl.textContent = url;
-    if (canvas && !canvas.dataset.drawn) {
-      new QRCode(canvas, {text: url, width:128, height:128, correctLevel: QRCode.CorrectLevel.M});
-      canvas.dataset.drawn = '1';
-    }
+  if (!opening) return;
+
+  const token = wrap.dataset.token;
+  const title = wrap.dataset.title || '';
+  if (!token) return;
+  const url = tableUrl(token);
+
+  const urlEl = document.getElementById(`qr-url-${id}`);
+  if (urlEl) urlEl.textContent = url;
+
+  const prev = document.getElementById(`qrc-${id}`);
+  if (prev && !prev.dataset.drawn) {
+    try {
+      const card = buildQrCard(url, { venue: VENUE_NAME, tableLabel: title });
+      prev.width = 300; prev.height = Math.round(300 * card.height / card.width);
+      prev.getContext('2d').drawImage(card, 0, 0, prev.width, prev.height);
+      prev.dataset.drawn = '1';
+    } catch (e) { /* показ ошибки уже в buildQrCard */ }
   }
 }
 
-/* ── QR download ── */
-function downloadQr(id, title) {
-  const canvas = document.getElementById(`qrc-${id}`);
-  if (!canvas) return;
-  // qrcode.js renders to inner canvas
-  const inner = canvas.tagName === 'CANVAS' ? canvas : canvas.querySelector('canvas');
+/* ── Скачать готовую QR-карточку (с номером стола / без) ── */
+function slug(s) {
+  return (s || '').toLowerCase().replace(/[^a-zа-я0-9]+/gi, '-').replace(/(^-|-$)/g, '') || 'menu';
+}
+function downloadQrCard(id, withLabel) {
+  const wrap = document.getElementById(`qr-${id}`);
+  if (!wrap) return;
+  const token = wrap.dataset.token;
+  const title = wrap.dataset.title || '';
+  const url = tableUrl(token);
+  const card = buildQrCard(url, { venue: VENUE_NAME, tableLabel: withLabel ? title : '' });
   const a = document.createElement('a');
-  a.download = `qr-${title.replace(/\s+/g,'-')}.png`;
-  a.href = (inner || canvas).toDataURL('image/png');
+  a.download = withLabel
+    ? `qr-${slug(VENUE_NAME)}-${slug(title)}.png`
+    : `qr-${slug(VENUE_NAME)}.png`;
+  a.href = card.toDataURL('image/png');
   a.click();
+}
+
+/* ── Рисуем премиальную QR-карточку на canvas ── */
+function buildQrCard(url, { venue, tableLabel }) {
+  if (typeof qrcode === 'undefined') {
+    alert('QR-библиотека ещё не загрузилась — обновите страницу и попробуйте снова.');
+    throw new Error('qrcode lib not loaded');
+  }
+  const qr = qrcode(0, 'M');
+  qr.addData(url);
+  qr.make();
+  const N = qr.getModuleCount();
+
+  const W = 1080, H = 1440, DPR = 2;
+  const c = document.createElement('canvas');
+  c.width = W * DPR; c.height = H * DPR;
+  const ctx = c.getContext('2d');
+  ctx.scale(DPR, DPR);
+  const SF = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif';
+
+  const rr = (x, y, w, h, r) => {
+    if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); return; }
+    r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  };
+
+  // фон + карточка
+  ctx.fillStyle = '#fbfbfd'; ctx.fillRect(0, 0, W, H);
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,.10)'; ctx.shadowBlur = 60; ctx.shadowOffsetY = 24;
+  ctx.fillStyle = '#ffffff';
+  rr(56, 56, W - 112, H - 112, 60); ctx.fill();
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(0,0,0,.09)'; ctx.lineWidth = 2;
+  rr(56, 56, W - 112, H - 112, 60); ctx.stroke();
+
+  // название заведения (до 2 строк)
+  ctx.fillStyle = '#1d1d1f';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.font = `700 54px ${SF}`;
+  const words = venue.split(/\s+/); let line = '', lines = [];
+  for (const w of words) {
+    const t = line ? line + ' ' + w : w;
+    if (ctx.measureText(t).width > W - 220 && line) { lines.push(line); line = w; }
+    else line = t;
+  }
+  if (line) lines.push(line);
+  lines = lines.slice(0, 2);
+  let y = lines.length > 1 ? 156 : 178;
+  lines.forEach(l => { ctx.fillText(l, W / 2, y); y += 62; });
+
+  // пилюля со столом (акцент)
+  let qrTop = 372;
+  if (tableLabel) {
+    const label = tableLabel.toUpperCase();
+    ctx.font = `800 34px ${SF}`;
+    const pw = ctx.measureText(label).width + 64;
+    const px = (W - pw) / 2, py = y + 6, ph = 66;
+    const g = ctx.createLinearGradient(px, py, px + pw, py + ph);
+    g.addColorStop(0, '#FF4D1C'); g.addColorStop(1, '#FF8A00');
+    ctx.fillStyle = g;
+    rr(px, py, pw, ph, ph / 2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, W / 2, py + ph / 2 + 1);
+    ctx.textBaseline = 'alphabetic';
+    qrTop = py + ph + 56;
+  }
+
+  // белый бокс под QR
+  const box = 720;
+  const bx = (W - box) / 2;
+  ctx.fillStyle = '#fff';
+  rr(bx, qrTop, box, box, 40); ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,.06)'; ctx.lineWidth = 2;
+  rr(bx, qrTop, box, box, 40); ctx.stroke();
+
+  // модули QR со скруглением
+  const quiet = 4, m = box / (N + quiet * 2);
+  const ox = bx + quiet * m, oy = qrTop + quiet * m;
+  const inFinder = (r, col) =>
+    (r < 7 && col < 7) || (r < 7 && col >= N - 7) || (r >= N - 7 && col < 7);
+  ctx.fillStyle = '#141414';
+  for (let r = 0; r < N; r++) for (let col = 0; col < N; col++) {
+    if (inFinder(r, col) || !qr.isDark(r, col)) continue;
+    rr(ox + col * m + m * 0.09, oy + r * m + m * 0.09, m * 0.82, m * 0.82, m * 0.34);
+    ctx.fill();
+  }
+  const finder = (fr, fc) => {
+    const x = ox + fc * m, yy = oy + fr * m;
+    ctx.fillStyle = '#141414'; rr(x, yy, 7 * m, 7 * m, 7 * m * 0.24); ctx.fill();
+    ctx.fillStyle = '#fff'; rr(x + m, yy + m, 5 * m, 5 * m, 5 * m * 0.22); ctx.fill();
+    ctx.fillStyle = '#141414'; rr(x + 2 * m, yy + 2 * m, 3 * m, 3 * m, 3 * m * 0.28); ctx.fill();
+  };
+  finder(0, 0); finder(0, N - 7); finder(N - 7, 0);
+
+  // подпись
+  ctx.fillStyle = '#86868b';
+  ctx.font = `400 28px ${SF}`;
+  ctx.fillText('Наведите камеру телефона на код', W / 2, qrTop + box + 74);
+
+  ctx.fillStyle = '#c2c2c9';
+  ctx.font = `700 22px ${SF}`;
+  ctx.fillText('Работает на Webordo', W / 2, H - 92);
+
+  return c;
 }
 
 /* ── Tabs ── */
@@ -676,6 +810,7 @@ async function saveToken() {
   const qrWrap = document.getElementById(`qr-${_tokenTableId}`);
   if (qrWrap) {
     qrWrap.classList.remove('open');
+    qrWrap.dataset.token = d.token;
     const canvas = document.getElementById(`qrc-${_tokenTableId}`);
     if (canvas) { canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height); delete canvas.dataset.drawn; }
   }

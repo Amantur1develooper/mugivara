@@ -242,10 +242,20 @@ def table_cx_update(request, token: str):
     })
 
 
-def table_cart(request, token):
+def _activate_qr_lang(request):
+    """QR-страницы вне i18n_patterns: язык берём из cookie переключателя,
+    по умолчанию — русский (не подхватываем язык браузера туриста)."""
+    from django.conf import settings as _s
     from django.utils import translation
-    translation.activate("ru")
-    request.LANGUAGE_CODE = "ru"
+    lang = request.COOKIES.get(_s.LANGUAGE_COOKIE_NAME) or ""
+    if lang not in dict(_s.LANGUAGES):
+        lang = "ru"
+    translation.activate(lang)
+    request.LANGUAGE_CODE = lang
+
+
+def table_cart(request, token):
+    _activate_qr_lang(request)
 
     place = get_object_or_404(Place, token=token, is_active=True)
     branch = place.floor.branch
@@ -270,9 +280,7 @@ def table_cart(request, token):
 
 @transaction.atomic
 def table_checkout(request, token):
-    from django.utils import translation
-    translation.activate("ru")
-    request.LANGUAGE_CODE = "ru"
+    _activate_qr_lang(request)
 
     place = get_object_or_404(Place, token=token, is_active=True)
     branch = place.floor.branch
@@ -286,6 +294,7 @@ def table_checkout(request, token):
         name = (request.POST.get("customer_name") or "").strip()
         phone = (request.POST.get("customer_phone") or "").strip()
         comment = (request.POST.get("comment") or "").strip()
+        promo_code_str = (request.POST.get("promo_code") or "").strip()
 
         if not name:
             from django.contrib import messages
@@ -295,6 +304,11 @@ def table_checkout(request, token):
                 "rows": rows, "cart_qty": cart_qty, "cart_total": cart_total,
             })
 
+        from core.promo import resolve_promo, bump_promo_use
+        promo, promo_discount, _fee, _lbl = resolve_promo(
+            branch, promo_code_str, cart_total, allow_free_delivery=False,
+        )
+
         order = Order.objects.create(
             type=Order.Type.DINE_IN,              # ✅ В заведении
             branch=branch,
@@ -303,10 +317,14 @@ def table_checkout(request, token):
             customer_name=name,
             customer_phone=phone,
             comment=comment,
-            total_amount=cart_total,
+            total_amount=cart_total - promo_discount,
+            promo_code=(promo.code if promo else ""),
+            promo_discount=promo_discount,
             payment_method=Order.PaymentMethod.CASH,
             payment_status=Order.PaymentStatus.UNPAID,
         )
+        if promo:
+            bump_promo_use(promo)
 
         for r in rows:
             bi = r["branch_item"]
@@ -361,6 +379,7 @@ def table_checkout(request, token):
 
 
 def table_success(request, token, order_id: int):
+    _activate_qr_lang(request)
     place = get_object_or_404(Place, token=token, is_active=True)
     branch = place.floor.branch
     order = get_object_or_404(Order, id=order_id, branch=branch)
@@ -372,9 +391,7 @@ def table_success(request, token, order_id: int):
         "order": order,
     })
 def table_menu(request, token: str):
-    from django.utils import translation
-    translation.activate("ru")
-    request.LANGUAGE_CODE = "ru"
+    _activate_qr_lang(request)
 
     place = get_object_or_404(Place, token=token, is_active=True)
     branch = place.floor.branch
@@ -530,6 +547,7 @@ def table_create_order(request, token):
 
     customer_name = (request.POST.get("customer_name") or "").strip()[:120]
     comment = (request.POST.get("comment") or "").strip()
+    promo_code_str = (request.POST.get("promo_code") or "").strip()
 
     if not customer_name:
         return redirect("table_cart", token=token)
@@ -601,6 +619,10 @@ def table_create_order(request, token):
                 order.comment = comment
             order.save(update_fields=["total_amount", "comment"])
         else:
+            from core.promo import resolve_promo, bump_promo_use
+            promo, promo_discount, _fee, _lbl = resolve_promo(
+                branch, promo_code_str, total, allow_free_delivery=False,
+            )
             order = Order.objects.create(
                 branch=branch,
                 type=Order.Type.DINE_IN,
@@ -608,10 +630,14 @@ def table_create_order(request, token):
                 status=Order.Status.NEW,
                 customer_name=customer_name,
                 comment=comment,
-                total_amount=total,
+                total_amount=total - promo_discount,
+                promo_code=(promo.code if promo else ""),
+                promo_discount=promo_discount,
                 payment_method=Order.PaymentMethod.CASH,
                 payment_status=Order.PaymentStatus.UNPAID,
             )
+            if promo:
+                bump_promo_use(promo)
 
             for row in cart_rows:
                 OrderItem.objects.create(
@@ -818,13 +844,16 @@ def table_waiter_accept(request, order_id):
     for o in new_orders:
         o.status = Order.Status.ACCEPTED
         o.save(update_fields=["status"])
-        try:
-            from printing.jobs import create_print_jobs
-            create_print_jobs(o)
-        except Exception as e:
-            import traceback
-            print("PRINT create_print_jobs ERROR (accept):", e)
-            traceback.print_exc()
+        # печатаем кухонный чек только если так настроено (иначе он уже
+        # напечатался при создании заказа — не дублируем)
+        if o.branch.print_on_accept:
+            try:
+                from printing.jobs import create_print_jobs
+                create_print_jobs(o)
+            except Exception as e:
+                import traceback
+                print("PRINT create_print_jobs ERROR (accept):", e)
+                traceback.print_exc()
 
     return JsonResponse({"ok": True})
 

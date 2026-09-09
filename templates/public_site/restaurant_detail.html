@@ -426,13 +426,13 @@
             {% endif %}
             {% if b.phone %}
               {% with wa=b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' %}
-              <a href="https://wa.me/{{ wa }}?text={% filter urlencode %}Здравствуйте! Хочу забронировать стол.
+              <a href="https://wa.me/{{ wa }}?text={% filter urlencode %}{% blocktrans %}Здравствуйте! Хочу забронировать стол.
 
 Филиал: {{ b_name }}
 Дата: __.__.____
 Время: __:__
 Гостей: __
-Имя: __{% endfilter %}" target="_blank" rel="noopener" class="bc-btn book">🗓️ {% trans "Бронирование" %}</a>
+Имя: __{% endblocktrans %}{% endfilter %}" target="_blank" rel="noopener" class="bc-btn book">🗓️ {% trans "Бронирование" %}</a>
               {% endwith %}
             {% else %}
               <a href="{% url 'public_site:reservation' b.id %}" class="bc-btn book">🗓️ {% trans "Бронирование" %}</a>
@@ -502,5 +502,5 @@
 {% endblock %}
 
 {% block footer %}
-  <a href="{% url 'public_site:home' %}">Разработка Amantur agency</a>
+  <a href="{% url 'public_site:home' %}">{% trans "Разработка Amantur agency" %}</a>
 {% endblock footer %}

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load i18n i18n_attrs l10n %}
 
-{% block title %}{% t branch 'name' %} — Меню · Стол {{ place.title }}{% endblock %}
+{% block title %}{% t branch 'name' %} — {% trans "Меню" %} · {% trans "Стол" %} {{ place.title }}{% endblock %}
 {% block cta %}{% endblock %}
 {% block footer %}{% endblock %}
 
@@ -631,17 +631,42 @@
 {% endblock %}
 
 {% block content %}
+<script>
+const CUR = "{% cur %}";
+const T = {
+  err:        "{% trans 'Ошибка' %}",
+  errNet:     "{% trans 'Ошибка сети' %}",
+  errRetry:   "{% trans 'Ошибка, попробуйте ещё' %}",
+  errRetry2:  "{% trans 'Ошибка. Попробуйте ещё раз.' %}",
+  addedOrder: "{% trans '✓ Добавлено в заказ' %}",
+  addedCx:    "{% trans '🧩 Добавлено в заказ!' %}",
+  waiterCalling: "{% trans 'Вызываю…' %}",
+  waiterCalled:  "{% trans '✅ Вызван' %}",
+  waiterOnWay:   "{% trans '✅ Официант уже идёт!' %}",
+  waiterBtn:     "{% trans '🔔 Официант' %}",
+  waiterSendBtn: "{% trans '🔔 Вызвать официанта' %}",
+  adding:     "{% trans 'Добавляю…' %}",
+  cxAddBtn:   "{% trans '🧩 Добавить в заказ' %}",
+  choosePos:  "{% trans 'Выберите позиции' %}",
+  required:   "{% trans 'Обязательно' %}",
+  optional:   "{% trans 'Необязательно' %}",
+  minLabel:   "{% trans 'мин' %}",
+  maxN:       "{% trans 'Максимум' %}",
+  minN:       "{% trans 'Выберите минимум' %}",
+  inGroup:    "{% trans 'в' %}",
+};
+</script>
 <div class="tm-toast-wrap" id="toastWrap"></div>
 
 <!-- ── WAITER MODAL ── -->
 <div class="tm-modal-bg" id="waiterModal">
   <div class="tm-modal">
     <div class="tm-modal-handle"></div>
-    <div class="tm-modal-title">🔔 Позвать официанта</div>
-    <div class="tm-modal-sub">Хотите что-то добавить или есть вопрос? Официант придёт к столу {{ place.title }}.</div>
-    <textarea class="tm-modal-note" id="waiterNote" rows="3" placeholder="Примечание (необязательно)..."></textarea>
-    <button class="tm-modal-send" id="waiterSendBtn" type="button">🔔 Вызвать официанта</button>
-    <button class="tm-modal-cancel" id="waiterCancelBtn" type="button">Отмена</button>
+    <div class="tm-modal-title">🔔 {% trans "Позвать официанта" %}</div>
+    <div class="tm-modal-sub">{% blocktrans with t=place.title %}Хотите что-то добавить или есть вопрос? Официант придёт к столу {{ t }}.{% endblocktrans %}</div>
+    <textarea class="tm-modal-note" id="waiterNote" rows="3" placeholder="{% trans 'Примечание (необязательно)…' %}"></textarea>
+    <button class="tm-modal-send" id="waiterSendBtn" type="button">🔔 {% trans "Вызвать официанта" %}</button>
+    <button class="tm-modal-cancel" id="waiterCancelBtn" type="button">{% trans "Отмена" %}</button>
   </div>
 </div>
 
@@ -670,7 +695,7 @@
         <div class="tm-place-name">🪑 {{ place.title }}</div>
         <div class="tm-branch-name">{% t branch 'name' %}</div>
       </div>
-      <button class="tm-call-btn" id="callWaiterBtn" type="button">🔔 Официант</button>
+      <button class="tm-call-btn" id="callWaiterBtn" type="button">🔔 {% trans "Официант" %}</button>
     </div>
   </div>
 
@@ -688,10 +713,10 @@
           {% endif %}
         {% endfor %}
         {% if constructors %}
-        <button class="tm-cat-pill" data-cat="constructors" type="button">🧩 Собери сам</button>
+        <button class="tm-cat-pill" data-cat="constructors" type="button">🧩 {% trans "Собери сам" %}</button>
         {% endif %}
       </div>
-      <button class="tm-cats-more-btn" id="catsMoreBtn" onclick="toggleCatsDropdown()" type="button" aria-label="Все категории">
+      <button class="tm-cats-more-btn" id="catsMoreBtn" onclick="toggleCatsDropdown()" type="button" aria-label="{% trans 'Все категории' %}">
         <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
           <path d="M2 4.5L7 9.5L12 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -706,8 +731,8 @@
 <div class="tm-order-banner" onclick="openBillModal()">
   <div class="tm-ob-icon">🧾</div>
   <div class="tm-ob-info">
-    <div class="tm-ob-label">Ваш счёт (уже на кухне)</div>
-    <div class="tm-ob-total">{{ open_order_total|floatformat:0 }} сом</div>
+    <div class="tm-ob-label">{% trans "Ваш счёт (уже на кухне)" %}</div>
+    <div class="tm-ob-total">{{ open_order_total|som }}</div>
   </div>
   <div class="tm-ob-arrow">›</div>
 </div>
@@ -718,8 +743,8 @@
     <div class="tm-bill-handle"></div>
     <div class="tm-bill-head">
       <div>
-        <div class="tm-bill-title">🧾 Счёт стола {{ place.title }}</div>
-        <div class="tm-bill-sub">с {{ open_order.created_at|time:"H:i" }}</div>
+        <div class="tm-bill-title">🧾 {% blocktrans with t=place.title %}Счёт стола {{ t }}{% endblocktrans %}</div>
+        <div class="tm-bill-sub">{% blocktrans with tm=open_order.created_at|time:"H:i" %}с {{ tm }}{% endblocktrans %}</div>
       </div>
       <button class="tm-bill-close" onclick="closeBillModal()">✕</button>
     </div>
@@ -728,13 +753,13 @@
       <div class="tm-bill-row">
         <div class="tm-bill-name">{{ oi.name }}</div>
         <div class="tm-bill-qty">×{{ oi.qty }}</div>
-        <div class="tm-bill-line">{{ oi.line_total|floatformat:0 }} сом</div>
+        <div class="tm-bill-line">{{ oi.line_total|som }}</div>
       </div>
       {% endfor %}
     </div>
     <div class="tm-bill-foot">
-      <span class="tm-bill-foot-label">ИТОГО</span>
-      <span class="tm-bill-foot-val">{{ open_order_total|floatformat:0 }} сом</span>
+      <span class="tm-bill-foot-label">{% trans "ИТОГО" %}</span>
+      <span class="tm-bill-foot-val">{{ open_order_total|som }}</span>
     </div>
   </div>
 </div>
@@ -771,7 +796,7 @@
             {% endif %}
             {% if dish.order_count >= 10 %}<div class="tm-hot-badge">🔥 {{ dish.order_count }}</div>{% endif %}
             {% if bi.is_on_promo %}<div class="tm-promo-badge">🏷️ {{ bi.promo_badge_text }}</div>{% endif %}
-            <div class="tm-dish-price-badge{% if bi.is_on_promo %} on-promo{% endif %}">{{ bi.price|floatformat:0 }} с</div>
+            <div class="tm-dish-price-badge{% if bi.is_on_promo %} on-promo{% endif %}">{{ bi.price|som }}</div>
           </div>
           <div class="tm-dish-body">
             <div class="tm-dish-name tm-dish-clickable">{{ dish_name }}</div>
@@ -780,12 +805,12 @@
               <div>
                 {% if bi.is_on_promo %}
                 <div class="tm-dish-price-row">
-                  <div class="tm-dish-price on-promo">{{ bi.price|floatformat:0 }} сом</div>
+                  <div class="tm-dish-price on-promo">{{ bi.price|som }}</div>
                   <div class="tm-dish-price-old">{{ bi.old_price|floatformat:0 }}</div>
                   {% if bi.discount_pct %}<span class="tm-discount-chip">−{{ bi.discount_pct }}%</span>{% endif %}
                 </div>
                 {% else %}
-                <div class="tm-dish-price">{{ bi.price|floatformat:0 }} сом</div>
+                <div class="tm-dish-price">{{ bi.price|som }}</div>
                 {% endif %}
               </div>
               <div class="tm-qty-row" id="qty-row-{{ bi.id }}">
@@ -794,7 +819,7 @@
                 <button class="tm-qty-btn" data-action="inc" data-bi="{{ bi.id }}" type="button">+</button>
               </div>
               <button class="tm-add-btn" id="add-{{ bi.id }}"
-                      data-add="{{ bi.id }}" type="button" title="Добавить">+</button>
+                      data-add="{{ bi.id }}" type="button" title="{% trans 'Добавить' %}">+</button>
             </div>
           </div>
         </div>
@@ -809,7 +834,7 @@
   {% if constructors %}
   <div class="tm-cat-section" id="cat-constructors">
     <div class="tm-cat-header">
-      <div class="tm-cat-title">🧩 Собери сам</div>
+      <div class="tm-cat-title">🧩 {% trans "Собери сам" %}</div>
       <div class="tm-cat-line"></div>
       <div class="tm-cat-count">{{ constructors|length }}</div>
     </div>
@@ -822,12 +847,12 @@
           {% else %}
             <div class="tm-cx-photo-empty">🧩</div>
           {% endif %}
-          <div class="tm-cx-badge">Собери сам</div>
+          <div class="tm-cx-badge">{% trans "Собери сам" %}</div>
         </div>
         <div class="tm-cx-body">
           <div class="tm-cx-name">{{ cx.name }}</div>
           {% if cx.description %}<div class="tm-cx-desc">{{ cx.description }}</div>{% endif %}
-          <button class="tm-cx-btn" type="button">🧩 Собрать</button>
+          <button class="tm-cx-btn" type="button">🧩 {% trans "Собрать" %}</button>
         </div>
       </div>
       {% endfor %}
@@ -838,8 +863,8 @@
 
 <!-- ── DISH MODAL ── -->
 <div id="tmDishModal" class="tmdm-backdrop" onclick="tmdmBackdropClose(event)">
-  <div class="tmdm-sheet" role="dialog" aria-label="Блюдо">
-    <button class="tmdm-close" onclick="closeTmDishModal()" aria-label="Закрыть">✕</button>
+  <div class="tmdm-sheet" role="dialog" aria-label="{% trans 'Блюдо' %}">
+    <button class="tmdm-close" onclick="closeTmDishModal()" aria-label="{% trans 'Закрыть' %}">✕</button>
     <div class="tmdm-photo-wrap">
       <img id="tmdmPhoto" src="" alt="" class="tmdm-photo">
       <div id="tmdmPhotoEmpty" class="tmdm-photo-empty" style="display:none">🍽️</div>
@@ -851,7 +876,7 @@
       <div class="tmdm-footer">
         <div id="tmdmPrice" class="tmdm-price"></div>
         <button id="tmdmAddBtn" class="tm-add-btn tmdm-add-btn" data-add="" type="button">
-          + В заказ
+          + {% trans "В заказ" %}
         </button>
       </div>
     </div>
@@ -864,19 +889,19 @@
   <div class="tm-cx-modal" id="cxModal">
     <div class="tm-cx-modal-head">
       <div class="tm-cx-modal-handle"></div>
-      <div class="tm-cx-modal-title" id="cxModalTitle">Собери сам</div>
-      <div class="tm-cx-modal-price" id="cxModalPriceLine">от 0 сом</div>
+      <div class="tm-cx-modal-title" id="cxModalTitle">{% trans "Собери сам" %}</div>
+      <div class="tm-cx-modal-price" id="cxModalPriceLine">{% blocktrans with p="0"|som %}от {{ p }}{% endblocktrans %}</div>
     </div>
     <div class="tm-cx-modal-body" id="cxModalBody">
       <!-- groups rendered by JS -->
     </div>
     <div class="tm-cx-modal-foot">
       <div class="tm-cx-total-row">
-        <div class="tm-cx-total-label">Итого:</div>
-        <div class="tm-cx-total-val" id="cxTotal">0 сом</div>
+        <div class="tm-cx-total-label">{% trans "Итого" %}:</div>
+        <div class="tm-cx-total-val" id="cxTotal">{{ 0|som }}</div>
       </div>
       <div class="tm-cx-error" id="cxError"></div>
-      <button class="tm-cx-add-btn" id="cxAddBtn" type="button">🧩 Добавить в заказ</button>
+      <button class="tm-cx-add-btn" id="cxAddBtn" type="button">🧩 {% trans "Добавить в заказ" %}</button>
     </div>
   </div>
 </div>
@@ -939,7 +964,7 @@ function renderCxGroups(cx) {
   body.innerHTML = "";
 
   for (const g of cx.groups) {
-    const hint = g.min_select > 0 ? `Обязательно: мин ${g.min_select}` : "Необязательно";
+    const hint = g.min_select > 0 ? `${T.required}: ${T.minLabel} ${g.min_select}` : T.optional;
     const block = document.createElement("div");
     block.className = "cx-group-block";
     block.innerHTML = `
@@ -963,7 +988,7 @@ function renderCxGroups(cx) {
         <div class="cx-ing-card-body">
           <div class="cx-ing-card-name">${ing.name}</div>
           ${ing.description ? `<div class="cx-ing-card-desc">${ing.description}</div>` : ""}
-          <div class="cx-ing-card-price">${ing.price} сом</div>
+          <div class="cx-ing-card-price">${ing.price} ${CUR}</div>
         </div>
       `;
       card.addEventListener("click", () => toggleIngredient(card, g, ing.id));
@@ -988,7 +1013,7 @@ function toggleIngredient(card, group, ingId) {
     selectedMap[gid] = [...selected, ingId];
     card.classList.add("selected");
   } else {
-    toast(`Максимум ${group.max_select} в «${group.name}»`, "#F59E0B");
+    toast(`${T.maxN} ${group.max_select} ${T.inGroup} «${group.name}»`, "#F59E0B");
     return;
   }
 
@@ -1002,8 +1027,8 @@ function updateCxTotal(cx) {
       if ((selectedMap[g.id] || []).includes(ing.id)) total += Number(ing.price);
     }
   }
-  document.getElementById("cxTotal").textContent = total + " сом";
-  document.getElementById("cxModalPriceLine").textContent = "Выберите позиции";
+  document.getElementById("cxTotal").textContent = total.toLocaleString() + " " + CUR;
+  document.getElementById("cxModalPriceLine").textContent = T.choosePos;
 }
 
 document.getElementById("cxAddBtn").addEventListener("click", async () => {
@@ -1016,14 +1041,14 @@ document.getElementById("cxAddBtn").addEventListener("click", async () => {
   for (const g of cx.groups) {
     const chosen = selectedMap[g.id] || [];
     if (g.min_select > 0 && chosen.length < g.min_select) {
-      errEl.textContent = `Выберите минимум ${g.min_select} в «${g.name}»`;
+      errEl.textContent = `${T.minN} ${g.min_select} ${T.inGroup} «${g.name}»`;
       return;
     }
   }
 
   const btn = document.getElementById("cxAddBtn");
   btn.disabled = true;
-  btn.textContent = "Добавляю...";
+  btn.textContent = T.adding;
 
   try {
     const fd = new FormData();
@@ -1037,18 +1062,18 @@ document.getElementById("cxAddBtn").addEventListener("click", async () => {
     const d = await r.json();
 
     if (!d.ok) {
-      errEl.textContent = d.error || "Ошибка";
+      errEl.textContent = d.error || T.err;
       return;
     }
 
     updateFab(d.qty, Math.round(d.total));
     closeCxModal();
-    toast("🧩 Добавлено в заказ!");
+    toast(T.addedCx);
   } catch {
-    errEl.textContent = "Ошибка, попробуйте ещё";
+    errEl.textContent = T.errRetry;
   } finally {
     btn.disabled = false;
-    btn.textContent = "🧩 Добавить в заказ";
+    btn.textContent = T.cxAddBtn;
   }
 });
 
@@ -1062,13 +1087,13 @@ document.getElementById("cxModalBg").addEventListener("click", e => {
 <a href="{% url 'public_site:table_cart' token %}" class="tm-fab hide" id="cartFab">
   <div class="tm-fab-icon">🍽️</div>
   <div class="tm-fab-info">
-    <div class="tm-fab-label">Ваш заказ</div>
-    <div class="tm-fab-total" id="fabTotal">{{ cart_total }} сом</div>
+    <div class="tm-fab-label">{% trans "Ваш заказ" %}</div>
+    <div class="tm-fab-total" id="fabTotal">{{ cart_total|som }}</div>
   </div>
   <div class="tm-fab-badge" id="fabQty">{{ cart_qty }}</div>
 </a>
 
-<button id="tm-top-btn" class="tm-top-btn hide" type="button" aria-label="Наверх">↑</button>
+<button id="tm-top-btn" class="tm-top-btn hide" type="button" aria-label="{% trans 'Наверх' %}">↑</button>
 
 <script>
 const TOKEN = "{{ token }}";
@@ -1107,7 +1132,7 @@ function updateFab(qty, total) {
   cartQty = qty; cartTotal = total;
   const fab = document.getElementById("cartFab");
   document.getElementById("fabQty").textContent   = qty;
-  document.getElementById("fabTotal").textContent = total + " сом";
+  document.getElementById("fabTotal").textContent = total.toLocaleString() + " " + CUR;
   fab.classList.toggle("hide", qty === 0);
   if (qty > 0) document.getElementById("fabQty").animate([{transform:"scale(1)"},{transform:"scale(1.3)"},{transform:"scale(1)"}], {duration:220});
 }
@@ -1143,9 +1168,9 @@ document.addEventListener("click", async e => {
     if (!data.ok) return;
     updateFab(data.qty, data.total.toFixed ? Math.round(data.total) : data.total);
     updateCard(biId, 1);
-    toast("✓ Добавлено в заказ");
+    toast(T.addedOrder);
   } catch(err) {
-    toast("Ошибка, попробуйте ещё", "#EF4444");
+    toast(T.errRetry, "#EF4444");
   } finally {
     btn.classList.remove("loading");
   }
@@ -1168,7 +1193,7 @@ document.addEventListener("click", async e => {
     updateFab(data.qty, Math.round(parseFloat(data.total)));
     updateCard(biId, data.item_qty);
   } catch(err) {
-    toast("Ошибка", "#EF4444");
+    toast(T.err, "#EF4444");
   } finally {
     btn.disabled = false;
   }
@@ -1265,7 +1290,7 @@ modal.addEventListener("click", e => { if (e.target === modal) modal.classList.r
 
 waiterSend.addEventListener("click", async () => {
   waiterSend.disabled = true;
-  waiterSend.textContent = "Вызываю...";
+  waiterSend.textContent = T.waiterCalling;
   try {
     const fd = new FormData();
     fd.append("note", waiterNote.value || "");
@@ -1274,15 +1299,15 @@ waiterSend.addEventListener("click", async () => {
       modal.classList.remove("open");
       waiterNote.value = "";
       callBtn.classList.add("called");
-      callBtn.textContent = "✅ Вызван";
-      toast("✅ Официант уже идёт!", "var(--teal)");
-      setTimeout(() => { callBtn.classList.remove("called"); callBtn.textContent = "🔔 Официант"; }, 15000);
+      callBtn.textContent = T.waiterCalled;
+      toast(T.waiterOnWay, "var(--teal)");
+      setTimeout(() => { callBtn.classList.remove("called"); callBtn.textContent = T.waiterBtn; }, 15000);
     }
   } catch {
-    toast("Ошибка. Попробуйте ещё раз.", "#EF4444");
+    toast(T.errRetry2, "#EF4444");
   } finally {
     waiterSend.disabled = false;
-    waiterSend.textContent = "🔔 Вызвать официанта";
+    waiterSend.textContent = T.waiterSendBtn;
   }
 });
 
@@ -1344,8 +1369,8 @@ document.querySelectorAll(".wb-logo").forEach(function (a) {
     dmName.textContent  = card.dataset.dishName || "";
     dmDesc.textContent  = card.dataset.dishDesc || "";
     const oldPrice = card.dataset.dishOldPrice;
-    dmPrice.innerHTML = (oldPrice ? `<span class="tmdm-price-old">${oldPrice} сом</span>` : "")
-      + `<span>${card.dataset.dishPrice || "0"} сом</span>`;
+    dmPrice.innerHTML = (oldPrice ? `<span class="tmdm-price-old">${oldPrice} ${CUR}</span>` : "")
+      + `<span>${card.dataset.dishPrice || "0"} ${CUR}</span>`;
     dmAddBtn.dataset.add = card.dataset.bi;
 
     backdrop.classList.add("open");

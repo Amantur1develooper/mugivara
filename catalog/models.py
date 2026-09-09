@@ -169,7 +169,8 @@ class BranchItem(TimeStampedModel):
 
     @property
     def promo_badge_text(self):
-        return self.promo_label.strip() or "Акция"
+        from django.utils.translation import gettext
+        return self.promo_label.strip() or gettext("Акция")
     
     
 class BranchCategoryItem(TimeStampedModel):

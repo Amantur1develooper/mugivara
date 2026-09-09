@@ -174,10 +174,22 @@
         <div class="avail-row">
           <div>
             <div style="font-size:14px;font-weight:500;color:var(--text2)">В наличии</div>
-            <div style="font-size:12px;color:var(--muted)">Если выключено — блюдо скрыто в меню</div>
+            <div style="font-size:12px;color:var(--muted)">Если выключено — блюдо скрыто везде</div>
           </div>
           <label class="db-switch">
             <input type="checkbox" name="is_available" {% if bi.is_available %}checked{% endif %}>
+            <span class="db-switch-slider"></span>
+          </label>
+        </div>
+
+        <div class="avail-row">
+          <div>
+            <div style="font-size:14px;font-weight:500;color:var(--text2)">🪑 Только в зале</div>
+            <div style="font-size:12px;color:var(--muted)">Блюдо видно только по QR за столом и в кассе.
+              Скрыто из онлайн-меню — недоступно для доставки и самовывоза.</div>
+          </div>
+          <label class="db-switch">
+            <input type="checkbox" name="dine_in_only" {% if not bi.delivery_available %}checked{% endif %}>
             <span class="db-switch-slider"></span>
           </label>
         </div>

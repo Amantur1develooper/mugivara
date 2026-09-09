@@ -978,6 +978,20 @@
       </div>
       {% endif %}
 
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <input id="posPromo" type="text" autocomplete="off" placeholder="Промокод"
+               oninput="this.value=this.value.toUpperCase()" onblur="checkPromo()"
+               style="flex:1;border:1.5px solid var(--border);border-radius:10px;padding:9px 12px;
+                      font-size:13px;font-weight:600;letter-spacing:.5px;background:var(--bg);
+                      color:var(--text);outline:none;text-transform:uppercase">
+        <button type="button" onclick="checkPromo()"
+                style="border:1.5px solid var(--border);background:var(--card);border-radius:10px;
+                       padding:0 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer">
+          Проверить
+        </button>
+      </div>
+      <div id="posPromoMsg" style="display:none;font-size:12px;font-weight:600;margin:-4px 0 8px 2px"></div>
+
       <textarea class="pos-comment" id="posComment" rows="2" placeholder="Комментарий (необязательно)"></textarea>
 
       <button class="pos-confirm-btn" id="posConfirmBtn" onclick="submitOrder()">
@@ -1094,6 +1108,7 @@ const STATUS_URL       = "{% url 'dashboard:pos_order_status' 0 %}".replace("/0/
 const RECEIPT_URL      = "{% url 'dashboard:pos_receipt' 0 %}".replace("/0/", "/{id}/");
 const TABLE_CLOSE_URL  = "{% url 'dashboard:pos_table_close' 0 %}".replace("/0/", "/{id}/");
 const TABLE_ORDER_URL  = "{% url 'dashboard:pos_table_order_json' 0 %}".replace("/0/", "/{id}/");
+const PROMO_URL        = "{% url 'public_site:validate_promo' branch.id %}";
 const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
 
 // ── Table state ────────────────────────────────────────────────────────────
@@ -1154,6 +1169,7 @@ function setQty(biId, qty) {
 function clearCart() {
   Object.keys(cart).forEach(k => delete cart[k]);
   document.getElementById("posComment").value = "";
+  const p = document.getElementById("posPromo"); if (p) p.value = "";
   renderCart();
 }
 
@@ -1338,6 +1354,30 @@ async function closeTableBill(payment) {
 }
 
 // ── Submit order ───────────────────────────────────────────────────────────
+async function checkPromo() {
+  const inp = document.getElementById("posPromo");
+  const msg = document.getElementById("posPromoMsg");
+  const code = inp.value.trim().toUpperCase();
+  if (!code) { msg.style.display = "none"; return; }
+  try {
+    const fd = new FormData();
+    fd.append("code", code);
+    const r = await fetch(PROMO_URL, { method: "POST", headers: { "X-CSRFToken": CSRF() }, body: fd });
+    const d = await r.json();
+    msg.style.display = "block";
+    if (d.ok) {
+      let txt = "−" + parseFloat(d.discount_value).toLocaleString();
+      txt += (d.discount_type === "percent") ? "%" : (d.discount_type === "fixed" ? " сом" : "");
+      if (d.discount_type === "free_delivery") txt = "бесплатная доставка";
+      msg.textContent = "✓ Промокод: " + txt;
+      msg.style.color = "#059669";
+    } else {
+      msg.textContent = "✕ " + (d.error || "Промокод недействителен");
+      msg.style.color = "#ff3b30";
+    }
+  } catch (e) { msg.style.display = "none"; }
+}
+
 async function submitOrder() {
   const keys = Object.keys(cart);
   if (!keys.length) { alert("Добавьте блюда в заказ"); return; }
@@ -1351,7 +1391,9 @@ async function submitOrder() {
 
   const items = keys.map(id => ({ bi_id: parseInt(id), qty: cart[id].qty }));
   const comment = document.getElementById("posComment").value.trim();
+  const promoCode = document.getElementById("posPromo").value.trim().toUpperCase();
   const body = { items, type: selectedType, payment: selectedPay, comment };
+  if (promoCode) body.promo_code = promoCode;
   if (selectedTableId) body.table_place_id = selectedTableId;
 
   try {
@@ -1362,6 +1404,12 @@ async function submitOrder() {
     });
     const d = await r.json();
     if (d.ok) {
+      const promoOff = parseFloat(d.promo_discount || 0);
+      if (promoOff > 0) {
+        const pm = document.getElementById("posPromoMsg");
+        if (pm) { pm.style.display = "block"; pm.style.color = "#059669";
+          pm.textContent = "✓ Промокод применён: −" + promoOff.toLocaleString() + " сом"; }
+      }
       if (d.open_table) {
         // Table order stays open — print kitchen ticket, update table button
         if (receiptWin) receiptWin.location.href = RECEIPT_URL.replace("{id}", d.order_id);

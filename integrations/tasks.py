@@ -147,6 +147,13 @@ def _order_text(order: Order, title_override: str = None) -> str:
             lines.append(f"🚚 Доставка: {_money(delivery_fee)}")
         if promo_savings > 0:
             lines.append(f"🏷️ Скидка по акции: −{_money(promo_savings)}")
+        _pc = getattr(order, "promo_code", "") or ""
+        _pd = Decimal(str(getattr(order, "promo_discount", 0) or 0))
+        if _pc:
+            if _pd > 0:
+                lines.append(f"🎟️ Промокод {_pc}: −{_money(_pd)}")
+            else:
+                lines.append(f"🎟️ Промокод {_pc}")
         lines.append(f"💰 ИТОГО: {_money(order.total_amount)}")
 
     created = timezone.localtime(order.created_at).strftime("%d.%m.%Y %H:%M")
@@ -187,8 +194,15 @@ def _table_order_text(order: Order) -> str:
     else:
         lines.append("⚠️ Состав не указан")
 
-    if getattr(order, "total_amount", None):
+    _pc = getattr(order, "promo_code", "") or ""
+    _pd = Decimal(str(getattr(order, "promo_discount", 0) or 0))
+    if _pc:
         lines.append("")
+        lines.append(f"🎟️ Промокод {_pc}" + (f": −{_money(_pd)}" if _pd > 0 else ""))
+
+    if getattr(order, "total_amount", None):
+        if not _pc:
+            lines.append("")
         lines.append(f"💰 Итого: {_money(order.total_amount)}")
 
     if getattr(order, "customer_name", ""):

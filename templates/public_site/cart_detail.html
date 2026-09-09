@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n i18n_attrs static %}
+{% load i18n i18n_attrs static l10n %}
 
 {% block head_extra %}
 <style>
@@ -159,6 +159,20 @@
 {% endblock %}
 
 {% block content %}
+<script>
+const CUR = "{% cur %}";
+const T = {
+  cur: "{% cur %}",
+  promoApplied: "{% trans '✓ Промокод применён:' %}",
+  promoBad: "{% trans 'Неверный промокод' %}",
+  apply: "{% trans 'Применить' %}",
+  remove: "{% trans 'Убрать' %}",
+  errRetry: "{% trans 'Ошибка. Попробуйте ещё раз.' %}",
+  cartEmpty: "{% trans 'Корзина пуста' %}",
+  placeOrder: "{% trans 'Оформить заказ →' %}",
+  sending: "{% trans 'Отправляем…' %}",
+};
+</script>
 <div class="cart-wrap">
 
   <!-- Заголовок -->
@@ -166,15 +180,15 @@
     <div class="cart-header-left">
       <div class="cart-avatar">
         {% if branch.cover_photo %}
-          <img src="{{ branch.cover_photo.url }}" alt="{{ branch.name_ru }}">
+          <img src="{{ branch.cover_photo.url }}" alt="{% t branch 'name' %}">
         {% else %}
-          {{ branch.name_ru|first }}
+          {% t branch 'name' as bn %}{{ bn|first }}
         {% endif %}
       </div>
       <div>
-        <div class="cart-title">Корзина</div>
+        <div class="cart-title">{% trans "Корзина" %}</div>
         <div class="cart-branch">
-          {{ branch.name_ru }}{% if branch.address %} · {{ branch.address }}{% endif %}
+          {% t branch 'name' %}{% if branch.address %} · {{ branch.address }}{% endif %}
         </div>
       </div>
     </div>
@@ -188,7 +202,7 @@
         </a>
         {% endwith %}
       {% endif %}
-      <a href="{% url 'public_site:branch_menu' branch.id %}" class="cart-btn-sm">← Меню</a>
+      <a href="{% url 'public_site:branch_menu' branch.id %}" class="cart-btn-sm">← {% trans "Меню" %}</a>
     </div>
   </div>
 
@@ -202,7 +216,7 @@
   {% if qty_total == 0 %}
     <div class="cart-empty">
       <div style="font-size:48px;margin-bottom:12px">🛒</div>
-      Корзина пуста. <a href="{% url 'public_site:branch_menu' branch.id %}" style="color:var(--accent);">Вернуться в меню →</a>
+      {% trans "Корзина пуста." %} <a href="{% url 'public_site:branch_menu' branch.id %}" style="color:var(--accent);">{% trans "Вернуться в меню →" %}</a>
     </div>
 
   {% else %}
@@ -216,14 +230,14 @@
            data-update-url="{% url 'public_site:cart_update' branch.id bi.id %}">
         <div style="flex:1;min-width:0;">
           <div class="cart-row-name">{% t dish "name" %}</div>
-          <div class="cart-row-price">{{ bi.price }} сом / шт.</div>
+          <div class="cart-row-price">{{ bi.price|som }} / {% trans "шт." %}</div>
         </div>
         <div class="cart-qty-controls">
           <button class="cart-qty-btn" data-dec type="button">−</button>
           <input class="cart-qty-input" type="number" min="0" value="{{ r.qty }}" data-qty-input>
           <button class="cart-qty-btn" data-inc type="button">+</button>
         </div>
-        <div class="cart-row-line"><span data-line-total>{{ r.line_total }}</span> сом</div>
+        <div class="cart-row-line"><span data-line-total>{{ r.line_total }}</span> {% cur %}</div>
         <button class="cart-del-btn" data-remove type="button">✕</button>
       </div>
       {% endwith %}
@@ -233,71 +247,71 @@
     <!-- Итоги -->
     <div class="cart-totals">
       <div class="cart-totals-row">
-        <span>Подытог</span>
-        <span><span data-subtotal>{{ subtotal }}</span> сом</span>
+        <span>{% trans "Подытог" %}</span>
+        <span><span data-subtotal>{{ subtotal }}</span> {% cur %}</span>
       </div>
       {% if branch.delivery_enabled %}
       <div class="cart-totals-row">
-        <span>Доставка</span>
-        <span><span data-delivery-fee>{{ delivery_fee }}</span> сом</span>
+        <span>{% trans "Доставка" %}</span>
+        <span><span data-delivery-fee>{{ delivery_fee }}</span> {% cur %}</span>
       </div>
       {% endif %}
       <div class="cart-totals-row total">
-        <span>Итого</span>
-        <span><span data-total>{{ total }}</span> сом</span>
+        <span>{% trans "Итого" %}</span>
+        <span><span data-total>{{ total }}</span> {% cur %}</span>
       </div>
     </div>
 
     <!-- Промокод -->
     <div class="cart-promo">
-      <div class="cart-promo-title">🎟 Промокод</div>
+      <div class="cart-promo-title">🎟 {% trans "Промокод" %}</div>
       <div class="cart-promo-row">
-        <input id="promo-input" type="text" placeholder="Введите промокод" class="cart-promo-input">
-        <button type="button" id="promo-apply-btn" class="cart-promo-apply">Применить</button>
+        <input id="promo-input" type="text" placeholder="{% trans 'Введите промокод' %}" class="cart-promo-input">
+        <button type="button" id="promo-apply-btn" class="cart-promo-apply">{% trans "Применить" %}</button>
       </div>
       <div id="promo-msg" class="cart-promo-msg" style="display:none"></div>
     </div>
 
     <!-- Оформление -->
     <div class="cart-checkout">
-      <div class="cart-checkout-title">📝 Оформление заказа</div>
+      <div class="cart-checkout-title">📝 {% trans "Оформление заказа" %}</div>
 
       <form action="{% url 'public_site:checkout' branch.id %}" method="post" id="checkout-form">
         {% csrf_token %}
         <input type="hidden" name="promo_code" id="promo-code-hidden">
 
-        <input name="name" required placeholder="Ваше имя" class="cart-field">
+        <input name="name" required placeholder="{% trans 'Ваше имя' %}" class="cart-field">
 
         <input name="phone" id="phone" type="tel" inputmode="numeric" autocomplete="tel"
                required value="+996" minlength="13" maxlength="13"
                pattern="^\+996\d{9}$"
-               title="Формат: +996XXXXXXXXX"
+               title="{% trans 'Формат: +996XXXXXXXXX' %}"
                placeholder="+996700123456" class="cart-field">
 
         <input name="address" required
-               placeholder="{% if branch.delivery_enabled %}Адрес доставки{% else %}Номер стола / кабинки{% endif %}"
+               placeholder="{% if branch.delivery_enabled %}{% trans 'Адрес доставки' %}{% else %}{% trans 'Номер стола / кабинки' %}{% endif %}"
                class="cart-field">
 
         {% if branch.delivery_enabled %}
-          <div class="min-order-note">Минимальная сумма доставки: {{ branch.min_order_amount }} сом</div>
+          <div class="min-order-note">{% blocktrans with amt=branch.min_order_amount|som %}Минимальная сумма доставки: {{ amt }}{% endblocktrans %}</div>
         {% endif %}
 
-        <textarea name="comment" rows="2" placeholder="Комментарий (необязательно)" class="cart-field" style="resize:vertical"></textarea>
+        <textarea name="comment" rows="2" placeholder="{% trans 'Комментарий (необязательно)' %}" class="cart-field" style="resize:vertical"></textarea>
 
-        <label class="cart-label">Способ оплаты</label>
+        <label class="cart-label">{% trans "Способ оплаты" %}</label>
         <div class="cart-radio-group">
           <label class="cart-radio-option">
             <input type="radio" name="payment_method" value="cash" checked>
-            <span>💵 Наличные</span>
+            <span>💵 {% trans "Наличные" %}</span>
           </label>
           <label class="cart-radio-option">
             <input type="radio" name="payment_method" value="online">
-            <span>💳 Онлайн</span>
+            <span>💳 {% trans "Онлайн" %}</span>
           </label>
         </div>
 
         <button type="submit" class="cart-submit" id="checkout-submit-btn">
-          Оформить заказ →
+          {% trans "Оформить заказ →" %}
         </button>
       </form>
     </div>
@@ -333,7 +347,7 @@ function updateTotals(data) {
   if (data.total        !== undefined) setAll('[data-total]',        data.total);
   if (data.qty_total    !== undefined) {
     document.querySelectorAll('[data-cart-qty]').forEach(el => el.textContent = data.qty_total);
-    document.querySelectorAll('[data-cart-total]').forEach(el => el.textContent = '· ' + data.total + ' сом');
+    document.querySelectorAll('[data-cart-total]').forEach(el => el.textContent = '· ' + data.total + ' ' + CUR);
   }
 }
 
@@ -420,21 +434,21 @@ document.addEventListener('change', async e => {
         hidden.value = code; input.readOnly = true;
         let desc = data.label;
         if (data.discount_type === 'percent') desc += ` −${parseFloat(data.discount_value).toFixed(0)}%`;
-        else if (data.discount_type === 'fixed') desc += ` −${parseFloat(data.discount_value).toFixed(0)} сом`;
-        showMsg('✓ Промокод применён: ' + desc, true);
-        btn.textContent = 'Убрать';
+        else if (data.discount_type === 'fixed') desc += ` −${parseFloat(data.discount_value).toFixed(0)} ${CUR}`;
+        showMsg(T.promoApplied + ' ' + desc, true);
+        btn.textContent = T.remove;
         btn.onclick = () => {
           input.readOnly = false; input.value = ''; hidden.value = '';
           msg.style.display = 'none';
-          btn.textContent = 'Применить'; btn.onclick = null; btn.disabled = false;
+          btn.textContent = T.apply; btn.onclick = null; btn.disabled = false;
         };
       } else {
-        showMsg('✗ ' + (data.error || 'Неверный промокод'), false);
-        btn.textContent = 'Применить'; btn.disabled = false;
+        showMsg('✗ ' + (data.error || T.promoBad), false);
+        btn.textContent = T.apply; btn.disabled = false;
       }
     } catch {
-      showMsg('Ошибка. Попробуйте ещё раз.', false);
-      btn.textContent = 'Применить'; btn.disabled = false;
+      showMsg(T.errRetry, false);
+      btn.textContent = T.apply; btn.disabled = false;
     }
   });
 })();
@@ -476,7 +490,7 @@ document.addEventListener('change', async e => {
     btn.disabled = empty;
     btn.style.opacity = empty ? '0.4' : '';
     btn.style.cursor  = empty ? 'not-allowed' : '';
-    btn.textContent   = empty ? 'Корзина пуста' : 'Оформить заказ →';
+    btn.textContent   = empty ? T.cartEmpty : T.placeOrder;
   }
 
   // следим за изменением qty
@@ -493,7 +507,7 @@ document.addEventListener('change', async e => {
   form.addEventListener('submit', function(e){
     if (totalQty() === 0) { e.preventDefault(); return; }
     btn.disabled = true;
-    btn.textContent = 'Отправляем…';
+    btn.textContent = T.sending;
   });
 
   refreshBtn();

@@ -208,26 +208,29 @@ def qr_order_create(request, token: str):
         order.total_amount = total
         order.save(update_fields=["total_amount"])
 
-    # Печать на кухне (вне транзакции, чтобы не тормозить ответ)
-    try:
-        from printing.jobs import create_print_jobs
-        from django.db import transaction as tx
-        _oid = order.id
-        def _do_print_qr():
-            try:
-                from orders.models import Order as _Ord
-                create_print_jobs(
-                    _Ord.objects
-                    .select_related("table_place__floor", "branch__restaurant")
-                    .get(id=_oid)
-                )
-            except Exception as e:
-                import traceback
-                print("PRINT create_print_jobs ERROR (qr-api):", e)
-                traceback.print_exc()
-        tx.on_commit(_do_print_qr)
-    except Exception:
-        pass
+    # Печать на кухне (вне транзакции, чтобы не тормозить ответ).
+    # Если у филиала включено «печать только после подтверждения» —
+    # чек уйдёт на кухню, когда кассир нажмёт «Принять».
+    if not order.branch.print_on_accept:
+        try:
+            from printing.jobs import create_print_jobs
+            from django.db import transaction as tx
+            _oid = order.id
+            def _do_print_qr():
+                try:
+                    from orders.models import Order as _Ord
+                    create_print_jobs(
+                        _Ord.objects
+                        .select_related("table_place__floor", "branch__restaurant")
+                        .get(id=_oid)
+                    )
+                except Exception as e:
+                    import traceback
+                    print("PRINT create_print_jobs ERROR (qr-api):", e)
+                    traceback.print_exc()
+            tx.on_commit(_do_print_qr)
+        except Exception:
+            pass
 
     return Response(
         {

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load static i18n i18n_attrs %}
+{% load static i18n i18n_attrs l10n %}
 
-{% block title %}Рестораны Кыргызстана — Webordo{% endblock %}
+{% block title %}{% trans "Рестораны Кыргызстана" %} — Webordo{% endblock %}
 
 {% block head_extra %}
 <style>
@@ -596,11 +596,11 @@
   {# ── HERO ── #}
   <div class="rl-hero">
     <div>
-      <div class="rl-eyebrow">Платформа Webordo</div>
-      <h1 class="rl-title">Рестораны<br>Кыргызстана</h1>
+      <div class="rl-eyebrow">{% trans "Платформа Webordo" %}</div>
+      <h1 class="rl-title">{% trans "Рестораны" %}<br>{% trans "Кыргызстана" context "родительный" %}</h1>
       <div class="rl-count">
         <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);"></span>
-        {{ total }} заведени{% if total == 1 %}е{% elif total|divisibleby:10 or total == 0 %}й{% else %}я{% endif %}
+        {% blocktrans count n=total %}{{ n }} заведение{% plural %}{{ n }} заведения{% endblocktrans %}
       </div>
     </div>
 
@@ -611,17 +611,17 @@
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/>
         </svg>
         <input class="rl-search" name="q" value="{{ q }}"
-               placeholder="Поиск ресторана..." autocomplete="off">
+               placeholder="{% trans 'Поиск ресторана...' %}" autocomplete="off">
       </div>
 
       <label class="rl-open-label">
         <input type="checkbox" name="open_now" value="1" {% if open_now %}checked{% endif %}
                onchange="this.form.submit()">
         <span class="rl-toggle"></span>
-        Открыто сейчас
+        {% trans "Открыто сейчас" %}
       </label>
 
-      <button class="rl-submit" type="submit">Найти</button>
+      <button class="rl-submit" type="submit">{% trans "Найти" %}</button>
     </form>
   </div>
 
@@ -629,7 +629,7 @@
   {# ── КАРУСЕЛЬ ── #}
   {% if promo_cards %}
   <div class="rl-carousel-section">
-    <div class="rl-carousel-label">Акции и доставка</div>
+    <div class="rl-carousel-label">{% trans "Акции и доставка" %}</div>
     <div class="rl-carousel-track-wrap" id="csWrap">
       <div class="rl-carousel-track" id="csTrack">
         {% for c in promo_cards %}
@@ -651,12 +651,12 @@
           {% if c.free_delivery_from %}
             <div class="rl-cs-free">
               <span class="rl-cs-free-icon">🎁</span>
-              Бесплатная доставка от {{ c.free_delivery_from|floatformat:"0" }} сом
+              {% blocktrans with amt=c.free_delivery_from|som %}Бесплатная доставка от {{ amt }}{% endblocktrans %}
             </div>
           {% elif c.has_delivery %}
-            <div class="rl-cs-no-delivery">🚚 Есть доставка</div>
+            <div class="rl-cs-no-delivery">🚚 {% trans "Есть доставка" %}</div>
           {% else %}
-            <div class="rl-cs-no-delivery">🥡 Самовывоз</div>
+            <div class="rl-cs-no-delivery">🥡 {% trans "Самовывоз" %}</div>
           {% endif %}
 
         </a>
@@ -666,10 +666,10 @@
     <div style="display:flex; align-items:center; justify-content:space-between; margin-top:14px;">
       <div class="rl-carousel-dots" id="csDots"></div>
       <div class="rl-carousel-nav" style="margin-top:0">
-        <button class="rl-carousel-btn" id="csPrev" aria-label="Назад">
+        <button class="rl-carousel-btn" id="csPrev" aria-label="{% trans 'Назад' %}">
           <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <button class="rl-carousel-btn" id="csNext" aria-label="Вперёд">
+        <button class="rl-carousel-btn" id="csNext" aria-label="{% trans 'Вперёд' %}">
           <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
@@ -712,13 +712,13 @@
         {# статус: открыто / закрыто #}
         <div class="rc-status {% if c.is_open %}open{% else %}closed{% endif %}">
           <span class="rc-status-dot"></span>
-          {% if c.is_open %}Открыто{% else %}Закрыто{% endif %}
+          {% if c.is_open %}{% trans "Открыто" %}{% else %}{% trans "Закрыто" %}{% endif %}
         </div>
 
         {# количество филиалов #}
         {% if c.branches_count > 1 %}
         <div class="rc-branches-badge">
-          {{ c.branches_count }} филиала
+          {% blocktrans count n=c.branches_count %}{{ n }} филиал{% plural %}{{ n }} филиала{% endblocktrans %}
         </div>
         {% endif %}
 
@@ -730,7 +730,7 @@
               <span>⏰ {{ c.hours_text }}</span>
               <span class="rc-photo-sub-dot"></span>
             {% endif %}
-            <span>{{ c.branches_count }} филиал{% if c.branches_count > 1 %}а{% endif %}</span>
+            <span>{% blocktrans count n=c.branches_count %}{{ n }} филиал{% plural %}{{ n }} филиала{% endblocktrans %}</span>
           </div>
         </div>
       </div>
@@ -741,21 +741,21 @@
         {# пилюли #}
         <div class="rc-pills">
           {% if c.has_delivery %}
-            <span class="rc-pill delivery">🚚 Доставка</span>
+            <span class="rc-pill delivery">🚚 {% trans "Доставка" %}</span>
             {% if c.min_order %}
-              <span class="rc-pill">Мин. {{ c.min_order|floatformat:"0" }} сом</span>
+              <span class="rc-pill">{% blocktrans with amt=c.min_order|som %}Мин. {{ amt }}{% endblocktrans %}</span>
             {% endif %}
             {% if c.free_delivery_from %}
-              <span class="rc-pill free-delivery">🎁 Бесплатно от {{ c.free_delivery_from|floatformat:"0" }} сом</span>
+              <span class="rc-pill free-delivery">🎁 {% blocktrans with amt=c.free_delivery_from|som %}Бесплатно от {{ amt }}{% endblocktrans %}</span>
             {% elif c.min_fee %}
-              <span class="rc-pill">Дост. {{ c.min_fee|floatformat:"0" }} сом</span>
+              <span class="rc-pill">{% blocktrans with amt=c.min_fee|som %}Дост. {{ amt }}{% endblocktrans %}</span>
             {% endif %}
           {% else %}
-            <span class="rc-pill">🥡 Самовывоз</span>
+            <span class="rc-pill">🥡 {% trans "Самовывоз" %}</span>
           {% endif %}
 
           {% if c.hours_text == "24/7" %}
-            <span class="rc-pill allday">🌙 Круглосуточно</span>
+            <span class="rc-pill allday">🌙 {% trans "Круглосуточно" %}</span>
           {% elif c.hours_text %}
             <span class="rc-pill hours">⏰ {{ c.hours_text }}</span>
           {% endif %}
@@ -763,9 +763,9 @@
 
         {# кнопка #}
         <div class="rc-footer">
-          <span class="rc-footer-hint">Меню, контакты, бронь</span>
+          <span class="rc-footer-hint">{% trans "Меню, контакты, бронь" %}</span>
           <span class="rc-btn">
-            Открыть
+            {% trans "Открыть" %}
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
               <path d="M2 11L11 2M11 2H5M11 2V8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
@@ -778,8 +778,8 @@
 
     <div class="rl-empty">
       <div class="rl-empty-icon">🔍</div>
-      <h3>Ничего не найдено</h3>
-      <p>Попробуй другой запрос или сними фильтр «Открыто сейчас»</p>
+      <h3>{% trans "Ничего не найдено" %}</h3>
+      <p>{% trans "Попробуй другой запрос или сними фильтр «Открыто сейчас»" %}</p>
     </div>
 
     {% endfor %}
@@ -810,7 +810,7 @@
     cards.forEach((_, i) => {
       const d = document.createElement('button');
       d.className = 'rl-dot' + (i === 0 ? ' active' : '');
-      d.setAttribute('aria-label', `Слайд ${i+1}`);
+      d.setAttribute('aria-label', `{% trans "Слайд" %} ${i+1}`);
       d.addEventListener('click', () => { goTo(i); resetAuto(); });
       dotsEl.appendChild(d);
     });

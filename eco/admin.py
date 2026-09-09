@@ -28,6 +28,7 @@ class EcoProjectAdmin(admin.ModelAdmin):
         (None, {"fields": ("place_category", "name", "slug", "is_active", "sort_order")}),
         ("Контакты", {"fields": ("address", "phone", "working_hours", "map_url")}),
         ("Описание и медиа", {"fields": ("description", "logo")}),
+        ("Telegram — уведомления о заявках", {"fields": ("tg_chat_id", "tg_thread_id")}),
     )
 
 

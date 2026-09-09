@@ -39,7 +39,8 @@ from decimal import Decimal
 
 @require_POST
 def add_to_cart(request, branch_item_id):
-    bi = get_object_or_404(BranchItem, id=branch_item_id, is_available=True)
+    bi = get_object_or_404(BranchItem, id=branch_item_id, is_available=True,
+                           delivery_available=True)
 
     qty = int(request.POST.get("qty") or 1)
     qty = max(1, min(qty, 99))
@@ -205,7 +206,7 @@ def home(request):
         .distinct()
         .only("id", "name_ru", "name_ky", "name_en", "slug", "logo", "cover", "rating")
         .prefetch_related("branches")
-        .order_by("-rating", "name_ru")[:8]
+        .order_by("-rating", "name_ru")[:16]
     )
     restaurant_cards = []
     for r in top_restaurants:
@@ -499,7 +500,7 @@ def _build_branch_menu_context(request, branch):
         "items_in_category",
         queryset=BranchCategoryItem.objects
             .select_related("branch_item__item")
-            .filter(branch_item__is_available=True)
+            .filter(branch_item__is_available=True, branch_item__delivery_available=True)
             .order_by("sort_order", "-branch_item__item__order_count", "id"),
         to_attr="prefetched_items",
     )
@@ -840,6 +841,8 @@ def checkout(request, branch_id: int):
             comment=comment,
             total_amount=total,
             delivery_fee=delivery_fee,
+            promo_code=(promo.code if promo else ""),
+            promo_discount=promo_discount,
             payment_method=payment_method,
             payment_status=Order.PaymentStatus.UNPAID,
         )

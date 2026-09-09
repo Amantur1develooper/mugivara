@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load static i18n i18n_attrs %}
+{% load static i18n i18n_attrs l10n %}
 
-{% block title %}{% t branch "name" %} — Меню · Webordo{% endblock %}
+{% block title %}{% t branch "name" %} — {% trans "Меню" %} · Webordo{% endblock %}
 
 {% block cta %}{% endblock %}
 
@@ -590,6 +590,61 @@
 
 {% block content %}
 
+<script>
+const CUR = "{% cur %}";
+const T = {
+  loading: "{% trans 'Загрузка…' %}",
+  loadErr: "{% trans 'Ошибка загрузки' %}",
+  cartEmpty: "{% trans 'Корзина пуста' %}",
+  err: "{% trans 'Ошибка' %}",
+  errNet: "{% trans 'Ошибка сети' %}",
+  added: "{% trans 'Добавлено в корзину' %}",
+  addFail: "{% trans 'Не удалось добавить' %}",
+  pcs: "{% trans 'шт' %}",
+  perPcs: "{% trans '/ шт.' %}",
+  required: "{% trans 'Обязательно' %}",
+  optional: "{% trans 'Необязательно' %}",
+  minLabel: "{% trans 'мин' %}",
+  maxLabel: "{% trans 'макс' %}",
+  chosen: "{% trans 'Выбрано' %}",
+  next: "{% trans 'Дальше →' %}",
+  prev: "{% trans '← Назад' %}",
+  done: "{% trans 'Готово ✓' %}",
+  maxN: "{% trans 'Максимум' %}",
+  minN: "{% trans 'Выберите минимум' %}",
+  inGroup: "{% trans 'в' %}",
+  free: "{% trans 'Бесплатно' %}",
+  toCartCx: "{% trans 'В корзину 🧩' %}",
+  deliveryFree: "{% trans '🎉 Доставка бесплатная!' %}",
+  toFreeDelivery: "{% trans 'До бесплатной доставки ещё' %}",
+  freeEmoji: "{% trans 'Бесплатно 🎉' %}",
+  minDeliverySum: "{% trans 'Минимальная сумма доставки:' %}",
+  subtotal: "{% trans 'Подытог' %}",
+  delivery: "{% trans 'Доставка' %}",
+  total: "{% trans 'Итого' %}",
+  havePromo: "{% trans '🎟 Есть промокод?' %}",
+  enterPromo: "{% trans 'Введите промокод' %}",
+  remove: "{% trans 'Убрать' %}",
+  apply: "{% trans 'Применить' %}",
+  checkoutTitle: "{% trans '📝 Оформление заказа' %}",
+  yourName: "{% trans 'Ваше имя' %}",
+  deliveryAddr: "{% trans 'Адрес доставки' %}",
+  tableNum: "{% trans 'Номер стола / кабинки' %}",
+  commentOpt: "{% trans 'Комментарий (необязательно)' %}",
+  payMethod: "{% trans 'Способ оплаты' %}",
+  cash: "{% trans '💵 Наличные' %}",
+  online: "{% trans '💳 Онлайн' %}",
+  placeOrder: "{% trans 'Оформить заказ →' %}",
+  cartEmptyBtn: "{% trans '🛒 Корзина пуста' %}",
+  phoneFormat: "{% trans 'Формат: +996XXXXXXXXX' %}",
+  promoApplied: "{% trans '✓ Промокод применён:' %}",
+  promoBad: "{% trans 'Неверный промокод' %}",
+  mKcal: "{% trans 'К' context 'калории' %}",
+  mProt: "{% trans 'Б' context 'белки' %}",
+  mFat: "{% trans 'Ж' context 'жиры' %}",
+  mCarb: "{% trans 'У' context 'углеводы' %}",
+};
+</script>
 
 <div class="bm-toast-wrap" id="toastWrap" aria-live="polite"></div>
 
@@ -625,16 +680,16 @@
         <div>
           {% t branch.restaurant "name" as rest_name %}
           <div class="bm-hero-brand">
-            <span class="bm-hero-menu-tag">М Е Н Ю</span>
+            <span class="bm-hero-menu-tag">{% trans "М Е Н Ю" %}</span>
           </div>
           <div class="bm-hero-meta">
             {% if branch.is_open_now %}
               <span class="bm-hero-pill open">
                 <span class="bm-hero-pill-dot"></span>
-                Открыто
+                {% trans "Открыто" %}
               </span>
             {% else %}
-              <span class="bm-hero-pill">● Закрыто</span>
+              <span class="bm-hero-pill">● {% trans "Закрыто" %}</span>
             {% endif %}
 
             {% if branch.address %}
@@ -643,14 +698,14 @@
 
             {% if branch.delivery_enabled %}
               <span class="bm-hero-pill delivery">
-                🚚 Доставка · {{ branch.delivery_fee|floatformat:"0" }} сом
+                🚚 {% trans "Доставка" %} · {{ branch.delivery_fee|som }}
               </span>
             {% else %}
-              <span class="bm-hero-pill">🥡 Самовывоз</span>
+              <span class="bm-hero-pill">🥡 {% trans "Самовывоз" %}</span>
             {% endif %}
 
             {% if branch.is_open_24h %}
-              <span class="bm-hero-pill">🌙 Круглосуточно</span>
+              <span class="bm-hero-pill">🌙 {% trans "Круглосуточно" %}</span>
             {% elif branch.open_time and branch.close_time %}
               <span class="bm-hero-pill">⏰ {{ branch.open_time|time:"H:i" }}–{{ branch.close_time|time:"H:i" }}</span>
             {% endif %}
@@ -661,9 +716,9 @@
         <button type="button" onclick="openCartModal()"
            class="bm-hero-cart {% if cart_qty > 0 %}active{% endif %}"
            id="heroCart">
-          🧺 Корзина
+          🧺 {% trans "Корзина" %}
           <span class="bm-hero-cart-badge" data-cart-qty>{{ cart_qty }}</span>
-          <span data-cart-total style="font-size:12px;opacity:.8;">· {{ cart_total }} сом</span>
+          <span data-cart-total style="font-size:12px;opacity:.8;">· {{ cart_total|som }}</span>
         </button>
       </div>
     </div>
@@ -675,9 +730,9 @@
     <div class="bm-cats-row">
       <!-- Скролл-полоса категорий -->
       <div class="bm-cats-inner" id="catsBar">
-        <a href="#bm-top" class="bm-cat-btn active" data-cat-link="bm-top">Все</a>
+        <a href="#bm-top" class="bm-cat-btn active" data-cat-link="bm-top">{% trans "Все" %}</a>
         {% if constructors %}
-          <a href="#cat-constructors" class="bm-cat-btn" data-cat-link="cat-constructors">🧩 Собери сам</a>
+          <a href="#cat-constructors" class="bm-cat-btn" data-cat-link="cat-constructors">🧩 {% trans "Собери сам" %}</a>
         {% endif %}
         {% for c in menu %}
           <a href="#cat-{{ c.branch_category.id }}"
@@ -689,7 +744,7 @@
       </div>
 
       <!-- Кнопка стрелка вниз -->
-      <button class="bm-cats-more-btn" id="catsMoreBtn" onclick="toggleCatsDropdown()" aria-label="Все категории">
+      <button class="bm-cats-more-btn" id="catsMoreBtn" onclick="toggleCatsDropdown()" aria-label="{% trans 'Все категории' %}">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M2 4.5L7 9.5L12 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
@@ -697,9 +752,9 @@
 
       <!-- Дропдаун: сюда JS переносит только те категории, что не влезли в полосу -->
       <div class="bm-cats-dropdown" id="catsDropdown">
-        <a href="#bm-top" class="bm-cat-btn" data-cat-link="bm-top" onclick="closeCatsDropdown()">Все</a>
+        <a href="#bm-top" class="bm-cat-btn" data-cat-link="bm-top" onclick="closeCatsDropdown()">{% trans "Все" %}</a>
         {% if constructors %}
-          <a href="#cat-constructors" class="bm-cat-btn" data-cat-link="cat-constructors" onclick="closeCatsDropdown()">🧩 Собери сам</a>
+          <a href="#cat-constructors" class="bm-cat-btn" data-cat-link="cat-constructors" onclick="closeCatsDropdown()">🧩 {% trans "Собери сам" %}</a>
         {% endif %}
         {% for c in menu %}
           <a href="#cat-{{ c.branch_category.id }}"
@@ -721,7 +776,7 @@
     <section class="bm-cat-section" id="cat-constructors" data-cat-section="cat-constructors">
       <div class="bm-cat-header">
         <div class="bm-cat-line"></div>
-        <h2 class="bm-cat-title">🧩 Собери сам</h2>
+        <h2 class="bm-cat-title">🧩 {% trans "Собери сам" %}</h2>
         <span class="bm-cat-count">{{ constructors|length }}</span>
         <div class="bm-cat-line"></div>
       </div>
@@ -736,7 +791,7 @@
               <div class="cx-card-img-placeholder">🧩</div>
             {% endif %}
             <div class="cx-card-overlay"></div>
-            <div class="cx-card-label">Собери сам</div>
+            <div class="cx-card-label">{% trans "Собери сам" %}</div>
           </div>
           <div class="cx-card-body">
             <div class="cx-card-name">{{ cx.name }}</div>
@@ -749,7 +804,7 @@
               {% if not forloop.last %}<span class="cx-card-step-sep">·</span>{% endif %}
               {% endfor %}
             </div>
-            <div class="cx-card-cta"><span>Собрать →</span></div>
+            <div class="cx-card-cta"><span>{% trans "Собрать →" %}</span></div>
           </div>
         </div>
         {% endfor %}
@@ -804,7 +859,7 @@
                 {% if bi.is_on_promo %}
                 <div class="dish-promo-badge">🏷️ {{ bi.promo_badge_text }}{% if bi.discount_pct %} −{{ bi.discount_pct }}%{% endif %}</div>
                 {% endif %}
-                <div class="dish-price-badge{% if bi.is_on_promo %} on-promo{% endif %}">{{ bi.price|floatformat:"0" }} сом</div>
+                <div class="dish-price-badge{% if bi.is_on_promo %} on-promo{% endif %}">{{ bi.price|som }}</div>
               </div>
 
               {# BODY #}
@@ -817,10 +872,10 @@
 
                 {% if dish.calories or dish.protein or dish.fat or dish.carbs %}
                 <div class="dish-macros">
-                  {% if dish.calories %}<span class="dish-macro-pill"><span class="dish-macro-label">К</span> {{ dish.calories }}</span>{% endif %}
-                  {% if dish.protein %}<span class="dish-macro-pill"><span class="dish-macro-label">Б</span> {{ dish.protein }}</span>{% endif %}
-                  {% if dish.fat %}<span class="dish-macro-pill"><span class="dish-macro-label">Ж</span> {{ dish.fat }}</span>{% endif %}
-                  {% if dish.carbs %}<span class="dish-macro-pill"><span class="dish-macro-label">У</span> {{ dish.carbs }}</span>{% endif %}
+                  {% if dish.calories %}<span class="dish-macro-pill"><span class="dish-macro-label">{% trans "К" context "калории" %}</span> {{ dish.calories }}</span>{% endif %}
+                  {% if dish.protein %}<span class="dish-macro-pill"><span class="dish-macro-label">{% trans "Б" context "белки" %}</span> {{ dish.protein }}</span>{% endif %}
+                  {% if dish.fat %}<span class="dish-macro-pill"><span class="dish-macro-label">{% trans "Ж" context "жиры" %}</span> {{ dish.fat }}</span>{% endif %}
+                  {% if dish.carbs %}<span class="dish-macro-pill"><span class="dish-macro-label">{% trans "У" context "углеводы" %}</span> {{ dish.carbs }}</span>{% endif %}
                 </div>
                 {% endif %}
 
@@ -828,19 +883,19 @@
                   <div>
                     {% if bi.is_on_promo %}
                     <div class="dish-price-row">
-                      <div class="dish-price on-promo">{{ bi.price|floatformat:"0" }} <span style="font-size:11px;font-weight:500;">сом</span></div>
-                      <div class="dish-price-old">{{ bi.old_price|floatformat:"0" }} сом</div>
+                      <div class="dish-price on-promo">{{ bi.price|floatformat:"0" }} <span style="font-size:11px;font-weight:500;">{% cur %}</span></div>
+                      <div class="dish-price-old">{{ bi.old_price|som }}</div>
                       {% if bi.discount_pct %}<span class="dish-discount-chip">−{{ bi.discount_pct }}%</span>{% endif %}
                     </div>
                     {% else %}
-                    <div class="dish-price">{{ bi.price|floatformat:"0" }} <span style="font-size:11px;font-weight:500;color:var(--muted);">сом</span></div>
+                    <div class="dish-price">{{ bi.price|floatformat:"0" }} <span style="font-size:11px;font-weight:500;color:var(--muted);">{% cur %}</span></div>
                     {% endif %}
                   </div>
 
                   {# форма добавления + кнопка #}
                   <form action="{% url 'public_site:add_to_cart' bi.id %}" method="post" data-add-to-cart>
                     {% csrf_token %}
-                    <button type="submit" class="dish-add-btn" aria-label="Добавить в корзину">
+                    <button type="submit" class="dish-add-btn" aria-label="{% trans 'Добавить в корзину' %}">
                       +
                     </button>
                   </form>
@@ -859,9 +914,9 @@
       <div class="bm-empty">
         <div style="font-size:52px;margin-bottom:16px;">🍽️</div>
         <div style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:800;color:var(--text);letter-spacing:-0.5px;margin-bottom:8px;">
-          Меню пока пустое
+          {% trans "Меню пока пустое" %}
         </div>
-        <div style="font-size:14px;color:var(--muted);">Ресторан ещё не добавил блюда</div>
+        <div style="font-size:14px;color:var(--muted);">{% trans "Ресторан ещё не добавил блюда" %}</div>
       </div>
     {% endif %}
 
@@ -1006,8 +1061,8 @@ const CX_CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
 
     {# Навигация Назад/Дальше #}
     <div class="cxm-nav" id="cxNav" style="display:none">
-      <button class="cxm-nav-btn cxm-prev" id="cxPrevBtn" type="button" onclick="cxGoPrev()">← Назад</button>
-      <button class="cxm-nav-btn cxm-next" id="cxNextBtn" type="button" onclick="cxGoNext()">Дальше →</button>
+      <button class="cxm-nav-btn cxm-prev" id="cxPrevBtn" type="button" onclick="cxGoPrev()">{% trans "← Назад" %}</button>
+      <button class="cxm-nav-btn cxm-next" id="cxNextBtn" type="button" onclick="cxGoNext()">{% trans "Дальше →" %}</button>
     </div>
 
     {# Подвал #}
@@ -1015,10 +1070,10 @@ const CX_CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
       <div class="cxm-chips" id="cxChips"></div>
       <div class="cxm-foot-row">
         <div class="cxm-foot-total">
-          <span class="cxm-foot-lbl">Итого</span>
-          <span class="cxm-foot-val" id="cxTotal">0 сом</span>
+          <span class="cxm-foot-lbl">{% trans "Итого" %}</span>
+          <span class="cxm-foot-val" id="cxTotal">0 {% cur %}</span>
         </div>
-        <button class="cxm-add-btn" id="cxAddBtn" type="button" onclick="cxAddToCart()">В корзину 🧩</button>
+        <button class="cxm-add-btn" id="cxAddBtn" type="button" onclick="cxAddToCart()">{% trans "В корзину 🧩" %}</button>
       </div>
       <div class="cxm-error" id="cxError"></div>
     </div>
@@ -1355,13 +1410,13 @@ function _buildSteps() {
     const isRequired = g.min > 0;
     const maxTxt = g.max > 0 ? ` / ${g.max}` : '';
     const hintBadge = isRequired
-      ? `<span class="cxm-hint-badge">Обязательно</span> мин ${g.min}${g.max > 0 ? `, макс ${g.max}` : ''}`
-      : `<span class="cxm-hint-badge opt">Необязательно</span>${g.max > 0 ? ` макс ${g.max}` : ''}`;
+      ? `<span class="cxm-hint-badge">${T.required}</span> ${T.minLabel} ${g.min}${g.max > 0 ? `, ${T.maxLabel} ${g.max}` : ''}`
+      : `<span class="cxm-hint-badge opt">${T.optional}</span>${g.max > 0 ? ` ${T.maxLabel} ${g.max}` : ''}`;
 
     step.innerHTML = `
       <div class="cxm-step-title">${_esc(g.name)}</div>
       <div class="cxm-step-hint">${hintBadge}</div>
-      <div class="cxm-step-qty-info" id="cxQtyInfo${g.id}">Выбрано: 0${maxTxt}</div>
+      <div class="cxm-step-qty-info" id="cxQtyInfo${g.id}">${T.chosen}: 0${maxTxt}</div>
       <div class="cxm-ing-grid" id="cxGrid${g.id}"></div>`;
 
     const grid = step.querySelector('#cxGrid' + g.id);
@@ -1380,7 +1435,7 @@ function _buildSteps() {
         <div class="cxm-ing-body">
           <div class="cxm-ing-name">${_esc(ing.name)}</div>
           ${ing.desc ? `<div class="cxm-ing-desc">${_esc(ing.desc)}</div>` : ''}
-          <div class="cxm-ing-price${ing.price == 0 ? ' free' : ''}">${ing.price == 0 ? 'Бесплатно' : '+' + ing.price + ' сом'}</div>
+          <div class="cxm-ing-price${ing.price == 0 ? ' free' : ''}">${ing.price == 0 ? T.free : '+' + ing.price + ' ' + CUR}</div>
           ${isRadio ? '' : `
           <div class="cxm-qty" id="cxQtyCtrl${ing.id}">
             <button class="cxm-qty-btn" type="button" onclick="event.stopPropagation();_cxQty(${g.id},${ing.id},-1)">−</button>
@@ -1412,7 +1467,7 @@ function _buildSteps() {
   if (_cxGroups.length > 1) {
     nav.style.display = 'flex';
     document.getElementById('cxPrevBtn').style.display = 'none';
-    document.getElementById('cxNextBtn').textContent = 'Дальше →';
+    document.getElementById('cxNextBtn').textContent = T.next;
   } else {
     nav.style.display = 'none';
   }
@@ -1448,7 +1503,7 @@ function _cxQty(gid, iid, delta) {
     else {
       const rest = _cxGroupTotal(gid) - cur;
       if (g.max > 0 && rest + nq > g.max) {
-        _showErr(`Максимум ${g.max} в «${g.name}»`);
+        _showErr(`${T.maxN} ${g.max} ${T.inGroup} «${g.name}»`);
         return;
       }
       map[iid] = nq;
@@ -1481,7 +1536,7 @@ function _updateGroupInfo(gid) {
   if (!g || !el) return;
   const tot = _cxGroupTotal(gid);
   const maxTxt = g.max > 0 ? ` / ${g.max}` : '';
-  el.textContent = `Выбрано: ${tot}${maxTxt}`;
+  el.textContent = `${T.chosen}: ${tot}${maxTxt}`;
   el.classList.toggle('ok', tot > 0 && (g.min === 0 || tot >= g.min));
 }
 
@@ -1519,7 +1574,7 @@ function _updateTotal() {
       total += (map[ing.id] || 0) * Number(ing.price);
     });
   });
-  document.getElementById('cxTotal').textContent = total + ' сом';
+  document.getElementById('cxTotal').textContent = total + ' ' + CUR;
 
   // блюдо собрано полностью (все обязательные группы заполнены) — подсвечиваем кнопку зелёным
   const ready = cx.groups.every(g => g.min <= 0 || _cxGroupTotal(g.id) >= g.min);
@@ -1533,7 +1588,7 @@ function _switchStep(idx, validate = false) {
   if (validate && idx > _cxStep) {
     const g = _cxGroups[_cxStep];
     if (g.min > 0 && _cxGroupTotal(g.id) < g.min) {
-      _showErr(`Выберите минимум ${g.min} в «${g.name}»`);
+      _showErr(`${T.minN} ${g.min} ${T.inGroup} «${g.name}»`);
       const btn = document.getElementById('cxNextBtn');
       if (btn) {
         btn.style.transform = 'translateX(-4px)';
@@ -1583,7 +1638,7 @@ function _updateNav() {
   const prev = document.getElementById('cxPrevBtn');
   const next = document.getElementById('cxNextBtn');
   if (prev) prev.style.display = _cxStep === 0 ? 'none' : '';
-  if (next) next.textContent = _cxStep === n - 1 ? 'Готово ✓' : 'Дальше →';
+  if (next) next.textContent = _cxStep === n - 1 ? T.done : T.next;
 }
 
 function cxGoNext() { if (_cxStep < _cxGroups.length - 1) _switchStep(_cxStep + 1, true); }
@@ -1596,7 +1651,7 @@ async function cxAddToCart() {
     const g = _cxGroups[i];
     if (g.min > 0 && _cxGroupTotal(g.id) < g.min) {
       _switchStep(i);
-      _showErr(`Выберите минимум ${g.min} в «${g.name}»`);
+      _showErr(`${T.minN} ${g.min} ${T.inGroup} «${g.name}»`);
       return;
     }
   }
@@ -1611,14 +1666,14 @@ async function cxAddToCart() {
       headers: { 'X-CSRFToken': CX_CSRF(), 'X-Requested-With': 'XMLHttpRequest' }
     });
     const d = await r.json();
-    if (!d.ok) { _showErr(d.error || 'Ошибка'); return; }
+    if (!d.ok) { _showErr(d.error || T.err); return; }
     closeCxModal();
     const fab = document.getElementById('cartFab');
     if (fab) fab.classList.remove('hide');
     if (d.qty_total !== undefined) updateCartUI(d.qty_total, d.total);
     if (typeof window._cartSilentRefresh === 'function') window._cartSilentRefresh();
-  } catch { _showErr('Ошибка сети'); }
-  finally { btn.disabled = false; btn.textContent = 'В корзину 🧩'; }
+  } catch { _showErr(T.errNet); }
+  finally { btn.disabled = false; btn.textContent = T.toCartCx; }
 }
 
 /* ── Helpers ── */
@@ -1638,18 +1693,18 @@ function _showErr(msg) {
    class="cart-fab {% if not cart_qty or cart_qty == 0 %}hide{% endif %}">
   <div class="cart-fab-icon">🧺</div>
   <div class="cart-fab-info">
-    <div class="cart-fab-title">Ваша корзина</div>
-    <div class="cart-fab-total" data-cart-total>{{ cart_total }} сом</div>
+    <div class="cart-fab-title">{% trans "Ваша корзина" %}</div>
+    <div class="cart-fab-total" data-cart-total>{{ cart_total|som }}</div>
   </div>
-  <div class="cart-fab-badge" data-cart-qty>{{ cart_qty }} шт</div>
+  <div class="cart-fab-badge" data-cart-qty>{{ cart_qty }} {% trans "шт" %}</div>
 </button>
 
 {# ══ КНОПКА НАВЕРХ ══ #}
-<button id="bm-top-btn" class="bm-top-btn hide" type="button" aria-label="Наверх">↑</button>
+<button id="bm-top-btn" class="bm-top-btn hide" type="button" aria-label="{% trans 'Наверх' %}">↑</button>
 
 {# ══ МОДАЛЬНОЕ ОКНО КОРЗИНЫ ══ #}
 <div id="cartModal" class="cm-backdrop" onclick="backdropClose(event)">
-  <div class="cm-sheet" role="dialog" aria-label="Корзина">
+  <div class="cm-sheet" role="dialog" aria-label="{% trans 'Корзина' %}">
 
     {# шапка #}
     <div class="cm-header">
@@ -1659,16 +1714,16 @@ function _showErr(msg) {
           {% else %}{% t branch 'name' as branch_name_t %}{{ branch_name_t|first }}{% endif %}
         </div>
         <div>
-          <div class="cm-title">Корзина</div>
+          <div class="cm-title">{% trans "Корзина" %}</div>
           <div class="cm-branch">{% t branch 'name' %}{% if branch.address %} · {{ branch.address }}{% endif %}</div>
         </div>
       </div>
-      <button class="cm-close" onclick="closeCartModal()" aria-label="Закрыть">✕</button>
+      <button class="cm-close" onclick="closeCartModal()" aria-label="{% trans 'Закрыть' %}">✕</button>
     </div>
 
     {# тело — заполняется JS #}
     <div class="cm-body" id="cmBody">
-      <div class="cm-loading">Загрузка…</div>
+      <div class="cm-loading">{% trans "Загрузка…" %}</div>
     </div>
 
   </div>
@@ -1676,8 +1731,8 @@ function _showErr(msg) {
 
 {# ══ МОДАЛЬНОЕ ОКНО БЛЮДА ══ #}
 <div id="dishModal" class="dm-backdrop" onclick="dmBackdropClose(event)">
-  <div class="dm-sheet" role="dialog" aria-label="Блюдо">
-    <button class="dm-close" onclick="closeDishModal()" aria-label="Закрыть">✕</button>
+  <div class="dm-sheet" role="dialog" aria-label="{% trans 'Блюдо' %}">
+    <button class="dm-close" onclick="closeDishModal()" aria-label="{% trans 'Закрыть' %}">✕</button>
     <div class="dm-photo-wrap">
       <img id="dmPhoto" src="" alt="" class="dm-photo">
       <div id="dmPhotoEmpty" class="dm-photo-empty" style="display:none">🍽️</div>
@@ -1691,8 +1746,8 @@ function _showErr(msg) {
         <div id="dmPrice" class="dm-price"></div>
         <form id="dmForm" method="post" data-add-to-cart>
           {% csrf_token %}
-          <button type="submit" class="dish-add-btn dm-add-btn" aria-label="В корзину">
-            В корзину
+          <button type="submit" class="dish-add-btn dm-add-btn" aria-label="{% trans 'В корзину' %}">
+            {% trans "В корзину" %}
           </button>
         </form>
       </div>
@@ -2056,7 +2111,7 @@ function updateCartUI(qty, total) {
 
   // badge везде
   document.querySelectorAll('[data-cart-qty]').forEach(el => {
-    el.textContent = n > 0 ? n + ' шт' : n;
+    el.textContent = n > 0 ? n + ' ' + T.pcs : n;
     el.classList.remove('cart-fab-badge-pop');
     void el.offsetWidth;
     el.classList.add('cart-fab-badge-pop');
@@ -2064,7 +2119,7 @@ function updateCartUI(qty, total) {
 
   // total везде
   document.querySelectorAll('[data-cart-total]').forEach(el => {
-    el.textContent = total + ' сом';
+    el.textContent = total + ' ' + CUR;
   });
 
   // показать/скрыть FAB
@@ -2113,13 +2168,13 @@ document.addEventListener('submit', async (e) => {
           btn.classList.remove('pulse');
         }, 900);
       }
-      showToast('Добавлено в корзину', true);
+      showToast(T.added, true);
     } else {
-      showToast('Не удалось добавить', false);
+      showToast(T.addFail, false);
       if (btn) { btn.classList.remove('loading'); btn.textContent = '+'; }
     }
   } catch {
-    showToast('Ошибка сети', false);
+    showToast(T.errNet, false);
     if (btn) { btn.classList.remove('loading'); btn.textContent = '+'; }
   }
 }, true);
@@ -2289,12 +2344,12 @@ document.addEventListener('click', e => {
 
   /* ── Первая полная загрузка ── */
   async function loadCart() {
-    body.innerHTML = '<div class="cm-loading">Загрузка…</div>';
+    body.innerHTML = '<div class="cm-loading">${T.loading}</div>';
     try {
       const r = await fetch(urls.cartJson);
       renderCart(await r.json());
     } catch {
-      body.innerHTML = '<div class="cm-loading">Ошибка загрузки</div>';
+      body.innerHTML = '<div class="cm-loading">${T.loadErr}</div>';
     }
   }
 
@@ -2315,7 +2370,7 @@ document.addEventListener('click', e => {
       body.innerHTML = `
         <div class="cm-empty">
           <div class="cm-empty-icon">🛒</div>
-          <div class="cm-empty-text">Корзина пуста</div>
+          <div class="cm-empty-text">${T.cartEmpty}</div>
         </div>`;
       cartRendered = false;
       return;
@@ -2331,7 +2386,7 @@ document.addEventListener('click', e => {
         const qEl = row.querySelector('.cm-qty-num');
         const tEl = row.querySelector('.cm-row-total');
         if (qEl) qEl.textContent = item.qty;
-        if (tEl) tEl.textContent = item.line_total + ' сом';
+        if (tEl) tEl.textContent = item.line_total + ' ' + CUR;
       } else {
         const div = document.createElement('div');
         div.className = 'cm-row';
@@ -2340,14 +2395,14 @@ document.addEventListener('click', e => {
         div.innerHTML = `
           <div style="flex:1;min-width:0">
             <div class="cm-row-name">${item.name}</div>
-            <div class="cm-row-price">${item.price} сом / шт.</div>
+            <div class="cm-row-price">${item.price} ${CUR} ${T.perPcs}</div>
           </div>
           <div class="cm-qty">
             <button class="cm-qty-btn" data-cm-dec>−</button>
             <span class="cm-qty-num">${item.qty}</span>
             <button class="cm-qty-btn" data-cm-inc>+</button>
           </div>
-          <div class="cm-row-total">${item.line_total} сом</div>`;
+          <div class="cm-row-total">${item.line_total} ${CUR}</div>`;
         itemsEl.appendChild(div);
       }
     });
@@ -2359,7 +2414,7 @@ document.addEventListener('click', e => {
         const qEl = row.querySelector('.cm-qty-num');
         const tEl = row.querySelector('.cm-row-total');
         if (qEl) qEl.textContent = item.qty;
-        if (tEl) tEl.textContent = item.line_total + ' сом';
+        if (tEl) tEl.textContent = item.line_total + ' ' + CUR;
       } else {
         const div = document.createElement('div');
         div.className = 'cm-row';
@@ -2376,8 +2431,8 @@ document.addEventListener('click', e => {
 
     const subEl = document.getElementById('cmSubtotal');
     const totEl = document.getElementById('cmTotal');
-    if (subEl) subEl.textContent = d.subtotal + ' сом';
-    if (totEl) totEl.textContent = d.total    + ' сом';
+    if (subEl) subEl.textContent = d.subtotal + ' ' + CUR;
+    if (totEl) totEl.textContent = d.total    + ' ' + CUR;
     updateFreeDeliveryBanner(d);
   }
 
@@ -2391,14 +2446,14 @@ document.addEventListener('click', e => {
       <div style="flex:1;min-width:0">
         <div class="cm-row-name">🧩 ${item.name}</div>
         ${selHtml}
-        <div class="cm-row-price" style="margin-top:3px">${item.price} сом / шт.</div>
+        <div class="cm-row-price" style="margin-top:3px">${item.price} ${CUR} ${T.perPcs}</div>
       </div>
       <div class="cm-qty">
         <button class="cm-qty-btn" data-cx-dec="${item.cx_idx}">−</button>
         <span class="cm-qty-num">${item.qty}</span>
         <button class="cm-qty-btn" data-cx-inc="${item.cx_idx}">+</button>
       </div>
-      <div class="cm-row-total">${item.line_total} сом</div>`;
+      <div class="cm-row-total">${item.line_total} ${CUR}</div>`;
   }
 
   /* ── Полный рендер (только при первом открытии) ── */
@@ -2408,7 +2463,7 @@ document.addEventListener('click', e => {
       body.innerHTML = `
         <div class="cm-empty">
           <div class="cm-empty-icon">🛒</div>
-          <div class="cm-empty-text">Корзина пуста</div>
+          <div class="cm-empty-text">${T.cartEmpty}</div>
         </div>`;
       cartRendered = false;
       return;
@@ -2418,14 +2473,14 @@ document.addEventListener('click', e => {
       <div class="cm-row" data-bi-id="${item.bi_id}" data-update-url="${item.update_url}">
         <div style="flex:1;min-width:0">
           <div class="cm-row-name">${item.name}</div>
-          <div class="cm-row-price">${item.price} сом / шт.</div>
+          <div class="cm-row-price">${item.price} ${CUR} ${T.perPcs}</div>
         </div>
         <div class="cm-qty">
           <button class="cm-qty-btn" data-cm-dec>−</button>
           <span class="cm-qty-num">${item.qty}</span>
           <button class="cm-qty-btn" data-cm-inc>+</button>
         </div>
-        <div class="cm-row-total">${item.line_total} сом</div>
+        <div class="cm-row-total">${item.line_total} ${CUR}</div>
       </div>`).join('');
 
     const cxHtml = (d.cx_items || []).map(item => `
@@ -2437,77 +2492,77 @@ document.addEventListener('click', e => {
     let freeBanner = '';
     if (d.delivery_enabled && freeFrom > 0) {
       if (d.free_delivery_reached) {
-        freeBanner = `<div class="cm-free-banner cm-free-ok">🎉 Доставка бесплатная!</div>`;
+        freeBanner = `<div class="cm-free-banner cm-free-ok">${T.deliveryFree}</div>`;
       } else {
         const need = Math.ceil(freeFrom - subtotalNum);
         const pct  = Math.min(100, Math.round((subtotalNum / freeFrom) * 100));
         freeBanner = `<div class="cm-free-banner cm-free-hint">
-          <div class="cm-free-hint-top">🚚 До бесплатной доставки ещё <strong>${need} сом</strong></div>
+          <div class="cm-free-hint-top">🚚 ${T.toFreeDelivery} <strong>${need} ${CUR}</strong></div>
           <div class="cm-free-bar-wrap"><div class="cm-free-bar" style="width:${pct}%"></div></div>
         </div>`;
       }
     }
 
     const deliveryLabel = d.free_delivery_reached
-      ? `<span class="cm-free-val">Бесплатно 🎉</span>`
-      : `<span id="cmDeliveryFee">${d.delivery_fee} сом</span>`;
+      ? `<span class="cm-free-val">${T.freeEmoji}</span>`
+      : `<span id="cmDeliveryFee">${d.delivery_fee} ${CUR}</span>`;
 
     const deliveryRow = d.delivery_enabled
-      ? `<div class="cm-total-row"><span>Доставка</span>${deliveryLabel}</div>` : '';
+      ? `<div class="cm-total-row"><span>${T.delivery}</span>${deliveryLabel}</div>` : '';
 
     const minNote = d.delivery_enabled && parseFloat(d.min_order_amount) > 0
-      ? `<div class="cm-min-note">Минимальная сумма доставки: ${d.min_order_amount} сом</div>` : '';
+      ? `<div class="cm-min-note">${T.minDeliverySum} ${d.min_order_amount} ${CUR}</div>` : '';
 
     body.innerHTML = `
       ${freeBanner}
       <div class="cm-items" id="cmItems">${itemsHtml}${cxHtml}</div>
 
       <div class="cm-totals">
-        <div class="cm-total-row"><span>Подытог</span><span id="cmSubtotal">${d.subtotal} сом</span></div>
+        <div class="cm-total-row"><span>${T.subtotal}</span><span id="cmSubtotal">${d.subtotal} ${CUR}</span></div>
         ${deliveryRow}
-        <div class="cm-total-row big"><span>Итого</span><span id="cmTotal">${d.total} сом</span></div>
+        <div class="cm-total-row big"><span>${T.total}</span><span id="cmTotal">${d.total} ${CUR}</span></div>
       </div>
 
       <div class="cm-promo${promoCode ? ' open' : ''}" id="cmPromo">
         <div class="cm-promo-toggle" onclick="document.getElementById('cmPromo').classList.toggle('open')">
-          <span class="cm-promo-toggle-label">🎟 Есть промокод?</span>
+          <span class="cm-promo-toggle-label">${T.havePromo}</span>
           <span class="cm-promo-toggle-arrow">▼</span>
         </div>
         <div class="cm-promo-body">
           <div class="cm-promo-row">
-            <input id="cmPromoInput" type="text" placeholder="Введите промокод" class="cm-promo-input" value="${promoCode}">
-            <button type="button" id="cmPromoBtn" class="cm-promo-btn">${promoCode ? 'Убрать' : 'Применить'}</button>
+            <input id="cmPromoInput" type="text" placeholder="${T.enterPromo}" class="cm-promo-input" value="${promoCode}">
+            <button type="button" id="cmPromoBtn" class="cm-promo-btn">${promoCode ? T.remove : T.apply}</button>
           </div>
           <div id="cmPromoMsg" class="cm-promo-msg" style="display:none"></div>
         </div>
       </div>
 
       <div style="background:var(--card,#fff);border:1.5px solid var(--border,#eee);border-radius:14px;padding:16px 18px">
-        <div class="cm-form-title">📝 Оформление заказа</div>
+        <div class="cm-form-title">${T.checkoutTitle}</div>
         <form id="cmCheckoutForm" action="${urls.checkoutUrl}" method="post">
           <input type="hidden" name="csrfmiddlewaretoken" value="${CSRF}">
           <input type="hidden" name="promo_code" id="cmPromoHidden" value="${promoCode}">
 
-          <input name="name" required placeholder="Ваше имя" class="cm-field">
+          <input name="name" required placeholder="${T.yourName}" class="cm-field">
 
           <input name="phone" id="cmPhone" type="tel" inputmode="numeric" autocomplete="tel"
                  required value="+996" minlength="13" maxlength="13"
-                 pattern="^\\+996\\d{9}$" title="Формат: +996XXXXXXXXX"
+                 pattern="^\\+996\\d{9}$" title="${T.phoneFormat}"
                  placeholder="+996700123456" class="cm-field">
 
           <input name="address" required
-                 placeholder="${d.delivery_enabled ? 'Адрес доставки' : 'Номер стола / кабинки'}"
+                 placeholder="${d.delivery_enabled ? T.deliveryAddr : T.tableNum}"
                  class="cm-field">
           ${minNote}
 
-          <textarea name="comment" rows="2" placeholder="Комментарий (необязательно)"
+          <textarea name="comment" rows="2" placeholder="${T.commentOpt}"
                     class="cm-field" style="resize:vertical"></textarea>
 
           {% if branch.pay_cash_enabled and branch.pay_online_enabled %}
-          <label style="font-size:12px;font-weight:600;color:var(--text2,#555);display:block;margin-bottom:8px">Способ оплаты</label>
+          <label style="font-size:12px;font-weight:600;color:var(--text2,#555);display:block;margin-bottom:8px">${T.payMethod}</label>
           <div class="cm-radio-group">
-            <label class="cm-radio-opt"><input type="radio" name="payment_method" value="cash" checked><span>💵 Наличные</span></label>
-            <label class="cm-radio-opt"><input type="radio" name="payment_method" value="online"><span>💳 Онлайн</span></label>
+            <label class="cm-radio-opt"><input type="radio" name="payment_method" value="cash" checked><span>${T.cash}</span></label>
+            <label class="cm-radio-opt"><input type="radio" name="payment_method" value="online"><span>${T.online}</span></label>
           </div>
           {% elif branch.pay_cash_enabled %}
           <input type="hidden" name="payment_method" value="cash">
@@ -2516,7 +2571,7 @@ document.addEventListener('click', e => {
           {% endif %}
 
           <button type="submit" class="cm-submit" id="cmSubmitBtn">
-            Оформить заказ →
+            ${T.placeOrder}
           </button>
         </form>
       </div>`;
@@ -2538,8 +2593,8 @@ document.addEventListener('click', e => {
       if (empty) {
         e.preventDefault();
         submitBtn.disabled = true;
-        submitBtn.textContent = '🛒 Корзина пуста';
-        setTimeout(() => { submitBtn.textContent = 'Оформить заказ →'; _updateSubmitState(); }, 2000);
+        submitBtn.textContent = T.cartEmptyBtn;
+        setTimeout(() => { submitBtn.textContent = T.placeOrder; _updateSubmitState(); }, 2000);
       }
     });
 
@@ -2566,7 +2621,7 @@ document.addEventListener('click', e => {
         promoInput.readOnly = false; promoInput.value = '';
         promoHid.value = ''; promoCode = '';
         promoMsg.style.display = 'none';
-        promoBtn.textContent = 'Применить'; return;
+        promoBtn.textContent = T.apply; return;
       }
       const code = promoInput.value.trim().toUpperCase();
       if (!code) return;
@@ -2584,14 +2639,14 @@ document.addEventListener('click', e => {
           promoInput.readOnly = true;
           let desc = data.label || code;
           if (data.discount_type === 'percent') desc += ` −${parseFloat(data.discount_value).toFixed(0)}%`;
-          else if (data.discount_type === 'fixed') desc += ` −${parseFloat(data.discount_value).toFixed(0)} сом`;
-          showPromoMsg('✓ Промокод применён: ' + desc, true);
-          promoBtn.textContent = 'Убрать'; promoBtn.disabled = false;
+          else if (data.discount_type === 'fixed') desc += ` −${parseFloat(data.discount_value).toFixed(0)} ${CUR}`;
+          showPromoMsg(T.promoApplied + ' ' + desc, true);
+          promoBtn.textContent = T.remove; promoBtn.disabled = false;
         } else {
-          showPromoMsg('✗ ' + (data.error || 'Неверный промокод'), false);
-          promoBtn.textContent = 'Применить'; promoBtn.disabled = false;
+          showPromoMsg('✗ ' + (data.error || T.promoBad), false);
+          promoBtn.textContent = T.apply; promoBtn.disabled = false;
         }
-      } catch { promoBtn.textContent = 'Применить'; promoBtn.disabled = false; }
+      } catch { promoBtn.textContent = T.apply; promoBtn.disabled = false; }
     });
 
     function showPromoMsg(t, ok) {
@@ -2629,7 +2684,7 @@ document.addEventListener('click', e => {
             body.innerHTML = `
               <div class="cm-empty">
                 <div class="cm-empty-icon">🛒</div>
-                <div class="cm-empty-text">Корзина пуста</div>
+                <div class="cm-empty-text">${T.cartEmpty}</div>
               </div>`;
             cartRendered = false;
           }
@@ -2637,11 +2692,11 @@ document.addEventListener('click', e => {
         } else {
           if (qtyEl) qtyEl.textContent = d.item_qty;
           const totalEl = row.querySelector('.cm-row-total');
-          if (totalEl && d.line_total !== undefined) totalEl.textContent = d.line_total + ' сом';
+          if (totalEl && d.line_total !== undefined) totalEl.textContent = d.line_total + ' ' + CUR;
         }
 
-        if (d.subtotal !== undefined) { const el = document.getElementById('cmSubtotal'); if (el) el.textContent = d.subtotal + ' сом'; }
-        if (d.total    !== undefined) { const el = document.getElementById('cmTotal');    if (el) el.textContent = d.total    + ' сом'; }
+        if (d.subtotal !== undefined) { const el = document.getElementById('cmSubtotal'); if (el) el.textContent = d.subtotal + ' ' + CUR; }
+        if (d.total    !== undefined) { const el = document.getElementById('cmTotal');    if (el) el.textContent = d.total    + ' ' + CUR; }
         updateFreeDeliveryBanner(d);
         _origUpdate(d.qty_total, d.total);
       } finally {
@@ -2673,7 +2728,7 @@ document.addEventListener('click', e => {
           body.innerHTML = `
             <div class="cm-empty">
               <div class="cm-empty-icon">🛒</div>
-              <div class="cm-empty-text">Корзина пуста</div>
+              <div class="cm-empty-text">${T.cartEmpty}</div>
             </div>`;
           cartRendered = false;
         }
@@ -2681,11 +2736,11 @@ document.addEventListener('click', e => {
       } else {
         qtyEl.textContent = d.row_qty ?? qty;
         const totalEl = row.querySelector('.cm-row-total');
-        if (totalEl && d.line_total !== undefined) totalEl.textContent = d.line_total + ' сом';
+        if (totalEl && d.line_total !== undefined) totalEl.textContent = d.line_total + ' ' + CUR;
       }
 
-      if (d.subtotal !== undefined) { const el = document.getElementById('cmSubtotal'); if (el) el.textContent = d.subtotal + ' сом'; }
-      if (d.total    !== undefined) { const el = document.getElementById('cmTotal');    if (el) el.textContent = d.total    + ' сом'; }
+      if (d.subtotal !== undefined) { const el = document.getElementById('cmSubtotal'); if (el) el.textContent = d.subtotal + ' ' + CUR; }
+      if (d.total    !== undefined) { const el = document.getElementById('cmTotal');    if (el) el.textContent = d.total    + ' ' + CUR; }
       updateFreeDeliveryBanner(d);
       _origUpdate(d.qty_total, d.total);
     } finally {
@@ -2708,7 +2763,7 @@ document.addEventListener('click', e => {
         // переход с подсказки на "бесплатно" — создать новый элемент чтобы анимация сработала
         const newBanner = document.createElement('div');
         newBanner.className = 'cm-free-banner cm-free-ok cm-free-ok-flash';
-        newBanner.textContent = '🎉 Доставка бесплатная!';
+        newBanner.textContent = T.deliveryFree;
         if (banner) {
           banner.replaceWith(newBanner);
         } else if (itemsEl) {
@@ -2717,7 +2772,7 @@ document.addEventListener('click', e => {
       } else if (!banner) {
         const newBanner = document.createElement('div');
         newBanner.className = 'cm-free-banner cm-free-ok';
-        newBanner.textContent = '🎉 Доставка бесплатная!';
+        newBanner.textContent = T.deliveryFree;
         if (itemsEl) itemsEl.parentNode.insertBefore(newBanner, itemsEl);
       }
     } else {
@@ -2729,16 +2784,16 @@ document.addEventListener('click', e => {
       }
       banner.className = 'cm-free-banner cm-free-hint';
       banner.innerHTML = `
-        <div class="cm-free-hint-top">🚚 До бесплатной доставки ещё <strong>${need} сом</strong></div>
+        <div class="cm-free-hint-top">🚚 ${T.toFreeDelivery} <strong>${need} ${CUR}</strong></div>
         <div class="cm-free-bar-wrap"><div class="cm-free-bar" style="width:${pct}%"></div></div>`;
     }
 
     const deliveryEl = document.getElementById('cmDeliveryFee');
     if (deliveryEl) {
       if (d.free_delivery_reached) {
-        deliveryEl.outerHTML = `<span class="cm-free-val">Бесплатно 🎉</span>`;
+        deliveryEl.outerHTML = `<span class="cm-free-val">${T.freeEmoji}</span>`;
       } else {
-        deliveryEl.textContent = d.delivery_fee + ' сом';
+        deliveryEl.textContent = d.delivery_fee + ' ' + CUR;
       }
     }
   }
@@ -2796,14 +2851,14 @@ document.addEventListener('click', e => {
     dmName.textContent  = card.dataset.dishName  || '';
     dmDesc.textContent  = card.dataset.dishDesc  || '';
     const oldPrice = card.dataset.dishOldPrice;
-    dmPrice.innerHTML = (oldPrice ? `<span class="dm-price-old">${oldPrice} сом</span>` : '')
-      + `<span>${card.dataset.dishPrice || '0'} сом</span>`;
+    dmPrice.innerHTML = (oldPrice ? `<span class="dm-price-old">${oldPrice} ${CUR}</span>` : '')
+      + `<span>${card.dataset.dishPrice || '0'} ${CUR}</span>`;
 
     const macros = [
-      ['К', card.dataset.dishCalories],
-      ['Б', card.dataset.dishProtein],
-      ['Ж', card.dataset.dishFat],
-      ['У', card.dataset.dishCarbs],
+      [T.mKcal, card.dataset.dishCalories],
+      [T.mProt, card.dataset.dishProtein],
+      [T.mFat, card.dataset.dishFat],
+      [T.mCarb, card.dataset.dishCarbs],
     ].filter(([, v]) => v);
     if (macros.length) {
       dmMacros.innerHTML = macros.map(([l, v]) =>

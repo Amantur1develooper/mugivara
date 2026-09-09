@@ -652,13 +652,17 @@ def item_edit(request, branch_item_id):
         bi.promo_label = request.POST.get("promo_label", "").strip()[:20]
 
         bi.is_available = request.POST.get("is_available") == "on"
+        # «Только в зале» — блюдо скрыто из онлайн-меню (доставка/самовывоз),
+        # но доступно по QR за столом и в кассе
+        bi.delivery_available = request.POST.get("dine_in_only") != "on"
 
         photo = request.FILES.get("photo")
         if photo:
             item.photo = photo
 
         item.save()
-        bi.save(update_fields=["price", "old_price", "promo_label", "is_available", "updated_at"])
+        bi.save(update_fields=["price", "old_price", "promo_label", "is_available",
+                               "delivery_available", "updated_at"])
 
         # Update category assignment
         new_cat_id = request.POST.get("branch_category_id", "").strip()
@@ -1700,6 +1704,7 @@ def pos_order_create(request, branch_id):
     customer_name   = (data.get("name") or "").strip()
     comment         = (data.get("comment") or "").strip()
     table_place_id  = data.get("table_place_id") or None
+    promo_code_str  = (data.get("promo_code") or "").strip()
 
     if not items_data:
         return JsonResponse({"ok": False, "error": "Нет позиций"}, status=400)
@@ -1770,6 +1775,13 @@ def pos_order_create(request, branch_id):
             order.save(update_fields=["total_amount"])
             open_table = True
         else:
+            # ── Промокод ──
+            from core.promo import resolve_promo, bump_promo_use
+            promo, promo_discount, applied_delivery_fee, promo_label = resolve_promo(
+                branch, promo_code_str, total, applied_delivery_fee,
+                allow_free_delivery=(order_type == Order.Type.DELIVERY),
+            )
+
             order = Order.objects.create(
                 branch=branch,
                 type=order_type,
@@ -1778,6 +1790,8 @@ def pos_order_create(request, branch_id):
                 customer_name=customer_name,
                 comment=comment,
                 table_place=table_place,
+                promo_code=(promo.code if promo else ""),
+                promo_discount=promo_discount,
             )
             for pit in prepared_items:
                 OrderItem.objects.create(
@@ -1793,18 +1807,22 @@ def pos_order_create(request, branch_id):
                         bi.is_available = False
                     bi.save(update_fields=["stock", "is_available"])
 
+            if promo:
+                bump_promo_use(promo)
+
             order.delivery_fee   = applied_delivery_fee
-            order.total_amount   = total + applied_delivery_fee
+            order.total_amount   = total - promo_discount + applied_delivery_fee
 
             # Заказ в зале со столом → оставляем ОТКРЫТЫМ
             # Остальные типы → сразу закрываем
             if table_place:
-                order.save(update_fields=["total_amount", "delivery_fee"])
+                order.save(update_fields=["total_amount", "delivery_fee", "promo_code", "promo_discount"])
                 open_table = True
             else:
                 order.status = Order.Status.CLOSED
                 order.payment_status = Order.PaymentStatus.PAID
-                order.save(update_fields=["total_amount", "delivery_fee", "status", "payment_status"])
+                order.save(update_fields=["total_amount", "delivery_fee", "status", "payment_status",
+                                          "promo_code", "promo_discount"])
                 open_table = False
 
     # Облачная печать — запускаем ПОСЛЕ коммита транзакции
@@ -1847,12 +1865,16 @@ def pos_order_create(request, branch_id):
         except Exception as e:
             print("TG notify_extra_order ERROR:", e)
 
+    _promo_code = "" if existing_order else (order.promo_code or "")
+    _promo_discount = Decimal("0") if existing_order else (order.promo_discount or Decimal("0"))
     return JsonResponse({
         "ok": True,
         "order_id": order.id,
-        "total": str(total + applied_delivery_fee),
+        "total": str(total - _promo_discount + applied_delivery_fee),
         "items_total": str(total),
         "delivery_fee": str(applied_delivery_fee),
+        "promo_code": _promo_code,
+        "promo_discount": str(_promo_discount),
         "open_table": open_table,
         "table_place_id": table_place.id if table_place else None,
     })
@@ -1994,15 +2016,19 @@ def pos_order_status(request, order_id):
         fields.append("updated_at")
         order.save(update_fields=fields)
 
-    # При принятии входящего заказа (new → accepted) — отправить на кухонный принтер
+    # При принятии входящего заказа (new → accepted) — отправить на кухонный принтер.
+    # Заказ со стола по QR при выключённом print_on_accept уже напечатан при создании —
+    # не дублируем. Доставка/самовывоз при создании не печатаются — печатаем здесь.
     if prev_status == Order.Status.NEW and new_status == Order.Status.ACCEPTED:
-        try:
-            from printing.jobs import create_print_jobs
-            create_print_jobs(order)
-        except Exception as e:
-            import traceback
-            print("PRINT create_print_jobs ERROR (accept):", e)
-            traceback.print_exc()
+        already_printed = bool(order.table_place_id) and not order.branch.print_on_accept
+        if not already_printed:
+            try:
+                from printing.jobs import create_print_jobs
+                create_print_jobs(order)
+            except Exception as e:
+                import traceback
+                print("PRINT create_print_jobs ERROR (accept):", e)
+                traceback.print_exc()
 
     # При закрытии онлайн-заказа → печать итогового чека на кассовый принтер
     if new_status == Order.Status.CLOSED and prev_status != Order.Status.CLOSED:
@@ -2185,7 +2211,10 @@ def pos_report(request, branch_id):
         cx_rev   = ConstructorOrderItem.objects.filter(order_id__in=ids).aggregate(s=_Sum("line_total"))["s"] or Decimal("0")
         return item_rev + cx_rev
 
-    total_revenue   = _revenue(closed)
+    # выручка по позициям минус скидки по промокодам (order.promo_discount)
+    promo_codes_sum = closed.aggregate(s=_Sum("promo_discount"))["s"] or Decimal("0")
+    promo_codes_cnt = closed.exclude(promo_code="").count()
+    total_revenue   = _revenue(closed) - promo_codes_sum
     total_orders    = closed.count()
     cancelled_count = cancelled.count()
     cancelled_sum   = _revenue(cancelled)
@@ -2330,6 +2359,8 @@ def pos_report(request, branch_id):
         "total_delivery_fees":   total_delivery_fees,
         "promo_discount_sum":    promo_discount_sum,
         "promo_items_count":     promo_items_count,
+        "promo_codes_sum":       promo_codes_sum,
+        "promo_codes_cnt":       promo_codes_cnt,
     })
 
 

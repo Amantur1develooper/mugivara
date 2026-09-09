@@ -218,6 +218,12 @@
       <form action="{% url 'public_site:table_create_order' token %}" method="post">
         {% csrf_token %}
         <input name="customer_name" required placeholder="Ваше имя" class="tc-field">
+        <div style="display:flex;gap:8px">
+          <input name="promo_code" placeholder="Промокод (если есть)" class="tc-field" autocomplete="off"
+                 oninput="this.value=this.value.toUpperCase()" style="flex:1;text-transform:uppercase"
+                 onblur="tcCheckPromo(this.value)">
+        </div>
+        <div id="tcPromoMsg" style="display:none;font-size:12px;font-weight:600;margin:-6px 0 10px 2px"></div>
         <textarea name="comment" rows="2" placeholder="Комментарий к заказу (необязательно)" class="tc-field" style="resize:vertical"></textarea>
         <button type="submit" class="tc-submit">✅ Отправить заказ</button>
       </form>
@@ -248,6 +254,29 @@ const CSRF       = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
 const UPDATE_URL = "{% url 'public_site:table_cart_update' token %}";
 const CX_UPDATE_URL = "{% url 'public_site:table_cx_update' token %}";
 const WAITER_URL = "{% url 'public_site:table_call_waiter' token %}";
+const PROMO_URL  = "{% url 'public_site:validate_promo' branch.id %}";
+
+async function tcCheckPromo(code){
+  const msg = document.getElementById("tcPromoMsg");
+  code = (code || "").trim().toUpperCase();
+  if (!code){ msg.style.display = "none"; return; }
+  try {
+    const fd = new FormData(); fd.append("code", code);
+    const r = await fetch(PROMO_URL, { method:"POST", headers:{ "X-CSRFToken": CSRF }, body: fd });
+    const d = await r.json();
+    msg.style.display = "block";
+    if (d.ok){
+      let t = "−" + parseFloat(d.discount_value).toLocaleString();
+      t += (d.discount_type === "percent") ? "%" : (d.discount_type === "fixed" ? " сом" : "");
+      if (d.discount_type === "free_delivery") t = "бесплатная доставка";
+      msg.textContent = "✓ Промокод действует: " + t;
+      msg.style.color = "#059669";
+    } else {
+      msg.textContent = "✕ " + (d.error || "Промокод недействителен");
+      msg.style.color = "#e11d48";
+    }
+  } catch(e){ msg.style.display = "none"; }
+}
 
 function post(url, body) {
   return fetch(url, {

@@ -6,7 +6,7 @@
 <style>
   :root{--kr-bg:#1a1030;--kr-card:#241840;--kr-border:rgba(168,85,247,.22);--kr-text:#f5f0ff;--kr-muted:rgba(245,240,255,.65);--kr-purple:#a855f7;--kr-pink:#ec4899;--kr-grad:linear-gradient(135deg,#a855f7,#ec4899);}
   body{background:var(--kr-bg);color:var(--kr-text);}
-  .km-page{max-width:700px;margin:0 auto;padding:0 16px 220px;}
+  .km-page{max-width:700px;margin:0 auto;padding:0 16px 120px;}
   .km-header{text-align:center;padding:36px 16px 24px;}
   .km-logo{width:64px;height:64px;border-radius:18px;overflow:hidden;border:2px solid rgba(168,85,247,.3);background:#1a0a2e;display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 12px;}
   .km-logo img{width:100%;height:100%;object-fit:cover;}
@@ -17,9 +17,25 @@
   .km-room-badge{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:14px;background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.3);color:var(--kr-text);font-size:14px;font-weight:700;margin-bottom:24px;}
   .km-room-badge span{color:var(--kr-muted);font-weight:400;font-size:12px;}
   {% endif %}
-  .km-cat{margin-bottom:32px;}
-  .km-cat-title{font-family:'Unbounded',sans-serif;font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:rgba(168,85,247,.7);margin-bottom:16px;display:flex;align-items:center;gap:10px;}
-  .km-cat-title::after{content:'';flex:1;height:1px;background:var(--kr-border);}
+  .km-cat{margin-bottom:36px;scroll-margin-top:150px;}
+  @media(max-width:600px){ .km-cat{scroll-margin-top:138px;} }
+  .km-cat-head{display:flex;align-items:baseline;gap:10px;margin-bottom:16px;}
+  .km-cat-title{font-family:'Unbounded',sans-serif;font-size:16px;font-weight:900;letter-spacing:-.3px;color:var(--kr-text);}
+  .km-cat-count{font-size:12px;font-weight:700;color:var(--kr-purple);background:rgba(168,85,247,.14);border-radius:100px;padding:2px 9px;}
+  .km-cat-line{flex:1;height:1px;background:var(--kr-border);}
+
+  /* ── STICKY CATEGORY BAR (как в ресторанах) ── */
+  .km-catbar{position:sticky;top:88px;z-index:120;margin:0 -16px 26px;
+    background:rgba(22,14,40,.9);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+    border-top:1px solid var(--kr-border);border-bottom:1px solid var(--kr-border);}
+  .km-catbar-inner{max-width:700px;margin:0 auto;display:flex;gap:8px;
+    padding:11px 16px;overflow-x:auto;scrollbar-width:none;}
+  .km-catbar-inner::-webkit-scrollbar{display:none;}
+  .km-catpill{flex-shrink:0;padding:8px 16px;border-radius:999px;font-size:12px;font-weight:700;
+    white-space:nowrap;cursor:pointer;text-decoration:none;transition:all .18s;
+    background:rgba(168,85,247,.1);border:1.5px solid rgba(168,85,247,.22);color:var(--kr-muted);}
+  .km-catpill:hover{color:var(--kr-text);border-color:rgba(168,85,247,.45);}
+  .km-catpill.active{background:var(--kr-grad);border-color:transparent;color:#fff;box-shadow:0 5px 16px rgba(168,85,247,.4);}
   .km-items{display:flex;flex-direction:column;gap:10px;}
   .km-item{background:var(--kr-card);border:1px solid var(--kr-border);border-radius:16px;display:flex;align-items:center;gap:14px;padding:12px 16px;transition:border-color .2s;}
   .km-item-photo{width:60px;height:60px;border-radius:12px;overflow:hidden;flex-shrink:0;background:linear-gradient(135deg,#1a0a2e,#0d0818);display:flex;align-items:center;justify-content:center;font-size:22px;}
@@ -35,14 +51,43 @@
   .km-add-btn{width:34px;height:34px;border-radius:50%;background:rgba(168,85,247,.12);border:1.5px solid rgba(168,85,247,.25);color:var(--kr-purple);font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
   .km-add-btn:hover{background:rgba(168,85,247,.22);}
 
-  /* ── CART SHEET (sticky bottom) ── */
-  .km-cart{position:fixed;bottom:0;left:0;right:0;z-index:200;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);}
-  .km-cart.visible{transform:translateY(0);}
-  .km-cart-inner{max-width:700px;margin:0 auto;background:#160e28;border-top:1px solid rgba(168,85,247,.3);border-radius:24px 24px 0 0;box-shadow:0 -8px 40px rgba(0,0,0,.6);}
-  .km-cart-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 10px;border-bottom:1px solid rgba(168,85,247,.12);}
+  /* ── FAB: свёрнутая корзина (как в ресторанах) ── */
+  .km-fab{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:300;
+    display:flex;align-items:center;gap:12px;min-width:250px;max-width:min(92vw,440px);
+    padding:12px 16px 12px 14px;border-radius:18px;cursor:pointer;
+    background:var(--kr-grad);border:none;color:#fff;box-shadow:0 14px 40px rgba(168,85,247,.5);
+    transition:transform .25s cubic-bezier(.32,1,.32,1),opacity .2s;}
+  .km-fab.hidden{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(22px);}
+  .km-fab-ic{width:36px;height:36px;border-radius:12px;flex-shrink:0;background:rgba(255,255,255,.18);
+    display:flex;align-items:center;justify-content:center;font-size:17px;}
+  .km-fab-txt{flex:1;min-width:0;text-align:left;}
+  .km-fab-lbl{font-size:10px;letter-spacing:.6px;text-transform:uppercase;color:rgba(255,255,255,.72);}
+  .km-fab-total{font-family:'Unbounded',sans-serif;font-size:14px;font-weight:900;color:#fff;}
+  .km-fab-badge{flex-shrink:0;padding:5px 12px;border-radius:100px;background:rgba(255,255,255,.22);
+    font-family:'Unbounded',sans-serif;font-size:11px;font-weight:900;color:#fff;}
+  .km-fab-arrow{flex-shrink:0;font-size:15px;color:rgba(255,255,255,.85);}
+
+  /* ── CART SHEET: полная корзина открывается по тапу на FAB ── */
+  .km-cart-overlay{position:fixed;inset:0;z-index:350;background:rgba(10,6,24,.72);
+    -webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+    display:flex;align-items:flex-end;justify-content:center;
+    opacity:0;pointer-events:none;transition:opacity .25s;}
+  .km-cart-overlay.open{opacity:1;pointer-events:auto;}
+  .km-cart-inner{width:100%;max-width:560px;background:#160e28;
+    border:1px solid rgba(168,85,247,.3);border-radius:24px 24px 0 0;
+    box-shadow:0 -16px 60px rgba(0,0,0,.7);position:relative;
+    transform:translateY(100%);transition:transform .32s cubic-bezier(.32,1,.32,1);
+    max-height:88vh;display:flex;flex-direction:column;overflow:hidden;}
+  .km-cart-overlay.open .km-cart-inner{transform:translateY(0);}
+  @media(min-width:600px){ .km-cart-overlay{align-items:center;} .km-cart-inner{border-radius:24px;} }
+  .km-cart-drag{width:40px;height:4px;border-radius:2px;background:rgba(168,85,247,.35);margin:12px auto 2px;flex-shrink:0;}
+  .km-cart-close{position:absolute;top:14px;right:16px;width:30px;height:30px;border-radius:50%;
+    background:rgba(0,0,0,.4);border:1px solid rgba(168,85,247,.25);color:rgba(245,240,255,.7);
+    font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;}
+  .km-cart-header{display:flex;align-items:center;justify-content:space-between;padding:8px 20px 10px;border-bottom:1px solid rgba(168,85,247,.12);}
   .km-cart-header-title{font-family:'Unbounded',sans-serif;font-size:13px;font-weight:900;color:var(--kr-text);}
   .km-cart-count{font-size:12px;color:var(--kr-muted);}
-  .km-cart-items{max-height:240px;overflow-y:auto;padding:8px 16px;}
+  .km-cart-items{flex:1;min-height:0;max-height:44vh;overflow-y:auto;padding:8px 16px;}
   .km-cart-items::-webkit-scrollbar{width:3px;}
   .km-cart-items::-webkit-scrollbar-track{background:transparent;}
   .km-cart-items::-webkit-scrollbar-thumb{background:rgba(168,85,247,.3);border-radius:2px;}
@@ -161,11 +206,26 @@
   </div>
   {% endif %}
 
-  {% for cat in menu_cats %}
-  <div class="km-cat">
-    <div class="km-cat-title">{{ cat.name }}</div>
+  {% if menu|length > 1 %}
+  <nav class="km-catbar" id="kmCatbar">
+    <div class="km-catbar-inner" id="kmCatbarInner">
+      {% for cat in menu %}
+      <a href="#kmcat-{{ cat.id }}" class="km-catpill{% if forloop.first %} active{% endif %}"
+         data-target="kmcat-{{ cat.id }}">{{ cat.name }}</a>
+      {% endfor %}
+    </div>
+  </nav>
+  {% endif %}
+
+  {% for cat in menu %}
+  <div class="km-cat" id="kmcat-{{ cat.id }}" data-catsection>
+    <div class="km-cat-head">
+      <div class="km-cat-title">{{ cat.name }}</div>
+      <span class="km-cat-count">{{ cat.count }}</span>
+      <div class="km-cat-line"></div>
+    </div>
     <div class="km-items">
-      {% for item in cat.items.all %}{% if item.is_active %}
+      {% for item in cat.items %}
       <div class="km-item" data-id="{{ item.id }}" data-name="{{ item.name|escapejs }}"
            data-price="{{ item.price|floatformat:0 }}"
            data-desc="{{ item.description|escapejs }}"
@@ -183,8 +243,13 @@
           <div class="km-add-btn" onclick="addItem({{ item.id }})">+</div>
         </div>
       </div>
-      {% endif %}{% endfor %}
+      {% endfor %}
     </div>
+  </div>
+  {% empty %}
+  <div style="text-align:center;padding:60px 20px;color:var(--kr-muted);">
+    <div style="font-size:44px;margin-bottom:12px;">🍽️</div>
+    <div style="font-size:15px;font-weight:700;color:var(--kr-text);">Меню пока пустое</div>
   </div>
   {% endfor %}
 </div>
@@ -205,9 +270,22 @@
   </div>
 </div>
 
+<!-- ── FAB: свёрнутая корзина ── -->
+<button class="km-fab hidden" id="kmFab" type="button" onclick="openCartSheet()">
+  <div class="km-fab-ic">🛒</div>
+  <div class="km-fab-txt">
+    <div class="km-fab-lbl">Ваш заказ</div>
+    <div class="km-fab-total" id="kmFabTotal">0 сом</div>
+  </div>
+  <div class="km-fab-badge" id="kmFabBadge">0</div>
+  <div class="km-fab-arrow">↑</div>
+</button>
+
 <!-- ── CART SHEET ── -->
-<div class="km-cart" id="kmCart">
-  <div class="km-cart-inner">
+<div class="km-cart-overlay" id="kmCartOverlay" onclick="closeCartSheet(event)">
+  <div class="km-cart-inner" onclick="event.stopPropagation()">
+    <div class="km-cart-drag"></div>
+    <div class="km-cart-close" onclick="closeCartSheet()">✕</div>
     <div class="km-cart-header">
       <div>
         <div class="km-cart-header-title">🛒 Ваш заказ</div>
@@ -239,6 +317,37 @@ const ROOM_NAME = "{{ room.name|escapejs|default:'' }}";
 const VENUE_NAME = "{{ venue.name|escapejs }}";
 const VENUE_WA = "{{ venue.whatsapp }}";
 const ORDER_URL = "{% url 'karaoke:karaoke_menu_order' venue.slug %}";
+
+// ── Категории: клик по пилюле + подсветка активной при скролле ──────────────
+(function initCatNav(){
+  const bar = document.getElementById("kmCatbarInner");
+  if (!bar) return;
+  const pills = Array.from(bar.querySelectorAll(".km-catpill"));
+  const sections = Array.from(document.querySelectorAll("[data-catsection]"));
+
+  pills.forEach(p => p.addEventListener("click", e => {
+    e.preventDefault();
+    const el = document.getElementById(p.dataset.target);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }));
+
+  function setActive(id){
+    pills.forEach(p => {
+      const on = p.dataset.target === id;
+      p.classList.toggle("active", on);
+      if (on) p.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+    });
+  }
+
+  if ("IntersectionObserver" in window && sections.length) {
+    const io = new IntersectionObserver(entries => {
+      const vis = entries.filter(e => e.isIntersecting)
+                         .sort((a,b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      if (vis[0]) setActive(vis[0].target.id);
+    }, { rootMargin: "-45% 0px -50% 0px", threshold: 0 });
+    sections.forEach(s => io.observe(s));
+  }
+})();
 
 function addItem(id) {
   if (cart[id]) {
@@ -277,16 +386,8 @@ function renderItemCtrl(id) {
 
 function renderCart() {
   const keys = Object.keys(cart);
-  const cartEl = document.getElementById("kmCart");
-  const itemsEl = document.getElementById("kmCartItems");
-  const countEl = document.getElementById("kmCartCount");
-  const totalEl = document.getElementById("kmCartTotal");
-
-  if (!keys.length) {
-    cartEl.classList.remove("visible");
-    return;
-  }
-  cartEl.classList.add("visible");
+  const fab = document.getElementById("kmFab");
+  const overlay = document.getElementById("kmCartOverlay");
 
   let total = 0, count = 0, html = "";
   keys.forEach(id => {
@@ -306,9 +407,27 @@ function renderCart() {
         </div>
       </div>`;
   });
-  itemsEl.innerHTML = html;
-  countEl.textContent = `${count} позиций`;
-  totalEl.textContent = `${total.toLocaleString()} сом`;
+  document.getElementById("kmCartItems").innerHTML = html || `<div style="text-align:center;color:var(--kr-muted);padding:24px 0;font-size:13px">Корзина пустая</div>`;
+  document.getElementById("kmCartCount").textContent = `${count} позиций`;
+  document.getElementById("kmCartTotal").textContent = `${total.toLocaleString()} сом`;
+
+  // FAB (свёрнутая корзина)
+  document.getElementById("kmFabTotal").textContent = `${total.toLocaleString()} сом`;
+  document.getElementById("kmFabBadge").textContent = count;
+  fab.classList.toggle("hidden", count === 0);
+
+  // корзина опустела — закрываем лист
+  if (count === 0 && overlay.classList.contains("open")) closeCartSheet();
+}
+
+function openCartSheet() {
+  document.getElementById("kmCartOverlay").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+function closeCartSheet(e) {
+  if (e && e.target !== document.getElementById("kmCartOverlay")) return;
+  document.getElementById("kmCartOverlay").classList.remove("open");
+  document.body.style.overflow = "";
 }
 
 // ── DISH MODAL ─────────────────────────────────────────────────────────────
@@ -389,7 +508,9 @@ function forceCloseDishModal() {
   document.body.style.overflow = "";
   modalItemId = null;
 }
-document.addEventListener("keydown", e => { if (e.key === "Escape") forceCloseDishModal(); });
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") { forceCloseDishModal(); closeCartSheet(); }
+});
 
 async function confirmOrder() {
   const phone = document.getElementById("kmPhone").value.trim();
@@ -444,6 +565,7 @@ async function confirmOrder() {
     delete cart[id];
     renderItemCtrl(id);
   });
+  closeCartSheet();
   renderCart();
   document.getElementById("kmPhone").value = "";
   {% if not room %}

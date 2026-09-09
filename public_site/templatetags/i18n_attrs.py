@@ -1,7 +1,32 @@
+from decimal import Decimal, InvalidOperation
+
 from django import template
 from django.utils.translation import get_language
 
 register = template.Library()
+
+
+def currency_word():
+    """Слово валюты по текущему языку: en → som, иначе → сом."""
+    return "som" if (get_language() or "ru")[:2] == "en" else "сом"
+
+
+@register.simple_tag(name="cur")
+def cur_tag():
+    """{% cur %} → «сом» / «som»."""
+    return currency_word()
+
+
+@register.filter(name="som")
+def som(value):
+    """{{ price|som }} → «1 500 сом» / «1 500 som». Число округляется до целого."""
+    try:
+        n = Decimal(str(value))
+        n = n.quantize(Decimal("1"))
+        s = f"{int(n):,}".replace(",", " ")
+    except (TypeError, ValueError, InvalidOperation):
+        s = str(value)
+    return f"{s} {currency_word()}"
 
 @register.simple_tag
 def t(obj, base_field: str):

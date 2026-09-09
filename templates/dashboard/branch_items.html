@@ -204,6 +204,13 @@
           ⭐ {{ bi.item.rating|floatformat:1 }}
         </span>
         {% endif %}
+        {% if not bi.delivery_available %}
+        <span style="margin-left:4px;display:inline-flex;align-items:center;gap:3px;
+                     padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700;
+                     background:rgba(37,99,235,.1);color:#2563EB">
+          🪑 Только в зале
+        </span>
+        {% endif %}
         {% if bi.item.description_ru %}
         <div class="item-name-sub">{{ bi.item.description_ru|truncatechars:60 }}</div>
         {% endif %}

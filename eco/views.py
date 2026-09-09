@@ -1,10 +1,53 @@
 import json
+from django.conf import settings
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
+from django.utils.html import escape
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import EcoProject, EcoService, EcoApplication
+
+
+def _tg_bot_token():
+    return (getattr(settings, "TG_BOT_TOKEN", "") or
+            getattr(settings, "TELEGRAM_BOT_TOKEN", "") or "").strip()
+
+
+def _notify_new_application(app):
+    """Отправляет новую эко-заявку в Telegram-группу проекта."""
+    token = _tg_bot_token()
+    chat_id = (app.project.tg_chat_id or "").strip()
+    if not token or not chat_id:
+        return
+    created = timezone.localtime(app.created_at).strftime("%d.%m.%Y %H:%M")
+    lines = [
+        "♻️ <b>Новая эко-заявка</b>",
+        f"🏢 Проект: {escape(app.project.name)}",
+        f"🧾 Услуга: {escape(app.service_name or '—')}",
+        "",
+        f"👤 {escape(app.fio)}",
+    ]
+    if app.phone:
+        lines.append(f"📞 {escape(app.phone)}")
+    lines.append(f"📍 {escape(app.address)}")
+    if app.comment:
+        lines.append(f"📝 {escape(app.comment)}")
+    lines.append(f"⏰ {created}")
+    payload = {
+        "chat_id": chat_id,
+        "text": "\n".join(lines),
+        "parse_mode": "HTML",
+        "disable_web_page_preview": True,
+    }
+    if app.project.tg_thread_id:
+        payload["message_thread_id"] = app.project.tg_thread_id
+    try:
+        import requests as req
+        req.post(f"https://api.telegram.org/bot{token}/sendMessage", json=payload, timeout=8)
+    except Exception:
+        pass
 
 
 def eco_list(request):
@@ -46,7 +89,7 @@ def eco_apply(request, slug):
         except EcoService.DoesNotExist:
             pass
 
-    EcoApplication.objects.create(
+    app = EcoApplication.objects.create(
         project=project,
         service=service,
         service_name=svc_name,
@@ -55,5 +98,7 @@ def eco_apply(request, slug):
         address=address,
         comment=comment,
     )
+
+    _notify_new_application(app)
 
     return JsonResponse({"ok": True})

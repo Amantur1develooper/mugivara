@@ -50,7 +50,10 @@ def cart_details(branch, cart: dict):
         except Exception:
             pass
 
-    qs = BranchItem.objects.select_related("item").filter(branch=branch, id__in=ids)
+    # онлайн-корзина (доставка/самовывоз) — блюда «только в зале» сюда не попадают
+    qs = BranchItem.objects.select_related("item").filter(
+        branch=branch, id__in=ids, delivery_available=True,
+    )
     mp = {str(x.id): x for x in qs}
 
     rows = []

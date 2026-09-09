@@ -1,10 +1,10 @@
-{% load static %}
+{% load static i18n i18n_attrs l10n %}
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="{{ LANGUAGE_CODE|default:'ru' }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>{{ cx.name }} — {{ branch.name_ru }}</title>
+<title>{{ cx.name }} — {% t branch "name" %}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -303,13 +303,23 @@ body {
 </head>
 <body>
 {% include "_webordo_ethno.html" %}
+<script>
+const CUR = "{% cur %}";
+const T = {
+  err: "{% trans 'Ошибка' %}", errNet: "{% trans 'Ошибка сети' %}",
+  maxN: "{% trans 'Максимум' %}", minN: "{% trans 'Выберите минимум' %}", inGroup: "{% trans 'в' %}",
+  chosen: "{% trans 'Выбрано' %}", next: "{% trans 'Дальше →' %}", done: "{% trans 'Готово ✓' %}",
+  toCartCx: "{% trans 'В корзину 🧩' %}", addedCart: "{% trans 'Добавлено в корзину ✓' %}",
+  step: "{% trans 'Шаг' %}", ofN: "{% trans 'из' %}",
+};
+</script>
 
 {# ── Шапка ── #}
 <header class="cb-header">
-  <a href="{% url 'public_site:branch_menu' branch.id %}" class="cb-back" title="Назад">←</a>
+  <a href="{% url 'public_site:branch_menu' branch.id %}" class="cb-back" title="{% trans 'Назад' %}">←</a>
   <div class="cb-header-info">
     <div class="cb-header-title">{{ cx.name }}</div>
-    <div class="cb-header-branch">{{ branch.name_ru }}</div>
+    <div class="cb-header-branch">{% t branch "name" %}</div>
   </div>
   <a href="{% url 'public_site:branch_menu' branch.id %}#cart" class="cb-cart-pill" id="cbHeaderCart"
      {% if cart_qty == 0 %}style="display:none"{% endif %}>
@@ -319,7 +329,7 @@ body {
 
 {# ── Прогресс ── #}
 <div class="cb-progress">
-  <div class="cb-progress-label" id="cbProgressLabel">Шаг 1 из {{ groups|length }}</div>
+  <div class="cb-progress-label" id="cbProgressLabel">{% blocktrans with n=groups|length %}Шаг 1 из {{ n }}{% endblocktrans %}</div>
   <div class="cb-progress-dots" id="cbProgressDots">
     {% for g in groups %}
     <div class="cb-dot {% if forloop.first %}current{% endif %}" id="cbDot{{ forloop.counter0 }}"></div>
@@ -345,14 +355,14 @@ body {
     <div class="cb-group-name">{{ g.name }}</div>
     <div class="cb-group-hint">
       {% if g.min_select > 0 %}
-        <span class="cb-group-hint-badge">Обязательно</span>
-        мин {{ g.min_select }}{% if g.max_select > 0 %}, макс {{ g.max_select }}{% endif %}
+        <span class="cb-group-hint-badge">{% trans "Обязательно" %}</span>
+        {% trans "мин" %} {{ g.min_select }}{% if g.max_select > 0 %}, {% trans "макс" %} {{ g.max_select }}{% endif %}
       {% else %}
-        <span class="cb-group-hint-badge optional">Необязательно</span>
-        {% if g.max_select > 0 %}макс {{ g.max_select }}{% else %}без ограничений{% endif %}
+        <span class="cb-group-hint-badge optional">{% trans "Необязательно" %}</span>
+        {% if g.max_select > 0 %}{% trans "макс" %} {{ g.max_select }}{% else %}{% trans "без ограничений" %}{% endif %}
       {% endif %}
     </div>
-    <div class="cb-group-qty-info" id="cbQtyInfo{{ g.id }}">Выбрано: 0{% if g.max_select > 0 %} / {{ g.max_select }}{% endif %}</div>
+    <div class="cb-group-qty-info" id="cbQtyInfo{{ g.id }}">{% trans "Выбрано" %}: 0{% if g.max_select > 0 %} / {{ g.max_select }}{% endif %}</div>
   </div>
 
   <div class="cb-items">
@@ -380,7 +390,7 @@ body {
         <div class="cb-item-desc">{{ ing.display_description|truncatechars:55 }}</div>
         {% endif %}
         <div class="cb-item-price {% if ing.display_price == 0 %}free{% endif %}">
-          {% if ing.display_price == 0 %}Бесплатно{% else %}+{{ ing.display_price|floatformat:0 }} сом{% endif %}
+          {% if ing.display_price == 0 %}{% trans "Бесплатно" %}{% else %}+{{ ing.display_price|som }}{% endif %}
         </div>
 
         <div class="cb-qty-ctrl" id="cbCtrl{{ ing.id }}">
@@ -397,8 +407,8 @@ body {
 
 {# ── Навигация ── #}
 <div class="cb-nav" id="cbNav">
-  <button class="cb-nav-btn cb-nav-prev" id="cbPrevBtn" onclick="goPrev()" style="display:none" type="button">← Назад</button>
-  <button class="cb-nav-btn cb-nav-next" id="cbNextBtn" onclick="goNext()" type="button">Дальше →</button>
+  <button class="cb-nav-btn cb-nav-prev" id="cbPrevBtn" onclick="goPrev()" style="display:none" type="button">{% trans "← Назад" %}</button>
+  <button class="cb-nav-btn cb-nav-next" id="cbNextBtn" onclick="goNext()" type="button">{% trans "Дальше →" %}</button>
 </div>
 
 {# ── Sticky footer ── #}
@@ -412,11 +422,11 @@ body {
     </div>
     <div class="cb-footer-row">
       <div class="cb-total">
-        <span class="cb-total-label">Итого</span>
-        <span id="cbTotalVal">0 сом</span>
+        <span class="cb-total-label">{% trans "Итого" %}</span>
+        <span id="cbTotalVal">0 {% cur %}</span>
       </div>
       <button class="cb-add-btn" id="cbAddBtn" onclick="addToCart()" type="button">
-        В корзину 🧩
+        {% trans "В корзину 🧩" %}
       </button>
     </div>
   </div>
@@ -467,7 +477,7 @@ function changeQty(gid, iid, delta, maxSelect, isRadio) {
     } else {
       const groupTotalWithout = getGroupTotal(gid) - curQty;
       if (maxSelect > 0 && groupTotalWithout + newQty > maxSelect) {
-        showToast(`Максимум ${maxSelect} в «${GROUPS.find(g=>g.id===gid)?.name}»`);
+        showToast(`${T.maxN} ${maxSelect} ${T.inGroup} «${GROUPS.find(g=>g.id===gid)?.name}»`);
         return;
       }
       map[iid] = newQty;
@@ -516,7 +526,7 @@ function updateGroupQtyInfo(gid) {
   if (!g || !info) return;
   const total = getGroupTotal(gid);
   const maxTxt = g.max > 0 ? ` / ${g.max}` : '';
-  info.textContent = `Выбрано: ${total}${maxTxt}`;
+  info.textContent = `${T.chosen}: ${total}${maxTxt}`;
   const satisfied = g.min === 0 || total >= g.min;
   info.classList.toggle('satisfied', satisfied && total > 0);
 }
@@ -546,7 +556,7 @@ function updateFooter() {
       chip.textContent = `${g.name}: —`;
     }
   });
-  document.getElementById('cbTotalVal').textContent = total + ' сом';
+  document.getElementById('cbTotalVal').textContent = total + ' ' + CUR;
 }
 
 // ── Навигация по шагам ────────────────────────────────────────────────────────
@@ -555,7 +565,7 @@ function switchStep(idx, validate = false) {
     const g = GROUPS[step];
     const total = getGroupTotal(g.id);
     if (g.min > 0 && total < g.min) {
-      showError(`Выберите минимум ${g.min} в «${g.name}»`);
+      showError(`${T.minN} ${g.min} ${T.inGroup} «${g.name}»`);
       shakeBtn();
       return false;
     }
@@ -589,10 +599,10 @@ function switchStep(idx, validate = false) {
 
   // кнопки
   document.getElementById('cbPrevBtn').style.display = step === 0 ? 'none' : '';
-  document.getElementById('cbNextBtn').textContent   = step === N - 1 ? 'Готово ✓' : 'Дальше →';
+  document.getElementById('cbNextBtn').textContent   = step === N - 1 ? T.done : T.next;
 
   // обновить прогресс
-  document.getElementById('cbProgressLabel').textContent = `Шаг ${step + 1} из ${N}`;
+  document.getElementById('cbProgressLabel').textContent = `${T.step} ${step + 1} ${T.ofN} ${N}`;
   clearError();
   return true;
 }
@@ -612,7 +622,7 @@ async function addToCart() {
     const g = GROUPS[i];
     if (g.min > 0 && getGroupTotal(g.id) < g.min) {
       switchStep(i);
-      showError(`Выберите минимум ${g.min} в «${g.name}»`);
+      showError(`${T.minN} ${g.min} ${T.inGroup} «${g.name}»`);
       shakeBtn();
       return;
     }
@@ -638,15 +648,15 @@ async function addToCart() {
     });
     const d = await r.json();
     if (d.ok) {
-      showToast('Добавлено в корзину ✓', 'ok');
+      showToast(T.addedCart, 'ok');
       setTimeout(() => location.href = MENU_URL + '#cart', 900);
     } else {
-      showError(d.error || 'Ошибка');
-      btn.disabled = false; btn.textContent = 'В корзину 🧩';
+      showError(d.error || T.err);
+      btn.disabled = false; btn.textContent = T.toCartCx;
     }
   } catch {
-    showError('Ошибка сети');
-    btn.disabled = false; btn.textContent = 'В корзину 🧩';
+    showError(T.errNet);
+    btn.disabled = false; btn.textContent = T.toCartCx;
   }
 }
 

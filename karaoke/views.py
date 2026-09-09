@@ -33,20 +33,41 @@ def karaoke_detail(request, slug):
     })
 
 
+def _build_karaoke_menu(venue):
+    """[{id, name, count, items:[...]}] — только активные позиции,
+    в конце «Разное» для позиций без категории."""
+    from .models import KaraokeMenuItem
+    menu = []
+    cats = venue.menu_categories.prefetch_related("items").all()
+    for cat in cats:
+        items = [i for i in cat.items.all() if i.is_active]
+        items.sort(key=lambda x: (x.sort_order, x.id))
+        if items:
+            menu.append({"id": f"c{cat.id}", "name": cat.name,
+                         "count": len(items), "items": items})
+    uncat = list(
+        KaraokeMenuItem.objects.filter(venue=venue, is_active=True, category__isnull=True)
+        .order_by("sort_order", "id")
+    )
+    if uncat:
+        menu.append({"id": "c0", "name": "Разное", "count": len(uncat), "items": uncat})
+    return menu
+
+
 def karaoke_menu(request, slug):
     venue = get_object_or_404(KaraokeVenue, slug=slug, is_active=True)
-    menu_cats = venue.menu_categories.prefetch_related("items").all()
-    return render(request, "karaoke/menu.html", {"venue": venue, "menu_cats": menu_cats})
+    return render(request, "karaoke/menu.html", {
+        "venue": venue, "menu": _build_karaoke_menu(venue),
+    })
 
 
 def karaoke_room_menu(request, slug, room_id):
     """Меню для конкретной кабинки — room name подставляется автоматически."""
     venue = get_object_or_404(KaraokeVenue, slug=slug, is_active=True)
     room = get_object_or_404(KaraokeRoom, id=room_id, venue=venue, is_active=True)
-    menu_cats = venue.menu_categories.prefetch_related("items").all()
     return render(request, "karaoke/menu.html", {
         "venue": venue,
-        "menu_cats": menu_cats,
+        "menu": _build_karaoke_menu(venue),
         "room": room,
     })
 

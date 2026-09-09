@@ -57,6 +57,7 @@ class OrderAdmin(admin.ModelAdmin):
         "id", "branch", "type", "status",
         "customer_name", "customer_phone",
         "payment_method", "payment_status",
+        "promo_code", "promo_discount",
         "total_amount", "created_at",
     )
     list_filter   = ("status", "type", "payment_method", "payment_status", "branch__restaurant", "branch")

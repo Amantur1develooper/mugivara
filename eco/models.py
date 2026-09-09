@@ -23,6 +23,15 @@ class EcoProject(TimeStampedModel):
     is_active     = models.BooleanField("Активен", default=True)
     sort_order    = models.PositiveSmallIntegerField("Порядок", default=0)
 
+    tg_chat_id    = models.CharField(
+        "TG Chat ID", max_length=50, blank=True, default="",
+        help_text="ID группы/канала Telegram, куда падают новые заявки. Пример: -1001234567890",
+    )
+    tg_thread_id  = models.PositiveIntegerField(
+        "TG Thread ID (топик)", null=True, blank=True,
+        help_text="Необязательно. ID темы в супергруппе с топиками.",
+    )
+
     class Meta:
         verbose_name        = "Эко-проект"
         verbose_name_plural = "Эко-проекты"

@@ -114,8 +114,12 @@ def _receipt_ticket(order, restaurant):
         lines.append(f"  {coi.constructor_name_snapshot or 'Конструктор'}")
         lines.append(f"    {coi.qty} x {coi.unit_price:.0f} = {coi.line_total:.0f} сом")
 
+    lines.append(SEP)
+    if getattr(order, "promo_code", "") and (order.promo_discount or 0) > 0:
+        lines.append(f"  Промокод {order.promo_code}: -{order.promo_discount:.0f} сом")
+    if getattr(order, "delivery_fee", 0) and order.delivery_fee > 0:
+        lines.append(f"  Доставка: {order.delivery_fee:.0f} сом")
     lines += [
-        SEP,
         f"{_BOLD}  ИТОГО: {order.total_amount:.0f} сом{_RESET}",
         f"  Оплата: {pm}",
         SEP2,

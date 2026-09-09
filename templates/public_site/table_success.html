@@ -1,19 +1,20 @@
 {% extends "base.html" %}
+{% load i18n %}
 {% block content %}
 <div class="max-w-2xl mx-auto px-4 py-10 text-center">
   <div class="rounded-3xl bg-white ring-1 ring-stone-200 p-8 shadow">
     <div class="text-5xl">✅</div>
-    <h1 class="text-2xl font-extrabold mt-3">Заказ принят!</h1>
-    <div class="mt-2 text-stone-600">Стол: <b>{{ place.title }}</b></div>
-    <div class="mt-1 text-stone-600">Номер заказа: <b>#{{ order.id }}</b></div>
+    <h1 class="text-2xl font-extrabold mt-3">{% trans "Заказ принят!" %}</h1>
+    <div class="mt-2 text-stone-600">{% trans "Стол" %}: <b>{{ place.title }}</b></div>
+    <div class="mt-1 text-stone-600">{% trans "Номер заказа" %}: <b>#{{ order.id }}</b></div>
 
     <a href="{% url 'table_menu' token %}"
        class="mt-6 inline-block px-5 py-3 rounded-2xl bg-stone-900 text-white font-semibold">
-      Вернуться в меню
+      {% trans "Вернуться в меню" %}
     </a>
   </div>
 </div>
 {% endblock %}{% block footer %}
-     <a href="{% url 'public_site:home' %}">Разработка Amantur agency
+     <a href="{% url 'public_site:home' %}">{% trans "Разработка Amantur agency" %}
 </a>
 {% endblock footer %}

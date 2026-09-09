@@ -43,6 +43,11 @@ class Order(TimeStampedModel):
 
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    promo_code     = models.CharField("Промокод", max_length=50, blank=True, default="")
+    promo_discount = models.DecimalField("Скидка по промокоду (сом)", max_digits=10,
+                                         decimal_places=2, default=0)
+
     class PaymentMethod(models.TextChoices):
         CASH = "cash", "Наличные"
         ONLINE = "online", "Онлайн"

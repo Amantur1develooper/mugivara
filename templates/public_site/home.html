@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static i18n i18n_attrs %}
 
-{% block title %}Webordo — Цифровая экосистема Кыргызстана{% endblock %}
+{% block title %}Webordo — {% trans "Цифровая экосистема Кыргызстана" %}{% endblock %}
 {% block body_class %}kg-ethno{% endblock %}
 
 {% block head_extra %}
@@ -555,7 +555,7 @@
 
 <!-- ═══════════════════ STICKY CATEGORY NAV ═══════════════════ -->
 <div class="cat-nav-wrap" id="catNav">
-  <nav class="cat-nav" aria-label="Категории">
+  <nav class="cat-nav" aria-label="{% trans 'Категории' %}">
     {% if restaurant_cards %}
     <a href="#restaurants" class="cat-pill active" data-section="restaurants">{% trans "🍽️ Еда" %}</a>
     {% endif %}
@@ -975,7 +975,7 @@
 <div class="cta-banner" style="max-width:1232px;margin:48px auto;">
   <h2>{% trans "Добавьте свой бизнес" %}</h2>
   <p>{% trans "Присоединяйтесь к платформе Webordo — QR-меню, онлайн-заказы и аналитика в одном месте" %}</p>
-  <a href="{% url 'dashboard:login' %}">Войти в личный кабинет →</a>
+  <a href="{% url 'dashboard:login' %}">{% trans "Войти в личный кабинет →" %}</a>
 </div>
 
 <!-- ═══════════════════ СТАТИСТИКА ═══════════════════ -->
