@@ -2,12 +2,12 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-10 02:19+0600\n"
+"POT-Creation-Date: 2026-09-10 15:20+0600\n"
 "Language: en\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: catalog/models.py:173
+#: catalog/models.py:173 templates/printshop/_product_card.html:12
 msgid "Акция"
 msgstr "Sale"
 
@@ -83,6 +83,389 @@ msgstr "Booking status updated."
 msgid "Синхронизировать ассортимент"
 msgstr "Sync catalog"
 
+#: templates/agency/agency_detail.html:4
+msgid "IT Агентство"
+msgstr "IT Agency"
+
+#: templates/agency/agency_detail.html:271
+#: templates/realestate/agency_detail.html:64
+msgid "Все агентства"
+msgstr "All agencies"
+
+#: templates/agency/agency_detail.html:296 templates/barbershop/book.html:90
+#: templates/barbershop/book.html:170 templates/base.html:459
+#: templates/base.html:518 templates/base.html:588
+#: templates/hotels/hotel_branch.html:573 templates/public_site/home.html:686
+msgid "Услуги"
+msgstr "Services"
+
+#: templates/agency/agency_detail.html:329
+msgid "по договорённости"
+msgstr "by agreement"
+
+#: templates/agency/agency_detail.html:334
+#, python-format
+msgid "%(d)s дн."
+msgstr "%(d)s days"
+
+#: templates/agency/agency_detail.html:337
+msgid "Заказать →"
+msgstr "Order →"
+
+#: templates/agency/agency_detail.html:349
+msgid "Услуги скоро появятся"
+msgstr "Services coming soon"
+
+#: templates/agency/agency_detail.html:357 templates/barbershop/book.html:93
+#: templates/public_site/contacts.html:4
+#: templates/public_site/restaurant_about.html:28
+#: templates/public_site/restaurant_contacts.html:469
+#: templates/shops/base.html:336 templates/simracing/venue.html:145
+msgid "Контакты"
+msgstr "Contacts"
+
+#: templates/agency/agency_detail.html:384
+msgid "Написать нам"
+msgstr "Contact us"
+
+#: templates/agency/agency_detail.html:398
+#: templates/agency/agency_detail.html:420
+msgid "Заявка"
+msgstr "Request"
+
+#: templates/agency/agency_detail.html:401
+#: templates/agency/agency_detail.html:421 templates/barbershop/book.html:145
+#: templates/hotels/hotel_branch.html:536
+#: templates/hotels/hotel_branch.html:665 templates/karaoke/detail.html:255
+#: templates/printshop/branch_catalog.html:211
+#: templates/public_site/branch_menu.html:630
+#: templates/public_site/cart_detail.html:283
+#: templates/public_site/table_cart.html:236 templates/simracing/venue.html:198
+msgid "Ваше имя"
+msgstr "Your name"
+
+#: templates/agency/agency_detail.html:402
+#: templates/agency/agency_detail.html:422
+msgid "Как к вам обращаться?"
+msgstr "How should we address you?"
+
+#: templates/agency/agency_detail.html:405
+#: templates/agency/agency_detail.html:423
+msgid "Телефон / WhatsApp"
+msgstr "Phone / WhatsApp"
+
+#: templates/agency/agency_detail.html:409
+#: templates/agency/agency_detail.html:424
+msgid "Опишите задачу"
+msgstr "Describe your task"
+
+#: templates/agency/agency_detail.html:410
+#: templates/agency/agency_detail.html:425
+msgid "Расскажите о вашем проекте..."
+msgstr "Tell us about your project..."
+
+#: templates/agency/agency_detail.html:413
+#: templates/agency/agency_detail.html:426
+msgid "Отправить заявку →"
+msgstr "Send request →"
+
+#: templates/agency/agency_detail.html:427
+msgid "Заполните имя и описание задачи"
+msgstr "Fill in your name and task description"
+
+#: templates/agency/agency_detail.html:428 templates/karaoke/detail.html:305
+#: templates/karaoke/menu.html:199 templates/legal/legal_detail.html:343
+msgid "Отправляем..."
+msgstr "Sending..."
+
+#: templates/agency/agency_detail.html:429 templates/karaoke/detail.html:323
+msgid "Ошибка. Попробуйте снова."
+msgstr "Error. Please try again."
+
+#: templates/agency/agency_detail.html:430
+msgid "Ошибка сети. Попробуйте снова."
+msgstr "Network error. Please try again."
+
+#: templates/agency/agency_detail.html:431
+msgid "Заявка отправлена!"
+msgstr "Request sent!"
+
+#: templates/agency/agency_detail.html:432
+msgid "Мы свяжемся с вами в ближайшее время"
+msgstr "We'll get in touch soon"
+
+#: templates/agency/agency_list.html:4 templates/public_site/home.html:823
+msgid "IT Агентства"
+msgstr "IT Agencies"
+
+#: templates/agency/agency_list.html:175 templates/base.html:510
+#: templates/eco/eco_list.html:190 templates/hotels/hotel_list.html:92
+#: templates/karaoke/list.html:41 templates/legal/legal_list.html:102
+#: templates/realestate/agency_list.html:52 templates/shops/base.html:326
+#: templates/simracing/list.html:41
+msgid "Главная"
+msgstr "Home"
+
+#: templates/agency/agency_list.html:176
+msgid "IT АГЕНТСТВА"
+msgstr "IT AGENCIES"
+
+#: templates/agency/agency_list.html:177
+msgid "Цифровые"
+msgstr "Digital"
+
+#: templates/agency/agency_list.html:177
+msgid "агентства"
+msgstr "agencies"
+
+#: templates/agency/agency_list.html:178
+msgid ""
+"Разработка, дизайн, AI-решения и цифровой маркетинг от проверенных IT-команд "
+"Кыргызстана"
+msgstr "Development, design, AI solutions and digital marketing from trusted IT teams in Kyrgyzstan"
+
+#: templates/agency/agency_list.html:228 templates/eco/eco_list.html:255
+#: templates/legal/legal_list.html:153
+#, python-format
+msgid "%(n)s услуга"
+msgid_plural "%(n)s услуг"
+msgstr[0] "%(n)s service"
+msgstr[1] "%(n)s services"
+
+#: templates/agency/agency_list.html:235 templates/eco/eco_list.html:262
+msgid "Смотреть услуги →"
+msgstr "View services →"
+
+#: templates/agency/agency_list.html:245 templates/karaoke/list.html:69
+#: templates/legal/legal_list.html:171 templates/realestate/agency_list.html:78
+#: templates/simracing/list.html:69
+msgid "Скоро появятся"
+msgstr "Coming soon"
+
+#: templates/agency/agency_list.html:246
+msgid "IT агентства добавляются администратором"
+msgstr "IT agencies are added by the administrator"
+
+#: templates/barbershop/book.html:7
+msgid "Запись"
+msgstr "Booking"
+
+#: templates/barbershop/book.html:86
+msgid "Онлайн-запись"
+msgstr "Online booking"
+
+#: templates/barbershop/book.html:91 templates/barbershop/book.html:172
+#: templates/barbershop/success.html:33
+msgid "Мастер"
+msgstr "Barber"
+
+#: templates/barbershop/book.html:92 templates/barbershop/book.html:173
+#: templates/simracing/venue.html:230
+msgid "Дата и время"
+msgstr "Date and time"
+
+#: templates/barbershop/book.html:102
+msgid "Выбранные услуги"
+msgstr "Selected services"
+
+#: templates/barbershop/book.html:105 templates/barbershop/book.html:174
+#: templates/hotels/room_request.html:123 templates/karaoke/menu.html:201
+#: templates/karaoke/menu.html:308 templates/pharmacy/cart_detail.html:65
+#: templates/printshop/branch_catalog.html:205
+#: templates/printshop/checkout_success.html:64
+#: templates/public_site/branch_menu.html:624
+#: templates/public_site/branch_menu.html:1073
+#: templates/public_site/cart_detail.html:260
+#: templates/public_site/cart_detail2.html:741
+#: templates/public_site/cart_detail2.html:840
+#: templates/public_site/checkout_success.html:98
+#: templates/public_site/constructor_build.html:425
+#: templates/public_site/table_cart.html:226
+#: templates/public_site/table_checkout.html:23
+#: templates/public_site/table_menu.html:900
+#: templates/shops/cart_detail.html:95 templates/shops/checkout_success.html:22
+#: templates/simracing/venue.html:223
+msgid "Итого"
+msgstr "Total"
+
+#: templates/barbershop/book.html:110 templates/barbershop/book.html:117
+#: templates/barbershop/book.html:131 templates/simracing/venue.html:152
+#: templates/simracing/venue.html:160 templates/simracing/venue.html:173
+#: templates/simracing/venue.html:183
+msgid "Далее →"
+msgstr "Next →"
+
+#: templates/barbershop/book.html:115
+msgid "Загрузка мастеров…"
+msgstr "Loading barbers…"
+
+#: templates/barbershop/book.html:118 templates/barbershop/book.html:132
+#: templates/barbershop/book.html:158 templates/pharmacy/cart_detail.html:15
+#: templates/pharmacy/drug_detail.html:29
+#: templates/public_site/constructor_build.html:319
+#: templates/public_site/restaurant_about.html:38
+#: templates/public_site/restaurants_list.html:669
+#: templates/shops/branch_catalog.html:780 templates/shops/cart_detail.html:22
+#: templates/shops/store_detail.html:284 templates/simracing/venue.html:161
+#: templates/simracing/venue.html:174 templates/simracing/venue.html:184
+#: templates/simracing/venue.html:209
+msgid "Назад"
+msgstr "Back"
+
+#: templates/barbershop/book.html:124 templates/barbershop/book.html:129
+msgid "Выберите дату"
+msgstr "Choose a date"
+
+#: templates/barbershop/book.html:128 templates/simracing/venue.html:181
+msgid "Доступное время"
+msgstr "Available times"
+
+#: templates/barbershop/book.html:146 templates/hotels/hotel_branch.html:537
+#: templates/hotels/hotel_branch.html:666 templates/karaoke/detail.html:254
+#: templates/public_site/cart_detail2.html:866
+#: templates/public_site/hall_plan.html:56
+#: templates/public_site/privacy.html:48
+#: templates/public_site/table_checkout.html:30
+#: templates/simracing/venue.html:199
+msgid "Имя"
+msgstr "Name"
+
+#: templates/barbershop/book.html:149 templates/eco/eco_detail.html:519
+#: templates/hotels/hotel_branch.html:541
+#: templates/hotels/hotel_branch.html:669 templates/karaoke/detail.html:258
+#: templates/karaoke/menu.html:201 templates/legal/legal_detail.html:350
+#: templates/pharmacy/drug_detail.html:120
+#: templates/public_site/cart_detail2.html:872
+#: templates/public_site/table_checkout.html:34
+#: templates/simracing/venue.html:202
+msgid "Телефон"
+msgstr "Phone"
+
+#: templates/barbershop/book.html:154 templates/simracing/venue.html:205
+msgid "Введите номер в формате +996 700 000 000"
+msgstr "Enter a number in the format +996 700 000 000"
+
+#: templates/barbershop/book.html:157
+msgid "Подтвердить запись ✓"
+msgstr "Confirm booking ✓"
+
+#: templates/barbershop/book.html:166
+#: templates/public_site/branch_menu.html:607
+#: templates/public_site/constructor_build.html:359
+#: templates/public_site/table_menu.html:653 templates/simracing/venue.html:219
+msgid "мин"
+msgstr "min"
+
+#: templates/barbershop/book.html:167
+msgid "Нет доступных мастеров"
+msgstr "No barbers available"
+
+#: templates/barbershop/book.html:168
+#: templates/printshop/branch_catalog.html:198
+#: templates/printshop/branch_catalog.html:359
+#: templates/public_site/branch_menu.html:596
+#: templates/public_site/branch_menu.html:1726
+#: templates/simracing/venue.html:224
+msgid "Загрузка…"
+msgstr "Loading…"
+
+#: templates/barbershop/book.html:169 templates/simracing/venue.html:225
+msgid "Нет свободного времени на эту дату"
+msgstr "No free times for this date"
+
+#: templates/barbershop/book.html:171
+msgid "Длительность"
+msgstr "Duration"
+
+#: templates/barbershop/index.html:7 templates/barbershop/index.html:29
+#: templates/public_site/home.html:850
+msgid "Барбершопы"
+msgstr "Barbershops"
+
+#: templates/barbershop/index.html:30
+msgid "Запишитесь онлайн за несколько секунд"
+msgstr "Book online in a few seconds"
+
+#: templates/barbershop/index.html:45
+msgid "Записаться →"
+msgstr "Book →"
+
+#: templates/barbershop/index.html:49
+msgid "Нет доступных барбершопов"
+msgstr "No barbershops available"
+
+#: templates/barbershop/success.html:7 templates/simracing/appt_success.html:7
+msgid "Запись подтверждена"
+msgstr "Booking confirmed"
+
+#: templates/barbershop/success.html:28
+#: templates/simracing/appt_success.html:30
+msgid "Запись принята!"
+msgstr "Booking accepted!"
+
+#: templates/barbershop/success.html:29
+#, python-format
+msgid "Мы ждём вас в %(name)s."
+msgstr "We're expecting you at %(name)s."
+
+#: templates/barbershop/success.html:29
+msgid "Если понадобится уточнение — мы свяжемся с вами."
+msgstr "If we need to clarify anything, we'll contact you."
+
+#: templates/barbershop/success.html:32 templates/eco/eco_detail.html:516
+#: templates/hotels/hotel_branch.html:647 templates/legal/legal_detail.html:347
+msgid "Услуга"
+msgstr "Service"
+
+#: templates/barbershop/success.html:34 templates/hotels/hotel_branch.html:655
+#: templates/karaoke/detail.html:235 templates/simracing/appt_success.html:49
+msgid "Дата"
+msgstr "Date"
+
+#: templates/barbershop/success.html:35
+#: templates/simracing/appt_success.html:53
+msgid "Время"
+msgstr "Time"
+
+#: templates/barbershop/success.html:36 templates/eco/eco_detail.html:517
+#: templates/hotels/hotel_branch.html:365
+#: templates/hotels/hotel_branch.html:680 templates/legal/legal_detail.html:348
+msgid "Стоимость"
+msgstr "Price"
+
+#: templates/barbershop/success.html:39 templates/public_site/contacts.html:210
+msgid "На главную"
+msgstr "Home"
+
+#: templates/barbershop/venue.html:81
+#: templates/printshop/branch_catalog.html:238
+#: templates/public_site/restaurant_contacts.html:426
+#: templates/public_site/restaurant_detail.html:425
+msgid "Маршрут"
+msgstr "Route"
+
+#: templates/barbershop/venue.html:85
+msgid "Записаться онлайн"
+msgstr "Book online"
+
+#: templates/barbershop/venue.html:94
+msgid "Свободные окошки сегодня"
+msgstr "Free slots today"
+
+#: templates/barbershop/venue.html:106
+msgid "На сегодня свободных окошек нет"
+msgstr "No free slots today"
+
+#: templates/barbershop/venue.html:119 templates/simracing/appt_success.html:41
+#: templates/simracing/success.html:13
+#, python-format
+msgid "%(m)s мин"
+msgstr "%(m)s min"
+
+#: templates/barbershop/venue.html:129
+msgid "Наши мастера"
+msgstr "Our barbers"
+
 #: templates/base.html:12 templates/public_site/about.html:29
 #: templates/public_site/home.html:4
 msgid "Цифровая экосистема Кыргызстана"
@@ -111,16 +494,12 @@ msgstr "Shops"
 msgid "Товары и заказы"
 msgstr "Products & orders"
 
-#: templates/base.html:459 templates/base.html:518 templates/base.html:588
-#: templates/public_site/home.html:686
-msgid "Услуги"
-msgstr "Services"
-
 #: templates/base.html:459
 msgid "Юристы, эко, барбершопы и другое"
 msgstr "Lawyers, eco, barbershops and more"
 
 #: templates/base.html:463 templates/base.html:519 templates/base.html:590
+#: templates/karaoke/list.html:3 templates/simracing/list.html:3
 msgid "Развлечения"
 msgstr "Entertainment"
 
@@ -132,7 +511,9 @@ msgstr "Karaoke, sim racing"
 msgid "Подключить бизнес"
 msgstr "Add your business"
 
-#: templates/base.html:495 templates/public_site/booking_success.html:28
+#: templates/base.html:495 templates/karaoke/menu.html:3
+#: templates/karaoke/menu.html:209
+#: templates/public_site/booking_success.html:28
 #: templates/public_site/branch_menu.html:4
 #: templates/public_site/cart_detail.html:205
 #: templates/public_site/contacts.html:306
@@ -141,10 +522,6 @@ msgstr "Add your business"
 #: templates/public_site/table_menu.html:4
 msgid "Меню"
 msgstr "Menu"
-
-#: templates/base.html:510 templates/shops/base.html:326
-msgid "Главная"
-msgstr "Home"
 
 #: templates/base.html:514 templates/base.html:582
 msgid "Бизнес"
@@ -185,8 +562,12 @@ msgstr ""
 msgid "ПАРТНЁР"
 msgstr "PARTNER"
 
-#: templates/base.html:560 templates/pharmacy/drug_detail.html:136
+#: templates/base.html:560 templates/karaoke/detail.html:160
+#: templates/legal/legal_detail.html:249
+#: templates/pharmacy/drug_detail.html:136
 #: templates/public_site/booking_success.html:35
+#: templates/realestate/agency_detail.html:76
+#: templates/simracing/appt_success.html:69 templates/simracing/success.html:23
 msgid "Написать в WhatsApp"
 msgstr "Message on WhatsApp"
 
@@ -208,13 +589,169 @@ msgstr "All services"
 msgid "Компания"
 msgstr "Company"
 
-#: templates/base.html:601 templates/shops/base.html:338
+#: templates/base.html:601 templates/pharmacy/pharmacy_list.html:306
+#: templates/pharmacy/pharmacy_list.html:340 templates/shops/base.html:338
 msgid "Кыргызстан"
 msgstr "Kyrgyzstan"
 
-#: templates/base.html:603
+#: templates/base.html:603 templates/public_site/privacy.html:3
+#: templates/public_site/privacy.html:15
 msgid "Политика конфиденциальности"
 msgstr "Privacy policy"
+
+#: templates/eco/eco_detail.html:4 templates/eco/eco_list.html:4
+#: templates/public_site/home.html:723
+msgid "Эко-проекты"
+msgstr "Eco Projects"
+
+#: templates/eco/eco_detail.html:312 templates/eco/eco_detail.html:374
+msgid "ЭКО-ПРОЕКТ"
+msgstr "ECO PROJECT"
+
+#: templates/eco/eco_detail.html:362
+msgid "Все эко-проекты"
+msgstr "All eco projects"
+
+#: templates/eco/eco_detail.html:389 templates/eco/eco_list.html:247
+#: templates/karaoke/detail.html:166 templates/legal/legal_detail.html:236
+#: templates/legal/legal_list.html:145
+msgid "Открыть на карте"
+msgstr "Open on the map"
+
+#: templates/eco/eco_detail.html:404 templates/hotels/hotel_branch.html:452
+#: templates/hotels/hotel_detail.html:217 templates/legal/legal_detail.html:253
+#: templates/pharmacy/pharmacy_detail.html:97
+#: templates/pharmacy/pharmacy_detail.html:101
+#: templates/printshop/branch_catalog.html:244
+#: templates/printshop/checkout_success.html:28
+#: templates/public_site/cart_detail2.html:713
+#: templates/public_site/checkout_success.html:53
+#: templates/public_site/contacts.html:291
+#: templates/public_site/restaurant_contacts.html:416
+#: templates/public_site/restaurant_detail.html:413
+#: templates/shops/base.html:226 templates/shops/base.html:276
+#: templates/shops/branch_catalog.html:827
+msgid "Позвонить"
+msgstr "Call"
+
+#: templates/eco/eco_detail.html:407 templates/hotels/hotel_branch.html:400
+#: templates/legal/legal_detail.html:256
+#: templates/public_site/restaurant_contacts.html:355
+#: templates/public_site/restaurant_contacts.html:496
+#: templates/public_site/restaurant_detail.html:337
+#: templates/shops/store_detail.html:365
+msgid "На карте"
+msgstr "On the map"
+
+#: templates/eco/eco_detail.html:416 templates/legal/legal_detail.html:263
+msgid "Услуги и цены"
+msgstr "Services and prices"
+
+#: templates/eco/eco_detail.html:441 templates/eco/eco_detail.html:451
+#: templates/public_site/branch_menu.html:616
+#: templates/public_site/constructor_build.html:393
+msgid "Бесплатно"
+msgstr "Free"
+
+#: templates/eco/eco_detail.html:456
+msgid "Заказать"
+msgstr "Order"
+
+#: templates/eco/eco_detail.html:464 templates/legal/legal_detail.html:301
+msgid "Услуги пока не добавлены"
+msgstr "No services added yet"
+
+#: templates/eco/eco_detail.html:474
+msgid "Заказ услуги"
+msgstr "Order a service"
+
+#: templates/eco/eco_detail.html:478 templates/eco/eco_detail.html:518
+#: templates/legal/legal_detail.html:314 templates/legal/legal_detail.html:349
+msgid "ФИО"
+msgstr "Full name"
+
+#: templates/eco/eco_detail.html:480 templates/legal/legal_detail.html:315
+msgid "Иванов Иван Иванович"
+msgstr "John Smith"
+
+#: templates/eco/eco_detail.html:484 templates/legal/legal_detail.html:319
+msgid "Ваш телефон"
+msgstr "Your phone"
+
+#: templates/eco/eco_detail.html:490
+msgid "Адрес / район"
+msgstr "Address / district"
+
+#: templates/eco/eco_detail.html:492
+msgid "Укажите адрес или район для вывоза"
+msgstr "Enter the address or district for pickup"
+
+#: templates/eco/eco_detail.html:496 templates/eco/eco_detail.html:521
+#: templates/hotels/hotel_branch.html:549
+#: templates/hotels/hotel_branch.html:676
+#: templates/public_site/cart_detail2.html:899
+#: templates/public_site/table_checkout.html:44
+msgid "Комментарий"
+msgstr "Comment"
+
+#: templates/eco/eco_detail.html:498
+msgid "Опишите подробности: объём, тип отходов, удобное время..."
+msgstr "Describe the details: volume, type of waste, convenient time..."
+
+#: templates/eco/eco_detail.html:502
+msgid ""
+"После нажатия откроется WhatsApp с готовым сообщением — просто отправьте его."
+msgstr "After you tap, WhatsApp will open with a ready message — just send it."
+
+#: templates/eco/eco_detail.html:507
+msgid "Отправить заявку в WhatsApp"
+msgstr "Send request via WhatsApp"
+
+#: templates/eco/eco_detail.html:514
+msgid "♻️ Заявка на эко-услугу"
+msgstr "♻️ Eco service request"
+
+#: templates/eco/eco_detail.html:515
+msgid "Проект"
+msgstr "Project"
+
+#: templates/eco/eco_detail.html:520
+msgid "Адрес"
+msgstr "Address"
+
+#: templates/eco/eco_list.html:191 templates/eco/eco_list.html:229
+msgid "ЭКО"
+msgstr "ECO"
+
+#: templates/eco/eco_list.html:193
+msgid "Эко&#8209;"
+msgstr "Eco&#8209;"
+
+#: templates/eco/eco_list.html:193
+msgid "проекты"
+msgstr "projects"
+
+#: templates/eco/eco_list.html:196
+msgid ""
+"Организации, которые заботятся о нашей планете — вывоз мусора, переработка, "
+"озеленение и другие экологические инициативы"
+msgstr "Organizations that care about our planet — waste collection, recycling, landscaping and other environmental initiatives"
+
+#: templates/eco/eco_list.html:202
+msgid "Эко-проектов"
+msgstr "Eco projects"
+
+#: templates/eco/eco_list.html:211
+msgid "Услуг для вас"
+msgstr "Services for you"
+
+#: templates/eco/eco_list.html:273
+msgid "Эко-проекты скоро появятся"
+msgstr "Eco projects coming soon"
+
+#: templates/eco/eco_list.html:274
+msgid "Информация добавляется администратором"
+msgstr "Information is added by the administrator"
 
 #: templates/home.html:4
 msgid "Санжи — рестораны"
@@ -244,9 +781,11 @@ msgstr "Search for a restaurant..."
 msgid "Открыто сейчас"
 msgstr "Open now"
 
-#: templates/home.html:83
+#: templates/home.html:83 templates/pharmacy/pharmacy_list.html:290
 #: templates/pharmacy/старый/pharmacy_list.html:47
+#: templates/printshop/center_list.html:51
 #: templates/public_site/restaurants_list.html:624
+#: templates/realestate/agency_detail.html:84
 #: templates/shops/store_list.html:299
 msgid "Найти"
 msgstr "Search"
@@ -256,7 +795,9 @@ msgstr "Search"
 msgid "Найдено:"
 msgstr "Found:"
 
-#: templates/home.html:133 templates/public_site/branch_menu.html:689
+#: templates/home.html:133 templates/printshop/branch_catalog.html:228
+#: templates/printshop/center_detail.html:100
+#: templates/public_site/branch_menu.html:689
 #: templates/public_site/contacts.html:252
 #: templates/public_site/restaurant_contacts.html:336
 #: templates/public_site/restaurant_contacts.html:386
@@ -267,7 +808,9 @@ msgstr "Found:"
 msgid "Открыто"
 msgstr "Open"
 
-#: templates/home.html:139 templates/public_site/branch_menu.html:692
+#: templates/home.html:139 templates/printshop/branch_catalog.html:228
+#: templates/printshop/center_detail.html:100
+#: templates/public_site/branch_menu.html:692
 #: templates/public_site/contacts.html:252
 #: templates/public_site/restaurant_contacts.html:386
 #: templates/public_site/restaurant_detail.html:377
@@ -280,7 +823,11 @@ msgstr "Closed"
 msgid "Филиалов"
 msgstr "Branches"
 
-#: templates/home.html:161 templates/public_site/branch_menu.html:623
+#: templates/home.html:161 templates/printshop/branch_catalog.html:203
+#: templates/printshop/branch_catalog.html:232
+#: templates/printshop/center_detail.html:107
+#: templates/printshop/checkout_success.html:55
+#: templates/public_site/branch_menu.html:623
 #: templates/public_site/branch_menu.html:701
 #: templates/public_site/cart_detail.html:255
 #: templates/public_site/cart_detail2.html:731
@@ -290,8 +837,8 @@ msgstr "Branches"
 #: templates/public_site/restaurant_contacts.html:402
 #: templates/public_site/restaurant_detail.html:396
 #: templates/public_site/restaurants_list.html:744
-#: templates/shops/branch_catalog.html:789
-#: templates/shops/branch_catalog.html:796 templates/shops/cart_detail.html:16
+#: templates/shops/branch_catalog.html:804
+#: templates/shops/branch_catalog.html:811 templates/shops/cart_detail.html:16
 #: templates/shops/cart_detail.html:89 templates/shops/store_detail.html:362
 msgid "Доставка"
 msgstr "Delivery"
@@ -305,7 +852,8 @@ msgstr "Min."
 msgid "Дост."
 msgstr "Delivery"
 
-#: templates/home.html:175 templates/public_site/branch_menu.html:704
+#: templates/home.html:175 templates/printshop/branch_catalog.html:209
+#: templates/public_site/branch_menu.html:704
 #: templates/public_site/checkout_success.html:21
 #: templates/public_site/restaurant_contacts.html:407
 #: templates/public_site/restaurant_detail.html:401
@@ -314,7 +862,7 @@ msgstr "Delivery"
 msgid "Самовывоз"
 msgstr "Takeaway"
 
-#: templates/home.html:182
+#: templates/home.html:182 templates/pharmacy/pharmacy_list.html:351
 #: templates/pharmacy/старый/pharmacy_list.html:94
 #: templates/public_site/restaurants_list.html:768
 #: templates/shops/store_list.html:320 templates/shops/store_list.html:393
@@ -330,11 +878,618 @@ msgstr "Menu & orders"
 msgid "Ничего не найдено."
 msgstr "Nothing found."
 
+#: templates/hotels/_room_card.html:18
+#, python-format
+msgid "Занято до %(d)s"
+msgstr "Busy until %(d)s"
+
+#: templates/hotels/_room_card.html:18 templates/public_site/hall_plan.html:61
+#: templates/public_site/reservation.html:124
+#: templates/public_site/reservation.html:161
+msgid "Занято"
+msgstr "Occupied"
+
+#: templates/hotels/_room_card.html:22
+#: templates/public_site/table_menu.html:893
+#, python-format
+msgid "от %(p)s"
+msgstr "from %(p)s"
+
+#: templates/hotels/_room_card.html:23 templates/hotels/hotel_branch.html:346
+#: templates/hotels/hotel_branch.html:555
+msgid "ночь"
+msgstr "night"
+
+#: templates/hotels/_room_card.html:33
+#, python-format
+msgid "до %(g)s чел."
+msgstr "up to %(g)s people"
+
+#: templates/hotels/_room_card.html:49
+msgid "ещё"
+msgstr "more"
+
+#: templates/hotels/_room_card.html:55
+#: templates/pharmacy/branch_catalog.html:111
+msgid "Подробнее"
+msgstr "Details"
+
+#: templates/hotels/_room_card.html:58 templates/hotels/hotel_branch.html:488
+#: templates/hotels/hotel_branch.html:610
+#: templates/hotels/hotel_branch.html:636
+#: templates/hotels/hotel_branch.html:648 templates/karaoke/_room_card.html:30
+#: templates/public_site/hall_plan.html:94
+#: templates/public_site/hall_plan.html:99
+msgid "Забронировать"
+msgstr "Book"
+
+#: templates/hotels/_room_card.html:59 templates/hotels/hotel_branch.html:360
+msgid "Заселиться сейчас"
+msgstr "Check in now"
+
+#: templates/hotels/_room_card.html:62
+msgid "Забронировать на др. даты"
+msgstr "Book for other dates"
+
+#: templates/hotels/_room_card.html:64
+#, python-format
+msgid "Занят до %(d)s"
+msgstr "Busy until %(d)s"
+
+#: templates/hotels/_room_card.html:67
+#: templates/realestate/apartment_detail.html:127
+msgid "Недоступно"
+msgstr "Unavailable"
+
+#: templates/hotels/hotel_branch.html:4
+msgid "Номера"
+msgstr "Rooms"
+
+#: templates/hotels/hotel_branch.html:346
+msgid "ночи"
+msgstr "nights"
+
+#: templates/hotels/hotel_branch.html:346
+msgid "ночей"
+msgstr "nights"
+
+#: templates/hotels/hotel_branch.html:347
+msgid "гость"
+msgstr "guest"
+
+#: templates/hotels/hotel_branch.html:347
+msgid "гостя"
+msgstr "guests"
+
+#: templates/hotels/hotel_branch.html:347
+msgid "гостей"
+msgstr "guests"
+
+#: templates/hotels/hotel_branch.html:348
+msgid "номер"
+msgstr "room"
+
+#: templates/hotels/hotel_branch.html:348
+msgid "номера"
+msgstr "rooms"
+
+#: templates/hotels/hotel_branch.html:348
+msgid "номеров"
+msgstr "rooms"
+
+#: templates/hotels/hotel_branch.html:349
+msgid "/ ночь"
+msgstr "/ night"
+
+#: templates/hotels/hotel_branch.html:350
+#: templates/public_site/branch_menu.html:613
+#: templates/public_site/constructor_build.html:310
+#: templates/public_site/table_menu.html:654
+msgid "Максимум"
+msgstr "Maximum"
+
+#: templates/hotels/hotel_branch.html:351
+#: templates/public_site/restaurant_contacts.html:515
+#: templates/public_site/restaurant_detail.html:479
+msgid "Описание не добавлено"
+msgstr "No description added"
+
+#: templates/hotels/hotel_branch.html:352
+msgid "Занят до"
+msgstr "Busy until"
+
+#: templates/hotels/hotel_branch.html:353
+msgid "— можно забронировать на свободные даты"
+msgstr "— you can book for free dates"
+
+#: templates/hotels/hotel_branch.html:354
+msgid "Сейчас занят — можно забронировать на свободные даты"
+msgstr "Currently busy — you can book for free dates"
+
+#: templates/hotels/hotel_branch.html:355
+msgid "Заселиться сейчас нельзя — номер занят до"
+msgstr "Can't check in now — the room is busy until"
+
+#: templates/hotels/hotel_branch.html:356
+msgid ". Забронируйте на свободные даты."
+msgstr ". Book for free dates."
+
+#: templates/hotels/hotel_branch.html:357
+msgid "Заселиться сейчас нельзя — номер занят."
+msgstr "Can't check in now — the room is busy."
+
+#: templates/hotels/hotel_branch.html:358
+msgid "Этот номер сейчас недоступен для брони."
+msgstr "This room is currently unavailable for booking."
+
+#: templates/hotels/hotel_branch.html:359
+#: templates/hotels/hotel_branch.html:489
+msgid "Заселиться"
+msgstr "Check in"
+
+#: templates/hotels/hotel_branch.html:359
+#: templates/hotels/hotel_branch.html:504 templates/hotels/hotel_list.html:93
+#: templates/karaoke/detail.html:232 templates/public_site/contacts.html:310
+#: templates/public_site/reservation.html:116
+#: templates/public_site/restaurant_contacts.html:437
+#: templates/public_site/restaurant_contacts.html:440
+#: templates/public_site/restaurant_detail.html:435
+#: templates/public_site/restaurant_detail.html:438
+#: templates/shops/base.html:221 templates/shops/base.html:271
+#: templates/shops/base.html:328 templates/simracing/venue.html:7
+msgid "Бронирование"
+msgstr "Booking"
+
+#: templates/hotels/hotel_branch.html:360
+#: templates/hotels/hotel_branch.html:505
+msgid "Забронировать номер"
+msgstr "Book a room"
+
+#: templates/hotels/hotel_branch.html:361
+msgid "💬 Подтвердить в WhatsApp"
+msgstr "💬 Confirm via WhatsApp"
+
+#: templates/hotels/hotel_branch.html:362
+msgid "Гостей (макс."
+msgstr "Guests (max."
+
+#: templates/hotels/hotel_branch.html:363
+msgid "На эти даты номер уже забронирован — выберите другие."
+msgstr "The room is already booked for these dates — choose others."
+
+#: templates/hotels/hotel_branch.html:364
+msgid "На выбранные даты номер уже забронирован. Выберите другие даты."
+msgstr "The room is already booked for the selected dates. Choose other dates."
+
+#: templates/hotels/hotel_branch.html:366
+#: templates/hotels/hotel_branch.html:661
+msgid "— Выберите сеанс —"
+msgstr "— Choose a session —"
+
+#: templates/hotels/hotel_branch.html:367
+#: templates/printshop/_product_card.html:20
+msgid "от"
+msgstr "from"
+
+#: templates/hotels/hotel_branch.html:390 templates/hotels/hotel_detail.html:4
+#: templates/hotels/hotel_detail.html:171
+msgid "Отель"
+msgstr "Hotel"
+
+#: templates/hotels/hotel_branch.html:433
+msgid "Другие номера"
+msgstr "Other rooms"
+
+#: templates/hotels/hotel_branch.html:445
+msgid "Номера пока не добавлены"
+msgstr "No rooms added yet"
+
+#: templates/hotels/hotel_branch.html:446
+msgid "Обратитесь в отель напрямую"
+msgstr "Contact the hotel directly"
+
+#: templates/hotels/hotel_branch.html:481
+#: templates/hotels/hotel_branch.html:633
+msgid "Описание"
+msgstr "Description"
+
+#: templates/hotels/hotel_branch.html:484
+msgid "Что включено"
+msgstr "What's included"
+
+#: templates/hotels/hotel_branch.html:515
+msgid "Дата заезда"
+msgstr "Check-in date"
+
+#: templates/hotels/hotel_branch.html:521
+msgid "Ночей"
+msgstr "Nights"
+
+#: templates/hotels/hotel_branch.html:525
+#: templates/public_site/hall_plan.html:58
+#: templates/public_site/staff_bookings.html:39
+msgid "Гостей"
+msgstr "Guests"
+
+#: templates/hotels/hotel_branch.html:531
+msgid "Количество номеров"
+msgstr "Number of rooms"
+
+#: templates/hotels/hotel_branch.html:545
+#: templates/hotels/hotel_branch.html:673
+#: templates/public_site/branch_menu.html:639
+#: templates/public_site/cart_detail.html:288
+msgid "Формат: +996XXXXXXXXX"
+msgstr "Format: +996XXXXXXXXX"
+
+#: templates/hotels/hotel_branch.html:551
+msgid "Особые пожелания, запрос ранней/поздней выписки..."
+msgstr "Special requests, early/late checkout request..."
+
+#: templates/hotels/hotel_branch.html:560
+#: templates/hotels/hotel_branch.html:683
+msgid "Подтвердить в WhatsApp"
+msgstr "Confirm via WhatsApp"
+
+#: templates/hotels/hotel_branch.html:631
+msgid "Сеансы"
+msgstr "Sessions"
+
+#: templates/hotels/hotel_branch.html:659
+msgid "Сеанс"
+msgstr "Session"
+
+#: templates/hotels/hotel_branch.html:677
+msgid "Особые пожелания…"
+msgstr "Special requests…"
+
+#: templates/hotels/hotel_detail.html:160 templates/hotels/hotel_list.html:4
+#: templates/hotels/hotel_list.html:94 templates/public_site/home.html:773
+msgid "Отели"
+msgstr "Hotels"
+
+#: templates/hotels/hotel_detail.html:174 templates/hotels/hotel_list.html:111
+#, python-format
+msgid "%(n)s объект"
+msgid_plural "%(n)s объекта"
+msgstr[0] "%(n)s location"
+msgstr[1] "%(n)s locations"
+
+#: templates/hotels/hotel_detail.html:176
+msgid "Сайт отеля ↗"
+msgstr "Hotel website ↗"
+
+#: templates/hotels/hotel_detail.html:184
+msgid "Объекты"
+msgstr "Locations"
+
+#: templates/hotels/hotel_detail.html:185
+msgid "Выберите объект"
+msgstr "Choose a location"
+
+#: templates/hotels/hotel_detail.html:206
+#: templates/pharmacy/pharmacy_detail.html:85
+#: templates/pharmacy/pharmacy_detail.html:89
+msgid "Карта"
+msgstr "Map"
+
+#: templates/hotels/hotel_detail.html:210
+msgid "Смотреть номера ↗"
+msgstr "View rooms ↗"
+
+#: templates/hotels/hotel_detail.html:212 templates/hotels/hotel_list.html:112
+msgid "Смотреть номера"
+msgstr "View rooms"
+
+#: templates/hotels/hotel_detail.html:227
+msgid "Объекты пока не добавлены"
+msgstr "No locations added yet"
+
+#: templates/hotels/hotel_detail.html:236
+msgid "Об отеле"
+msgstr "About the hotel"
+
+#: templates/hotels/hotel_list.html:95
+msgid "Выберите отель и забронируйте номер онлайн"
+msgstr "Choose a hotel and book a room online"
+
+#: templates/hotels/hotel_list.html:119
+msgid "Отели скоро появятся"
+msgstr "Hotels coming soon"
+
+#: templates/hotels/hotel_list.html:121
+msgid "Следите за обновлениями"
+msgstr "Stay tuned"
+
+#: templates/hotels/room_request.html:7 templates/hotels/room_request.html:72
+msgid "Номер не найден"
+msgstr "Room not found"
+
+#: templates/hotels/room_request.html:7
+msgid "заказ в номер"
+msgstr "in-room order"
+
+#: templates/hotels/room_request.html:73
+msgid "Похоже, ссылка устарела. Обратитесь на ресепшн."
+msgstr "It looks like the link has expired. Please contact the front desk."
+
+#: templates/hotels/room_request.html:79
+msgid "Заказ услуг в номер и вызов сотрудника"
+msgstr "In-room service orders and staff call"
+
+#: templates/hotels/room_request.html:89 templates/hotels/room_request.html:94
+msgid "Позвать сотрудника"
+msgstr "Call a staff member"
+
+#: templates/hotels/room_request.html:90
+msgid "Нужна помощь, уборка, полотенца — нажмите, и к вам подойдут."
+msgstr "Need help, cleaning, towels — tap and someone will come to you."
+
+#: templates/hotels/room_request.html:100
+#: templates/hotels/room_request.html:129
+msgid "Услуги в номер"
+msgstr "In-room services"
+
+#: templates/hotels/room_request.html:101
+msgid "Отметьте нужное — заявка уйдёт на ресепшн."
+msgstr "Check what you need — the request goes to the front desk."
+
+#: templates/hotels/room_request.html:115
+#: templates/hotels/room_request.html:135
+msgid "Ваше имя (необязательно)"
+msgstr "Your name (optional)"
+
+#: templates/hotels/room_request.html:119
+msgid "Комментарий (например: 2 бутылки воды, без сахара…)"
+msgstr "Comment (e.g. 2 bottles of water, no sugar…)"
+
+#: templates/hotels/room_request.html:124
+#: templates/hotels/room_request.html:142 templates/legal/legal_detail.html:335
+#: templates/legal/legal_detail.html:344
+msgid "Отправить заявку"
+msgstr "Send request"
+
+#: templates/hotels/room_request.html:130
+msgid "Опишите, что нужно — заявка уйдёт на ресепшн."
+msgstr "Describe what you need — the request goes to the front desk."
+
+#: templates/hotels/room_request.html:139
+msgid "Что нужно?"
+msgstr "What do you need?"
+
+#: templates/karaoke/_room_card.html:22
+#, python-format
+msgid "до %(cap)s чел."
+msgstr "up to %(cap)s people"
+
+#: templates/karaoke/_room_card.html:25 templates/karaoke/detail.html:233
+msgid "час"
+msgstr "hour"
+
+#: templates/karaoke/_room_card.html:31
+msgid "Меню кабинки"
+msgstr "Room menu"
+
+#: templates/karaoke/detail.html:125
+msgid "Все заведения"
+msgstr "All venues"
+
+#: templates/karaoke/detail.html:143
+msgid "Выбрать и забронировать кабинку"
+msgstr "Choose and book a room"
+
+#: templates/karaoke/detail.html:148
+#: templates/public_site/cart_detail2.html:762
+#: templates/public_site/home.html:1349
+#: templates/public_site/restaurant_contacts.html:448
+#: templates/public_site/restaurant_contacts.html:450
+#: templates/public_site/restaurant_detail.html:448
+#: templates/public_site/restaurant_detail.html:452
+msgid "Открыть меню"
+msgstr "Open menu"
+
+#: templates/karaoke/detail.html:204
+msgid "Остальные кабинки"
+msgstr "Other rooms"
+
+#: templates/karaoke/detail.html:240
+msgid "Начало"
+msgstr "Start"
+
+#: templates/karaoke/detail.html:244
+msgid "Конец"
+msgstr "End"
+
+#: templates/karaoke/detail.html:249
+msgid "Занятые слоты"
+msgstr "Busy slots"
+
+#: templates/karaoke/detail.html:263
+msgid "Кол-во гостей"
+msgstr "Number of guests"
+
+#: templates/karaoke/detail.html:267
+msgid "Примечание"
+msgstr "Note"
+
+#: templates/karaoke/detail.html:268
+msgid "Особые пожелания..."
+msgstr "Special requests..."
+
+#: templates/karaoke/detail.html:270 templates/karaoke/detail.html:322
+#: templates/karaoke/detail.html:326 templates/simracing/list.html:61
+msgid "Забронировать →"
+msgstr "Book →"
+
+#: templates/karaoke/detail.html:303
+msgid "Заполните все обязательные поля"
+msgstr "Fill in all required fields"
+
+#: templates/karaoke/detail.html:315
+msgid "Заявка принята!"
+msgstr "Application accepted!"
+
+#: templates/karaoke/detail.html:315
+msgid "Ждите подтверждения. Мы свяжемся с вами."
+msgstr "Wait for confirmation. We'll get in touch."
+
+#: templates/karaoke/detail.html:317
+msgid "Написать нам в WhatsApp"
+msgstr "Message us on WhatsApp"
+
+#: templates/karaoke/detail.html:327
+msgid "Ошибка сети."
+msgstr "Network error."
+
+#: templates/karaoke/list.html:42 templates/simracing/list.html:42
+msgid "РАЗВЛЕЧЕНИЯ"
+msgstr "ENTERTAINMENT"
+
+#: templates/karaoke/list.html:44
+msgid "Выберите заведение, забронируйте кабинку и проведите незабываемый вечер"
+msgstr "Choose a venue, book a room and have an unforgettable evening"
+
+#: templates/karaoke/list.html:59
+#, python-format
+msgid "%(n)s кабинка"
+msgid_plural "%(n)s кабинок"
+msgstr[0] "%(n)s room"
+msgstr[1] "%(n)s rooms"
+
+#: templates/karaoke/list.html:61
+msgid "Выбрать кабинку →"
+msgstr "Choose a room →"
+
+#: templates/karaoke/list.html:70
+msgid "Заведения добавляются администратором"
+msgstr "Venues are added by the administrator"
+
+#: templates/karaoke/menu.html:197 templates/karaoke/menu.html:287
+#: templates/karaoke/menu.html:301 templates/public_site/cart_detail2.html:689
+#: templates/public_site/table_cart.html:161
+#: templates/public_site/table_menu.html:1090
+msgid "Ваш заказ"
+msgstr "Your order"
+
+#: templates/karaoke/menu.html:197 templates/public_site/table_cart.html:257
+msgid "Корзина пустая"
+msgstr "Cart is empty"
+
+#: templates/karaoke/menu.html:198
+msgid "позиций"
+msgstr "items"
+
+#: templates/karaoke/menu.html:198 templates/shops/branch_catalog.html:757
+msgid "+ В корзину"
+msgstr "+ Add to cart"
+
+#: templates/karaoke/menu.html:199 templates/karaoke/menu.html:319
+#: templates/public_site/cart_detail2.html:907
+#: templates/public_site/table_cart.html:233
+#: templates/shops/cart_detail.html:160
+msgid "Подтвердить заказ"
+msgstr "Confirm order"
+
+#: templates/karaoke/menu.html:200
+msgid "Заказ из меню"
+msgstr "Order from the menu"
+
+#: templates/karaoke/menu.html:200 templates/public_site/hall_plan.html:49
+msgid "Кабинка"
+msgstr "Room"
+
+#: templates/karaoke/menu.html:211
+msgid "Назад к заведению"
+msgstr "Back to the venue"
+
+#: templates/karaoke/menu.html:215
+msgid "ваша кабинка"
+msgstr "your room"
+
+#: templates/karaoke/menu.html:262 templates/public_site/branch_menu.html:917
+msgid "Меню пока пустое"
+msgstr "The menu is empty for now"
+
+#: templates/karaoke/menu.html:313
+msgid "Кабинка / Стол (например: VIP 1)"
+msgstr "Room / Table (e.g. VIP 1)"
+
+#: templates/karaoke/menu.html:317
+msgid "Телефон: +996 700 000 000"
+msgstr "Phone: +996 700 000 000"
+
+#: templates/legal/legal_detail.html:4 templates/legal/legal_list.html:4
+msgid "Юридические услуги"
+msgstr "Legal services"
+
+#: templates/legal/legal_detail.html:203
+msgid "Все организации"
+msgstr "All organizations"
+
+#: templates/legal/legal_detail.html:292
+msgid "Обратиться"
+msgstr "Get in touch"
+
+#: templates/legal/legal_detail.html:310
+msgid "Обращение за услугой"
+msgstr "Service inquiry"
+
+#: templates/legal/legal_detail.html:324
+msgid "Опишите вашу ситуацию"
+msgstr "Describe your situation"
+
+#: templates/legal/legal_detail.html:326
+msgid ""
+"Расскажите кратко о вашем вопросе или проблеме, с которой вы хотите "
+"обратиться..."
+msgstr "Briefly describe the question or issue you'd like to raise..."
+
+#: templates/legal/legal_detail.html:330
+msgid ""
+"После отправки заявка придёт в Telegram организации, и откроется WhatsApp "
+"для связи."
+msgstr "After you submit, the request goes to the organization's Telegram, and WhatsApp opens for contact."
+
+#: templates/legal/legal_detail.html:345
+msgid "⚖️ Обращение за юридической услугой"
+msgstr "⚖️ Legal service inquiry"
+
+#: templates/legal/legal_detail.html:346
+msgid "Организация"
+msgstr "Organization"
+
+#: templates/legal/legal_detail.html:351
+msgid "Ситуация"
+msgstr "Situation"
+
+#: templates/legal/legal_list.html:103
+msgid "ЮРИДИЧЕСКИЕ УСЛУГИ"
+msgstr "LEGAL SERVICES"
+
+#: templates/legal/legal_list.html:104
+msgid "Юр. организации"
+msgstr "Legal organizations"
+
+#: templates/legal/legal_list.html:105
+msgid ""
+"Найдите юриста, узнайте стоимость услуг и обратитесь за помощью прямо сейчас"
+msgstr "Find a lawyer, check service prices and get help right now"
+
+#: templates/legal/legal_list.html:160
+msgid "Смотреть услуги"
+msgstr "View services"
+
+#: templates/legal/legal_list.html:172
+msgid "Юридические организации добавляются администратором"
+msgstr "Legal organizations are added by the administrator"
+
 #: templates/pharmacy/branch_catalog.html:14
+#: templates/pharmacy/pharmacy_list.html:340
 msgid "Каталог лекарств"
 msgstr "Medicine catalog"
 
 #: templates/pharmacy/branch_catalog.html:26
+#: templates/pharmacy/pharmacy_list.html:348
 #: templates/public_site/restaurant_contacts.html:371
 #: templates/public_site/restaurant_detail.html:358
 msgid "Филиалы"
@@ -343,14 +1498,14 @@ msgstr "Branches"
 #: templates/pharmacy/branch_catalog.html:36
 #: templates/public_site/branch_menu.html:733
 #: templates/public_site/branch_menu.html:755
-#: templates/public_site/home.html:1315 templates/shops/branch_catalog.html:824
+#: templates/public_site/home.html:1315 templates/shops/branch_catalog.html:839
 #: templates/shops/store_detail.html:313
 msgid "Все"
 msgstr "All"
 
 #: templates/pharmacy/branch_catalog.html:84
 #: templates/pharmacy/drug_detail.html:51
-#: templates/shops/branch_catalog.html:892 templates/shops/cart_detail.html:50
+#: templates/shops/branch_catalog.html:907 templates/shops/cart_detail.html:50
 msgid "В наличии"
 msgstr "In stock"
 
@@ -363,18 +1518,16 @@ msgstr "Out of stock"
 #: templates/pharmacy/branch_catalog.html:106
 #: templates/pharmacy/drug_detail.html:64
 #: templates/public_site/cart_detail2.html:790
-#: templates/shops/branch_catalog.html:890
+#: templates/shops/branch_catalog.html:905
 msgid "Цена"
 msgstr "Price"
 
-#: templates/pharmacy/branch_catalog.html:111
-msgid "Подробнее"
-msgstr "Details"
-
 #: templates/pharmacy/branch_catalog.html:126
+#: templates/printshop/branch_catalog.html:194
+#: templates/printshop/branch_catalog.html:337
 #: templates/public_site/branch_menu.html:1749
 #: templates/public_site/branch_menu.html:1750
-#: templates/shops/branch_catalog.html:899
+#: templates/shops/branch_catalog.html:914
 msgid "В корзину"
 msgstr "Add to cart"
 
@@ -382,25 +1535,26 @@ msgstr "Add to cart"
 msgid "Категории пустые или в филиале нет товаров."
 msgstr "Categories are empty or this branch has no products."
 
+#: templates/pharmacy/branch_catalog.html:182
+msgid "Не удалось добавить в корзину"
+msgstr "Couldn't add to cart"
+
+#: templates/pharmacy/branch_catalog.html:186
+msgid "Ошибка сети / сервера"
+msgstr "Network / server error"
+
 #: templates/pharmacy/cart_detail.html:4 templates/pharmacy/cart_detail.html:10
+#: templates/printshop/branch_catalog.html:197
+#: templates/printshop/branch_catalog.html:356
 #: templates/public_site/branch_menu.html:719
 #: templates/public_site/branch_menu.html:1707
 #: templates/public_site/branch_menu.html:1717
 #: templates/public_site/cart_detail.html:189
 #: templates/public_site/cart_detail2.html:701
-#: templates/shops/cart_detail.html:4 templates/shops/cart_detail.html:13
+#: templates/public_site/table_cart.html:4 templates/shops/cart_detail.html:4
+#: templates/shops/cart_detail.html:13
 msgid "Корзина"
 msgstr "Cart"
-
-#: templates/pharmacy/cart_detail.html:15
-#: templates/pharmacy/drug_detail.html:29
-#: templates/public_site/constructor_build.html:319
-#: templates/public_site/restaurant_about.html:38
-#: templates/public_site/restaurants_list.html:669
-#: templates/shops/branch_catalog.html:765 templates/shops/cart_detail.html:22
-#: templates/shops/store_detail.html:284
-msgid "Назад"
-msgstr "Back"
 
 #: templates/pharmacy/cart_detail.html:38
 #: templates/pharmacy/cart_detail.html:56
@@ -422,11 +1576,8 @@ msgstr "Back"
 #: templates/public_site/restaurant_contacts.html:404
 #: templates/public_site/restaurant_detail.html:396
 #: templates/public_site/restaurant_detail.html:398
-#: templates/shops/branch_catalog.html:794
-#: templates/shops/branch_catalog.html:796
-#: templates/shops/branch_catalog.html:872
-#: templates/shops/branch_catalog.html:891
-#: templates/shops/branch_catalog.html:953 templates/shops/cart_detail.html:43
+#: templates/shops/branch_catalog.html:809
+#: templates/shops/branch_catalog.html:968 templates/shops/cart_detail.html:43
 #: templates/shops/cart_detail.html:46 templates/shops/cart_detail.html:84
 #: templates/shops/cart_detail.html:90 templates/shops/cart_detail.html:96
 #: templates/shops/cart_detail.html:101
@@ -442,20 +1593,6 @@ msgstr "Refresh"
 #: templates/shops/cart_detail.html:73
 msgid "Удалить"
 msgstr "Remove"
-
-#: templates/pharmacy/cart_detail.html:65
-#: templates/public_site/branch_menu.html:624
-#: templates/public_site/branch_menu.html:1073
-#: templates/public_site/cart_detail.html:260
-#: templates/public_site/cart_detail2.html:741
-#: templates/public_site/cart_detail2.html:840
-#: templates/public_site/checkout_success.html:98
-#: templates/public_site/constructor_build.html:425
-#: templates/public_site/table_checkout.html:23
-#: templates/public_site/table_menu.html:900
-#: templates/shops/cart_detail.html:95
-msgid "Итого"
-msgstr "Total"
 
 #: templates/pharmacy/cart_detail.html:70
 #: templates/public_site/cart_detail2.html:856
@@ -478,6 +1615,8 @@ msgid "Адрес (необязательно)"
 msgstr "Address (optional)"
 
 #: templates/pharmacy/cart_detail.html:84
+#: templates/printshop/branch_catalog.html:193
+#: templates/printshop/branch_catalog.html:332
 #: templates/public_site/branch_menu.html:633
 #: templates/public_site/cart_detail.html:299
 #: templates/public_site/hall_plan.html:90
@@ -493,10 +1632,12 @@ msgid "Способ оплаты"
 msgstr "Payment method"
 
 #: templates/pharmacy/cart_detail.html:100
+#: templates/printshop/branch_catalog.html:215
 msgid "Оформить заказ"
 msgstr "Place order"
 
 #: templates/pharmacy/checkout_success.html:7
+#: templates/printshop/checkout_success.html:11
 #: templates/public_site/checkout_success.html:15
 msgid "Заказ создан!"
 msgstr "Order placed!"
@@ -511,6 +1652,7 @@ msgstr "Amount:"
 
 #: templates/pharmacy/checkout_success.html:16
 #: templates/pharmacy/drug_detail.html:128
+#: templates/printshop/checkout_success.html:71
 msgid "Вернуться в каталог"
 msgstr "Back to catalog"
 
@@ -541,18 +1683,13 @@ msgstr "No video added yet."
 msgid "Филиал"
 msgstr "Branch"
 
-#: templates/pharmacy/drug_detail.html:120
-#: templates/public_site/cart_detail2.html:872
-#: templates/public_site/table_checkout.html:34
-msgid "Телефон"
-msgstr "Phone"
-
 #: templates/pharmacy/pharmacy_detail.html:4
 #: templates/shops/store_detail.html:4
 msgid "филиалы"
 msgstr "branches"
 
 #: templates/pharmacy/pharmacy_detail.html:26
+#: templates/pharmacy/pharmacy_list.html:335
 #: templates/pharmacy/старый/pharmacy_list.html:96
 msgid "Аптека"
 msgstr "Pharmacy"
@@ -562,36 +1699,75 @@ msgid "Выберите филиал, чтобы открыть каталог �
 msgstr "Choose a branch to open the medicine catalog."
 
 #: templates/pharmacy/pharmacy_detail.html:68
+#: templates/printshop/center_detail.html:110
 #: templates/shops/store_detail.html:399
 msgid "Открыть каталог"
 msgstr "Open catalog"
-
-#: templates/pharmacy/pharmacy_detail.html:85
-#: templates/pharmacy/pharmacy_detail.html:89
-msgid "Карта"
-msgstr "Map"
-
-#: templates/pharmacy/pharmacy_detail.html:97
-#: templates/pharmacy/pharmacy_detail.html:101
-#: templates/public_site/cart_detail2.html:713
-#: templates/public_site/checkout_success.html:53
-#: templates/public_site/contacts.html:291
-#: templates/public_site/restaurant_contacts.html:416
-#: templates/public_site/restaurant_detail.html:413
-#: templates/shops/base.html:226 templates/shops/base.html:276
-#: templates/shops/branch_catalog.html:812
-msgid "Позвонить"
-msgstr "Call"
 
 #: templates/pharmacy/pharmacy_detail.html:125
 msgid "Филиалы не найдены."
 msgstr "No branches found."
 
+#: templates/pharmacy/pharmacy_list.html:4
+msgid "Аптеки Кыргызстана"
+msgstr "Pharmacies of Kyrgyzstan"
+
+#: templates/pharmacy/pharmacy_list.html:272
+#: templates/public_site/restaurants_list.html:599
+msgid "Платформа Webordo"
+msgstr "Webordo platform"
+
+#: templates/pharmacy/pharmacy_list.html:275
 #: templates/pharmacy/старый/pharmacy_list.html:4
 #: templates/pharmacy/старый/pharmacy_list.html:20
 #: templates/public_site/home.html:798
 msgid "Аптеки"
 msgstr "Pharmacies"
+
+#: templates/pharmacy/pharmacy_list.html:275
+#: templates/public_site/restaurants_list.html:600
+msgctxt "родительный"
+msgid "Кыргызстана"
+msgstr "of Kyrgyzstan"
+
+#: templates/pharmacy/pharmacy_list.html:279
+#, python-format
+msgid "%(n)s аптека"
+msgid_plural "%(n)s аптек"
+msgstr[0] "%(n)s pharmacy"
+msgstr[1] "%(n)s pharmacies"
+
+#: templates/pharmacy/pharmacy_list.html:288
+#: templates/pharmacy/старый/pharmacy_list.html:36
+msgid "Поиск аптеки..."
+msgstr "Search for a pharmacy..."
+
+#: templates/pharmacy/pharmacy_list.html:298
+msgid "Аптек"
+msgstr "Pharmacies"
+
+#: templates/pharmacy/pharmacy_list.html:302
+msgid "Часть работает"
+msgstr "Some open"
+
+#: templates/pharmacy/pharmacy_list.html:310
+msgid "Каталог онлайн"
+msgstr "Online catalog"
+
+#: templates/pharmacy/pharmacy_list.html:347
+msgid "Каталог"
+msgstr "Catalog"
+
+#: templates/pharmacy/pharmacy_list.html:363
+#: templates/public_site/restaurants_list.html:781
+#: templates/realestate/agency_detail.html:112
+#: templates/shops/store_list.html:326
+msgid "Ничего не найдено"
+msgstr "Nothing found"
+
+#: templates/pharmacy/pharmacy_list.html:364
+msgid "Попробуйте другой запрос"
+msgstr "Try another search"
 
 #: templates/pharmacy/старый/pharmacy_list.html:20
 msgid "Раздел"
@@ -607,13 +1783,211 @@ msgid ""
 msgstr ""
 "Find a pharmacy, pick a branch and browse the medicine catalog by category."
 
-#: templates/pharmacy/старый/pharmacy_list.html:36
-msgid "Поиск аптеки..."
-msgstr "Search for a pharmacy..."
-
 #: templates/pharmacy/старый/pharmacy_list.html:87
 msgid "Каталог лекарств и филиалы"
 msgstr "Medicine catalog & branches"
+
+#: templates/printshop/_product_card.html:10
+msgid "Новинка"
+msgstr "New"
+
+#: templates/printshop/_product_card.html:11
+msgid "Популярное"
+msgstr "Popular"
+
+#: templates/printshop/branch_catalog.html:190
+#: templates/printshop/branch_catalog.html:306
+#: templates/public_site/branch_menu.html:603
+#: templates/public_site/branch_menu.html:1699
+#: templates/shops/branch_catalog.html:756
+#: templates/shops/branch_catalog.html:970
+msgid "шт"
+msgstr "pcs"
+
+#: templates/printshop/branch_catalog.html:191
+msgid "Вариант"
+msgstr "Option"
+
+#: templates/printshop/branch_catalog.html:192
+#: templates/printshop/branch_catalog.html:324
+msgid "Количество"
+msgstr "Quantity"
+
+#: templates/printshop/branch_catalog.html:195
+msgid "Ошибка добавления"
+msgstr "Failed to add"
+
+#: templates/printshop/branch_catalog.html:196
+#: templates/public_site/branch_menu.html:601
+#: templates/shops/branch_catalog.html:759
+msgid "Добавлено в корзину"
+msgstr "Added to cart"
+
+#: templates/printshop/branch_catalog.html:199
+#: templates/public_site/branch_menu.html:598
+#: templates/public_site/cart_detail.html:171
+#: templates/public_site/cart_detail2.html:758
+msgid "Корзина пуста"
+msgstr "Your cart is empty"
+
+#: templates/printshop/branch_catalog.html:200
+msgid "🎉 Поздравляем! Доставка будет бесплатной."
+msgstr "🎉 Congratulations! Delivery will be free."
+
+#: templates/printshop/branch_catalog.html:201
+msgid "🚚 До бесплатной доставки осталось заказать на"
+msgstr "🚚 To free delivery, order for another"
+
+#: templates/printshop/branch_catalog.html:202
+#: templates/printshop/checkout_success.html:51
+#: templates/public_site/branch_menu.html:622
+#: templates/public_site/cart_detail.html:250
+#: templates/public_site/cart_detail2.html:727
+#: templates/public_site/cart_detail2.html:827
+#: templates/public_site/checkout_success.html:90
+#: templates/shops/cart_detail.html:83
+msgid "Подытог"
+msgstr "Subtotal"
+
+#: templates/printshop/branch_catalog.html:204
+#: templates/printshop/checkout_success.html:60
+msgid "Скидка"
+msgstr "Discount"
+
+#: templates/printshop/branch_catalog.html:206
+#: templates/public_site/cart_detail.html:267
+#: templates/public_site/table_checkout.html:38
+msgid "Промокод"
+msgstr "Promo code"
+
+#: templates/printshop/branch_catalog.html:207
+#: templates/public_site/branch_menu.html:628
+#: templates/public_site/cart_detail.html:168
+#: templates/public_site/cart_detail.html:270
+msgid "Применить"
+msgstr "Apply"
+
+#: templates/printshop/branch_catalog.html:208
+msgid "Минимальная сумма заказа —"
+msgstr "Minimum order amount —"
+
+#: templates/printshop/branch_catalog.html:210
+#: templates/public_site/cart_detail.html:277
+msgid "Оформление заказа"
+msgstr "Checkout"
+
+#: templates/printshop/branch_catalog.html:212
+msgid "Телефон *"
+msgstr "Phone *"
+
+#: templates/printshop/branch_catalog.html:213
+msgid "Адрес (для доставки)"
+msgstr "Address (for delivery)"
+
+#: templates/printshop/branch_catalog.html:214
+msgid "Комментарий к заказу"
+msgstr "Order comment"
+
+#: templates/printshop/branch_catalog.html:270
+#: templates/printshop/branch_catalog.html:286
+msgid "Другое"
+msgstr "Other"
+
+#: templates/printshop/branch_catalog.html:293
+#: templates/shops/branch_catalog.html:930
+msgid "Каталог пока пуст"
+msgstr "The catalog is empty for now"
+
+#: templates/printshop/branch_catalog.html:303
+#: templates/public_site/branch_menu.html:1696
+#: templates/shops/branch_catalog.html:967
+msgid "Ваша корзина"
+msgstr "Your cart"
+
+#: templates/printshop/branch_catalog.html:333
+msgid "Например: сделать срочно"
+msgstr "e.g. rush order"
+
+#: templates/printshop/center_detail.html:79
+msgid "Онлайн-каталог • Заказ в WhatsApp"
+msgstr "Online catalog • Order via WhatsApp"
+
+#: templates/printshop/center_detail.html:111
+msgid "Каталог →"
+msgstr "Catalog →"
+
+#: templates/printshop/center_detail.html:116
+msgid "У центра пока нет активных филиалов."
+msgstr "The center has no active branches yet."
+
+#: templates/printshop/center_list.html:3
+#: templates/printshop/center_list.html:47
+msgid "Полиграфические центры"
+msgstr "Print centers"
+
+#: templates/printshop/center_list.html:48
+msgid ""
+"Печать документов, визиток, баннеров, сувениров и многое другое — закажите "
+"онлайн."
+msgstr "Printing of documents, business cards, banners, souvenirs and much more — order online."
+
+#: templates/printshop/center_list.html:50
+msgid "Поиск по названию..."
+msgstr "Search by name..."
+
+#: templates/printshop/center_list.html:65
+#: templates/public_site/restaurants_list.html:721
+#: templates/public_site/restaurants_list.html:733
+#, python-format
+msgid "%(n)s филиал"
+msgid_plural "%(n)s филиалов"
+msgstr[0] "%(n)s branch"
+msgstr[1] "%(n)s branches"
+
+#: templates/printshop/center_list.html:72
+msgid "Пока нет доступных полиграфических центров."
+msgstr "No print centers available yet."
+
+#: templates/printshop/checkout_success.html:3
+#: templates/public_site/checkout_success.html:4
+#: templates/shops/checkout_success.html:7
+msgid "Заказ создан"
+msgstr "Order placed"
+
+#: templates/printshop/checkout_success.html:12
+msgid "Сейчас откроем WhatsApp с готовым сообщением."
+msgstr "We'll open WhatsApp with a ready message now."
+
+#: templates/printshop/checkout_success.html:13
+#: templates/public_site/checkout_success.html:20
+msgid "Заказ"
+msgstr "Order"
+
+#: templates/printshop/checkout_success.html:22
+#: templates/public_site/checkout_success.html:47
+msgid "Открыть WhatsApp"
+msgstr "Open WhatsApp"
+
+#: templates/printshop/checkout_success.html:36
+#: templates/public_site/checkout_success.html:68
+#: templates/shops/checkout_success.html:41
+#: templates/shops/order_success.html:42
+msgid "Скопировать текст заказа"
+msgstr "Copy order text"
+
+#: templates/printshop/checkout_success.html:40
+#: templates/public_site/checkout_success.html:74
+msgid "Скопировано! Вставьте в WhatsApp, если он не открылся."
+msgstr "Copied! Paste it into WhatsApp if it didn't open."
+
+#: templates/printshop/checkout_success.html:45
+#: templates/public_site/checkout_success.html:82
+msgid "WhatsApp не открылся?"
+msgstr "WhatsApp didn't open?"
+
+#: templates/printshop/checkout_success.html:46
+msgid "Нажмите кнопку «Открыть WhatsApp» или «Скопировать текст заказа»."
+msgstr "Tap “Open WhatsApp” or “Copy order text”."
 
 #: templates/public_site/about.html:3
 msgid "О Webordo"
@@ -951,24 +2325,29 @@ msgstr "Guests:"
 msgid "К бронированию"
 msgstr "To booking"
 
+#: templates/public_site/booking_success.html:34
+#, python-format
+msgid "Здравствуйте! Я забронировал(а) %(place)s (бронь #%(id)s) "
+msgstr "Hello! I have booked %(place)s (booking #%(id)s) "
+
 #: templates/public_site/booking_success.html:43
 msgid "Открыть Telegram филиала"
 msgstr "Open the branch's Telegram"
 
-#: templates/public_site/branch_menu.html:596
-#: templates/public_site/branch_menu.html:1726
-msgid "Загрузка…"
-msgstr "Loading…"
+#: templates/public_site/booking_success.html:51
+#: templates/public_site/contacts.html:338
+#: templates/public_site/hall_plan.html:181
+#: templates/public_site/reservation.html:263
+#: templates/public_site/restaurant_detail.html:505
+#: templates/public_site/staff_bookings.html:98
+#: templates/public_site/table_checkout.html:55
+#: templates/public_site/table_success.html:18
+msgid "Разработка Amantur agency"
+msgstr "Built by Amantur agency"
 
 #: templates/public_site/branch_menu.html:597
 msgid "Ошибка загрузки"
 msgstr "Loading error"
-
-#: templates/public_site/branch_menu.html:598
-#: templates/public_site/cart_detail.html:171
-#: templates/public_site/cart_detail2.html:758
-msgid "Корзина пуста"
-msgstr "Your cart is empty"
 
 #: templates/public_site/branch_menu.html:599
 #: templates/public_site/constructor_build.html:309
@@ -979,22 +2358,14 @@ msgstr "Error"
 #: templates/public_site/branch_menu.html:600
 #: templates/public_site/constructor_build.html:309
 #: templates/public_site/table_menu.html:638
+#: templates/shops/branch_catalog.html:763
 msgid "Ошибка сети"
 msgstr "Network error"
 
-#: templates/public_site/branch_menu.html:601
-msgid "Добавлено в корзину"
-msgstr "Added to cart"
-
 #: templates/public_site/branch_menu.html:602
+#: templates/shops/branch_catalog.html:762
 msgid "Не удалось добавить"
 msgstr "Couldn't add"
-
-#: templates/public_site/branch_menu.html:603
-#: templates/public_site/branch_menu.html:1699
-#: templates/shops/branch_catalog.html:955
-msgid "шт"
-msgstr "pcs"
 
 #: templates/public_site/branch_menu.html:604
 msgid "/ шт."
@@ -1012,12 +2383,6 @@ msgstr "Required"
 #: templates/public_site/table_menu.html:652
 msgid "Необязательно"
 msgstr "Optional"
-
-#: templates/public_site/branch_menu.html:607
-#: templates/public_site/constructor_build.html:359
-#: templates/public_site/table_menu.html:653
-msgid "мин"
-msgstr "min"
 
 #: templates/public_site/branch_menu.html:608
 #: templates/public_site/constructor_build.html:359
@@ -1049,12 +2414,6 @@ msgstr "← Back"
 msgid "Готово ✓"
 msgstr "Done ✓"
 
-#: templates/public_site/branch_menu.html:613
-#: templates/public_site/constructor_build.html:310
-#: templates/public_site/table_menu.html:654
-msgid "Максимум"
-msgstr "Maximum"
-
 #: templates/public_site/branch_menu.html:614
 #: templates/public_site/constructor_build.html:310
 #: templates/public_site/table_menu.html:655
@@ -1066,11 +2425,6 @@ msgstr "Select at least"
 #: templates/public_site/table_menu.html:656
 msgid "в"
 msgstr "in"
-
-#: templates/public_site/branch_menu.html:616
-#: templates/public_site/constructor_build.html:393
-msgid "Бесплатно"
-msgstr "Free"
 
 #: templates/public_site/branch_menu.html:617
 #: templates/public_site/branch_menu.html:1076
@@ -1096,15 +2450,6 @@ msgstr "Free 🎉"
 msgid "Минимальная сумма доставки:"
 msgstr "Minimum delivery amount:"
 
-#: templates/public_site/branch_menu.html:622
-#: templates/public_site/cart_detail.html:250
-#: templates/public_site/cart_detail2.html:727
-#: templates/public_site/cart_detail2.html:827
-#: templates/public_site/checkout_success.html:90
-#: templates/shops/cart_detail.html:83
-msgid "Подытог"
-msgstr "Subtotal"
-
 #: templates/public_site/branch_menu.html:625
 msgid "🎟 Есть промокод?"
 msgstr "🎟 Have a promo code?"
@@ -1119,23 +2464,13 @@ msgstr "Enter promo code"
 msgid "Убрать"
 msgstr "Remove"
 
-#: templates/public_site/branch_menu.html:628
-#: templates/public_site/cart_detail.html:168
-#: templates/public_site/cart_detail.html:270
-msgid "Применить"
-msgstr "Apply"
-
 #: templates/public_site/branch_menu.html:629
 msgid "📝 Оформление заказа"
 msgstr "📝 Checkout"
 
-#: templates/public_site/branch_menu.html:630
-#: templates/public_site/cart_detail.html:283
-msgid "Ваше имя"
-msgstr "Your name"
-
 #: templates/public_site/branch_menu.html:631
 #: templates/public_site/cart_detail.html:292
+#: templates/public_site/privacy.html:58
 msgid "Адрес доставки"
 msgstr "Delivery address"
 
@@ -1161,11 +2496,6 @@ msgstr "Place order →"
 #: templates/public_site/branch_menu.html:638
 msgid "🛒 Корзина пуста"
 msgstr "🛒 Cart is empty"
-
-#: templates/public_site/branch_menu.html:639
-#: templates/public_site/cart_detail.html:288
-msgid "Формат: +996XXXXXXXXX"
-msgstr "Format: +996XXXXXXXXX"
 
 #: templates/public_site/branch_menu.html:640
 #: templates/public_site/cart_detail.html:166
@@ -1236,21 +2566,13 @@ msgstr "Build →"
 msgid "Добавить в корзину"
 msgstr "Add to cart"
 
-#: templates/public_site/branch_menu.html:917
-msgid "Меню пока пустое"
-msgstr "The menu is empty for now"
-
 #: templates/public_site/branch_menu.html:919
 msgid "Ресторан ещё не добавил блюда"
 msgstr "The restaurant hasn't added dishes yet"
 
-#: templates/public_site/branch_menu.html:1696
-#: templates/shops/branch_catalog.html:952
-msgid "Ваша корзина"
-msgstr "Your cart"
-
 #: templates/public_site/branch_menu.html:1703
 #: templates/public_site/table_menu.html:1096
+#: templates/shops/branch_catalog.html:973
 msgid "Наверх"
 msgstr "Back to top"
 
@@ -1266,6 +2588,7 @@ msgid "Блюдо"
 msgstr "Dish"
 
 #: templates/public_site/cart_detail.html:170
+#: templates/public_site/table_cart.html:138
 #: templates/public_site/table_menu.html:640
 msgid "Ошибка. Попробуйте ещё раз."
 msgstr "Error. Please try again."
@@ -1279,27 +2602,15 @@ msgid "Вернуться в меню →"
 msgstr "Back to menu →"
 
 #: templates/public_site/cart_detail.html:233
+#: templates/public_site/table_cart.html:184
+#: templates/public_site/table_cart.html:209
 msgid "шт."
 msgstr "pcs."
-
-#: templates/public_site/cart_detail.html:267
-#: templates/public_site/table_checkout.html:38
-msgid "Промокод"
-msgstr "Promo code"
-
-#: templates/public_site/cart_detail.html:277
-msgid "Оформление заказа"
-msgstr "Checkout"
 
 #: templates/public_site/cart_detail.html:296
 #, python-format
 msgid "Минимальная сумма доставки: %(amt)s"
 msgstr "Minimum delivery amount: %(amt)s"
-
-#: templates/public_site/cart_detail2.html:689
-#: templates/public_site/table_menu.html:1090
-msgid "Ваш заказ"
-msgstr "Your order"
 
 #: templates/public_site/cart_detail2.html:711
 msgid "Назад в меню"
@@ -1315,15 +2626,6 @@ msgid ""
 msgstr ""
 "Add dishes from the menu and your order will appear here, clear and easy to "
 "read."
-
-#: templates/public_site/cart_detail2.html:762
-#: templates/public_site/home.html:1349
-#: templates/public_site/restaurant_contacts.html:448
-#: templates/public_site/restaurant_contacts.html:450
-#: templates/public_site/restaurant_detail.html:448
-#: templates/public_site/restaurant_detail.html:452
-msgid "Открыть меню"
-msgstr "Open menu"
 
 #: templates/public_site/cart_detail2.html:771
 msgid "Состав заказа"
@@ -1353,12 +2655,6 @@ msgstr "The order goes straight to the venue right after you confirm."
 msgid "Оставьте контакты, чтобы ресторан быстро обработал заказ."
 msgstr "Leave your contacts so the restaurant can process the order quickly."
 
-#: templates/public_site/cart_detail2.html:866
-#: templates/public_site/hall_plan.html:56
-#: templates/public_site/table_checkout.html:30
-msgid "Имя"
-msgstr "Name"
-
 #: templates/public_site/cart_detail2.html:867
 #: templates/shops/cart_detail.html:113
 msgid "Имя (не обязательно)"
@@ -1368,32 +2664,14 @@ msgstr "Name (optional)"
 msgid "Адрес / стол / кабинка"
 msgstr "Address / table / room"
 
-#: templates/public_site/cart_detail2.html:899
-#: templates/public_site/table_checkout.html:44
-msgid "Комментарий"
-msgstr "Comment"
-
 #: templates/public_site/cart_detail2.html:900
 #: templates/shops/cart_detail.html:144
 msgid "Комментарий (не обязательно)"
 msgstr "Comment (optional)"
 
-#: templates/public_site/cart_detail2.html:907
-#: templates/shops/cart_detail.html:160
-msgid "Подтвердить заказ"
-msgstr "Confirm order"
-
-#: templates/public_site/checkout_success.html:4
-msgid "Заказ создан"
-msgstr "Order placed"
-
 #: templates/public_site/checkout_success.html:17
 msgid "Сейчас откроем WhatsApp филиала с готовым сообщением."
 msgstr "We'll now open the branch's WhatsApp with a ready-made message."
-
-#: templates/public_site/checkout_success.html:20
-msgid "Заказ"
-msgstr "Order"
 
 #: templates/public_site/checkout_success.html:26
 msgid "Состав"
@@ -1403,31 +2681,15 @@ msgstr "Contents"
 msgid "и ещё"
 msgstr "and more"
 
-#: templates/public_site/checkout_success.html:47
-msgid "Открыть WhatsApp"
-msgstr "Open WhatsApp"
-
 #: templates/public_site/checkout_success.html:58
 #: templates/public_site/checkout_success.html:105
 #: templates/public_site/table_success.html:13
 msgid "Вернуться в меню"
 msgstr "Back to menu"
 
-#: templates/public_site/checkout_success.html:68
-msgid "Скопировать текст заказа"
-msgstr "Copy order text"
-
-#: templates/public_site/checkout_success.html:74
-msgid "Скопировано! Вставьте в WhatsApp, если он не открылся."
-msgstr "Copied! Paste it into WhatsApp if it didn't open."
-
 #: templates/public_site/checkout_success.html:77
 msgid "Не получилось скопировать. Выделите текст и скопируйте вручную."
 msgstr "Couldn't copy. Select the text and copy it manually."
-
-#: templates/public_site/checkout_success.html:82
-msgid "WhatsApp не открылся?"
-msgstr "WhatsApp didn't open?"
 
 #: templates/public_site/checkout_success.html:84
 msgid ""
@@ -1457,17 +2719,6 @@ msgstr "Step 1 of %(n)s"
 #: templates/public_site/constructor_build.html:362
 msgid "без ограничений"
 msgstr "no limit"
-
-#: templates/public_site/contacts.html:4
-#: templates/public_site/restaurant_about.html:28
-#: templates/public_site/restaurant_contacts.html:469
-#: templates/shops/base.html:336
-msgid "Контакты"
-msgstr "Contacts"
-
-#: templates/public_site/contacts.html:210
-msgid "На главную"
-msgstr "Home"
 
 #: templates/public_site/contacts.html:213
 msgid "Наши адреса и контакты"
@@ -1499,17 +2750,6 @@ msgstr "Open 24/7"
 msgid "Как добраться"
 msgstr "Directions"
 
-#: templates/public_site/contacts.html:310
-#: templates/public_site/reservation.html:116
-#: templates/public_site/restaurant_contacts.html:437
-#: templates/public_site/restaurant_contacts.html:440
-#: templates/public_site/restaurant_detail.html:435
-#: templates/public_site/restaurant_detail.html:438
-#: templates/shops/base.html:221 templates/shops/base.html:271
-#: templates/shops/base.html:328
-msgid "Бронирование"
-msgstr "Booking"
-
 #: templates/public_site/contacts.html:321
 msgid "Филиалы не добавлены."
 msgstr "No branches added."
@@ -1528,12 +2768,9 @@ msgid "План зала"
 msgstr "Floor plan"
 
 #: templates/public_site/hall_plan.html:30
+#: templates/realestate/apartment_detail.html:106
 msgid "Этаж"
 msgstr "Floor"
-
-#: templates/public_site/hall_plan.html:49
-msgid "Кабинка"
-msgstr "Room"
 
 #: templates/public_site/hall_plan.html:49
 #: templates/public_site/table_menu.html:4
@@ -1549,22 +2786,11 @@ msgstr "seats"
 msgid "Тел"
 msgstr "Tel"
 
-#: templates/public_site/hall_plan.html:58
-#: templates/public_site/staff_bookings.html:39
-msgid "Гостей"
-msgstr "Guests"
-
 #: templates/public_site/hall_plan.html:61
 #: templates/public_site/hall_plan.html:70
 #: templates/public_site/staff_bookings.html:49
 msgid "Гость пришёл"
 msgstr "Guest arrived"
-
-#: templates/public_site/hall_plan.html:61
-#: templates/public_site/reservation.html:124
-#: templates/public_site/reservation.html:161
-msgid "Занято"
-msgstr "Occupied"
 
 #: templates/public_site/hall_plan.html:77
 #: templates/public_site/staff_bookings.html:57
@@ -1575,11 +2801,6 @@ msgstr "Freed"
 #: templates/public_site/reservation.html:202
 msgid "Телефон (необязательно)"
 msgstr "Phone (optional)"
-
-#: templates/public_site/hall_plan.html:94
-#: templates/public_site/hall_plan.html:99
-msgid "Забронировать"
-msgstr "Book"
 
 #: templates/public_site/home.html:545
 msgid "🇰🇬 Цифровая экосистема Кыргызстана"
@@ -1649,10 +2870,6 @@ msgstr "Legal consultations and services"
 msgid "Все →"
 msgstr "All →"
 
-#: templates/public_site/home.html:723
-msgid "Эко-проекты"
-msgstr "Eco Projects"
-
 #: templates/public_site/home.html:724
 msgid "Вывоз мусора, озеленение, переработка"
 msgstr "Waste removal, landscaping, recycling"
@@ -1665,10 +2882,6 @@ msgstr "Markets"
 msgid "Базары и торговля оптом"
 msgstr "Bazaars and wholesale trade"
 
-#: templates/public_site/home.html:773
-msgid "Отели"
-msgstr "Hotels"
-
 #: templates/public_site/home.html:774
 msgid "Бронирование номеров"
 msgstr "Room booking"
@@ -1677,17 +2890,9 @@ msgstr "Room booking"
 msgid "Лекарства и здоровье"
 msgstr "Medicines & Health"
 
-#: templates/public_site/home.html:823
-msgid "IT Агентства"
-msgstr "IT Agencies"
-
 #: templates/public_site/home.html:824
 msgid "Разработка, дизайн, AI, маркетинг"
 msgstr "Development, design, AI, marketing"
-
-#: templates/public_site/home.html:850
-msgid "Барбершопы"
-msgstr "Barbershops"
 
 #: templates/public_site/home.html:851
 msgid "Онлайн-запись к мастеру"
@@ -1701,7 +2906,7 @@ msgstr "Print shop"
 msgid "Печать, визитки, баннеры, сувениры"
 msgstr "Printing, business cards, banners, souvenirs"
 
-#: templates/public_site/home.html:899
+#: templates/public_site/home.html:899 templates/realestate/agency_list.html:4
 msgid "Агентства недвижимости"
 msgstr "Real estate agencies"
 
@@ -1717,7 +2922,8 @@ msgstr "Karaoke"
 msgid "Бронирование кабинок"
 msgstr "Room reservations"
 
-#: templates/public_site/home.html:949
+#: templates/public_site/home.html:949 templates/simracing/list.html:3
+#: templates/simracing/list.html:43
 msgid "Симрейсинг"
 msgstr "Sim racing"
 
@@ -1784,6 +2990,204 @@ msgstr "✕ Route"
 msgid "2ГИС"
 msgstr "2GIS"
 
+#: templates/public_site/privacy.html:17
+msgid "Действует с 11 июля 2026 г. · Мобильное приложение Webordo"
+msgstr "Effective from July 11, 2026 · Webordo mobile app"
+
+#: templates/public_site/privacy.html:25
+msgid "1. Общие положения"
+msgstr "1. General provisions"
+
+#: templates/public_site/privacy.html:27
+msgid ""
+"Настоящая Политика конфиденциальности (далее — «Политика») описывает, какие "
+"данные обрабатывает мобильное приложение <strong>Webordo</strong> (далее — "
+"«Приложение») — официальный мобильный клиент сервиса webordo.kg, платформы "
+"заказа еды и услуг заведений Кыргызской Республики."
+msgstr "This Privacy Policy (the “Policy”) describes what data the <strong>Webordo</strong> mobile app (the “App”) processes — the official mobile client of webordo.kg, a platform for ordering food and services from venues in the Kyrgyz Republic."
+
+#: templates/public_site/privacy.html:28
+msgid "Оператор данных: <strong>webordo.kg</strong> (далее — «Оператор»)."
+msgstr "Data operator: <strong>webordo.kg</strong> (the “Operator”)."
+
+#: templates/public_site/privacy.html:29
+msgid ""
+"Используя Приложение, вы соглашаетесь с настоящей Политикой. Приложение "
+"работает в гостевом режиме: регистрация и создание аккаунта не требуются и "
+"не предусмотрены."
+msgstr "By using the App, you agree to this Policy. The App works in guest mode: registration and account creation are not required and not provided."
+
+#: templates/public_site/privacy.html:33
+msgid "2. Какие данные мы обрабатываем и зачем"
+msgstr "2. What data we process and why"
+
+#: templates/public_site/privacy.html:35
+msgid ""
+"Приложение обрабатывает только те данные, которые вы сами указываете при "
+"оформлении заказа или бронирования:"
+msgstr "The App processes only the data you provide yourself when placing an order or booking:"
+
+#: templates/public_site/privacy.html:41
+msgid "Данные"
+msgstr "Data"
+
+#: templates/public_site/privacy.html:42
+msgid "Когда указываются"
+msgstr "When provided"
+
+#: templates/public_site/privacy.html:43
+msgid "Для чего используются"
+msgstr "What it's used for"
+
+#: templates/public_site/privacy.html:49 templates/public_site/privacy.html:54
+msgid "Заказ, бронирование"
+msgstr "Order, booking"
+
+#: templates/public_site/privacy.html:50
+msgid "Чтобы заведение могло обратиться к вам при выполнении заказа"
+msgstr "So the venue can contact you when fulfilling the order"
+
+#: templates/public_site/privacy.html:53
+msgid "Номер телефона"
+msgstr "Phone number"
+
+#: templates/public_site/privacy.html:55
+msgid "Связь с вами по вашему заказу или брони"
+msgstr "Contacting you about your order or booking"
+
+#: templates/public_site/privacy.html:59
+msgid "Только заказ с доставкой"
+msgstr "Delivery orders only"
+
+#: templates/public_site/privacy.html:60
+msgid "Доставка заказа по указанному адресу"
+msgstr "Delivering the order to the specified address"
+
+#: templates/public_site/privacy.html:66
+msgid ""
+"Эти данные передаются на сервер webordo.kg по защищённому соединению (HTTPS) "
+"и предоставляются только выбранному вами заведению исключительно для "
+"выполнения вашего заказа или бронирования. Мы не используем ваши данные для "
+"рекламы, не продаём их и не передаём третьим лицам, за исключением "
+"заведения, выполняющего ваш заказ, и случаев, прямо предусмотренных "
+"законодательством Кыргызской Республики."
+msgstr "This data is transmitted to the webordo.kg server over a secure connection (HTTPS) and is provided only to the venue you selected, solely to fulfil your order or booking. We do not use your data for advertising, do not sell it and do not share it with third parties, except for the venue fulfilling your order and cases expressly provided for by the legislation of the Kyrgyz Republic."
+
+#: templates/public_site/privacy.html:70
+msgid "3. Данные, которые остаются только на вашем устройстве"
+msgstr "3. Data that stays only on your device"
+
+#: templates/public_site/privacy.html:72
+msgid ""
+"Содержимое корзины, список сделанных с этого устройства заказов (номер, "
+"сумма, статус) и выбранный язык интерфейса хранятся локально на вашем "
+"устройстве и не передаются Оператору. Они удаляются при удалении Приложения "
+"или очистке его данных в настройках устройства."
+msgstr "The contents of your cart, the list of orders made from this device (number, amount, status) and the selected interface language are stored locally on your device and are not transmitted to the Operator. They are deleted when the App is removed or its data is cleared in the device settings."
+
+#: templates/public_site/privacy.html:76
+msgid "4. Разрешения Приложения"
+msgstr "4. App permissions"
+
+#: templates/public_site/privacy.html:82
+msgid ""
+"<strong style=\"color:#111\">Камера</strong> — используется исключительно "
+"для сканирования QR-кода на столе заведения. Изображения с камеры не "
+"сохраняются, не записываются и никуда не передаются. Разрешение "
+"необязательно: код стола можно ввести вручную."
+msgstr "<strong style=\"color:#111\">Camera</strong> — used exclusively to scan the QR code on the venue's table. Camera images are not saved, not recorded and not transmitted anywhere. The permission is optional: the table code can be entered manually."
+
+#: templates/public_site/privacy.html:88
+msgid ""
+"<strong style=\"color:#111\">Доступ в интернет и состояние сети</strong> — "
+"загрузка меню, оформление заказов, уведомление об отсутствии соединения."
+msgstr "<strong style=\"color:#111\">Internet access and network state</strong> — loading the menu, placing orders, notifying about a lost connection."
+
+#: templates/public_site/privacy.html:92
+msgid ""
+"Иных разрешений (геолокация, контакты, файлы, микрофон и т. п.) Приложение "
+"не запрашивает."
+msgstr "The App does not request any other permissions (geolocation, contacts, files, microphone, etc.)."
+
+#: templates/public_site/privacy.html:96
+msgid "5. Автоматический сбор данных"
+msgstr "5. Automatic data collection"
+
+#: templates/public_site/privacy.html:98
+msgid ""
+"Приложение не содержит рекламных сетей, сторонних трекеров и сторонних "
+"аналитических SDK. Идентификаторы устройства не собираются. Внешние действия "
+"(звонок, WhatsApp, маршрут в 2ГИС) открываются в соответствующих сторонних "
+"приложениях; их работа регулируется политиками их владельцев."
+msgstr "The App contains no advertising networks, third-party trackers or third-party analytics SDKs. Device identifiers are not collected. External actions (call, WhatsApp, route in 2GIS) open in the corresponding third-party apps; their operation is governed by their owners' policies."
+
+#: templates/public_site/privacy.html:102
+msgid "6. Хранение и защита данных"
+msgstr "6. Data storage and protection"
+
+#: templates/public_site/privacy.html:104
+msgid ""
+"Данные заказов хранятся на сервере webordo.kg в течение срока, необходимого "
+"для выполнения заказа и ведения учёта заведением. Передача данных "
+"осуществляется только по протоколу HTTPS. Доступ к данным заказов имеют "
+"только Оператор и заведение, выполняющее заказ."
+msgstr "Order data is stored on the webordo.kg server for the period needed to fulfil the order and for the venue's record-keeping. Data is transmitted only via HTTPS. Only the Operator and the venue fulfilling the order have access to order data."
+
+#: templates/public_site/privacy.html:108
+msgid "7. Ваши права"
+msgstr "7. Your rights"
+
+#: templates/public_site/privacy.html:110
+msgid ""
+"Вы вправе узнать, какие данные о вас обрабатываются, потребовать исправления "
+"неточных данных или удаления ваших данных с сервера."
+msgstr "You have the right to learn what data about you is processed, to request correction of inaccurate data or deletion of your data from the server."
+
+#: templates/public_site/privacy.html:111
+msgid ""
+"Для этого напишите на <a href=\"mailto:support@webordo.kg\" "
+"style=\"color:#f97316;text-decoration:none;font-"
+"weight:600\">support@webordo.kg</a>, указав номер телефона, с которого "
+"оформлялись заказы. Запросы рассматриваются в срок не более 30 дней."
+msgstr "To do so, write to <a href=\"mailto:support@webordo.kg\" style=\"color:#f97316;text-decoration:none;font-weight:600\">support@webordo.kg</a>, specifying the phone number used for orders. Requests are processed within no more than 30 days."
+
+#: templates/public_site/privacy.html:115
+msgid "8. Дети"
+msgstr "8. Children"
+
+#: templates/public_site/privacy.html:117
+msgid ""
+"Приложение не предназначено для самостоятельного использования детьми до 13 "
+"лет и не собирает данные о возрасте пользователей."
+msgstr "The App is not intended for independent use by children under 13 and does not collect data about users' age."
+
+#: templates/public_site/privacy.html:121
+msgid "9. Изменения Политики"
+msgstr "9. Changes to the Policy"
+
+#: templates/public_site/privacy.html:123
+msgid ""
+"При изменении Политики новая редакция публикуется на этой странице с "
+"обновлённой датой вступления в силу. Продолжение использования Приложения "
+"после публикации изменений означает согласие с новой редакцией."
+msgstr "When the Policy changes, a new version is published on this page with an updated effective date. Continued use of the App after changes are published means acceptance of the new version."
+
+#: templates/public_site/privacy.html:127
+msgid "10. Контакты"
+msgstr "10. Contacts"
+
+#: templates/public_site/privacy.html:130
+msgid "Оператор:"
+msgstr "Operator:"
+
+#: templates/public_site/privacy.html:132
+msgid "Сайт:"
+msgstr "Website:"
+
+#: templates/public_site/privacy.html:139
+msgid "Политика конфиденциальности · webordo.kg · Действует с 11 июля 2026 г."
+msgstr "Privacy Policy · webordo.kg · Effective from July 11, 2026"
+
 #: templates/public_site/reservation.html:121
 #: templates/public_site/reservation.html:168
 msgid "Свободно"
@@ -1805,11 +3209,40 @@ msgstr "Book a table"
 msgid "Длительность сессии"
 msgstr "Session length"
 
+#: templates/public_site/reservation.html:192
+msgid "5 мин"
+msgstr "5 min"
+
+#: templates/public_site/reservation.html:193
+msgid "8 мин"
+msgstr "8 min"
+
+#: templates/public_site/reservation.html:194
+msgid "11 мин"
+msgstr "11 min"
+
+#: templates/public_site/reservation.html:195
+msgid "20 мин"
+msgstr "20 min"
+
+#: templates/public_site/reservation.html:196
+msgid "30 мин"
+msgstr "30 min"
+
+#: templates/public_site/reservation.html:197
+msgid "40 мин"
+msgstr "40 min"
+
+#: templates/public_site/reservation.html:198
+msgid "60 мин"
+msgstr "60 min"
+
 #: templates/public_site/reservation.html:207
 msgid "Подтвердить бронь"
 msgstr "Confirm booking"
 
 #: templates/public_site/reservation.html:209
+#: templates/public_site/table_cart.html:151
 #: templates/public_site/table_menu.html:669
 msgid "Отмена"
 msgstr "Cancel"
@@ -1829,13 +3262,6 @@ msgstr "Restaurant · Webordo"
 msgid "филиала"
 msgstr "branches"
 
-#: templates/public_site/restaurant_contacts.html:355
-#: templates/public_site/restaurant_contacts.html:496
-#: templates/public_site/restaurant_detail.html:337
-#: templates/shops/store_detail.html:365
-msgid "На карте"
-msgstr "On the map"
-
 #: templates/public_site/restaurant_contacts.html:359
 #: templates/public_site/restaurant_detail.html:341
 msgid "Сайт"
@@ -1845,11 +3271,6 @@ msgstr "Website"
 #: templates/public_site/restaurant_detail.html:359
 msgid "Выберите филиал"
 msgstr "Choose a branch"
-
-#: templates/public_site/restaurant_contacts.html:426
-#: templates/public_site/restaurant_detail.html:425
-msgid "Маршрут"
-msgstr "Route"
 
 #: templates/public_site/restaurant_contacts.html:431
 #, python-format
@@ -1879,11 +3300,6 @@ msgstr "No branches added yet"
 #: templates/public_site/restaurant_detail.html:470
 msgid "О заведении"
 msgstr "About the venue"
-
-#: templates/public_site/restaurant_contacts.html:515
-#: templates/public_site/restaurant_detail.html:479
-msgid "Описание не добавлено"
-msgstr "No description added"
 
 #: templates/public_site/restaurant_contacts.html:516
 #: templates/public_site/restaurant_detail.html:480
@@ -1917,24 +3333,9 @@ msgstr ""
 msgid "У ресторана пока нет активных филиалов"
 msgstr "This restaurant has no active branches yet"
 
-#: templates/public_site/restaurant_detail.html:505
-#: templates/public_site/table_checkout.html:55
-#: templates/public_site/table_success.html:18
-msgid "Разработка Amantur agency"
-msgstr "Built by Amantur agency"
-
 #: templates/public_site/restaurants_list.html:4
 msgid "Рестораны Кыргызстана"
 msgstr "Restaurants of Kyrgyzstan"
-
-#: templates/public_site/restaurants_list.html:599
-msgid "Платформа Webordo"
-msgstr "Webordo platform"
-
-#: templates/public_site/restaurants_list.html:600
-msgctxt "родительный"
-msgid "Кыргызстана"
-msgstr "of Kyrgyzstan"
 
 #: templates/public_site/restaurants_list.html:603
 #, python-format
@@ -1960,14 +3361,6 @@ msgstr "Delivery available"
 msgid "Вперёд"
 msgstr "Next"
 
-#: templates/public_site/restaurants_list.html:721
-#: templates/public_site/restaurants_list.html:733
-#, python-format
-msgid "%(n)s филиал"
-msgid_plural "%(n)s филиала"
-msgstr[0] "%(n)s branch"
-msgstr[1] "%(n)s branches"
-
 #: templates/public_site/restaurants_list.html:746
 #, python-format
 msgid "Мин. %(amt)s"
@@ -1986,11 +3379,6 @@ msgstr "Delivery %(amt)s"
 #: templates/public_site/restaurants_list.html:766
 msgid "Меню, контакты, бронь"
 msgstr "Menu, contacts, booking"
-
-#: templates/public_site/restaurants_list.html:781
-#: templates/shops/store_list.html:326
-msgid "Ничего не найдено"
-msgstr "Nothing found"
 
 #: templates/public_site/restaurants_list.html:782
 msgid "Попробуй другой запрос или сними фильтр «Открыто сейчас»"
@@ -2027,6 +3415,85 @@ msgstr "History"
 #: templates/public_site/staff_bookings.html:89
 msgid "Пока пусто."
 msgstr "Nothing here yet."
+
+#: templates/public_site/table_cart.html:130
+msgid "бесплатная доставка"
+msgstr "free delivery"
+
+#: templates/public_site/table_cart.html:131
+msgid "✓ Промокод действует:"
+msgstr "✓ Promo code is valid:"
+
+#: templates/public_site/table_cart.html:132
+msgid "Промокод недействителен"
+msgstr "Promo code is invalid"
+
+#: templates/public_site/table_cart.html:133
+msgid "Вызываю..."
+msgstr "Calling..."
+
+#: templates/public_site/table_cart.html:134
+msgid "✅ Официант вызван!"
+msgstr "✅ Waiter called!"
+
+#: templates/public_site/table_cart.html:135
+msgid "Уже идёт к вашему столу"
+msgstr "On the way to your table"
+
+#: templates/public_site/table_cart.html:136
+#: templates/public_site/table_cart.html:147
+#: templates/public_site/table_cart.html:170
+#: templates/public_site/table_menu.html:665
+msgid "Позвать официанта"
+msgstr "Call the waiter"
+
+#: templates/public_site/table_cart.html:137
+msgid "Нажмите, чтобы позвать"
+msgstr "Tap to call"
+
+#: templates/public_site/table_cart.html:139
+#: templates/public_site/table_menu.html:647
+msgid "🔔 Вызвать официанта"
+msgstr "🔔 Call the waiter"
+
+#: templates/public_site/table_cart.html:148
+#, python-format
+msgid "Официант подойдёт к столу <b>%(t)s</b>."
+msgstr "The waiter will come to table <b>%(t)s</b>."
+
+#: templates/public_site/table_cart.html:149
+msgid "Примечание (необязательно)..."
+msgstr "Note (optional)..."
+
+#: templates/public_site/table_cart.html:150
+#: templates/public_site/table_menu.html:668
+msgid "Вызвать официанта"
+msgstr "Call the waiter"
+
+#: templates/public_site/table_cart.html:171
+#, python-format
+msgid "Нажмите, чтобы позвать — подойдёт к столу %(t)s"
+msgstr "Tap to call — someone will come to table %(t)s"
+
+#: templates/public_site/table_cart.html:238
+msgid "Промокод (если есть)"
+msgstr "Promo code (if any)"
+
+#: templates/public_site/table_cart.html:243
+msgid "Комментарий к заказу (необязательно)"
+msgstr "Order comment (optional)"
+
+#: templates/public_site/table_cart.html:244
+msgid "Отправить заказ"
+msgstr "Send order"
+
+#: templates/public_site/table_cart.html:250
+msgid "Продолжить выбор блюд"
+msgstr "Continue choosing dishes"
+
+#: templates/public_site/table_cart.html:260
+msgid "Перейти в меню →"
+msgstr "Go to the menu →"
 
 #: templates/public_site/table_checkout.html:6
 msgid "Подтверждение"
@@ -2080,10 +3547,6 @@ msgstr "✅ The waiter is on the way!"
 msgid "🔔 Официант"
 msgstr "🔔 Waiter"
 
-#: templates/public_site/table_menu.html:647
-msgid "🔔 Вызвать официанта"
-msgstr "🔔 Call the waiter"
-
 #: templates/public_site/table_menu.html:648
 msgid "Добавляю…"
 msgstr "Adding…"
@@ -2096,10 +3559,6 @@ msgstr "🧩 Add to order"
 msgid "Выберите позиции"
 msgstr "Select items"
 
-#: templates/public_site/table_menu.html:665
-msgid "Позвать официанта"
-msgstr "Call the waiter"
-
 #: templates/public_site/table_menu.html:666
 #, python-format
 msgid "Хотите что-то добавить или есть вопрос? Официант придёт к столу %(t)s."
@@ -2111,10 +3570,6 @@ msgstr ""
 #: templates/public_site/table_menu.html:667
 msgid "Примечание (необязательно)…"
 msgstr "Note (optional)…"
-
-#: templates/public_site/table_menu.html:668
-msgid "Вызвать официанта"
-msgstr "Call the waiter"
 
 #: templates/public_site/table_menu.html:698
 msgid "Официант"
@@ -2150,11 +3605,6 @@ msgstr "Build"
 msgid "В заказ"
 msgstr "To order"
 
-#: templates/public_site/table_menu.html:893
-#, python-format
-msgid "от %(p)s"
-msgstr "from %(p)s"
-
 #: templates/public_site/table_menu.html:904
 msgid "Добавить в заказ"
 msgstr "Add to order"
@@ -2166,6 +3616,119 @@ msgstr "Order accepted!"
 #: templates/public_site/table_success.html:9
 msgid "Номер заказа"
 msgstr "Order number"
+
+#: templates/realestate/agency_detail.html:4
+msgid "квартиры"
+msgstr "apartments"
+
+#: templates/realestate/agency_detail.html:83
+msgid "Поиск по адресу, району, площади, комнатам..."
+msgstr "Search by address, district, area, rooms..."
+
+#: templates/realestate/agency_detail.html:85
+msgid "Сбросить"
+msgstr "Reset"
+
+#: templates/realestate/agency_detail.html:99
+msgid "Без адреса"
+msgstr "No address"
+
+#: templates/realestate/agency_detail.html:101
+#: templates/realestate/apartment_detail.html:104
+#, python-format
+msgid "%(a)s м²"
+msgstr "%(a)s m²"
+
+#: templates/realestate/agency_detail.html:101
+#, python-format
+msgid "%(r)s-комн."
+msgstr "%(r)s-room"
+
+#: templates/realestate/agency_detail.html:103
+msgid "Цена не указана"
+msgstr "Price not specified"
+
+#: templates/realestate/agency_detail.html:113
+#, python-format
+msgid "По запросу «%(q)s» квартир не найдено"
+msgstr "No apartments found for “%(q)s”"
+
+#: templates/realestate/agency_detail.html:115
+msgid "Пока нет квартир"
+msgstr "No apartments yet"
+
+#: templates/realestate/agency_detail.html:116
+msgid "Агентство скоро добавит предложения"
+msgstr "The agency will add listings soon"
+
+#: templates/realestate/agency_list.html:53
+msgid "НЕДВИЖИМОСТЬ"
+msgstr "REAL ESTATE"
+
+#: templates/realestate/agency_list.html:54
+msgid "Агентства"
+msgstr "Agencies"
+
+#: templates/realestate/agency_list.html:54
+msgid "недвижимости"
+msgstr "of real estate"
+
+#: templates/realestate/agency_list.html:55
+msgid ""
+"Квартиры от проверенных агентств недвижимости — с фото, ценами и прямой "
+"связью с риэлтором"
+msgstr "Apartments from trusted real estate agencies — with photos, prices and direct contact with a realtor"
+
+#: templates/realestate/agency_list.html:70
+msgid "Смотреть квартиры →"
+msgstr "View apartments →"
+
+#: templates/realestate/agency_list.html:79
+msgid "Агентства недвижимости добавляются администратором"
+msgstr "Real estate agencies are added by the administrator"
+
+#: templates/realestate/apartment_detail.html:67
+#, python-format
+msgid "Все квартиры %(name)s"
+msgstr "All apartments of %(name)s"
+
+#: templates/realestate/apartment_detail.html:100
+msgid "Адрес по запросу"
+msgstr "Address on request"
+
+#: templates/realestate/apartment_detail.html:104
+msgid "Площадь"
+msgstr "Area"
+
+#: templates/realestate/apartment_detail.html:105
+msgid "Комнат"
+msgstr "Rooms"
+
+#: templates/realestate/apartment_detail.html:106
+#, python-format
+msgid "из %(t)s"
+msgstr "of %(t)s"
+
+#: templates/realestate/apartment_detail.html:107
+msgid "Ремонт"
+msgstr "Renovation"
+
+#: templates/realestate/apartment_detail.html:116
+#: templates/realestate/apartment_detail.html:117
+msgid "Обзор"
+msgstr "Tour"
+
+#: templates/realestate/apartment_detail.html:124
+msgid "Цена по запросу"
+msgstr "Price on request"
+
+#: templates/realestate/apartment_detail.html:129
+msgid "Купить в WhatsApp"
+msgstr "Buy via WhatsApp"
+
+#: templates/realestate/apartment_detail.html:131
+msgid "Контакт не указан"
+msgstr "No contact provided"
 
 #: templates/shops/base.html:16
 msgid "Онлайн меню Санжи"
@@ -2187,7 +3750,9 @@ msgstr "Become a Sanzhi partner"
 msgid ""
 "QR-меню, заказы со стола, бронирование, уведомления в Telegram. Подключим "
 "ресторан быстро."
-msgstr "QR menus, table orders, reservations, Telegram notifications. We'll onboard your restaurant fast."
+msgstr ""
+"QR menus, table orders, reservations, Telegram notifications. We'll onboard "
+"your restaurant fast."
 
 #: templates/shops/base.html:318
 msgid "Напиши <b>“ПАРТНЁР”</b> — отправлю условия и демо."
@@ -2207,7 +3772,11 @@ msgid ""
 "              2) Делаем QR-столы<br>\n"
 "              3) Подключаем бронирование<br>\n"
 "              4) Запускаем"
-msgstr "1) We collect your menu and prices<br>\n              2) We make QR tables<br>\n              3) We connect booking<br>\n              4) We go live"
+msgstr ""
+"1) We collect your menu and prices<br>\n"
+"              2) We make QR tables<br>\n"
+"              3) We connect booking<br>\n"
+"              4) We go live"
 
 #: templates/shops/base.html:369
 msgid "Санжи — онлайн меню и заказы"
@@ -2221,36 +3790,63 @@ msgstr "Made for restaurants of Kyrgyzstan"
 msgid "Разработка Amantur Agency"
 msgstr "Built by Amantur Agency"
 
-#: templates/shops/branch_catalog.html:778
-msgid "Каталог филиала"
-msgstr "Branch catalog"
+#: templates/shops/branch_catalog.html:758
+msgid "＋ В корзину"
+msgstr "＋ Add to cart"
 
-#: templates/shops/branch_catalog.html:789
-msgid "Покупка в магазине"
-msgstr "In-store purchase"
+#: templates/shops/branch_catalog.html:760
+msgid "✓ Добавлено"
+msgstr "✓ Added"
 
-#: templates/shops/branch_catalog.html:794
-msgid "Мин. заказ"
-msgstr "Min. order"
+#: templates/shops/branch_catalog.html:761
+msgid "Недостаточно товара"
+msgstr "Not enough stock"
 
-#: templates/shops/branch_catalog.html:807
-msgid "Каталог открыт"
-msgstr "Catalog open"
+#: templates/shops/branch_catalog.html:764
+msgid "В наличии:"
+msgstr "In stock:"
 
-#: templates/shops/branch_catalog.html:870
-msgid "Есть"
-msgstr "Available"
-
-#: templates/shops/branch_catalog.html:870
-#: templates/shops/branch_catalog.html:902
+#: templates/shops/branch_catalog.html:765
+#: templates/shops/branch_catalog.html:885
+#: templates/shops/branch_catalog.html:917
 msgid "Нет в наличии"
 msgstr "Out of stock"
 
-#: templates/shops/branch_catalog.html:915
-msgid "Каталог пока пуст"
-msgstr "The catalog is empty for now"
+#: templates/shops/branch_catalog.html:793
+msgid "Каталог филиала"
+msgstr "Branch catalog"
 
-#: templates/shops/branch_catalog.html:916
+#: templates/shops/branch_catalog.html:804
+msgid "Покупка в магазине"
+msgstr "In-store purchase"
+
+#: templates/shops/branch_catalog.html:809
+msgid "Мин. заказ"
+msgstr "Min. order"
+
+#: templates/shops/branch_catalog.html:819
+msgid "Инд. заказы:"
+msgstr "Custom orders:"
+
+#: templates/shops/branch_catalog.html:822
+msgid "Каталог открыт"
+msgstr "Catalog open"
+
+#: templates/shops/branch_catalog.html:832
+msgid "Инд. заказ"
+msgstr "Custom order"
+
+#: templates/shops/branch_catalog.html:852
+msgid ""
+"Цены указаны по прайс-листу фирменных магазинов и могут отличаться в других "
+"точках продаж."
+msgstr "Prices are listed per the brand stores' price list and may differ at other points of sale."
+
+#: templates/shops/branch_catalog.html:885
+msgid "Есть"
+msgstr "Available"
+
+#: templates/shops/branch_catalog.html:931
 msgid "Товары для этого филиала ещё не добавлены."
 msgstr "Products for this branch haven't been added yet."
 
@@ -2262,6 +3858,10 @@ msgstr "In the shop"
 msgid "Мин. сумма доставки:"
 msgstr "Min. delivery amount:"
 
+#: templates/shops/cart_detail.html:127
+msgid "Введите номер в формате +996XXXXXXXXX (9 цифр после +996)"
+msgstr "Enter a number in the format +996XXXXXXXXX (9 digits after +996)"
+
 #: templates/shops/cart_detail.html:135
 msgid "Адрес доставки (обязательно)"
 msgstr "Delivery address (required)"
@@ -2269,6 +3869,43 @@ msgstr "Delivery address (required)"
 #: templates/shops/cart_detail.html:140
 msgid "Комментарий (например: приду через 10 минут)"
 msgstr "Comment (e.g. I'll arrive in 10 minutes)"
+
+#: templates/shops/cart_detail.html:210
+msgid "Недостаточно товара. Доступно:"
+msgstr "Not enough stock. Available:"
+
+#: templates/shops/checkout_success.html:9
+msgid "Сейчас откроем WhatsApp и отправим заказ в филиал."
+msgstr "We'll open WhatsApp now and send the order to the branch."
+
+#: templates/shops/checkout_success.html:13
+msgid "Состав (кратко)"
+msgstr "Items (brief)"
+
+#: templates/shops/checkout_success.html:47
+#: templates/shops/order_success.html:44
+msgid "Скопировано ✅"
+msgstr "Copied ✅"
+
+#: templates/shops/checkout_success.html:49
+msgid "Если WhatsApp не открылся — нажми “Скопировать” и отправь вручную."
+msgstr "If WhatsApp didn't open — tap “Copy” and send it manually."
+
+#: templates/shops/order_success.html:7
+msgid "Заказ отправлен"
+msgstr "Order sent"
+
+#: templates/shops/order_success.html:13
+msgid "Состав (коротко):"
+msgstr "Items (short):"
+
+#: templates/shops/order_success.html:25
+msgid "основной"
+msgstr "primary"
+
+#: templates/shops/order_success.html:37
+msgid "Если WhatsApp не открылся — скопируй текст:"
+msgstr "If WhatsApp didn't open — copy the text:"
 
 #: templates/shops/store_detail.html:282
 msgid "филиал(ов)"
@@ -2323,6 +3960,142 @@ msgstr "points"
 msgid "нет точек"
 msgstr "no locations"
 
+#: templates/simracing/appt_success.html:31
+#, python-format
+msgid "Запись #%(id)s — ждём вас!"
+msgstr "Booking #%(id)s — see you soon!"
+
+#: templates/simracing/appt_success.html:35 templates/simracing/venue.html:141
+#: templates/simracing/venue.html:227
+msgid "Тип"
+msgstr "Type"
+
+#: templates/simracing/appt_success.html:39 templates/simracing/venue.html:142
+#: templates/simracing/venue.html:228
+msgid "Сессия"
+msgstr "Session"
+
+#: templates/simracing/appt_success.html:45 templates/simracing/venue.html:229
+msgid "Заездов"
+msgstr "Runs"
+
+#: templates/simracing/appt_success.html:58
+msgid "Клиент"
+msgstr "Customer"
+
+#: templates/simracing/appt_success.html:63 templates/simracing/venue.html:232
+msgid "К оплате"
+msgstr "To pay"
+
+#: templates/simracing/appt_success.html:71
+msgid "Новая запись"
+msgstr "New booking"
+
+#: templates/simracing/list.html:44
+msgid "Выберите клуб, забронируйте карт и почувствуйте скорость"
+msgstr "Choose a club, book a kart and feel the speed"
+
+#: templates/simracing/list.html:59
+#, python-format
+msgid "%(n)s карт"
+msgid_plural "%(n)s карт"
+msgstr[0] "%(n)s kart"
+msgstr[1] "%(n)s karts"
+
+#: templates/simracing/list.html:70
+msgid "Клубы добавляются администратором"
+msgstr "Clubs are added by the administrator"
+
+#: templates/simracing/success.html:7
+msgid "Бронь подтверждена!"
+msgstr "Booking confirmed!"
+
+#: templates/simracing/success.html:8
+#, python-format
+msgid "Сессия #%(id)s запущена"
+msgstr "Session #%(id)s started"
+
+#: templates/simracing/success.html:11
+msgid "Детали"
+msgstr "Details"
+
+#: templates/simracing/success.html:15
+#, python-format
+msgid "Начало: %(st)s → Конец ~%(en)s"
+msgstr "Start: %(st)s → End ~%(en)s"
+
+#: templates/simracing/success.html:28
+msgid "Назад к выбору машины"
+msgstr "Back to kart selection"
+
+#: templates/simracing/venue.html:143
+msgid "Заезды"
+msgstr "Runs"
+
+#: templates/simracing/venue.html:144
+msgid "Дата/время"
+msgstr "Date/time"
+
+#: templates/simracing/venue.html:150
+msgid "Выберите тип"
+msgstr "Choose a type"
+
+#: templates/simracing/venue.html:157
+msgid "Выберите сессию из прайс-листа"
+msgstr "Choose a session from the price list"
+
+#: templates/simracing/venue.html:159
+msgid "Прайс-лист не настроен для этого типа"
+msgstr "The price list is not set up for this type"
+
+#: templates/simracing/venue.html:166
+msgid "Количество заездов"
+msgstr "Number of runs"
+
+#: templates/simracing/venue.html:172 templates/simracing/venue.html:222
+msgid "Итого: — сом · — мин"
+msgstr "Total: — som · — min"
+
+#: templates/simracing/venue.html:179
+msgid "Дата посещения"
+msgstr "Visit date"
+
+#: templates/simracing/venue.html:182
+msgid "Выберите дату выше"
+msgstr "Choose a date above"
+
+#: templates/simracing/venue.html:208
+msgid "Подтвердить запись"
+msgstr "Confirm booking"
+
+#: templates/simracing/venue.html:220
+msgid "минут"
+msgstr "minutes"
+
+#: templates/simracing/venue.html:221
+msgid "Машины не добавлены. Обратитесь к администратору."
+msgstr "No karts added. Please contact the administrator."
+
+#: templates/simracing/venue.html:226
+msgid "Ошибка загрузки — попробуйте ещё раз"
+msgstr "Loading error — please try again"
+
+#: templates/simracing/venue.html:231
+msgid "Общая длительность"
+msgstr "Total duration"
+
+#: templates/simracing/venue.html:233
+msgid "Классические карты для всей семьи"
+msgstr "Classic karts for the whole family"
+
+#: templates/simracing/venue.html:234
+msgid "Спортивные Евро-карты — больше скорости"
+msgstr "Sport Euro karts — more speed"
+
+#: templates/simracing/venue.html:235
+msgid "Полноценный автосимулятор на большом экране"
+msgstr "A full driving simulator on a big screen"
+
 #~ msgid "Санжи — экосистема заказов для бизнеса"
 #~ msgstr "Sanji — an ordering ecosystem for business"
 
@@ -2347,9 +4120,6 @@ msgstr "no locations"
 
 #~ msgid "Выбрал товары/блюда"
 #~ msgstr "Chose products / dishes"
-
-#~ msgid "Оформил заказ или бронь"
-#~ msgstr "Placed an order or booking"
 
 #~ msgid "Доставка/самовывоз — как у филиала"
 #~ msgstr "Delivery / pickup — as offered by the branch"
@@ -2391,41 +4161,20 @@ msgstr "no locations"
 #~ msgid "Фото филиала"
 #~ msgstr "Branch photo"
 
-#~ msgid "Контакты филиалов"
-#~ msgstr "Branch contacts"
-
-#~ msgid "Выберите филиал и нажмите"
-#~ msgstr "Choose a branch and tap"
-
 #~ msgid "чтобы открыть QR-меню и оформить заказ."
 #~ msgstr "to open the QR menu and place an order."
 
 #~ msgid "Тел."
 #~ msgstr "Tel."
 
-#~ msgid "Закрыто сейчас"
-#~ msgstr "Closed now"
-
 #~ msgid "Магазин"
 #~ msgstr "Shop"
-
-#~ msgid "Открыть корзину"
-#~ msgstr "Open cart"
 
 #~ msgid "Обложка магазина"
 #~ msgstr "Shop cover"
 
 #~ msgid "Формат"
 #~ msgstr "Format"
-
-#~ msgid "Заказ с доставкой"
-#~ msgstr "Delivery order"
-
-#~ msgid "Адрес"
-#~ msgstr "Address"
-
-#~ msgid "Адрес скоро добавим"
-#~ msgstr "Address coming soon"
 
 #~ msgid "Контакт"
 #~ msgstr "Contact"
@@ -2438,12 +4187,6 @@ msgstr "no locations"
 
 #~ msgid "заказ без процентов"
 #~ msgstr "commission-free ordering"
-
-#~ msgid "Выберите точку и способ заказа:"
-#~ msgstr "Choose a location and an ordering method:"
-
-#~ msgid "Назад к магазинам"
-#~ msgstr "Back to shops"
 
 #~ msgid "Доставляет магазин"
 #~ msgstr "Delivered by the shop"
@@ -2467,9 +4210,6 @@ msgstr "no locations"
 #~ "Open the catalog, add products to the cart and place an order. Delivery "
 #~ "is handled by the shop itself — we work on a subscription, with no "
 #~ "percentage fees."
-
-#~ msgid "Поиск магазина..."
-#~ msgstr "Search for a shop..."
 
 #~ msgid "Точек"
 #~ msgstr "Locations"

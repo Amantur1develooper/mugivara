@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load i18n static %}
-{% block title %}Развлечения — Симрейсинг{% endblock %}
+{% block title %}{% trans "Развлечения" %} — {% trans "Симрейсинг" %}{% endblock %}
 {% block cta %}{% endblock %}
 {% block head_extra %}
 <style>
@@ -38,10 +38,10 @@
   <div class="sr-hero">
     <div class="sr-hero-glow"></div>
     <div class="sr-hero-grid"></div>
-    <a href="/" class="sr-back">← Главная</a>
-    <div class="sr-hero-ew">WEBORDO · РАЗВЛЕЧЕНИЯ</div>
-    <div class="sr-hero-title">🏎️ <span>Симрейсинг</span></div>
-    <div class="sr-hero-sub">Выберите клуб, забронируйте карт и почувствуйте скорость</div>
+    <a href="/" class="sr-back">← {% trans "Главная" %}</a>
+    <div class="sr-hero-ew">WEBORDO · {% trans "РАЗВЛЕЧЕНИЯ" %}</div>
+    <div class="sr-hero-title">🏎️ <span>{% trans "Симрейсинг" %}</span></div>
+    <div class="sr-hero-sub">{% trans "Выберите клуб, забронируйте карт и почувствуйте скорость" %}</div>
   </div>
   {% if venues %}
   <div class="sr-grid">
@@ -56,9 +56,9 @@
         <div class="sr-card-meta">
           {% if v.address %}<span>📍 {{ v.address|truncatechars:30 }}</span>{% endif %}
           {% if v.working_hours %}<span>🕐 {{ v.working_hours }}</span>{% endif %}
-          <span>🏁 {{ v.machines.count }} карт</span>
+          <span>🏁 {% blocktrans count n=v.machines.count %}{{ n }} карт{% plural %}{{ n }} карт{% endblocktrans %}</span>
         </div>
-        <div class="sr-card-btn">Забронировать →</div>
+        <div class="sr-card-btn">{% trans "Забронировать →" %}</div>
       </div>
     </a>
     {% endfor %}
@@ -66,8 +66,8 @@
   {% else %}
   <div class="sr-empty">
     <div style="font-size:56px;margin-bottom:16px">🏎️</div>
-    <div style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:800;margin-bottom:8px">Скоро появятся</div>
-    <div style="font-size:14px;color:var(--sr-muted)">Клубы добавляются администратором</div>
+    <div style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:800;margin-bottom:8px">{% trans "Скоро появятся" %}</div>
+    <div style="font-size:14px;color:var(--sr-muted)">{% trans "Клубы добавляются администратором" %}</div>
   </div>
   {% endif %}
 </div>

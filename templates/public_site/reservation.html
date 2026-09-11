@@ -189,13 +189,13 @@
         {% trans "Длительность сессии" %}
       </div>
       <div class="res-duration-grid" id="durGrid">
-        <div class="dur-btn" onclick="pickDur(5,this)">5 мин</div>
-        <div class="dur-btn" onclick="pickDur(8,this)">8 мин</div>
-        <div class="dur-btn" onclick="pickDur(11,this)">11 мин</div>
-        <div class="dur-btn" onclick="pickDur(20,this)">20 мин</div>
-        <div class="dur-btn" onclick="pickDur(30,this)">30 мин</div>
-        <div class="dur-btn" onclick="pickDur(40,this)">40 мин</div>
-        <div class="dur-btn" onclick="pickDur(60,this)">60 мин</div>
+        <div class="dur-btn" onclick="pickDur(5,this)">{% blocktrans %}5 мин{% endblocktrans %}</div>
+        <div class="dur-btn" onclick="pickDur(8,this)">{% blocktrans %}8 мин{% endblocktrans %}</div>
+        <div class="dur-btn" onclick="pickDur(11,this)">{% blocktrans %}11 мин{% endblocktrans %}</div>
+        <div class="dur-btn" onclick="pickDur(20,this)">{% blocktrans %}20 мин{% endblocktrans %}</div>
+        <div class="dur-btn" onclick="pickDur(30,this)">{% blocktrans %}30 мин{% endblocktrans %}</div>
+        <div class="dur-btn" onclick="pickDur(40,this)">{% blocktrans %}40 мин{% endblocktrans %}</div>
+        <div class="dur-btn" onclick="pickDur(60,this)">{% blocktrans %}60 мин{% endblocktrans %}</div>
       </div>
 
       <input name="name" placeholder="{% trans 'Имя (необязательно)' %}" class="res-input">
@@ -260,5 +260,5 @@ function buildUrl(placeId) {
 
 {% endblock %}
 {% block footer %}
-<a href="{% url 'public_site:home' %}">Разработка Amantur agency</a>
+<a href="{% url 'public_site:home' %}">{% trans "Разработка Amantur agency" %}</a>
 {% endblock footer %}

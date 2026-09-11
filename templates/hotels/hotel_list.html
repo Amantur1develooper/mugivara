@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static i18n_attrs %}
 
-{% block title %}Отели — Webordo{% endblock %}
+{% block title %}{% trans "Отели" %} — Webordo{% endblock %}
 {% block cta %}{% endblock %}
 
 {% block head_extra %}
@@ -89,10 +89,10 @@
 <div class="hl-page">
 
   <div class="hl-hero">
-    <a href="/" class="hl-back">← Главная</a>
-    <div class="hl-hero-eyebrow">Webordo · Бронирование</div>
-    <div class="hl-hero-title">Отели</div>
-    <div class="hl-hero-sub">Выберите отель и забронируйте номер онлайн</div>
+    <a href="/" class="hl-back">← {% trans "Главная" %}</a>
+    <div class="hl-hero-eyebrow">Webordo · {% trans "Бронирование" %}</div>
+    <div class="hl-hero-title">{% trans "Отели" %}</div>
+    <div class="hl-hero-sub">{% trans "Выберите отель и забронируйте номер онлайн" %}</div>
   </div>
 
   <div class="hl-grid">
@@ -100,25 +100,25 @@
     <a href="{% url 'hotels:hotel_detail' c.obj.slug %}" class="hc">
       <div class="hc-photo">
         {% if c.cover %}
-          <img src="{{ c.cover.url }}" alt="{{ c.obj.name_ru }}" loading="lazy">
+          <img src="{{ c.cover.url }}" alt="{% t c.obj 'name' %}" loading="lazy">
         {% else %}
           <div class="hc-photo-empty"><span>🏨</span></div>
         {% endif %}
         <div class="hc-photo-grad"></div>
-        <div class="hc-photo-name">{{ c.obj.name_ru }}</div>
+        <div class="hc-photo-name">{% t c.obj "name" %}</div>
       </div>
       <div class="hc-body">
-        <div class="hc-meta">🏢 {{ c.branches_count }} {% if c.branches_count == 1 %}объект{% else %}объекта{% endif %}</div>
-        <div class="hc-btn">🏨 Смотреть номера</div>
+        <div class="hc-meta">🏢 {% blocktrans count n=c.branches_count %}{{ n }} объект{% plural %}{{ n }} объекта{% endblocktrans %}</div>
+        <div class="hc-btn">🏨 {% trans "Смотреть номера" %}</div>
       </div>
     </a>
     {% empty %}
     <div class="hl-empty">
       <div style="font-size:48px;margin-bottom:16px">🏗️</div>
       <div style="font-family:'Unbounded',sans-serif;font-size:17px;font-weight:800;color:var(--text)">
-        Отели скоро появятся
+        {% trans "Отели скоро появятся" %}
       </div>
-      <div style="font-size:14px;color:var(--muted);margin-top:8px">Следите за обновлениями</div>
+      <div style="font-size:14px;color:var(--muted);margin-top:8px">{% trans "Следите за обновлениями" %}</div>
     </div>
     {% endfor %}
   </div>

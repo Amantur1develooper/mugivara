@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% load static %}
-{% block title %}{{ branch.name_ru }} — {{ center.name_ru }} · Webordo{% endblock %}
+{% load static i18n i18n_attrs l10n %}
+{% block title %}{% t branch "name" %} — {% t center "name" %} · Webordo{% endblock %}
 {% block cta %}{% endblock %}
 
 {% block head_extra %}
@@ -184,6 +184,37 @@
 {% endblock %}
 
 {% block content %}
+<script>
+const CUR = "{% cur %}";
+const T = {
+  pcs: "{% trans 'шт' %}",
+  variant: "{% trans 'Вариант' %}",
+  qty: "{% trans 'Количество' %}",
+  commentOpt: "{% trans 'Комментарий (необязательно)' %}",
+  addToCart: "{% trans 'В корзину' %}",
+  addErr: "{% trans 'Ошибка добавления' %}",
+  addedCart: "{% trans 'Добавлено в корзину' %}",
+  cart: "{% trans 'Корзина' %}",
+  loading: "{% trans 'Загрузка…' %}",
+  cartEmpty: "{% trans 'Корзина пуста' %}",
+  freeOk: "{% trans '🎉 Поздравляем! Доставка будет бесплатной.' %}",
+  toFree1: "{% trans '🚚 До бесплатной доставки осталось заказать на' %}",
+  subtotal: "{% trans 'Подытог' %}",
+  delivery: "{% trans 'Доставка' %}",
+  discount: "{% trans 'Скидка' %}",
+  total: "{% trans 'Итого' %}",
+  promo: "{% trans 'Промокод' %}",
+  apply: "{% trans 'Применить' %}",
+  minOrder1: "{% trans 'Минимальная сумма заказа —' %}",
+  pickup: "{% trans 'Самовывоз' %}",
+  checkoutTitle: "{% trans 'Оформление заказа' %}",
+  yourName: "{% trans 'Ваше имя' %}",
+  phoneReq: "{% trans 'Телефон *' %}",
+  addrDelivery: "{% trans 'Адрес (для доставки)' %}",
+  commentOrder: "{% trans 'Комментарий к заказу' %}",
+  placeOrder: "{% trans 'Оформить заказ' %}",
+};
+</script>
 <div class="pc-page">
 
   <section class="pc-hero">
@@ -191,26 +222,26 @@
     {% if branch.banner %}<div class="pc-hero-photo" style="background-image:url('{{ branch.banner.url }}')"></div>{% endif %}
     <div class="pc-hero-overlay"></div>
     <div class="pc-hero-content">
-      <div class="pc-hero-title">{{ branch.name_ru }}</div>
-      {% if center.description_ru %}<div class="pc-hero-desc">{{ center.description_ru|truncatechars:160 }}</div>{% endif %}
+      <div class="pc-hero-title">{% t branch "name" %}</div>
+      {% t center "description" as cd %}{% if cd %}<div class="pc-hero-desc">{{ cd|truncatechars:160 }}</div>{% endif %}
       <div class="pc-hero-meta">
-        {% if branch.is_open_now %}<span class="pc-pill open">🟢 Открыто</span>{% else %}<span class="pc-pill">🔴 Закрыто</span>{% endif %}
+        {% if branch.is_open_now %}<span class="pc-pill open">🟢 {% trans "Открыто" %}</span>{% else %}<span class="pc-pill">🔴 {% trans "Закрыто" %}</span>{% endif %}
         {% if branch.is_open_24h %}<span class="pc-pill open">24/7</span>
         {% elif branch.open_time and branch.close_time %}<span class="pc-pill">{{ branch.open_time|time:"H:i" }}–{{ branch.close_time|time:"H:i" }}</span>{% endif %}
         {% if branch.address %}<span class="pc-pill">📍 {{ branch.address }}</span>{% endif %}
-        {% if branch.delivery_enabled %}<span class="pc-pill delivery">🚚 Доставка</span>{% endif %}
+        {% if branch.delivery_enabled %}<span class="pc-pill delivery">🚚 {% trans "Доставка" %}</span>{% endif %}
       </div>
       <div class="pc-hero-btns">
         {% if branch.map_url %}
         <a href="{{ branch.map_url }}" target="_blank" rel="noopener" class="pc-tl-btn pc-tl-map">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
-          Маршрут
+          {% trans "Маршрут" %}
         </a>
         {% endif %}
         {% if branch.phone %}
         <a href="tel:{{ branch.phone }}" class="pc-tl-btn pc-tl-phone">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M2 6.5C2 14.5 9.5 22 17.5 22l1.5-3.5-3-1.5-1.5 2c-2-1-4-2.5-5.5-4.5L11 13l-1.5-3L6 8.5 2 6.5z"/></svg>
-          Позвонить
+          {% trans "Позвонить" %}
         </a>
         {% endif %}
         {% if branch.phone or branch.whatsapp %}
@@ -234,9 +265,9 @@
   <div class="pc-cats-sticky">
     <div class="pc-cats-inner" id="pcCats">
       {% for section in cat_sections %}
-      <a href="#cat-{{ section.cat.id }}" class="pc-cat-btn" data-cat="cat-{{ section.cat.id }}">{{ section.cat.name_ru }}</a>
+      <a href="#cat-{{ section.cat.id }}" class="pc-cat-btn" data-cat="cat-{{ section.cat.id }}">{% t section.cat "name" %}</a>
       {% endfor %}
-      {% if uncat_products %}<a href="#cat-0" class="pc-cat-btn" data-cat="cat-0">Другое</a>{% endif %}
+      {% if uncat_products %}<a href="#cat-0" class="pc-cat-btn" data-cat="cat-0">{% trans "Другое" %}</a>{% endif %}
     </div>
   </div>
   {% endif %}
@@ -244,7 +275,7 @@
   <div class="pc-content">
     {% for section in cat_sections %}
     <div class="pc-cat-section" id="cat-{{ section.cat.id }}">
-      <div class="pc-cat-header"><div class="pc-cat-title">{{ section.cat.name_ru }}</div><div class="pc-cat-line"></div></div>
+      <div class="pc-cat-header"><div class="pc-cat-title">{% t section.cat "name" %}</div><div class="pc-cat-line"></div></div>
       <div class="pc-grid">
         {% for p in section.products %}{% include "printshop/_product_card.html" %}{% endfor %}
       </div>
@@ -252,14 +283,14 @@
     {% endfor %}
     {% if uncat_products %}
     <div class="pc-cat-section" id="cat-0">
-      <div class="pc-cat-header"><div class="pc-cat-title">Другое</div><div class="pc-cat-line"></div></div>
+      <div class="pc-cat-header"><div class="pc-cat-title">{% trans "Другое" %}</div><div class="pc-cat-line"></div></div>
       <div class="pc-grid">
         {% for p in uncat_products %}{% include "printshop/_product_card.html" %}{% endfor %}
       </div>
     </div>
     {% endif %}
     {% if not cat_sections and not uncat_products %}
-      <div style="text-align:center;padding:60px;color:var(--pc-muted)">Каталог пока пуст</div>
+      <div style="text-align:center;padding:60px;color:var(--pc-muted)">{% trans "Каталог пока пуст" %}</div>
     {% endif %}
   </div>
 
@@ -269,10 +300,10 @@
 <div class="pc-cart-fab {% if not cart_qty %}hide{% endif %}" id="pcCartFab" onclick="pcOpenCart()">
   <div class="pc-cart-fab-icon">🛒</div>
   <div class="pc-cart-fab-info">
-    <div class="pc-cart-fab-title">Ваша корзина</div>
-    <div class="pc-cart-fab-total" id="pcCartTotal">{{ cart_total|floatformat:"0" }} сом</div>
+    <div class="pc-cart-fab-title">{% trans "Ваша корзина" %}</div>
+    <div class="pc-cart-fab-total" id="pcCartTotal">{{ cart_total|som }}</div>
   </div>
-  <div class="pc-cart-fab-badge" id="pcCartBadge">{{ cart_qty }} шт</div>
+  <div class="pc-cart-fab-badge" id="pcCartBadge">{{ cart_qty }} {% trans "шт" %}</div>
 </div>
 
 {# ══ PRODUCT MODAL ══ #}
@@ -290,7 +321,7 @@
       <div id="pcPmVariants"></div>
       <div id="pcPmOptions"></div>
       <div>
-        <div class="pc-pm-section-label">Количество</div>
+        <div class="pc-pm-section-label">{% trans "Количество" %}</div>
         <div class="pc-pm-qty">
           <button type="button" onclick="pcPmChangeQty(-1)">−</button>
           <span id="pcPmQty">1</span>
@@ -298,12 +329,12 @@
         </div>
       </div>
       <div>
-        <div class="pc-pm-section-label">Комментарий (необязательно)</div>
-        <textarea id="pcPmComment" class="pc-pm-comment" placeholder="Например: сделать срочно"></textarea>
+        <div class="pc-pm-section-label">{% trans "Комментарий (необязательно)" %}</div>
+        <textarea id="pcPmComment" class="pc-pm-comment" placeholder="{% trans 'Например: сделать срочно' %}"></textarea>
       </div>
       <div class="pc-pm-footer">
-        <div class="pc-pm-price" id="pcPmPrice">0 сом</div>
-        <button type="button" class="pc-pm-add" onclick="pcAddToCart()">В корзину</button>
+        <div class="pc-pm-price" id="pcPmPrice">0 {% cur %}</div>
+        <button type="button" class="pc-pm-add" onclick="pcAddToCart()">{% trans "В корзину" %}</button>
       </div>
     </div>
   </div>
@@ -322,10 +353,10 @@
 <div id="pcCartModal" class="pc-backdrop" onclick="pcBackdropClose(event,'pcCartModal')">
   <div class="pc-sheet" role="dialog">
     <div class="pc-cm-header">
-      <div class="pc-cm-title">Корзина</div>
+      <div class="pc-cm-title">{% trans "Корзина" %}</div>
       <button class="pc-close" style="position:static" onclick="pcCloseModal('pcCartModal')">✕</button>
     </div>
-    <div class="pc-cm-body" id="pcCmBody">Загрузка…</div>
+    <div class="pc-cm-body" id="pcCmBody">{% trans "Загрузка…" %}</div>
   </div>
 </div>
 
@@ -435,15 +466,15 @@ function pcOpenProduct(id) {
   pcSelectedVariant = p.variants.find(v => v.is_default) || p.variants[0] || null;
   const vWrap = document.getElementById('pcPmVariants');
   if (p.variants.length) {
-    vWrap.innerHTML = `<div class="pc-pm-section-label">Вариант</div><div class="pc-pm-pills" id="pcVariantPills">` +
-      p.variants.map(v => `<div class="pc-pm-pill ${pcSelectedVariant && v.id===pcSelectedVariant.id?'selected':''}" data-vid="${v.id}" onclick="pcSelectVariant(${v.id})">${pcEsc(v.label)} · ${v.price} сом</div>`).join('') +
+    vWrap.innerHTML = `<div class="pc-pm-section-label">${T.variant}</div><div class="pc-pm-pills" id="pcVariantPills">` +
+      p.variants.map(v => `<div class="pc-pm-pill ${pcSelectedVariant && v.id===pcSelectedVariant.id?'selected':''}" data-vid="${v.id}" onclick="pcSelectVariant(${v.id})">${pcEsc(v.label)} · ${v.price} ${CUR}</div>`).join('') +
       `</div>`;
   } else { vWrap.innerHTML = ''; }
 
   const oWrap = document.getElementById('pcPmOptions');
   oWrap.innerHTML = p.option_groups.map(g => {
     const items = g.values.map(v => {
-      const label = v.price_delta && v.price_delta !== '0' && v.price_delta !== '0.00' ? `${pcEsc(v.label)} (+${v.price_delta} сом)` : pcEsc(v.label);
+      const label = v.price_delta && v.price_delta !== '0' && v.price_delta !== '0.00' ? `${pcEsc(v.label)} (+${v.price_delta} ${CUR})` : pcEsc(v.label);
       return `<div class="pc-pm-pill" data-gid="${g.id}" data-vid="${v.id}" onclick="pcToggleOption(${g.id},${v.id},${g.allow_multiple})">${label}</div>`;
     }).join('');
     return `<div><div class="pc-pm-section-label">${pcEsc(g.name)}${g.is_required ? ' *' : ''}</div><div class="pc-pm-pills" data-group="${g.id}">${items}</div></div>`;
@@ -500,7 +531,7 @@ function pcUpdatePmPrice() {
       if (val) price += Number(val.price_delta);
     });
   });
-  document.getElementById('pcPmPrice').textContent = (price * pcQty).toFixed(0) + ' сом';
+  document.getElementById('pcPmPrice').textContent = (price * pcQty).toFixed(0) + ' ' + CUR;
 }
 
 function pcPmChangeQty(delta) {
@@ -520,10 +551,10 @@ async function pcAddToCart() {
     comment: document.getElementById('pcPmComment').value,
   };
   const d = await pcPost(PC_U.cartAdd, data);
-  if (!d.ok) { pcToast('Ошибка добавления'); return; }
+  if (!d.ok) { pcToast(T.addErr); return; }
   pcRenderCartBadge(d);
   pcCloseModal('pcProductModal');
-  pcToast('Добавлено в корзину');
+  pcToast(T.addedCart);
 }
 
 /* ── LIGHTBOX ── */
@@ -582,8 +613,8 @@ function pcBackdropClose(e, id) { if (e.target.id === id) pcCloseModal(id); }
 function pcRenderCartBadge(d) {
   const fab = document.getElementById('pcCartFab');
   fab.classList.toggle('hide', !d.qty_total);
-  document.getElementById('pcCartBadge').textContent = d.qty_total + ' шт';
-  document.getElementById('pcCartTotal').textContent = Number(d.total).toFixed(0) + ' сом';
+  document.getElementById('pcCartBadge').textContent = d.qty_total + ' ' + T.pcs;
+  document.getElementById('pcCartTotal').textContent = Number(d.total).toFixed(0) + ' ' + CUR;
 }
 
 /* ── CART MODAL ── */
@@ -597,18 +628,18 @@ async function pcRefreshCart(promo) {
   pcRenderCartBadge(d);
   const body = document.getElementById('pcCmBody');
   if (!d.items.length) {
-    body.innerHTML = `<div class="pc-cm-empty"><div style="font-size:44px;margin-bottom:10px">🛒</div>Корзина пуста</div>`;
+    body.innerHTML = `<div class="pc-cm-empty"><div style="font-size:44px;margin-bottom:10px">🛒</div>${T.cartEmpty}</div>`;
     return;
   }
 
   let freeBanner = '';
   if (d.free_delivery_reached) {
-    freeBanner = `<div class="pc-free-banner pc-free-ok">🎉 Поздравляем! Доставка будет бесплатной.</div>`;
+    freeBanner = `<div class="pc-free-banner pc-free-ok">${T.freeOk}</div>`;
   } else if (d.free_delivery_from) {
     const need = Math.max(0, Number(d.free_delivery_from) - Number(d.subtotal));
     const pct = Math.min(100, Number(d.subtotal) / Number(d.free_delivery_from) * 100);
     freeBanner = `<div class="pc-free-banner pc-free-hint">
-      <div class="pc-free-hint-top">🚚 До бесплатной доставки осталось заказать на <strong>${need.toFixed(0)} сом</strong>.</div>
+      <div class="pc-free-hint-top">${T.toFree1} <strong>${need.toFixed(0)} ${CUR}</strong>.</div>
       <div class="pc-free-bar-wrap"><div class="pc-free-bar" style="width:${pct}%"></div></div>
     </div>`;
   }
@@ -630,48 +661,48 @@ async function pcRefreshCart(promo) {
         </div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-        <div class="pc-cm-row-total">${Number(it.line_total).toFixed(0)} сом</div>
+        <div class="pc-cm-row-total">${Number(it.line_total).toFixed(0)} ${CUR}</div>
         <button class="pc-cm-remove" onclick="pcCartRemove('${it.line_id}')">🗑</button>
       </div>
     </div>`;
   }).join('');
 
   const totalsHtml = `<div class="pc-totals">
-    <div class="pc-total-row"><span>Подытог</span><span>${Number(d.subtotal).toFixed(0)} сом</span></div>
-    ${d.delivery_enabled ? `<div class="pc-total-row"><span>Доставка</span><span>${Number(d.delivery_fee).toFixed(0)} сом</span></div>` : ''}
-    ${Number(d.discount) > 0 ? `<div class="pc-total-row" style="color:var(--pc-teal)"><span>Скидка</span><span>−${Number(d.discount).toFixed(0)} сом</span></div>` : ''}
-    <div class="pc-total-row big"><span>Итого</span><span>${Number(d.total).toFixed(0)} сом</span></div>
+    <div class="pc-total-row"><span>${T.subtotal}</span><span>${Number(d.subtotal).toFixed(0)} ${CUR}</span></div>
+    ${d.delivery_enabled ? `<div class="pc-total-row"><span>${T.delivery}</span><span>${Number(d.delivery_fee).toFixed(0)} ${CUR}</span></div>` : ''}
+    ${Number(d.discount) > 0 ? `<div class="pc-total-row" style="color:var(--pc-teal)"><span>${T.discount}</span><span>−${Number(d.discount).toFixed(0)} ${CUR}</span></div>` : ''}
+    <div class="pc-total-row big"><span>${T.total}</span><span>${Number(d.total).toFixed(0)} ${CUR}</span></div>
   </div>`;
 
   const appliedPromo = promo || '';
   const promoHtml = `<div class="pc-promo">
     <div class="pc-promo-row">
-      <input class="pc-promo-input" id="pcPromoInput" placeholder="Промокод" value="${pcEsc(appliedPromo)}">
-      <button class="pc-promo-btn" onclick="pcApplyPromo()">Применить</button>
+      <input class="pc-promo-input" id="pcPromoInput" placeholder="${T.promo}" value="${pcEsc(appliedPromo)}">
+      <button class="pc-promo-btn" onclick="pcApplyPromo()">${T.apply}</button>
     </div>
     <div class="pc-promo-msg" id="pcPromoMsg" style="color:${d.promo_valid ? 'var(--pc-teal)' : '#ef4444'}">${appliedPromo ? pcEsc(d.promo_msg || '') : ''}</div>
   </div>`;
 
   const minNote = (Number(d.min_order_amount) > 0 && Number(d.subtotal) < Number(d.min_order_amount))
-    ? `<div class="pc-min-note">Минимальная сумма заказа — ${Number(d.min_order_amount).toFixed(0)} сом</div>` : '';
+    ? `<div class="pc-min-note">${T.minOrder1} ${Number(d.min_order_amount).toFixed(0)} ${CUR}</div>` : '';
 
   const modeHtml = d.delivery_enabled ? `
     <div class="pc-radio-group">
-      <label class="pc-radio-opt"><input type="radio" name="mode" value="delivery" checked> Доставка</label>
-      <label class="pc-radio-opt"><input type="radio" name="mode" value="pickup"> Самовывоз</label>
+      <label class="pc-radio-opt"><input type="radio" name="mode" value="delivery" checked> ${T.delivery}</label>
+      <label class="pc-radio-opt"><input type="radio" name="mode" value="pickup"> ${T.pickup}</label>
     </div>` : `<input type="hidden" name="mode" value="pickup">`;
 
   const formHtml = `<form method="post" action="${PC_U.checkout}">
     <input type="hidden" name="csrfmiddlewaretoken" value="${PC_CSRF}">
     <input type="hidden" name="promo_code" id="pcPromoHidden" value="${appliedPromo}">
-    <div class="pc-pm-section-label">Оформление заказа</div>
+    <div class="pc-pm-section-label">${T.checkoutTitle}</div>
     ${modeHtml}
-    <input class="pc-field" name="name" placeholder="Ваше имя">
-    <input class="pc-field" name="phone" placeholder="Телефон *" required>
-    <input class="pc-field" name="address" placeholder="Адрес (для доставки)">
-    <textarea class="pc-field" name="comment" placeholder="Комментарий к заказу" style="resize:vertical;min-height:48px"></textarea>
+    <input class="pc-field" name="name" placeholder="${T.yourName}">
+    <input class="pc-field" name="phone" placeholder="${T.phoneReq}" required>
+    <input class="pc-field" name="address" placeholder="${T.addrDelivery}">
+    <textarea class="pc-field" name="comment" placeholder="${T.commentOrder}" style="resize:vertical;min-height:48px"></textarea>
     ${minNote}
-    <button type="submit" class="pc-submit">Оформить заказ</button>
+    <button type="submit" class="pc-submit">${T.placeOrder}</button>
   </form>`;
 
   body.innerHTML = freeBanner + `<div>${itemsHtml}</div>` + totalsHtml + promoHtml + formHtml;

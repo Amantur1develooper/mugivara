@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load i18n static %}
 
-{% block title %}{{ agency.name }} — квартиры{% endblock %}
+{% block title %}{{ agency.name }} — {% trans "квартиры" %}{% endblock %}
 {% block cta %}{% endblock %}
 
 {% block head_extra %}
@@ -61,7 +61,7 @@
 <div style="background:var(--re-bg);min-height:100vh">
 <div class="re-page">
   <div class="re-hero">
-    <a href="{% url 'realestate:agency_list' %}" class="re-back">← Все агентства</a>
+    <a href="{% url 'realestate:agency_list' %}" class="re-back">← {% trans "Все агентства" %}</a>
     <div class="re-hero-top">
       <div class="re-logo">
         {% if agency.logo %}<img src="{{ agency.logo.url }}" alt="{{ agency.name }}">{% else %}🏢{% endif %}
@@ -73,16 +73,16 @@
     <div class="re-contact-row">
       <a href="tel:{{ agency.phone }}" class="re-contact-chip">📞 {{ agency.phone }}</a>
       {% with digits=agency.phone|cut:"+"|cut:" "|cut:"-"|cut:"("|cut:")" %}
-      <a href="https://wa.me/{{ digits }}" target="_blank" rel="noopener" class="re-contact-chip re-wa-chip">💬 Написать в WhatsApp</a>
+      <a href="https://wa.me/{{ digits }}" target="_blank" rel="noopener" class="re-contact-chip re-wa-chip">💬 {% trans "Написать в WhatsApp" %}</a>
       {% endwith %}
     </div>
     {% endif %}
   </div>
 
   <form method="get" class="re-search-row">
-    <input type="text" name="q" value="{{ q }}" placeholder="Поиск по адресу, району, площади, комнатам...">
-    <button type="submit">Найти</button>
-    {% if q %}<a href="{% url 'realestate:agency_detail' agency.slug %}" class="re-search-clear">Сбросить</a>{% endif %}
+    <input type="text" name="q" value="{{ q }}" placeholder="{% trans 'Поиск по адресу, району, площади, комнатам...' %}">
+    <button type="submit">{% trans "Найти" %}</button>
+    {% if q %}<a href="{% url 'realestate:agency_detail' agency.slug %}" class="re-search-clear">{% trans "Сбросить" %}</a>{% endif %}
   </form>
 
   {% if apartments %}
@@ -96,11 +96,11 @@
         <span class="re-status-badge re-status-{{ apt.status }}">{{ apt.get_status_display }}</span>
       </div>
       <div class="re-card-body">
-        <div class="re-card-addr">{{ apt.address|default:"Без адреса" }}</div>
+        <div class="re-card-addr">{{ apt.address|default:_("Без адреса") }}</div>
         <div class="re-card-meta">
-          {% if apt.area %}{{ apt.area }} м²{% endif %}{% if apt.rooms %} · {{ apt.rooms }}-комн.{% endif %}{% if apt.district %} · {{ apt.district }}{% endif %}
+          {% if apt.area %}{% blocktrans with a=apt.area %}{{ a }} м²{% endblocktrans %}{% endif %}{% if apt.rooms %} · {% blocktrans with r=apt.rooms %}{{ r }}-комн.{% endblocktrans %}{% endif %}{% if apt.district %} · {{ apt.district }}{% endif %}
         </div>
-        <div class="re-card-price">{{ apt.price_display|default:"Цена не указана" }}</div>
+        <div class="re-card-price">{{ apt.price_display|default:_("Цена не указана") }}</div>
       </div>
     </a>
     {% endfor %}
@@ -109,11 +109,11 @@
   <div class="re-empty">
     <div style="font-size:52px;margin-bottom:14px">🏠</div>
     {% if q %}
-    <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:17px;margin-bottom:6px">Ничего не найдено</div>
-    <div style="font-size:14px;color:var(--re-muted)">По запросу «{{ q }}» квартир не найдено</div>
+    <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:17px;margin-bottom:6px">{% trans "Ничего не найдено" %}</div>
+    <div style="font-size:14px;color:var(--re-muted)">{% blocktrans %}По запросу «{{ q }}» квартир не найдено{% endblocktrans %}</div>
     {% else %}
-    <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:17px;margin-bottom:6px">Пока нет квартир</div>
-    <div style="font-size:14px;color:var(--re-muted)">Агентство скоро добавит предложения</div>
+    <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:17px;margin-bottom:6px">{% trans "Пока нет квартир" %}</div>
+    <div style="font-size:14px;color:var(--re-muted)">{% trans "Агентство скоро добавит предложения" %}</div>
     {% endif %}
   </div>
   {% endif %}

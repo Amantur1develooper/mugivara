@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% load static %}
-{% block title %}Полиграфические центры — Webordo{% endblock %}
+{% load static i18n i18n_attrs %}
+{% block title %}{% trans "Полиграфические центры" %} — Webordo{% endblock %}
 
 {% block content %}
 <style>
@@ -44,11 +44,11 @@
 
 <div class="page-wrap">
   <div class="hero">
-    <h1>🖨️ Полиграфические центры</h1>
-    <p>Печать документов, визиток, баннеров, сувениров и многое другое — закажите онлайн.</p>
+    <h1>🖨️ {% trans "Полиграфические центры" %}</h1>
+    <p>{% trans "Печать документов, визиток, баннеров, сувениров и многое другое — закажите онлайн." %}</p>
     <form class="search-box" method="get">
-      <input type="text" name="q" value="{{ q }}" placeholder="Поиск по названию...">
-      <button type="submit">Найти</button>
+      <input type="text" name="q" value="{{ q }}" placeholder="{% trans 'Поиск по названию...' %}">
+      <button type="submit">{% trans "Найти" %}</button>
     </form>
   </div>
 
@@ -57,19 +57,19 @@
     {% for c in centers %}
     <a class="card" href="{% url 'printshop:center_detail' c.slug %}">
       <div class="card-body">
-        {% if c.logo %}<img class="card-logo" src="{{ c.logo.url }}" alt="{{ c.name_ru }}">
+        {% if c.logo %}<img class="card-logo" src="{{ c.logo.url }}" alt="{% t c 'name' %}">
         {% else %}<div class="card-logo-empty">🖨️</div>{% endif %}
         <div>
-          <div class="card-name">{{ c.name_ru }}</div>
-          {% if c.description_ru %}<div class="card-desc">{{ c.description_ru|truncatechars:90 }}</div>{% endif %}
-          <div class="card-branches">{{ c.branches.count }} филиал(ов)</div>
+          <div class="card-name">{% t c "name" %}</div>
+          {% t c "description" as cd %}{% if cd %}<div class="card-desc">{{ cd|truncatechars:90 }}</div>{% endif %}
+          <div class="card-branches">{% blocktrans count n=c.branches.count %}{{ n }} филиал{% plural %}{{ n }} филиалов{% endblocktrans %}</div>
         </div>
       </div>
     </a>
     {% endfor %}
   </div>
   {% else %}
-    <div class="empty">Пока нет доступных полиграфических центров.</div>
+    <div class="empty">{% trans "Пока нет доступных полиграфических центров." %}</div>
   {% endif %}
 </div>
 {% endblock %}

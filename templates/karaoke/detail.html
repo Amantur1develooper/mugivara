@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static i18n_attrs %}
 {% block title %}{{ venue.name }} — Karaoke{% endblock %}
 {% block cta %}{% endblock %}
 
@@ -122,7 +122,7 @@
       <div class="kr-hero-glow"></div>
       <div class="kr-hero-grid"></div>
     </div>
-    <a href="{% url 'karaoke:karaoke_list' %}" class="kr-back">← Все заведения</a>
+    <a href="{% url 'karaoke:karaoke_list' %}" class="kr-back">← {% trans "Все заведения" %}</a>
     <div class="kr-hero-content">
       <div class="kr-logo-row">
         <div class="kr-logo">
@@ -140,12 +140,12 @@
   <div class="kr-tl">
     <a href="#rooms" class="kr-tl-btn kr-tl-btn-primary">
       <div class="kr-tl-btn-icon">🚪</div>
-      <span>Выбрать и забронировать кабинку</span>
+      <span>{% trans "Выбрать и забронировать кабинку" %}</span>
     </a>
     {% if menu_cats %}
     <a href="{% url 'karaoke:karaoke_menu' venue.slug %}" class="kr-tl-btn">
       <div class="kr-tl-btn-icon">🍽️</div>
-      <span>Открыть меню</span>
+      <span>{% trans "Открыть меню" %}</span>
     </a>
     {% endif %}
     {% if venue.phone %}
@@ -157,13 +157,13 @@
     {% if venue.whatsapp %}
     <a href="https://wa.me/{{ venue.whatsapp }}" target="_blank" class="kr-tl-btn">
       <div class="kr-tl-btn-icon">💬</div>
-      <span>Написать в WhatsApp</span>
+      <span>{% trans "Написать в WhatsApp" %}</span>
     </a>
     {% endif %}
     {% if venue.map_url %}
     <a href="{{ venue.map_url }}" target="_blank" rel="noopener" class="kr-tl-btn">
       <div class="kr-tl-btn-icon">📍</div>
-      <span>{{ venue.address|default:"Открыть на карте" }}</span>
+      <span>{{ venue.address|default:_("Открыть на карте") }}</span>
     </a>
     {% endif %}
   </div>
@@ -201,7 +201,7 @@
     {% endif %}
     {% if uncategorized %}
     <div class="kr-section">
-      {% if categories %}<div class="kr-sec-title">Остальные кабинки</div>{% endif %}
+      {% if categories %}<div class="kr-sec-title">{% trans "Остальные кабинки" %}</div>{% endif %}
       <div class="kr-rooms-grid">
         {% for room in uncategorized %}{% if room.is_active %}
         {% include "karaoke/_room_card.html" with room=room venue=venue %}
@@ -229,45 +229,45 @@ function openBook(roomId, roomName, price) {
   selectedRoomId = roomId;
   const today = new Date().toISOString().split("T")[0];
   document.getElementById("krModalContent").innerHTML = `
-    <div class="kr-modal-title">🎤 Бронирование</div>
-    <div class="kr-modal-sub">🚪 ${roomName}${price ? ' · ' + price + ' сом/час' : ''}</div>
+    <div class="kr-modal-title">🎤 {% trans "Бронирование" %}</div>
+    <div class="kr-modal-sub">🚪 ${roomName}${price ? ' · ' + price + ' {% cur %}/{% trans "час" %}' : ''}</div>
     <div class="kr-field">
-      <label>Дата *</label>
+      <label>{% trans "Дата" %} *</label>
       <input type="date" id="krDate" min="${today}" value="${today}" onchange="loadSlots()">
     </div>
     <div class="kr-row2">
       <div class="kr-field">
-        <label>Начало *</label>
+        <label>{% trans "Начало" %} *</label>
         <input type="time" id="krStart" value="19:00" step="1800">
       </div>
       <div class="kr-field">
-        <label>Конец *</label>
+        <label>{% trans "Конец" %} *</label>
         <input type="time" id="krEnd" value="21:00" step="1800">
       </div>
     </div>
     <div id="krSlotsWrap" style="margin-bottom:14px;display:none">
-      <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--kr-muted);margin-bottom:7px;">Занятые слоты</div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--kr-muted);margin-bottom:7px;">{% trans "Занятые слоты" %}</div>
       <div class="kr-slots" id="krSlots"></div>
     </div>
     <div class="kr-row2">
       <div class="kr-field">
-        <label>Имя *</label>
-        <input type="text" id="krName" placeholder="Ваше имя">
+        <label>{% trans "Имя" %} *</label>
+        <input type="text" id="krName" placeholder="{% trans 'Ваше имя' %}">
       </div>
       <div class="kr-field">
-        <label>Телефон *</label>
+        <label>{% trans "Телефон" %} *</label>
         <input type="tel" id="krPhone" placeholder="+996 ...">
       </div>
     </div>
     <div class="kr-field">
-      <label>Кол-во гостей</label>
+      <label>{% trans "Кол-во гостей" %}</label>
       <input type="number" id="krGuests" min="1" value="2">
     </div>
     <div class="kr-field">
-      <label>Примечание</label>
-      <input type="text" id="krNotes" placeholder="Особые пожелания...">
+      <label>{% trans "Примечание" %}</label>
+      <input type="text" id="krNotes" placeholder="{% trans 'Особые пожелания...' %}">
     </div>
-    <button class="kr-submit-btn" id="krSubmitBtn" onclick="submitBooking()">Забронировать →</button>
+    <button class="kr-submit-btn" id="krSubmitBtn" onclick="submitBooking()">{% trans "Забронировать →" %}</button>
   `;
   document.getElementById("krModal").classList.add("open");
   loadSlots();
@@ -300,9 +300,9 @@ async function submitBooking() {
   const end   = document.getElementById("krEnd")?.value;
   const guests= document.getElementById("krGuests")?.value;
   const notes = document.getElementById("krNotes")?.value.trim();
-  if (!name || !phone || !date || !start || !end) { alert("Заполните все обязательные поля"); return; }
+  if (!name || !phone || !date || !start || !end) { alert("{% trans 'Заполните все обязательные поля' %}"); return; }
   const btn = document.getElementById("krSubmitBtn");
-  btn.disabled = true; btn.textContent = "Отправляем...";
+  btn.disabled = true; btn.textContent = "{% trans 'Отправляем...' %}";
   const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
   const url = "{% url 'karaoke:karaoke_book' venue.slug 0 %}".replace("/0/", `/${selectedRoomId}/`);
   try {
@@ -312,19 +312,19 @@ async function submitBooking() {
     });
     const d = await r.json();
     if (d.ok) {
-      let html = `<div class="kr-success"><div class="ic">✅</div><div class="ttl">Заявка принята!</div><div class="sub">Ждите подтверждения. Мы свяжемся с вами.</div>`;
+      let html = `<div class="kr-success"><div class="ic">✅</div><div class="ttl">{% trans "Заявка принята!" %}</div><div class="sub">{% trans "Ждите подтверждения. Мы свяжемся с вами." %}</div>`;
       if (d.wa_url) {
-        html += `<a href="${d.wa_url}" target="_blank" class="kr-submit-btn" style="display:block;text-decoration:none;text-align:center;margin-top:10px;">💬 Написать нам в WhatsApp</a>`;
+        html += `<a href="${d.wa_url}" target="_blank" class="kr-submit-btn" style="display:block;text-decoration:none;text-align:center;margin-top:10px;">💬 {% trans "Написать нам в WhatsApp" %}</a>`;
       }
       html += `</div>`;
       document.getElementById("krModalContent").innerHTML = html;
     } else {
-      btn.disabled = false; btn.textContent = "Забронировать →";
-      alert(d.error || "Ошибка. Попробуйте снова.");
+      btn.disabled = false; btn.textContent = "{% trans 'Забронировать →' %}";
+      alert(d.error || "{% trans 'Ошибка. Попробуйте снова.' %}");
     }
   } catch(e) {
-    btn.disabled = false; btn.textContent = "Забронировать →";
-    alert("Ошибка сети.");
+    btn.disabled = false; btn.textContent = "{% trans 'Забронировать →' %}";
+    alert("{% trans 'Ошибка сети.' %}");
   }
 }
 

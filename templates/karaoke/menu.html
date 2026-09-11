@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% load i18n static %}
-{% block title %}Меню — {{ venue.name }}{% endblock %}
+{% load i18n static i18n_attrs l10n %}
+{% block title %}{% trans "Меню" %} — {{ venue.name }}{% endblock %}
 {% block cta %}{% endblock %}
 {% block head_extra %}
 <style>
@@ -191,18 +191,28 @@
 </style>
 {% endblock %}
 {% block content %}
+<script>
+const CUR = "{% cur %}";
+const T = {
+  yourOrder: "{% trans 'Ваш заказ' %}", cartEmpty: "{% trans 'Корзина пустая' %}",
+  positions: "{% trans 'позиций' %}", addCart: "{% trans '+ В корзину' %}",
+  sending: "{% trans 'Отправляем...' %}", confirmOrder: "{% trans 'Подтвердить заказ' %}",
+  orderFromMenu: "{% trans 'Заказ из меню' %}", room: "{% trans 'Кабинка' %}",
+  phone: "{% trans 'Телефон' %}", total: "{% trans 'Итого' %}",
+};
+</script>
 <div style="background:var(--kr-bg);min-height:100vh">
 <div class="km-page">
   <div class="km-header">
     <div class="km-logo">{% if venue.logo %}<img src="{{ venue.logo.url }}" alt="">{% else %}🎤{% endif %}</div>
     <div class="km-title">{{ venue.name }}</div>
-    <div class="km-sub">Меню</div>
+    <div class="km-sub">{% trans "Меню" %}</div>
   </div>
-  <a href="{% url 'karaoke:karaoke_detail' venue.slug %}" class="km-back">← Назад к заведению</a>
+  <a href="{% url 'karaoke:karaoke_detail' venue.slug %}" class="km-back">← {% trans "Назад к заведению" %}</a>
 
   {% if room %}
   <div style="text-align:center;margin-bottom:24px;">
-    <div class="km-room-badge">🚪 {{ room.name }} <span>— ваша кабинка</span></div>
+    <div class="km-room-badge">🚪 {{ room.name }} <span>— {% trans "ваша кабинка" %}</span></div>
   </div>
   {% endif %}
 
@@ -211,7 +221,7 @@
     <div class="km-catbar-inner" id="kmCatbarInner">
       {% for cat in menu %}
       <a href="#kmcat-{{ cat.id }}" class="km-catpill{% if forloop.first %} active{% endif %}"
-         data-target="kmcat-{{ cat.id }}">{{ cat.name }}</a>
+         data-target="kmcat-{{ cat.id }}">{% t cat "name" %}</a>
       {% endfor %}
     </div>
   </nav>
@@ -220,7 +230,7 @@
   {% for cat in menu %}
   <div class="km-cat" id="kmcat-{{ cat.id }}" data-catsection>
     <div class="km-cat-head">
-      <div class="km-cat-title">{{ cat.name }}</div>
+      <div class="km-cat-title">{% t cat "name" %}</div>
       <span class="km-cat-count">{{ cat.count }}</span>
       <div class="km-cat-line"></div>
     </div>
@@ -235,9 +245,9 @@
           {% if item.photo %}<img src="{{ item.photo.url }}" alt="{{ item.name }}" loading="lazy">{% else %}🍽️{% endif %}
         </div>
         <div class="km-item-info">
-          <div class="km-item-name">{{ item.name }}</div>
-          {% if item.description %}<div class="km-item-desc">{{ item.description|truncatechars:60 }}</div>{% endif %}
-          <div class="km-item-price">{{ item.price|floatformat:0 }} сом</div>
+          <div class="km-item-name">{% t item "name" %}</div>
+          {% t item "description" as idesc %}{% if idesc %}<div class="km-item-desc">{{ idesc|truncatechars:60 }}</div>{% endif %}
+          <div class="km-item-price">{{ item.price|som }}</div>
         </div>
         <div class="km-item-ctrl" id="ctrl-{{ item.id }}" onclick="event.stopPropagation()">
           <div class="km-add-btn" onclick="addItem({{ item.id }})">+</div>
@@ -249,7 +259,7 @@
   {% empty %}
   <div style="text-align:center;padding:60px 20px;color:var(--kr-muted);">
     <div style="font-size:44px;margin-bottom:12px;">🍽️</div>
-    <div style="font-size:15px;font-weight:700;color:var(--kr-text);">Меню пока пустое</div>
+    <div style="font-size:15px;font-weight:700;color:var(--kr-text);">{% trans "Меню пока пустое" %}</div>
   </div>
   {% endfor %}
 </div>
@@ -274,8 +284,8 @@
 <button class="km-fab hidden" id="kmFab" type="button" onclick="openCartSheet()">
   <div class="km-fab-ic">🛒</div>
   <div class="km-fab-txt">
-    <div class="km-fab-lbl">Ваш заказ</div>
-    <div class="km-fab-total" id="kmFabTotal">0 сом</div>
+    <div class="km-fab-lbl">{% trans "Ваш заказ" %}</div>
+    <div class="km-fab-total" id="kmFabTotal">0 {% cur %}</div>
   </div>
   <div class="km-fab-badge" id="kmFabBadge">0</div>
   <div class="km-fab-arrow">↑</div>
@@ -288,25 +298,25 @@
     <div class="km-cart-close" onclick="closeCartSheet()">✕</div>
     <div class="km-cart-header">
       <div>
-        <div class="km-cart-header-title">🛒 Ваш заказ</div>
+        <div class="km-cart-header-title">🛒 {% trans "Ваш заказ" %}</div>
         <div class="km-cart-count" id="kmCartCount"></div>
       </div>
     </div>
     <div class="km-cart-items" id="kmCartItems"></div>
     <div class="km-cart-footer">
       <div class="km-cart-total">
-        <span class="km-cart-total-lbl">Итого</span>
-        <span class="km-cart-total-val" id="kmCartTotal">0 сом</span>
+        <span class="km-cart-total-lbl">{% trans "Итого" %}</span>
+        <span class="km-cart-total-val" id="kmCartTotal">0 {% cur %}</span>
       </div>
       {% if not room %}
       <div class="km-room-row">
-        <input class="km-room-input" id="kmRoom" placeholder="Кабинка / Стол (например: VIP 1)" autocomplete="off">
+        <input class="km-room-input" id="kmRoom" placeholder="{% trans 'Кабинка / Стол (например: VIP 1)' %}" autocomplete="off">
       </div>
       {% endif %}
       <div class="km-phone-row">
-        <input class="km-phone-input" id="kmPhone" type="tel" placeholder="Телефон: +996 700 000 000" autocomplete="tel">
+        <input class="km-phone-input" id="kmPhone" type="tel" placeholder="{% trans 'Телефон: +996 700 000 000' %}" autocomplete="tel">
       </div>
-      <button class="km-order-btn" id="kmOrderBtn" onclick="confirmOrder()">Подтвердить заказ</button>
+      <button class="km-order-btn" id="kmOrderBtn" onclick="confirmOrder()">{% trans "Подтвердить заказ" %}</button>
     </div>
   </div>
 </div>
@@ -398,7 +408,7 @@ function renderCart() {
       <div class="km-ci">
         <div style="flex:1">
           <div class="km-ci-name">${it.name}</div>
-          <div class="km-ci-line">${it.price} × ${it.qty} = ${line} сом</div>
+          <div class="km-ci-line">${it.price} × ${it.qty} = ${line} ${CUR}</div>
         </div>
         <div class="km-ci-ctrl">
           <div class="km-ci-btn" onclick="changeQty(${id}, -1)">−</div>
@@ -407,12 +417,12 @@ function renderCart() {
         </div>
       </div>`;
   });
-  document.getElementById("kmCartItems").innerHTML = html || `<div style="text-align:center;color:var(--kr-muted);padding:24px 0;font-size:13px">Корзина пустая</div>`;
-  document.getElementById("kmCartCount").textContent = `${count} позиций`;
-  document.getElementById("kmCartTotal").textContent = `${total.toLocaleString()} сом`;
+  document.getElementById("kmCartItems").innerHTML = html || `<div style="text-align:center;color:var(--kr-muted);padding:24px 0;font-size:13px">${T.cartEmpty}</div>`;
+  document.getElementById("kmCartCount").textContent = `${count} ${T.positions}`;
+  document.getElementById("kmCartTotal").textContent = `${total.toLocaleString()} ${CUR}`;
 
   // FAB (свёрнутая корзина)
-  document.getElementById("kmFabTotal").textContent = `${total.toLocaleString()} сом`;
+  document.getElementById("kmFabTotal").textContent = `${total.toLocaleString()} ${CUR}`;
   document.getElementById("kmFabBadge").textContent = count;
   fab.classList.toggle("hidden", count === 0);
 
@@ -444,7 +454,7 @@ function openDishModal(id) {
   const photo = el.dataset.photo;
 
   document.getElementById("kmModalName").textContent  = name;
-  document.getElementById("kmModalPrice").textContent = price + " сом";
+  document.getElementById("kmModalPrice").textContent = price + " " + CUR;
   const descEl = document.getElementById("kmModalDesc");
   descEl.textContent = desc || "";
   descEl.style.display = desc ? "block" : "none";
@@ -482,7 +492,7 @@ function renderModalCtrl() {
         <div class="km-modal-qty-btn" onclick="modalChangeQty(${id},1)">+</div>
       </div>`;
   } else {
-    ctrl.innerHTML = `<button class="km-modal-add-btn" onclick="modalAddItem(${id})">+ В корзину</button>`;
+    ctrl.innerHTML = `<button class="km-modal-add-btn" onclick="modalAddItem(${id})">${T.addCart}</button>`;
   }
 }
 
@@ -496,7 +506,7 @@ function modalChangeQty(id, delta) {
   if (!cart[id]) {
     // item removed — show add button again
     document.getElementById("kmModalCtrl").innerHTML =
-      `<button class="km-modal-add-btn" onclick="modalAddItem(${id})">+ В корзину</button>`;
+      `<button class="km-modal-add-btn" onclick="modalAddItem(${id})">${T.addCart}</button>`;
   } else {
     const vEl = document.getElementById(`mqv-${id}`);
     if (vEl) vEl.textContent = cart[id].qty;
@@ -524,7 +534,7 @@ async function confirmOrder() {
 
   const btn = document.getElementById("kmOrderBtn");
   btn.disabled = true;
-  btn.textContent = "Отправляем...";
+  btn.textContent = T.sending;
 
   const keys = Object.keys(cart);
   const items = keys.map(id => ({
@@ -548,15 +558,15 @@ async function confirmOrder() {
   // WhatsApp
   if (VENUE_WA) {
     let waLines = [
-      "🎤 *Заказ из меню*", "",
+      `🎤 *${T.orderFromMenu}*`, "",
       `*${VENUE_NAME}*`,
-      `Кабинка: ${room}`,
-      `Телефон: ${phone}`, "",
+      `${T.room}: ${room}`,
+      `${T.phone}: ${phone}`, "",
     ];
     items.forEach(it => {
-      waLines.push(`• ${it.name} × ${it.qty} = ${it.price * it.qty} сом`);
+      waLines.push(`• ${it.name} × ${it.qty} = ${it.price * it.qty} ${CUR}`);
     });
-    waLines.push("", `*Итого: ${total} сом*`);
+    waLines.push("", `*${T.total}: ${total} ${CUR}*`);
     window.open(`https://wa.me/${VENUE_WA}?text=${encodeURIComponent(waLines.join("\n"))}`, "_blank");
   }
 
@@ -572,7 +582,7 @@ async function confirmOrder() {
   document.getElementById("kmRoom").value = "";
   {% endif %}
   btn.disabled = false;
-  btn.textContent = "Подтвердить заказ";
+  btn.textContent = T.confirmOrder;
 }
 </script>
 {% endblock %}

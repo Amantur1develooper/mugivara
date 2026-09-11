@@ -1,6 +1,6 @@
-{% load static %}
+{% load static i18n i18n_attrs l10n %}
 <!doctype html>
-<html lang="ru">
+<html lang="{{ LANGUAGE_CODE|default:'ru' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -78,11 +78,11 @@
     {% if shop.map_url %}
     <a href="{{ shop.map_url }}" target="_blank" rel="noopener" class="action-btn btn-map">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
-      Маршрут
+      {% trans "Маршрут" %}
     </a>
     {% endif %}
     <a href="{% url 'barbershop:book' shop.slug %}" class="action-btn" style="background:linear-gradient(135deg,#ff6b35,#ff4444);color:#fff;box-shadow:0 4px 16px rgba(255,77,28,.3)">
-      ✂️ Записаться онлайн
+      ✂️ {% trans "Записаться онлайн" %}
     </a>
   </div>
 
@@ -91,7 +91,7 @@
   <div class="slots-bar">
     <div class="slots-dot"></div>
     <div>
-      <div class="slots-label">Свободные окошки сегодня</div>
+      <div class="slots-label">{% trans "Свободные окошки сегодня" %}</div>
       <div class="slots-range">{{ free_first }} – {{ free_last }}</div>
     </div>
     <div class="slots-chips" style="margin-top:0;margin-left:auto">
@@ -103,21 +103,21 @@
   {% else %}
   <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;background:#1a1a1a;border:1px solid rgba(255,255,255,.08);border-radius:14px;margin-bottom:28px">
     <span style="font-size:18px">😴</span>
-    <span style="font-size:14px;color:#888">На сегодня свободных окошек нет</span>
+    <span style="font-size:14px;color:#888">{% trans "На сегодня свободных окошек нет" %}</span>
   </div>
   {% endif %}
 
   {% for cat in categories %}
-  <div class="cat-label">{{ cat.name }}</div>
+  <div class="cat-label">{% t cat "name" %}</div>
   <div class="services-grid">
     {% for svc in cat.services.all %}
     {% if svc.is_active %}
     <div class="svc-card">
-      <div class="svc-name">{{ svc.name }}</div>
-      {% if svc.description %}<div style="font-size:13px;color:#888;margin-top:4px">{{ svc.description }}</div>{% endif %}
+      <div class="svc-name">{% t svc "name" %}</div>
+      {% t svc "description" as svcd %}{% if svcd %}<div style="font-size:13px;color:#888;margin-top:4px">{{ svcd }}</div>{% endif %}
       <div class="svc-meta">
-        <span>⏱ {{ svc.duration_min }} мин</span>
-        <span class="svc-price">{{ svc.price }} сом</span>
+        <span>⏱ {% blocktrans with m=svc.duration_min %}{{ m }} мин{% endblocktrans %}</span>
+        <span class="svc-price">{{ svc.price|som }}</span>
       </div>
     </div>
     {% endif %}
@@ -126,7 +126,7 @@
   {% endfor %}
 
   {% if barbers %}
-  <div class="section-title" style="margin-top:16px">Наши мастера</div>
+  <div class="section-title" style="margin-top:16px">{% trans "Наши мастера" %}</div>
   <div class="barbers-grid">
     {% for b in barbers %}
     <div class="barber-card">

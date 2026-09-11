@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n i18n_attrs %}
 
 {% block content %}
 <div class="max-w-xl mx-auto px-4 py-8">
   <div class="rounded-3xl bg-white p-6 ring-1 ring-black/10">
-    <div class="text-2xl font-extrabold">✅ Заказ отправлен</div>
+    <div class="text-2xl font-extrabold">✅ {% trans "Заказ отправлен" %}</div>
     <div class="mt-2 text-sm text-stone-600">
-      #{{ order.id }} · {{ branch.name_ru }}
+      #{{ order.id }} · {% t branch "name" %}
     </div>
 
     <div class="mt-4 text-sm">
-      <div class="font-semibold">Состав (коротко):</div>
+      <div class="font-semibold">{% trans "Состав (коротко):" %}</div>
       <div class="text-stone-700 mt-1">
         {% for s in short_lines %}
           <div>• {{ s }}</div>
@@ -22,7 +22,7 @@
       {% if wa_url %}
         <a href="{{ wa_url }}" class="w-full block text-center px-4 py-3 rounded-2xl font-extrabold text-white"
            style="background:#25D366;">
-          📲 WhatsApp (основной)
+          📲 WhatsApp ({% trans "основной" %})
         </a>
       {% endif %}
       {% if wa_url2 %}
@@ -34,14 +34,14 @@
     </div>
 
     <div class="mt-5">
-      <div class="text-sm font-semibold">Если WhatsApp не открылся — скопируй текст:</div>
+      <div class="text-sm font-semibold">{% trans "Если WhatsApp не открылся — скопируй текст:" %}</div>
       <textarea id="orderText" class="mt-2 w-full h-40 rounded-2xl border border-stone-300 p-3 text-sm">{{ order_text }}</textarea>
 
       <button id="copyBtn"
               class="mt-3 w-full px-4 py-3 rounded-2xl bg-stone-900 text-white font-extrabold">
-        📋 Скопировать текст заказа
+        📋 {% trans "Скопировать текст заказа" %}
       </button>
-      <div id="copied" class="mt-2 text-center text-emerald-700 text-sm hidden">Скопировано ✅</div>
+      <div id="copied" class="mt-2 text-center text-emerald-700 text-sm hidden">{% trans "Скопировано ✅" %}</div>
     </div>
   </div>
 </div>

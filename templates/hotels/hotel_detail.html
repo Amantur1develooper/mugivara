@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static i18n_attrs %}
 
-{% block title %}{{ hotel.name_ru }} — Отель{% endblock %}
+{% block title %}{% t hotel "name" %} — {% trans "Отель" %}{% endblock %}
 {% block cta %}{% endblock %}
 
 {% block head_extra %}
@@ -157,23 +157,23 @@
       <div class="hd-hero-bg-img" style="background-image:url('{{ hotel.logo.url }}')"></div>
     {% endif %}
     <div class="hd-hero-overlay"></div>
-    <a href="{% url 'hotels:hotel_list' %}" class="hd-back">← Отели</a>
+    <a href="{% url 'hotels:hotel_list' %}" class="hd-back">← {% trans "Отели" %}</a>
 
     <div class="hd-hero-content">
       <div class="hd-logo">
         {% if hotel.logo %}
-          <img src="{{ hotel.logo.url }}" alt="{{ hotel.name_ru }}" loading="lazy">
+          <img src="{{ hotel.logo.url }}" alt="{% t hotel 'name' %}" loading="lazy">
         {% else %}
-          <span class="hd-logo-letter">{{ hotel.name_ru|slice:":1" }}</span>
+          <span class="hd-logo-letter">{% t hotel "name" as hn %}{{ hn|slice:":1" }}</span>
         {% endif %}
       </div>
       <div>
-        <div class="hd-hero-eyebrow">Отель · Webordo</div>
-        <h1 class="hd-hero-title">{{ hotel.name_ru }}</h1>
+        <div class="hd-hero-eyebrow">{% trans "Отель" %} · Webordo</div>
+        <h1 class="hd-hero-title">{% t hotel "name" %}</h1>
         <div class="hd-hero-pills">
-          <span class="hd-pill">🏢 {{ branches|length }} {% if branches|length == 1 %}объект{% else %}объекта{% endif %}</span>
+          <span class="hd-pill">🏢 {% blocktrans count n=branches|length %}{{ n }} объект{% plural %}{{ n }} объекта{% endblocktrans %}</span>
           {% if hotel.external_url %}
-            <a href="{{ hotel.external_url }}" target="_blank" rel="noopener" class="hd-pill blue">🌐 Сайт отеля ↗</a>
+            <a href="{{ hotel.external_url }}" target="_blank" rel="noopener" class="hd-pill blue">🌐 {% trans "Сайт отеля ↗" %}</a>
           {% endif %}
         </div>
       </div>
@@ -181,21 +181,21 @@
   </div>
 
   <!-- BRANCHES -->
-  <div class="hd-sec-tag">Объекты</div>
-  <div class="hd-sec-title">Выберите объект</div>
+  <div class="hd-sec-tag">{% trans "Объекты" %}</div>
+  <div class="hd-sec-title">{% trans "Выберите объект" %}</div>
 
   <div class="hd-grid">
     {% for b in branches %}
     <div class="bc">
       <div class="bc-photo">
         {% if b.cover_photo %}
-          <img src="{{ b.cover_photo.url }}" alt="{{ b.name_ru }}" loading="lazy">
+          <img src="{{ b.cover_photo.url }}" alt="{% t b 'name' %}" loading="lazy">
         {% else %}
           <div class="bc-photo-empty"><span>🏨</span></div>
         {% endif %}
         <div class="bc-photo-grad"></div>
         <div class="bc-photo-name">
-          {{ b.name_ru }}
+          {% t b "name" %}
           {% if b.address %}<div class="bc-photo-addr">📍 {{ b.address }}</div>{% endif %}
         </div>
       </div>
@@ -203,18 +203,18 @@
       <div class="bc-body">
         <div class="bc-chips">
           {% if b.phone %}<a href="tel:{{ b.phone }}" class="bc-chip">📞 {{ b.phone }}</a>{% endif %}
-          {% if b.map_url %}<a href="{{ b.map_url }}" target="_blank" rel="noopener" class="bc-chip">📍 Карта</a>{% endif %}
+          {% if b.map_url %}<a href="{{ b.map_url }}" target="_blank" rel="noopener" class="bc-chip">📍 {% trans "Карта" %}</a>{% endif %}
         </div>
 
         {% if b.external_url %}
-          <a href="{{ b.external_url }}" target="_blank" rel="noopener" class="bc-btn-main">🏨 Смотреть номера ↗</a>
+          <a href="{{ b.external_url }}" target="_blank" rel="noopener" class="bc-btn-main">🏨 {% trans "Смотреть номера ↗" %}</a>
         {% else %}
-          <a href="{% url 'hotels:hotel_branch' b.id %}" class="bc-btn-main">🏨 Смотреть номера</a>
+          <a href="{% url 'hotels:hotel_branch' b.id %}" class="bc-btn-main">🏨 {% trans "Смотреть номера" %}</a>
         {% endif %}
 
         {% if b.phone %}
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            <a href="tel:{{ b.phone }}" class="bc-btn">📞 Позвонить</a>
+            <a href="tel:{{ b.phone }}" class="bc-btn">📞 {% trans "Позвонить" %}</a>
             <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}"
                target="_blank" rel="noopener" class="bc-btn wa">💬 WhatsApp</a>
           </div>
@@ -224,7 +224,7 @@
     {% empty %}
     <div style="grid-column:1/-1;text-align:center;padding:60px 24px;background:var(--card);border:1.5px solid var(--border);border-radius:20px">
       <div style="font-size:48px;margin-bottom:12px">🏗️</div>
-      <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:15px;color:var(--text)">Объекты пока не добавлены</div>
+      <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:15px;color:var(--text)">{% trans "Объекты пока не добавлены" %}</div>
     </div>
     {% endfor %}
   </div>
@@ -233,11 +233,11 @@
   {% if hotel.about_ru %}
   <div class="hd-about">
     <div class="hd-about-left">
-      <div class="hd-about-label">Об отеле</div>
-      <div class="hd-about-title">{{ hotel.name_ru }}</div>
+      <div class="hd-about-label">{% trans "Об отеле" %}</div>
+      <div class="hd-about-title">{% t hotel "name" %}</div>
     </div>
     <div class="hd-about-right">
-      <p class="hd-about-text">{{ hotel.about_ru }}</p>
+      <p class="hd-about-text">{% t hotel "about" %}</p>
     </div>
   </div>
   {% endif %}

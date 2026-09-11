@@ -1,3 +1,4 @@
+{% load i18n i18n_attrs %}
 <div class="kr-room" onclick="openBook({{ room.id }}, '{{ room.name|escapejs }}', '{{ room.price_per_hour|floatformat:0 }}')">
   {% with photos=room.photos.all %}
   {% if photos %}
@@ -18,15 +19,15 @@
   <div class="kr-room-body">
     <div class="kr-room-name">{{ room.name }}</div>
     <div class="kr-room-meta">
-      <span>👥 до {{ room.capacity }} чел.</span>
+      <span>👥 {% blocktrans with cap=room.capacity %}до {{ cap }} чел.{% endblocktrans %}</span>
     </div>
     {% if room.price_per_hour %}
-    <div class="kr-room-price">{{ room.price_per_hour|floatformat:0 }} сом/час</div>
+    <div class="kr-room-price">{{ room.price_per_hour|som }}/{% trans "час" %}</div>
     {% endif %}
     {% if room.description %}
     <div style="font-size:12px;color:var(--kr-muted);margin-top:6px;line-height:1.5;">{{ room.description|truncatechars:80 }}</div>
     {% endif %}
-    <span class="kr-room-book-btn">🗓 Забронировать</span>
-    <a class="kr-room-menu-btn" href="{% url 'karaoke:karaoke_room_menu' venue.slug room.id %}" onclick="event.stopPropagation()">🍽️ Меню кабинки</a>
+    <span class="kr-room-book-btn">🗓 {% trans "Забронировать" %}</span>
+    <a class="kr-room-menu-btn" href="{% url 'karaoke:karaoke_room_menu' venue.slug room.id %}" onclick="event.stopPropagation()">🍽️ {% trans "Меню кабинки" %}</a>
   </div>
 </div>

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load i18n static %}
 
-{% block title %}Юридические услуги — Webordo{% endblock %}
+{% block title %}{% trans "Юридические услуги" %} — Webordo{% endblock %}
 {% block cta %}{% endblock %}
 
 {% block head_extra %}
@@ -99,10 +99,10 @@
 <div class="lg-page">
 
   <div class="lg-hero">
-    <a href="/" class="lg-back">← Главная</a>
-    <div class="lg-hero-eyebrow">WEBORDO · ЮРИДИЧЕСКИЕ УСЛУГИ</div>
-    <div class="lg-hero-title">⚖️ Юр. организации</div>
-    <div class="lg-hero-sub">Найдите юриста, узнайте стоимость услуг и обратитесь за помощью прямо сейчас</div>
+    <a href="/" class="lg-back">← {% trans "Главная" %}</a>
+    <div class="lg-hero-eyebrow">WEBORDO · {% trans "ЮРИДИЧЕСКИЕ УСЛУГИ" %}</div>
+    <div class="lg-hero-title">⚖️ {% trans "Юр. организации" %}</div>
+    <div class="lg-hero-sub">{% trans "Найдите юриста, узнайте стоимость услуг и обратитесь за помощью прямо сейчас" %}</div>
   </div>
 
   {% if orgs %}
@@ -142,7 +142,7 @@
           {% if org.map_url %}
           <div class="lc-row">
             <span class="lc-row-icon">🗺</span>
-            <a href="{{ org.map_url }}" target="_blank" rel="noopener" style="color:#2563EB;text-decoration:none;">Открыть на карте</a>
+            <a href="{{ org.map_url }}" target="_blank" rel="noopener" style="color:#2563EB;text-decoration:none;">{% trans "Открыть на карте" %}</a>
           </div>
           {% endif %}
         </div>
@@ -150,14 +150,14 @@
         {% with cnt=org.services.count %}
         {% if cnt %}
         <div>
-          <span class="lc-services-count">📋 {{ cnt }} услуг{% if cnt == 1 %}а{% elif cnt < 5 %}и{% endif %}</span>
+          <span class="lc-services-count">📋 {% blocktrans count n=cnt %}{{ n }} услуга{% plural %}{{ n }} услуг{% endblocktrans %}</span>
         </div>
         {% endif %}
         {% endwith %}
 
         <div class="lc-footer">
           <a href="{% url 'legal:legal_detail' org.slug %}" class="lc-detail-btn">
-            ⚖️ Смотреть услуги
+            ⚖️ {% trans "Смотреть услуги" %}
           </a>
         </div>
       </div>
@@ -168,8 +168,8 @@
   {% else %}
   <div class="lg-empty">
     <div style="font-size:56px;margin-bottom:16px">⚖️</div>
-    <div style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px">Скоро появятся</div>
-    <div style="font-size:14px;color:var(--muted)">Юридические организации добавляются администратором</div>
+    <div style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px">{% trans "Скоро появятся" %}</div>
+    <div style="font-size:14px;color:var(--muted)">{% trans "Юридические организации добавляются администратором" %}</div>
   </div>
   {% endif %}
 

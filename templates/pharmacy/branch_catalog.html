@@ -173,17 +173,17 @@
       if (data.ok) {
         // обновим бейджи (если они есть в base)
         document.querySelectorAll('[data-cart-qty]').forEach(el => el.textContent = data.qty);
-        document.querySelectorAll('[data-cart-total]').forEach(el => el.textContent = '· ' + data.total + ' сом');
+        document.querySelectorAll('[data-cart-total]').forEach(el => el.textContent = '· ' + data.total + ' {% cur %}');
 
         // показать FAB, если он реализован
         if (window.SANJI_CART_FAB_UPDATE) window.SANJI_CART_FAB_UPDATE(data.qty, data.total);
         else if (window.SANJI_CART_FAB_SHOW) window.SANJI_CART_FAB_SHOW();
       } else {
-        alert('Не удалось добавить в корзину');
+        alert('{% trans "Не удалось добавить в корзину" %}');
       }
     } catch (err) {
       console.error(err);
-      alert('Ошибка сети / сервера');
+      alert('{% trans "Ошибка сети / сервера" %}');
     } finally {
       if (btn) btn.disabled = false;
     }

@@ -1,10 +1,10 @@
-{% load static %}
+{% load static i18n i18n_attrs l10n %}
 <!doctype html>
-<html lang="ru">
+<html lang="{{ LANGUAGE_CODE|default:'ru' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{{ venue.name }} — Бронирование</title>
+  <title>{{ venue.name }} — {% trans "Бронирование" %}</title>
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -138,50 +138,50 @@
 
     <!-- Steps -->
     <div class="steps">
-      <div class="step active" id="step-ind-1"><div class="step-num">1</div><div class="step-label">Тип</div></div>
-      <div class="step" id="step-ind-2"><div class="step-num">2</div><div class="step-label">Сессия</div></div>
-      <div class="step" id="step-ind-3"><div class="step-num">3</div><div class="step-label">Заезды</div></div>
-      <div class="step" id="step-ind-4"><div class="step-num">4</div><div class="step-label">Дата/время</div></div>
-      <div class="step" id="step-ind-5"><div class="step-num">5</div><div class="step-label">Контакты</div></div>
+      <div class="step active" id="step-ind-1"><div class="step-num">1</div><div class="step-label">{% trans "Тип" %}</div></div>
+      <div class="step" id="step-ind-2"><div class="step-num">2</div><div class="step-label">{% trans "Сессия" %}</div></div>
+      <div class="step" id="step-ind-3"><div class="step-num">3</div><div class="step-label">{% trans "Заезды" %}</div></div>
+      <div class="step" id="step-ind-4"><div class="step-num">4</div><div class="step-label">{% trans "Дата/время" %}</div></div>
+      <div class="step" id="step-ind-5"><div class="step-num">5</div><div class="step-label">{% trans "Контакты" %}</div></div>
     </div>
 
     <!-- Step 1: Machine type -->
     <div class="panel active" id="panel-1">
-      <div class="section-label">Выберите тип</div>
+      <div class="section-label">{% trans "Выберите тип" %}</div>
       <div class="type-grid" id="type-list"></div>
-      <button class="btn-next" id="btn1" disabled onclick="goStep(2)">Далее →</button>
+      <button class="btn-next" id="btn1" disabled onclick="goStep(2)">{% trans "Далее →" %}</button>
     </div>
 
     <!-- Step 2: Session type -->
     <div class="panel" id="panel-2">
-      <div class="section-label">Выберите сессию из прайс-листа</div>
+      <div class="section-label">{% trans "Выберите сессию из прайс-листа" %}</div>
       <div class="session-grid" id="session-list"></div>
-      <div id="no-sessions" style="display:none" class="slot-none">Прайс-лист не настроен для этого типа</div>
-      <button class="btn-next" id="btn2" disabled onclick="goStep(3)">Далее →</button>
-      <button class="btn-back" onclick="goStep(1)">← Назад</button>
+      <div id="no-sessions" style="display:none" class="slot-none">{% trans "Прайс-лист не настроен для этого типа" %}</div>
+      <button class="btn-next" id="btn2" disabled onclick="goStep(3)">{% trans "Далее →" %}</button>
+      <button class="btn-back" onclick="goStep(1)">← {% trans "Назад" %}</button>
     </div>
 
     <!-- Step 3: Quantity -->
     <div class="panel" id="panel-3">
-      <div class="section-label">Количество заездов</div>
+      <div class="section-label">{% trans "Количество заездов" %}</div>
       <div class="qty-row">
         <button class="qty-btn" onclick="changeQty(-1)">−</button>
         <div class="qty-val" id="qty-display">1</div>
         <button class="qty-btn" onclick="changeQty(+1)">+</button>
       </div>
-      <div class="qty-total" id="qty-total">Итого: — сом · — мин</div>
-      <button class="btn-next" onclick="goStep(4)" style="margin-top:18px;">Далее →</button>
-      <button class="btn-back" onclick="goStep(2)">← Назад</button>
+      <div class="qty-total" id="qty-total">{% trans "Итого: — сом · — мин" %}</div>
+      <button class="btn-next" onclick="goStep(4)" style="margin-top:18px;">{% trans "Далее →" %}</button>
+      <button class="btn-back" onclick="goStep(2)">← {% trans "Назад" %}</button>
     </div>
 
     <!-- Step 4: Date + time -->
     <div class="panel" id="panel-4">
-      <div class="section-label">Дата посещения</div>
+      <div class="section-label">{% trans "Дата посещения" %}</div>
       <input type="date" class="date-input" id="date-input">
-      <div class="section-label" style="margin-top:4px;">Доступное время</div>
-      <div id="slots-wrap"><div class="slot-none">Выберите дату выше</div></div>
-      <button class="btn-next" id="btn4" disabled onclick="goStep(5)">Далее →</button>
-      <button class="btn-back" onclick="goStep(3)">← Назад</button>
+      <div class="section-label" style="margin-top:4px;">{% trans "Доступное время" %}</div>
+      <div id="slots-wrap"><div class="slot-none">{% trans "Выберите дату выше" %}</div></div>
+      <button class="btn-next" id="btn4" disabled onclick="goStep(5)">{% trans "Далее →" %}</button>
+      <button class="btn-back" onclick="goStep(3)">← {% trans "Назад" %}</button>
     </div>
 
     <!-- Step 5: Contacts + confirm -->
@@ -195,32 +195,55 @@
         <input type="hidden" name="appt_date"       id="f-date">
         <input type="hidden" name="appt_time"       id="f-time">
         <div class="field">
-          <label>Ваше имя</label>
-          <input type="text" name="name" placeholder="Имя">
+          <label>{% trans "Ваше имя" %}</label>
+          <input type="text" name="name" placeholder="{% trans 'Имя' %}">
         </div>
         <div class="field">
-          <label>Телефон *</label>
+          <label>{% trans "Телефон" %} *</label>
           <input type="tel" name="phone" id="phone-input" placeholder="+996 700 000 000" required autocomplete="tel">
           <div id="phone-error" style="display:none;color:#f97316;font-size:12px;margin-top:5px;">
-            Введите номер в формате +996 700 000 000
+            {% trans "Введите номер в формате +996 700 000 000" %}
           </div>
         </div>
-        <button type="submit" class="btn-next" onclick="return prepareAndValidate(event)">✅ Подтвердить запись</button>
-        <button type="button" class="btn-back" onclick="goStep(4)">← Назад</button>
+        <button type="submit" class="btn-next" onclick="return prepareAndValidate(event)">✅ {% trans "Подтвердить запись" %}</button>
+        <button type="button" class="btn-back" onclick="goStep(4)">← {% trans "Назад" %}</button>
       </form>
     </div>
   </div>
 </div>
 
 <script>
+const CUR = "{% cur %}";
+const LOCALE = "{{ LANGUAGE_CODE|default:'ru' }}" === "en" ? "en-US" : "ru-RU";
+const T = {
+  min: "{% trans 'мин' %}",
+  minutes: "{% trans 'минут' %}",
+  noMachines: "{% trans 'Машины не добавлены. Обратитесь к администратору.' %}",
+  totalDash: "{% trans 'Итого: — сом · — мин' %}",
+  total: "{% trans 'Итого' %}",
+  loading: "{% trans 'Загрузка…' %}",
+  noSlots: "{% trans 'Нет свободного времени на эту дату' %}",
+  loadErr: "{% trans 'Ошибка загрузки — попробуйте ещё раз' %}",
+  type: "{% trans 'Тип' %}",
+  session: "{% trans 'Сессия' %}",
+  runs: "{% trans 'Заездов' %}",
+  dateTime: "{% trans 'Дата и время' %}",
+  totalDuration: "{% trans 'Общая длительность' %}",
+  toPay: "{% trans 'К оплате' %}",
+  metaStd: "{% trans 'Классические карты для всей семьи' %}",
+  metaEuro: "{% trans 'Спортивные Евро-карты — больше скорости' %}",
+  metaSim: "{% trans 'Полноценный автосимулятор на большом экране' %}",
+};
+</script>
+<script>
 const ST_BY_TYPE = {{ st_by_type_json|safe }};
 const MACH_TYPES = {{ machine_types_json|safe }};
 const SLOTS_URL  = "{% url 'simracing:slots_json' venue.slug %}";
 
 const TYPE_META = {
-  kart_standard: { icon: "🏎️", desc: "Классические карты для всей семьи" },
-  kart_euro:     { icon: "🏁", desc: "Спортивные Евро-карты — больше скорости" },
-  simulator:     { icon: "🎮", desc: "Полноценный автосимулятор на большом экране" },
+  kart_standard: { icon: "🏎️", desc: T.metaStd },
+  kart_euro:     { icon: "🏁", desc: T.metaEuro },
+  simulator:     { icon: "🎮", desc: T.metaSim },
 };
 
 let sel = { mtype: null, mtypeLabel: null, st: null, qty: 1, date: null, time: null };
@@ -229,7 +252,7 @@ let sel = { mtype: null, mtypeLabel: null, st: null, qty: 1, date: null, time: n
 function buildTypes() {
   const wrap = document.getElementById('type-list');
   if (!MACH_TYPES.length) {
-    wrap.innerHTML = '<div class="slot-none" style="padding:20px 0;">Машины не добавлены. Обратитесь к администратору.</div>';
+    wrap.innerHTML = '<div class="slot-none" style="padding:20px 0;">' + T.noMachines + '</div>';
     return;
   }
   let html = '';
@@ -272,8 +295,8 @@ function buildSessions() {
   types.forEach(st => {
     html += `<div class="session-card" id="sc-${st.id}" onclick="selectSession(${st.id},${st.duration},${st.price})">
       <div class="session-dur">${st.duration}</div>
-      <div class="session-dur-label">минут</div>
-      <div class="session-price">${st.price.toLocaleString()} сом</div>
+      <div class="session-dur-label">${T.minutes}</div>
+      <div class="session-price">${st.price.toLocaleString()} ${CUR}</div>
     </div>`;
   });
   wrap.innerHTML = html;
@@ -298,10 +321,10 @@ function changeQty(delta) {
 
 function updateQtyTotal() {
   const el = document.getElementById('qty-total');
-  if (!sel.st) { el.textContent = 'Итого: — сом · — мин'; return; }
+  if (!sel.st) { el.textContent = T.totalDash; return; }
   const total = sel.st.price * sel.qty;
   const mins  = sel.st.duration * sel.qty;
-  el.textContent = `Итого: ${total.toLocaleString()} сом · ${mins} мин`;
+  el.textContent = `${T.total}: ${total.toLocaleString()} ${CUR} · ${mins} ${T.min}`;
 }
 
 /* ─── Step 4: Date + Slots ─── */
@@ -309,7 +332,7 @@ async function loadSlots(dateStr) {
   sel.time = null;
   document.getElementById('btn4').disabled = true;
   const wrap = document.getElementById('slots-wrap');
-  wrap.innerHTML = '<div class="slot-none">Загрузка…</div>';
+  wrap.innerHTML = '<div class="slot-none">' + T.loading + '</div>';
   const params = new URLSearchParams({
     machine_type: sel.mtype,
     session_type_id: sel.st.id,
@@ -320,7 +343,7 @@ async function loadSlots(dateStr) {
     const r = await fetch(`${SLOTS_URL}?${params}`);
     const d = await r.json();
     if (!d.slots || !d.slots.length) {
-      wrap.innerHTML = '<div class="slot-none">Нет свободного времени на эту дату</div>';
+      wrap.innerHTML = '<div class="slot-none">' + T.noSlots + '</div>';
       return;
     }
     let html = '<div class="slots-grid">';
@@ -330,7 +353,7 @@ async function loadSlots(dateStr) {
     html += '</div>';
     wrap.innerHTML = html;
   } catch(e) {
-    wrap.innerHTML = '<div class="slot-none">Ошибка загрузки — попробуйте ещё раз</div>';
+    wrap.innerHTML = '<div class="slot-none">' + T.loadErr + '</div>';
   }
 }
 
@@ -347,15 +370,15 @@ function buildSummary() {
   const total = sel.st.price * sel.qty;
   const mins  = sel.st.duration * sel.qty;
   const dateDisp = sel.date
-    ? new Date(sel.date + 'T12:00:00').toLocaleDateString('ru-RU', {day:'numeric', month:'long', weekday:'short'})
+    ? new Date(sel.date + 'T12:00:00').toLocaleDateString(LOCALE, {day:'numeric', month:'long', weekday:'short'})
     : '';
   document.getElementById('summary').innerHTML = `
-    <div class="summary-row"><span>🏎️ Тип</span><span>${sel.mtypeLabel}</span></div>
-    <div class="summary-row"><span>⏱ Сессия</span><span>${sel.st.duration} мин · ${sel.st.price.toLocaleString()} сом</span></div>
-    <div class="summary-row"><span>🔁 Заездов</span><span>${sel.qty}</span></div>
-    <div class="summary-row"><span>📅 Дата и время</span><span>${dateDisp}, ${sel.time}</span></div>
-    <div class="summary-row"><span>⏳ Общая длительность</span><span>${mins} мин</span></div>
-    <div class="summary-row"><span>💰 К оплате</span><span>${total.toLocaleString()} сом</span></div>
+    <div class="summary-row"><span>🏎️ ${T.type}</span><span>${sel.mtypeLabel}</span></div>
+    <div class="summary-row"><span>⏱ ${T.session}</span><span>${sel.st.duration} ${T.min} · ${sel.st.price.toLocaleString()} ${CUR}</span></div>
+    <div class="summary-row"><span>🔁 ${T.runs}</span><span>${sel.qty}</span></div>
+    <div class="summary-row"><span>📅 ${T.dateTime}</span><span>${dateDisp}, ${sel.time}</span></div>
+    <div class="summary-row"><span>⏳ ${T.totalDuration}</span><span>${mins} ${T.min}</span></div>
+    <div class="summary-row"><span>💰 ${T.toPay}</span><span>${total.toLocaleString()} ${CUR}</span></div>
   `;
   document.getElementById('f-mtype').value = sel.mtype;
   document.getElementById('f-stid').value  = sel.st.id;

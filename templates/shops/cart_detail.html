@@ -124,7 +124,7 @@
                minlength="13"
                maxlength="13"
                pattern="^\+996\d{9}$"
-               title="Введите номер в формате +996XXXXXXXXX (9 цифр после +996)"
+               title="{% trans 'Введите номер в формате +996XXXXXXXXX (9 цифр после +996)' %}"
                placeholder="+996700123456"
                class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base">
 
@@ -207,7 +207,7 @@
       const data = await postQty(url, qty);
       if (!data.ok){
         if (data.error === "not_enough"){
-          alert("Недостаточно товара. Доступно: " + (data.available || ""));
+          alert("{% trans 'Недостаточно товара. Доступно:' %} " + (data.available || ""));
         }
         return;
       }

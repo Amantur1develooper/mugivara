@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load i18n i18n_attrs %}
+{% load i18n i18n_attrs l10n %}
 
-{% block title %}Корзина · {{ place.title }} · {% t branch 'name' %}{% endblock %}
+{% block title %}{% trans "Корзина" %} · {{ place.title }} · {% t branch 'name' %}{% endblock %}
 {% block cta %}{% endblock %}
 {% block footer %}{% endblock %}
 
@@ -123,16 +123,32 @@
 {% endblock %}
 
 {% block content %}
+<script>
+const CUR = "{% cur %}";
+const T = {
+  cur: "{% cur %}",
+  freeDelivery: "{% trans 'бесплатная доставка' %}",
+  promoOk: "{% trans '✓ Промокод действует:' %}",
+  promoBad: "{% trans 'Промокод недействителен' %}",
+  calling: "{% trans 'Вызываю...' %}",
+  waiterCalled: "{% trans '✅ Официант вызван!' %}",
+  waiterOnWay: "{% trans 'Уже идёт к вашему столу' %}",
+  callWaiter: "{% trans 'Позвать официанта' %}",
+  tapToCall: "{% trans 'Нажмите, чтобы позвать' %}",
+  errRetry: "{% trans 'Ошибка. Попробуйте ещё раз.' %}",
+  callWaiterBtn: "{% trans '🔔 Вызвать официанта' %}",
+};
+</script>
 
 <!-- Waiter modal -->
 <div class="tc-modal-bg" id="waiterModal">
   <div class="tc-modal">
     <div class="tc-modal-handle"></div>
-    <div class="tc-modal-title">🔔 Позвать официанта</div>
-    <div class="tc-modal-sub">Официант подойдёт к столу <b>{{ place.title }}</b>.</div>
-    <textarea class="tc-modal-note" id="waiterNote" rows="3" placeholder="Примечание (необязательно)..."></textarea>
-    <button class="tc-modal-send" id="waiterSendBtn" type="button">🔔 Вызвать официанта</button>
-    <button class="tc-modal-cancel" id="waiterCancelBtn" type="button">Отмена</button>
+    <div class="tc-modal-title">🔔 {% trans "Позвать официанта" %}</div>
+    <div class="tc-modal-sub">{% blocktrans with t=place.title %}Официант подойдёт к столу <b>{{ t }}</b>.{% endblocktrans %}</div>
+    <textarea class="tc-modal-note" id="waiterNote" rows="3" placeholder="{% trans 'Примечание (необязательно)...' %}"></textarea>
+    <button class="tc-modal-send" id="waiterSendBtn" type="button">🔔 {% trans "Вызвать официанта" %}</button>
+    <button class="tc-modal-cancel" id="waiterCancelBtn" type="button">{% trans "Отмена" %}</button>
   </div>
 </div>
 
@@ -142,7 +158,7 @@
   <div class="tc-header">
     <a href="{% url 'public_site:table_menu' token %}" class="tc-back">←</a>
     <div>
-      <div class="tc-title">Ваш заказ</div>
+      <div class="tc-title">{% trans "Ваш заказ" %}</div>
       <div class="tc-subtitle">{% t branch 'name' %} · 🪑 {{ place.title }}</div>
     </div>
   </div>
@@ -151,8 +167,8 @@
   <button class="tc-waiter-btn" id="callWaiterBtn" type="button">
     <span class="tc-waiter-icon">🔔</span>
     <div>
-      <div class="tc-waiter-text-title">Позвать официанта</div>
-      <div class="tc-waiter-text-sub">Нажмите, чтобы позвать — подойдёт к столу {{ place.title }}</div>
+      <div class="tc-waiter-text-title">{% trans "Позвать официанта" %}</div>
+      <div class="tc-waiter-text-sub">{% blocktrans with t=place.title %}Нажмите, чтобы позвать — подойдёт к столу {{ t }}{% endblocktrans %}</div>
     </div>
   </button>
 
@@ -165,7 +181,7 @@
       <div class="tc-row" data-row="{{ r.branch_item.id }}">
         <div style="flex:1;min-width:0;">
           <div class="tc-row-name">{% t r.branch_item.item 'name' %}</div>
-          <div class="tc-row-price">{{ r.branch_item.price }} сом / шт.</div>
+          <div class="tc-row-price">{{ r.branch_item.price|som }} / {% trans "шт." %}</div>
         </div>
         <div class="tc-row-controls">
           <button class="tc-qty-btn del" data-act="remove" data-id="{{ r.branch_item.id }}" type="button">✕</button>
@@ -173,7 +189,7 @@
           <span class="tc-qty-num" data-qty="{{ r.branch_item.id }}">{{ r.qty }}</span>
           <button class="tc-qty-btn" data-act="inc" data-id="{{ r.branch_item.id }}" type="button">+</button>
         </div>
-        <div class="tc-line-total"><span data-line="{{ r.branch_item.id }}">{{ r.line_total }}</span> сом</div>
+        <div class="tc-line-total"><span data-line="{{ r.branch_item.id }}">{{ r.line_total }}</span> {% cur %}</div>
       </div>
       {% endfor %}
     </div>
@@ -190,7 +206,7 @@
           <div class="tc-row-price" style="font-size:11px;color:var(--muted);margin-top:3px;">
             {% for sel in item.selections %}{{ sel.gname }}: {% for ing in sel.ings %}{{ ing.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if not forloop.last %} · {% endif %}{% endfor %}
           </div>
-          <div class="tc-row-price">{{ item.unit_price }} сом / шт.</div>
+          <div class="tc-row-price">{{ item.unit_price|som }} / {% trans "шт." %}</div>
         </div>
         <div class="tc-row-controls">
           <button class="tc-qty-btn del" data-cx-act="remove" data-cx-idx="{{ item.idx }}" type="button">✕</button>
@@ -198,7 +214,7 @@
           <span class="tc-qty-num" id="cx-qty-{{ item.idx }}">{{ item.qty }}</span>
           <button class="tc-qty-btn" data-cx-act="inc" data-cx-idx="{{ item.idx }}" type="button">+</button>
         </div>
-        <div class="tc-line-total"><span id="cx-line-{{ item.idx }}">{{ item.line_total }}</span> сом</div>
+        <div class="tc-line-total"><span id="cx-line-{{ item.idx }}">{{ item.line_total }}</span> {% cur %}</div>
       </div>
       {% endfor %}
     </div>
@@ -207,41 +223,41 @@
     <!-- Total -->
     <div class="tc-totals">
       <div class="tc-total-row big">
-        <span>Итого</span>
-        <span id="cartTotal">{{ cart_total }} сом</span>
+        <span>{% trans "Итого" %}</span>
+        <span id="cartTotal">{{ cart_total|som }}</span>
       </div>
     </div>
 
     <!-- Checkout form -->
     <div class="tc-form-card">
-      <div class="tc-form-title">📝 Подтвердить заказ</div>
+      <div class="tc-form-title">📝 {% trans "Подтвердить заказ" %}</div>
       <form action="{% url 'public_site:table_create_order' token %}" method="post">
         {% csrf_token %}
-        <input name="customer_name" required placeholder="Ваше имя" class="tc-field">
+        <input name="customer_name" required placeholder="{% trans 'Ваше имя' %}" class="tc-field">
         <div style="display:flex;gap:8px">
-          <input name="promo_code" placeholder="Промокод (если есть)" class="tc-field" autocomplete="off"
+          <input name="promo_code" placeholder="{% trans 'Промокод (если есть)' %}" class="tc-field" autocomplete="off"
                  oninput="this.value=this.value.toUpperCase()" style="flex:1;text-transform:uppercase"
                  onblur="tcCheckPromo(this.value)">
         </div>
         <div id="tcPromoMsg" style="display:none;font-size:12px;font-weight:600;margin:-6px 0 10px 2px"></div>
-        <textarea name="comment" rows="2" placeholder="Комментарий к заказу (необязательно)" class="tc-field" style="resize:vertical"></textarea>
-        <button type="submit" class="tc-submit">✅ Отправить заказ</button>
+        <textarea name="comment" rows="2" placeholder="{% trans 'Комментарий к заказу (необязательно)' %}" class="tc-field" style="resize:vertical"></textarea>
+        <button type="submit" class="tc-submit">✅ {% trans "Отправить заказ" %}</button>
       </form>
     </div>
 
     <a href="{% url 'public_site:table_menu' token %}"
        style="display:block;text-align:center;padding:12px;color:var(--muted);font-size:13px;text-decoration:none;">
-      ← Продолжить выбор блюд
+      ← {% trans "Продолжить выбор блюд" %}
     </a>
 
   {% else %}
 
     <div class="tc-empty">
       <div style="font-size:48px;margin-bottom:12px">🛒</div>
-      <div style="font-size:14px;margin-bottom:16px;">Корзина пустая</div>
+      <div style="font-size:14px;margin-bottom:16px;">{% trans "Корзина пустая" %}</div>
       <a href="{% url 'public_site:table_menu' token %}"
          style="display:inline-block;padding:12px 24px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;font-weight:700;text-decoration:none;">
-        Перейти в меню →
+        {% trans "Перейти в меню →" %}
       </a>
     </div>
 
@@ -267,12 +283,12 @@ async function tcCheckPromo(code){
     msg.style.display = "block";
     if (d.ok){
       let t = "−" + parseFloat(d.discount_value).toLocaleString();
-      t += (d.discount_type === "percent") ? "%" : (d.discount_type === "fixed" ? " сом" : "");
-      if (d.discount_type === "free_delivery") t = "бесплатная доставка";
-      msg.textContent = "✓ Промокод действует: " + t;
+      t += (d.discount_type === "percent") ? "%" : (d.discount_type === "fixed" ? " " + CUR : "");
+      if (d.discount_type === "free_delivery") t = T.freeDelivery;
+      msg.textContent = T.promoOk + " " + t;
       msg.style.color = "#059669";
     } else {
-      msg.textContent = "✕ " + (d.error || "Промокод недействителен");
+      msg.textContent = "✕ " + (d.error || T.promoBad);
       msg.style.color = "#e11d48";
     }
   } catch(e){ msg.style.display = "none"; }
@@ -304,7 +320,7 @@ document.addEventListener("click", async e => {
     const data = await post(UPDATE_URL, fd);
     if (!data.ok) return;
 
-    document.getElementById("cartTotal").textContent = Math.round(parseFloat(data.total)) + " сом";
+    document.getElementById("cartTotal").textContent = Math.round(parseFloat(data.total)) + " " + CUR;
 
     const row = document.querySelector(`[data-row="${biId}"]`);
     if (!row) return;
@@ -338,7 +354,7 @@ document.addEventListener("click", async e => {
     const data = await post(CX_UPDATE_URL, fd);
     if (!data.ok) return;
 
-    document.getElementById("cartTotal").textContent = Math.round(parseFloat(data.total)) + " сом";
+    document.getElementById("cartTotal").textContent = Math.round(parseFloat(data.total)) + " " + CUR;
 
     const row = document.querySelector(`[data-cx-row="${idx}"]`);
     if (!row) return;
@@ -370,7 +386,7 @@ modal.addEventListener("click", e => { if (e.target === modal) modal.classList.r
 
 waiterSend.addEventListener("click", async () => {
   waiterSend.disabled = true;
-  waiterSend.textContent = "Вызываю...";
+  waiterSend.textContent = T.calling;
   try {
     const fd = new FormData();
     fd.append("note", waiterNote.value || "");
@@ -379,19 +395,19 @@ waiterSend.addEventListener("click", async () => {
       modal.classList.remove("open");
       waiterNote.value = "";
       callBtn.classList.add("called");
-      callBtn.querySelector(".tc-waiter-text-title").textContent = "✅ Официант вызван!";
-      callBtn.querySelector(".tc-waiter-text-sub").textContent = "Уже идёт к вашему столу";
+      callBtn.querySelector(".tc-waiter-text-title").textContent = T.waiterCalled;
+      callBtn.querySelector(".tc-waiter-text-sub").textContent = T.waiterOnWay;
       setTimeout(() => {
         callBtn.classList.remove("called");
-        callBtn.querySelector(".tc-waiter-text-title").textContent = "Позвать официанта";
-        callBtn.querySelector(".tc-waiter-text-sub").textContent = "Нажмите, чтобы позвать";
+        callBtn.querySelector(".tc-waiter-text-title").textContent = T.callWaiter;
+        callBtn.querySelector(".tc-waiter-text-sub").textContent = T.tapToCall;
       }, 20000);
     }
   } catch {
-    alert("Ошибка. Попробуйте ещё раз.");
+    alert(T.errRetry);
   } finally {
     waiterSend.disabled = false;
-    waiterSend.textContent = "🔔 Вызвать официанта";
+    waiterSend.textContent = T.callWaiterBtn;
   }
 });
 </script>

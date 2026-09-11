@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static i18n_attrs l10n %}
 
-{% block title %}{{ agency.name }} — IT Агентство{% endblock %}
+{% block title %}{{ agency.name }} — {% trans "IT Агентство" %}{% endblock %}
 {% block cta %}{% endblock %}
 
 {% block head_extra %}
@@ -268,7 +268,7 @@
       <div class="ag-hero-cover-glow"></div>
       <div class="ag-hero-grid"></div>
     </div>
-    <a href="{% url 'agency:agency_list' %}" class="ag-back">← Все агентства</a>
+    <a href="{% url 'agency:agency_list' %}" class="ag-back">← {% trans "Все агентства" %}</a>
     <div class="ag-hero-content">
       <div class="ag-logo-row">
         <div class="ag-logo">
@@ -293,7 +293,7 @@
       </div>
       {% endif %}
 
-      <div class="ag-section-title">Услуги</div>
+      <div class="ag-section-title">{% trans "Услуги" %}</div>
 
       {% if services %}
       <div class="ag-services">
@@ -323,18 +323,18 @@
             <div class="ag-svc-footer">
               <div>
                 {% if svc.price %}
-                  <div class="ag-svc-price">{{ svc.price|floatformat:0 }} сом</div>
+                  <div class="ag-svc-price">{{ svc.price|som }}</div>
                   {% if svc.price_note %}<div class="ag-svc-price-note">{{ svc.price_note }}</div>{% endif %}
                 {% else %}
-                  <div class="ag-svc-price" style="font-size:13px">по договорённости</div>
+                  <div class="ag-svc-price" style="font-size:13px">{% trans "по договорённости" %}</div>
                 {% endif %}
               </div>
               <div style="display:flex;align-items:center;gap:10px">
                 {% if svc.delivery_days %}
-                  <div class="ag-svc-days">⏱ {{ svc.delivery_days }} дн.</div>
+                  <div class="ag-svc-days">⏱ {% blocktrans with d=svc.delivery_days %}{{ d }} дн.{% endblocktrans %}</div>
                 {% endif %}
                 <button class="ag-svc-order-btn" onclick="event.stopPropagation();openOrder({{ svc.id }}, '{{ svc.name|escapejs }}')">
-                  Заказать →
+                  {% trans "Заказать →" %}
                 </button>
               </div>
             </div>
@@ -346,7 +346,7 @@
       {% else %}
       <div style="text-align:center;padding:60px 24px;background:var(--ag-card);border:1px solid var(--ag-border);border-radius:18px">
         <div style="font-size:42px;margin-bottom:12px">🚧</div>
-        <div style="font-size:14px;color:var(--ag-muted)">Услуги скоро появятся</div>
+        <div style="font-size:14px;color:var(--ag-muted)">{% trans "Услуги скоро появятся" %}</div>
       </div>
       {% endif %}
     </div>
@@ -354,7 +354,7 @@
     <!-- SIDEBAR -->
     <div class="ag-sidebar">
       <div class="ag-info-card">
-        <div class="ag-contact-title">Контакты</div>
+        <div class="ag-contact-title">{% trans "Контакты" %}</div>
         {% if agency.phone %}
         <div class="ag-contact-row">
           <span>📞</span>
@@ -381,7 +381,7 @@
         {% endif %}
 
         <button class="ag-submit-btn" style="margin-top:20px" onclick="openOrder(null,'')">
-          ✉️ Написать нам
+          ✉️ {% trans "Написать нам" %}
         </button>
       </div>
     </div>
@@ -395,26 +395,43 @@
   <div class="ag-modal">
     <button class="ag-modal-close" onclick="closeModal()">✕</button>
     <div id="agModalContent">
-      <div class="ag-modal-title">Заявка</div>
+      <div class="ag-modal-title">{% trans "Заявка" %}</div>
       <div class="ag-modal-svc" id="agModalSvc" style="display:none"></div>
       <div class="ag-field">
-        <label>Ваше имя *</label>
-        <input id="agName" placeholder="Как к вам обращаться?">
+        <label>{% trans "Ваше имя" %} *</label>
+        <input id="agName" placeholder="{% trans 'Как к вам обращаться?' %}">
       </div>
       <div class="ag-field">
-        <label>Телефон / WhatsApp</label>
+        <label>{% trans "Телефон / WhatsApp" %}</label>
         <input id="agPhone" placeholder="+996 ..." type="tel">
       </div>
       <div class="ag-field">
-        <label>Опишите задачу *</label>
-        <textarea id="agMessage" placeholder="Расскажите о вашем проекте..."></textarea>
+        <label>{% trans "Опишите задачу" %} *</label>
+        <textarea id="agMessage" placeholder="{% trans 'Расскажите о вашем проекте...' %}"></textarea>
       </div>
       <input type="hidden" id="agSvcId" value="">
-      <button class="ag-submit-btn" id="agSubmitBtn" onclick="submitInquiry()">Отправить заявку →</button>
+      <button class="ag-submit-btn" id="agSubmitBtn" onclick="submitInquiry()">{% trans "Отправить заявку →" %}</button>
     </div>
   </div>
 </div>
 
+<script>
+const T = {
+  request: "{% trans 'Заявка' %}",
+  yourName: "{% trans 'Ваше имя' %}",
+  namePlaceholder: "{% trans 'Как к вам обращаться?' %}",
+  phoneWa: "{% trans 'Телефон / WhatsApp' %}",
+  describeTask: "{% trans 'Опишите задачу' %}",
+  taskPlaceholder: "{% trans 'Расскажите о вашем проекте...' %}",
+  submitReq: "{% trans 'Отправить заявку →' %}",
+  fillNameTask: "{% trans 'Заполните имя и описание задачи' %}",
+  sending: "{% trans 'Отправляем...' %}",
+  errRetry: "{% trans 'Ошибка. Попробуйте снова.' %}",
+  errNetRetry: "{% trans 'Ошибка сети. Попробуйте снова.' %}",
+  sent: "{% trans 'Заявка отправлена!' %}",
+  sentSub: "{% trans 'Мы свяжемся с вами в ближайшее время' %}",
+};
+</script>
 <script>
 function openOrder(svcId, svcName) {
   document.getElementById("agModal").classList.add("open");
@@ -426,13 +443,13 @@ function openOrder(svcId, svcName) {
 function closeModal() {
   document.getElementById("agModal").classList.remove("open");
   document.getElementById("agModalContent").innerHTML = `
-    <div class="ag-modal-title">Заявка</div>
+    <div class="ag-modal-title">${T.request}</div>
     <div class="ag-modal-svc" id="agModalSvc" style="display:none"></div>
-    <div class="ag-field"><label>Ваше имя *</label><input id="agName" placeholder="Как к вам обращаться?"></div>
-    <div class="ag-field"><label>Телефон / WhatsApp</label><input id="agPhone" placeholder="+996 ..." type="tel"></div>
-    <div class="ag-field"><label>Опишите задачу *</label><textarea id="agMessage" placeholder="Расскажите о вашем проекте..."></textarea></div>
+    <div class="ag-field"><label>${T.yourName} *</label><input id="agName" placeholder="${T.namePlaceholder}"></div>
+    <div class="ag-field"><label>${T.phoneWa}</label><input id="agPhone" placeholder="+996 ..." type="tel"></div>
+    <div class="ag-field"><label>${T.describeTask} *</label><textarea id="agMessage" placeholder="${T.taskPlaceholder}"></textarea></div>
     <input type="hidden" id="agSvcId" value="">
-    <button class="ag-submit-btn" id="agSubmitBtn" onclick="submitInquiry()">Отправить заявку →</button>
+    <button class="ag-submit-btn" id="agSubmitBtn" onclick="submitInquiry()">${T.submitReq}</button>
   `;
 }
 document.getElementById("agModal").addEventListener("click", function(e) {
@@ -446,12 +463,12 @@ async function submitInquiry() {
   const svc_id  = document.getElementById("agSvcId").value;
 
   if (!name || !message) {
-    alert("Заполните имя и описание задачи");
+    alert(T.fillNameTask);
     return;
   }
 
   const btn = document.getElementById("agSubmitBtn");
-  btn.disabled = true; btn.textContent = "Отправляем...";
+  btn.disabled = true; btn.textContent = T.sending;
 
   const csrfToken = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
   try {
@@ -465,16 +482,16 @@ async function submitInquiry() {
       document.getElementById("agModalContent").innerHTML = `
         <div class="ag-submit-success">
           <div class="icon">✅</div>
-          <div class="title">Заявка отправлена!</div>
-          <div class="sub">Мы свяжемся с вами в ближайшее время</div>
+          <div class="title">${T.sent}</div>
+          <div class="sub">${T.sentSub}</div>
         </div>`;
     } else {
-      btn.disabled = false; btn.textContent = "Отправить заявку →";
-      alert(d.error || "Ошибка. Попробуйте снова.");
+      btn.disabled = false; btn.textContent = T.submitReq;
+      alert(d.error || T.errRetry);
     }
   } catch(e) {
-    btn.disabled = false; btn.textContent = "Отправить заявку →";
-    alert("Ошибка сети. Попробуйте снова.");
+    btn.disabled = false; btn.textContent = T.submitReq;
+    alert(T.errNetRetry);
   }
 }
 </script>

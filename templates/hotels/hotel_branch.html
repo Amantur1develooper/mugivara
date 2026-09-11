@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static i18n_attrs l10n %}
 
-{% block title %}{{ branch.name_ru }} — Номера{% endblock %}
+{% block title %}{% t branch "name" %} — {% trans "Номера" %}{% endblock %}
 {% block cta %}{% endblock %}
 
 {% block head_extra %}
@@ -340,6 +340,43 @@
 {% endblock %}
 
 {% block content %}
+<script>
+const CUR = "{% cur %}";
+const T = {
+  night: ["{% trans 'ночь' %}", "{% trans 'ночи' %}", "{% trans 'ночей' %}"],
+  guest: ["{% trans 'гость' %}", "{% trans 'гостя' %}", "{% trans 'гостей' %}"],
+  room: ["{% trans 'номер' %}", "{% trans 'номера' %}", "{% trans 'номеров' %}"],
+  perNight: "{% trans '/ ночь' %}",
+  maxGuests: "{% trans 'Максимум' %}",
+  noDesc: "{% trans 'Описание не добавлено' %}",
+  busyUntil: "{% trans 'Занят до' %}",
+  canBookFree: "{% trans '— можно забронировать на свободные даты' %}",
+  busyNowFree: "{% trans 'Сейчас занят — можно забронировать на свободные даты' %}",
+  checkinNoBusy: "{% trans 'Заселиться сейчас нельзя — номер занят до' %}",
+  bookFreeDates: "{% trans '. Забронируйте на свободные даты.' %}",
+  checkinNoRoom: "{% trans 'Заселиться сейчас нельзя — номер занят.' %}",
+  roomUnavail: "{% trans 'Этот номер сейчас недоступен для брони.' %}",
+  checkin: "{% trans 'Заселиться' %}", booking: "{% trans 'Бронирование' %}",
+  checkinNow: "{% trans 'Заселиться сейчас' %}", bookRoom: "{% trans 'Забронировать номер' %}",
+  confirmWa: "{% trans '💬 Подтвердить в WhatsApp' %}",
+  guestsMax: "{% trans 'Гостей (макс.' %}",
+  dateConflict: "{% trans 'На эти даты номер уже забронирован — выберите другие.' %}",
+  dateConflictSubmit: "{% trans 'На выбранные даты номер уже забронирован. Выберите другие даты.' %}",
+  price: "{% trans 'Стоимость' %}",
+  chooseSession: "{% trans '— Выберите сеанс —' %}",
+  from: "{% trans 'от' %}",
+};
+const LANG = "{{ LANGUAGE_CODE|default:'ru'|slice:':2' }}";
+function _plural(n, forms) {
+  if (LANG === 'ru') {
+    const m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return forms[0];
+    if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return forms[1];
+    return forms[2];
+  }
+  return n === 1 ? forms[0] : forms[1];
+}
+</script>
 
 <!-- ══ HERO ══ -->
 <div class="hb-hero">
@@ -348,10 +385,10 @@
   {% endif %}
   <div class="hb-hero-overlay"></div>
   <div class="hb-hero-dots"></div>
-  <a href="{% url 'hotels:hotel_detail' hotel.slug %}" class="hb-back">← {{ hotel.name_ru }}</a>
+  <a href="{% url 'hotels:hotel_detail' hotel.slug %}" class="hb-back">← {% t hotel "name" %}</a>
   <div class="hb-hero-content">
-    <div class="hb-eyebrow">Отель · Webordo</div>
-    <div class="hb-title">{{ branch.name_ru }}</div>
+    <div class="hb-eyebrow">{% trans "Отель" %} · Webordo</div>
+    <div class="hb-title">{% t branch "name" %}</div>
     <div class="hb-meta">
       {% if branch.address %}<span>📍 {{ branch.address }}</span>{% endif %}
       {% if branch.phone %}
@@ -360,7 +397,7 @@
            target="_blank" rel="noopener">💬 WhatsApp</a>
       {% endif %}
       {% if branch.map_url %}
-        <a href="{{ branch.map_url }}" target="_blank" rel="noopener">📍 На карте</a>
+        <a href="{{ branch.map_url }}" target="_blank" rel="noopener">📍 {% trans "На карте" %}</a>
       {% endif %}
     </div>
   </div>
@@ -380,7 +417,7 @@
     {% if cat.rooms.all %}
       <div class="hb-cat">
         <div class="hb-cat-line"></div>
-        <div class="hb-cat-label">{{ cat.name_ru }}</div>
+        <div class="hb-cat-label">{% t cat "name" %}</div>
         <div class="hb-cat-line"></div>
       </div>
       <div class="hb-grid">
@@ -393,7 +430,7 @@
     {% if categories %}
       <div class="hb-cat">
         <div class="hb-cat-line"></div>
-        <div class="hb-cat-label">Другие номера</div>
+        <div class="hb-cat-label">{% trans "Другие номера" %}</div>
         <div class="hb-cat-line"></div>
       </div>
     {% endif %}
@@ -405,14 +442,14 @@
   {% if not categories and not uncategorized %}
     <div class="hb-empty">
       <div style="font-size:52px;margin-bottom:16px">🏗️</div>
-      <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:17px;color:var(--text);margin-bottom:8px">Номера пока не добавлены</div>
-      <div style="font-size:14px;color:var(--muted)">Обратитесь в отель напрямую</div>
+      <div style="font-family:'Unbounded',sans-serif;font-weight:800;font-size:17px;color:var(--text);margin-bottom:8px">{% trans "Номера пока не добавлены" %}</div>
+      <div style="font-size:14px;color:var(--muted)">{% trans "Обратитесь в отель напрямую" %}</div>
       {% if branch.phone %}
         <a href="tel:{{ branch.phone }}"
            style="display:inline-flex;align-items:center;gap:8px;margin-top:22px;
                   padding:13px 28px;border-radius:15px;background:#2563EB;
                   color:#fff;text-decoration:none;font-weight:700;font-size:14px">
-          📞 Позвонить
+          📞 {% trans "Позвонить" %}
         </a>
       {% endif %}
     </div>
@@ -441,15 +478,15 @@
       <div class="dm-price" id="dmPrice"></div>
       <div class="dm-guests" id="dmGuests"></div>
 
-      <div class="dm-sec">Описание</div>
+      <div class="dm-sec">{% trans "Описание" %}</div>
       <div class="dm-desc" id="dmDesc"></div>
 
-      <div class="dm-sec" id="dmAmenitiesSec">Что включено</div>
+      <div class="dm-sec" id="dmAmenitiesSec">{% trans "Что включено" %}</div>
       <div class="dm-tags" id="dmTags"></div>
 
       <div class="dm-actions">
-        <button class="dm-btn dm-btn-blue" id="dmBtnBook">📅 Забронировать</button>
-        <button class="dm-btn dm-btn-green" id="dmBtnCheckin">🔑 Заселиться</button>
+        <button class="dm-btn dm-btn-blue" id="dmBtnBook">📅 {% trans "Забронировать" %}</button>
+        <button class="dm-btn dm-btn-green" id="dmBtnCheckin">🔑 {% trans "Заселиться" %}</button>
       </div>
     </div>
   </div>
@@ -464,8 +501,8 @@
     <button class="m-close" id="bookClose">✕</button>
 
     <div class="bm-head">
-      <div class="bm-type-badge blue" id="bmBadge">Бронирование</div>
-      <div class="bm-title" id="bmTitle">Забронировать номер</div>
+      <div class="bm-type-badge blue" id="bmBadge">{% trans "Бронирование" %}</div>
+      <div class="bm-title" id="bmTitle">{% trans "Забронировать номер" %}</div>
       <div class="bm-subtitle" id="bmSub"></div>
     </div>
 
@@ -475,52 +512,52 @@
         <input type="hidden" name="book_type" id="bmType" value="booking">
 
         <div>
-          <label class="bm-lbl">Дата заезда *</label>
+          <label class="bm-lbl">{% trans "Дата заезда" %} *</label>
           <input class="bm-inp" type="date" name="checkin" id="bmCheckin" required>
         </div>
 
         <div class="bm-2col">
           <div>
-            <label class="bm-lbl">Ночей *</label>
+            <label class="bm-lbl">{% trans "Ночей" %} *</label>
             <input class="bm-inp" type="number" name="nights" id="bmNights" min="1" value="1" required>
           </div>
           <div>
-            <label class="bm-lbl" id="bmGuestsLbl">Гостей</label>
+            <label class="bm-lbl" id="bmGuestsLbl">{% trans "Гостей" %}</label>
             <input class="bm-inp" type="number" name="guests" id="bmGuests" min="1" value="1" required>
           </div>
         </div>
 
         <div>
-          <label class="bm-lbl">Количество номеров</label>
+          <label class="bm-lbl">{% trans "Количество номеров" %}</label>
           <input class="bm-inp" type="number" name="rooms_count" id="bmRooms" min="1" max="10" value="1" required>
         </div>
 
         <div>
-          <label class="bm-lbl">Ваше имя *</label>
-          <input class="bm-inp" type="text" name="name" placeholder="Имя" required>
+          <label class="bm-lbl">{% trans "Ваше имя" %} *</label>
+          <input class="bm-inp" type="text" name="name" placeholder="{% trans 'Имя' %}" required>
         </div>
 
         <div>
-          <label class="bm-lbl">Телефон *</label>
+          <label class="bm-lbl">{% trans "Телефон" %} *</label>
           <input class="bm-inp" type="tel" name="phone" id="bmPhone"
                  value="+996" placeholder="+996700123456"
                  required minlength="13" maxlength="13"
-                 pattern="^\+996\d{9}$" title="Формат: +996XXXXXXXXX">
+                 pattern="^\+996\d{9}$" title="{% trans 'Формат: +996XXXXXXXXX' %}">
         </div>
 
         <div>
-          <label class="bm-lbl">Комментарий</label>
+          <label class="bm-lbl">{% trans "Комментарий" %}</label>
           <textarea class="bm-inp" name="comment" rows="2"
-                    placeholder="Особые пожелания, запрос ранней/поздней выписки..."></textarea>
+                    placeholder="{% trans 'Особые пожелания, запрос ранней/поздней выписки...' %}"></textarea>
         </div>
 
         <div class="bm-total">
-          <span class="bm-total-lbl" id="bmNightsLbl">1 ночь</span>
-          <span class="bm-total-sum" id="bmTotalSum">0 сом</span>
+          <span class="bm-total-lbl" id="bmNightsLbl">1 {% trans "ночь" %}</span>
+          <span class="bm-total-sum" id="bmTotalSum">0 {% cur %}</span>
         </div>
 
         <button type="submit" class="bm-submit blue" id="bmSubmit">
-          💬 Подтвердить в WhatsApp
+          💬 {% trans "Подтвердить в WhatsApp" %}
         </button>
       </form>
     </div>
@@ -533,7 +570,7 @@
 <div class="hb-wrap" style="padding-top:0;padding-bottom:0">
   <div class="hb-cat" style="margin-top:40px">
     <div class="hb-cat-line"></div>
-    <div class="hb-cat-label">Услуги</div>
+    <div class="hb-cat-label">{% trans "Услуги" %}</div>
     <div class="hb-cat-line"></div>
   </div>
   <div class="hb-grid" style="margin-bottom:40px">
@@ -542,7 +579,7 @@
       <!-- Фото -->
       <div class="rc-photo" onclick="openServiceDetail({{ svc.id }})" style="cursor:pointer">
         {% if svc.photo1 %}
-          <img src="{{ svc.photo1.url }}" alt="{{ svc.name_ru }}" loading="lazy">
+          <img src="{{ svc.photo1.url }}" alt="{% t svc 'name' %}" loading="lazy">
           <div class="rc-photo-grad"></div>
         {% else %}
           <div class="rc-photo-empty"><span>🛁</span></div>
@@ -551,12 +588,12 @@
           <div class="rc-photo-cnt">📷 {{ svc.photos|length }}</div>
         {% endif %}
         <div class="rc-photo-price">
-          {{ svc.price|floatformat:"0" }} <span>сом</span>
+          {{ svc.price|floatformat:"0" }} <span>{% cur %}</span>
         </div>
       </div>
       <!-- Тело -->
       <div class="rc-body">
-        <div class="rc-name">{{ svc.name_ru }}</div>
+        <div class="rc-name">{% t svc "name" %}</div>
         {% with active_sessions=svc.sessions.all %}
         {% if active_sessions %}
         <div class="rc-chips">
@@ -566,11 +603,11 @@
         </div>
         {% endif %}
         {% endwith %}
-        {% if svc.description_ru %}
-          <div class="rc-desc">{{ svc.description_ru }}</div>
+        {% t svc "description" as svcd %}{% if svcd %}
+          <div class="rc-desc">{{ svcd }}</div>
         {% endif %}
         <div class="rc-actions" style="grid-template-columns:1fr">
-          <button class="rc-btn rc-btn-blue" onclick="openServiceBook({{ svc.id }})">📅 Забронировать</button>
+          <button class="rc-btn rc-btn-blue" onclick="openServiceBook({{ svc.id }})">📅 {% trans "Забронировать" %}</button>
         </div>
       </div>
     </div>
@@ -591,12 +628,12 @@
     <div class="dm-body">
       <div class="dm-name" id="svcName"></div>
       <div class="dm-price" id="svcPrice"></div>
-      <div class="dm-sec" id="svcSessionsSec">Сеансы</div>
+      <div class="dm-sec" id="svcSessionsSec">{% trans "Сеансы" %}</div>
       <div class="dm-tags" id="svcSessions"></div>
-      <div class="dm-sec">Описание</div>
+      <div class="dm-sec">{% trans "Описание" %}</div>
       <div class="dm-desc" id="svcDesc"></div>
       <div class="dm-actions" style="grid-template-columns:1fr">
-        <button class="dm-btn dm-btn-blue" onclick="closeSvcDetail();openServiceBook(curSvc&&curSvc.id)">📅 Забронировать</button>
+        <button class="dm-btn dm-btn-blue" onclick="closeSvcDetail();openServiceBook(curSvc&&curSvc.id)">📅 {% trans "Забронировать" %}</button>
       </div>
     </div>
   </div>
@@ -607,43 +644,43 @@
   <div class="m-box">
     <button class="m-close" onclick="closeSvcBook()">✕</button>
     <div class="bm-head">
-      <div class="bm-type-badge blue">Услуга</div>
-      <div class="bm-title" id="svcBmTitle">Забронировать</div>
+      <div class="bm-type-badge blue">{% trans "Услуга" %}</div>
+      <div class="bm-title" id="svcBmTitle">{% trans "Забронировать" %}</div>
       <div class="bm-subtitle" id="svcBmSub"></div>
     </div>
     <div class="bm-body">
       <form method="post" id="svcBmForm" class="bm-grid">
         {% csrf_token %}
         <div>
-          <label class="bm-lbl">Дата *</label>
+          <label class="bm-lbl">{% trans "Дата" %} *</label>
           <input class="bm-inp" type="date" name="booking_date" id="svcBmDate" required>
         </div>
         <div id="svcSessionBlock">
-          <label class="bm-lbl">Сеанс *</label>
+          <label class="bm-lbl">{% trans "Сеанс" %} *</label>
           <select class="bm-inp" name="session_id" id="svcBmSession" required>
-            <option value="">— Выберите сеанс —</option>
+            <option value="">{% trans "— Выберите сеанс —" %}</option>
           </select>
         </div>
         <div>
-          <label class="bm-lbl">Ваше имя *</label>
-          <input class="bm-inp" type="text" name="name" placeholder="Имя" required>
+          <label class="bm-lbl">{% trans "Ваше имя" %} *</label>
+          <input class="bm-inp" type="text" name="name" placeholder="{% trans 'Имя' %}" required>
         </div>
         <div>
-          <label class="bm-lbl">Телефон *</label>
+          <label class="bm-lbl">{% trans "Телефон" %} *</label>
           <input class="bm-inp" type="tel" name="phone" id="svcBmPhone"
                  value="+996" placeholder="+996700123456"
                  required minlength="13" maxlength="13"
-                 pattern="^\+996\d{9}$" title="Формат: +996XXXXXXXXX">
+                 pattern="^\+996\d{9}$" title="{% trans 'Формат: +996XXXXXXXXX' %}">
         </div>
         <div>
-          <label class="bm-lbl">Комментарий</label>
-          <textarea class="bm-inp" name="comment" rows="2" placeholder="Особые пожелания…"></textarea>
+          <label class="bm-lbl">{% trans "Комментарий" %}</label>
+          <textarea class="bm-inp" name="comment" rows="2" placeholder="{% trans 'Особые пожелания…' %}"></textarea>
         </div>
         <div class="bm-total">
-          <span class="bm-total-lbl" id="svcBmLbl">Стоимость</span>
-          <span class="bm-total-sum" id="svcBmTotal">0 сом</span>
+          <span class="bm-total-lbl" id="svcBmLbl">{% trans "Стоимость" %}</span>
+          <span class="bm-total-sum" id="svcBmTotal">0 {% cur %}</span>
         </div>
-        <button type="submit" class="bm-submit blue">💬 Подтвердить в WhatsApp</button>
+        <button type="submit" class="bm-submit blue">💬 {% trans "Подтвердить в WhatsApp" %}</button>
       </form>
     </div>
   </div>
@@ -658,11 +695,7 @@ let cur = null;
 /* ─── helpers ─── */
 const $ = id => document.getElementById(id);
 
-function nightsWord(n) {
-  if (n === 1) return '1 ночь';
-  if (n >= 2 && n <= 4) return n + ' ночи';
-  return n + ' ночей';
-}
+function nightsWord(n) { return n + ' ' + _plural(n, T.night); }
 
 /* ─── DETAIL MODAL ─── */
 function openDetail(roomId) {
@@ -701,21 +734,21 @@ function openDetail(roomId) {
 
   $('dmName').textContent  = cur.name;
   // тарифная сетка в модале
-  let priceLine = `от ${cur.price.toLocaleString()} сом <small>/ ночь</small>`;
+  let priceLine = `${T.from} ${cur.price.toLocaleString()} ${CUR} <small>${T.perNight}</small>`;
   if (cur.price_extra > 0) {
     const rows = [];
     for (let g = 1; g <= Math.min(cur.max_guests, 5); g++) {
       const p = calcPricePerNight(cur.price, cur.price_extra, g);
-      const gLabel = g === 1 ? '1 гость' : g + ' ' + (g < 5 ? 'гостя' : 'гостей');
-      rows.push(`${gLabel} — ${p.toLocaleString()} сом`);
+      const gLabel = g + ' ' + _plural(g, T.guest);
+      rows.push(`${gLabel} — ${p.toLocaleString()} ${CUR}`);
     }
     priceLine = rows.map((r, i) =>
       `<span style="display:block;font-size:${i===0?'22':'16'}px;font-weight:${i===0?'800':'600'};color:${i===0?'#2563EB':'var(--text2)'};">${r}</span>`
     ).join('');
   }
   $('dmPrice').innerHTML = priceLine;
-  $('dmGuests').textContent = `👥 Максимум ${cur.max_guests} ${cur.max_guests === 1 ? 'гость' : cur.max_guests < 5 ? 'гостя' : 'гостей'}`;
-  $('dmDesc').textContent  = cur.description || 'Описание не добавлено';
+  $('dmGuests').textContent = `👥 ${T.maxGuests} ${cur.max_guests} ${_plural(cur.max_guests, T.guest)}`;
+  $('dmDesc').textContent  = cur.description || T.noDesc;
 
   const tags = $('dmTags');
   tags.innerHTML = '';
@@ -749,8 +782,8 @@ function openDetail(roomId) {
       $('dmBtnBook').parentElement.appendChild(note);
     }
     note.textContent = cur.busy_until
-      ? ('Занят до ' + cur.busy_until + ' — можно забронировать на свободные даты')
-      : 'Сейчас занят — можно забронировать на свободные даты';
+      ? (T.busyUntil + ' ' + cur.busy_until + ' ' + T.canBookFree)
+      : T.busyNowFree;
     note.style.display = '';
   } else if (note) {
     note.style.display = 'none';
@@ -788,34 +821,34 @@ function openBook(type) {
 
   if (isCheckin && !cur.available) {
     alert(cur.busy_until
-      ? ('Заселиться сейчас нельзя — номер занят до ' + cur.busy_until + '. Забронируйте на свободные даты.')
-      : 'Заселиться сейчас нельзя — номер занят.');
+      ? (T.checkinNoBusy + ' ' + cur.busy_until + T.bookFreeDates)
+      : T.checkinNoRoom);
     return;
   }
   if (!cur.bookable) {
-    alert('Этот номер сейчас недоступен для брони.');
+    alert(T.roomUnavail);
     return;
   }
   closeDetail();
 
   $('bmType').value = type;
   const badge = $('bmBadge');
-  badge.textContent = isCheckin ? 'Заселиться' : 'Бронирование';
+  badge.textContent = isCheckin ? T.checkin : T.booking;
   badge.className   = 'bm-type-badge ' + (isCheckin ? 'green' : 'blue');
 
-  $('bmTitle').textContent = isCheckin ? 'Заселиться сейчас' : 'Забронировать номер';
+  $('bmTitle').textContent = isCheckin ? T.checkinNow : T.bookRoom;
   $('bmSub').textContent   = cur.name;
 
   const submit = $('bmSubmit');
   submit.className = 'bm-submit ' + (isCheckin ? 'green' : 'blue');
-  submit.textContent = '💬 Подтвердить в WhatsApp';
+  submit.textContent = T.confirmWa;
 
   $('bmForm').action = cur.book_url;
 
   // guests limit
   const guestInp = $('bmGuests');
   guestInp.max = cur.max_guests;
-  $('bmGuestsLbl').textContent = `Гостей (макс. ${cur.max_guests})`;
+  $('bmGuestsLbl').textContent = `${T.guestsMax} ${cur.max_guests})`;
   if (parseInt(guestInp.value) > cur.max_guests) guestInp.value = 1;
 
   // минимальная дата заезда: сегодня, либо — если номер занят — первая свободная дата
@@ -852,11 +885,7 @@ function calcPricePerNight(price, priceExtra, guests) {
   return price + priceExtra * Math.max(0, guests - 1);
 }
 
-function roomsWord(r) {
-  if (r === 1) return '1 номер';
-  if (r >= 2 && r <= 4) return r + ' номера';
-  return r + ' номеров';
-}
+function roomsWord(r) { return r + ' ' + _plural(r, T.room); }
 
 function updateTotal() {
   if (!cur) return;
@@ -867,11 +896,11 @@ function updateTotal() {
   const perNight = calcPricePerNight(cur.price, cur.price_extra, g);
   const total = perNight * n * r;
 
-  $('bmTotalSum').textContent = total.toLocaleString() + ' сом';
+  $('bmTotalSum').textContent = total.toLocaleString() + ' ' + CUR;
 
-  let lbl = roomsWord(r) + ' · ' + nightsWord(n) + ' · ' + g + ' ' + (g === 1 ? 'гость' : g < 5 ? 'гостя' : 'гостей');
+  let lbl = roomsWord(r) + ' · ' + nightsWord(n) + ' · ' + g + ' ' + _plural(g, T.guest);
   if (cur.price_extra > 0 && g > 1) {
-    lbl += ` · ${perNight.toLocaleString()} сом/ночь`;
+    lbl += ` · ${perNight.toLocaleString()} ${CUR}${T.perNight}`;
   }
   $('bmNightsLbl').textContent = lbl;
 
@@ -885,7 +914,7 @@ function updateTotal() {
     $('bmNightsLbl').parentElement.appendChild(warn);
   }
   warn.style.display = conflict ? '' : 'none';
-  warn.textContent = 'На эти даты номер уже забронирован — выберите другие.';
+  warn.textContent = T.dateConflict;
   $('bmSubmit').disabled = conflict;
   $('bmSubmit').style.opacity = conflict ? '.5' : '';
 }
@@ -897,7 +926,7 @@ $('bmCheckin').addEventListener('input', updateTotal);
 $('bmForm').addEventListener('submit', e => {
   if (bookingConflict($('bmCheckin').value, Math.max(1, parseInt($('bmNights').value) || 1))) {
     e.preventDefault();
-    alert('На выбранные даты номер уже забронирован. Выберите другие даты.');
+    alert(T.dateConflictSubmit);
   }
 });
 
@@ -954,7 +983,7 @@ function openServiceDetail(id) {
   }
 
   $('svcName').textContent = curSvc.name;
-  $('svcPrice').textContent = curSvc.price.toLocaleString() + ' сом';
+  $('svcPrice').textContent = curSvc.price.toLocaleString() + ' ' + CUR;
   $('svcDesc').textContent = curSvc.description || '—';
 
   const tags = $('svcSessions'), sec = $('svcSessionsSec');
@@ -987,13 +1016,13 @@ function openServiceBook(id) {
   closeSvcDetail();
 
   $('svcBmTitle').textContent = curSvc.name;
-  $('svcBmLbl').textContent = 'Стоимость';
-  $('svcBmTotal').textContent = curSvc.price.toLocaleString() + ' сом';
+  $('svcBmLbl').textContent = T.price;
+  $('svcBmTotal').textContent = curSvc.price.toLocaleString() + ' ' + CUR;
   $('svcBmForm').action = curSvc.book_url;
 
   // fill sessions
   const sel = $('svcBmSession');
-  sel.innerHTML = '<option value="">— Выберите сеанс —</option>';
+  sel.innerHTML = '<option value="">' + T.chooseSession + '</option>';
   const block = $('svcSessionBlock');
   if (curSvc.sessions.length) {
     block.style.display = '';

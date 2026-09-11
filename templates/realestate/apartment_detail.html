@@ -64,7 +64,7 @@
 {% block content %}
 <div style="background:var(--re-bg);min-height:100vh">
 <div class="re-page">
-  <a href="{% url 'realestate:agency_detail' agency.slug %}" class="re-back">← Все квартиры {{ agency.name }}</a>
+  <a href="{% url 'realestate:agency_detail' agency.slug %}" class="re-back">← {% blocktrans with name=agency.name %}Все квартиры {{ name }}{% endblocktrans %}</a>
 
   {% with photos=apartment.photos.all %}
   {% if photos %}
@@ -97,14 +97,14 @@
   <div class="re-layout">
     <div>
       <span class="re-status-badge re-status-{{ apartment.status }}">{{ apartment.get_status_display }}</span>
-      <div class="re-addr">{{ apartment.address|default:"Адрес по запросу" }}</div>
+      <div class="re-addr">{{ apartment.address|default:_("Адрес по запросу") }}</div>
       <div class="re-loc">{% if apartment.district %}{{ apartment.district }}{% if apartment.city %}, {{ apartment.city }}{% endif %}{% else %}{{ apartment.city }}{% endif %}</div>
 
       <div class="re-specs">
-        {% if apartment.area %}<div class="re-spec"><div class="re-spec-label">Площадь</div><div class="re-spec-value">{{ apartment.area }} м²</div></div>{% endif %}
-        {% if apartment.rooms %}<div class="re-spec"><div class="re-spec-label">Комнат</div><div class="re-spec-value">{{ apartment.rooms }}</div></div>{% endif %}
-        {% if apartment.floor %}<div class="re-spec"><div class="re-spec-label">Этаж</div><div class="re-spec-value">{{ apartment.floor }}{% if apartment.floors_total %} из {{ apartment.floors_total }}{% endif %}</div></div>{% endif %}
-        {% if apartment.renovation %}<div class="re-spec"><div class="re-spec-label">Ремонт</div><div class="re-spec-value">{{ apartment.get_renovation_display }}</div></div>{% endif %}
+        {% if apartment.area %}<div class="re-spec"><div class="re-spec-label">{% trans "Площадь" %}</div><div class="re-spec-value">{% blocktrans with a=apartment.area %}{{ a }} м²{% endblocktrans %}</div></div>{% endif %}
+        {% if apartment.rooms %}<div class="re-spec"><div class="re-spec-label">{% trans "Комнат" %}</div><div class="re-spec-value">{{ apartment.rooms }}</div></div>{% endif %}
+        {% if apartment.floor %}<div class="re-spec"><div class="re-spec-label">{% trans "Этаж" %}</div><div class="re-spec-value">{{ apartment.floor }}{% if apartment.floors_total %} {% blocktrans with t=apartment.floors_total %}из {{ t }}{% endblocktrans %}{% endif %}</div></div>{% endif %}
+        {% if apartment.renovation %}<div class="re-spec"><div class="re-spec-label">{% trans "Ремонт" %}</div><div class="re-spec-value">{{ apartment.get_renovation_display }}</div></div>{% endif %}
       </div>
 
       {% if apartment.description %}
@@ -113,22 +113,22 @@
 
       {% if apartment.review_url_1 or apartment.review_url_2 %}
       <div style="display:flex;gap:10px;margin-top:16px">
-        {% if apartment.review_url_1 %}<a href="{{ apartment.review_url_1 }}" target="_blank" rel="noopener" style="flex:1;text-align:center;padding:12px;border-radius:12px;background:var(--re-card);border:1px solid var(--re-border);color:var(--re-teal);font-weight:700;font-size:13px;text-decoration:none">🎥 Обзор 1</a>{% endif %}
-        {% if apartment.review_url_2 %}<a href="{{ apartment.review_url_2 }}" target="_blank" rel="noopener" style="flex:1;text-align:center;padding:12px;border-radius:12px;background:var(--re-card);border:1px solid var(--re-border);color:var(--re-teal);font-weight:700;font-size:13px;text-decoration:none">🎥 Обзор 2</a>{% endif %}
+        {% if apartment.review_url_1 %}<a href="{{ apartment.review_url_1 }}" target="_blank" rel="noopener" style="flex:1;text-align:center;padding:12px;border-radius:12px;background:var(--re-card);border:1px solid var(--re-border);color:var(--re-teal);font-weight:700;font-size:13px;text-decoration:none">🎥 {% trans "Обзор" %} 1</a>{% endif %}
+        {% if apartment.review_url_2 %}<a href="{{ apartment.review_url_2 }}" target="_blank" rel="noopener" style="flex:1;text-align:center;padding:12px;border-radius:12px;background:var(--re-card);border:1px solid var(--re-border);color:var(--re-teal);font-weight:700;font-size:13px;text-decoration:none">🎥 {% trans "Обзор" %} 2</a>{% endif %}
       </div>
       {% endif %}
     </div>
 
     <div class="re-sidebar">
       <div class="re-price-card">
-        <div class="re-price">{{ apartment.price_display|default:"Цена по запросу" }}</div>
+        <div class="re-price">{{ apartment.price_display|default:_("Цена по запросу") }}</div>
         {% if apartment.price_per_sqm_display %}<div style="font-size:13px;color:var(--re-muted);margin:-12px 0 18px">{{ apartment.price_per_sqm_display }}</div>{% endif %}
         {% if apartment.status == "sold" or apartment.status == "removed" %}
-          <a class="re-buy-btn re-buy-disabled">Недоступно</a>
+          <a class="re-buy-btn re-buy-disabled">{% trans "Недоступно" %}</a>
         {% elif apartment.whatsapp_url %}
-          <a class="re-buy-btn" href="{{ apartment.whatsapp_url }}" target="_blank" rel="noopener">💬 Купить в WhatsApp</a>
+          <a class="re-buy-btn" href="{{ apartment.whatsapp_url }}" target="_blank" rel="noopener">💬 {% trans "Купить в WhatsApp" %}</a>
         {% else %}
-          <a class="re-buy-btn re-buy-disabled">Контакт не указан</a>
+          <a class="re-buy-btn re-buy-disabled">{% trans "Контакт не указан" %}</a>
         {% endif %}
       </div>
     </div>

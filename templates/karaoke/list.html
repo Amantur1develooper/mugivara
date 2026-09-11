@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% load i18n static %}
-{% block title %}Развлечения — Karaoke{% endblock %}
+{% load i18n static i18n_attrs %}
+{% block title %}{% trans "Развлечения" %} — Karaoke{% endblock %}
 {% block cta %}{% endblock %}
 {% block head_extra %}
 <style>
@@ -38,10 +38,10 @@
   <div class="kr-hero">
     <div class="kr-hero-glow"></div>
     <div class="kr-hero-grid"></div>
-    <a href="/" class="kr-back">← Главная</a>
-    <div class="kr-hero-ew">WEBORDO · РАЗВЛЕЧЕНИЯ</div>
+    <a href="/" class="kr-back">← {% trans "Главная" %}</a>
+    <div class="kr-hero-ew">WEBORDO · {% trans "РАЗВЛЕЧЕНИЯ" %}</div>
     <div class="kr-hero-title">🎤 <span>Karaoke</span></div>
-    <div class="kr-hero-sub">Выберите заведение, забронируйте кабинку и проведите незабываемый вечер</div>
+    <div class="kr-hero-sub">{% trans "Выберите заведение, забронируйте кабинку и проведите незабываемый вечер" %}</div>
   </div>
   {% if venues %}
   <div class="kr-grid">
@@ -56,9 +56,9 @@
         <div class="kr-card-meta">
           {% if v.address %}<span>📍 {{ v.address|truncatechars:30 }}</span>{% endif %}
           {% if v.working_hours %}<span>🕐 {{ v.working_hours }}</span>{% endif %}
-          <span>🚪 {{ v.rooms.count }} кабинок</span>
+          <span>🚪 {% blocktrans count n=v.rooms.count %}{{ n }} кабинка{% plural %}{{ n }} кабинок{% endblocktrans %}</span>
         </div>
-        <div class="kr-card-btn">Выбрать кабинку →</div>
+        <div class="kr-card-btn">{% trans "Выбрать кабинку →" %}</div>
       </div>
     </a>
     {% endfor %}
@@ -66,8 +66,8 @@
   {% else %}
   <div class="kr-empty">
     <div style="font-size:56px;margin-bottom:16px">🎤</div>
-    <div style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:800;margin-bottom:8px">Скоро появятся</div>
-    <div style="font-size:14px;color:var(--kr-muted)">Заведения добавляются администратором</div>
+    <div style="font-family:'Unbounded',sans-serif;font-size:18px;font-weight:800;margin-bottom:8px">{% trans "Скоро появятся" %}</div>
+    <div style="font-size:14px;color:var(--kr-muted)">{% trans "Заведения добавляются администратором" %}</div>
   </div>
   {% endif %}
 </div>

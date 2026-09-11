@@ -31,7 +31,7 @@
       {# WhatsApp #}
       {% if branch.phone %}
         <a class="px-4 py-3 rounded-2xl bg-emerald-600 text-white font-semibold"
-           href="https://wa.me/{{ branch.phone|cut:'+'|cut:' ' }}?text={{ 'Здравствуйте! Я забронировал(а) '|urlencode }}{{ booking.place.title|urlencode }}{{ ' (бронь #'|urlencode }}{{ booking.id|stringformat:'s'|urlencode }}{{ ') '|urlencode }}">
+           href="https://wa.me/{{ branch.phone|cut:'+'|cut:' ' }}?text={% filter urlencode %}{% blocktrans with place=booking.place.title id=booking.id %}Здравствуйте! Я забронировал(а) {{ place }} (бронь #{{ id }}) {% endblocktrans %}{% endfilter %}">
           {% trans "Написать в WhatsApp" %}
         </a>
       {% endif %}
@@ -48,6 +48,6 @@
 </div>
 {% endblock %}
 {% block footer %}
-     <a href="{% url 'public_site:home' %}">Разработка Amantur agency
+     <a href="{% url 'public_site:home' %}">{% trans "Разработка Amantur agency" %}
 </a>
 {% endblock footer %}

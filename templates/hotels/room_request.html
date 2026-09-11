@@ -1,10 +1,10 @@
-{% load static %}
+{% load static i18n i18n_attrs l10n %}
 <!doctype html>
-<html lang="ru">
+<html lang="{{ LANGUAGE_CODE|default:'ru' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>{% if not_found %}Номер не найден{% else %}{{ room.name_ru }} — заказ в номер{% endif %}</title>
+  <title>{% if not_found %}{% trans "Номер не найден" %}{% else %}{% t room "name" %} — {% trans "заказ в номер" %}{% endif %}</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -69,14 +69,14 @@
 {% if not_found %}
   <div class="nf">
     <div class="big">🔑</div>
-    <h2>Номер не найден</h2>
-    <p class="sub">Похоже, ссылка устарела. Обратитесь на ресепшн.</p>
+    <h2>{% trans "Номер не найден" %}</h2>
+    <p class="sub">{% trans "Похоже, ссылка устарела. Обратитесь на ресепшн." %}</p>
   </div>
 {% else %}
   <div class="head">
-    <div class="hotel">{{ hotel.name_ru }}</div>
-    <div class="room">{{ room.name_ru }}</div>
-    <div class="sub">Заказ услуг в номер и вызов сотрудника</div>
+    <div class="hotel">{% t hotel "name" %}</div>
+    <div class="room">{% t room "name" %}</div>
+    <div class="sub">{% trans "Заказ услуг в номер и вызов сотрудника" %}</div>
   </div>
 
   {% if messages %}
@@ -86,19 +86,19 @@
   {% endif %}
 
   <div class="card">
-    <h2>Позвать сотрудника</h2>
-    <p class="hint">Нужна помощь, уборка, полотенца — нажмите, и к вам подойдут.</p>
+    <h2>{% trans "Позвать сотрудника" %}</h2>
+    <p class="hint">{% trans "Нужна помощь, уборка, полотенца — нажмите, и к вам подойдут." %}</p>
     <form method="post" action="{% url 'hotel_room_request_submit' room.public_code %}">
       {% csrf_token %}
       <input type="hidden" name="kind" value="lobby">
-      <button type="submit" class="lobby-btn">🛎 Позвать сотрудника</button>
+      <button type="submit" class="lobby-btn">🛎 {% trans "Позвать сотрудника" %}</button>
     </form>
   </div>
 
   {% if services %}
   <div class="card">
-    <h2>Услуги в номер</h2>
-    <p class="hint">Отметьте нужное — заявка уйдёт на ресепшн.</p>
+    <h2>{% trans "Услуги в номер" %}</h2>
+    <p class="hint">{% trans "Отметьте нужное — заявка уйдёт на ресепшн." %}</p>
     <form method="post" action="{% url 'hotel_room_request_submit' room.public_code %}" id="svcForm">
       {% csrf_token %}
       <input type="hidden" name="kind" value="service">
@@ -106,40 +106,40 @@
       {% for s in services %}
       <label class="svc">
         <input type="checkbox" name="services" value="{{ s.id }}" data-price="{{ s.price|floatformat:0 }}" onchange="recalc()">
-        <span class="n">{{ s.name_ru }}{% if s.description_ru %}<span class="d"> · {{ s.description_ru }}</span>{% endif %}</span>
-        <span class="p">{{ s.price|floatformat:0 }} сом</span>
+        <span class="n">{% t s "name" %}{% t s "description" as sd %}{% if sd %}<span class="d"> · {{ sd }}</span>{% endif %}</span>
+        <span class="p">{{ s.price|som }}</span>
       </label>
       {% endfor %}
 
       <div class="field">
-        <label>Ваше имя (необязательно)</label>
+        <label>{% trans "Ваше имя (необязательно)" %}</label>
         <input type="text" name="guest_name" maxlength="120">
       </div>
       <div class="field">
-        <label>Комментарий (например: 2 бутылки воды, без сахара…)</label>
+        <label>{% trans "Комментарий (например: 2 бутылки воды, без сахара…)" %}</label>
         <textarea name="comment" maxlength="500"></textarea>
       </div>
 
-      <div class="total"><span>Итого</span><span id="total">0 сом</span></div>
-      <button type="submit" class="submit">Отправить заявку</button>
+      <div class="total"><span>{% trans "Итого" %}</span><span id="total">0 {% cur %}</span></div>
+      <button type="submit" class="submit">{% trans "Отправить заявку" %}</button>
     </form>
   </div>
   {% else %}
   <div class="card">
-    <h2>Услуги в номер</h2>
-    <p class="hint">Опишите, что нужно — заявка уйдёт на ресепшн.</p>
+    <h2>{% trans "Услуги в номер" %}</h2>
+    <p class="hint">{% trans "Опишите, что нужно — заявка уйдёт на ресепшн." %}</p>
     <form method="post" action="{% url 'hotel_room_request_submit' room.public_code %}">
       {% csrf_token %}
       <input type="hidden" name="kind" value="service">
       <div class="field">
-        <label>Ваше имя (необязательно)</label>
+        <label>{% trans "Ваше имя (необязательно)" %}</label>
         <input type="text" name="guest_name" maxlength="120">
       </div>
       <div class="field">
-        <label>Что нужно?</label>
+        <label>{% trans "Что нужно?" %}</label>
         <textarea name="comment" maxlength="500" required></textarea>
       </div>
-      <button type="submit" class="submit" style="margin-top:12px">Отправить заявку</button>
+      <button type="submit" class="submit" style="margin-top:12px">{% trans "Отправить заявку" %}</button>
     </form>
   </div>
   {% endif %}
@@ -156,7 +156,7 @@ function recalc(){
   document.querySelectorAll('#svcForm input[name="services"]:checked').forEach(c => {
     sum += parseInt(c.dataset.price || '0', 10);
   });
-  document.getElementById('total').textContent = sum.toLocaleString('ru-RU') + ' сом';
+  document.getElementById('total').textContent = sum.toLocaleString('ru-RU') + ' {% cur %}';
 }
 </script>
 {% endif %}

@@ -1,10 +1,10 @@
-{% load static %}
+{% load static i18n i18n_attrs l10n %}
 <!doctype html>
-<html lang="ru">
+<html lang="{{ LANGUAGE_CODE|default:'ru' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Запись подтверждена — {{ shop.name }}</title>
+  <title>{% trans "Запись подтверждена" %} — {{ shop.name }}</title>
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -25,18 +25,18 @@
 {% include "_webordo_ethno.html" %}
 <div class="card">
   <div class="icon">✅</div>
-  <h1>Запись принята!</h1>
-  <div class="sub">Мы ждём вас в {{ shop.name }}.<br>Если понадобится уточнение — мы свяжемся с вами.</div>
+  <h1>{% trans "Запись принята!" %}</h1>
+  <div class="sub">{% blocktrans with name=shop.name %}Мы ждём вас в {{ name }}.{% endblocktrans %}<br>{% trans "Если понадобится уточнение — мы свяжемся с вами." %}</div>
   {% if appt %}
   <div class="info">
-    <div class="info-row"><span class="info-label">Услуга</span><span class="info-val">{{ appt.service_name }}</span></div>
-    <div class="info-row"><span class="info-label">Мастер</span><span class="info-val">{{ appt.barber_name }}</span></div>
-    <div class="info-row"><span class="info-label">Дата</span><span class="info-val">{{ appt.appt_date|date:"d E Y" }}</span></div>
-    <div class="info-row"><span class="info-label">Время</span><span class="info-val">{{ appt.appt_time|time:"H:i" }}</span></div>
-    <div class="info-row"><span class="info-label">Стоимость</span><span class="info-val">{{ appt.price_snapshot }} сом</span></div>
+    <div class="info-row"><span class="info-label">{% trans "Услуга" %}</span><span class="info-val">{{ appt.service_name }}</span></div>
+    <div class="info-row"><span class="info-label">{% trans "Мастер" %}</span><span class="info-val">{{ appt.barber_name }}</span></div>
+    <div class="info-row"><span class="info-label">{% trans "Дата" %}</span><span class="info-val">{{ appt.appt_date|date:"d E Y" }}</span></div>
+    <div class="info-row"><span class="info-label">{% trans "Время" %}</span><span class="info-val">{{ appt.appt_time|time:"H:i" }}</span></div>
+    <div class="info-row"><span class="info-label">{% trans "Стоимость" %}</span><span class="info-val">{{ appt.price_snapshot|som }}</span></div>
   </div>
   {% endif %}
-  <a href="{% url 'barbershop:venue' shop.slug %}" class="btn">← На главную</a>
+  <a href="{% url 'barbershop:venue' shop.slug %}" class="btn">← {% trans "На главную" %}</a>
 </div>
 </body>
 </html>

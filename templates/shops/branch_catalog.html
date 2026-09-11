@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static i18n_attrs l10n %}
 
-{% block title %}{{ branch.name_ru }} — {{ store.name_ru }}{% endblock %}
+{% block title %}{% t branch "name" %} — {% t store "name" %}{% endblock %}
 {% block cta %}{% endblock %}
 
 {% block head_extra %}
@@ -750,6 +750,21 @@
 {% endblock %}
 
 {% block content %}
+<script>
+const CUR = "{% cur %}";
+const T = {
+  pcs: "{% trans 'шт' %}",
+  addCart: "{% trans '+ В корзину' %}",
+  addCartAlt: "{% trans '＋ В корзину' %}",
+  added: "{% trans 'Добавлено в корзину' %}",
+  addedShort: "{% trans '✓ Добавлено' %}",
+  notEnough: "{% trans 'Недостаточно товара' %}",
+  addFail: "{% trans 'Не удалось добавить' %}",
+  errNet: "{% trans 'Ошибка сети' %}",
+  inStock: "{% trans 'В наличии:' %}",
+  soldOut: "{% trans 'Нет в наличии' %}",
+};
+</script>
 <div class="sc-toast-wrap" id="scToastWrap" aria-live="polite"></div>
 
 <div class="sc-page">
@@ -793,7 +808,7 @@
         {% if branch.min_order_amount %}
           <span class="sc-pill">🛵 {% trans "Мин. заказ" %} · {{ branch.min_order_amount|floatformat:"0" }} {% trans "сом" %}</span>
         {% endif %}
-        <span class="sc-pill">💸 {% trans "Доставка" %} · {{ branch.delivery_fee|floatformat:"0" }} {% trans "сом" %}</span>
+        <span class="sc-pill">💸 {% trans "Доставка" %} · {{ branch.delivery_fee|som }}</span>
       {% endif %}
 
       {% if branch.phone %}
@@ -801,7 +816,7 @@
       {% endif %}
 
       {% if store.order_phone %}
-        <span class="sc-pill" style="background:rgba(124,58,237,.08);border-color:rgba(124,58,237,.2);color:#7c3aed;">✨ Инд. заказы: {{ store.order_phone }}</span>
+        <span class="sc-pill" style="background:rgba(124,58,237,.08);border-color:rgba(124,58,237,.2);color:#7c3aed;">✨ {% trans "Инд. заказы:" %} {{ store.order_phone }}</span>
       {% endif %}
 
       <span class="sc-pill open"><span class="sc-pill-dot"></span>{% trans "Каталог открыт" %}</span>
@@ -814,7 +829,7 @@
       {% endif %}
       {% if store.order_phone %}
         <a href="tel:{{ store.order_phone }}"
-           class="sc-call-btn" style="background:rgba(124,58,237,.1);border-color:rgba(124,58,237,.24);color:#7c3aed;">✨ Инд. заказ</a>
+           class="sc-call-btn" style="background:rgba(124,58,237,.1);border-color:rgba(124,58,237,.24);color:#7c3aed;">✨ {% trans "Инд. заказ" %}</a>
       {% endif %}
     </div>
   </div>
@@ -823,7 +838,7 @@
     <div class="sc-cats-inner" id="scCatsBar">
       <a href="#sc-top" class="sc-cat-btn active" data-cat-link="sc-top">{% trans "Все" %}</a>
       {% for c in categories %}
-        <a href="#cat-{{ c.id }}" class="sc-cat-btn" data-cat-link="cat-{{ c.id }}">{{ c.name_ru }}</a>
+        <a href="#cat-{{ c.id }}" class="sc-cat-btn" data-cat-link="cat-{{ c.id }}">{% t c "name" %}</a>
       {% endfor %}
     </div>
   </div>
@@ -834,7 +849,7 @@
                 background:rgba(16,24,40,.04);border:1px solid rgba(16,24,40,.07);border-radius:12px;
                 font-size:12px;color:#667085;line-height:1.45">
       <span style="font-size:15px;flex-shrink:0">ℹ️</span>
-      <span>Цены указаны по прайс-листу фирменных магазинов и могут отличаться в других точках продаж.</span>
+      <span>{% trans "Цены указаны по прайс-листу фирменных магазинов и могут отличаться в других точках продаж." %}</span>
     </div>
 
     {% if categories and stocks %}
@@ -842,7 +857,7 @@
         <section class="sc-cat-section" id="cat-{{ c.id }}" data-cat-section="cat-{{ c.id }}">
           <div class="sc-cat-header">
             <div class="sc-cat-line"></div>
-            <h2 class="sc-cat-title">{{ c.name_ru }}</h2>
+            <h2 class="sc-cat-title">{% t c "name" %}</h2>
             <span class="sc-cat-count">{{ c.products.count|default:0 }}</span>
             <div class="sc-cat-line"></div>
           </div>
@@ -852,16 +867,16 @@
               {% if s.product.category_id == c.id %}
                 <article class="sc-card"
                   data-pid="{{ s.product.id }}"
-                  data-name="{{ s.product.name_ru }}"
+                  data-name="{% t s.product 'name' %}"
                   data-price="{{ s.product.price|floatformat:'0' }}"
                   data-qty="{{ s.qty|floatformat:'-3' }}"
                   data-unit="{{ s.product.get_unit_display }}"
-                  data-cat="{{ c.name_ru }}"
+                  data-cat="{% t c 'name' %}"
                   data-photo="{% if s.product.photo %}{{ s.product.photo.url }}{% endif %}"
                   data-in-stock="{% if s.qty > 0 %}1{% else %}0{% endif %}">
                   <div class="sc-card-media" onclick="openProductModal(this.closest('.sc-card'))">
                     {% if s.product.photo %}
-                      <img src="{{ s.product.photo.url }}" alt="{{ s.product.name_ru }}" loading="lazy" decoding="async">
+                      <img src="{{ s.product.photo.url }}" alt="{% t s.product 'name' %}" loading="lazy" decoding="async">
                     {% else %}
                       <div class="sc-card-placeholder">🛍️</div>
                     {% endif %}
@@ -869,26 +884,26 @@
                     <span class="sc-stock-badge {% if s.qty <= 0 %}out{% endif %}">
                       {% if s.qty > 0 %}{% trans "Есть" %}: {{ s.qty|floatformat:"-3" }}{% else %}{% trans "Нет в наличии" %}{% endif %}
                     </span>
-                    <span class="sc-price-badge">{{ s.product.price|floatformat:"0" }} {% trans "сом" %}</span>
+                    <span class="sc-price-badge">{{ s.product.price|som }}</span>
                   </div>
 
                   <div class="sc-card-body">
                     <div class="sc-card-top">
-                      <div class="sc-card-title" onclick="openProductModal(this.closest('.sc-card'))">{{ s.product.name_ru }}</div>
-                      <div class="sc-card-cat">{{ c.name_ru }}</div>
+                      <div class="sc-card-title" onclick="openProductModal(this.closest('.sc-card'))">{% t s.product "name" %}</div>
+                      <div class="sc-card-cat">{% t c "name" %}</div>
                     </div>
 
-                    {% if s.product.description_ru %}
-                      <div class="sc-card-desc" onclick="openProductModal(this.closest('.sc-card'))">{{ s.product.description_ru }}</div>
+                    {% t s.product "description" as pdesc %}{% if pdesc %}
+                      <div class="sc-card-desc" onclick="openProductModal(this.closest('.sc-card'))">{{ pdesc }}</div>
                     {% endif %}
 
                     {# hidden span for full description (safe from HTML escaping) #}
-                    <span style="display:none" class="sc-card-full-desc">{{ s.product.description_ru }}</span>
+                    <span style="display:none" class="sc-card-full-desc">{% t s.product "description" %}</span>
 
                     <div class="sc-card-footer">
                       <div class="sc-price-wrap">
                         <div class="sc-price-label">{% trans "Цена" %}</div>
-                        <div class="sc-price-value">{{ s.product.price|floatformat:"0" }} {% trans "сом" %}</div>
+                        <div class="sc-price-value">{{ s.product.price|som }}</div>
                         <div class="sc-stock-note">{% trans "В наличии" %}: <b>{{ s.qty|floatformat:"-3" }}</b>{% if s.product.unit %} {{ s.product.unit }}{% endif %}</div>
                       </div>
 
@@ -955,7 +970,7 @@
   <div class="sc-cart-badge" data-cart-qty>{{ cart_qty|default:0 }} {% trans "шт" %}</div>
 </a>
 
-<button id="scTopBtn" class="sc-top-btn hide" type="button" aria-label="Наверх">↑</button>
+<button id="scTopBtn" class="sc-top-btn hide" type="button" aria-label="{% trans 'Наверх' %}">↑</button>
 {% endblock %}
 
 {% block page_scripts %}
@@ -985,7 +1000,7 @@
     document.querySelectorAll('[data-cart-qty]').forEach(el => {
       el.textContent = n;
       if (el.classList.contains('sc-cart-badge')) {
-        el.textContent = n + ' шт';
+        el.textContent = n + ' ' + T.pcs;
       }
       el.classList.remove('sc-badge-pop');
       void el.offsetWidth;
@@ -993,7 +1008,7 @@
     });
 
     document.querySelectorAll('[data-cart-total]').forEach(el => {
-      el.textContent = total + ' сом';
+      el.textContent = total + ' ' + CUR;
     });
 
     const fab = document.getElementById('cartFab');
@@ -1033,34 +1048,34 @@
           btn.textContent = '✓';
           btn.classList.add('pulse');
           setTimeout(() => {
-            btn.textContent = '+ В корзину';
+            btn.textContent = T.addCart;
             btn.classList.remove('pulse');
             btn.disabled = false;
           }, 850);
         }
-        showToast('Добавлено в корзину', true);
+        showToast(T.added, true);
       } else if (data.error === 'not_enough') {
-        showToast('Недостаточно товара', false);
+        showToast(T.notEnough, false);
         if (btn) {
           btn.disabled = false;
           btn.classList.remove('loading');
-          btn.textContent = '+ В корзину';
+          btn.textContent = T.addCart;
         }
       } else {
-        showToast('Не удалось добавить', false);
+        showToast(T.addFail, false);
         if (btn) {
           btn.disabled = false;
           btn.classList.remove('loading');
-          btn.textContent = '+ В корзину';
+          btn.textContent = T.addCart;
         }
       }
     } catch (err) {
       console.error(err);
-      showToast('Ошибка сети', false);
+      showToast(T.errNet, false);
       if (btn) {
         btn.disabled = false;
         btn.classList.remove('loading');
-        btn.textContent = '+ В корзину';
+        btn.textContent = T.addCart;
       }
     }
   }, true);
@@ -1092,9 +1107,9 @@
     // texts
     document.getElementById('scModalCat').textContent   = d.cat || '';
     document.getElementById('scModalTitle').textContent = d.name || '';
-    document.getElementById('scModalPrice').textContent = (d.price || '0') + ' сом';
+    document.getElementById('scModalPrice').textContent = (d.price || '0') + ' ' + CUR;
     document.getElementById('scModalStock').textContent =
-      inStock ? ('В наличии: ' + d.qty + ' ' + (d.unit || '')) : 'Нет в наличии';
+      inStock ? (T.inStock + ' ' + d.qty + ' ' + (d.unit || '')) : T.soldOut;
 
     // full description from hidden span
     const fullDesc = card.querySelector('.sc-card-full-desc')?.textContent?.trim() || '';
@@ -1107,9 +1122,9 @@
       const baseUrl = document.getElementById('scCartAddUrl').dataset.url;
       const url = baseUrl.replace('/0/', '/' + d.pid + '/');
       actionWrap.innerHTML =
-        `<button class="sc-modal-add" id="scModalAddBtn" onclick="modalAddToCart('${url}', this)">＋ В корзину</button>`;
+        `<button class="sc-modal-add" id="scModalAddBtn" onclick="modalAddToCart('${url}', this)">${T.addCartAlt}</button>`;
     } else {
-      actionWrap.innerHTML = `<span class="sc-modal-sold">Нет в наличии</span>`;
+      actionWrap.innerHTML = `<span class="sc-modal-sold">${T.soldOut}</span>`;
     }
 
     _modal.classList.add('open');
@@ -1150,25 +1165,25 @@
         updateCartUI(data.qty_total, data.total);
         btn.classList.remove('loading');
         btn.classList.add('pulse');
-        btn.textContent = '✓ Добавлено';
-        showToast('Добавлено в корзину', true);
+        btn.textContent = T.addedShort;
+        showToast(T.added, true);
         setTimeout(() => {
-          btn.textContent = '＋ В корзину';
+          btn.textContent = T.addCartAlt;
           btn.classList.remove('pulse');
         }, 1200);
       } else if (data.error === 'not_enough') {
-        showToast('Недостаточно товара', false);
+        showToast(T.notEnough, false);
         btn.classList.remove('loading');
-        btn.textContent = '＋ В корзину';
+        btn.textContent = T.addCartAlt;
       } else {
-        showToast('Не удалось добавить', false);
+        showToast(T.addFail, false);
         btn.classList.remove('loading');
-        btn.textContent = '＋ В корзину';
+        btn.textContent = T.addCartAlt;
       }
     } catch {
-      showToast('Ошибка сети', false);
+      showToast(T.errNet, false);
       btn.classList.remove('loading');
-      btn.textContent = '＋ В корзину';
+      btn.textContent = T.addCartAlt;
     }
   }
 

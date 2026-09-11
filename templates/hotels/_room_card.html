@@ -1,10 +1,10 @@
-{% load i18n %}
+{% load i18n i18n_attrs %}
 <div class="rc">
 
   <!-- Фото -->
   <div class="rc-photo" onclick="openDetail({{ room.id }})">
     {% if room.photo1 %}
-      <img src="{{ room.photo1.url }}" alt="{{ room.name_ru }}" loading="lazy">
+      <img src="{{ room.photo1.url }}" alt="{% t room 'name' %}" loading="lazy">
       <div class="rc-photo-grad"></div>
     {% else %}
       <div class="rc-photo-empty"><span>🛏️</span></div>
@@ -15,29 +15,29 @@
     {% endif %}
 
     {% if not room.public_available %}
-      <div class="rc-photo-busy">{% if room.busy_until %}Занято до {{ room.busy_until|date:"d.m" }}{% else %}Занято{% endif %}</div>
+      <div class="rc-photo-busy">{% if room.busy_until %}{% blocktrans with d=room.busy_until|date:"d.m" %}Занято до {{ d }}{% endblocktrans %}{% else %}{% trans "Занято" %}{% endif %}</div>
     {% endif %}
 
     <div class="rc-photo-price">
-      от {{ room.price_per_night|floatformat:"0" }} сом
-      <span>/ ночь</span>
+      {% blocktrans with p=room.price_per_night|som %}от {{ p }}{% endblocktrans %}
+      <span>/ {% trans "ночь" %}</span>
     </div>
   </div>
 
   <!-- Тело -->
   <div class="rc-body">
 
-    <div class="rc-name">{{ room.name_ru }}</div>
+    <div class="rc-name">{% t room "name" %}</div>
 
     <div class="rc-chips">
-      <span class="rc-chip gray">👥 до {{ room.max_guests }} чел.</span>
+      <span class="rc-chip gray">👥 {% blocktrans with g=room.max_guests %}до {{ g }} чел.{% endblocktrans %}</span>
       {% if room.category %}
-        <span class="rc-chip gray">{{ room.category.name_ru }}</span>
+        <span class="rc-chip gray">{% t room.category "name" %}</span>
       {% endif %}
     </div>
 
-    {% if room.description_ru %}
-      <div class="rc-desc">{{ room.description_ru }}</div>
+    {% t room "description" as rdesc %}{% if rdesc %}
+      <div class="rc-desc">{{ rdesc }}</div>
     {% endif %}
 
     {% if room.amenities_list %}
@@ -46,25 +46,25 @@
           <span class="rc-chip">✓ {{ a }}</span>
         {% endfor %}
         {% if room.amenities_list|length > 3 %}
-          <span class="rc-chip gray">+{{ room.amenities_list|length|add:"-3" }} ещё</span>
+          <span class="rc-chip gray">+{{ room.amenities_list|length|add:"-3" }} {% trans "ещё" %}</span>
         {% endif %}
       </div>
     {% endif %}
 
     <div class="rc-actions">
-      <button class="rc-btn rc-btn-ghost" onclick="openDetail({{ room.id }})">👁 Подробнее</button>
+      <button class="rc-btn rc-btn-ghost" onclick="openDetail({{ room.id }})">👁 {% trans "Подробнее" %}</button>
 
       {% if room.public_available %}
-        <button class="rc-btn rc-btn-blue" onclick="openBookDirect({{ room.id }}, 'booking')">📅 Забронировать</button>
-        <button class="rc-btn rc-btn-green" onclick="openBookDirect({{ room.id }}, 'checkin')">🔑 Заселиться сейчас</button>
+        <button class="rc-btn rc-btn-blue" onclick="openBookDirect({{ room.id }}, 'booking')">📅 {% trans "Забронировать" %}</button>
+        <button class="rc-btn rc-btn-green" onclick="openBookDirect({{ room.id }}, 'checkin')">🔑 {% trans "Заселиться сейчас" %}</button>
       {% elif room.is_available %}
         {# занят сегодня, но можно забронировать на свободные даты #}
-        <button class="rc-btn rc-btn-blue" onclick="openBookDirect({{ room.id }}, 'booking')">📅 Забронировать на др. даты</button>
+        <button class="rc-btn rc-btn-blue" onclick="openBookDirect({{ room.id }}, 'booking')">📅 {% trans "Забронировать на др. даты" %}</button>
         {% if room.busy_until %}
-          <span class="rc-chip gray" style="align-self:center">Занят до {{ room.busy_until|date:"d.m" }}</span>
+          <span class="rc-chip gray" style="align-self:center">{% blocktrans with d=room.busy_until|date:"d.m" %}Занят до {{ d }}{% endblocktrans %}</span>
         {% endif %}
       {% else %}
-        <button class="rc-btn rc-btn-disabled" disabled>Недоступно</button>
+        <button class="rc-btn rc-btn-disabled" disabled>{% trans "Недоступно" %}</button>
       {% endif %}
     </div>
 

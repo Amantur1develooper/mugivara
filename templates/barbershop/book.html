@@ -1,10 +1,10 @@
-{% load static %}
+{% load static i18n i18n_attrs l10n %}
 <!doctype html>
-<html lang="ru">
+<html lang="{{ LANGUAGE_CODE|default:'ru' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Запись — {{ shop.name }}</title>
+  <title>{% trans "Запись" %} — {{ shop.name }}</title>
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -83,14 +83,14 @@
 {% include "_webordo_ethno.html" %}
 <div class="page">
   <a href="{% url 'barbershop:venue' shop.slug %}" class="back">← {{ shop.name }}</a>
-  <h1>Онлайн-запись</h1>
+  <h1>{% trans "Онлайн-запись" %}</h1>
   <div class="sub">{{ shop.name }}</div>
 
   <div class="steps">
-    <div class="step active" id="step-ind-1"><div class="step-num">1</div><div class="step-label">Услуги</div></div>
-    <div class="step" id="step-ind-2"><div class="step-num">2</div><div class="step-label">Мастер</div></div>
-    <div class="step" id="step-ind-3"><div class="step-num">3</div><div class="step-label">Дата и время</div></div>
-    <div class="step" id="step-ind-4"><div class="step-num">4</div><div class="step-label">Контакты</div></div>
+    <div class="step active" id="step-ind-1"><div class="step-num">1</div><div class="step-label">{% trans "Услуги" %}</div></div>
+    <div class="step" id="step-ind-2"><div class="step-num">2</div><div class="step-label">{% trans "Мастер" %}</div></div>
+    <div class="step" id="step-ind-3"><div class="step-num">3</div><div class="step-label">{% trans "Дата и время" %}</div></div>
+    <div class="step" id="step-ind-4"><div class="step-num">4</div><div class="step-label">{% trans "Контакты" %}</div></div>
   </div>
 
   <!-- Step 1: Services (multi-select) -->
@@ -99,37 +99,37 @@
 
     <!-- Selected basket -->
     <div class="basket" id="basket">
-      <div class="basket-title">Выбранные услуги</div>
+      <div class="basket-title">{% trans "Выбранные услуги" %}</div>
       <div id="basket-rows"></div>
       <div class="basket-total">
-        <span>Итого</span>
+        <span>{% trans "Итого" %}</span>
         <span id="basket-total-val"></span>
       </div>
     </div>
 
-    <button class="btn-next" id="btn1" disabled onclick="goStep(2)">Далее →</button>
+    <button class="btn-next" id="btn1" disabled onclick="goStep(2)">{% trans "Далее →" %}</button>
   </div>
 
   <!-- Step 2: Barber -->
   <div class="panel" id="panel-2">
-    <div class="loading" id="barbers-loading">Загрузка мастеров…</div>
+    <div class="loading" id="barbers-loading">{% trans "Загрузка мастеров…" %}</div>
     <div class="barbers-wrap" id="barbers-list" style="display:none"></div>
-    <button class="btn-next" id="btn2" disabled onclick="goStep(3)">Далее →</button>
-    <button class="btn-back" onclick="goStep(1)">← Назад</button>
+    <button class="btn-next" id="btn2" disabled onclick="goStep(3)">{% trans "Далее →" %}</button>
+    <button class="btn-back" onclick="goStep(1)">← {% trans "Назад" %}</button>
   </div>
 
   <!-- Step 3: Date + Time -->
   <div class="panel" id="panel-3">
     <div class="field">
-      <label>Выберите дату</label>
+      <label>{% trans "Выберите дату" %}</label>
       <input type="date" class="date-input" id="date-input">
     </div>
     <div class="field">
-      <label>Доступное время</label>
-      <div id="slots-wrap"><div class="slot-none">Выберите дату</div></div>
+      <label>{% trans "Доступное время" %}</label>
+      <div id="slots-wrap"><div class="slot-none">{% trans "Выберите дату" %}</div></div>
     </div>
-    <button class="btn-next" id="btn3" disabled onclick="goStep(4)">Далее →</button>
-    <button class="btn-back" onclick="goStep(2)">← Назад</button>
+    <button class="btn-next" id="btn3" disabled onclick="goStep(4)">{% trans "Далее →" %}</button>
+    <button class="btn-back" onclick="goStep(2)">← {% trans "Назад" %}</button>
   </div>
 
   <!-- Step 4: Contact -->
@@ -142,24 +142,39 @@
       <input type="hidden" name="appt_date"   id="f-date">
       <input type="hidden" name="appt_time"   id="f-time">
       <div class="field">
-        <label>Ваше имя</label>
-        <input type="text" name="name" placeholder="Имя" required>
+        <label>{% trans "Ваше имя" %}</label>
+        <input type="text" name="name" placeholder="{% trans 'Имя' %}" required>
       </div>
       <div class="field">
-        <label>Телефон *</label>
+        <label>{% trans "Телефон" %} *</label>
         <input type="tel" name="phone" id="phone-input" placeholder="+996 700 000 000"
                required autocomplete="tel"
                style="letter-spacing:.5px">
         <div id="phone-error" style="display:none;color:#ff4444;font-size:12px;margin-top:5px">
-          Введите номер в формате +996 700 000 000
+          {% trans "Введите номер в формате +996 700 000 000" %}
         </div>
       </div>
-      <button type="submit" class="btn-next" onclick="return validatePhone(event)">Подтвердить запись ✓</button>
-      <button type="button" class="btn-back" onclick="goStep(3)">← Назад</button>
+      <button type="submit" class="btn-next" onclick="return validatePhone(event)">{% trans "Подтвердить запись ✓" %}</button>
+      <button type="button" class="btn-back" onclick="goStep(3)">← {% trans "Назад" %}</button>
     </form>
   </div>
 </div>
 
+<script>
+const CUR = "{% cur %}";
+const T = {
+  min: "{% trans 'мин' %}",
+  noBarbers: "{% trans 'Нет доступных мастеров' %}",
+  loading: "{% trans 'Загрузка…' %}",
+  noSlots: "{% trans 'Нет свободного времени на эту дату' %}",
+  services: "{% trans 'Услуги' %}",
+  duration: "{% trans 'Длительность' %}",
+  barber: "{% trans 'Мастер' %}",
+  dateTime: "{% trans 'Дата и время' %}",
+  total: "{% trans 'Итого' %}",
+};
+const LOCALE = "{{ LANGUAGE_CODE|default:'ru' }}" === "en" ? "en-US" : "ru-RU";
+</script>
 <script>
 const CATEGORIES = {{ categories_json|safe }};
 const SERVICES   = {{ services_json|safe }};
@@ -183,8 +198,8 @@ function buildServices() {
         <div class="svc-check" id="chk-${s.id}">✓</div>
         <div class="svc-item-name">${s.name}</div>
         <div class="svc-item-meta">
-          <span>⏱ ${s.duration} мин</span>
-          <span class="svc-price">${s.price.toLocaleString()} сом</span>
+          <span>⏱ ${s.duration} ${T.min}</span>
+          <span class="svc-price">${s.price.toLocaleString()} ${CUR}</span>
         </div>
       </div>`;
     });
@@ -218,11 +233,11 @@ function updateBasket() {
   const totalDuration = selected.reduce((a, s) => a + s.duration, 0);
   let rows = '';
   selected.forEach(s => {
-    rows += `<div class="basket-row"><span>${s.name}</span><span>${s.price.toLocaleString()} сом · ${s.duration} мин</span></div>`;
+    rows += `<div class="basket-row"><span>${s.name}</span><span>${s.price.toLocaleString()} ${CUR} · ${s.duration} ${T.min}</span></div>`;
   });
   document.getElementById('basket-rows').innerHTML = rows;
   document.getElementById('basket-total-val').textContent =
-    `${totalPrice.toLocaleString()} сом · ${totalDuration} мин`;
+    `${totalPrice.toLocaleString()} ${CUR} · ${totalDuration} ${T.min}`;
   basket.style.display = 'block';
   btn.disabled = false;
 }
@@ -240,7 +255,7 @@ async function loadBarbers() {
   loading.style.display = 'none';
   if (!d.barbers.length) {
     wrap.style.display = 'block';
-    wrap.innerHTML = '<div class="slot-none">Нет доступных мастеров</div>';
+    wrap.innerHTML = '<div class="slot-none">' + T.noBarbers + '</div>';
     return;
   }
   let html = '';
@@ -269,12 +284,12 @@ async function loadSlots(dateStr) {
   sel.time = null;
   document.getElementById('btn3').disabled = true;
   const wrap = document.getElementById('slots-wrap');
-  wrap.innerHTML = '<div class="slot-none">Загрузка…</div>';
+  wrap.innerHTML = '<div class="slot-none">' + T.loading + '</div>';
   const ids = [...selectedSvcIds].join(',');
   const r = await fetch(`${SLOTS_URL}?barber=${sel.barber.id}&services=${ids}&date=${dateStr}`);
   const d = await r.json();
   if (!d.slots.length) {
-    wrap.innerHTML = '<div class="slot-none">Нет свободного времени на эту дату</div>';
+    wrap.innerHTML = '<div class="slot-none">' + T.noSlots + '</div>';
     return;
   }
   let html = '<div class="slots-grid">';
@@ -298,21 +313,21 @@ function buildSummary() {
   const totalPrice    = selected.reduce((a, s) => a + s.price, 0);
   const totalDuration = selected.reduce((a, s) => a + s.duration, 0);
   const dateDisp = sel.date
-    ? new Date(sel.date).toLocaleDateString('ru-RU', {day:'numeric', month:'long', year:'numeric', weekday:'short'})
+    ? new Date(sel.date).toLocaleDateString(LOCALE, {day:'numeric', month:'long', year:'numeric', weekday:'short'})
     : '';
 
   let svcRows = '';
   selected.forEach(s => {
-    svcRows += `<div class="summary-svc-item">• ${s.name} — ${s.price.toLocaleString()} сом</div>`;
+    svcRows += `<div class="summary-svc-item">• ${s.name} — ${s.price.toLocaleString()} ${CUR}</div>`;
   });
 
   document.getElementById('summary').innerHTML = `
-    <div class="summary-row"><span>✂️ Услуги (${selected.length})</span><span>${totalPrice.toLocaleString()} сом</span></div>
+    <div class="summary-row"><span>✂️ ${T.services} (${selected.length})</span><span>${totalPrice.toLocaleString()} ${CUR}</span></div>
     ${svcRows}
-    <div class="summary-row" style="margin-top:8px"><span>⏱ Длительность</span><span>${totalDuration} мин</span></div>
-    <div class="summary-row"><span>👤 Мастер</span><span>${sel.barber.name}</span></div>
-    <div class="summary-row"><span>📅 Дата и время</span><span>${dateDisp}, ${sel.time}</span></div>
-    <div class="summary-row"><span>💰 Итого</span><span>${totalPrice.toLocaleString()} сом</span></div>
+    <div class="summary-row" style="margin-top:8px"><span>⏱ ${T.duration}</span><span>${totalDuration} ${T.min}</span></div>
+    <div class="summary-row"><span>👤 ${T.barber}</span><span>${sel.barber.name}</span></div>
+    <div class="summary-row"><span>📅 ${T.dateTime}</span><span>${dateDisp}, ${sel.time}</span></div>
+    <div class="summary-row"><span>💰 ${T.total}</span><span>${totalPrice.toLocaleString()} ${CUR}</span></div>
   `;
   document.getElementById('f-services').value = [...selectedSvcIds].join(',');
   document.getElementById('f-barber').value   = sel.barber.id;

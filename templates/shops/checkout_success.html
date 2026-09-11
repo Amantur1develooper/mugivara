@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n i18n_attrs l10n %}
 
 {% block content %}
 <div class="max-w-3xl mx-auto px-4 py-8">
   <div class="rounded-3xl bg-white ring-1 ring-black/5 shadow-xl p-6">
-    <div class="text-2xl font-extrabold">✅ Заказ создан</div>
+    <div class="text-2xl font-extrabold">✅ {% trans "Заказ создан" %}</div>
     <div class="mt-2 text-stone-600">
-      Сейчас откроем WhatsApp и отправим заказ в филиал.
+      {% trans "Сейчас откроем WhatsApp и отправим заказ в филиал." %}
     </div>
 
     <div class="mt-5 rounded-2xl bg-stone-50 ring-1 ring-stone-200 p-4">
-      <div class="font-bold text-stone-900">Состав (кратко)</div>
+      <div class="font-bold text-stone-900">{% trans "Состав (кратко)" %}</div>
       <div class="mt-2 text-sm text-stone-700">
         {% for it in preview_items %}
           • {{ it.product.name }} × {{ it.qty }}<br>
@@ -19,7 +19,7 @@
         {% endfor %}
         {% if order.items.all|length > 2 %}…{% endif %}
       </div>
-      <div class="mt-3 font-extrabold">Итого: {{ order.total }} сом</div>
+      <div class="mt-3 font-extrabold">{% trans "Итого" %}: {{ order.total|som }}</div>
     </div>
 
     <div class="mt-5 flex flex-col sm:flex-row gap-3">
@@ -38,15 +38,15 @@
 
       <button id="copyBtn"
               class="px-5 py-3 rounded-2xl bg-stone-900 text-white font-semibold shadow hover:bg-stone-800">
-        Скопировать текст заказа
+        {% trans "Скопировать текст заказа" %}
       </button>
     </div>
 
     <textarea id="orderText" class="sr-only">{{ order_text }}</textarea>
 
-    <div id="copied" class="mt-3 text-sm text-emerald-700 hidden">Скопировано ✅</div>
+    <div id="copied" class="mt-3 text-sm text-emerald-700 hidden">{% trans "Скопировано ✅" %}</div>
     <div class="mt-6 text-xs text-stone-500">
-      Если WhatsApp не открылся — нажми “Скопировать” и отправь вручную.
+      {% trans "Если WhatsApp не открылся — нажми “Скопировать” и отправь вручную." %}
     </div>
   </div>
 </div>

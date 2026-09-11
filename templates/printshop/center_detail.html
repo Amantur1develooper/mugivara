@@ -1,6 +1,6 @@
 {% extends "base.html" %}
-{% load static %}
-{% block title %}{{ center.name_ru }} — Webordo{% endblock %}
+{% load static i18n i18n_attrs %}
+{% block title %}{% t center "name" %} — Webordo{% endblock %}
 
 {% block content %}
 <style>
@@ -76,14 +76,14 @@
 <div class="page-wrap">
   <section class="hero">
     <div class="hero-inner">
-      <div class="hero-badge"><span class="hero-dot"></span><span>Онлайн-каталог • Заказ в WhatsApp</span></div>
+      <div class="hero-badge"><span class="hero-dot"></span><span>{% trans "Онлайн-каталог • Заказ в WhatsApp" %}</span></div>
       <div>
         {% if center.logo %}
-          <img src="{{ center.logo.url }}" alt="{{ center.name_ru }}"
+          <img src="{{ center.logo.url }}" alt="{% t center 'name' %}"
                style="width:64px;height:64px;border-radius:16px;object-fit:cover;border:2px solid rgba(2,6,23,.08);margin-bottom:10px;display:block">
         {% endif %}
-        <h1>{{ center.name_ru }}</h1>
-        {% if center.description_ru %}<p>{{ center.description_ru|truncatechars:160 }}</p>{% endif %}
+        <h1>{% t center "name" %}</h1>
+        {% t center "description" as cd %}{% if cd %}<p>{{ cd|truncatechars:160 }}</p>{% endif %}
       </div>
     </div>
   </section>
@@ -92,28 +92,28 @@
     {% for b in branches %}
     <a class="card" href="{% url 'printshop:branch_catalog' center.slug b.id %}">
       <div class="cover">
-        {% if b.banner %}<img src="{{ b.banner.url }}" alt="{{ b.name_ru }}" loading="lazy">{% endif %}
+        {% if b.banner %}<img src="{{ b.banner.url }}" alt="{% t b 'name' %}" loading="lazy">{% endif %}
       </div>
       <div class="card-body">
         <div class="title-row">
-          <div class="branch-name">{{ b.name_ru }}</div>
-          {% if b.is_open_now %}<span class="pill green">Открыто</span>{% else %}<span class="pill">Закрыто</span>{% endif %}
+          <div class="branch-name">{% t b "name" %}</div>
+          {% if b.is_open_now %}<span class="pill green">{% trans "Открыто" %}</span>{% else %}<span class="pill">{% trans "Закрыто" %}</span>{% endif %}
         </div>
         <div class="meta">{{ b.address }}</div>
         <div class="pills">
           {% if not b.is_open_24h and b.open_time and b.close_time %}
             <span class="pill">{{ b.open_time|time:"H:i" }}–{{ b.close_time|time:"H:i" }}</span>
           {% elif b.is_open_24h %}<span class="pill green">24/7</span>{% endif %}
-          {% if b.delivery_enabled %}<span class="pill orange">Доставка</span>{% endif %}
+          {% if b.delivery_enabled %}<span class="pill orange">{% trans "Доставка" %}</span>{% endif %}
         </div>
         <div class="cta">
-          <span class="meta">Открыть каталог</span>
-          <span class="btn">Каталог →</span>
+          <span class="meta">{% trans "Открыть каталог" %}</span>
+          <span class="btn">{% trans "Каталог →" %}</span>
         </div>
       </div>
     </a>
     {% empty %}
-      <div class="empty">У центра пока нет активных филиалов.</div>
+      <div class="empty">{% trans "У центра пока нет активных филиалов." %}</div>
     {% endfor %}
   </section>
 </div>

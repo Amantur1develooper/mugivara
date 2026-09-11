@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load i18n static %}
 
-{% block title %}IT Агентства — Webordo{% endblock %}
+{% block title %}{% trans "IT Агентства" %} — Webordo{% endblock %}
 {% block cta %}{% endblock %}
 
 {% block head_extra %}
@@ -172,10 +172,10 @@
   <div class="ag-hero">
     <div class="ag-hero-glow"></div>
     <div class="ag-hero-grid"></div>
-    <a href="/" class="ag-back">← Главная</a>
-    <div class="ag-hero-eyebrow">WEBORDO · IT АГЕНТСТВА</div>
-    <div class="ag-hero-title">Цифровые<br><span>агентства</span></div>
-    <div class="ag-hero-sub">Разработка, дизайн, AI-решения и цифровой маркетинг от проверенных IT-команд Кыргызстана</div>
+    <a href="/" class="ag-back">← {% trans "Главная" %}</a>
+    <div class="ag-hero-eyebrow">WEBORDO · {% trans "IT АГЕНТСТВА" %}</div>
+    <div class="ag-hero-title">{% trans "Цифровые" %}<br><span>{% trans "агентства" %}</span></div>
+    <div class="ag-hero-sub">{% trans "Разработка, дизайн, AI-решения и цифровой маркетинг от проверенных IT-команд Кыргызстана" %}</div>
   </div>
 
   {% if agencies %}
@@ -225,14 +225,14 @@
 
         {% with cnt=agency.services.count %}
         {% if cnt %}
-        <div><span class="ag-svc-count">⚡ {{ cnt }} услуг{% if cnt == 1 %}а{% elif cnt < 5 %}и{% endif %}</span></div>
+        <div><span class="ag-svc-count">⚡ {% blocktrans count n=cnt %}{{ n }} услуга{% plural %}{{ n }} услуг{% endblocktrans %}</span></div>
         {% endif %}
         {% endwith %}
       </div>
 
       <div class="ag-card-footer">
         <a href="{% url 'agency:agency_detail' agency.slug %}" class="ag-detail-btn">
-          Смотреть услуги →
+          {% trans "Смотреть услуги →" %}
         </a>
       </div>
     </div>
@@ -242,8 +242,8 @@
   {% else %}
   <div class="ag-empty">
     <div style="font-size:56px;margin-bottom:16px">💻</div>
-    <div class="ag-empty-title">Скоро появятся</div>
-    <div class="ag-empty-sub">IT агентства добавляются администратором</div>
+    <div class="ag-empty-title">{% trans "Скоро появятся" %}</div>
+    <div class="ag-empty-sub">{% trans "IT агентства добавляются администратором" %}</div>
   </div>
   {% endif %}
 

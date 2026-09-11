@@ -1,10 +1,10 @@
-{% load static %}
+{% load static i18n i18n_attrs l10n %}
 <!doctype html>
-<html lang="ru">
+<html lang="{{ LANGUAGE_CODE|default:'ru' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Запись подтверждена — {{ venue.name }}</title>
+  <title>{% trans "Запись подтверждена" %} — {{ venue.name }}</title>
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -27,48 +27,48 @@
 {% include "_webordo_ethno.html" %}
 <div class="card">
   <div class="icon">🏁</div>
-  <h1>Запись принята!</h1>
-  <div class="sub">Запись #{{ appt.id }} — ждём вас!</div>
+  <h1>{% trans "Запись принята!" %}</h1>
+  <div class="sub">{% blocktrans with id=appt.id %}Запись #{{ id }} — ждём вас!{% endblocktrans %}</div>
 
   <div class="details">
     <div class="detail-row">
-      <span class="detail-label">🏎️ Тип</span>
+      <span class="detail-label">🏎️ {% trans "Тип" %}</span>
       <span class="detail-val">{{ type_label }}</span>
     </div>
     <div class="detail-row">
-      <span class="detail-label">⏱ Сессия</span>
+      <span class="detail-label">⏱ {% trans "Сессия" %}</span>
       <span class="detail-val">
-        {% if appt.session_type %}{{ appt.session_type.duration_minutes }} мин · {{ appt.session_type.price }} сом{% else %}—{% endif %}
+        {% if appt.session_type %}{% blocktrans with m=appt.session_type.duration_minutes %}{{ m }} мин{% endblocktrans %} · {{ appt.session_type.price|som }}{% else %}—{% endif %}
       </span>
     </div>
     <div class="detail-row">
-      <span class="detail-label">🔁 Заездов</span>
+      <span class="detail-label">🔁 {% trans "Заездов" %}</span>
       <span class="detail-val">{{ appt.quantity }}</span>
     </div>
     <div class="detail-row">
-      <span class="detail-label">📅 Дата</span>
+      <span class="detail-label">📅 {% trans "Дата" %}</span>
       <span class="detail-val">{{ date_fmt }}</span>
     </div>
     <div class="detail-row">
-      <span class="detail-label">🕐 Время</span>
+      <span class="detail-label">🕐 {% trans "Время" %}</span>
       <span class="detail-val">{{ appt.appt_time|time:"H:i" }}</span>
     </div>
     {% if appt.customer_name %}
     <div class="detail-row">
-      <span class="detail-label">👤 Клиент</span>
+      <span class="detail-label">👤 {% trans "Клиент" %}</span>
       <span class="detail-val">{{ appt.customer_name }}</span>
     </div>
     {% endif %}
     <div class="detail-row">
-      <span class="detail-label">💰 К оплате</span>
-      <span class="detail-val">{{ appt.total_price }} сом</span>
+      <span class="detail-label">💰 {% trans "К оплате" %}</span>
+      <span class="detail-val">{{ appt.total_price|som }}</span>
     </div>
   </div>
 
   {% if venue.whatsapp %}
-  <a href="https://wa.me/{{ venue.whatsapp }}" target="_blank" class="btn btn-wa">💬 Написать в WhatsApp</a>
+  <a href="https://wa.me/{{ venue.whatsapp }}" target="_blank" class="btn btn-wa">💬 {% trans "Написать в WhatsApp" %}</a>
   {% endif %}
-  <a href="{% url 'simracing:venue' venue.slug %}" class="btn btn-back">← Новая запись</a>
+  <a href="{% url 'simracing:venue' venue.slug %}" class="btn btn-back">← {% trans "Новая запись" %}</a>
 </div>
 </body>
 </html>

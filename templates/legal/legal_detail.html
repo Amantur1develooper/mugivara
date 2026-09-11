@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static i18n_attrs l10n %}
 
-{% block title %}{{ org.name }} — Юридические услуги{% endblock %}
+{% block title %}{{ org.name }} — {% trans "Юридические услуги" %}{% endblock %}
 {% block cta %}{% endblock %}
 
 {% block head_extra %}
@@ -200,7 +200,7 @@
 {% block content %}
 <div class="ld-page">
 
-  <a href="{% url 'legal:legal_list' %}" class="ld-back">← Все организации</a>
+  <a href="{% url 'legal:legal_list' %}" class="ld-back">← {% trans "Все организации" %}</a>
 
   <!-- Org info -->
   <div class="ld-org-card">
@@ -233,7 +233,7 @@
         {% if org.map_url %}
         <div class="ld-meta-row">
           <span class="ld-meta-icon">🗺</span>
-          <a href="{{ org.map_url }}" target="_blank" rel="noopener" style="color:#2563EB;text-decoration:none;">Открыть на карте</a>
+          <a href="{{ org.map_url }}" target="_blank" rel="noopener" style="color:#2563EB;text-decoration:none;">{% trans "Открыть на карте" %}</a>
         </div>
         {% endif %}
       </div>
@@ -246,21 +246,21 @@
         {% if org.whatsapp_url %}
         <a href="{{ org.whatsapp_url }}" target="_blank" rel="noopener" class="ld-wa-btn">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-          Написать в WhatsApp
+          {% trans "Написать в WhatsApp" %}
         </a>
         {% endif %}
         {% if org.phone %}
-        <a href="tel:{{ org.phone }}" class="ld-tel-btn">📞 Позвонить</a>
+        <a href="tel:{{ org.phone }}" class="ld-tel-btn">📞 {% trans "Позвонить" %}</a>
         {% endif %}
         {% if org.map_url %}
-        <a href="{{ org.map_url }}" target="_blank" rel="noopener" class="ld-tel-btn">🗺 На карте</a>
+        <a href="{{ org.map_url }}" target="_blank" rel="noopener" class="ld-tel-btn">🗺 {% trans "На карте" %}</a>
         {% endif %}
       </div>
     </div>
   </div>
 
   <!-- Services list -->
-  <div class="ld-section-title">📋 Услуги и цены</div>
+  <div class="ld-section-title">📋 {% trans "Услуги и цены" %}</div>
 
   {% if services %}
   <div class="svc-list">
@@ -277,7 +277,7 @@
         {% endif %}
       </div>
       <div class="svc-right">
-        <div class="svc-price">{{ svc.price|floatformat:0 }} сом</div>
+        <div class="svc-price">{{ svc.price|som }}</div>
         {% if svc.price_note %}
         <div class="svc-price-note">{{ svc.price_note }}</div>
         {% endif %}
@@ -289,7 +289,7 @@
                 data-org-name="{{ org.name }}"
                 data-org-phone="{{ org.whatsapp_digits }}"
                 onclick="openModal(this)">
-          ✉️ Обратиться
+          ✉️ {% trans "Обратиться" %}
         </button>
       </div>
       </div>{# /svc-body #}
@@ -298,7 +298,7 @@
   </div>
 
   {% else %}
-  <div class="lg-empty">Услуги пока не добавлены</div>
+  <div class="lg-empty">{% trans "Услуги пока не добавлены" %}</div>
   {% endif %}
 
 </div>
@@ -307,36 +307,50 @@
 <div class="modal-overlay" id="reqModal" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <button class="modal-close" onclick="closeModal()">✕</button>
-    <div class="modal-title">Обращение за услугой</div>
+    <div class="modal-title">{% trans "Обращение за услугой" %}</div>
     <div id="modalServiceBadge" class="modal-service-name"></div>
 
     <div class="modal-field">
-      <label class="modal-label" for="reqFio">ФИО *</label>
-      <input id="reqFio" class="modal-input" type="text" placeholder="Иванов Иван Иванович" autocomplete="name">
+      <label class="modal-label" for="reqFio">{% trans "ФИО" %} *</label>
+      <input id="reqFio" class="modal-input" type="text" placeholder="{% trans 'Иванов Иван Иванович' %}" autocomplete="name">
     </div>
 
     <div class="modal-field">
-      <label class="modal-label" for="reqPhone">Ваш телефон</label>
+      <label class="modal-label" for="reqPhone">{% trans "Ваш телефон" %}</label>
       <input id="reqPhone" class="modal-input" type="tel" placeholder="+996 XXX XXX XXX" autocomplete="tel">
     </div>
 
     <div class="modal-field">
-      <label class="modal-label" for="reqSituation">Опишите вашу ситуацию *</label>
+      <label class="modal-label" for="reqSituation">{% trans "Опишите вашу ситуацию" %} *</label>
       <textarea id="reqSituation" class="modal-textarea"
-                placeholder="Расскажите кратко о вашем вопросе или проблеме, с которой вы хотите обратиться..."></textarea>
+                placeholder="{% trans 'Расскажите кратко о вашем вопросе или проблеме, с которой вы хотите обратиться...' %}"></textarea>
     </div>
 
     <p class="modal-hint">
-      📱 После отправки заявка придёт в Telegram организации, и откроется WhatsApp для связи.
+      📱 {% trans "После отправки заявка придёт в Telegram организации, и откроется WhatsApp для связи." %}
     </p>
 
     <button class="modal-submit" id="modalSubmitBtn" onclick="submitModal()">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-      <span id="modalSubmitText">Отправить заявку</span>
+      <span id="modalSubmitText">{% trans "Отправить заявку" %}</span>
     </button>
   </div>
 </div>
 
+<script>
+const CUR = "{% cur %}";
+const T = {
+  sending: "{% trans 'Отправляем...' %}",
+  submit: "{% trans 'Отправить заявку' %}",
+  reqLegal: "{% trans '⚖️ Обращение за юридической услугой' %}",
+  org: "{% trans 'Организация' %}",
+  service: "{% trans 'Услуга' %}",
+  price: "{% trans 'Стоимость' %}",
+  fio: "{% trans 'ФИО' %}",
+  phone: "{% trans 'Телефон' %}",
+  situation: "{% trans 'Ситуация' %}",
+};
+</script>
 <script>
 let _phone = "";
 let _svcId = "";
@@ -358,7 +372,7 @@ function openModal(btn) {
   document.getElementById("reqFio").value = "";
   document.getElementById("reqPhone").value = "";
   document.getElementById("reqSituation").value = "";
-  document.getElementById("modalSubmitText").textContent = "Отправить заявку";
+  document.getElementById("modalSubmitText").textContent = T.submit;
   document.getElementById("modalSubmitBtn").disabled = false;
 
   document.getElementById("reqModal").classList.add("open");
@@ -389,13 +403,13 @@ function submitModal() {
 
   const btn = document.getElementById("modalSubmitBtn");
   btn.disabled = true;
-  document.getElementById("modalSubmitText").textContent = "Отправляем...";
+  document.getElementById("modalSubmitText").textContent = T.sending;
 
   // WhatsApp сообщение
-  const priceStr = _svcNote ? `${_svcPrice} сом (${_svcNote})` : `${_svcPrice} сом`;
-  let msg = `⚖️ Обращение за юридической услугой\n\nОрганизация: ${_orgName}\nУслуга: ${_svcName}\nСтоимость: ${priceStr}\n\n👤 ФИО: ${fio}`;
-  if (phone) msg += `\n📞 Телефон: ${phone}`;
-  msg += `\n\n📋 Ситуация:\n${situation}`;
+  const priceStr = _svcNote ? `${_svcPrice} ${CUR} (${_svcNote})` : `${_svcPrice} ${CUR}`;
+  let msg = `${T.reqLegal}\n\n${T.org}: ${_orgName}\n${T.service}: ${_svcName}\n${T.price}: ${priceStr}\n\n👤 ${T.fio}: ${fio}`;
+  if (phone) msg += `\n📞 ${T.phone}: ${phone}`;
+  msg += `\n\n📋 ${T.situation}:\n${situation}`;
 
   const waUrl = _phone
     ? `https://wa.me/${_phone}?text=${encodeURIComponent(msg)}`

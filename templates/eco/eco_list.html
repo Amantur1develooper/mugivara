@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load i18n static %}
 
-{% block title %}Эко-проекты — Webordo{% endblock %}
+{% block title %}{% trans "Эко-проекты" %} — Webordo{% endblock %}
 {% block cta %}{% endblock %}
 
 {% block head_extra %}
@@ -187,19 +187,19 @@
       <span class="ec-hero-orb3"></span>
     </div>
     <div class="ec-hero-content">
-      <a href="/" class="ec-hero-back">← Главная</a>
-      <div class="ec-hero-eyebrow">WEBORDO · ЭКО</div>
+      <a href="/" class="ec-hero-back">← {% trans "Главная" %}</a>
+      <div class="ec-hero-eyebrow">WEBORDO · {% trans "ЭКО" %}</div>
       <div class="ec-hero-title">
-        <span class="word-eco">Эко&#8209;</span><span class="word-projects">проекты</span>
+        <span class="word-eco">{% trans "Эко&#8209;" %}</span><span class="word-projects">{% trans "проекты" %}</span>
       </div>
       <div class="ec-hero-sub">
-        Организации, которые заботятся о нашей планете — вывоз мусора, переработка, озеленение и другие экологические инициативы
+        {% trans "Организации, которые заботятся о нашей планете — вывоз мусора, переработка, озеленение и другие экологические инициативы" %}
       </div>
       {% if projects %}
       <div class="ec-hero-stats">
         <div class="ec-hero-stat">
           <div class="ec-hero-stat-num">{{ projects|length }}</div>
-          <div class="ec-hero-stat-label">Эко-проектов</div>
+          <div class="ec-hero-stat-label">{% trans "Эко-проектов" %}</div>
         </div>
         <div class="ec-hero-stat">
           <div class="ec-hero-stat-num">
@@ -208,7 +208,7 @@
             {{ projects|length }}+
             {% endwith %}
           </div>
-          <div class="ec-hero-stat-label">Услуг для вас</div>
+          <div class="ec-hero-stat-label">{% trans "Услуг для вас" %}</div>
         </div>
       </div>
       {% endif %}
@@ -226,7 +226,7 @@
         {% else %}
           <div class="ecc-photo-placeholder">🌿</div>
         {% endif %}
-        <div class="ecc-badge">♻️ ЭКО</div>
+        <div class="ecc-badge">♻️ {% trans "ЭКО" %}</div>
       </div>
 
       <div class="ecc-body">
@@ -244,7 +244,7 @@
           {% if project.map_url %}
           <div class="ecc-row">
             <span class="ecc-row-icon">🗺</span>
-            <a href="{{ project.map_url }}" target="_blank" rel="noopener">Открыть на карте</a>
+            <a href="{{ project.map_url }}" target="_blank" rel="noopener">{% trans "Открыть на карте" %}</a>
           </div>
           {% endif %}
         </div>
@@ -252,14 +252,14 @@
         {% with cnt=project.services.count %}
         {% if cnt %}
         <div>
-          <span class="ecc-svc-count">🌱 {{ cnt }} услуг{% if cnt == 1 %}а{% elif cnt < 5 %}и{% endif %}</span>
+          <span class="ecc-svc-count">🌱 {% blocktrans count n=cnt %}{{ n }} услуга{% plural %}{{ n }} услуг{% endblocktrans %}</span>
         </div>
         {% endif %}
         {% endwith %}
 
         <div class="ecc-footer">
           <a href="{% url 'eco:eco_detail' project.slug %}" class="ecc-btn">
-            🌿 Смотреть услуги →
+            🌿 {% trans "Смотреть услуги →" %}
           </a>
         </div>
       </div>
@@ -270,8 +270,8 @@
   {% else %}
   <div class="ec-empty">
     <div class="ec-empty-icon">🌱</div>
-    <div class="ec-empty-title">Эко-проекты скоро появятся</div>
-    <div class="ec-empty-sub">Информация добавляется администратором</div>
+    <div class="ec-empty-title">{% trans "Эко-проекты скоро появятся" %}</div>
+    <div class="ec-empty-sub">{% trans "Информация добавляется администратором" %}</div>
   </div>
   {% endif %}
 

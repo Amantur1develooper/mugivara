@@ -1,10 +1,10 @@
-{% load static %}
+{% load static i18n %}
 <!doctype html>
-<html lang="ru">
+<html lang="{{ LANGUAGE_CODE|default:'ru' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Барбершопы — Webordo</title>
+  <title>{% trans "Барбершопы" %} — Webordo</title>
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -26,8 +26,8 @@
 <body>
 {% include "_webordo_ethno.html" %}
 <div class="hero">
-  <h1>✂️ Барбершопы</h1>
-  <p>Запишитесь онлайн за несколько секунд</p>
+  <h1>✂️ {% trans "Барбершопы" %}</h1>
+  <p>{% trans "Запишитесь онлайн за несколько секунд" %}</p>
 </div>
 <div class="grid">
   {% for shop in shops %}
@@ -42,11 +42,11 @@
         {% if shop.working_hours %}🕐 {{ shop.working_hours }}<br>{% endif %}
         {% if shop.phone %}📞 {{ shop.phone }}{% endif %}
       </div>
-      <span class="card-btn">Записаться →</span>
+      <span class="card-btn">{% trans "Записаться →" %}</span>
     </div>
   </a>
   {% empty %}
-  <div style="grid-column:1/-1;text-align:center;padding:60px;color:#555">Нет доступных барбершопов</div>
+  <div style="grid-column:1/-1;text-align:center;padding:60px;color:#555">{% trans "Нет доступных барбершопов" %}</div>
   {% endfor %}
 </div>
 </body>
