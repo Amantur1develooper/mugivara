@@ -31,9 +31,12 @@ class Barbershop(TimeStampedModel):
         verbose_name="Категория платформы",
     )
     name          = models.CharField("Название", max_length=200)
+    name_en       = models.CharField("Название (EN)", max_length=200, blank=True, default="")
     slug          = models.SlugField(max_length=220, unique=True)
     tagline       = models.CharField("Слоган", max_length=300, blank=True, default="")
+    tagline_en    = models.CharField("Слоган (EN)", max_length=300, blank=True, default="")
     description   = models.TextField("Описание", blank=True, default="")
+    description_en = models.TextField("Описание (EN)", blank=True, default="")
     logo          = models.ImageField("Логотип", upload_to="barbershop/logos/", blank=True, null=True)
     cover         = models.ImageField("Обложка", upload_to="barbershop/covers/", blank=True, null=True)
     address       = models.CharField("Адрес", max_length=300, blank=True, default="")
@@ -78,6 +81,7 @@ class BarbershopMembership(TimeStampedModel):
 class ServiceCategory(TimeStampedModel):
     barbershop = models.ForeignKey(Barbershop, on_delete=models.CASCADE, related_name="service_categories")
     name       = models.CharField("Категория", max_length=100)
+    name_en    = models.CharField("Категория (EN)", max_length=100, blank=True, default="")
     sort_order = models.PositiveSmallIntegerField("Порядок", default=0)
     is_active  = models.BooleanField("Активна", default=True)
 
@@ -95,7 +99,9 @@ class Service(TimeStampedModel):
     category      = models.ForeignKey(ServiceCategory, on_delete=models.SET_NULL,
                                       null=True, blank=True, related_name="services")
     name          = models.CharField("Название", max_length=200)
+    name_en       = models.CharField("Название (EN)", max_length=200, blank=True, default="")
     description   = models.TextField("Описание", blank=True, default="")
+    description_en = models.TextField("Описание (EN)", blank=True, default="")
     price         = models.DecimalField("Цена (сом)", max_digits=10, decimal_places=0, default=0)
     duration_min  = models.PositiveSmallIntegerField("Длительность (мин)", default=30)
     is_active     = models.BooleanField("Активна", default=True)

@@ -10,6 +10,8 @@ from django.db import models as _models
 from .models import (
     Store, StoreBranch, StoreCategory, StoreProduct,
     StoreStock, StoreOrder, StoreOrderItem, StoreMembership,
+    Warehouse, WarehouseStock,
+    StoreConstructor, StoreConstructorIngredient, StoreConstructorOrderItem,
 )
 
 LOGIN_URL = "dashboard:login"
@@ -124,6 +126,7 @@ def shop_branch_edit(request, branch_id):
         branch.lat = lat_raw if lat_raw else None
         branch.lon = lon_raw if lon_raw else None
         branch.is_active        = request.POST.get("is_active") == "on"
+        branch.show_stock_qty   = request.POST.get("show_stock_qty") == "on"
         branch.delivery_enabled = request.POST.get("delivery_enabled") == "on"
         branch.delivery_fee     = _dec(request.POST.get("delivery_fee"))
         branch.min_order_amount = _dec(request.POST.get("min_order_amount"))
@@ -231,6 +234,29 @@ def shop_price_update(request, stock_id):
     return JsonResponse({"ok": True, "price": _fmt(price)})
 
 
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_cost_price_update(request, stock_id):
+    stock = get_object_or_404(StoreStock, id=stock_id)
+    if not _has_branch_access(request.user, stock.branch):
+        return JsonResponse({"ok": False}, status=403)
+    try:
+        cost_price = Decimal(request.POST.get("cost_price", ""))
+        if cost_price < 0:
+            raise ValueError
+    except Exception:
+        return JsonResponse({"ok": False, "error": "Некорректная себестоимость"})
+    product = stock.product
+    product.cost_price = cost_price
+    product.save(update_fields=["cost_price"])
+    return JsonResponse({
+        "ok": True,
+        "cost_price": _fmt(product.cost_price),
+        "margin": _fmt(product.margin),
+        "margin_pct": _fmt(product.margin_pct),
+    })
+
+
 # ── PRODUCT ADD / EDIT / DELETE / TOGGLE ─────────────────────────────────────
 
 @require_POST
@@ -260,6 +286,7 @@ def shop_product_add(request, branch_id):
         name_en=request.POST.get("name_en", "").strip(),
         description_ru=request.POST.get("description_ru", "").strip(),
         price=_dec(request.POST.get("price", "0")),
+        cost_price=_dec(request.POST.get("cost_price", "0")),
         unit=request.POST.get("unit", "pcs"),
         barcode=request.POST.get("barcode", "").strip(),
         is_active=True,
@@ -274,6 +301,9 @@ def shop_product_add(request, branch_id):
     return JsonResponse({
         "ok": True,
         "stock_id": stock.id,
+        "cost_price": _fmt(product.cost_price),
+        "margin": _fmt(product.margin),
+        "margin_pct": _fmt(product.margin_pct),
         "product_id": product.id,
         "name_ru": product.name_ru,
         "name_ky": product.name_ky,
@@ -304,6 +334,7 @@ def shop_product_edit(request, stock_id):
     product.name_en = request.POST.get("name_en", "").strip()
     product.description_ru = request.POST.get("description_ru", product.description_ru).strip()
     product.price = _dec(request.POST.get("price", str(product.price)))
+    product.cost_price = _dec(request.POST.get("cost_price", str(product.cost_price)))
     product.unit = request.POST.get("unit", product.unit)
 
     category_id = request.POST.get("category_id") or None
@@ -329,6 +360,9 @@ def shop_product_edit(request, stock_id):
         "name_ky": product.name_ky,
         "name_en": product.name_en,
         "price": _fmt(product.price),
+        "cost_price": _fmt(product.cost_price),
+        "margin": _fmt(product.margin),
+        "margin_pct": _fmt(product.margin_pct),
         "qty": _fmt(stock.qty),
         "unit_display": product.get_unit_display(),
         "photo_url": product.photo.url if product.photo else "",
@@ -360,6 +394,126 @@ def shop_product_toggle(request, stock_id):
     p.is_active = not p.is_active
     p.save(update_fields=["is_active"])
     return JsonResponse({"ok": True, "is_active": p.is_active})
+
+
+# ── ОТДЕЛЬНЫЙ СКЛАД СЕТИ (не привязан к филиалу) ─────────────────────────────
+
+def _get_or_create_warehouse(store):
+    wh = store.warehouses.filter(is_active=True).order_by("id").first()
+    if not wh:
+        wh = Warehouse.objects.create(store=store, name="Основной склад")
+    return wh
+
+
+@login_required(login_url=LOGIN_URL)
+def shop_warehouse(request, store_id):
+    store = get_object_or_404(Store, id=store_id)
+    if not _has_store_access(request.user, store):
+        return redirect("dashboard:shop_home")
+
+    warehouse = _get_or_create_warehouse(store)
+
+    # На складе должна быть строка под каждый товар сети (даже с qty=0)
+    existing_ids = set(warehouse.stocks.values_list("product_id", flat=True))
+    missing = store.products.exclude(id__in=existing_ids)
+    if missing.exists():
+        WarehouseStock.objects.bulk_create(
+            [WarehouseStock(warehouse=warehouse, product=p) for p in missing],
+            ignore_conflicts=True,
+        )
+
+    wstocks = list(
+        WarehouseStock.objects
+        .filter(warehouse=warehouse)
+        .select_related("product", "product__category")
+        .order_by("product__category__sort_order", "product__id")
+    )
+    branches = list(store.branches.filter(is_active=True).order_by("name_ru"))
+
+    return render(request, "dashboard/shops/warehouse.html", {
+        "store": store,
+        "warehouse": warehouse,
+        "wstocks": wstocks,
+        "branches": branches,
+    })
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_warehouse_stock_update(request, wstock_id):
+    wstock = get_object_or_404(WarehouseStock, id=wstock_id)
+    if not _has_store_access(request.user, wstock.warehouse.store):
+        return JsonResponse({"ok": False}, status=403)
+    try:
+        qty = Decimal(request.POST.get("qty", ""))
+        if qty < 0:
+            raise ValueError
+    except Exception:
+        return JsonResponse({"ok": False, "error": "Некорректное значение"})
+    wstock.qty = qty
+    wstock.save(update_fields=["qty"])
+    return JsonResponse({"ok": True, "qty": _fmt(wstock.qty)})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_warehouse_cost_update(request, wstock_id):
+    wstock = get_object_or_404(WarehouseStock, id=wstock_id)
+    if not _has_store_access(request.user, wstock.warehouse.store):
+        return JsonResponse({"ok": False}, status=403)
+    try:
+        cost_price = Decimal(request.POST.get("cost_price", ""))
+        if cost_price < 0:
+            raise ValueError
+    except Exception:
+        return JsonResponse({"ok": False, "error": "Некорректная себестоимость"})
+    product = wstock.product
+    product.cost_price = cost_price
+    product.save(update_fields=["cost_price"])
+    return JsonResponse({
+        "ok": True,
+        "cost_price": _fmt(product.cost_price),
+        "margin": _fmt(product.margin),
+        "margin_pct": _fmt(product.margin_pct),
+    })
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_warehouse_transfer(request, wstock_id):
+    """Переместить количество со склада в остаток филиала."""
+    wstock = get_object_or_404(WarehouseStock, id=wstock_id)
+    store = wstock.warehouse.store
+    if not _has_store_access(request.user, store):
+        return JsonResponse({"ok": False}, status=403)
+
+    branch_id = request.POST.get("branch_id")
+    branch = get_object_or_404(StoreBranch, id=branch_id, store=store)
+    try:
+        qty = Decimal(request.POST.get("qty", ""))
+        if qty <= 0:
+            raise ValueError
+    except Exception:
+        return JsonResponse({"ok": False, "error": "Укажите количество для перемещения"})
+
+    if qty > wstock.qty:
+        return JsonResponse({"ok": False, "error": "На складе недостаточно товара"})
+
+    wstock.qty = wstock.qty - qty
+    wstock.save(update_fields=["qty"])
+
+    branch_stock, _created = StoreStock.objects.get_or_create(
+        branch=branch, product=wstock.product, defaults={"qty": 0},
+    )
+    branch_stock.qty = branch_stock.qty + qty
+    branch_stock.save(update_fields=["qty"])
+
+    return JsonResponse({
+        "ok": True,
+        "warehouse_qty": _fmt(wstock.qty),
+        "branch_qty": _fmt(branch_stock.qty),
+        "branch_name": branch.name_ru,
+    })
 
 
 # ── CATEGORY LIST PAGE ───────────────────────────────────────────────────────
@@ -459,7 +613,7 @@ def shop_orders(request, branch_id):
         return redirect("dashboard:shop_home")
 
     status_filter = request.GET.get("status", "")
-    qs = StoreOrder.objects.filter(branch=branch).prefetch_related("items__product")
+    qs = StoreOrder.objects.filter(branch=branch).prefetch_related("items__product", "constructor_items")
     if status_filter:
         qs = qs.filter(status=status_filter)
     orders = qs.order_by("-created_at")[:100]
@@ -488,6 +642,44 @@ def shop_order_status(request, order_id):
 
 # ── POS ───────────────────────────────────────────────────────────────────────
 
+def _constructors_json(store):
+    """Данные конструкторов «Собери сам» для POS (аналог CX_DATA в меню ресторана)."""
+    import json as _j
+    constructors = (
+        StoreConstructor.objects
+        .filter(store=store, is_active=True)
+        .prefetch_related("groups__ingredients__product")
+        .order_by("sort_order", "id")
+    )
+    data = {}
+    for cx in constructors:
+        groups = []
+        for g in cx.groups.all().order_by("sort_order", "id"):
+            ings = []
+            for ing in g.ingredients.filter(is_active=True).order_by("sort_order", "id"):
+                p = ing.product
+                ings.append({
+                    "id": ing.id,
+                    "name": p.name_ru,
+                    "price": _fmt(ing.display_price),
+                    "photo": p.photo.url if p.photo else "",
+                    "product_id": p.id,
+                    "write_off_qty": _fmt(ing.write_off_qty),
+                })
+            groups.append({
+                "id": g.id, "name": g.name,
+                "min": g.min_select, "max": g.max_select,
+                "ingredients": ings,
+            })
+        data[cx.id] = {
+            "id": cx.id, "name": cx.name,
+            "base_price": _fmt(cx.base_price),
+            "photo": cx.photo.url if cx.photo else "",
+            "groups": groups,
+        }
+    return _j.dumps(data, ensure_ascii=False)
+
+
 @login_required(login_url=LOGIN_URL)
 def shop_pos(request, branch_id):
     branch = get_object_or_404(StoreBranch, id=branch_id)
@@ -505,15 +697,18 @@ def shop_pos(request, branch_id):
     live_orders = (
         StoreOrder.objects
         .filter(branch=branch, status__in=[StoreOrder.Status.NEW, StoreOrder.Status.CONFIRMED])
-        .prefetch_related("items__product")
+        .prefetch_related("items__product", "constructor_items")
         .order_by("created_at")
     )
+    has_constructors = StoreConstructor.objects.filter(store=branch.store, is_active=True).exists()
     return render(request, "dashboard/shops/pos.html", {
         "branch":      branch,
         "store":       branch.store,
         "categories":  categories,
         "stocks":      stocks,
         "live_orders": live_orders,
+        "has_constructors":  has_constructors,
+        "constructors_json": _constructors_json(branch.store) if has_constructors else "{}",
     })
 
 
@@ -531,10 +726,11 @@ def shop_pos_order_create(request, branch_id):
         return JsonResponse({"ok": False, "error": "bad json"}, status=400)
 
     items_data     = data.get("items", [])
+    cx_items_data  = data.get("cx_items", [])
     payment_method = data.get("payment", "cash")
     comment        = (data.get("comment") or "").strip()
 
-    if not items_data:
+    if not items_data and not cx_items_data:
         return JsonResponse({"ok": False, "error": "Нет позиций"}, status=400)
 
     order = StoreOrder.objects.create(
@@ -567,6 +763,61 @@ def shop_pos_order_create(request, branch_id):
         except Exception:
             continue
 
+    # ── «Собери сам»: считаем цену на сервере и списываем со склада филиала ──
+    if cx_items_data:
+        for cx_it in cx_items_data:
+            try:
+                cx = StoreConstructor.objects.get(id=int(cx_it["cx_id"]), store=branch.store, is_active=True)
+            except (StoreConstructor.DoesNotExist, KeyError, ValueError, TypeError):
+                continue
+            qty = max(Decimal("1"), Decimal(str(cx_it.get("qty", 1))))
+            selections = cx_it.get("selections") or {}
+
+            unit_price = cx.base_price
+            snapshot = []
+            wh_deductions = {}  # product_id -> qty to deduct
+
+            for g in cx.groups.all():
+                sel_map = selections.get(str(g.id)) or {}
+                ings_snap = []
+                for ing_id_str, ing_qty in sel_map.items():
+                    ing_qty = int(ing_qty or 0)
+                    if ing_qty <= 0:
+                        continue
+                    try:
+                        ci = StoreConstructorIngredient.objects.select_related("product").get(
+                            id=int(ing_id_str), group=g, is_active=True,
+                        )
+                    except (StoreConstructorIngredient.DoesNotExist, ValueError):
+                        continue
+                    unit_price += ci.display_price * ing_qty
+                    ings_snap.append({
+                        "id": ci.id, "name": ci.product.name_ru,
+                        "price": _fmt(ci.display_price), "qty": ing_qty,
+                        "product_id": ci.product_id, "write_off_qty": _fmt(ci.write_off_qty),
+                    })
+                    wh_deductions[ci.product_id] = wh_deductions.get(ci.product_id, Decimal("0")) \
+                        + (ci.write_off_qty * ing_qty)
+                if ings_snap:
+                    snapshot.append({"gid": g.id, "gname": g.name, "ings": ings_snap})
+
+            line_total = unit_price * qty
+            StoreConstructorOrderItem.objects.create(
+                order=order, constructor=cx, constructor_name_snapshot=cx.name,
+                qty=qty, unit_price=unit_price, line_total=line_total,
+                ingredients_snapshot=snapshot,
+            )
+            subtotal += line_total
+
+            # Списываем со склада филиала (не уходим в минус)
+            for product_id, ded_qty in wh_deductions.items():
+                total_qty = ded_qty * qty
+                bs, _created = StoreStock.objects.get_or_create(
+                    branch=branch, product_id=product_id, defaults={"qty": 0},
+                )
+                bs.qty = max(Decimal("0"), bs.qty - total_qty)
+                bs.save(update_fields=["qty"])
+
     order.subtotal = subtotal
     order.total    = subtotal
     order.save(update_fields=["subtotal", "total"])
@@ -583,11 +834,20 @@ def shop_pos_live_orders(request, branch_id):
     orders = (
         StoreOrder.objects
         .filter(branch=branch, status__in=[StoreOrder.Status.NEW, StoreOrder.Status.CONFIRMED])
-        .prefetch_related("items__product")
+        .prefetch_related("items__product", "constructor_items")
         .order_by("created_at")
     )
     result = []
     for o in orders:
+        items = [
+            {"name": oi.product.name_ru, "qty": str(oi.qty), "line": str(oi.line_total)}
+            for oi in o.items.all()
+        ]
+        items += [
+            {"name": "🧩 " + (coi.constructor_name_snapshot or "Собери сам"),
+             "qty": str(coi.qty), "line": str(coi.line_total)}
+            for coi in o.constructor_items.all()
+        ]
         result.append({
             "id":      o.id,
             "status":  o.status,
@@ -599,10 +859,7 @@ def shop_pos_live_orders(request, branch_id):
             "payment": o.payment_method,
             "comment": o.comment,
             "created": o.created_at.strftime("%H:%M"),
-            "items": [
-                {"name": oi.product.name_ru, "qty": str(oi.qty), "line": str(oi.line_total)}
-                for oi in o.items.all()
-            ],
+            "items": items,
         })
     return JsonResponse({"ok": True, "orders": result})
 
@@ -648,7 +905,7 @@ def shop_pos_history(request, branch_id):
     orders = (
         StoreOrder.objects
         .filter(branch=branch, created_at__date=sel_date)
-        .prefetch_related("items__product")
+        .prefetch_related("items__product", "constructor_items")
         .order_by("-created_at")
     )
 
@@ -680,6 +937,24 @@ def shop_pos_order_cancel(request, order_id):
                 stock.save(update_fields=["qty"])
             except StoreStock.DoesNotExist:
                 pass
+
+        # Возврат ингредиентов «Собери сам» на склад филиала
+        cx_items = order.constructor_items.all()
+        if cx_items:
+            for coi in cx_items:
+                qty = coi.qty
+                for sel in (coi.ingredients_snapshot or []):
+                    for ing in sel.get("ings", []):
+                        product_id = ing.get("product_id")
+                        write_off = Decimal(str(ing.get("write_off_qty", 1)))
+                        ing_qty = Decimal(str(ing.get("qty", 1)))
+                        if not product_id:
+                            continue
+                        bs, _created = StoreStock.objects.get_or_create(
+                            branch=order.branch, product_id=product_id, defaults={"qty": 0},
+                        )
+                        bs.qty += write_off * ing_qty * qty
+                        bs.save(update_fields=["qty"])
 
     order.status = StoreOrder.Status.CANCELED
     order.save(update_fields=["status"])

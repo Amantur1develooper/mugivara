@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static i18n_attrs %}
 
-{% block title %}{{ apartment.address }} — {{ agency.name }}{% endblock %}
+{% block title %}{{ apartment.address }} — {% t agency "name" %}{% endblock %}
 {% block cta %}{% endblock %}
 
 {% block head_extra %}
@@ -64,7 +64,7 @@
 {% block content %}
 <div style="background:var(--re-bg);min-height:100vh">
 <div class="re-page">
-  <a href="{% url 'realestate:agency_detail' agency.slug %}" class="re-back">← {% blocktrans with name=agency.name %}Все квартиры {{ name }}{% endblocktrans %}</a>
+  {% t agency "name" as agname %}<a href="{% url 'realestate:agency_detail' agency.slug %}" class="re-back">← {% blocktrans with name=agname %}Все квартиры {{ name }}{% endblocktrans %}</a>
 
   {% with photos=apartment.photos.all %}
   {% if photos %}
@@ -107,8 +107,8 @@
         {% if apartment.renovation %}<div class="re-spec"><div class="re-spec-label">{% trans "Ремонт" %}</div><div class="re-spec-value">{{ apartment.get_renovation_display }}</div></div>{% endif %}
       </div>
 
-      {% if apartment.description %}
-      <div class="re-desc">{{ apartment.description|linebreaksbr }}</div>
+      {% t apartment "description" as aptdesc %}{% if aptdesc %}
+      <div class="re-desc">{{ aptdesc|linebreaksbr }}</div>
       {% endif %}
 
       {% if apartment.review_url_1 or apartment.review_url_2 %}

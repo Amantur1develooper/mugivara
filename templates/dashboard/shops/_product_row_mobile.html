@@ -30,6 +30,11 @@
         <button class="pm-price-save" onclick="savePriceEdit({{ stock.id }})">✓</button>
       </div>
 
+      <span class="pm-margin-chip {% if p.margin > 0 %}pos{% elif p.margin < 0 %}neg{% endif %}" id="pmargin-{{ stock.id }}"
+            title="Себестоимость: {{ p.cost_price|floatformat:0 }} сом">
+        💰 +{{ p.margin|floatformat:0 }} сом{% if p.price %} ({{ p.margin_pct|floatformat:0 }}%){% endif %}
+      </span>
+
       {# Visibility toggle badge — tappable directly #}
       <span class="pm-vis-toggle {% if p.is_active %}active{% else %}hidden{% endif %}"
             id="pvis-{{ stock.id }}"
@@ -52,6 +57,7 @@
   <button class="pm-dots"
     data-sid="{{ stock.id }}"
     data-price="{{ p.price|floatformat:0 }}"
+    data-cost-price="{{ p.cost_price|floatformat:0 }}"
     data-qty="{{ qty|floatformat:'-3' }}"
     data-unit="{{ p.unit }}"
     data-unit-display="{{ p.get_unit_display }}"

@@ -184,6 +184,15 @@
 }
 .pm-price-chip:hover { background: rgba(255,77,28,.08); color: var(--accent); }
 
+/* margin chip (profit per item) */
+.pm-margin-chip {
+  font-size: 11px; font-weight: 700; white-space: nowrap;
+  border-radius: 6px; padding: 2px 6px;
+  background: rgba(0,0,0,.04); color: var(--muted);
+}
+.pm-margin-chip.pos { background: rgba(16,185,129,.1); color: #059669; }
+.pm-margin-chip.neg { background: rgba(239,68,68,.1); color: #dc2626; }
+
 /* ── Context menu ───────────────────────────────────── */
 .pm-ctx {
   position: fixed; z-index: 500;
@@ -580,16 +589,23 @@ const PM_CATS = [
       <select class="pm-select" id="pmCatSel"></select>
     </div>
 
-    {# Price + Qty #}
+    {# Price + Cost + Qty #}
     <div class="pm-row2">
       <div class="pm-field">
-        <label class="pm-label">Цена (сом)</label>
-        <input class="pm-input" id="pmPrice" type="number" min="0" value="0" inputmode="decimal">
+        <label class="pm-label">Цена продажи (сом)</label>
+        <input class="pm-input" id="pmPrice" type="number" min="0" value="0" inputmode="decimal" oninput="updatePmMarginHint()">
       </div>
       <div class="pm-field">
-        <label class="pm-label">Остаток</label>
-        <input class="pm-input" id="pmQty" type="number" min="0" value="0" inputmode="decimal">
+        <label class="pm-label">Себестоимость (сом)</label>
+        <input class="pm-input" id="pmCostPrice" type="number" min="0" value="0" inputmode="decimal" oninput="updatePmMarginHint()">
       </div>
+    </div>
+    <div class="pm-field" id="pmMarginHint" style="font-size:12px;font-weight:700;color:var(--muted);margin-top:-8px">
+      💰 Маржа: 0 сом
+    </div>
+    <div class="pm-field">
+      <label class="pm-label">Остаток</label>
+      <input class="pm-input" id="pmQty" type="number" min="0" value="0" inputmode="decimal">
     </div>
 
     {# Description #}
@@ -804,6 +820,16 @@ function _buildCatOptions(selectedId) {
   return html;
 }
 
+function updatePmMarginHint() {
+  const price = parseFloat(document.getElementById('pmPrice').value) || 0;
+  const cost  = parseFloat(document.getElementById('pmCostPrice').value) || 0;
+  const margin = price - cost;
+  const pct = price ? Math.round((margin / price) * 100) : 0;
+  const el = document.getElementById('pmMarginHint');
+  el.textContent = `💰 Маржа: ${margin} сом${price ? ` (${pct}%)` : ''}`;
+  el.style.color = margin > 0 ? '#059669' : (margin < 0 ? '#dc2626' : 'var(--muted)');
+}
+
 function openAddSheet(catId) {
   _sheetMode = 'add';
   _sheetCatId = catId;
@@ -816,10 +842,12 @@ function openAddSheet(catId) {
   document.getElementById('pmNameEn').value = '';
   document.getElementById('pmDesc').value = '';
   document.getElementById('pmPrice').value = '0';
+  document.getElementById('pmCostPrice').value = '0';
   document.getElementById('pmQty').value = '0';
   document.getElementById('pmBarcode').value = '';
   document.getElementById('pmUnit').value = 'pcs';
   document.getElementById('pmCatSel').innerHTML = _buildCatOptions(catId);
+  updatePmMarginHint();
   // reset photo
   const pick = document.getElementById('pmPhotoPick');
   const existImg = pick.querySelector('img');
@@ -847,10 +875,12 @@ function openEditSheet(stockId, data) {
   document.getElementById('pmNameEn').value = data.name_en || '';
   document.getElementById('pmDesc').value = data.description_ru || '';
   document.getElementById('pmPrice').value = data.price || '0';
+  document.getElementById('pmCostPrice').value = data.cost_price || '0';
   document.getElementById('pmQty').value = fmtQty(data.qty || '0');
   document.getElementById('pmBarcode').value = data.barcode || '';
   document.getElementById('pmUnit').value = data.unit || 'pcs';
   document.getElementById('pmCatSel').innerHTML = _buildCatOptions(data.category_id);
+  updatePmMarginHint();
 
   // photo preview
   const pick = document.getElementById('pmPhotoPick');
@@ -918,6 +948,7 @@ async function submitSheet() {
       name_en:        document.getElementById('pmNameEn').value.trim(),
       description_ru: document.getElementById('pmDesc').value.trim(),
       price:          document.getElementById('pmPrice').value || '0',
+      cost_price:     document.getElementById('pmCostPrice').value || '0',
       qty:            document.getElementById('pmQty').value || '0',
       unit:           document.getElementById('pmUnit').value || 'pcs',
       barcode:        document.getElementById('pmBarcode').value.trim(),
@@ -964,6 +995,7 @@ async function submitSheet() {
       name_en:        document.getElementById('pmNameEn').value.trim(),
       description_ru: document.getElementById('pmDesc').value.trim(),
       price:          document.getElementById('pmPrice').value || '0',
+      cost_price:     document.getElementById('pmCostPrice').value || '0',
       qty:            document.getElementById('pmQty').value || '0',
       unit:           document.getElementById('pmUnit').value || 'pcs',
       barcode:        document.getElementById('pmBarcode').value.trim(),
@@ -978,10 +1010,18 @@ async function submitSheet() {
     const nameEl = document.getElementById(`pname-${sid}`);
     const metaEl = document.getElementById(`pmeta-${sid}`);
     const priceEl = document.getElementById(`pprice-${sid}`);
+    const marginEl = document.getElementById(`pmargin-${sid}`);
     const qtyEl  = document.getElementById(`pqty-val-${sid}`);
     if (nameEl) nameEl.textContent = d.name_ru;
     if (metaEl) metaEl.textContent = `${d.price} сом · ${d.unit_display}`;
     if (priceEl) priceEl.textContent = d.price + ' сом';
+    if (marginEl) {
+      marginEl.textContent = `💰 +${d.margin} сом${d.price ? ` (${d.margin_pct}%)` : ''}`;
+      marginEl.title = `Себестоимость: ${d.cost_price} сом`;
+      marginEl.className = `pm-margin-chip ${d.margin > 0 ? 'pos' : (d.margin < 0 ? 'neg' : '')}`;
+    }
+    const dotsBtn = document.querySelector(`button.pm-dots[data-sid="${sid}"]`);
+    if (dotsBtn) dotsBtn.dataset.costPrice = d.cost_price;
     if (qtyEl) qtyEl.textContent = fmtQty(d.qty);
 
     const row = document.getElementById(`stock-row-${sid}`);
@@ -1066,6 +1106,7 @@ function _readStockData(sid) {
     description_ru: document.getElementById(`d-desc-${sid}`)?.textContent || '',
     barcode:        document.getElementById(`d-barcode-${sid}`)?.textContent || '',
     price:          d.price || '0',
+    cost_price:     d.costPrice || '0',
     qty:            document.getElementById(`pqty-val-${sid}`)?.textContent || d.qty || '0',
     unit:           d.unit || 'pcs',
     unit_display:   d.unitDisplay || '',
@@ -1244,6 +1285,8 @@ function productRowHTML(p) {
                  onkeydown="if(event.key==='Enter')savePriceEdit(${sid});if(event.key==='Escape'){document.getElementById('pprice-${sid}').style.display='';this.closest('.pm-price-edit').classList.remove('open')}">
           <button class="pm-price-save" onclick="savePriceEdit(${sid})">✓</button>
         </div>
+        <span class="pm-margin-chip ${p.margin > 0 ? 'pos' : (p.margin < 0 ? 'neg' : '')}" id="pmargin-${sid}"
+              title="Себестоимость: ${p.cost_price||0} сом">💰 +${p.margin||0} сом${p.price ? ` (${p.margin_pct||0}%)` : ''}</span>
         <span class="pm-vis-toggle ${isActive ? 'active' : 'hidden'}" id="pvis-${sid}"
               onclick="toggleVis(${sid}, this)">${isActive ? '● Активен' : '○ Скрыт'}</span>
         <span class="pm-status ${sc}" id="pdot-${sid}"></span>
@@ -1258,6 +1301,7 @@ function productRowHTML(p) {
     <button class="pm-dots"
       data-sid="${sid}"
       data-price="${p.price}"
+      data-cost-price="${p.cost_price||0}"
       data-qty="${fmtQty(p.qty)}"
       data-unit="${esc(p.unit||'pcs')}"
       data-unit-display="${esc(p.unit_display||'')}"

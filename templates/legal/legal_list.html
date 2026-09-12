@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static i18n_attrs %}
 
 {% block title %}{% trans "Юридические услуги" %} — Webordo{% endblock %}
 {% block cta %}{% endblock %}
@@ -111,14 +111,14 @@
     <div class="lc">
       <div class="lc-photo">
         {% if org.logo %}
-          <img src="{{ org.logo.url }}" alt="{{ org.name }}" loading="lazy" decoding="async">
+          <img src="{{ org.logo.url }}" alt="{% t org 'name' %}" loading="lazy" decoding="async">
         {% else %}
           <div class="lc-photo-placeholder">⚖️</div>
         {% endif %}
       </div>
 
       <div class="lc-body">
-        <div class="lc-name">{{ org.name }}</div>
+        <div class="lc-name">{% t org "name" %}</div>
 
         <div class="lc-meta">
           {% if org.address %}

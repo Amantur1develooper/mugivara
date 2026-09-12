@@ -46,9 +46,11 @@
                 <span data-line-total>{{ r.line_total }}</span> {% trans "сом" %}
               </span>
             </div>
+            {% if branch.show_stock_qty %}
             <div class="text-xs text-stone-500 mt-1">
               {% trans "В наличии" %}: <b>{{ r.stock.qty }}</b> {{ r.product.unit }}
             </div>
+            {% endif %}
           </div>
 
           <div class="flex items-center justify-between sm:justify-end gap-3">
@@ -166,6 +168,12 @@
 </div>
 
 <script>
+  const SHOW_STOCK_QTY = {{ branch.show_stock_qty|yesno:"true,false" }};
+  const T = {
+    notEnough: "{% trans 'Недостаточно товара' %}",
+    notEnoughAvail: "{% trans 'Недостаточно товара. Доступно:' %}",
+  };
+
   function getCookie(name) {
     const v = document.cookie.split('; ').find(row => row.startsWith(name + '='));
     return v ? decodeURIComponent(v.split('=')[1]) : '';
@@ -207,7 +215,7 @@
       const data = await postQty(url, qty);
       if (!data.ok){
         if (data.error === "not_enough"){
-          alert("{% trans 'Недостаточно товара. Доступно:' %} " + (data.available || ""));
+          alert(SHOW_STOCK_QTY ? (T.notEnoughAvail + " " + (data.available || "")) : T.notEnough);
         }
         return;
       }

@@ -7,8 +7,20 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 
+from django.utils.translation import get_language
+
 from .models import (Barbershop, ServiceCategory, Service, Barber,
                      BarberSchedule, Appointment)
+
+
+def _loc(obj, field):
+    """Локализованное значение поля: name_en/description_en при активном EN, иначе базовое."""
+    lang = (get_language() or "ru")[:2]
+    if lang != "ru":
+        val = getattr(obj, f"{field}_{lang}", "") or getattr(obj, f"{field}_en", "")
+        if val:
+            return val
+    return getattr(obj, field, "") or ""
 
 
 def _get_bot_token():
@@ -115,14 +127,14 @@ def book(request, slug):
                   .order_by("sort_order", "id"))
     services_json = json.dumps([
         {
-            "id": svc.id, "name": svc.name,
+            "id": svc.id, "name": _loc(svc, "name"),
             "price": int(svc.price), "duration": svc.duration_min,
             "category": svc.category_id,
         }
         for cat in categories for svc in cat.services.filter(is_active=True)
     ], ensure_ascii=False)
     categories_json = json.dumps([
-        {"id": c.id, "name": c.name} for c in categories
+        {"id": c.id, "name": _loc(c, "name")} for c in categories
     ], ensure_ascii=False)
     return render(request, "barbershop/book.html", {
         "shop": shop,

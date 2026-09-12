@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static i18n_attrs %}
 
 {% block title %}{% trans "IT Агентства" %} — Webordo{% endblock %}
 {% block cta %}{% endblock %}
@@ -184,7 +184,7 @@
     <div class="ag-card">
       <div class="ag-card-cover">
         {% if agency.cover %}
-          <img src="{{ agency.cover.url }}" alt="{{ agency.name }}" loading="lazy">
+          <img src="{{ agency.cover.url }}" alt="{% t agency 'name' %}" loading="lazy">
         {% else %}
           <div class="ag-card-cover-glow"></div>
           <div class="ag-card-cover-icon">💻</div>
@@ -199,9 +199,9 @@
       </div>
 
       <div class="ag-card-body">
-        <div class="ag-card-name">{{ agency.name }}</div>
-        {% if agency.tagline %}
-          <div class="ag-card-tagline">{{ agency.tagline }}</div>
+        <div class="ag-card-name">{% t agency "name" %}</div>
+        {% t agency "tagline" as agtag %}{% if agtag %}
+          <div class="ag-card-tagline">{{ agtag }}</div>
         {% endif %}
 
         {% with types=agency.services.values_list|dictsort:0 %}

@@ -6,6 +6,7 @@ from io import BytesIO
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from PIL import Image
 
 from core.models import TimeStampedModel
@@ -37,10 +38,12 @@ class RealtyAgency(TimeStampedModel):
         verbose_name="Категория платформы",
     )
     name        = models.CharField("Название агентства", max_length=200)
+    name_en     = models.CharField("Название агентства (EN)", max_length=200, blank=True, default="")
     slug        = models.SlugField(max_length=220, unique=True)
     logo        = models.ImageField("Логотип", upload_to="realestate/logos/", blank=True, null=True)
     cover       = models.ImageField("Обложка", upload_to="realestate/covers/", blank=True, null=True)
     description = models.TextField("Описание", blank=True, default="")
+    description_en = models.TextField("Описание (EN)", blank=True, default="")
     phone       = models.CharField("Телефон / WhatsApp агентства", max_length=50, blank=True, default="",
                                    help_text="Резервный номер для кнопки «Купить», если у квартиры не указан риэлтор")
     address     = models.CharField("Адрес", max_length=300, blank=True, default="")
@@ -77,16 +80,16 @@ class RealtyMembership(TimeStampedModel):
 
 class Apartment(TimeStampedModel):
     class Renovation(models.TextChoices):
-        NONE     = "none", "Без ремонта"
-        COSMETIC = "cosmetic", "Косметический"
-        EURO     = "euro", "Евроремонт"
-        DESIGNER = "designer", "Дизайнерский"
+        NONE     = "none", _("Без ремонта")
+        COSMETIC = "cosmetic", _("Косметический")
+        EURO     = "euro", _("Евроремонт")
+        DESIGNER = "designer", _("Дизайнерский")
 
     class Status(models.TextChoices):
-        FREE    = "free", "Свободна"
-        BOOKED  = "booked", "Забронирована"
-        SOLD    = "sold", "Продана"
-        REMOVED = "removed", "Снята с продажи"
+        FREE    = "free", _("Свободна")
+        BOOKED  = "booked", _("Забронирована")
+        SOLD    = "sold", _("Продана")
+        REMOVED = "removed", _("Снята с продажи")
 
     class Currency(models.TextChoices):
         KGS = "KGS", "сом"
@@ -114,6 +117,7 @@ class Apartment(TimeStampedModel):
     status        = models.CharField("Статус", max_length=20, choices=Status.choices, default=Status.FREE)
 
     description  = models.TextField("Описание", blank=True, default="")
+    description_en = models.TextField("Описание (EN)", blank=True, default="")
     review_url_1 = models.URLField("Ссылка на обзор 1", max_length=500, blank=True, default="")
     review_url_2 = models.URLField("Ссылка на обзор 2", max_length=500, blank=True, default="")
     is_active    = models.BooleanField("Активно", default=True)

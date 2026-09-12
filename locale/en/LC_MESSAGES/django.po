@@ -2,10 +2,43 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-10 15:20+0600\n"
+"POT-Creation-Date: 2026-09-12 20:59+0600\n"
 "Language: en\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+
+#: agency/models.py:8
+msgid "Разработка"
+msgstr "Development"
+
+#: agency/models.py:9
+msgid "Дизайн"
+msgstr "Design"
+
+#: agency/models.py:10
+msgid "SEO / Маркетинг"
+msgstr "SEO / Marketing"
+
+#: agency/models.py:11
+msgid "Мобильные приложения"
+msgstr "Mobile apps"
+
+#: agency/models.py:12
+msgid "AI / Автоматизация"
+msgstr "AI / Automation"
+
+#: agency/models.py:13
+msgid "DevOps / Облако"
+msgstr "DevOps / Cloud"
+
+#: agency/models.py:14
+msgid "Поддержка"
+msgstr "Support"
+
+#: agency/models.py:15 templates/printshop/branch_catalog.html:270
+#: templates/printshop/branch_catalog.html:286
+msgid "Другое"
+msgstr "Other"
 
 #: catalog/models.py:173 templates/printshop/_product_card.html:12
 msgid "Акция"
@@ -47,6 +80,38 @@ msgstr "Please enter an address / table / room."
 msgid "Минимальная сумма заказа для доставки: %(min)s"
 msgstr "Minimum order amount for delivery: %(min)s"
 
+#: realestate/models.py:83
+msgid "Без ремонта"
+msgstr "No renovation"
+
+#: realestate/models.py:84
+msgid "Косметический"
+msgstr "Cosmetic"
+
+#: realestate/models.py:85
+msgid "Евроремонт"
+msgstr "Euro renovation"
+
+#: realestate/models.py:86
+msgid "Дизайнерский"
+msgstr "Designer"
+
+#: realestate/models.py:89
+msgid "Свободна"
+msgstr "Available"
+
+#: realestate/models.py:90
+msgid "Забронирована"
+msgstr "Booked"
+
+#: realestate/models.py:91
+msgid "Продана"
+msgstr "Sold"
+
+#: realestate/models.py:92
+msgid "Снята с продажи"
+msgstr "Delisted"
+
 #: reservations/views.py:113
 msgid "Статус: гость пришёл ✅"
 msgstr "Status: guest arrived ✅"
@@ -79,6 +144,18 @@ msgstr "Invalid status."
 msgid "Статус брони обновлён."
 msgstr "Booking status updated."
 
+#: simracing/models.py:103
+msgid "Стандартный картинг"
+msgstr "Standard karting"
+
+#: simracing/models.py:104
+msgid "Евроспор картинг"
+msgstr "Euro-sport karting"
+
+#: simracing/models.py:105
+msgid "Автосимулятор"
+msgstr "Racing simulator"
+
 #: templates/admin/pharmacy/pharmacybranch/change_form.html:7
 msgid "Синхронизировать ассортимент"
 msgstr "Sync catalog"
@@ -94,7 +171,7 @@ msgstr "All agencies"
 
 #: templates/agency/agency_detail.html:296 templates/barbershop/book.html:90
 #: templates/barbershop/book.html:170 templates/base.html:459
-#: templates/base.html:518 templates/base.html:588
+#: templates/base.html:518 templates/base.html:591
 #: templates/hotels/hotel_branch.html:573 templates/public_site/home.html:686
 msgid "Услуги"
 msgstr "Services"
@@ -222,7 +299,9 @@ msgstr "agencies"
 msgid ""
 "Разработка, дизайн, AI-решения и цифровой маркетинг от проверенных IT-команд "
 "Кыргызстана"
-msgstr "Development, design, AI solutions and digital marketing from trusted IT teams in Kyrgyzstan"
+msgstr ""
+"Development, design, AI solutions and digital marketing from trusted IT "
+"teams in Kyrgyzstan"
 
 #: templates/agency/agency_list.html:228 templates/eco/eco_list.html:255
 #: templates/legal/legal_list.html:153
@@ -475,7 +554,7 @@ msgstr "Kyrgyzstan's digital ecosystem"
 msgid "Категории"
 msgstr "Categories"
 
-#: templates/base.html:451 templates/base.html:515 templates/base.html:583
+#: templates/base.html:451 templates/base.html:515 templates/base.html:586
 #: templates/public_site/home.html:614
 msgid "Еда"
 msgstr "Food"
@@ -484,7 +563,7 @@ msgstr "Food"
 msgid "Меню, доставка, QR"
 msgstr "Menu, delivery, QR"
 
-#: templates/base.html:455 templates/base.html:516 templates/base.html:584
+#: templates/base.html:455 templates/base.html:516 templates/base.html:587
 #: templates/public_site/about.html:101 templates/public_site/home.html:1321
 #: templates/shops/store_list.html:4 templates/shops/store_list.html:290
 msgid "Магазины"
@@ -498,7 +577,7 @@ msgstr "Products & orders"
 msgid "Юристы, эко, барбершопы и другое"
 msgstr "Lawyers, eco, barbershops and more"
 
-#: templates/base.html:463 templates/base.html:519 templates/base.html:590
+#: templates/base.html:463 templates/base.html:519 templates/base.html:593
 #: templates/karaoke/list.html:3 templates/simracing/list.html:3
 msgid "Развлечения"
 msgstr "Entertainment"
@@ -507,7 +586,7 @@ msgstr "Entertainment"
 msgid "Караоке, симрейсинг"
 msgstr "Karaoke, sim racing"
 
-#: templates/base.html:471 templates/base.html:524 templates/base.html:596
+#: templates/base.html:471 templates/base.html:524 templates/base.html:599
 msgid "Подключить бизнес"
 msgstr "Add your business"
 
@@ -523,11 +602,11 @@ msgstr "Add your business"
 msgid "Меню"
 msgstr "Menu"
 
-#: templates/base.html:514 templates/base.html:582
+#: templates/base.html:514 templates/base.html:585
 msgid "Бизнес"
 msgstr "Business"
 
-#: templates/base.html:521 templates/base.html:595
+#: templates/base.html:521 templates/base.html:598
 #: templates/public_site/restaurant_about.html:9
 #: templates/public_site/restaurant_about.html:33 templates/shops/base.html:223
 #: templates/shops/base.html:273 templates/shops/base.html:330
@@ -581,20 +660,20 @@ msgid ""
 msgstr ""
 "Kyrgyzstan's digital ecosystem — restaurants, shops and services in one place"
 
-#: templates/base.html:589
+#: templates/base.html:592
 msgid "Все услуги"
 msgstr "All services"
 
-#: templates/base.html:594
+#: templates/base.html:597
 msgid "Компания"
 msgstr "Company"
 
-#: templates/base.html:601 templates/pharmacy/pharmacy_list.html:306
+#: templates/base.html:604 templates/pharmacy/pharmacy_list.html:306
 #: templates/pharmacy/pharmacy_list.html:340 templates/shops/base.html:338
 msgid "Кыргызстан"
 msgstr "Kyrgyzstan"
 
-#: templates/base.html:603 templates/public_site/privacy.html:3
+#: templates/base.html:606 templates/public_site/privacy.html:3
 #: templates/public_site/privacy.html:15
 msgid "Политика конфиденциальности"
 msgstr "Privacy policy"
@@ -735,7 +814,9 @@ msgstr "projects"
 msgid ""
 "Организации, которые заботятся о нашей планете — вывоз мусора, переработка, "
 "озеленение и другие экологические инициативы"
-msgstr "Organizations that care about our planet — waste collection, recycling, landscaping and other environmental initiatives"
+msgstr ""
+"Organizations that care about our planet — waste collection, recycling, "
+"landscaping and other environmental initiatives"
 
 #: templates/eco/eco_list.html:202
 msgid "Эко-проектов"
@@ -1448,7 +1529,9 @@ msgstr "Briefly describe the question or issue you'd like to raise..."
 msgid ""
 "После отправки заявка придёт в Telegram организации, и откроется WhatsApp "
 "для связи."
-msgstr "After you submit, the request goes to the organization's Telegram, and WhatsApp opens for contact."
+msgstr ""
+"After you submit, the request goes to the organization's Telegram, and "
+"WhatsApp opens for contact."
 
 #: templates/legal/legal_detail.html:345
 msgid "⚖️ Обращение за юридической услугой"
@@ -1888,11 +1971,6 @@ msgstr "Address (for delivery)"
 msgid "Комментарий к заказу"
 msgstr "Order comment"
 
-#: templates/printshop/branch_catalog.html:270
-#: templates/printshop/branch_catalog.html:286
-msgid "Другое"
-msgstr "Other"
-
 #: templates/printshop/branch_catalog.html:293
 #: templates/shops/branch_catalog.html:930
 msgid "Каталог пока пуст"
@@ -1929,7 +2007,9 @@ msgstr "Print centers"
 msgid ""
 "Печать документов, визиток, баннеров, сувениров и многое другое — закажите "
 "онлайн."
-msgstr "Printing of documents, business cards, banners, souvenirs and much more — order online."
+msgstr ""
+"Printing of documents, business cards, banners, souvenirs and much more — "
+"order online."
 
 #: templates/printshop/center_list.html:50
 msgid "Поиск по названию..."
@@ -3004,7 +3084,11 @@ msgid ""
 "данные обрабатывает мобильное приложение <strong>Webordo</strong> (далее — "
 "«Приложение») — официальный мобильный клиент сервиса webordo.kg, платформы "
 "заказа еды и услуг заведений Кыргызской Республики."
-msgstr "This Privacy Policy (the “Policy”) describes what data the <strong>Webordo</strong> mobile app (the “App”) processes — the official mobile client of webordo.kg, a platform for ordering food and services from venues in the Kyrgyz Republic."
+msgstr ""
+"This Privacy Policy (the “Policy”) describes what data the <strong>Webordo</"
+"strong> mobile app (the “App”) processes — the official mobile client of "
+"webordo.kg, a platform for ordering food and services from venues in the "
+"Kyrgyz Republic."
 
 #: templates/public_site/privacy.html:28
 msgid "Оператор данных: <strong>webordo.kg</strong> (далее — «Оператор»)."
@@ -3015,7 +3099,9 @@ msgid ""
 "Используя Приложение, вы соглашаетесь с настоящей Политикой. Приложение "
 "работает в гостевом режиме: регистрация и создание аккаунта не требуются и "
 "не предусмотрены."
-msgstr "By using the App, you agree to this Policy. The App works in guest mode: registration and account creation are not required and not provided."
+msgstr ""
+"By using the App, you agree to this Policy. The App works in guest mode: "
+"registration and account creation are not required and not provided."
 
 #: templates/public_site/privacy.html:33
 msgid "2. Какие данные мы обрабатываем и зачем"
@@ -3025,7 +3111,9 @@ msgstr "2. What data we process and why"
 msgid ""
 "Приложение обрабатывает только те данные, которые вы сами указываете при "
 "оформлении заказа или бронирования:"
-msgstr "The App processes only the data you provide yourself when placing an order or booking:"
+msgstr ""
+"The App processes only the data you provide yourself when placing an order "
+"or booking:"
 
 #: templates/public_site/privacy.html:41
 msgid "Данные"
@@ -3071,7 +3159,13 @@ msgid ""
 "рекламы, не продаём их и не передаём третьим лицам, за исключением "
 "заведения, выполняющего ваш заказ, и случаев, прямо предусмотренных "
 "законодательством Кыргызской Республики."
-msgstr "This data is transmitted to the webordo.kg server over a secure connection (HTTPS) and is provided only to the venue you selected, solely to fulfil your order or booking. We do not use your data for advertising, do not sell it and do not share it with third parties, except for the venue fulfilling your order and cases expressly provided for by the legislation of the Kyrgyz Republic."
+msgstr ""
+"This data is transmitted to the webordo.kg server over a secure connection "
+"(HTTPS) and is provided only to the venue you selected, solely to fulfil "
+"your order or booking. We do not use your data for advertising, do not sell "
+"it and do not share it with third parties, except for the venue fulfilling "
+"your order and cases expressly provided for by the legislation of the Kyrgyz "
+"Republic."
 
 #: templates/public_site/privacy.html:70
 msgid "3. Данные, которые остаются только на вашем устройстве"
@@ -3083,7 +3177,11 @@ msgid ""
 "сумма, статус) и выбранный язык интерфейса хранятся локально на вашем "
 "устройстве и не передаются Оператору. Они удаляются при удалении Приложения "
 "или очистке его данных в настройках устройства."
-msgstr "The contents of your cart, the list of orders made from this device (number, amount, status) and the selected interface language are stored locally on your device and are not transmitted to the Operator. They are deleted when the App is removed or its data is cleared in the device settings."
+msgstr ""
+"The contents of your cart, the list of orders made from this device (number, "
+"amount, status) and the selected interface language are stored locally on "
+"your device and are not transmitted to the Operator. They are deleted when "
+"the App is removed or its data is cleared in the device settings."
 
 #: templates/public_site/privacy.html:76
 msgid "4. Разрешения Приложения"
@@ -3095,19 +3193,27 @@ msgid ""
 "для сканирования QR-кода на столе заведения. Изображения с камеры не "
 "сохраняются, не записываются и никуда не передаются. Разрешение "
 "необязательно: код стола можно ввести вручную."
-msgstr "<strong style=\"color:#111\">Camera</strong> — used exclusively to scan the QR code on the venue's table. Camera images are not saved, not recorded and not transmitted anywhere. The permission is optional: the table code can be entered manually."
+msgstr ""
+"<strong style=\"color:#111\">Camera</strong> — used exclusively to scan the "
+"QR code on the venue's table. Camera images are not saved, not recorded and "
+"not transmitted anywhere. The permission is optional: the table code can be "
+"entered manually."
 
 #: templates/public_site/privacy.html:88
 msgid ""
 "<strong style=\"color:#111\">Доступ в интернет и состояние сети</strong> — "
 "загрузка меню, оформление заказов, уведомление об отсутствии соединения."
-msgstr "<strong style=\"color:#111\">Internet access and network state</strong> — loading the menu, placing orders, notifying about a lost connection."
+msgstr ""
+"<strong style=\"color:#111\">Internet access and network state</strong> — "
+"loading the menu, placing orders, notifying about a lost connection."
 
 #: templates/public_site/privacy.html:92
 msgid ""
 "Иных разрешений (геолокация, контакты, файлы, микрофон и т. п.) Приложение "
 "не запрашивает."
-msgstr "The App does not request any other permissions (geolocation, contacts, files, microphone, etc.)."
+msgstr ""
+"The App does not request any other permissions (geolocation, contacts, "
+"files, microphone, etc.)."
 
 #: templates/public_site/privacy.html:96
 msgid "5. Автоматический сбор данных"
@@ -3119,7 +3225,11 @@ msgid ""
 "аналитических SDK. Идентификаторы устройства не собираются. Внешние действия "
 "(звонок, WhatsApp, маршрут в 2ГИС) открываются в соответствующих сторонних "
 "приложениях; их работа регулируется политиками их владельцев."
-msgstr "The App contains no advertising networks, third-party trackers or third-party analytics SDKs. Device identifiers are not collected. External actions (call, WhatsApp, route in 2GIS) open in the corresponding third-party apps; their operation is governed by their owners' policies."
+msgstr ""
+"The App contains no advertising networks, third-party trackers or third-"
+"party analytics SDKs. Device identifiers are not collected. External actions "
+"(call, WhatsApp, route in 2GIS) open in the corresponding third-party apps; "
+"their operation is governed by their owners' policies."
 
 #: templates/public_site/privacy.html:102
 msgid "6. Хранение и защита данных"
@@ -3131,7 +3241,11 @@ msgid ""
 "для выполнения заказа и ведения учёта заведением. Передача данных "
 "осуществляется только по протоколу HTTPS. Доступ к данным заказов имеют "
 "только Оператор и заведение, выполняющее заказ."
-msgstr "Order data is stored on the webordo.kg server for the period needed to fulfil the order and for the venue's record-keeping. Data is transmitted only via HTTPS. Only the Operator and the venue fulfilling the order have access to order data."
+msgstr ""
+"Order data is stored on the webordo.kg server for the period needed to "
+"fulfil the order and for the venue's record-keeping. Data is transmitted "
+"only via HTTPS. Only the Operator and the venue fulfilling the order have "
+"access to order data."
 
 #: templates/public_site/privacy.html:108
 msgid "7. Ваши права"
@@ -3141,7 +3255,9 @@ msgstr "7. Your rights"
 msgid ""
 "Вы вправе узнать, какие данные о вас обрабатываются, потребовать исправления "
 "неточных данных или удаления ваших данных с сервера."
-msgstr "You have the right to learn what data about you is processed, to request correction of inaccurate data or deletion of your data from the server."
+msgstr ""
+"You have the right to learn what data about you is processed, to request "
+"correction of inaccurate data or deletion of your data from the server."
 
 #: templates/public_site/privacy.html:111
 msgid ""
@@ -3149,7 +3265,11 @@ msgid ""
 "style=\"color:#f97316;text-decoration:none;font-"
 "weight:600\">support@webordo.kg</a>, указав номер телефона, с которого "
 "оформлялись заказы. Запросы рассматриваются в срок не более 30 дней."
-msgstr "To do so, write to <a href=\"mailto:support@webordo.kg\" style=\"color:#f97316;text-decoration:none;font-weight:600\">support@webordo.kg</a>, specifying the phone number used for orders. Requests are processed within no more than 30 days."
+msgstr ""
+"To do so, write to <a href=\"mailto:support@webordo.kg\" "
+"style=\"color:#f97316;text-decoration:none;font-"
+"weight:600\">support@webordo.kg</a>, specifying the phone number used for "
+"orders. Requests are processed within no more than 30 days."
 
 #: templates/public_site/privacy.html:115
 msgid "8. Дети"
@@ -3159,7 +3279,9 @@ msgstr "8. Children"
 msgid ""
 "Приложение не предназначено для самостоятельного использования детьми до 13 "
 "лет и не собирает данные о возрасте пользователей."
-msgstr "The App is not intended for independent use by children under 13 and does not collect data about users' age."
+msgstr ""
+"The App is not intended for independent use by children under 13 and does "
+"not collect data about users' age."
 
 #: templates/public_site/privacy.html:121
 msgid "9. Изменения Политики"
@@ -3170,7 +3292,10 @@ msgid ""
 "При изменении Политики новая редакция публикуется на этой странице с "
 "обновлённой датой вступления в силу. Продолжение использования Приложения "
 "после публикации изменений означает согласие с новой редакцией."
-msgstr "When the Policy changes, a new version is published on this page with an updated effective date. Continued use of the App after changes are published means acceptance of the new version."
+msgstr ""
+"When the Policy changes, a new version is published on this page with an "
+"updated effective date. Continued use of the App after changes are published "
+"means acceptance of the new version."
 
 #: templates/public_site/privacy.html:127
 msgid "10. Контакты"
@@ -3677,7 +3802,9 @@ msgstr "of real estate"
 msgid ""
 "Квартиры от проверенных агентств недвижимости — с фото, ценами и прямой "
 "связью с риэлтором"
-msgstr "Apartments from trusted real estate agencies — with photos, prices and direct contact with a realtor"
+msgstr ""
+"Apartments from trusted real estate agencies — with photos, prices and "
+"direct contact with a realtor"
 
 #: templates/realestate/agency_list.html:70
 msgid "Смотреть квартиры →"
@@ -3840,7 +3967,9 @@ msgstr "Custom order"
 msgid ""
 "Цены указаны по прайс-листу фирменных магазинов и могут отличаться в других "
 "точках продаж."
-msgstr "Prices are listed per the brand stores' price list and may differ at other points of sale."
+msgstr ""
+"Prices are listed per the brand stores' price list and may differ at other "
+"points of sale."
 
 #: templates/shops/branch_catalog.html:885
 msgid "Есть"

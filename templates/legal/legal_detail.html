@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load i18n static i18n_attrs l10n %}
 
-{% block title %}{{ org.name }} — {% trans "Юридические услуги" %}{% endblock %}
+{% block title %}{% t org "name" %} — {% trans "Юридические услуги" %}{% endblock %}
 {% block cta %}{% endblock %}
 
 {% block head_extra %}
@@ -206,11 +206,11 @@
   <div class="ld-org-card">
     <div class="ld-org-logo">
       {% if org.logo %}
-        <img src="{{ org.logo.url }}" alt="{{ org.name }}">
+        <img src="{{ org.logo.url }}" alt="{% t org 'name' %}">
       {% else %}⚖️{% endif %}
     </div>
     <div class="ld-org-info">
-      <div class="ld-org-name">{{ org.name }}</div>
+      <div class="ld-org-name">{% t org "name" %}</div>
       <div class="ld-meta-grid">
         {% if org.address %}
         <div class="ld-meta-row">
@@ -238,8 +238,8 @@
         {% endif %}
       </div>
 
-      {% if org.description %}
-      <div class="ld-desc">{{ org.description }}</div>
+      {% t org "description" as orgdesc %}{% if orgdesc %}
+      <div class="ld-desc">{{ orgdesc }}</div>
       {% endif %}
 
       <div class="ld-contacts">
@@ -267,13 +267,13 @@
     {% for svc in services %}
     <div class="svc-card">
       {% if svc.photo %}
-      <img src="{{ svc.photo.url }}" class="svc-photo" alt="{{ svc.name }}">
+      <img src="{{ svc.photo.url }}" class="svc-photo" alt="{% t svc 'name' %}">
       {% endif %}
       <div class="svc-body">
       <div class="svc-info">
-        <div class="svc-name">{{ svc.name }}</div>
-        {% if svc.description %}
-        <div class="svc-desc">{{ svc.description }}</div>
+        <div class="svc-name">{% t svc "name" %}</div>
+        {% t svc "description" as svcdesc %}{% if svcdesc %}
+        <div class="svc-desc">{{ svcdesc }}</div>
         {% endif %}
       </div>
       <div class="svc-right">
@@ -283,10 +283,10 @@
         {% endif %}
         <button class="svc-order-btn"
                 data-svc-id="{{ svc.id }}"
-                data-svc-name="{{ svc.name|escapejs }}"
+                data-svc-name="{% t svc 'name' %}"
                 data-svc-price="{{ svc.price|floatformat:0 }}"
                 data-svc-note="{{ svc.price_note }}"
-                data-org-name="{{ org.name }}"
+                data-org-name="{% t org 'name' %}"
                 data-org-phone="{{ org.whatsapp_digits }}"
                 onclick="openModal(this)">
           ✉️ {% trans "Обратиться" %}

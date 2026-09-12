@@ -1,17 +1,18 @@
 from django.conf import settings
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from core.models import TimeStampedModel
 
 
 SERVICE_TYPE_CHOICES = [
-    ("dev",     "Разработка"),
-    ("design",  "Дизайн"),
-    ("seo",     "SEO / Маркетинг"),
-    ("mobile",  "Мобильные приложения"),
-    ("ai",      "AI / Автоматизация"),
-    ("devops",  "DevOps / Облако"),
-    ("support", "Поддержка"),
-    ("other",   "Другое"),
+    ("dev",     _("Разработка")),
+    ("design",  _("Дизайн")),
+    ("seo",     _("SEO / Маркетинг")),
+    ("mobile",  _("Мобильные приложения")),
+    ("ai",      _("AI / Автоматизация")),
+    ("devops",  _("DevOps / Облако")),
+    ("support", _("Поддержка")),
+    ("other",   _("Другое")),
 ]
 
 
@@ -22,9 +23,12 @@ class Agency(TimeStampedModel):
         verbose_name="Категория платформы",
     )
     name          = models.CharField("Название агентства", max_length=200)
+    name_en       = models.CharField("Название агентства (EN)", max_length=200, blank=True, default="")
     slug          = models.SlugField(max_length=220, unique=True)
     tagline       = models.CharField("Слоган", max_length=300, blank=True, default="")
+    tagline_en    = models.CharField("Слоган (EN)", max_length=300, blank=True, default="")
     description   = models.TextField("Описание", blank=True, default="")
+    description_en = models.TextField("Описание (EN)", blank=True, default="")
     logo          = models.ImageField("Логотип", upload_to="agency/logos/", blank=True, null=True)
     cover         = models.ImageField("Обложка", upload_to="agency/covers/", blank=True, null=True)
     website       = models.URLField("Сайт", blank=True, default="")
@@ -51,7 +55,9 @@ class AgencyService(TimeStampedModel):
                                      verbose_name="Агентство")
     service_type = models.CharField("Тип услуги", max_length=20, choices=SERVICE_TYPE_CHOICES, default="dev")
     name         = models.CharField("Название услуги", max_length=300)
+    name_en      = models.CharField("Название услуги (EN)", max_length=300, blank=True, default="")
     description  = models.TextField("Описание", blank=True, default="")
+    description_en = models.TextField("Описание (EN)", blank=True, default="")
     photo        = models.ImageField("Фото / Превью", upload_to="agency/services/", blank=True, null=True)
     tech_stack   = models.CharField("Стек технологий", max_length=500, blank=True, default="",
                                     help_text="Например: React, Django, PostgreSQL")

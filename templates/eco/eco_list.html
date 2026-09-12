@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static i18n_attrs %}
 
 {% block title %}{% trans "Эко-проекты" %} — Webordo{% endblock %}
 {% block cta %}{% endblock %}
@@ -221,7 +221,7 @@
     <div class="ecc">
       <div class="ecc-photo">
         {% if project.logo %}
-          <img src="{{ project.logo.url }}" alt="{{ project.name }}" loading="lazy" decoding="async">
+          <img src="{{ project.logo.url }}" alt="{% t project 'name' %}" loading="lazy" decoding="async">
           <div class="ecc-photo-overlay"></div>
         {% else %}
           <div class="ecc-photo-placeholder">🌿</div>
@@ -230,7 +230,7 @@
       </div>
 
       <div class="ecc-body">
-        <div class="ecc-name">{{ project.name }}</div>
+        <div class="ecc-name">{% t project "name" %}</div>
         <div class="ecc-meta">
           {% if project.address %}
           <div class="ecc-row"><span class="ecc-row-icon">📍</span><span>{{ project.address }}</span></div>

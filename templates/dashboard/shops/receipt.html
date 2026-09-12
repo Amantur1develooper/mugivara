@@ -89,6 +89,20 @@
       </div>
     </div>
     {% endfor %}
+    {% for coi in order.constructor_items.all %}
+    <div class="r-item">
+      <div class="r-item-name">🧩 {{ coi.constructor_name_snapshot }}</div>
+      {% for sel in coi.ingredients_snapshot %}
+      <div class="r-item-detail" style="opacity:.75;font-size:11px">
+        <span>{{ sel.gname }}: {% for ing in sel.ings %}{{ ing.name }}{% if ing.qty > 1 %} ×{{ ing.qty }}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+      </div>
+      {% endfor %}
+      <div class="r-item-detail">
+        <span>{{ coi.unit_price|floatformat:0 }} × {{ coi.qty|floatformat:"-3" }}</span>
+        <span>{{ coi.line_total|floatformat:0 }} сом</span>
+      </div>
+    </div>
+    {% endfor %}
   </div>
 
   <div class="r-totals">

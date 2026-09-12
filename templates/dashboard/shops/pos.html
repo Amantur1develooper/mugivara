@@ -218,6 +218,70 @@
   padding: 4px 8px; border-radius: 6px; border: none; background: none;
 }
 .pos-cart-clear:hover { color: #ff3b30; background: rgba(255,59,48,.08); }
+.pos-cx-btn {
+  font-size: 11px; font-weight: 800; color: #fff; cursor: pointer;
+  padding: 6px 10px; border-radius: 8px; border: none;
+  background: linear-gradient(135deg, var(--accent, #ff4d1c), var(--accent2, #ff8a00));
+}
+.pos-cx-btn:hover { opacity: .9; }
+
+/* ── Constructor modal ── */
+.cx-overlay {
+  position: fixed; inset: 0; z-index: 900; background: rgba(0,0,0,.55);
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.cx-overlay.open { opacity: 1; pointer-events: auto; }
+.cx-box {
+  background: var(--card); border-radius: 18px; width: 100%; max-width: 720px;
+  max-height: 88vh; display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 24px 70px rgba(0,0,0,.35);
+}
+.cx-head {
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.cx-title { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 14px; flex: 1; }
+.cx-close {
+  width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--border);
+  background: var(--bg); cursor: pointer; font-size: 13px; color: var(--muted);
+}
+.cx-pick-list { padding: 14px 18px; display: flex; flex-wrap: wrap; gap: 8px; }
+.cx-pick-card {
+  padding: 10px 16px; border-radius: 12px; border: 1.5px solid var(--border);
+  background: var(--bg); cursor: pointer; font-size: 13px; font-weight: 700;
+}
+.cx-pick-card:hover { border-color: var(--accent); color: var(--accent); }
+.cx-body { flex: 1; overflow-y: auto; padding: 4px 18px 14px; }
+.cx-group { margin-top: 14px; }
+.cx-group-title { font-size: 12px; font-weight: 900; color: var(--text); margin-bottom: 3px; }
+.cx-group-hint { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+.cx-ing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.cx-ing {
+  border: 1.5px solid var(--border); border-radius: 12px; padding: 8px 10px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.cx-ing.active { border-color: var(--accent); background: rgba(255,77,28,.05); }
+.cx-ing-name { font-size: 12px; font-weight: 700; flex: 1; min-width: 0; }
+.cx-ing-price { font-size: 11px; color: var(--muted); display: block; }
+.cx-ing-qty { display: flex; align-items: center; gap: 4px; }
+.cx-ing-qty-btn {
+  width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--card); cursor: pointer; font-size: 13px; font-weight: 800;
+}
+.cx-ing-qty-val { min-width: 16px; text-align: center; font-size: 12px; font-weight: 800; }
+.cx-foot {
+  padding: 12px 18px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+}
+.cx-foot-total { flex: 1; font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 15px; }
+.cx-foot-add {
+  padding: 11px 20px; border-radius: 12px; border: none; cursor: pointer;
+  background: linear-gradient(135deg, var(--accent, #ff4d1c), var(--accent2, #ff8a00));
+  color: #fff; font-weight: 800; font-size: 13px;
+}
+.cx-foot-add:disabled { opacity: .4; cursor: default; }
+.cx-error { font-size: 11px; color: #dc2626; text-align: center; margin-top: 6px; }
 .pos-cart-items { flex: 1; overflow-y: auto; padding: 8px 12px; }
 .pos-cart-row {
   display: flex; align-items: center; gap: 8px;
@@ -472,6 +536,9 @@
   <div class="pos-cart">
     <div class="pos-cart-header">
       <div class="pos-cart-title">🛒 Заказ</div>
+      {% if has_constructors %}
+      <button class="pos-cx-btn" onclick="openCxPicker()">🧩 Собери сам</button>
+      {% endif %}
       <button class="pos-cart-clear" onclick="clearCart()">Очистить</button>
     </div>
 
@@ -516,6 +583,25 @@
 
 </div>
 
+{% if has_constructors %}
+<!-- CONSTRUCTOR ("СОБЕРИ САМ") MODAL -->
+<div class="cx-overlay" id="cxOverlay" onclick="if(event.target===this)closeCxModal()">
+  <div class="cx-box">
+    <div class="cx-head">
+      <div class="cx-title" id="cxTitle">🧩 Собери сам</div>
+      <button class="cx-close" onclick="closeCxModal()">✕</button>
+    </div>
+    <div class="cx-pick-list" id="cxPickList"></div>
+    <div class="cx-body" id="cxBody" style="display:none"></div>
+    <div class="cx-foot" id="cxFoot" style="display:none">
+      <div class="cx-foot-total">Итого: <span id="cxTotal">0</span> сом</div>
+      <button class="cx-foot-add" id="cxAddBtn" onclick="cxAddToOrder()">+ В заказ</button>
+    </div>
+    <div class="cx-error" id="cxError"></div>
+  </div>
+</div>
+{% endif %}
+
 <!-- SCANNER OVERLAY -->
 <div class="bc-overlay" id="bcOverlay">
   <div class="bc-overlay-title">📷 Сканирование штрих-кода</div>
@@ -534,6 +620,7 @@ const LIVE_URL    = "{% url 'dashboard:shop_pos_live_orders' branch.id %}";
 const STATUS_URL  = "/dashboard/shops/branch/{{ branch.id }}/pos/status/{id}/";
 const RECEIPT_URL = "{% url 'dashboard:shop_pos_receipt' 0 %}".replace("/0/", "/{id}/");
 const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+const CX_DATA = {{ constructors_json|default:"{}"|safe }};
 
 // Build barcode → stock element map from DOM
 const barcodeMap = {};
@@ -604,6 +691,139 @@ function showBcStatus(msg, cls) {
 const cart = {};  // { stock_id: { name, price, qty, maxQty } }
 let selectedPay = "cash";
 
+// ── «Собери сам» cart ────────────────────────────────────────────────────────
+let cxCart = [];  // [{ cx_id, cx_name, unit_price, qty, selections: {gid: {ing_id: qty}}, summary }]
+let _cxId = null, _cxSel = {};
+
+function openCxPicker() {
+  document.getElementById("cxPickList").innerHTML = Object.values(CX_DATA).map(cx =>
+    `<div class="cx-pick-card" onclick="openCxBuilder(${cx.id})">${esc(cx.name)}</div>`
+  ).join("") || `<div style="font-size:12px;color:var(--muted)">Нет активных конструкторов</div>`;
+  document.getElementById("cxBody").style.display = "none";
+  document.getElementById("cxFoot").style.display = "none";
+  document.getElementById("cxTitle").textContent = "🧩 Собери сам";
+  document.getElementById("cxError").textContent = "";
+  document.getElementById("cxOverlay").classList.add("open");
+}
+function closeCxModal() {
+  document.getElementById("cxOverlay").classList.remove("open");
+  _cxId = null;
+}
+
+function openCxBuilder(cxId) {
+  const cx = CX_DATA[cxId];
+  if (!cx) return;
+  _cxId = cxId;
+  _cxSel = {};
+  cx.groups.forEach(g => { _cxSel[g.id] = {}; });
+
+  document.getElementById("cxTitle").textContent = "🧩 " + cx.name;
+  document.getElementById("cxPickList").innerHTML = "";
+  document.getElementById("cxBody").style.display = "";
+  document.getElementById("cxFoot").style.display = "flex";
+  document.getElementById("cxError").textContent = "";
+
+  document.getElementById("cxBody").innerHTML = cx.groups.map(g => {
+    const maxTxt = g.max > 0 ? ` (макс. ${g.max})` : "";
+    const reqTxt = g.min > 0 ? `Минимум ${g.min}${maxTxt}` : `Необязательно${maxTxt}`;
+    const ingsHtml = g.ingredients.map(ing => `
+      <div class="cx-ing" id="cxIng-${ing.id}">
+        <div>
+          <span class="cx-ing-name">${esc(ing.name)}</span>
+          <span class="cx-ing-price">+${ing.price} сом</span>
+        </div>
+        <div class="cx-ing-qty">
+          <button class="cx-ing-qty-btn" type="button" onclick="cxChangeQty(${g.id},${ing.id},-1,${g.max})">−</button>
+          <div class="cx-ing-qty-val" id="cxQtyVal-${ing.id}">0</div>
+          <button class="cx-ing-qty-btn" type="button" onclick="cxChangeQty(${g.id},${ing.id},1,${g.max})">+</button>
+        </div>
+      </div>`).join("");
+    return `
+      <div class="cx-group">
+        <div class="cx-group-title">${esc(g.name)}</div>
+        <div class="cx-group-hint">${reqTxt}</div>
+        <div class="cx-ing-grid">${ingsHtml}</div>
+      </div>`;
+  }).join("");
+
+  cxUpdateTotal();
+}
+
+function cxChangeQty(gid, ingId, delta, max) {
+  const map = _cxSel[gid];
+  const cur = map[ingId] || 0;
+  let nq = cur + delta;
+  if (nq < 0) nq = 0;
+  if (nq > 0) {
+    const groupTotal = Object.entries(map).reduce((a,[k,v]) => a + (parseInt(k)===ingId ? 0 : v), 0);
+    if (max > 0 && groupTotal + nq > max) {
+      document.getElementById("cxError").textContent = `Максимум ${max} в этой группе`;
+      return;
+    }
+  }
+  if (nq === 0) delete map[ingId]; else map[ingId] = nq;
+  document.getElementById("cxError").textContent = "";
+  document.getElementById(`cxQtyVal-${ingId}`).textContent = nq;
+  document.getElementById(`cxIng-${ingId}`)?.classList.toggle("active", nq > 0);
+  cxUpdateTotal();
+}
+
+function cxUpdateTotal() {
+  const cx = CX_DATA[_cxId];
+  if (!cx) return;
+  let total = parseFloat(cx.base_price) || 0;
+  cx.groups.forEach(g => {
+    const map = _cxSel[g.id] || {};
+    g.ingredients.forEach(ing => {
+      total += (map[ing.id] || 0) * parseFloat(ing.price);
+    });
+  });
+  document.getElementById("cxTotal").textContent = total.toLocaleString();
+}
+
+function cxAddToOrder() {
+  const cx = CX_DATA[_cxId];
+  if (!cx) return;
+  for (const g of cx.groups) {
+    const total = Object.values(_cxSel[g.id] || {}).reduce((a,b)=>a+b, 0);
+    if (g.min > 0 && total < g.min) {
+      document.getElementById("cxError").textContent = `Выберите минимум ${g.min} в «${g.name}»`;
+      return;
+    }
+  }
+  let unit_price = parseFloat(cx.base_price) || 0;
+  const summaryParts = [];
+  cx.groups.forEach(g => {
+    const map = _cxSel[g.id] || {};
+    const names = [];
+    g.ingredients.forEach(ing => {
+      const q = map[ing.id] || 0;
+      if (q > 0) {
+        unit_price += q * parseFloat(ing.price);
+        names.push(q > 1 ? `${ing.name} ×${q}` : ing.name);
+      }
+    });
+    if (names.length) summaryParts.push(names.join(", "));
+  });
+
+  cxCart.push({
+    cx_id: _cxId,
+    cx_name: cx.name,
+    unit_price,
+    qty: 1,
+    selections: JSON.parse(JSON.stringify(_cxSel)),
+    summary: summaryParts.join(" · "),
+  });
+  closeCxModal();
+  renderCart();
+}
+
+function cxSetQty(idx, qty) {
+  if (qty <= 0) { cxCart.splice(idx, 1); }
+  else { cxCart[idx].qty = qty; }
+  renderCart();
+}
+
 function addToCart(stockId, name, price, maxQty) {
   if (cart[stockId]) {
     if (cart[stockId].qty < maxQty) cart[stockId].qty++;
@@ -624,6 +844,7 @@ function setQty(stockId, qty) {
 
 function clearCart() {
   Object.keys(cart).forEach(k => delete cart[k]);
+  cxCart = [];
   document.getElementById("posComment").value = "";
   renderCart();
 }
@@ -632,7 +853,7 @@ function renderCart() {
   const container = document.getElementById("posCartItems");
   const keys = Object.keys(cart);
 
-  if (!keys.length) {
+  if (!keys.length && !cxCart.length) {
     container.innerHTML = `
       <div class="pos-cart-empty" style="display:flex">
         <div class="pos-cart-empty-icon">🛒</div>
@@ -660,6 +881,22 @@ function renderCart() {
       </div>`;
   });
 
+  cxCart.forEach((it, idx) => {
+    const line = it.unit_price * it.qty;
+    total += line;
+    html += `
+      <div class="pos-cart-row" style="flex-wrap:wrap">
+        <div class="pos-cart-name">🧩 ${esc(it.cx_name)}${it.summary ? `<div style="font-size:10px;color:var(--muted);font-weight:500">${esc(it.summary)}</div>` : ""}</div>
+        <div class="pos-cart-qty-wrap">
+          <button class="pos-qty-btn" onclick="cxSetQty(${idx}, ${it.qty - 1})">−</button>
+          <div class="pos-cart-qty-val">${it.qty}</div>
+          <button class="pos-qty-btn" onclick="cxSetQty(${idx}, ${it.qty + 1})">+</button>
+        </div>
+        <div class="pos-cart-line">${line.toLocaleString()} сом</div>
+        <button class="pos-cart-del" onclick="cxSetQty(${idx}, 0)">✕</button>
+      </div>`;
+  });
+
   container.innerHTML = html;
   document.getElementById("posTotal").textContent = total.toLocaleString() + " сом";
 }
@@ -677,19 +914,20 @@ function esc(s) {
 // ── Submit order ───────────────────────────────────────────────────────────────
 async function submitOrder() {
   const keys = Object.keys(cart);
-  if (!keys.length) { alert("Добавьте товары в заказ"); return; }
+  if (!keys.length && !cxCart.length) { alert("Добавьте товары в заказ"); return; }
 
   const btn = document.getElementById("posConfirmBtn");
   btn.disabled = true; btn.textContent = "Оформляем...";
 
   const items = keys.map(id => ({ stock_id: parseInt(id), qty: cart[id].qty }));
+  const cx_items = cxCart.map(it => ({ cx_id: it.cx_id, qty: it.qty, selections: it.selections }));
   const comment = document.getElementById("posComment").value.trim();
 
   try {
     const r = await fetch(ORDER_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-CSRFToken": CSRF() },
-      body: JSON.stringify({ items, payment: selectedPay, comment }),
+      body: JSON.stringify({ items, cx_items, payment: selectedPay, comment }),
     });
     const d = await r.json();
     if (d.ok) {

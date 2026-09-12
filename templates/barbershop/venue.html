@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{{ shop.name }}</title>
+  <title>{% t shop "name" %}</title>
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -53,8 +53,8 @@
     {% if shop.cover %}<img src="{{ shop.cover.url }}" alt="">{% else %}✂️{% endif %}
   </div>
   <div class="hero-text">
-    <div class="hero-name">{{ shop.name }}</div>
-    {% if shop.tagline %}<div class="hero-sub">{{ shop.tagline }}</div>{% endif %}
+    <div class="hero-name">{% t shop "name" %}</div>
+    {% t shop "tagline" as shoptag %}{% if shoptag %}<div class="hero-sub">{{ shoptag }}</div>{% endif %}
   </div>
 </div>
 

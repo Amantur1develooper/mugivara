@@ -6,12 +6,18 @@ from .models import SimRacingVenue, SimRacingMembership, Machine, SessionType, S
 class SimRacingVenueAdmin(admin.ModelAdmin):
     list_display = ("name", "slug", "is_active", "sort_order")
     prepopulated_fields = {"slug": ("name",)}
+    fieldsets = (
+        (None, {"fields": ("place_category", "name", "name_en", "slug", "is_active", "sort_order")}),
+        ("Слоган и описание", {"fields": ("tagline", "tagline_en", "description", "description_en", "logo", "cover")}),
+        ("Контакты", {"fields": ("address", "phone", "whatsapp", "working_hours")}),
+    )
 
 
 @admin.register(Machine)
 class MachineAdmin(admin.ModelAdmin):
     list_display = ("name", "venue", "type", "is_active", "sort_order")
     list_filter = ("venue", "type", "is_active")
+    fields = ("venue", "name", "name_en", "type", "photo", "is_active", "sort_order")
 
 
 @admin.register(SessionType)

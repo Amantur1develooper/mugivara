@@ -12,8 +12,10 @@ class EcoProject(TimeStampedModel):
         verbose_name="Категория платформы",
     )
     name          = models.CharField("Название", max_length=200)
+    name_en       = models.CharField("Название (EN)", max_length=200, blank=True, default="")
     slug          = models.SlugField(max_length=220, unique=True)
     description   = models.TextField("Описание", blank=True, default="")
+    description_en = models.TextField("Описание (EN)", blank=True, default="")
     address       = models.CharField("Адрес", max_length=300, blank=True, default="")
     phone         = models.CharField("Телефон / WhatsApp", max_length=50, blank=True, default="")
     working_hours = models.CharField("Часы работы", max_length=200, blank=True, default="",
@@ -54,7 +56,9 @@ class EcoService(TimeStampedModel):
     project     = models.ForeignKey(EcoProject, on_delete=models.CASCADE, related_name="services",
                                     verbose_name="Проект")
     name        = models.CharField("Название услуги", max_length=300)
+    name_en     = models.CharField("Название услуги (EN)", max_length=300, blank=True, default="")
     description = models.TextField("Описание услуги", blank=True, default="")
+    description_en = models.TextField("Описание услуги (EN)", blank=True, default="")
     price       = models.DecimalField("Цена (сом)", max_digits=10, decimal_places=0, default=0)
     price_note  = models.CharField("Примечание к цене", max_length=100, blank=True, default="",
                                    help_text="Например: за вывоз, за кг, бесплатно")

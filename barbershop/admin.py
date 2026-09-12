@@ -6,6 +6,12 @@ from .models import (Barbershop, BarbershopMembership, ServiceCategory, Service,
 class BarbershopAdmin(admin.ModelAdmin):
     list_display = ["name", "slug", "phone", "is_active"]
     prepopulated_fields = {"slug": ("name",)}
+    fieldsets = (
+        (None, {"fields": ("place_category", "name", "name_en", "slug", "is_active")}),
+        ("Слоган и описание", {"fields": ("tagline", "tagline_en", "description", "description_en", "logo", "cover")}),
+        ("Контакты", {"fields": ("address", "phone", "whatsapp", "working_hours", "map_url")}),
+        ("Telegram", {"fields": ("tg_chat_id", "tg_thread_id")}),
+    )
 
 @admin.register(BarbershopMembership)
 class BarbershopMembershipAdmin(admin.ModelAdmin):
@@ -14,10 +20,13 @@ class BarbershopMembershipAdmin(admin.ModelAdmin):
 @admin.register(ServiceCategory)
 class ServiceCategoryAdmin(admin.ModelAdmin):
     list_display = ["name", "barbershop", "sort_order", "is_active"]
+    fields = ["barbershop", "name", "name_en", "sort_order", "is_active"]
 
 @admin.register(Service)
 class ServiceAdmin(admin.ModelAdmin):
     list_display = ["name", "barbershop", "category", "price", "duration_min", "is_active"]
+    fields = ["barbershop", "category", "name", "name_en", "description", "description_en",
+              "price", "duration_min", "is_active", "sort_order"]
 
 @admin.register(Barber)
 class BarberAdmin(admin.ModelAdmin):

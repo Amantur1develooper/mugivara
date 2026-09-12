@@ -26,9 +26,12 @@ class KaraokeVenue(TimeStampedModel):
         verbose_name="Категория платформы",
     )
     name          = models.CharField("Название", max_length=200)
+    name_en       = models.CharField("Название (EN)", max_length=200, blank=True, default="")
     slug          = models.SlugField(max_length=220, unique=True)
     tagline       = models.CharField("Слоган", max_length=300, blank=True, default="")
+    tagline_en    = models.CharField("Слоган (EN)", max_length=300, blank=True, default="")
     description   = models.TextField("Описание", blank=True, default="")
+    description_en = models.TextField("Описание (EN)", blank=True, default="")
     logo          = models.ImageField("Логотип", upload_to="karaoke/logos/", blank=True, null=True)
     cover         = models.ImageField("Обложка", upload_to="karaoke/covers/", blank=True, null=True)
     address       = models.CharField("Адрес", max_length=300, blank=True, default="")
@@ -56,6 +59,7 @@ class KaraokeVenue(TimeStampedModel):
 class RoomCategory(TimeStampedModel):
     venue      = models.ForeignKey(KaraokeVenue, on_delete=models.CASCADE, related_name="room_categories")
     name       = models.CharField("Название категории", max_length=100)
+    name_en    = models.CharField("Название категории (EN)", max_length=100, blank=True, default="")
     sort_order = models.PositiveSmallIntegerField("Порядок", default=0)
 
     class Meta:
@@ -74,7 +78,9 @@ class KaraokeRoom(TimeStampedModel):
     category       = models.ForeignKey(RoomCategory, on_delete=models.SET_NULL,
                                        null=True, blank=True, related_name="rooms")
     name           = models.CharField("Название кабинки", max_length=150)
+    name_en        = models.CharField("Название кабинки (EN)", max_length=150, blank=True, default="")
     description    = models.TextField("Описание", blank=True, default="")
+    description_en = models.TextField("Описание (EN)", blank=True, default="")
     capacity       = models.PositiveSmallIntegerField("Вместимость (чел.)", default=6)
     price_per_hour = models.DecimalField("Цена за час (сом)", max_digits=10, decimal_places=0, default=0)
     is_active      = models.BooleanField("Активна", default=True)
@@ -138,6 +144,7 @@ class KaraokeBooking(TimeStampedModel):
 class KaraokeMenuCategory(TimeStampedModel):
     venue      = models.ForeignKey(KaraokeVenue, on_delete=models.CASCADE, related_name="menu_categories")
     name       = models.CharField("Название", max_length=150)
+    name_en    = models.CharField("Название (EN)", max_length=150, blank=True, default="")
     sort_order = models.PositiveSmallIntegerField("Порядок", default=0)
 
     class Meta:
@@ -154,7 +161,9 @@ class KaraokeMenuItem(TimeStampedModel):
     category    = models.ForeignKey(KaraokeMenuCategory, on_delete=models.SET_NULL,
                                     null=True, blank=True, related_name="items")
     name        = models.CharField("Название", max_length=200)
+    name_en     = models.CharField("Название (EN)", max_length=200, blank=True, default="")
     description = models.TextField("Описание", blank=True, default="")
+    description_en = models.TextField("Описание (EN)", blank=True, default="")
     photo       = models.ImageField("Фото", upload_to="karaoke/menu/", blank=True, null=True)
     price       = models.DecimalField("Цена (сом)", max_digits=10, decimal_places=0, default=0)
     cost_price  = models.DecimalField("Себестоимость (сом)", max_digits=10, decimal_places=0, default=0)

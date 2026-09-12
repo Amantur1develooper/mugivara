@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load i18n static i18n_attrs %}
-{% block title %}{{ venue.name }} — Karaoke{% endblock %}
+{% block title %}{% t venue "name" %} — Karaoke{% endblock %}
 {% block cta %}{% endblock %}
 
 {% block head_extra %}
@@ -129,8 +129,8 @@
           {% if venue.logo %}<img src="{{ venue.logo.url }}" alt="">{% else %}🎤{% endif %}
         </div>
         <div>
-          <div class="kr-hero-name">{{ venue.name }}</div>
-          {% if venue.tagline %}<div class="kr-hero-tag">{{ venue.tagline }}</div>{% endif %}
+          <div class="kr-hero-name">{% t venue "name" %}</div>
+          {% t venue "tagline" as vtag %}{% if vtag %}<div class="kr-hero-tag">{{ vtag }}</div>{% endif %}
         </div>
       </div>
     </div>
@@ -179,7 +179,7 @@
   <!-- ОПИСАНИЕ -->
   {% if venue.description %}
   <div style="background:var(--kr-card);border:1px solid var(--kr-border);border-radius:18px;padding:22px;margin-bottom:32px;">
-    <div style="font-size:14px;color:var(--kr-muted);line-height:1.8;">{{ venue.description }}</div>
+    <div style="font-size:14px;color:var(--kr-muted);line-height:1.8;">{% t venue "description" %}</div>
   </div>
   {% endif %}
 
@@ -189,7 +189,7 @@
       {% for cat in categories %}
         {% if cat.rooms.filter %}
         <div class="kr-section">
-          <div class="kr-sec-title">{{ cat.name }}</div>
+          <div class="kr-sec-title">{% t cat "name" %}</div>
           <div class="kr-rooms-grid">
             {% for room in cat.rooms.all %}{% if room.is_active %}
             {% include "karaoke/_room_card.html" with room=room venue=venue %}

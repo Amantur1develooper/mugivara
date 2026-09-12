@@ -1,7 +1,7 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static i18n_attrs %}
 
-{% block title %}{{ agency.name }} — {% trans "квартиры" %}{% endblock %}
+{% block title %}{% t agency "name" %} — {% trans "квартиры" %}{% endblock %}
 {% block cta %}{% endblock %}
 
 {% block head_extra %}
@@ -64,9 +64,9 @@
     <a href="{% url 'realestate:agency_list' %}" class="re-back">← {% trans "Все агентства" %}</a>
     <div class="re-hero-top">
       <div class="re-logo">
-        {% if agency.logo %}<img src="{{ agency.logo.url }}" alt="{{ agency.name }}">{% else %}🏢{% endif %}
+        {% if agency.logo %}<img src="{{ agency.logo.url }}" alt="{% t agency 'name' %}">{% else %}🏢{% endif %}
       </div>
-      <div class="re-title">{{ agency.name }}</div>
+      <div class="re-title">{% t agency "name" %}</div>
     </div>
     {% if agency.address %}<div class="re-sub">📍 {{ agency.address }}</div>{% endif %}
     {% if agency.phone %}

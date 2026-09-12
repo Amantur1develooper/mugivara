@@ -109,7 +109,7 @@ def venue(request, slug):
     )
 
     machine_types_available = [
-        {"value": v_type, "label": label, "has_price": v_type in st_by_type}
+        {"value": v_type, "label": str(label), "has_price": v_type in st_by_type}
         for v_type, label in Machine.Type.choices
         if v_type in active_types
     ]

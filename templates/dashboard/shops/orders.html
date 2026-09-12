@@ -133,6 +133,12 @@
         <span class="ord-item-price">{{ item.line_total|floatformat:0 }} сом</span>
       </div>
       {% endfor %}
+      {% for coi in order.constructor_items.all %}
+      <div class="ord-item-row">
+        <span class="ord-item-name">🧩 {{ coi.constructor_name_snapshot }} × {{ coi.qty|floatformat:0 }}</span>
+        <span class="ord-item-price">{{ coi.line_total|floatformat:0 }} сом</span>
+      </div>
+      {% endfor %}
       {% if order.delivery_fee %}
       <div class="ord-item-row" style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px">
         <span class="ord-delivery">Доставка</span>

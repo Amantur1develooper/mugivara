@@ -110,8 +110,11 @@ table.hist-table { width: 100%; border-collapse: collapse; font-size: 13px; }
           <td style="font-size:12px;color:var(--text2);white-space:nowrap">{{ o.created_at|date:"H:i" }}</td>
           <td style="font-size:12px;color:var(--text2);max-width:320px">
             {% for oi in o.items.all %}
-              {{ oi.product.name_ru }} ×{{ oi.qty|floatformat:0 }}{% if not forloop.last %}, {% endif %}
-            {% empty %}—{% endfor %}
+              {{ oi.product.name_ru }} ×{{ oi.qty|floatformat:0 }}{% if not forloop.last or o.constructor_items.all %}, {% endif %}
+            {% empty %}{% if not o.constructor_items.all %}—{% endif %}{% endfor %}
+            {% for coi in o.constructor_items.all %}
+              🧩 {{ coi.constructor_name_snapshot }} ×{{ coi.qty|floatformat:0 }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
             {% if o.name %}<br><span style="color:var(--muted);font-size:11px">{{ o.name }}</span>{% endif %}
             {% if o.comment %}<br><span style="color:var(--muted);font-size:11px">💬 {{ o.comment }}</span>{% endif %}
           </td>

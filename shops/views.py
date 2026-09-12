@@ -203,7 +203,10 @@ def cart_add(request, branch_id, product_id):
 
     # проверка остатков
     if new_qty > stock.qty:
-        return JsonResponse({"ok": False, "error": "not_enough", "available": str(stock.qty)})
+        payload = {"ok": False, "error": "not_enough"}
+        if branch.show_stock_qty:
+            payload["available"] = str(stock.qty)
+        return JsonResponse(payload)
 
     cart[str(product_id)] = str(new_qty)
     save_cart(request, branch_id, cart)

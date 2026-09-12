@@ -20,7 +20,7 @@ class ApartmentAdmin(admin.ModelAdmin):
         (None, {"fields": ("agency", "realtor", "status", "is_active", "sort_order")}),
         ("Адрес", {"fields": ("city", "district", "address")}),
         ("Параметры", {"fields": ("area", "rooms", "floor", "floors_total", "renovation")}),
-        ("Цена и описание", {"fields": ("price", "price_per_sqm", "currency", "description")}),
+        ("Цена и описание", {"fields": ("price", "price_per_sqm", "currency", "description", "description_en")}),
         ("Обзоры", {"fields": ("review_url_1", "review_url_2")}),
         ("Хозяин квартиры (не публично)", {"fields": ("owner_phone",)}),
     )
@@ -41,9 +41,9 @@ class RealtyAgencyAdmin(admin.ModelAdmin):
     prepopulated_fields  = {"slug": ("name",)}
     inlines              = [RealtyMembershipInline]
     fieldsets = (
-        (None, {"fields": ("place_category", "name", "slug", "is_active", "sort_order")}),
+        (None, {"fields": ("place_category", "name", "name_en", "slug", "is_active", "sort_order")}),
         ("Контакты", {"fields": ("address", "phone")}),
-        ("Описание и медиа", {"fields": ("description", "logo", "cover")}),
+        ("Описание и медиа", {"fields": ("description", "description_en", "logo", "cover")}),
     )
 
 

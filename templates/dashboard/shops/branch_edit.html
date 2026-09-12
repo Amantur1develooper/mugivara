@@ -89,6 +89,20 @@
   </div>
 
   <div class="db-form-card">
+    <div class="db-form-section-title">🛍️ Витрина</div>
+    <div class="db-form-group">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+        <input type="checkbox" name="show_stock_qty" {% if branch.show_stock_qty %}checked{% endif %}
+               style="width:16px;height:16px;accent-color:var(--accent)">
+        <span class="db-label" style="margin-bottom:0">Показывать покупателям количество товара</span>
+      </label>
+      <p style="font-size:12px;color:var(--muted,#888);margin:6px 0 0">
+        Если выключить — в витрине и карточке товара покупатель увидит только «В наличии» / «Нет в наличии», без точного остатка.
+      </p>
+    </div>
+  </div>
+
+  <div class="db-form-card">
     <div class="db-form-section-title">🚚 Доставка</div>
     <div class="db-form-group">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer">

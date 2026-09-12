@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from io import BytesIO
 import os
 from django.core.files.base import ContentFile
@@ -33,9 +34,12 @@ class SimRacingVenue(models.Model):
         verbose_name="Категория платформы",
     )
     name         = models.CharField("Название", max_length=200)
+    name_en      = models.CharField("Название (EN)", max_length=200, blank=True, default="")
     slug         = models.SlugField(max_length=220, unique=True)
     tagline      = models.CharField("Слоган", max_length=300, blank=True, default="")
+    tagline_en   = models.CharField("Слоган (EN)", max_length=300, blank=True, default="")
     description  = models.TextField("Описание", blank=True, default="")
+    description_en = models.TextField("Описание (EN)", blank=True, default="")
     logo         = models.ImageField("Логотип", upload_to="simracing/logos/", blank=True, null=True)
     cover        = models.ImageField("Обложка", upload_to="simracing/covers/", blank=True, null=True)
     address      = models.CharField("Адрес", max_length=300, blank=True, default="")
@@ -96,12 +100,13 @@ class SimRacingMembership(models.Model):
 
 class Machine(models.Model):
     class Type(models.TextChoices):
-        KART_STANDARD = "kart_standard", "Стандартный картинг"
-        KART_EURO     = "kart_euro",     "Евроспор картинг"
-        SIMULATOR     = "simulator",     "Автосимулятор"
+        KART_STANDARD = "kart_standard", _("Стандартный картинг")
+        KART_EURO     = "kart_euro",     _("Евроспор картинг")
+        SIMULATOR     = "simulator",     _("Автосимулятор")
 
     venue      = models.ForeignKey(SimRacingVenue, on_delete=models.CASCADE, related_name="machines")
     name       = models.CharField("Название", max_length=120)
+    name_en    = models.CharField("Название (EN)", max_length=120, blank=True, default="")
     type       = models.CharField("Тип", max_length=20, choices=Type.choices, default=Type.KART_STANDARD)
     photo      = models.ImageField("Фото", upload_to="simracing/machines/", blank=True, null=True)
     sort_order = models.PositiveIntegerField("Порядок", default=0)

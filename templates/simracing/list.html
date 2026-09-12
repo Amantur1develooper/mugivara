@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static i18n_attrs %}
 {% block title %}{% trans "Развлечения" %} — {% trans "Симрейсинг" %}{% endblock %}
 {% block cta %}{% endblock %}
 {% block head_extra %}
@@ -48,11 +48,11 @@
     {% for v in venues %}
     <a href="{% url 'simracing:venue' v.slug %}" class="sr-card">
       <div class="sr-card-cover">
-        {% if v.cover %}<img src="{{ v.cover.url }}" alt="{{ v.name }}" loading="lazy">{% else %}🏎️{% endif %}
+        {% if v.cover %}<img src="{{ v.cover.url }}" alt="{% t v 'name' %}" loading="lazy">{% else %}🏎️{% endif %}
       </div>
       <div class="sr-card-body">
-        <div class="sr-card-name">{{ v.name }}</div>
-        {% if v.tagline %}<div class="sr-card-tag">{{ v.tagline }}</div>{% endif %}
+        <div class="sr-card-name">{% t v "name" %}</div>
+        {% t v "tagline" as vtag %}{% if vtag %}<div class="sr-card-tag">{{ vtag }}</div>{% endif %}
         <div class="sr-card-meta">
           {% if v.address %}<span>📍 {{ v.address|truncatechars:30 }}</span>{% endif %}
           {% if v.working_hours %}<span>🕐 {{ v.working_hours }}</span>{% endif %}

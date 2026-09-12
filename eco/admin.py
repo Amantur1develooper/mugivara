@@ -13,7 +13,7 @@ class EcoServiceAdmin(admin.ModelAdmin):
 class EcoServiceInline(admin.TabularInline):
     model   = EcoService
     extra   = 1
-    fields  = ("name", "description", "price", "price_note", "is_active", "sort_order")
+    fields  = ("name", "name_en", "description", "description_en", "price", "price_note", "is_active", "sort_order")
     ordering = ("sort_order", "id")
 
 
@@ -25,9 +25,9 @@ class EcoProjectAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
     inlines             = [EcoServiceInline]
     fieldsets = (
-        (None, {"fields": ("place_category", "name", "slug", "is_active", "sort_order")}),
+        (None, {"fields": ("place_category", "name", "name_en", "slug", "is_active", "sort_order")}),
         ("Контакты", {"fields": ("address", "phone", "working_hours", "map_url")}),
-        ("Описание и медиа", {"fields": ("description", "logo")}),
+        ("Описание и медиа", {"fields": ("description", "description_en", "logo")}),
         ("Telegram — уведомления о заявках", {"fields": ("tg_chat_id", "tg_thread_id")}),
     )
 

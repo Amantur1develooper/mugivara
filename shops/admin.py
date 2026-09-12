@@ -5,7 +5,9 @@ from django import forms
 from django.db import transaction
 from django.contrib import messages
 
-from .models import Store, StoreBranch, StoreCategory, StoreProduct, StoreStock, StoreMembership
+from .models import (Store, StoreBranch, StoreCategory, StoreProduct, StoreStock,
+                     StoreMembership, Warehouse, WarehouseStock,
+                     StoreConstructor, StoreConstructorGroup, StoreConstructorIngredient)
 
 
 @admin.register(StoreMembership)
@@ -133,9 +135,13 @@ class StoreCategoryAdmin(admin.ModelAdmin):
 
 @admin.register(StoreProduct)
 class StoreProductAdmin(admin.ModelAdmin):
-    list_display = ("store", "name_ru", "category", "unit", "price", "is_active")
+    list_display = ("store", "name_ru", "category", "unit", "cost_price", "price", "margin_display", "is_active")
     list_filter = ("store", "category", "unit", "is_active")
     search_fields = ("name_ru", "name_ky", "name_en")
+
+    @admin.display(description="Маржа")
+    def margin_display(self, obj):
+        return f"{obj.margin} сом ({obj.margin_pct}%)"
 
 
 @admin.register(StoreStock)
@@ -143,3 +149,45 @@ class StoreStockAdmin(admin.ModelAdmin):
     list_display = ("branch", "product", "qty")
     list_filter = ("branch", "branch__store")
     search_fields = ("product__name_ru", "branch__name_ru")
+
+
+@admin.register(Warehouse)
+class WarehouseAdmin(admin.ModelAdmin):
+    list_display = ("store", "name", "address", "is_active")
+    list_filter = ("store", "is_active")
+    search_fields = ("name", "store__name_ru")
+
+
+@admin.register(WarehouseStock)
+class WarehouseStockAdmin(admin.ModelAdmin):
+    list_display = ("warehouse", "product", "qty")
+    list_filter = ("warehouse", "warehouse__store")
+    search_fields = ("product__name_ru", "warehouse__name")
+
+
+class StoreConstructorIngredientInline(admin.TabularInline):
+    model = StoreConstructorIngredient
+    extra = 1
+    fields = ("product", "price_override", "write_off_qty", "is_active", "sort_order")
+    autocomplete_fields = ("product",)
+
+
+class StoreConstructorGroupInline(admin.TabularInline):
+    model = StoreConstructorGroup
+    extra = 1
+    fields = ("name", "min_select", "max_select", "sort_order")
+
+
+@admin.register(StoreConstructor)
+class StoreConstructorAdmin(admin.ModelAdmin):
+    list_display  = ("store", "name", "base_price", "is_active", "sort_order")
+    list_filter   = ("store", "is_active")
+    search_fields = ("name", "store__name_ru")
+    inlines       = (StoreConstructorGroupInline,)
+
+
+@admin.register(StoreConstructorGroup)
+class StoreConstructorGroupAdmin(admin.ModelAdmin):
+    list_display  = ("constructor", "name", "min_select", "max_select", "sort_order")
+    list_filter   = ("constructor__store", "constructor")
+    inlines       = (StoreConstructorIngredientInline,)

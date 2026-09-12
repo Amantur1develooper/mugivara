@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load i18n static i18n_attrs l10n %}
 
-{% block title %}{{ project.name }} — {% trans "Эко-проекты" %}{% endblock %}
+{% block title %}{% t project "name" %} — {% trans "Эко-проекты" %}{% endblock %}
 {% block cta %}{% endblock %}
 
 {% block head_extra %}
@@ -304,7 +304,7 @@
     <div style="
       font-family:'Unbounded',sans-serif;font-weight:900;font-size:20px;
       color:#fff;text-align:center;max-width:260px;line-height:1.25;
-    ">{{ project.name }}</div>
+    ">{% t project "name" %}</div>
     <div style="
       display:flex;align-items:center;gap:6px;
       font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
@@ -367,12 +367,12 @@
     <div class="ed-header-orb2"></div>
     <div class="ed-header-inner">
       <div class="ed-logo">
-        {% if project.logo %}<img src="{{ project.logo.url }}" alt="{{ project.name }}">
+        {% if project.logo %}<img src="{{ project.logo.url }}" alt="{% t project 'name' %}">
         {% else %}🌿{% endif %}
       </div>
       <div class="ed-header-info">
         <div class="ed-eco-badge">♻️ {% trans "ЭКО-ПРОЕКТ" %}</div>
-        <div class="ed-name">{{ project.name }}</div>
+        <div class="ed-name">{% t project "name" %}</div>
         <div class="ed-meta">
           {% if project.address %}
           <div class="ed-meta-row"><span class="ed-meta-icon">📍</span><span>{{ project.address }}</span></div>
@@ -390,8 +390,8 @@
           </div>
           {% endif %}
         </div>
-        {% if project.description %}
-        <div class="ed-desc">{{ project.description }}</div>
+        {% t project "description" as pdesc %}{% if pdesc %}
+        <div class="ed-desc">{{ pdesc }}</div>
         {% endif %}
         <div class="ed-contacts">
           {% if project.whatsapp_url %}
@@ -431,9 +431,9 @@
         {% else %}🌿{% endif %}
       </div>
       <div class="svc-info">
-        <div class="svc-name">{{ svc.name }}</div>
-        {% if svc.description %}
-        <div class="svc-desc">{{ svc.description }}</div>
+        <div class="svc-name">{% t svc "name" %}</div>
+        {% t svc "description" as svcdesc %}{% if svcdesc %}
+        <div class="svc-desc">{{ svcdesc }}</div>
         {% endif %}
       </div>
       <div class="svc-right">
@@ -447,10 +447,10 @@
         {% endif %}
         <button class="svc-order-btn"
                 data-svc-id="{{ svc.id }}"
-                data-svc-name="{{ svc.name }}"
+                data-svc-name="{% t svc 'name' %}"
                 data-svc-price="{% if svc.price == 0 %}{% trans 'Бесплатно' %}{% else %}{{ svc.price|som }}{% endif %}"
                 data-svc-note="{{ svc.price_note }}"
-                data-org-name="{{ project.name }}"
+                data-org-name="{% t project 'name' %}"
                 data-org-phone="{{ project.whatsapp_digits }}"
                 onclick="openModal(this)">
           ♻️ {% trans "Заказать" %}

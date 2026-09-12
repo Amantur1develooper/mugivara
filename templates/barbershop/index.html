@@ -1,4 +1,4 @@
-{% load static i18n %}
+{% load static i18n i18n_attrs %}
 <!doctype html>
 <html lang="{{ LANGUAGE_CODE|default:'ru' }}">
 <head>
@@ -36,7 +36,7 @@
       {% if shop.cover %}<img src="{{ shop.cover.url }}" alt="">{% else %}✂️{% endif %}
     </div>
     <div class="card-body">
-      <div class="card-name">{{ shop.name }}</div>
+      <div class="card-name">{% t shop "name" %}</div>
       <div class="card-info">
         {% if shop.address %}📍 {{ shop.address }}<br>{% endif %}
         {% if shop.working_hours %}🕐 {{ shop.working_hours }}<br>{% endif %}

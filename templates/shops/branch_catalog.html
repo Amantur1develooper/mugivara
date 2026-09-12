@@ -202,15 +202,15 @@
     position:sticky;
     top:92px;
     z-index:100;
-    padding:14px 20px;
+    padding:14px 20px 0;
     margin-top:18px;
   }
-  .sc-cats-inner{
+  .sc-cats-row{
+    position:relative;
     max-width:1200px;
     margin:0 auto;
     padding:6px;
     display:flex;
-    gap:6px;
     align-items:center;
     background:rgba(255,255,255,.9);
     backdrop-filter:blur(20px);
@@ -218,10 +218,74 @@
     border:1px solid var(--sc-border);
     border-radius:999px;
     box-shadow:0 14px 36px rgba(16,24,40,.09), 0 2px 10px rgba(16,24,40,.05);
+  }
+  .sc-cats-inner{
+    flex:1;
+    min-width:0;
+    padding:0 4px 0 10px;
+    display:flex;
+    gap:6px;
+    align-items:center;
     overflow-x:auto;
     scrollbar-width:none;
   }
   .sc-cats-inner::-webkit-scrollbar{ display:none; }
+
+  .sc-cats-more-btn{
+    flex-shrink:0;
+    width:38px;
+    height:38px;
+    margin-left:2px;
+    border-radius:50%;
+    border:none;
+    background:#f6f7fb;
+    color:var(--sc-muted);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:14px;
+    transition:all .2s ease;
+    position:relative;
+    z-index:1;
+  }
+  .sc-cats-more-btn:hover{ color:var(--sc-text); background:#eef0f4; }
+  .sc-cats-more-btn.open{
+    background:linear-gradient(135deg,var(--sc-accent),var(--sc-accent-2));
+    color:#fff;
+    box-shadow:0 4px 14px var(--sc-glow);
+  }
+  .sc-cats-more-btn svg{ transition:transform .25s; }
+  .sc-cats-more-btn.open svg{ transform:rotate(180deg); }
+
+  .sc-cats-dropdown{
+    position:absolute;
+    top:calc(100% + 10px);
+    right:0;
+    left:0;
+    background:rgba(255,255,255,.98);
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+    border:1px solid var(--sc-border);
+    border-radius:24px;
+    box-shadow:0 20px 56px rgba(16,24,40,.14), 0 4px 16px rgba(16,24,40,.06);
+    padding:14px;
+    z-index:200;
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+    transform:translateY(-8px) scale(.98);
+    transition:opacity .2s ease, transform .2s ease, visibility .2s;
+  }
+  .sc-cats-dropdown.open{
+    opacity:1;
+    visibility:visible;
+    pointer-events:auto;
+    transform:translateY(0) scale(1);
+  }
   .sc-cat-btn{
     display:inline-flex;
     align-items:center;
@@ -342,6 +406,10 @@
     border-radius:999px;
     font-size:11px;
     font-weight:900;
+    white-space:nowrap;
+    max-width:calc(100% - 20px);
+    overflow:hidden;
+    text-overflow:ellipsis;
     backdrop-filter:blur(10px);
     -webkit-backdrop-filter:blur(10px);
   }
@@ -752,6 +820,7 @@
 {% block content %}
 <script>
 const CUR = "{% cur %}";
+const SHOW_STOCK_QTY = {{ branch.show_stock_qty|yesno:"true,false" }};
 const T = {
   pcs: "{% trans 'шт' %}",
   addCart: "{% trans '+ В корзину' %}",
@@ -834,12 +903,27 @@ const T = {
     </div>
   </div>
 
-  <div class="sc-cats-sticky">
-    <div class="sc-cats-inner" id="scCatsBar">
-      <a href="#sc-top" class="sc-cat-btn active" data-cat-link="sc-top">{% trans "Все" %}</a>
-      {% for c in categories %}
-        <a href="#cat-{{ c.id }}" class="sc-cat-btn" data-cat-link="cat-{{ c.id }}">{% t c "name" %}</a>
-      {% endfor %}
+  <div class="sc-cats-sticky" id="scCatsStickyBar">
+    <div class="sc-cats-row">
+      <div class="sc-cats-inner" id="scCatsBar">
+        <a href="#sc-top" class="sc-cat-btn active" data-cat-link="sc-top">{% trans "Все" %}</a>
+        {% for c in categories %}
+          <a href="#cat-{{ c.id }}" class="sc-cat-btn" data-cat-link="cat-{{ c.id }}">{% t c "name" %}</a>
+        {% endfor %}
+      </div>
+
+      <button class="sc-cats-more-btn" id="scCatsMoreBtn" onclick="toggleScCatsDropdown()" aria-label="{% trans 'Все категории' %}">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M2 4.5L7 9.5L12 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <div class="sc-cats-dropdown" id="scCatsDropdown">
+        <a href="#sc-top" class="sc-cat-btn" data-cat-link="sc-top" onclick="closeScCatsDropdown()">{% trans "Все" %}</a>
+        {% for c in categories %}
+          <a href="#cat-{{ c.id }}" class="sc-cat-btn" data-cat-link="cat-{{ c.id }}" onclick="closeScCatsDropdown()">{% t c "name" %}</a>
+        {% endfor %}
+      </div>
     </div>
   </div>
 
@@ -881,9 +965,11 @@ const T = {
                       <div class="sc-card-placeholder">🛍️</div>
                     {% endif %}
                     <div class="sc-media-grad"></div>
-                    <span class="sc-stock-badge {% if s.qty <= 0 %}out{% endif %}">
-                      {% if s.qty > 0 %}{% trans "Есть" %}: {{ s.qty|floatformat:"-3" }}{% else %}{% trans "Нет в наличии" %}{% endif %}
-                    </span>
+                    {% if s.qty <= 0 %}
+                    <span class="sc-stock-badge out">{% trans "Нет в наличии" %}</span>
+                    {% elif branch.show_stock_qty %}
+                    <span class="sc-stock-badge">{% trans "Есть" %}: {{ s.qty|floatformat:"-3" }}</span>
+                    {% endif %}
                     <span class="sc-price-badge">{{ s.product.price|som }}</span>
                   </div>
 
@@ -902,9 +988,11 @@ const T = {
 
                     <div class="sc-card-footer">
                       <div class="sc-price-wrap">
-                        <div class="sc-price-label">{% trans "Цена" %}</div>
-                        <div class="sc-price-value">{{ s.product.price|som }}</div>
+                        {% if s.qty <= 0 %}
+                        <div class="sc-stock-note">{% trans "Нет в наличии" %}</div>
+                        {% elif branch.show_stock_qty %}
                         <div class="sc-stock-note">{% trans "В наличии" %}: <b>{{ s.qty|floatformat:"-3" }}</b>{% if s.product.unit %} {{ s.product.unit }}{% endif %}</div>
+                        {% endif %}
                       </div>
 
                       {% if s.qty > 0 %}
@@ -1108,8 +1196,17 @@ const T = {
     document.getElementById('scModalCat').textContent   = d.cat || '';
     document.getElementById('scModalTitle').textContent = d.name || '';
     document.getElementById('scModalPrice').textContent = (d.price || '0') + ' ' + CUR;
-    document.getElementById('scModalStock').textContent =
-      inStock ? (T.inStock + ' ' + d.qty + ' ' + (d.unit || '')) : T.soldOut;
+    const modalStockEl = document.getElementById('scModalStock');
+    if (!inStock) {
+      modalStockEl.textContent = T.soldOut;
+      modalStockEl.style.display = '';
+    } else if (SHOW_STOCK_QTY) {
+      modalStockEl.textContent = T.inStock + ' ' + d.qty + ' ' + (d.unit || '');
+      modalStockEl.style.display = '';
+    } else {
+      modalStockEl.textContent = '';
+      modalStockEl.style.display = 'none';
+    }
 
     // full description from hidden span
     const fullDesc = card.querySelector('.sc-card-full-desc')?.textContent?.trim() || '';
@@ -1223,6 +1320,73 @@ const T = {
       const top = sections[0].getBoundingClientRect().top;
       if (top > 200) setActive('sc-top');
     }, { passive: true });
+  })();
+
+  // ── Дропдаун категорий ──────────────────────────────────────
+  function toggleScCatsDropdown() {
+    const btn = document.getElementById('scCatsMoreBtn');
+    const dd  = document.getElementById('scCatsDropdown');
+    const open = dd.classList.toggle('open');
+    btn.classList.toggle('open', open);
+  }
+  function closeScCatsDropdown() {
+    document.getElementById('scCatsDropdown')?.classList.remove('open');
+    document.getElementById('scCatsMoreBtn')?.classList.remove('open');
+  }
+  document.addEventListener('click', e => {
+    const bar = document.getElementById('scCatsStickyBar');
+    if (bar && !bar.contains(e.target)) closeScCatsDropdown();
+  });
+  // Полоса категорий скроллится целиком; в дропдаун попадают только те
+  // категории, что сейчас не влезли в полосу — пересчитывается на скролле,
+  // ресайзе и при открытии дропдауна.
+  (function() {
+    const bar = document.getElementById('scCatsBar');
+    const btn = document.getElementById('scCatsMoreBtn');
+    const dd  = document.getElementById('scCatsDropdown');
+    if (!bar || !btn || !dd) return;
+
+    const chips = Array.from(bar.querySelectorAll('[data-cat-link]'));
+    const ddByKey = {};
+    dd.querySelectorAll('[data-cat-link]').forEach(a => { ddByKey[a.dataset.catLink] = a; });
+
+    function recalc() {
+      Object.values(ddByKey).forEach(a => { a.style.display = 'none'; });
+
+      const barRect = bar.getBoundingClientRect();
+      let hidden = 0;
+      chips.forEach((chip, i) => {
+        if (i === 0) return; // «Все» — всегда в полосе, в дропдаун не дублируем
+        const r = chip.getBoundingClientRect();
+        const visible = r.left >= barRect.left - 1 && r.right <= barRect.right + 1;
+        if (!visible) {
+          const ddItem = ddByKey[chip.dataset.catLink];
+          if (ddItem) { ddItem.style.display = ''; hidden++; }
+        }
+      });
+
+      btn.style.display = hidden > 0 ? 'flex' : 'none';
+      if (!hidden) closeScCatsDropdown();
+    }
+
+    let ticking = false;
+    bar.addEventListener('scroll', () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => { recalc(); ticking = false; });
+    }, { passive: true });
+
+    let resizeT;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeT);
+      resizeT = setTimeout(recalc, 120);
+    }, { passive: true });
+
+    window.addEventListener('load', recalc);
+    recalc();
+
+    const origToggle = toggleScCatsDropdown;
+    window.toggleScCatsDropdown = function() { recalc(); origToggle(); };
   })();
 </script>
 {% endblock %}

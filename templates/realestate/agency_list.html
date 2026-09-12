@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static i18n_attrs %}
 
 {% block title %}{% trans "Агентства недвижимости" %} — Webordo{% endblock %}
 {% block cta %}{% endblock %}
@@ -60,10 +60,10 @@
     {% for agency in agencies %}
     <a href="{% url 'realestate:agency_detail' agency.slug %}" class="re-card">
       <div class="re-card-cover">
-        {% if agency.cover %}<img src="{{ agency.cover.url }}" alt="{{ agency.name }}">{% else %}🏢{% endif %}
+        {% if agency.cover %}<img src="{{ agency.cover.url }}" alt="{% t agency 'name' %}">{% else %}🏢{% endif %}
       </div>
       <div class="re-card-body">
-        <div class="re-card-name">{{ agency.name }}</div>
+        <div class="re-card-name">{% t agency "name" %}</div>
         {% if agency.address %}<div class="re-card-meta">📍 {{ agency.address }}</div>{% endif %}
       </div>
       <div class="re-card-footer">

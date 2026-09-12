@@ -48,11 +48,11 @@
     {% for v in venues %}
     <a href="{% url 'karaoke:karaoke_detail' v.slug %}" class="kr-card">
       <div class="kr-card-cover">
-        {% if v.cover %}<img src="{{ v.cover.url }}" alt="{{ v.name }}" loading="lazy">{% else %}🎤{% endif %}
+        {% if v.cover %}<img src="{{ v.cover.url }}" alt="{% t v 'name' %}" loading="lazy">{% else %}🎤{% endif %}
       </div>
       <div class="kr-card-body">
-        <div class="kr-card-name">{{ v.name }}</div>
-        {% if v.tagline %}<div class="kr-card-tag">{{ v.tagline }}</div>{% endif %}
+        <div class="kr-card-name">{% t v "name" %}</div>
+        {% t v "tagline" as vtag %}{% if vtag %}<div class="kr-card-tag">{{ vtag }}</div>{% endif %}
         <div class="kr-card-meta">
           {% if v.address %}<span>📍 {{ v.address|truncatechars:30 }}</span>{% endif %}
           {% if v.working_hours %}<span>🕐 {{ v.working_hours }}</span>{% endif %}

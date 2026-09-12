@@ -71,6 +71,7 @@
         </div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="{% url 'dashboard:shop_warehouse' item.store.id %}" class="db-btn db-btn-ghost db-btn-sm">📦 Склад</a>
         <a href="{% url 'dashboard:shop_store_edit' item.store.id %}" class="db-btn db-btn-ghost db-btn-sm">✏️ Настройки магазина</a>
         {% if request.user.is_superuser %}
           <a href="{% url 'dashboard:shop_store_duplicate' item.store.id %}" class="db-btn db-btn-ghost db-btn-sm" title="Клонировать всю сеть со всеми филиалами и товарами">📋 Клонировать сеть</a>
