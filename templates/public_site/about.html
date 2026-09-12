@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n static %}
+{% load i18n static i18n_attrs %}
 {% block title %}{% trans "О Webordo" %}{% endblock %}
 
 {% block content %}
@@ -228,6 +228,60 @@
         </div>
       </div>
     </section>
+
+    {% if team %}
+    <section class="mt-8 sm:mt-10 rounded-[34px] overflow-hidden border border-stone-200/80 shadow-[0_22px_70px_rgba(15,23,42,.08)] bg-white">
+      <div class="px-6 sm:px-8 lg:px-10 py-8 sm:py-10">
+        <div class="inline-flex items-center gap-2 rounded-full bg-orange-50 border border-orange-200 px-3 py-1.5 text-[11px] sm:text-xs font-extrabold uppercase tracking-[0.16em] text-orange-600">
+          {% trans "Команда" %}
+        </div>
+        <h2 class="mt-4 text-2xl sm:text-3xl lg:text-[40px] font-black tracking-tight text-stone-950 leading-tight">
+          {% trans "Кто стоит за Webordo" %}
+        </h2>
+
+        <div class="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {% for member in team %}
+          <div class="rounded-[28px] border border-white/10 bg-gradient-to-br from-stone-950 via-stone-900 to-stone-800 text-white p-6 shadow-[0_18px_50px_rgba(15,23,42,.14)]">
+            <div class="flex items-center gap-4">
+              <div class="w-20 h-20 rounded-2xl overflow-hidden ring-2 ring-white/15 bg-white/10 flex-shrink-0">
+                {% if member.photo %}
+                  <img src="{{ member.photo.url }}" alt="{% t member 'name' %}" class="w-full h-full object-cover">
+                {% else %}
+                  <div class="w-full h-full flex items-center justify-center text-3xl">🙂</div>
+                {% endif %}
+              </div>
+              <div class="min-w-0">
+                <div class="text-lg font-black leading-tight truncate">{% t member "name" %}</div>
+                <div class="mt-1.5 inline-flex items-center rounded-full bg-orange-400/15 ring-1 ring-orange-300/30 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.08em] text-orange-300">
+                  {% t member "role" %}
+                </div>
+              </div>
+            </div>
+
+            {% t member "bio" as member_bio %}{% if member_bio %}
+            <p class="mt-4 text-sm text-white/75 leading-relaxed">{{ member_bio }}</p>
+            {% endif %}
+
+            <div class="mt-5 flex flex-wrap gap-2">
+              {% if member.phone %}
+                <a href="tel:{{ member.phone }}" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 ring-1 ring-white/10 px-3 py-2 text-xs font-bold hover:bg-white/15 transition">📞 {{ member.phone }}</a>
+              {% endif %}
+              {% if member.email %}
+                <a href="mailto:{{ member.email }}" class="inline-flex items-center gap-1.5 rounded-xl bg-white/10 ring-1 ring-white/10 px-3 py-2 text-xs font-bold hover:bg-white/15 transition">✉️ {{ member.email }}</a>
+              {% endif %}
+              {% if member.whatsapp_url %}
+                <a href="{{ member.whatsapp_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-white transition" style="background:#25D366;">WhatsApp</a>
+              {% endif %}
+              {% if member.instagram_url %}
+                <a href="{{ member.instagram_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-xs font-bold text-stone-950 hover:bg-stone-100 transition">Instagram</a>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+    {% endif %}
 
     <section class="mt-8 sm:mt-10 rounded-[34px] bg-stone-950 text-white overflow-hidden shadow-[0_24px_80px_rgba(15,23,42,.14)]">
       <div class="px-6 sm:px-8 lg:px-12 py-8 sm:py-10 lg:py-12 relative">

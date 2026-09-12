@@ -1071,7 +1071,9 @@ def checkout_success(request, branch_id: int, order_id: int):
 
 
 def about(request):
-    return render(request, "public_site/about.html")
+    from core.models import TeamMember
+    team = TeamMember.objects.filter(is_active=True).order_by("sort_order", "id")
+    return render(request, "public_site/about.html", {"team": team})
 
 
 def privacy(request):

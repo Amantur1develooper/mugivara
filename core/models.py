@@ -321,6 +321,38 @@ class Banner(models.Model):
         return self.title
 
 
+class TeamMember(TimeStampedModel):
+    """Команда Webordo — карточка на странице «О нас» (фото, должность, контакты).
+    Владелец редактирует всё сам через админку, без правки кода."""
+
+    photo    = models.ImageField("Фото", upload_to="team/", blank=True, null=True)
+    name_ru  = models.CharField("Имя (рус)", max_length=150)
+    name_ky  = models.CharField("Имя (кырг)", max_length=150, blank=True, default="")
+    name_en  = models.CharField("Имя (англ)", max_length=150, blank=True, default="")
+    role_ru  = models.CharField("Должность (рус)", max_length=150, default="Директор и CEO")
+    role_ky  = models.CharField("Должность (кырг)", max_length=150, blank=True, default="")
+    role_en  = models.CharField("Должность (англ)", max_length=150, blank=True, default="")
+    bio_ru   = models.TextField("О себе (рус)", blank=True, default="")
+    bio_ky   = models.TextField("О себе (кырг)", blank=True, default="")
+    bio_en   = models.TextField("О себе (англ)", blank=True, default="")
+
+    phone         = models.CharField("Телефон", max_length=40, blank=True, default="")
+    email         = models.EmailField("Email", blank=True, default="")
+    whatsapp_url  = models.URLField("WhatsApp (ссылка)", blank=True, default="")
+    instagram_url = models.URLField("Instagram", blank=True, default="")
+
+    sort_order = models.PositiveSmallIntegerField("Порядок", default=0)
+    is_active  = models.BooleanField("Показывать на сайте", default=True)
+
+    class Meta:
+        ordering            = ["sort_order", "id"]
+        verbose_name        = "Команда — сотрудник"
+        verbose_name_plural = "Команда"
+
+    def __str__(self):
+        return f"{self.name_ru} — {self.role_ru}"
+
+
 class UserProfile(models.Model):
     """Профиль мобильного пользователя — привязан 1:1 к User."""
     user  = models.OneToOneField(

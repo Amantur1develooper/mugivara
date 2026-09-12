@@ -6,7 +6,8 @@ from django.urls import path
 from django import forms
 from django.contrib.admin.widgets import AutocompleteSelect
 from django.db import transaction
-from .models import Restaurant, Branch, Membership, PromoCode, Banner, PlaceCategory
+from django.utils.html import format_html
+from .models import Restaurant, Branch, Membership, PromoCode, Banner, PlaceCategory, TeamMember
 from catalog.models import MenuSet, Item, BranchMenuSet, BranchItem
 from catalog.models import BranchItem as CatalogBranchItem
 from catalog.services import sync_branch_menu, ensure_links_for_branch_item
@@ -363,6 +364,28 @@ class BannerAdmin(admin.ModelAdmin):
         "image_wide", "image_tablet", "image_mobile",
         "link_url", "click_count",
     )
+
+
+@admin.register(TeamMember)
+class TeamMemberAdmin(admin.ModelAdmin):
+    list_display  = ("photo_preview", "name_ru", "role_ru", "phone", "email", "is_active", "sort_order")
+    list_filter   = ("is_active",)
+    search_fields = ("name_ru", "name_ky", "name_en", "role_ru", "email", "phone")
+    fieldsets = (
+        ("Фото", {"fields": ("photo", "photo_preview")}),
+        ("Имя", {"fields": ("name_ru", "name_ky", "name_en")}),
+        ("Должность", {"fields": ("role_ru", "role_ky", "role_en")}),
+        ("О себе", {"fields": ("bio_ru", "bio_ky", "bio_en")}),
+        ("Контакты", {"fields": ("phone", "email", "whatsapp_url", "instagram_url")}),
+        ("Показ на сайте", {"fields": ("is_active", "sort_order")}),
+    )
+    readonly_fields = ("photo_preview",)
+
+    @admin.display(description="Фото")
+    def photo_preview(self, obj):
+        if obj.photo:
+            return format_html('<img src="{}" style="width:64px;height:64px;object-fit:cover;border-radius:12px">', obj.photo.url)
+        return "—"
 
 
 @admin.register(Membership)
