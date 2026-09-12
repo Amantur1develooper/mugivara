@@ -134,6 +134,18 @@ urlpatterns = [
     path("shops/branch/<int:branch_id>/pos/history/",      sv.shop_pos_history,        name="shop_pos_history"),
     path("shops/pos/order/<int:order_id>/cancel/",         sv.shop_pos_order_cancel,   name="shop_pos_order_cancel"),
 
+    path("shops/<int:store_id>/constructor/",                       sv.shop_constructor_list,             name="shop_constructor_list"),
+    path("shops/<int:store_id>/constructor/add/",                   sv.shop_constructor_add,              name="shop_constructor_add"),
+    path("shops/constructor/<int:cx_id>/delete/",                   sv.shop_constructor_delete,           name="shop_constructor_delete"),
+    path("shops/constructor/<int:cx_id>/toggle/",                   sv.shop_constructor_toggle,           name="shop_constructor_toggle"),
+    path("shops/constructor/<int:cx_id>/photo/",                    sv.shop_constructor_photo_update,     name="shop_constructor_photo_update"),
+    path("shops/constructor/<int:cx_id>/group/add/",                sv.shop_constructor_group_add,        name="shop_constructor_group_add"),
+    path("shops/constructor/group/<int:group_id>/update/",          sv.shop_constructor_group_update,     name="shop_constructor_group_update"),
+    path("shops/constructor/group/<int:group_id>/delete/",          sv.shop_constructor_group_delete,     name="shop_constructor_group_delete"),
+    path("shops/constructor/group/<int:group_id>/ingredient/add/",  sv.shop_constructor_ingredient_add,    name="shop_constructor_ingredient_add"),
+    path("shops/constructor/ingredient/<int:ing_id>/update/",       sv.shop_constructor_ingredient_update, name="shop_constructor_ingredient_update"),
+    path("shops/constructor/ingredient/<int:ing_id>/delete/",       sv.shop_constructor_ingredient_delete, name="shop_constructor_ingredient_delete"),
+
     # ── AGENCY ──────────────────────────────────────────────────────────────
     path("agency/",                                      av.agency_home,           name="agency_home"),
     path("agency/<int:agency_id>/edit/",                 av.agency_edit,           name="agency_edit"),

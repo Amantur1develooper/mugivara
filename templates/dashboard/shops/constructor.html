@@ -1,0 +1,770 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Собери сам — {{ store.name_ru }}{% endblock %}
+{% block nav_shops %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+.cx-wrap { max-width: 800px; }
+
+/* ── Создать конструктор ── */
+.cx-create-box {
+  background: var(--card); border: 1.5px dashed var(--border);
+  border-radius: 16px; padding: 18px; margin-bottom: 24px;
+}
+.cx-create-title { font-weight: 800; font-size: 13px; margin-bottom: 12px; color: var(--text); }
+.cx-create-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.cx-inp {
+  padding: 9px 13px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: var(--bg);
+  font-size: 13px; color: var(--text); outline: none;
+  transition: border-color .15s; font-family: inherit; box-sizing: border-box;
+}
+.cx-inp:focus { border-color: var(--accent); }
+.cx-inp-lg  { flex: 1; min-width: 140px; }
+.cx-inp-md  { width: 120px; }
+.cx-inp-sm  { width: 80px; }
+.cx-inp-tiny{ width: 56px; text-align: center; padding: 6px 8px; }
+
+/* ── Buttons ── */
+.cx-btn {
+  padding: 8px 14px; border-radius: 10px; border: none;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  font-family: inherit; transition: opacity .15s, background .15s;
+  white-space: nowrap;
+}
+.cx-btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; box-shadow: 0 3px 10px rgba(255,77,28,.2);
+}
+.cx-btn-primary:hover { opacity: .88; }
+.cx-btn-ghost {
+  background: transparent; color: var(--text2);
+  border: 1.5px solid var(--border);
+}
+.cx-btn-ghost:hover { border-color: var(--text); color: var(--text); }
+.cx-btn-danger { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
+.cx-btn-danger:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,.05); }
+.cx-btn-sm { padding: 5px 10px; font-size: 11px; border-radius: 8px; }
+
+/* ── Constructor card ── */
+.cx-card {
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 18px; margin-bottom: 20px; overflow: hidden;
+}
+.cx-card-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px; background: var(--bg);
+  border-bottom: 1.5px solid var(--border);
+}
+.cx-card-icon { font-size: 20px; flex-shrink: 0; }
+.cx-card-meta { flex: 1; min-width: 0; }
+.cx-card-name { font-weight: 800; font-size: 14px; color: var(--text); }
+.cx-card-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.cx-status {
+  padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 700;
+  flex-shrink: 0;
+}
+.cx-status.on  { background: rgba(16,185,129,.1);  color: #10b981; border: 1px solid rgba(16,185,129,.2); }
+.cx-status.off { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+.cx-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* ── Groups container ── */
+.cx-card-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+
+/* ── Group ── */
+.cx-group {
+  border: 1.5px solid var(--border); border-radius: 14px;
+  overflow: visible; background: var(--bg);
+}
+.cx-group-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; background: var(--card);
+  border-bottom: 1px solid var(--border);
+  border-radius: 13px 13px 0 0; flex-wrap: wrap;
+}
+.cx-group-name { font-weight: 700; font-size: 13px; color: var(--text); flex: 1; min-width: 80px; }
+.cx-group-limits {
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+.cx-group-limits label { font-size: 10px; color: var(--muted); font-weight: 600; }
+.cx-limit-inp {
+  width: 46px; padding: 4px 6px; border-radius: 7px;
+  border: 1.5px solid var(--border); background: var(--bg);
+  font-size: 12px; font-weight: 700; text-align: center;
+  color: var(--text); outline: none; font-family: inherit;
+  transition: border-color .15s;
+}
+.cx-limit-inp:focus { border-color: var(--accent); }
+.cx-limit-saved { font-size: 10px; color: #10b981; opacity: 0; transition: opacity .3s; }
+.cx-limit-saved.show { opacity: 1; }
+
+/* ── Ingredient chips ── */
+.cx-ings { display: flex; flex-wrap: wrap; gap: 7px; padding: 11px 14px 8px; }
+.cx-ing-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 100px; padding: 4px 6px 4px 4px;
+  font-size: 12px; font-weight: 600; color: var(--text);
+  transition: border-color .15s;
+}
+.cx-ing-chip:hover { border-color: var(--accent); }
+.cx-ing-chip img,
+.cx-ing-chip-ico {
+  width: 24px; height: 24px; border-radius: 50%; object-fit: cover;
+  flex-shrink: 0; background: var(--bg);
+  display: flex; align-items: center; justify-content: center; font-size: 12px;
+}
+
+/* Price badge — clickable to edit */
+.cx-ing-price-badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 7px; border-radius: 100px;
+  font-size: 11px; font-weight: 800; cursor: pointer;
+  background: rgba(255,77,28,.08); color: var(--accent);
+  border: 1px solid rgba(255,77,28,.15);
+  transition: background .12s; flex-shrink: 0;
+}
+.cx-ing-price-badge:hover { background: rgba(255,77,28,.16); }
+.cx-ing-price-edit { display: none; align-items: center; gap: 4px; }
+.cx-ing-price-edit.open { display: flex; }
+.cx-ing-price-input {
+  width: 64px; padding: 3px 7px; border-radius: 7px;
+  border: 1.5px solid var(--accent); font-size: 12px; font-weight: 700;
+  font-family: inherit; outline: none; color: var(--text);
+  background: #fff;
+}
+.cx-ing-price-save {
+  width: 22px; height: 22px; border-radius: 6px; border: none;
+  background: var(--accent); color: #fff; font-size: 12px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+
+/* Write-off qty badge — clickable to edit */
+.cx-ing-qty-badge {
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 2px 7px; border-radius: 100px;
+  font-size: 11px; font-weight: 700; cursor: pointer;
+  background: rgba(16,185,129,.08); color: #059669;
+  border: 1px solid rgba(16,185,129,.18);
+  transition: background .12s; flex-shrink: 0; white-space: nowrap;
+}
+.cx-ing-qty-badge:hover { background: rgba(16,185,129,.16); }
+.cx-ing-qty-edit { display: none; align-items: center; gap: 4px; }
+.cx-ing-qty-edit.open { display: flex; }
+.cx-ing-qty-input {
+  width: 56px; padding: 3px 7px; border-radius: 7px;
+  border: 1.5px solid #10b981; font-size: 12px; font-weight: 700;
+  font-family: inherit; outline: none; color: var(--text);
+  background: #fff;
+}
+.cx-ing-qty-save {
+  width: 22px; height: 22px; border-radius: 6px; border: none;
+  background: #10b981; color: #fff; font-size: 12px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+
+.cx-ing-del {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: transparent; border: none;
+  color: var(--muted); cursor: pointer; font-size: 13px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; transition: color .12s, background .12s; flex-shrink: 0;
+}
+.cx-ing-del:hover { color: #ef4444; background: rgba(239,68,68,.08); }
+.cx-ings-empty { font-size: 12px; color: var(--muted); font-style: italic; align-self: center; }
+
+/* ── Add ingredient (из товаров магазина) ── */
+.cx-add-zone { padding: 0 14px 12px; }
+.cx-dropdown-wrap { position: relative; }
+.cx-add-menu-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 100px;
+  border: 1.5px dashed var(--border);
+  background: transparent; font-size: 12px; font-weight: 600;
+  color: var(--text2); cursor: pointer; transition: all .15s;
+  font-family: inherit; align-self: flex-start;
+}
+.cx-add-menu-btn:hover { border-color: var(--accent); color: var(--accent); }
+.cx-dropdown {
+  display: none; position: absolute; left: 0; right: 0;
+  top: calc(100% + 4px); z-index: 300;
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 14px; box-shadow: 0 12px 36px rgba(0,0,0,.12);
+  overflow: hidden;
+}
+.cx-dropdown.open { display: block; }
+.cx-dd-search { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.cx-dd-search input {
+  width: 100%; padding: 7px 10px; border-radius: 8px;
+  border: 1.5px solid var(--border); font-size: 12px;
+  background: var(--bg); color: var(--text); outline: none;
+  font-family: inherit; box-sizing: border-box;
+}
+.cx-dd-search input:focus { border-color: var(--accent); }
+.cx-dd-list { max-height: 240px; overflow-y: auto; }
+.cx-dd-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; cursor: pointer; transition: background .1s;
+  border-bottom: 1px solid var(--border);
+}
+.cx-dd-item:last-child { border-bottom: none; }
+.cx-dd-item:hover { background: var(--bg); }
+.cx-dd-item.used { opacity: .35; pointer-events: none; }
+.cx-dd-img { width: 32px; height: 32px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+.cx-dd-ico { width: 32px; height: 32px; border-radius: 8px; background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.cx-dd-name { font-size: 12px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cx-dd-price { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+.cx-dd-empty { padding: 16px; text-align: center; font-size: 12px; color: var(--muted); }
+
+/* Photo picker */
+.cx-create-photo {
+  width: 80px; height: 56px; flex-shrink: 0;
+  border: 1.5px dashed var(--border); border-radius: 10px;
+  background: var(--bg); cursor: pointer; overflow: hidden;
+  position: relative; display: flex; align-items: center; justify-content: center;
+  transition: border-color .15s;
+}
+.cx-create-photo:hover { border-color: var(--accent); }
+.cx-create-photo img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+.cx-create-photo-icon { font-size: 20px; opacity: .5; }
+
+/* ── Add group bar ── */
+.cx-add-group-bar { border-top: 1.5px dashed var(--border); padding: 14px 18px; }
+.cx-add-group-label {
+  font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .4px; margin-bottom: 10px;
+}
+.cx-add-group-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+
+/* ── Constructor cover ── */
+.cx-cover {
+  width: 100%; aspect-ratio: 16/7; border-radius: 16px 16px 0 0;
+  overflow: hidden; position: relative; cursor: pointer;
+  background: var(--bg); border-bottom: 1.5px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+}
+.cx-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cx-cover-placeholder { font-size: 32px; opacity: .35; }
+.cx-cover-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0); transition: background .18s;
+  display: flex; align-items: center; justify-content: center;
+}
+.cx-cover:hover .cx-cover-overlay { background: rgba(0,0,0,.35); }
+.cx-cover-hint {
+  color: #fff; font-size: 12px; font-weight: 700;
+  opacity: 0; transition: opacity .18s;
+  background: rgba(0,0,0,.5); padding: 6px 14px; border-radius: 100px;
+}
+.cx-cover:hover .cx-cover-hint { opacity: 1; }
+
+/* ── Toast ── */
+.cx-toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+  background: #111118; color: #fff; padding: 10px 18px;
+  border-radius: 12px; font-size: 13px; font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0,0,0,.2);
+  transform: translateY(20px); opacity: 0; transition: all .28s;
+  pointer-events: none;
+}
+.cx-toast.show { transform: translateY(0); opacity: 1; }
+.cx-toast.ok  { background: #047857; }
+.cx-toast.err { background: #b91c1c; }
+
+@media (max-width: 600px) {
+  .cx-create-row  { flex-direction: column; }
+  .cx-inp-lg      { width: 100%; }
+  .cx-add-group-row { flex-direction: column; }
+}
+</style>
+
+{# URL-справочник для JS #}
+<div id="cx-url-map" style="display:none"
+  data-add       ="{% url 'dashboard:shop_constructor_add' store.id %}"
+  data-grp-add   ="{% url 'dashboard:shop_constructor_group_add' 99999 %}"
+  data-grp-upd   ="{% url 'dashboard:shop_constructor_group_update' 99999 %}"
+  data-grp-del   ="{% url 'dashboard:shop_constructor_group_delete' 99999 %}"
+  data-ing-add   ="{% url 'dashboard:shop_constructor_ingredient_add' 99999 %}"
+  data-ing-upd   ="{% url 'dashboard:shop_constructor_ingredient_update' 99999 %}"
+  data-ing-del   ="{% url 'dashboard:shop_constructor_ingredient_delete' 99999 %}"
+  data-cx-del    ="{% url 'dashboard:shop_constructor_delete' 99999 %}"
+  data-cx-toggle ="{% url 'dashboard:shop_constructor_toggle' 99999 %}"
+  data-cx-photo  ="{% url 'dashboard:shop_constructor_photo_update' 99999 %}">
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">🧩 Собери сам</div>
+    <div class="db-breadcrumb">{{ store.name_ru }}</div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <a href="{% url 'dashboard:shop_warehouse' store.id %}" class="db-btn db-btn-ghost db-btn-sm">📦 Склад</a>
+    <a href="{% url 'dashboard:shop_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
+  </div>
+</div>
+
+<div class="cx-wrap">
+  <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6">
+    Создайте конструктор (букет, набор и т.д.) → добавьте группы (например «Цветы», «Упаковка») →
+    добавьте в них товары магазина с ценой и количеством списания со склада. При оформлении заказа
+    в кассе выбранные товары автоматически спишутся со склада филиала.
+  </p>
+
+  {# ── Создать конструктор ── #}
+  <div class="cx-create-box">
+    <div class="cx-create-title">➕ Новый конструктор</div>
+    <div class="cx-create-row">
+      <div class="cx-create-photo" onclick="document.getElementById('newPhoto').click()" title="Добавить фото обложки">
+        <input type="file" accept="image/*" id="newPhoto" style="display:none" onchange="previewNewCx(this)">
+        <img id="newPhotoPreview" src="" alt="" style="display:none">
+        <span class="cx-create-photo-icon" id="newPhotoIcon">🖼</span>
+      </div>
+      <input class="cx-inp cx-inp-lg" id="newName" placeholder="Название, например: Собери свой букет">
+      <input class="cx-inp cx-inp-lg" id="newDesc" placeholder="Описание (необязательно)">
+      <input class="cx-inp cx-inp-sm" id="newBasePrice" type="number" min="0" placeholder="Баз. цена" title="Базовая цена (сом)">
+      <button class="cx-btn cx-btn-primary" onclick="createConstructor()">Создать</button>
+    </div>
+  </div>
+
+  {# ── Список конструкторов ── #}
+  <div id="cxList">
+    {% for cx in constructors %}
+    <div class="cx-card" id="cx-{{ cx.id }}">
+
+      <div class="cx-cover" id="cx-cover-{{ cx.id }}"
+           onclick="document.getElementById('cx-photo-input-{{ cx.id }}').click()"
+           title="Нажмите чтобы загрузить фото обложки">
+        <input type="file" accept="image/*" id="cx-photo-input-{{ cx.id }}"
+               style="display:none" onchange="uploadCxPhoto({{ cx.id }}, this)">
+        {% if cx.photo %}
+          <img id="cx-cover-img-{{ cx.id }}" src="{{ cx.photo.url }}" alt="">
+        {% else %}
+          <span class="cx-cover-placeholder" id="cx-cover-placeholder-{{ cx.id }}">🧩</span>
+          <img id="cx-cover-img-{{ cx.id }}" src="" alt="" style="display:none">
+        {% endif %}
+        <div class="cx-cover-overlay"><span class="cx-cover-hint">📷 Изменить фото</span></div>
+      </div>
+
+      <div class="cx-card-head">
+        <span class="cx-card-icon">🧩</span>
+        <div class="cx-card-meta">
+          <div class="cx-card-name">{{ cx.name }} <span style="color:var(--muted);font-weight:600">· {{ cx.base_price|floatformat:0 }} сом баз.</span></div>
+          {% if cx.description %}<div class="cx-card-desc">{{ cx.description }}</div>{% endif %}
+        </div>
+        <span class="cx-status {% if cx.is_active %}on{% else %}off{% endif %}" id="cx-status-{{ cx.id }}">
+          {% if cx.is_active %}Активен{% else %}Выкл{% endif %}
+        </span>
+        <div class="cx-card-actions">
+          <button class="cx-btn cx-btn-ghost cx-btn-sm" onclick="toggleCx({{ cx.id }})">Вкл/Выкл</button>
+          <button class="cx-btn cx-btn-danger cx-btn-sm" onclick="deleteCx({{ cx.id }})">Удалить</button>
+        </div>
+      </div>
+
+      <div class="cx-card-body" id="cx-groups-{{ cx.id }}">
+        {% for g in cx.groups.all %}
+        <div class="cx-group" id="cxg-{{ g.id }}">
+          <div class="cx-group-head">
+            <div class="cx-group-name">{{ g.name }}</div>
+            <div class="cx-group-limits">
+              <label>Мин</label>
+              <input class="cx-limit-inp" id="cxmin-{{ g.id }}" type="number" min="0"
+                     value="{{ g.min_select }}" onchange="saveGroupLimits({{ g.id }})"
+                     title="Минимум выбора (0 = необязательно)">
+              <label>Макс <span style="color:var(--muted);font-weight:400">(0=∞)</span></label>
+              <input class="cx-limit-inp" id="cxmax-{{ g.id }}" type="number" min="0"
+                     value="{{ g.max_select }}" onchange="saveGroupLimits({{ g.id }})"
+                     title="Максимум выбора (0 = без ограничения)">
+              <span class="cx-limit-saved" id="cxlim-saved-{{ g.id }}">✓</span>
+            </div>
+            <button class="cx-btn cx-btn-danger cx-btn-sm" onclick="deleteGroup({{ g.id }})">✕ Удалить</button>
+          </div>
+
+          <div class="cx-ings" id="cx-ings-{{ g.id }}">
+            {% for ing in g.ingredients.all %}
+            <span class="cx-ing-chip" id="cxi-{{ ing.id }}">
+              {% if ing.product.photo %}
+                <img src="{{ ing.product.photo.url }}" alt="">
+              {% else %}
+                <span class="cx-ing-chip-ico">🛍️</span>
+              {% endif %}
+              <span>{{ ing.product.name_ru }}</span>
+
+              <span class="cx-ing-price-badge" id="cxpb-{{ ing.id }}"
+                    onclick="startPriceEdit({{ ing.id }})" title="Нажмите чтобы изменить цену">
+                {{ ing.display_price|floatformat:0 }} сом
+              </span>
+              <span class="cx-ing-price-edit" id="cxpe-{{ ing.id }}">
+                <input class="cx-ing-price-input" id="cxpi-{{ ing.id }}"
+                       type="number" min="0" value="{{ ing.display_price|floatformat:0 }}"
+                       onkeydown="if(event.key==='Enter')savePrice({{ ing.id }});if(event.key==='Escape')cancelPriceEdit({{ ing.id }})">
+                <button class="cx-ing-price-save" onclick="savePrice({{ ing.id }})" title="Сохранить">✓</button>
+              </span>
+
+              <span class="cx-ing-qty-badge" id="cxqb-{{ ing.id }}"
+                    onclick="startQtyEdit({{ ing.id }})" title="Сколько списывать со склада за 1 выбор">
+                ×{{ ing.write_off_qty|floatformat:"-3" }} со склада
+              </span>
+              <span class="cx-ing-qty-edit" id="cxqe-{{ ing.id }}">
+                <input class="cx-ing-qty-input" id="cxqi-{{ ing.id }}"
+                       type="number" min="0" step="0.001" value="{{ ing.write_off_qty|floatformat:"-3" }}"
+                       onkeydown="if(event.key==='Enter')saveQty({{ ing.id }});if(event.key==='Escape')cancelQtyEdit({{ ing.id }})">
+                <button class="cx-ing-qty-save" onclick="saveQty({{ ing.id }})" title="Сохранить">✓</button>
+              </span>
+
+              <button class="cx-ing-del" onclick="deleteIng({{ ing.id }}, {{ g.id }}, {{ ing.product_id }})" title="Убрать">×</button>
+            </span>
+            {% empty %}
+            <span class="cx-ings-empty" id="cx-empty-{{ g.id }}">Пусто — добавьте товары ниже</span>
+            {% endfor %}
+          </div>
+
+          <div class="cx-add-zone">
+            <div class="cx-dropdown-wrap">
+              <button class="cx-add-menu-btn" onclick="toggleDropdown({{ g.id }})">🛍️ Добавить товар</button>
+              <div class="cx-dropdown" id="dd-{{ g.id }}">
+                <div class="cx-dd-search">
+                  <input type="text" placeholder="Поиск..." oninput="filterDd({{ g.id }}, this.value)" autocomplete="off">
+                </div>
+                <div class="cx-dd-list" id="dd-list-{{ g.id }}">
+                  {% for p in products %}
+                  <div class="cx-dd-item {% for ing in g.ingredients.all %}{% if ing.product_id == p.id %}used{% endif %}{% endfor %}"
+                       id="dd-p-{{ g.id }}-{{ p.id }}"
+                       data-name="{{ p.name_ru|lower }}"
+                       onclick="addFromProducts({{ g.id }}, {{ p.id }})">
+                    {% if p.photo %}
+                      <img class="cx-dd-img" src="{{ p.photo.url }}" alt="">
+                    {% else %}
+                      <div class="cx-dd-ico">🛍️</div>
+                    {% endif %}
+                    <span class="cx-dd-name">{{ p.name_ru }}</span>
+                    <span class="cx-dd-price">{{ p.price|floatformat:0 }} сом</span>
+                  </div>
+                  {% empty %}
+                  <div class="cx-dd-empty">В магазине нет товаров</div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <div style="font-size:13px;color:var(--muted);padding:4px 0" id="cx-no-groups-{{ cx.id }}">
+          Нет групп — добавьте первую ниже ↓
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="cx-add-group-bar">
+        <div class="cx-add-group-label">Новая группа</div>
+        <div class="cx-add-group-row">
+          <input class="cx-inp cx-inp-lg" id="grp-name-{{ cx.id }}"
+                 placeholder="Например: Цветы" onkeydown="if(event.key==='Enter')addGroup({{ cx.id }})">
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Мин</div>
+            <input class="cx-inp cx-inp-tiny" id="grp-min-{{ cx.id }}" type="number" min="0" value="1">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Макс (0=∞)</div>
+            <input class="cx-inp cx-inp-tiny" id="grp-max-{{ cx.id }}" type="number" min="0" value="1">
+          </div>
+          <button class="cx-btn cx-btn-primary" onclick="addGroup({{ cx.id }})">＋ Добавить группу</button>
+        </div>
+      </div>
+
+    </div>
+    {% empty %}
+    <div id="cxEmpty" style="text-align:center;padding:56px;background:var(--card);border-radius:16px;border:1.5px solid var(--border);color:var(--muted)">
+      <div style="font-size:48px;margin-bottom:12px">🧩</div>
+      <div style="font-weight:700;font-size:15px;margin-bottom:4px">Нет конструкторов</div>
+      <div style="font-size:13px">Создайте первый выше</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="cx-toast" id="cxToast"></div>
+
+<script>
+const _m = document.getElementById('cx-url-map').dataset;
+const U = {
+  add:    _m.add,
+  grpAdd: id => _m.grpAdd.replace('99999', id),
+  grpUpd: id => _m.grpUpd.replace('99999', id),
+  grpDel: id => _m.grpDel.replace('99999', id),
+  ingAdd: id => _m.ingAdd.replace('99999', id),
+  ingUpd: id => _m.ingUpd.replace('99999', id),
+  ingDel: id => _m.ingDel.replace('99999', id),
+  cxDel:    id => _m.cxDel.replace('99999', id),
+  cxToggle: id => _m.cxToggle.replace('99999', id),
+  cxPhoto:  id => _m.cxPhoto.replace('99999', id),
+};
+const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+
+async function post(url, data = {}, files = null) {
+  const fd = new FormData();
+  for (const [k, v] of Object.entries(data)) fd.append(k, v);
+  if (files) for (const [k, v] of Object.entries(files)) fd.append(k, v);
+  const r = await fetch(url, { method: 'POST', body: fd, headers: { 'X-CSRFToken': CSRF() } });
+  return r.json();
+}
+
+function toast(msg, type = '') {
+  const t = document.getElementById('cxToast');
+  t.textContent = msg;
+  t.className = `cx-toast show ${type}`;
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.className = 'cx-toast', 2400);
+}
+
+function previewNewCx(input) {
+  const file = input.files[0];
+  const icon = document.getElementById('newPhotoIcon');
+  const img  = document.getElementById('newPhotoPreview');
+  if (!file) { icon.style.display = ''; img.style.display = 'none'; img.src = ''; return; }
+  img.src = URL.createObjectURL(file);
+  img.style.display = 'block';
+  icon.style.display = 'none';
+}
+
+async function createConstructor() {
+  const name = document.getElementById('newName').value.trim();
+  const desc = document.getElementById('newDesc').value.trim();
+  const bp   = document.getElementById('newBasePrice').value || '0';
+  if (!name) { toast('Введите название', 'err'); return; }
+  const photoEl = document.getElementById('newPhoto');
+  const files = photoEl?.files[0] ? { photo: photoEl.files[0] } : null;
+  const d = await post(U.add, { name, description: desc, base_price: bp }, files);
+  if (!d.ok) { toast(d.error || 'Ошибка', 'err'); return; }
+  toast('Конструктор создан', 'ok');
+  location.reload();
+}
+
+async function uploadCxPhoto(cxId, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const d = await post(U.cxPhoto(cxId), {}, { photo: file });
+  if (!d.ok) { toast(d.error || 'Ошибка загрузки', 'err'); return; }
+  const img = document.getElementById(`cx-cover-img-${cxId}`);
+  const ph  = document.getElementById(`cx-cover-placeholder-${cxId}`);
+  if (img) { img.src = d.photo_url; img.style.display = 'block'; }
+  if (ph)  { ph.style.display = 'none'; }
+  input.value = '';
+  toast('Фото обновлено', 'ok');
+}
+
+async function deleteCx(id) {
+  if (!confirm('Удалить конструктор?')) return;
+  const d = await post(U.cxDel(id));
+  if (d.ok) { document.getElementById(`cx-${id}`)?.remove(); toast('Удалено', 'ok'); }
+  else toast(d.error || 'Ошибка', 'err');
+}
+async function toggleCx(id) {
+  const d = await post(U.cxToggle(id));
+  if (d.ok) {
+    const s = document.getElementById(`cx-status-${id}`);
+    s.className = `cx-status ${d.is_active ? 'on' : 'off'}`;
+    s.textContent = d.is_active ? 'Активен' : 'Выкл';
+    toast(d.is_active ? 'Включён' : 'Выключен', 'ok');
+  }
+}
+
+let _limTimer = {};
+function saveGroupLimits(gid) {
+  clearTimeout(_limTimer[gid]);
+  _limTimer[gid] = setTimeout(async () => {
+    const minV = document.getElementById(`cxmin-${gid}`)?.value || '0';
+    const maxV = document.getElementById(`cxmax-${gid}`)?.value || '0';
+    const d = await post(U.grpUpd(gid), { min_select: minV, max_select: maxV });
+    if (d.ok) {
+      const s = document.getElementById(`cxlim-saved-${gid}`);
+      if (s) { s.classList.add('show'); setTimeout(() => s.classList.remove('show'), 1500); }
+    } else toast(d.error || 'Ошибка сохранения', 'err');
+  }, 600);
+}
+
+async function addGroup(cxId) {
+  const name = document.getElementById(`grp-name-${cxId}`).value.trim();
+  const min  = document.getElementById(`grp-min-${cxId}`).value || '1';
+  const max  = document.getElementById(`grp-max-${cxId}`).value || '1';
+  if (!name) { toast('Введите название группы', 'err'); return; }
+  const d = await post(U.grpAdd(cxId), { name, min_select: min, max_select: max });
+  if (!d.ok) { toast(d.error || 'Ошибка', 'err'); return; }
+  document.getElementById(`grp-name-${cxId}`).value = '';
+  document.getElementById(`cx-no-groups-${cxId}`)?.remove();
+
+  let ddItems = '';
+  const refList = document.querySelector('.cx-dd-list');
+  if (refList) {
+    refList.querySelectorAll('.cx-dd-item').forEach(el => {
+      const pId = el.id.split('-').pop();
+      const name  = el.querySelector('.cx-dd-name')?.textContent || '';
+      const price = el.querySelector('.cx-dd-price')?.textContent || '';
+      const imgEl = el.querySelector('.cx-dd-img');
+      const icoEl = el.querySelector('.cx-dd-ico');
+      const imgHtml = imgEl
+        ? `<img class="cx-dd-img" src="${imgEl.src}" alt="">`
+        : `<div class="cx-dd-ico">${icoEl?.textContent || '🛍️'}</div>`;
+      ddItems += `<div class="cx-dd-item" id="dd-p-${d.id}-${pId}" data-name="${name.toLowerCase()}"
+        onclick="addFromProducts(${d.id},${pId})">${imgHtml}
+        <span class="cx-dd-name">${name}</span><span class="cx-dd-price">${price}</span></div>`;
+    });
+  }
+
+  const html = `
+<div class="cx-group" id="cxg-${d.id}">
+  <div class="cx-group-head">
+    <div class="cx-group-name">${_esc(d.name)}</div>
+    <div class="cx-group-limits">
+      <label>Мин</label>
+      <input class="cx-limit-inp" id="cxmin-${d.id}" type="number" min="0" value="${d.min_select}"
+             onchange="saveGroupLimits(${d.id})" title="Минимум выбора">
+      <label>Макс <span style="color:var(--muted);font-weight:400">(0=∞)</span></label>
+      <input class="cx-limit-inp" id="cxmax-${d.id}" type="number" min="0" value="${d.max_select}"
+             onchange="saveGroupLimits(${d.id})" title="Максимум выбора">
+      <span class="cx-limit-saved" id="cxlim-saved-${d.id}">✓</span>
+    </div>
+    <button class="cx-btn cx-btn-danger cx-btn-sm" onclick="deleteGroup(${d.id})">✕ Удалить</button>
+  </div>
+  <div class="cx-ings" id="cx-ings-${d.id}">
+    <span class="cx-ings-empty" id="cx-empty-${d.id}">Пусто — добавьте товары ниже</span>
+  </div>
+  <div class="cx-add-zone">
+    <div class="cx-dropdown-wrap">
+      <button class="cx-add-menu-btn" onclick="toggleDropdown(${d.id})">🛍️ Добавить товар</button>
+      <div class="cx-dropdown" id="dd-${d.id}">
+        <div class="cx-dd-search"><input type="text" placeholder="Поиск..." oninput="filterDd(${d.id},this.value)" autocomplete="off"></div>
+        <div class="cx-dd-list" id="dd-list-${d.id}">${ddItems || '<div class="cx-dd-empty">В магазине нет товаров</div>'}</div>
+      </div>
+    </div>
+  </div>
+</div>`;
+  document.getElementById(`cx-groups-${cxId}`).insertAdjacentHTML('beforeend', html);
+  toast('Группа добавлена', 'ok');
+}
+
+async function deleteGroup(id) {
+  if (!confirm('Удалить группу?')) return;
+  const d = await post(U.grpDel(id));
+  if (d.ok) { document.getElementById(`cxg-${id}`)?.remove(); toast('Удалено', 'ok'); }
+  else toast(d.error || 'Ошибка', 'err');
+}
+
+let openDd = null;
+function toggleDropdown(groupId) {
+  const dd = document.getElementById(`dd-${groupId}`);
+  if (openDd && openDd !== dd) openDd.classList.remove('open');
+  dd.classList.toggle('open');
+  openDd = dd.classList.contains('open') ? dd : null;
+  if (openDd) setTimeout(() => dd.querySelector('input')?.focus(), 50);
+}
+document.addEventListener('click', e => {
+  if (openDd && !e.target.closest('.cx-dropdown-wrap')) { openDd.classList.remove('open'); openDd = null; }
+});
+function filterDd(gid, q) {
+  const query = q.toLowerCase();
+  document.querySelectorAll(`#dd-list-${gid} .cx-dd-item`).forEach(el => {
+    el.style.display = el.dataset.name.includes(query) ? '' : 'none';
+  });
+}
+
+async function addFromProducts(groupId, productId) {
+  const d = await post(U.ingAdd(groupId), { product_id: productId, write_off_qty: '1' });
+  if (!d.ok) { toast(d.error || 'Ошибка', 'err'); return; }
+  _appendChip(groupId, productId, d);
+  document.querySelectorAll(`[id^="dd-p-"][id$="-${productId}"]`).forEach(el => el.classList.add('used'));
+  document.getElementById(`dd-${groupId}`)?.classList.remove('open');
+  openDd = null;
+  toast(`${d.name} добавлен`, 'ok');
+}
+
+function _appendChip(groupId, productId, d) {
+  document.getElementById(`cx-empty-${groupId}`)?.remove();
+  const photoHtml = d.photo_url
+    ? `<img src="${d.photo_url}" alt="">`
+    : `<span class="cx-ing-chip-ico">🛍️</span>`;
+  const price = parseFloat(d.price || 0);
+  const wq    = parseFloat(d.write_off_qty || 1);
+  const chip = `
+<span class="cx-ing-chip" id="cxi-${d.id}">
+  ${photoHtml}
+  <span>${_esc(d.name)}</span>
+  <span class="cx-ing-price-badge" id="cxpb-${d.id}" onclick="startPriceEdit(${d.id})" title="Нажмите чтобы изменить цену">
+    ${price} сом
+  </span>
+  <span class="cx-ing-price-edit" id="cxpe-${d.id}">
+    <input class="cx-ing-price-input" id="cxpi-${d.id}" type="number" min="0" value="${price}"
+           onkeydown="if(event.key==='Enter')savePrice(${d.id});if(event.key==='Escape')cancelPriceEdit(${d.id})">
+    <button class="cx-ing-price-save" onclick="savePrice(${d.id})" title="Сохранить">✓</button>
+  </span>
+  <span class="cx-ing-qty-badge" id="cxqb-${d.id}" onclick="startQtyEdit(${d.id})" title="Сколько списывать со склада за 1 выбор">
+    ×${wq} со склада
+  </span>
+  <span class="cx-ing-qty-edit" id="cxqe-${d.id}">
+    <input class="cx-ing-qty-input" id="cxqi-${d.id}" type="number" min="0" step="0.001" value="${wq}"
+           onkeydown="if(event.key==='Enter')saveQty(${d.id});if(event.key==='Escape')cancelQtyEdit(${d.id})">
+    <button class="cx-ing-qty-save" onclick="saveQty(${d.id})" title="Сохранить">✓</button>
+  </span>
+  <button class="cx-ing-del" onclick="deleteIng(${d.id},${groupId},${productId})" title="Убрать">×</button>
+</span>`;
+  document.getElementById(`cx-ings-${groupId}`).insertAdjacentHTML('beforeend', chip);
+}
+
+function startPriceEdit(ingId) {
+  document.getElementById(`cxpb-${ingId}`).style.display = 'none';
+  const edit = document.getElementById(`cxpe-${ingId}`);
+  edit.classList.add('open');
+  setTimeout(() => { const inp = document.getElementById(`cxpi-${ingId}`); if(inp){inp.focus();inp.select();} }, 30);
+}
+function cancelPriceEdit(ingId) {
+  document.getElementById(`cxpb-${ingId}`).style.display = '';
+  document.getElementById(`cxpe-${ingId}`).classList.remove('open');
+}
+async function savePrice(ingId) {
+  const inp = document.getElementById(`cxpi-${ingId}`);
+  const price_override = inp?.value || '0';
+  const d = await post(U.ingUpd(ingId), { price_override });
+  if (!d.ok) { toast(d.error || 'Ошибка', 'err'); return; }
+  document.getElementById(`cxpb-${ingId}`).textContent = parseFloat(d.price) + ' сом';
+  cancelPriceEdit(ingId);
+  toast('Цена сохранена', 'ok');
+}
+
+function startQtyEdit(ingId) {
+  document.getElementById(`cxqb-${ingId}`).style.display = 'none';
+  const edit = document.getElementById(`cxqe-${ingId}`);
+  edit.classList.add('open');
+  setTimeout(() => { const inp = document.getElementById(`cxqi-${ingId}`); if(inp){inp.focus();inp.select();} }, 30);
+}
+function cancelQtyEdit(ingId) {
+  document.getElementById(`cxqb-${ingId}`).style.display = '';
+  document.getElementById(`cxqe-${ingId}`).classList.remove('open');
+}
+async function saveQty(ingId) {
+  const inp = document.getElementById(`cxqi-${ingId}`);
+  const write_off_qty = inp?.value || '1';
+  const d = await post(U.ingUpd(ingId), { write_off_qty });
+  if (!d.ok) { toast(d.error || 'Ошибка', 'err'); return; }
+  document.getElementById(`cxqb-${ingId}`).textContent = `×${parseFloat(d.write_off_qty)} со склада`;
+  cancelQtyEdit(ingId);
+  toast('Сохранено', 'ok');
+}
+
+async function deleteIng(ingId, groupId, productId) {
+  const d = await post(U.ingDel(ingId));
+  if (!d.ok) { toast(d.error || 'Ошибка', 'err'); return; }
+  document.getElementById(`cxi-${ingId}`)?.remove();
+  document.querySelectorAll(`[id^="dd-p-"][id$="-${productId}"]`).forEach(el => el.classList.remove('used'));
+  const ings = document.getElementById(`cx-ings-${groupId}`);
+  if (ings && !ings.querySelector('.cx-ing-chip')) {
+    ings.insertAdjacentHTML('beforeend', `<span class="cx-ings-empty" id="cx-empty-${groupId}">Пусто — добавьте товары ниже</span>`);
+  }
+  toast('Удалено', 'ok');
+}
+
+function _esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+{% endblock %}

@@ -11,7 +11,7 @@ from .models import (
     Store, StoreBranch, StoreCategory, StoreProduct,
     StoreStock, StoreOrder, StoreOrderItem, StoreMembership,
     Warehouse, WarehouseStock,
-    StoreConstructor, StoreConstructorIngredient, StoreConstructorOrderItem,
+    StoreConstructor, StoreConstructorGroup, StoreConstructorIngredient, StoreConstructorOrderItem,
 )
 
 LOGIN_URL = "dashboard:login"
@@ -638,6 +638,187 @@ def shop_order_status(request, order_id):
         order.status = new_status
         order.save(update_fields=["status"])
     return redirect("dashboard:shop_orders", branch_id=order.branch_id)
+
+
+# ── КОНСТРУКТОР «СОБЕРИ САМ» ────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def shop_constructor_list(request, store_id):
+    store = get_object_or_404(Store, id=store_id)
+    if not _has_store_access(request.user, store):
+        return redirect("dashboard:shop_home")
+
+    constructors = (
+        StoreConstructor.objects
+        .filter(store=store)
+        .prefetch_related("groups__ingredients__product")
+        .order_by("sort_order", "id")
+    )
+    products = (
+        StoreProduct.objects
+        .filter(store=store, is_active=True)
+        .select_related("category")
+        .order_by("category__sort_order", "name_ru")
+    )
+    return render(request, "dashboard/shops/constructor.html", {
+        "store": store,
+        "constructors": constructors,
+        "products": products,
+    })
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_constructor_add(request, store_id):
+    store = get_object_or_404(Store, id=store_id)
+    if not _has_store_access(request.user, store):
+        return JsonResponse({"ok": False}, status=403)
+    name = request.POST.get("name", "").strip()
+    desc = request.POST.get("description", "").strip()
+    bp   = _dec(request.POST.get("base_price", "0"))
+    if not name:
+        return JsonResponse({"ok": False, "error": "Введите название"})
+    cx = StoreConstructor.objects.create(store=store, name=name, description=desc, base_price=bp)
+    photo = request.FILES.get("photo")
+    if photo:
+        cx.photo = photo
+        cx.save()
+    return JsonResponse({"ok": True, "id": cx.id, "name": cx.name, "base_price": _fmt(cx.base_price),
+                          "photo_url": cx.photo.url if cx.photo else ""})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_constructor_photo_update(request, cx_id):
+    cx = get_object_or_404(StoreConstructor, id=cx_id)
+    if not _has_store_access(request.user, cx.store):
+        return JsonResponse({"ok": False}, status=403)
+    photo = request.FILES.get("photo")
+    if not photo:
+        return JsonResponse({"ok": False, "error": "Нет файла"})
+    cx.photo = photo
+    cx.save()
+    return JsonResponse({"ok": True, "photo_url": cx.photo.url})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_constructor_delete(request, cx_id):
+    cx = get_object_or_404(StoreConstructor, id=cx_id)
+    if not _has_store_access(request.user, cx.store):
+        return JsonResponse({"ok": False}, status=403)
+    cx.delete()
+    return JsonResponse({"ok": True})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_constructor_toggle(request, cx_id):
+    cx = get_object_or_404(StoreConstructor, id=cx_id)
+    if not _has_store_access(request.user, cx.store):
+        return JsonResponse({"ok": False}, status=403)
+    cx.is_active = not cx.is_active
+    cx.save(update_fields=["is_active"])
+    return JsonResponse({"ok": True, "is_active": cx.is_active})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_constructor_group_add(request, cx_id):
+    cx = get_object_or_404(StoreConstructor, id=cx_id)
+    if not _has_store_access(request.user, cx.store):
+        return JsonResponse({"ok": False}, status=403)
+    name  = request.POST.get("name", "").strip()
+    min_s = int(request.POST.get("min_select", 1) or 1)
+    max_s = int(request.POST.get("max_select", 1) or 1)
+    if not name:
+        return JsonResponse({"ok": False, "error": "Введите название группы"})
+    g = StoreConstructorGroup.objects.create(constructor=cx, name=name, min_select=min_s, max_select=max_s)
+    return JsonResponse({"ok": True, "id": g.id, "name": g.name, "min_select": g.min_select, "max_select": g.max_select})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_constructor_group_update(request, group_id):
+    g = get_object_or_404(StoreConstructorGroup, id=group_id)
+    if not _has_store_access(request.user, g.constructor.store):
+        return JsonResponse({"ok": False}, status=403)
+    try:
+        min_s = int(request.POST.get("min_select", g.min_select))
+        max_s = int(request.POST.get("max_select", g.max_select))
+    except (ValueError, TypeError):
+        return JsonResponse({"ok": False, "error": "Неверные значения"})
+    g.min_select = min_s
+    g.max_select = max_s
+    g.save(update_fields=["min_select", "max_select"])
+    return JsonResponse({"ok": True, "min_select": g.min_select, "max_select": g.max_select})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_constructor_group_delete(request, group_id):
+    g = get_object_or_404(StoreConstructorGroup, id=group_id)
+    if not _has_store_access(request.user, g.constructor.store):
+        return JsonResponse({"ok": False}, status=403)
+    g.delete()
+    return JsonResponse({"ok": True})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_constructor_ingredient_add(request, group_id):
+    """Добавить товар магазина как элемент группы конструктора."""
+    g = get_object_or_404(StoreConstructorGroup, id=group_id)
+    store = g.constructor.store
+    if not _has_store_access(request.user, store):
+        return JsonResponse({"ok": False}, status=403)
+    product = get_object_or_404(StoreProduct, id=request.POST.get("product_id"), store=store)
+    if StoreConstructorIngredient.objects.filter(group=g, product=product).exists():
+        return JsonResponse({"ok": False, "error": "Уже добавлено"})
+    write_off = _dec(request.POST.get("write_off_qty", "1"), "1")
+    ing = StoreConstructorIngredient.objects.create(group=g, product=product, write_off_qty=write_off)
+    return JsonResponse({
+        "ok": True, "id": ing.id,
+        "name": product.name_ru,
+        "price": _fmt(ing.display_price),
+        "photo_url": product.photo.url if product.photo else "",
+        "write_off_qty": _fmt(ing.write_off_qty),
+        "product_id": product.id,
+    })
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_constructor_ingredient_update(request, ing_id):
+    """Обновить цену (override) и/или кол-во списания со склада филиала."""
+    ing = get_object_or_404(StoreConstructorIngredient, id=ing_id)
+    if not _has_store_access(request.user, ing.group.constructor.store):
+        return JsonResponse({"ok": False}, status=403)
+    price_raw = request.POST.get("price_override", None)
+    if price_raw is not None:
+        price_raw = price_raw.strip()
+        if price_raw == "":
+            ing.price_override = None
+        else:
+            try:
+                ing.price_override = Decimal(price_raw)
+            except InvalidOperation:
+                return JsonResponse({"ok": False, "error": "Неверная цена"})
+    wq_raw = request.POST.get("write_off_qty", None)
+    if wq_raw is not None:
+        ing.write_off_qty = _dec(wq_raw, "1")
+    ing.save()
+    return JsonResponse({"ok": True, "price": _fmt(ing.display_price), "write_off_qty": _fmt(ing.write_off_qty)})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_constructor_ingredient_delete(request, ing_id):
+    ing = get_object_or_404(StoreConstructorIngredient, id=ing_id)
+    if not _has_store_access(request.user, ing.group.constructor.store):
+        return JsonResponse({"ok": False}, status=403)
+    ing.delete()
+    return JsonResponse({"ok": True})
 
 
 # ── POS ───────────────────────────────────────────────────────────────────────
