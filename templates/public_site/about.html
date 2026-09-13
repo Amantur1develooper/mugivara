@@ -58,6 +58,10 @@
                  class="inline-flex items-center justify-center rounded-2xl px-5 py-3 font-black text-white/95 ring-1 ring-white/20 bg-white/10 backdrop-blur hover:bg-white/15 transition">
                 {% trans "Посмотреть экосистему" %}
               </a>
+              <a href="{% url 'public_site:kp_index' %}"
+                 class="inline-flex items-center justify-center gap-1.5 rounded-2xl px-5 py-3 font-black text-stone-950 bg-gradient-to-r from-orange-300 via-amber-200 to-orange-100 hover:-translate-y-0.5 transition">
+                📄 {% trans "Предложения для бизнеса" %}
+              </a>
             </div>
           </div>
 
@@ -91,26 +95,34 @@
     </section>
 
     <section class="mt-6 sm:mt-8 grid lg:grid-cols-4 sm:grid-cols-2 gap-4">
-      <div class="rounded-[28px] bg-white/90 border border-stone-200/80 p-5 shadow-[0_14px_34px_rgba(15,23,42,.05)]">
+      <a href="{% url 'public_site:kp_detail' 'restaurants' %}"
+         class="group rounded-[28px] bg-white/90 border border-stone-200/80 p-5 shadow-[0_14px_34px_rgba(15,23,42,.05)] transition hover:-translate-y-1 hover:shadow-[0_20px_44px_rgba(15,23,42,.10)]">
         <div class="text-2xl">🍽️</div>
         <div class="mt-3 text-lg font-black text-stone-950">{% trans "Рестораны" %}</div>
         <p class="mt-2 text-sm text-stone-600 leading-relaxed">{% trans "QR-меню, заказы, категории, филиалы, самовывоз и доставка." %}</p>
-      </div>
-      <div class="rounded-[28px] bg-white/90 border border-stone-200/80 p-5 shadow-[0_14px_34px_rgba(15,23,42,.05)]">
+        <div class="mt-3 text-xs font-black text-orange-600 inline-flex items-center gap-1">{% trans "Предложение" %} <span class="transition group-hover:translate-x-0.5">→</span></div>
+      </a>
+      <a href="{% url 'public_site:kp_detail' 'shops' %}"
+         class="group rounded-[28px] bg-white/90 border border-stone-200/80 p-5 shadow-[0_14px_34px_rgba(15,23,42,.05)] transition hover:-translate-y-1 hover:shadow-[0_20px_44px_rgba(15,23,42,.10)]">
         <div class="text-2xl">🛍️</div>
         <div class="mt-3 text-lg font-black text-stone-950">{% trans "Магазины" %}</div>
         <p class="mt-2 text-sm text-stone-600 leading-relaxed">{% trans "Каталоги товаров, корзина, наличие, доставка и удобный заказ." %}</p>
-      </div>
-      <div class="rounded-[28px] bg-white/90 border border-stone-200/80 p-5 shadow-[0_14px_34px_rgba(15,23,42,.05)]">
+        <div class="mt-3 text-xs font-black text-orange-600 inline-flex items-center gap-1">{% trans "Предложение" %} <span class="transition group-hover:translate-x-0.5">→</span></div>
+      </a>
+      <a href="{% url 'public_site:kp_detail' 'barbershop' %}"
+         class="group rounded-[28px] bg-white/90 border border-stone-200/80 p-5 shadow-[0_14px_34px_rgba(15,23,42,.05)] transition hover:-translate-y-1 hover:shadow-[0_20px_44px_rgba(15,23,42,.10)]">
         <div class="text-2xl">💇</div>
         <div class="mt-3 text-lg font-black text-stone-950">{% trans "Услуги и салоны" %}</div>
         <p class="mt-2 text-sm text-stone-600 leading-relaxed">{% trans "Запись, прайс, направление услуг и быстрый контакт с филиалом." %}</p>
-      </div>
-      <div class="rounded-[28px] bg-white/90 border border-stone-200/80 p-5 shadow-[0_14px_34px_rgba(15,23,42,.05)]">
+        <div class="mt-3 text-xs font-black text-orange-600 inline-flex items-center gap-1">{% trans "Предложение" %} <span class="transition group-hover:translate-x-0.5">→</span></div>
+      </a>
+      <a href="{% url 'public_site:kp_index' %}"
+         class="group rounded-[28px] bg-stone-950 p-5 shadow-[0_14px_34px_rgba(15,23,42,.12)] transition hover:-translate-y-1 text-white">
         <div class="text-2xl">🌐</div>
-        <div class="mt-3 text-lg font-black text-stone-950">{% trans "Городская экосистема" %}</div>
-        <p class="mt-2 text-sm text-stone-600 leading-relaxed">{% trans "Одна платформа, где клиенту не нужно искать всё по отдельности." %}</p>
-      </div>
+        <div class="mt-3 text-lg font-black">{% trans "Все 11 направлений" %}</div>
+        <p class="mt-2 text-sm text-white/70 leading-relaxed">{% trans "Караоке, симрейсинг, отели, юристы, агентства, эко, аптеки и другое." %}</p>
+        <div class="mt-3 text-xs font-black text-orange-300 inline-flex items-center gap-1">{% trans "Смотреть все" %} <span class="transition group-hover:translate-x-0.5">→</span></div>
+      </a>
     </section>
 
     <section id="ecosystem" class="mt-8 sm:mt-10">
@@ -256,6 +268,10 @@
           </div>
 
           <div class="flex flex-wrap gap-3">
+            <a href="{% url 'public_site:kp_index' %}"
+               class="inline-flex items-center justify-center gap-1.5 rounded-2xl px-5 py-3 font-black text-stone-950 bg-gradient-to-r from-orange-300 via-amber-200 to-orange-100 hover:-translate-y-0.5 transition">
+              📄 {% trans "Предложения для бизнеса" %}
+            </a>
             <a href="https://wa.me/996558212040"
                class="inline-flex items-center justify-center rounded-2xl px-5 py-3 font-black text-white shadow-[0_12px_28px_rgba(37,211,102,.18)]"
                style="background:#25D366;">

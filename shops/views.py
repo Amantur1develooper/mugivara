@@ -1,7 +1,8 @@
 from django.shortcuts import render
+from django.utils.translation import gettext as _
 # shops/views.py
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Count, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.db import transaction
@@ -110,13 +111,25 @@ def _branch_catalog(request, branch: StoreBranch):
     store = branch.store
     mode = get_mode(request, branch.id)
 
-    categories = store.categories.filter(is_active=True).order_by("sort_order", "id")
-
     stocks = (
         StoreStock.objects
         .filter(branch=branch, product__is_active=True)
         .select_related("product", "product__category")
         .order_by("product__category__sort_order", "product__id")
+    )
+
+    # Показываем только те категории, в которых у этого филиала реально есть товары —
+    # пустые категории (без единого товара на складе филиала) не должны отображаться.
+    categories = (
+        store.categories
+        .filter(is_active=True, products__is_active=True, products__stocks__branch=branch)
+        .annotate(branch_products_count=Count(
+            "products",
+            filter=Q(products__is_active=True, products__stocks__branch=branch),
+            distinct=True,
+        ))
+        .distinct()
+        .order_by("sort_order", "id")
     )
 
     # cart badge
@@ -244,7 +257,10 @@ def cart_update(request, branch_id, product_id):
         cart.pop(str(product_id), None)
     else:
         if qty > stock.qty:
-            return JsonResponse({"ok": False, "error": "not_enough", "available": str(stock.qty)})
+            payload = {"ok": False, "error": "not_enough"}
+            if branch.show_stock_qty:
+                payload["available"] = str(stock.qty)
+            return JsonResponse(payload)
         cart[str(product_id)] = str(qty)
 
     save_cart(request, branch_id, cart)
@@ -353,7 +369,7 @@ def checkout(request, branch_id):
 
     # адрес обязателен только для доставки
     if is_delivery and not address:
-        messages.error(request, "Укажите адрес для доставки")
+        messages.error(request, _("Укажите адрес для доставки"))
         return redirect("shops:cart_detail", branch_id=branch.id)
 
     delivery_fee = Decimal("0")
@@ -379,7 +395,7 @@ def checkout(request, branch_id):
         for r in rows:
             st = stock_map.get(r["product_id"])
             if (not st) or (int(st.qty) < int(r["qty"])):
-                messages.error(request, f"Нет в наличии: {r['product'].name_ru}")
+                messages.error(request, _("Нет в наличии: %(name)s") % {"name": r['product'].name_ru})
                 return redirect("shops:cart_detail", branch_id=branch.id)
 
         subtotal = cart["subtotal"]

@@ -3,7 +3,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-13 12:21+0600\n"
+"POT-Creation-Date: 2026-09-13 23:12+0600\n"
 "Language: en\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -53,13 +53,13 @@ msgstr "Your cart is empty."
 
 #: pharmacy/views.py:226 templates/pharmacy/cart_detail.html:91
 #: templates/public_site/cart_detail.html:305
-#: templates/shops/cart_detail.html:382
+#: templates/shops/cart_detail.html:403
 msgid "Наличные"
 msgstr "Cash"
 
 #: pharmacy/views.py:226 templates/pharmacy/cart_detail.html:95
 #: templates/public_site/cart_detail.html:309
-#: templates/shops/cart_detail.html:386
+#: templates/shops/cart_detail.html:407
 msgid "Онлайн"
 msgstr "Online"
 
@@ -144,6 +144,15 @@ msgstr "Invalid status."
 msgid "Статус брони обновлён."
 msgstr "Booking status updated."
 
+#: shops/views.py:372
+msgid "Укажите адрес для доставки"
+msgstr "Please enter a delivery address"
+
+#: shops/views.py:398
+#, python-format
+msgid "Нет в наличии: %(name)s"
+msgstr "Out of stock: %(name)s"
+
 #: simracing/models.py:103
 msgid "Стандартный картинг"
 msgstr "Standard karting"
@@ -171,7 +180,7 @@ msgstr "All agencies"
 
 #: templates/agency/agency_detail.html:296 templates/barbershop/book.html:90
 #: templates/barbershop/book.html:170 templates/base.html:459
-#: templates/base.html:518 templates/base.html:591
+#: templates/base.html:518 templates/base.html:600
 #: templates/hotels/hotel_branch.html:573 templates/public_site/home.html:686
 msgid "Услуги"
 msgstr "Services"
@@ -363,7 +372,7 @@ msgstr "Selected services"
 #: templates/public_site/table_cart.html:226
 #: templates/public_site/table_checkout.html:23
 #: templates/public_site/table_menu.html:900
-#: templates/shops/cart_detail.html:321
+#: templates/shops/cart_detail.html:342
 #: templates/shops/checkout_success.html:119 templates/simracing/venue.html:223
 msgid "Итого"
 msgstr "Total"
@@ -386,7 +395,7 @@ msgstr "Loading barbers…"
 #: templates/public_site/restaurant_about.html:38
 #: templates/public_site/restaurants_list.html:669
 #: templates/public_site/еуые/restaurant_contacts.html:179
-#: templates/shops/branch_catalog.html:882 templates/shops/cart_detail.html:242
+#: templates/shops/branch_catalog.html:902 templates/shops/cart_detail.html:263
 #: templates/shops/store_detail.html:284 templates/simracing/venue.html:161
 #: templates/simracing/venue.html:174 templates/simracing/venue.html:184
 #: templates/simracing/venue.html:209
@@ -459,7 +468,7 @@ msgid "Длительность"
 msgstr "Duration"
 
 #: templates/barbershop/index.html:7 templates/barbershop/index.html:29
-#: templates/public_site/home.html:850
+#: templates/base.html:588 templates/public_site/home.html:850
 msgid "Барбершопы"
 msgstr "Barbershops"
 
@@ -556,7 +565,7 @@ msgstr "Kyrgyzstan's digital ecosystem"
 msgid "Категории"
 msgstr "Categories"
 
-#: templates/base.html:451 templates/base.html:515 templates/base.html:586
+#: templates/base.html:451 templates/base.html:515
 #: templates/public_site/home.html:614
 msgid "Еда"
 msgstr "Food"
@@ -566,7 +575,7 @@ msgid "Меню, доставка, QR"
 msgstr "Menu, delivery, QR"
 
 #: templates/base.html:455 templates/base.html:516 templates/base.html:587
-#: templates/public_site/about.html:101 templates/public_site/home.html:1321
+#: templates/public_site/about.html:108 templates/public_site/home.html:1321
 #: templates/shops/store_list.html:4 templates/shops/store_list.html:290
 msgid "Магазины"
 msgstr "Shops"
@@ -579,7 +588,7 @@ msgstr "Products & orders"
 msgid "Юристы, эко, барбершопы и другое"
 msgstr "Lawyers, eco, barbershops and more"
 
-#: templates/base.html:463 templates/base.html:519 templates/base.html:593
+#: templates/base.html:463 templates/base.html:519 templates/base.html:602
 #: templates/karaoke/list.html:3 templates/simracing/list.html:3
 msgid "Развлечения"
 msgstr "Entertainment"
@@ -588,7 +597,8 @@ msgstr "Entertainment"
 msgid "Караоке, симрейсинг"
 msgstr "Karaoke, sim racing"
 
-#: templates/base.html:471 templates/base.html:524 templates/base.html:600
+#: templates/base.html:471 templates/base.html:524 templates/base.html:610
+#: templates/public_site/kp_index.html:17
 msgid "Подключить бизнес"
 msgstr "Add your business"
 
@@ -610,7 +620,7 @@ msgstr "Menu"
 msgid "Бизнес"
 msgstr "Business"
 
-#: templates/base.html:521 templates/base.html:598
+#: templates/base.html:521 templates/base.html:607
 #: templates/public_site/restaurant_about.html:9
 #: templates/public_site/restaurant_about.html:33
 #: templates/public_site/еуые/restaurant_contacts.html:286
@@ -651,6 +661,7 @@ msgstr "PARTNER"
 #: templates/legal/legal_detail.html:249
 #: templates/pharmacy/drug_detail.html:136
 #: templates/public_site/booking_success.html:35
+#: templates/public_site/kp_detail.html:51
 #: templates/realestate/agency_detail.html:76
 #: templates/simracing/appt_success.html:69 templates/simracing/success.html:23
 msgid "Написать в WhatsApp"
@@ -666,24 +677,77 @@ msgid ""
 msgstr ""
 "Kyrgyzstan's digital ecosystem — restaurants, shops and services in one place"
 
-#: templates/base.html:592
+#: templates/base.html:586 templates/public_site/about.html:101
+#: templates/public_site/home.html:1318
+#: templates/public_site/restaurant_contacts.html:315
+#: templates/public_site/restaurant_detail.html:294
+#: templates/public_site/restaurants_list.html:600
+msgid "Рестораны"
+msgstr "Restaurants"
+
+#: templates/base.html:589
+msgid "Караоке"
+msgstr "Karaoke"
+
+#: templates/base.html:590 templates/public_site/home.html:949
+#: templates/simracing/list.html:3 templates/simracing/list.html:43
+msgid "Симрейсинг"
+msgstr "Sim racing"
+
+#: templates/base.html:591 templates/hotels/hotel_detail.html:160
+#: templates/hotels/hotel_list.html:4 templates/hotels/hotel_list.html:94
+#: templates/public_site/home.html:773
+msgid "Отели"
+msgstr "Hotels"
+
+#: templates/base.html:592 templates/public_site/home.html:899
+#: templates/realestate/agency_list.html:4
+msgid "Агентства недвижимости"
+msgstr "Real estate agencies"
+
+#: templates/base.html:593 templates/legal/legal_detail.html:4
+#: templates/legal/legal_list.html:4
+msgid "Юридические услуги"
+msgstr "Legal services"
+
+#: templates/base.html:594
+msgid "Диджитал-агентства"
+msgstr "Digital agencies"
+
+#: templates/base.html:595
+msgid "Эко-бизнес"
+msgstr "Eco business"
+
+#: templates/base.html:596 templates/pharmacy/pharmacy_list.html:275
+#: templates/pharmacy/старый/pharmacy_list.html:4
+#: templates/pharmacy/старый/pharmacy_list.html:20
+#: templates/public_site/home.html:798
+msgid "Аптеки"
+msgstr "Pharmacies"
+
+#: templates/base.html:601
 msgid "Все услуги"
 msgstr "All services"
 
-#: templates/base.html:597
+#: templates/base.html:606
 msgid "Компания"
 msgstr "Company"
 
-#: templates/base.html:599
+#: templates/base.html:608
 msgid "Основатель"
 msgstr "Founder"
 
-#: templates/base.html:605 templates/pharmacy/pharmacy_list.html:306
+#: templates/base.html:609 templates/public_site/about.html:63
+#: templates/public_site/about.html:273 templates/public_site/kp_index.html:3
+msgid "Предложения для бизнеса"
+msgstr "Business proposals"
+
+#: templates/base.html:615 templates/pharmacy/pharmacy_list.html:306
 #: templates/pharmacy/pharmacy_list.html:340 templates/shops/base.html:338
 msgid "Кыргызстан"
 msgstr "Kyrgyzstan"
 
-#: templates/base.html:607 templates/public_site/privacy.html:3
+#: templates/base.html:617 templates/public_site/privacy.html:3
 #: templates/public_site/privacy.html:15
 msgid "Политика конфиденциальности"
 msgstr "Privacy policy"
@@ -722,7 +786,7 @@ msgstr "Open on the map"
 #: templates/shops/1212/branch_catalog.html:650
 #: templates/shops/1212/branch_catalog2.html:652
 #: templates/shops/1212/store_detail.html:157 templates/shops/base.html:226
-#: templates/shops/base.html:276 templates/shops/branch_catalog.html:929
+#: templates/shops/base.html:276 templates/shops/branch_catalog.html:947
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:186
 msgid "Позвонить"
 msgstr "Call"
@@ -950,9 +1014,9 @@ msgstr "Branches"
 #: templates/shops/1212/store_detail.html:126
 #: templates/shops/1212/store_list2.html:282
 #: templates/shops/1212/store_list2.html:340
-#: templates/shops/branch_catalog.html:906
-#: templates/shops/branch_catalog.html:913 templates/shops/cart_detail.html:235
-#: templates/shops/cart_detail.html:313
+#: templates/shops/branch_catalog.html:928
+#: templates/shops/branch_catalog.html:935 templates/shops/cart_detail.html:256
+#: templates/shops/cart_detail.html:334
 #: templates/shops/checkout_success.html:97
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:166
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:176
@@ -1271,11 +1335,6 @@ msgstr "Session"
 msgid "Особые пожелания…"
 msgstr "Special requests…"
 
-#: templates/hotels/hotel_detail.html:160 templates/hotels/hotel_list.html:4
-#: templates/hotels/hotel_list.html:94 templates/public_site/home.html:773
-msgid "Отели"
-msgstr "Hotels"
-
 #: templates/hotels/hotel_detail.html:174 templates/hotels/hotel_list.html:111
 #, python-format
 msgid "%(n)s объект"
@@ -1508,14 +1567,14 @@ msgstr "Cart is empty"
 msgid "позиций"
 msgstr "items"
 
-#: templates/karaoke/menu.html:198 templates/shops/branch_catalog.html:859
+#: templates/karaoke/menu.html:198 templates/shops/branch_catalog.html:879
 msgid "+ В корзину"
 msgstr "+ Add to cart"
 
 #: templates/karaoke/menu.html:199 templates/karaoke/menu.html:319
 #: templates/public_site/cart_detail2.html:907
 #: templates/public_site/table_cart.html:233
-#: templates/shops/cart_detail.html:391
+#: templates/shops/cart_detail.html:412
 msgid "Подтвердить заказ"
 msgstr "Confirm order"
 
@@ -1546,10 +1605,6 @@ msgstr "Room / Table (e.g. VIP 1)"
 #: templates/karaoke/menu.html:317
 msgid "Телефон: +996 700 000 000"
 msgstr "Phone: +996 700 000 000"
-
-#: templates/legal/legal_detail.html:4 templates/legal/legal_list.html:4
-msgid "Юридические услуги"
-msgstr "Legal services"
 
 #: templates/legal/legal_detail.html:203
 msgid "Все организации"
@@ -1633,8 +1688,8 @@ msgstr "Branches"
 #: templates/public_site/еуые/branch_menu.html:268
 #: templates/shops/1212/branch_catalog.html:696
 #: templates/shops/1212/branch_catalog2.html:698
-#: templates/shops/branch_catalog.html:942
-#: templates/shops/branch_catalog.html:955
+#: templates/shops/branch_catalog.html:959
+#: templates/shops/branch_catalog.html:972
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:211
 #: templates/shops/store_detail.html:313
 msgid "Все"
@@ -1644,8 +1699,8 @@ msgstr "All"
 #: templates/pharmacy/drug_detail.html:51
 #: templates/shops/1212/branch_catalog.html:748
 #: templates/shops/1212/branch_catalog2.html:750
-#: templates/shops/branch_catalog.html:1025
-#: templates/shops/cart_detail.html:283
+#: templates/shops/branch_catalog.html:1042
+#: templates/shops/cart_detail.html:304
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:264
 msgid "В наличии"
 msgstr "In stock"
@@ -1673,7 +1728,7 @@ msgstr "Price"
 #: templates/public_site/branch_menu.html:1750
 #: templates/shops/1212/branch_catalog.html:755
 #: templates/shops/1212/branch_catalog2.html:757
-#: templates/shops/branch_catalog.html:1033
+#: templates/shops/branch_catalog.html:1050
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:276
 msgid "В корзину"
 msgstr "Add to cart"
@@ -1703,7 +1758,7 @@ msgstr "Network / server error"
 #: templates/shops/1212/branch_catalog.html:624
 #: templates/shops/1212/branch_catalog2.html:626
 #: templates/shops/1212/store_list2.html:339 templates/shops/cart_detail.html:4
-#: templates/shops/cart_detail.html:230
+#: templates/shops/cart_detail.html:251
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:198
 msgid "Корзина"
 msgstr "Cart"
@@ -1741,12 +1796,12 @@ msgstr "Cart"
 #: templates/shops/1212/branch_catalog2.html:643
 #: templates/shops/1212/branch_catalog2.html:749
 #: templates/shops/1212/branch_catalog2.html:780
-#: templates/shops/branch_catalog.html:911
-#: templates/shops/branch_catalog.html:1087
-#: templates/shops/cart_detail.html:278 templates/shops/cart_detail.html:280
-#: templates/shops/cart_detail.html:308 templates/shops/cart_detail.html:314
-#: templates/shops/cart_detail.html:322 templates/shops/cart_detail.html:327
-#: templates/shops/cart_detail.html:340 templates/shops/cart_detail.html:342
+#: templates/shops/branch_catalog.html:933
+#: templates/shops/branch_catalog.html:1104
+#: templates/shops/cart_detail.html:299 templates/shops/cart_detail.html:301
+#: templates/shops/cart_detail.html:329 templates/shops/cart_detail.html:335
+#: templates/shops/cart_detail.html:343 templates/shops/cart_detail.html:348
+#: templates/shops/cart_detail.html:361 templates/shops/cart_detail.html:363
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:176
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:200
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:260
@@ -1760,7 +1815,7 @@ msgstr "Refresh"
 
 #: templates/pharmacy/cart_detail.html:51
 #: templates/public_site/cart_detail2.html:805
-#: templates/shops/cart_detail.html:294
+#: templates/shops/cart_detail.html:315
 msgid "Удалить"
 msgstr "Remove"
 
@@ -1796,7 +1851,7 @@ msgstr "Comment (optional)"
 #: templates/pharmacy/cart_detail.html:88
 #: templates/public_site/branch_menu.html:634
 #: templates/public_site/cart_detail.html:301
-#: templates/shops/cart_detail.html:378
+#: templates/shops/cart_detail.html:399
 msgid "Способ оплаты"
 msgstr "Payment method"
 
@@ -1888,13 +1943,6 @@ msgid "Платформа Webordo"
 msgstr "Webordo platform"
 
 #: templates/pharmacy/pharmacy_list.html:275
-#: templates/pharmacy/старый/pharmacy_list.html:4
-#: templates/pharmacy/старый/pharmacy_list.html:20
-#: templates/public_site/home.html:798
-msgid "Аптеки"
-msgstr "Pharmacies"
-
-#: templates/pharmacy/pharmacy_list.html:275
 #: templates/public_site/restaurants_list.html:600
 msgctxt "родительный"
 msgid "Кыргызстана"
@@ -1970,8 +2018,8 @@ msgstr "Popular"
 #: templates/printshop/branch_catalog.html:306
 #: templates/public_site/branch_menu.html:603
 #: templates/public_site/branch_menu.html:1699
-#: templates/shops/branch_catalog.html:858
-#: templates/shops/branch_catalog.html:1089
+#: templates/shops/branch_catalog.html:878
+#: templates/shops/branch_catalog.html:1106
 msgid "шт"
 msgstr "pcs"
 
@@ -1990,7 +2038,7 @@ msgstr "Failed to add"
 
 #: templates/printshop/branch_catalog.html:196
 #: templates/public_site/branch_menu.html:601
-#: templates/shops/branch_catalog.html:861
+#: templates/shops/branch_catalog.html:881
 msgid "Добавлено в корзину"
 msgstr "Added to cart"
 
@@ -1998,7 +2046,7 @@ msgstr "Added to cart"
 #: templates/public_site/branch_menu.html:598
 #: templates/public_site/cart_detail.html:171
 #: templates/public_site/cart_detail2.html:758
-#: templates/shops/cart_detail.html:249
+#: templates/shops/cart_detail.html:270
 msgid "Корзина пуста"
 msgstr "Your cart is empty"
 
@@ -2017,7 +2065,7 @@ msgstr "🚚 To free delivery, order for another"
 #: templates/public_site/cart_detail2.html:727
 #: templates/public_site/cart_detail2.html:827
 #: templates/public_site/checkout_success.html:97
-#: templates/shops/cart_detail.html:307
+#: templates/shops/cart_detail.html:328
 msgid "Подытог"
 msgstr "Subtotal"
 
@@ -2045,7 +2093,7 @@ msgstr "Minimum order amount —"
 
 #: templates/printshop/branch_catalog.html:210
 #: templates/public_site/cart_detail.html:277
-#: templates/shops/cart_detail.html:350
+#: templates/shops/cart_detail.html:371
 msgid "Оформление заказа"
 msgstr "Checkout"
 
@@ -2062,13 +2110,13 @@ msgid "Комментарий к заказу"
 msgstr "Order comment"
 
 #: templates/printshop/branch_catalog.html:293
-#: templates/shops/branch_catalog.html:1049
+#: templates/shops/branch_catalog.html:1066
 msgid "Каталог пока пуст"
 msgstr "The catalog is empty for now"
 
 #: templates/printshop/branch_catalog.html:303
 #: templates/public_site/branch_menu.html:1696
-#: templates/shops/branch_catalog.html:1086
+#: templates/shops/branch_catalog.html:1103
 msgid "Ваша корзина"
 msgstr "Your cart"
 
@@ -2203,85 +2251,85 @@ msgstr ""
 msgid "Посмотреть экосистему"
 msgstr "Explore the ecosystem"
 
-#: templates/public_site/about.html:66
+#: templates/public_site/about.html:70
 msgid "Подход"
 msgstr "Approach"
 
-#: templates/public_site/about.html:67
+#: templates/public_site/about.html:71
 msgid "Всё в одном"
 msgstr "All in one"
 
-#: templates/public_site/about.html:69
+#: templates/public_site/about.html:73
 msgid "Одна витрина, одна ссылка, один понятный путь для клиента."
 msgstr "One storefront, one link, one clear path for the customer."
 
-#: templates/public_site/about.html:74 templates/public_site/about.html:140
+#: templates/public_site/about.html:78 templates/public_site/about.html:152
 msgid "Для бизнеса"
 msgstr "For business"
 
-#: templates/public_site/about.html:75
+#: templates/public_site/about.html:79
 msgid "QR + каталог + заявки"
 msgstr "QR + catalog + requests"
 
-#: templates/public_site/about.html:77
+#: templates/public_site/about.html:81
 msgid "Быстрый запуск без сложного приложения и без лишних касаний."
 msgstr "A fast launch with no complex app and no extra taps."
 
-#: templates/public_site/about.html:82
+#: templates/public_site/about.html:86
 msgid "Модель"
 msgstr "Model"
 
-#: templates/public_site/about.html:83
+#: templates/public_site/about.html:87
 msgid "Подписка, а не комиссия"
 msgstr "Subscription, not commission"
 
-#: templates/public_site/about.html:85
+#: templates/public_site/about.html:89
 msgid "Вы сохраняете контроль над доставкой, клиентами и экономикой заказа."
 msgstr "You keep control over delivery, customers and the order economics."
 
-#: templates/public_site/about.html:96 templates/public_site/home.html:1318
-#: templates/public_site/restaurant_contacts.html:315
-#: templates/public_site/restaurant_detail.html:294
-#: templates/public_site/restaurants_list.html:600
-msgid "Рестораны"
-msgstr "Restaurants"
-
-#: templates/public_site/about.html:97
+#: templates/public_site/about.html:102
 msgid "QR-меню, заказы, категории, филиалы, самовывоз и доставка."
 msgstr "QR menu, orders, categories, branches, pickup and delivery."
 
-#: templates/public_site/about.html:102
+#: templates/public_site/about.html:103 templates/public_site/about.html:110
+#: templates/public_site/about.html:117
+msgid "Предложение"
+msgstr "Proposal"
+
+#: templates/public_site/about.html:109
 msgid "Каталоги товаров, корзина, наличие, доставка и удобный заказ."
 msgstr "Product catalogs, cart, stock, delivery and easy ordering."
 
-#: templates/public_site/about.html:106
+#: templates/public_site/about.html:115
 msgid "Услуги и салоны"
 msgstr "Services & salons"
 
-#: templates/public_site/about.html:107
+#: templates/public_site/about.html:116
 msgid "Запись, прайс, направление услуг и быстрый контакт с филиалом."
 msgstr "Booking, price list, service areas and quick contact with the branch."
 
-#: templates/public_site/about.html:111
-msgid "Городская экосистема"
-msgstr "City ecosystem"
+#: templates/public_site/about.html:122
+msgid "Все 11 направлений"
+msgstr "All 11 directions"
 
-#: templates/public_site/about.html:112
-msgid "Одна платформа, где клиенту не нужно искать всё по отдельности."
+#: templates/public_site/about.html:123
+msgid "Караоке, симрейсинг, отели, юристы, агентства, эко, аптеки и другое."
 msgstr ""
-"One platform where the customer doesn't have to look for everything "
-"separately.One platform where the customer doesn't have to look for "
-"everything separately."
+"Karaoke, sim racing, hotels, lawyers, agencies, eco, pharmacies and more."
 
-#: templates/public_site/about.html:120
+#: templates/public_site/about.html:124
+msgid "Смотреть все"
+msgstr "View all"
+
+#: templates/public_site/about.html:132
 msgid "Идея платформы"
 msgstr "The platform idea"
 
-#: templates/public_site/about.html:123
+#: templates/public_site/about.html:135
 msgid "Webordo собирает бизнесы в одну понятную цифровую витрину."
 msgstr "Webordo brings businesses together into one clear digital storefront."
 
-#: templates/public_site/about.html:126
+#: templates/public_site/about.html:138
 msgid ""
 "Клиенту больше не нужно отдельно искать ссылку на меню, отдельно писать в "
 "WhatsApp, отдельно уточнять наличие, отдельно спрашивать доставку или "
@@ -2292,79 +2340,79 @@ msgstr ""
 "check availability and ask about delivery or order terms separately. They "
 "open Webordo and get a clear path: choose, check out, get in touch, order."
 
-#: templates/public_site/about.html:131
+#: templates/public_site/about.html:143
 msgid "Для клиента"
 msgstr "For the customer"
 
-#: templates/public_site/about.html:133
+#: templates/public_site/about.html:145
 msgid "Одна ссылка или QR вместо длинной переписки"
 msgstr "One link or QR instead of long messaging"
 
-#: templates/public_site/about.html:134
+#: templates/public_site/about.html:146
 msgid "Понятная витрина, красивые карточки и быстрый выбор"
 msgstr "A clear storefront, beautiful cards and a fast choice"
 
-#: templates/public_site/about.html:135
+#: templates/public_site/about.html:147
 msgid "Заказ, бронь или заявка — за минуту"
 msgstr "An order, booking or request — in a minute"
 
-#: templates/public_site/about.html:136
+#: templates/public_site/about.html:148
 msgid "Переход между ресторанами, магазинами и услугами в одной системе"
 msgstr "Move between restaurants, shops and services within one system"
 
-#: templates/public_site/about.html:142
+#: templates/public_site/about.html:154
 msgid "Современная витрина без создания сложного приложения"
 msgstr "A modern storefront without building a complex app"
 
-#: templates/public_site/about.html:143
+#: templates/public_site/about.html:155
 msgid "Управление категориями, филиалами, товарами и меню"
 msgstr "Manage categories, branches, products and menus"
 
-#: templates/public_site/about.html:144
+#: templates/public_site/about.html:156
 msgid "Понятный поток заказов и меньше лишних вопросов"
 msgstr "A clear order flow and fewer unnecessary questions"
 
-#: templates/public_site/about.html:145
+#: templates/public_site/about.html:157
 msgid "Запуск быстро, обновления легко, масштабирование удобно"
 msgstr "Quick to launch, easy to update, simple to scale"
 
-#: templates/public_site/about.html:154
+#: templates/public_site/about.html:166
 msgid "Экосистема"
 msgstr "Ecosystem"
 
-#: templates/public_site/about.html:155
+#: templates/public_site/about.html:167
 msgid "Всё вокруг заказа и клиента"
 msgstr "Everything around the order and the customer"
 
-#: templates/public_site/about.html:162
+#: templates/public_site/about.html:174
 msgid "Sanji / Food"
 msgstr "Sanji / Food"
 
-#: templates/public_site/about.html:163
+#: templates/public_site/about.html:175
 msgid "Меню, QR-столы, блюда, доставка и самовывоз."
 msgstr "Menu, QR tables, dishes, delivery and pickup."
 
-#: templates/public_site/about.html:166
+#: templates/public_site/about.html:178
 msgid "Store / Retail"
 msgstr "Store / Retail"
 
-#: templates/public_site/about.html:167
+#: templates/public_site/about.html:179
 msgid "Каталог товаров, корзина, остатки, филиалы и витрина."
 msgstr "Product catalog, cart, stock, branches and storefront."
 
-#: templates/public_site/about.html:170
+#: templates/public_site/about.html:182
 msgid "Service / Booking"
 msgstr "Service / Booking"
 
-#: templates/public_site/about.html:171
+#: templates/public_site/about.html:183
 msgid "Услуги, прайс, запись, бронирование и заявка."
 msgstr "Services, price list, booking, reservations and requests."
 
-#: templates/public_site/about.html:174
+#: templates/public_site/about.html:186
 msgid "Дальше — ещё шире"
 msgstr "And it goes wider"
 
-#: templates/public_site/about.html:175
+#: templates/public_site/about.html:187
 msgid ""
 "Маркетплейс городских сервисов, больше категорий, больше филиалов, больше "
 "сценариев для бизнеса."
@@ -2372,11 +2420,11 @@ msgstr ""
 "A marketplace of city services — more categories, more branches, more "
 "scenarios for business."
 
-#: templates/public_site/about.html:185
+#: templates/public_site/about.html:197 templates/public_site/kp_print.html:225
 msgid "Быстрый запуск"
 msgstr "Fast launch"
 
-#: templates/public_site/about.html:187
+#: templates/public_site/about.html:199
 msgid ""
 "Подключаем бизнес, оформляем витрину, загружаем меню или каталог и быстро "
 "запускаем в работу."
@@ -2384,11 +2432,11 @@ msgstr ""
 "We connect the business, set up the storefront, upload the menu or catalog "
 "and launch quickly."
 
-#: templates/public_site/about.html:192
+#: templates/public_site/about.html:204
 msgid "Подписочная модель"
 msgstr "Subscription model"
 
-#: templates/public_site/about.html:194
+#: templates/public_site/about.html:206
 msgid ""
 "Мы не забираем процент с каждого заказа. Бизнесу понятнее считать экономику "
 "и легче расти."
@@ -2396,11 +2444,11 @@ msgstr ""
 "We don't take a cut of every order. It's easier for the business to plan its "
 "economics and grow."
 
-#: templates/public_site/about.html:199
+#: templates/public_site/about.html:211
 msgid "Единая городская логика"
 msgstr "One city-wide logic"
 
-#: templates/public_site/about.html:201
+#: templates/public_site/about.html:213
 msgid ""
 "Наша цель — чтобы Webordo ассоциировался не с одной нишей, а с новой "
 "цифровой инфраструктурой локального бизнеса."
@@ -2408,18 +2456,17 @@ msgstr ""
 "Our goal is for Webordo to stand not for one niche, but for a new digital "
 "infrastructure for local business."
 
-#: templates/public_site/about.html:210
+#: templates/public_site/about.html:222
 msgid "Почему это работает"
 msgstr "Why it works"
 
-#: templates/public_site/about.html:213
+#: templates/public_site/about.html:225
 msgid "Webordo делает бизнес ближе к клиенту — красиво, быстро и понятно."
 msgstr ""
-"Webordo brings business closer to the customer — beautiful, fast and "
-"clear.Webordo brings business closer to the customer — beautifully, quickly "
-"and clearly."
+"Webordo brings business closer to the customer — beautifully, quickly and "
+"clearly."
 
-#: templates/public_site/about.html:216
+#: templates/public_site/about.html:228
 msgid ""
 "Вместо разрозненных ссылок, старых прайсов и бесконечных уточнений — "
 "современная страница, понятная витрина и быстрый сценарий заказа или заявки. "
@@ -2429,48 +2476,46 @@ msgstr ""
 "— a modern page, a clear storefront and a fast order or request flow. It "
 "looks stronger, sells better and saves time."
 
-#: templates/public_site/about.html:221
+#: templates/public_site/about.html:233
 #: templates/public_site/еуые/about.html:40
 msgid "Важно"
 msgstr "Important"
 
-#: templates/public_site/about.html:223
+#: templates/public_site/about.html:235
 msgid "Webordo работает по подписке, а не по проценту с заказов."
 msgstr "Webordo works on a subscription, not a percentage of orders."
 
-#: templates/public_site/about.html:224
+#: templates/public_site/about.html:236
 msgid "Доставку выполняет сам ресторан, магазин или партнёр бизнеса."
 msgstr ""
-"Delivery is handled by the restaurant, the shop or a business "
-"partner.Delivery is handled by the restaurant, shop or the business's own "
-"partner."
+"Delivery is handled by the restaurant, shop or the business's own partner."
 
-#: templates/public_site/about.html:225
+#: templates/public_site/about.html:237
 msgid ""
 "Можно подключать филиалы, категории, товары, блюда и разные форматы услуг."
 msgstr ""
 "You can add branches, categories, products, dishes and different service "
 "formats."
 
-#: templates/public_site/about.html:226
+#: templates/public_site/about.html:238
 msgid ""
 "Платформа подходит и для запуска сейчас, и для роста в экосистему дальше."
 msgstr ""
 "The platform fits both launching now and growing into an ecosystem later."
 
-#: templates/public_site/about.html:235
+#: templates/public_site/about.html:247
 msgid "Об основателе Webordo"
 msgstr "About the founder of Webordo"
 
-#: templates/public_site/about.html:249
+#: templates/public_site/about.html:261
 msgid "Партнёрство"
 msgstr "Partnership"
 
-#: templates/public_site/about.html:251
+#: templates/public_site/about.html:263
 msgid "Подключите бизнес к Webordo и станьте частью экосистемы."
 msgstr "Connect your business to Webordo and become part of the ecosystem."
 
-#: templates/public_site/about.html:254
+#: templates/public_site/about.html:266
 msgid ""
 "Покажем демо, оформим страницу, загрузим меню или каталог, настроим QR и "
 "подскажем формат подключения. Webordo — это уже не просто страница. Это "
@@ -2481,7 +2526,7 @@ msgstr ""
 "page — it's a digital environment where a business looks modern and sells "
 "more easily."
 
-#: templates/public_site/about.html:272
+#: templates/public_site/about.html:288
 msgid "Сообщение: “ПАРТНЁР” — отправим демо, условия и варианты подключения."
 msgstr "Message: “PARTNER” — we'll send a demo, terms and connection options."
 
@@ -2538,12 +2583,12 @@ msgstr "Error"
 #: templates/public_site/branch_menu.html:600
 #: templates/public_site/constructor_build.html:309
 #: templates/public_site/table_menu.html:638
-#: templates/shops/branch_catalog.html:865
+#: templates/shops/branch_catalog.html:885
 msgid "Ошибка сети"
 msgstr "Network error"
 
 #: templates/public_site/branch_menu.html:602
-#: templates/shops/branch_catalog.html:864
+#: templates/shops/branch_catalog.html:884
 msgid "Не удалось добавить"
 msgstr "Couldn't add"
 
@@ -2735,7 +2780,7 @@ msgstr "Build your own"
 
 #: templates/public_site/branch_menu.html:747
 #: templates/public_site/table_menu.html:719
-#: templates/shops/branch_catalog.html:948
+#: templates/shops/branch_catalog.html:965
 msgid "Все категории"
 msgstr "All categories"
 
@@ -2753,7 +2798,7 @@ msgstr "The restaurant hasn't added dishes yet"
 
 #: templates/public_site/branch_menu.html:1703
 #: templates/public_site/table_menu.html:1096
-#: templates/shops/branch_catalog.html:1092
+#: templates/shops/branch_catalog.html:1109
 msgid "Наверх"
 msgstr "Back to top"
 
@@ -2837,7 +2882,7 @@ msgid "Оставьте контакты, чтобы ресторан быстр
 msgstr "Leave your contacts so the restaurant can process the order quickly."
 
 #: templates/public_site/cart_detail2.html:867
-#: templates/shops/cart_detail.html:356
+#: templates/shops/cart_detail.html:377
 msgid "Имя (не обязательно)"
 msgstr "Name (optional)"
 
@@ -2846,7 +2891,7 @@ msgid "Адрес / стол / кабинка"
 msgstr "Address / table / room"
 
 #: templates/public_site/cart_detail2.html:900
-#: templates/shops/cart_detail.html:375
+#: templates/shops/cart_detail.html:396
 msgid "Комментарий (не обязательно)"
 msgstr "Comment (optional)"
 
@@ -2873,8 +2918,8 @@ msgid ""
 "С вами скоро свяжутся, чтобы подтвердить заказ — пожалуйста, проверьте, что "
 "номер телефона указан верно."
 msgstr ""
-"We'll contact you shortly to confirm the order — please make sure your "
-"phone number is entered correctly."
+"We'll contact you shortly to confirm the order — please make sure your phone "
+"number is entered correctly."
 
 #: templates/public_site/checkout_success.html:65
 #: templates/public_site/checkout_success.html:112
@@ -3124,10 +3169,6 @@ msgstr "Print shop"
 msgid "Печать, визитки, баннеры, сувениры"
 msgstr "Printing, business cards, banners, souvenirs"
 
-#: templates/public_site/home.html:899 templates/realestate/agency_list.html:4
-msgid "Агентства недвижимости"
-msgstr "Real estate agencies"
-
 #: templates/public_site/home.html:900
 msgid "Квартиры от агентств недвижимости"
 msgstr "Apartments from real estate agencies"
@@ -3139,11 +3180,6 @@ msgstr "Karaoke"
 #: templates/public_site/home.html:925
 msgid "Бронирование кабинок"
 msgstr "Room reservations"
-
-#: templates/public_site/home.html:949 templates/simracing/list.html:3
-#: templates/simracing/list.html:43
-msgid "Симрейсинг"
-msgstr "Sim racing"
 
 #: templates/public_site/home.html:950
 msgid "Картинг и симуляторы"
@@ -3207,6 +3243,134 @@ msgstr "✕ Route"
 #: templates/public_site/home.html:1350
 msgid "2ГИС"
 msgstr "2GIS"
+
+#: templates/public_site/kp_detail.html:3
+#, python-format
+msgid "Предложение для %(name)s"
+msgstr "Proposal for %(name)s"
+
+#: templates/public_site/kp_detail.html:17
+msgid "Все направления"
+msgstr "All directions"
+
+#: templates/public_site/kp_detail.html:22
+msgid "Открыть PDF"
+msgstr "Open PDF"
+
+#: templates/public_site/kp_detail.html:47
+#, python-format
+msgid ""
+"Здравствуйте! Интересует подключение к Webordo — направление «%(name)s»."
+msgstr "Hello! I'm interested in connecting to Webordo — %(name)s."
+
+#: templates/public_site/kp_detail.html:55
+#: templates/public_site/kp_detail.html:135
+msgid "Скачать PDF"
+msgstr "Download PDF"
+
+#: templates/public_site/kp_detail.html:75
+#: templates/public_site/kp_print.html:180
+msgid "Что мы уже даём вам"
+msgstr "What we already give you"
+
+#: templates/public_site/kp_detail.html:93
+#: templates/public_site/kp_print.html:206
+msgid "Что видите вы в личном кабинете"
+msgstr "What you see in your dashboard"
+
+#: templates/public_site/kp_detail.html:123
+msgid "Готовы подключиться?"
+msgstr "Ready to connect?"
+
+#: templates/public_site/kp_detail.html:125
+#, python-format
+msgid "Подключим ваш бизнес к Webordo — направление «%(name)s»"
+msgstr "Let's connect your business to Webordo — %(name)s"
+
+#: templates/public_site/kp_index.html:20
+msgid "Предложения для каждого направления"
+msgstr "A proposal for every direction"
+
+#: templates/public_site/kp_index.html:23
+msgid ""
+"Выберите свою сферу — покажем, что уже работает на платформе для вас, и что "
+"вы получите в личном кабинете. Каждое предложение можно скачать в PDF."
+msgstr ""
+"Pick your field — we'll show what already works on the platform for you, and "
+"what you get in your dashboard. Every proposal can be downloaded as a PDF."
+
+#: templates/public_site/kp_index.html:35
+msgid "Смотреть предложение"
+msgstr "View proposal"
+
+#: templates/public_site/kp_print.html:160
+#: templates/public_site/kp_print.html:203
+msgid "Коммерческое предложение"
+msgstr "Business proposal"
+
+#: templates/public_site/kp_print.html:169
+msgid "Что сейчас мешает расти"
+msgstr "What's holding you back right now"
+
+#: templates/public_site/kp_print.html:195
+msgid "стр. 1 из 2"
+msgstr "page 1 of 2"
+
+#: templates/public_site/kp_print.html:219
+msgid "Важно:"
+msgstr "Important:"
+
+#: templates/public_site/kp_print.html:222
+msgid "Условия"
+msgstr "Terms"
+
+#: templates/public_site/kp_print.html:224
+msgid "Подписка"
+msgstr "Subscription"
+
+#: templates/public_site/kp_print.html:224
+msgid "а не процент с каждого заказа —"
+msgstr "not a percentage of each order —"
+
+#: templates/public_site/kp_print.html:224
+msgid "экономику считать проще"
+msgstr "easier to plan your economics"
+
+#: templates/public_site/kp_print.html:225
+msgid "оформляем страницу, загружаем"
+msgstr "we set up the page, upload"
+
+#: templates/public_site/kp_print.html:225
+msgid "услуги/товары сами"
+msgstr "your services/products for you"
+
+#: templates/public_site/kp_print.html:226
+msgid "Без привязки"
+msgstr "No lock-in"
+
+#: templates/public_site/kp_print.html:226
+msgid "стоимость и формат — обсуждаем"
+msgstr "price and format — discussed"
+
+#: templates/public_site/kp_print.html:226
+msgid "индивидуально под ваш бизнес"
+msgstr "individually for your business"
+
+#: templates/public_site/kp_print.html:231
+msgid "Webordo · основатель"
+msgstr "Webordo · founder"
+
+#: templates/public_site/kp_print.html:233
+msgid "Директор и CEO"
+msgstr "Director & CEO"
+
+#: templates/public_site/kp_print.html:242
+msgid ""
+"Webordo — цифровая экосистема Кыргызстана: рестораны, магазины и услуги в "
+"одном месте"
+msgstr ""
+"Webordo — Kyrgyzstan's digital ecosystem: restaurants, shops and services in "
+"one place"
 
 #: templates/public_site/privacy.html:17
 msgid "Действует с 11 июля 2026 г. · Мобильное приложение Webordo"
@@ -4126,7 +4290,7 @@ msgstr "No contact provided"
 #: templates/shops/1212/store_detail.html:38
 #: templates/shops/1212/store_detail.html:142
 #: templates/shops/1212/store_list.html:113
-#: templates/shops/cart_detail.html:235
+#: templates/shops/cart_detail.html:256
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:166
 msgid "В магазине"
 msgstr "In the shop"
@@ -4165,7 +4329,7 @@ msgstr "Delivery orders only"
 
 #: templates/shops/1212/branch_catalog.html:680
 #: templates/shops/1212/branch_catalog2.html:682
-#: templates/shops/branch_catalog.html:906
+#: templates/shops/branch_catalog.html:928
 msgid "Покупка в магазине"
 msgstr "In-store purchase"
 
@@ -4188,7 +4352,7 @@ msgstr "TBC"
 
 #: templates/shops/1212/branch_catalog.html:727
 #: templates/shops/1212/branch_catalog2.html:729
-#: templates/shops/branch_catalog.html:1002
+#: templates/shops/branch_catalog.html:1019
 msgid "Есть"
 msgstr "Available"
 
@@ -4196,10 +4360,10 @@ msgstr "Available"
 #: templates/shops/1212/branch_catalog.html:758
 #: templates/shops/1212/branch_catalog2.html:731
 #: templates/shops/1212/branch_catalog2.html:760
-#: templates/shops/branch_catalog.html:867
-#: templates/shops/branch_catalog.html:1000
-#: templates/shops/branch_catalog.html:1023
-#: templates/shops/branch_catalog.html:1036
+#: templates/shops/branch_catalog.html:887
+#: templates/shops/branch_catalog.html:1017
+#: templates/shops/branch_catalog.html:1040
+#: templates/shops/branch_catalog.html:1053
 msgid "Нет в наличии"
 msgstr "Out of stock"
 
@@ -4418,43 +4582,43 @@ msgstr "Made for restaurants of Kyrgyzstan"
 msgid "Разработка Amantur Agency"
 msgstr "Built by Amantur Agency"
 
-#: templates/shops/branch_catalog.html:860
+#: templates/shops/branch_catalog.html:880
 msgid "＋ В корзину"
 msgstr "＋ Add to cart"
 
-#: templates/shops/branch_catalog.html:862
+#: templates/shops/branch_catalog.html:882
 msgid "✓ Добавлено"
 msgstr "✓ Added"
 
-#: templates/shops/branch_catalog.html:863 templates/shops/cart_detail.html:405
+#: templates/shops/branch_catalog.html:883 templates/shops/cart_detail.html:426
 msgid "Недостаточно товара"
 msgstr "Not enough stock"
 
-#: templates/shops/branch_catalog.html:866
+#: templates/shops/branch_catalog.html:886
 msgid "В наличии:"
 msgstr "In stock:"
 
-#: templates/shops/branch_catalog.html:895
+#: templates/shops/branch_catalog.html:915
 msgid "Каталог филиала"
 msgstr "Branch catalog"
 
-#: templates/shops/branch_catalog.html:911
+#: templates/shops/branch_catalog.html:933
 msgid "Мин. заказ"
 msgstr "Min. order"
 
-#: templates/shops/branch_catalog.html:921
+#: templates/shops/branch_catalog.html:939
 msgid "Инд. заказы:"
 msgstr "Custom orders:"
 
-#: templates/shops/branch_catalog.html:924
+#: templates/shops/branch_catalog.html:942
 msgid "Каталог открыт"
 msgstr "Catalog open"
 
-#: templates/shops/branch_catalog.html:934
+#: templates/shops/branch_catalog.html:951
 msgid "Инд. заказ"
 msgstr "Custom order"
 
-#: templates/shops/branch_catalog.html:967
+#: templates/shops/branch_catalog.html:984
 msgid ""
 "Цены указаны по прайс-листу фирменных магазинов и могут отличаться в других "
 "точках продаж."
@@ -4462,63 +4626,63 @@ msgstr ""
 "Prices are listed per the brand stores' price list and may differ at other "
 "points of sale."
 
-#: templates/shops/branch_catalog.html:1050
+#: templates/shops/branch_catalog.html:1067
 msgid "Товары для этого филиала ещё не добавлены."
 msgstr "Products for this branch haven't been added yet."
 
-#: templates/shops/cart_detail.html:250
+#: templates/shops/cart_detail.html:271
 msgid "Добавьте товары из каталога, чтобы оформить заказ."
 msgstr "Add items from the catalog to place an order."
 
-#: templates/shops/cart_detail.html:253
+#: templates/shops/cart_detail.html:274
 msgid "Перейти в каталог"
 msgstr "Go to catalog"
 
-#: templates/shops/cart_detail.html:289
+#: templates/shops/cart_detail.html:310
 msgid "Меньше"
 msgstr "Less"
 
-#: templates/shops/cart_detail.html:292
+#: templates/shops/cart_detail.html:313
 msgid "Больше"
 msgstr "More"
 
-#: templates/shops/cart_detail.html:304
+#: templates/shops/cart_detail.html:325
 msgid "Итого по заказу"
 msgstr "Order summary"
 
-#: templates/shops/cart_detail.html:327
+#: templates/shops/cart_detail.html:348
 msgid "Мин. сумма доставки:"
 msgstr "Min. delivery amount:"
 
-#: templates/shops/cart_detail.html:337
+#: templates/shops/cart_detail.html:358
 msgid "Совсем чуть-чуть до доставки!"
 msgstr "Almost there for delivery!"
 
-#: templates/shops/cart_detail.html:339
+#: templates/shops/cart_detail.html:360
 msgid "Минимальная сумма заказа для доставки"
 msgstr "The minimum order amount for delivery is"
 
-#: templates/shops/cart_detail.html:341
+#: templates/shops/cart_detail.html:362
 msgid "Добавьте товаров ещё на"
 msgstr "Add items for another"
 
-#: templates/shops/cart_detail.html:343
+#: templates/shops/cart_detail.html:364
 msgid "и сможете оформить доставку 🙂"
 msgstr "and you'll be able to order delivery 🙂"
 
-#: templates/shops/cart_detail.html:362
+#: templates/shops/cart_detail.html:383
 msgid "Введите номер в формате +996XXXXXXXXX (9 цифр после +996)"
 msgstr "Enter a number in the format +996XXXXXXXXX (9 digits after +996)"
 
-#: templates/shops/cart_detail.html:368
+#: templates/shops/cart_detail.html:389
 msgid "Адрес доставки (обязательно)"
 msgstr "Delivery address (required)"
 
-#: templates/shops/cart_detail.html:370
+#: templates/shops/cart_detail.html:391
 msgid "Комментарий (например: приду через 10 минут)"
 msgstr "Comment (e.g. I'll arrive in 10 minutes)"
 
-#: templates/shops/cart_detail.html:406
+#: templates/shops/cart_detail.html:427
 msgid "Недостаточно товара. Доступно:"
 msgstr "Not enough stock. Available:"
 

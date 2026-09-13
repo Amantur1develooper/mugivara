@@ -127,7 +127,6 @@ def shop_branch_edit(request, branch_id):
         lon_raw = request.POST.get("lon", "").strip()
         branch.lat = lat_raw if lat_raw else None
         branch.lon = lon_raw if lon_raw else None
-        branch.is_active        = request.POST.get("is_active") == "on"
         branch.show_stock_qty   = request.POST.get("show_stock_qty") == "on"
         branch.delivery_enabled = request.POST.get("delivery_enabled") == "on"
         branch.delivery_fee     = _dec(request.POST.get("delivery_fee"))

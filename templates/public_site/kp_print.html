@@ -1,0 +1,246 @@
+{% load i18n %}
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Webordo — КП {{ kp.name }}</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Arial, sans-serif;
+    color: #1d1d1f;
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 13mm 18mm;
+    position: relative;
+    page-break-after: always;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  .brand {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 6mm;
+  }
+  .brand-logo {
+    font-family: 'Unbounded', -apple-system, sans-serif;
+    font-weight: 900; font-size: 22px; letter-spacing: -0.5px;
+  }
+  .brand-logo span { color: #FF6A1A; }
+  .brand-tag {
+    font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: #98a2b3;
+  }
+
+  .hero {
+    background: linear-gradient(135deg, #17181c 0%, #24262d 100%);
+    border-radius: 20px;
+    padding: 11mm 12mm;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 8mm;
+  }
+  .hero::after {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 88% 8%, rgba(255,138,0,.28), transparent 55%),
+      radial-gradient(circle at 8% 95%, rgba(255,106,26,.16), transparent 50%);
+  }
+  .hero-eyebrow {
+    position: relative; display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.16);
+    border-radius: 999px; padding: 5px 12px; font-size: 10.5px; font-weight: 800;
+    letter-spacing: .05em; text-transform: uppercase; margin-bottom: 10px;
+  }
+  .hero-eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: #34d399; }
+  .hero h1 {
+    position: relative; font-family: 'Unbounded', sans-serif; font-weight: 800;
+    font-size: 27px; line-height: 1.18; letter-spacing: -0.7px; max-width: 155mm;
+  }
+  .hero h1 b {
+    background: linear-gradient(135deg, #ffb37a, #ff8a00);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p {
+    position: relative; margin-top: 9px; font-size: 12.5px; line-height: 1.55;
+    color: rgba(255,255,255,.72); max-width: 155mm;
+  }
+
+  .sec-title { display: flex; align-items: center; gap: 9px; margin: 5mm 0 3mm; }
+  .sec-num {
+    width: 24px; height: 24px; border-radius: 8px; flex-shrink: 0;
+    background: linear-gradient(135deg,#FF4D1C,#FF8A00);
+    color: #fff; font-weight: 800; font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sec-title h2 {
+    font-family: 'Unbounded', sans-serif; font-size: 15.5px; font-weight: 800;
+    letter-spacing: -0.3px; color: #1d1d1f;
+  }
+
+  .pain-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; }
+  .pain {
+    background: #f8f8fa; border: 1px solid #ececef; border-radius: 14px;
+    padding: 5mm 5mm;
+  }
+  .pain .ico { font-size: 18px; margin-bottom: 6px; }
+  .pain .t { font-weight: 700; font-size: 11.5px; margin-bottom: 3px; }
+  .pain .d { font-size: 10.5px; color: #6b7280; line-height: 1.45; }
+
+  .feat-list { display: flex; flex-direction: column; gap: 3.4mm; }
+  .feat {
+    display: flex; gap: 4mm; align-items: flex-start;
+    background: #fff; border: 1px solid #ececef; border-radius: 14px;
+    padding: 4.2mm 5mm;
+  }
+  .feat .ico {
+    width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(255,77,28,.1), rgba(255,138,0,.06));
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .feat .body .t { font-weight: 700; font-size: 12px; margin-bottom: 2px; }
+  .feat .body .d { font-size: 10.5px; color: #6b7280; line-height: 1.5; }
+
+  .p1-footer {
+    position: absolute; bottom: 12mm; left: 18mm; right: 18mm;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 9.5px; color: #98a2b3; border-top: 1px solid #ececef; padding-top: 4mm;
+  }
+
+  .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; }
+  .dash-card {
+    background: #f8f8fa; border: 1px solid #ececef; border-radius: 14px; padding: 3.2mm 4.5mm;
+  }
+  .dash-card .t { font-weight: 700; font-size: 11px; margin-bottom: 2px; }
+  .dash-card ul { margin: 0; padding-left: 14px; font-size: 10px; color: #4b5563; line-height: 1.48; }
+
+  .quote-box {
+    margin-top: 3.5mm;
+    background: linear-gradient(135deg, #fff8f2, #ffe8d6);
+    border-radius: 16px; padding: 4mm 5mm;
+    font-size: 10.8px; color: #7a3e0f; line-height: 1.5;
+  }
+  .quote-box b { color: #1d1d1f; }
+
+  .terms-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 3mm; margin-top: 1mm; }
+  .term { text-align: center; border: 1px solid #ececef; border-radius: 14px; padding: 4mm 4mm; }
+  .term .big { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 14px; color: #1d1d1f; margin-bottom: 3px; }
+  .term .lbl { font-size: 9.5px; color: #6b7280; line-height: 1.35; }
+
+  .contact-card {
+    margin-top: 4.5mm; background: #17181c; border-radius: 18px; padding: 5.5mm 8mm;
+    display: flex; align-items: center; justify-content: space-between; color: #fff;
+    gap: 6mm;
+  }
+  .contact-card .who { font-size: 9.5px; text-transform: uppercase; letter-spacing: .08em; color: rgba(255,255,255,.45); margin-bottom: 3px; }
+  .contact-card .name { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 15px; margin-bottom: 1px; }
+  .contact-card .role { font-size: 10.5px; color: rgba(255,255,255,.6); }
+  .contact-card .links { text-align: right; font-size: 11px; line-height: 1.75; }
+  .contact-card .links b { font-weight: 700; }
+
+  .note {
+    margin-top: 4mm; font-size: 9px; color: #98a2b3; text-align: center; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+  <!-- ══════════════ PAGE 1 ══════════════ -->
+  <div class="page">
+    <div class="brand">
+      <div class="brand-logo">Web<span>o</span>rdo</div>
+      <div class="brand-tag">{% trans "Коммерческое предложение" %} · {{ kp.name }}</div>
+    </div>
+
+    <div class="hero">
+      <div class="hero-eyebrow"><span class="dot"></span>{{ kp.eyebrow }}</div>
+      <h1>{{ kp.hero_title|safe }}</h1>
+      <p>{{ kp.hero_text }}</p>
+    </div>
+
+    <div class="sec-title"><div class="sec-num">1</div><h2>{% trans "Что сейчас мешает расти" %}</h2></div>
+    <div class="pain-grid">
+      {% for p in kp.pains %}
+      <div class="pain">
+        <div class="ico">{{ p.ico }}</div>
+        <div class="t">{{ p.title }}</div>
+        <div class="d">{{ p.desc }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="sec-title"><div class="sec-num">2</div><h2>{% trans "Что мы уже даём вам" %}</h2></div>
+    <div class="feat-list">
+      {% for f in kp.features %}
+      <div class="feat">
+        <div class="ico">{{ f.ico }}</div>
+        <div class="body">
+          <div class="t">{{ f.title }}</div>
+          <div class="d">{{ f.desc }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="p1-footer">
+      <span>webordo.kg</span>
+      <span>{% trans "стр. 1 из 2" %}</span>
+    </div>
+  </div>
+
+  <!-- ══════════════ PAGE 2 ══════════════ -->
+  <div class="page">
+    <div class="brand">
+      <div class="brand-logo">Web<span>o</span>rdo</div>
+      <div class="brand-tag">{% trans "Коммерческое предложение" %} · {{ kp.name }}</div>
+    </div>
+
+    <div class="sec-title"><div class="sec-num">3</div><h2>{% trans "Что видите вы в личном кабинете" %}</h2></div>
+    <div class="dash-grid">
+      {% for d in kp.dashboard %}
+      <div class="dash-card">
+        <div class="t">{{ d.t }}</div>
+        <ul>
+          {% for item in d.items %}<li>{{ item }}</li>{% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="quote-box">
+      💡 <b>{% trans "Важно:" %}</b> {{ kp.note }}
+    </div>
+
+    <div class="sec-title"><div class="sec-num">4</div><h2>{% trans "Условия" %}</h2></div>
+    <div class="terms-grid">
+      <div class="term"><div class="big">{% trans "Подписка" %}</div><div class="lbl">{% trans "а не процент с каждого заказа —" %}<br>{% trans "экономику считать проще" %}</div></div>
+      <div class="term"><div class="big">{% trans "Быстрый запуск" %}</div><div class="lbl">{% trans "оформляем страницу, загружаем" %}<br>{% trans "услуги/товары сами" %}</div></div>
+      <div class="term"><div class="big">{% trans "Без привязки" %}</div><div class="lbl">{% trans "стоимость и формат — обсуждаем" %}<br>{% trans "индивидуально под ваш бизнес" %}</div></div>
+    </div>
+
+    <div class="contact-card">
+      <div>
+        <div class="who">{% trans "Webordo · основатель" %}</div>
+        <div class="name">Амантур</div>
+        <div class="role">{% trans "Директор и CEO" %}</div>
+      </div>
+      <div class="links">
+        <div>📞 <b>0558 212 040</b></div>
+        <div>✉️ amanturagency@gmail.com</div>
+        <div>💬 wa.me/996558212040</div>
+      </div>
+    </div>
+
+    <div class="note">{% trans "Webordo — цифровая экосистема Кыргызстана: рестораны, магазины и услуги в одном месте" %} · webordo.kg</div>
+  </div>
+
+</body>
+</html>

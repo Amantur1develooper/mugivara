@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% load i18n static %}
+{% block title %}{% blocktrans with name=kp.name %}Предложение для {{ name }}{% endblocktrans %}{% endblock %}
+
+{% block content %}
+<div class="relative -mx-4 sm:-mx-6 lg:-mx-8 overflow-hidden">
+  <div class="absolute inset-0 -z-10"
+       style="background:
+         radial-gradient(900px 420px at 10% 0%, rgba(255,122,0,.16), transparent 60%),
+         radial-gradient(760px 380px at 90% 8%, rgba(17,24,39,.09), transparent 58%),
+         linear-gradient(180deg, #fff8f1 0%, #fffaf6 42%, #ffffff 100%);"></div>
+
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8 lg:py-10">
+
+    <div class="flex items-center justify-between gap-3 mb-6">
+      <a href="{% url 'public_site:kp_index' %}" class="inline-flex items-center gap-1.5 text-sm font-bold text-stone-500 hover:text-stone-900 transition">
+        ← {% trans "Все направления" %}
+      </a>
+      <a href="{{ pdf_url }}"
+         class="inline-flex items-center gap-2 rounded-2xl bg-stone-950 text-white px-4 py-2.5 text-sm font-black hover:bg-stone-800 transition"
+         target="_blank" rel="noopener">
+        📄 {% trans "Открыть PDF" %}
+      </a>
+    </div>
+
+    <!-- Hero -->
+    <section class="relative overflow-hidden rounded-[32px] sm:rounded-[40px] border border-white/60 shadow-[0_24px_80px_rgba(15,23,42,.10)] bg-gradient-to-br from-stone-950 via-stone-900 to-stone-800">
+      <div class="absolute inset-0 opacity-40"
+           style="background-image:
+             radial-gradient(circle at 14% 18%, rgba(255,255,255,.18) 0, rgba(255,255,255,0) 34%),
+             radial-gradient(circle at 84% 10%, rgba(251,146,60,.18) 0, rgba(251,146,60,0) 32%);"></div>
+
+      <div class="relative px-5 sm:px-8 lg:px-12 py-10 sm:py-14 lg:py-16 text-center">
+        <div class="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[11px] sm:text-xs font-extrabold uppercase tracking-[0.18em] text-white/90 ring-1 ring-white/15 backdrop-blur">
+          <span class="text-base">{{ kp.emoji }}</span> {{ kp.eyebrow }}
+        </div>
+
+        <h1 class="mt-6 text-white font-black tracking-tight leading-[1.02] text-[30px] sm:text-[42px] lg:text-[54px] max-w-3xl mx-auto">
+          {{ kp.hero_title|safe }}
+        </h1>
+
+        <p class="mt-5 max-w-2xl mx-auto text-white/78 text-sm sm:text-base leading-relaxed">
+          {{ kp.hero_text }}
+        </p>
+
+        <div class="mt-8 flex flex-wrap justify-center gap-3">
+          <a href="https://wa.me/996558212040?text={% blocktrans with name=kp.name %}Здравствуйте! Интересует подключение к Webordo — направление «{{ name }}».{% endblocktrans %}"
+             target="_blank" rel="noopener"
+             class="inline-flex items-center justify-center rounded-2xl px-5 py-3 font-black text-white shadow-[0_12px_28px_rgba(37,211,102,.22)] transition hover:-translate-y-0.5"
+             style="background:#25D366;">
+            💬 {% trans "Написать в WhatsApp" %}
+          </a>
+          <a href="{{ pdf_url }}" target="_blank" rel="noopener"
+             class="inline-flex items-center justify-center rounded-2xl px-5 py-3 font-black text-stone-950 bg-white hover:bg-stone-100 transition">
+            📄 {% trans "Скачать PDF" %}
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pains -->
+    <section class="mt-8 sm:mt-10 grid sm:grid-cols-3 gap-4">
+      {% for p in kp.pains %}
+      <div class="rounded-[26px] bg-white/90 border border-stone-200/80 p-5 shadow-[0_14px_34px_rgba(15,23,42,.05)]">
+        <div class="text-2xl">{{ p.ico }}</div>
+        <div class="mt-3 text-base font-black text-stone-950">{{ p.title }}</div>
+        <p class="mt-2 text-sm text-stone-600 leading-relaxed">{{ p.desc }}</p>
+      </div>
+      {% endfor %}
+    </section>
+
+    <!-- Features -->
+    <section class="mt-8 sm:mt-10">
+      <div class="inline-flex items-center gap-2 rounded-full bg-orange-50 border border-orange-200 px-3 py-1.5 text-[11px] sm:text-xs font-extrabold uppercase tracking-[0.16em] text-orange-600">
+        {% trans "Что мы уже даём вам" %}
+      </div>
+      <div class="mt-5 grid gap-3">
+        {% for f in kp.features %}
+        <div class="flex items-start gap-4 rounded-[22px] bg-white border border-stone-200/80 p-5 shadow-[0_10px_28px_rgba(15,23,42,.04)]">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-orange-100 to-amber-50 flex items-center justify-center text-xl flex-shrink-0">{{ f.ico }}</div>
+          <div>
+            <div class="font-black text-stone-950 text-[15px]">{{ f.title }}</div>
+            <div class="mt-1 text-sm text-stone-600 leading-relaxed">{{ f.desc }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- Dashboard -->
+    <section class="mt-8 sm:mt-10">
+      <div class="inline-flex items-center gap-2 rounded-full bg-orange-50 border border-orange-200 px-3 py-1.5 text-[11px] sm:text-xs font-extrabold uppercase tracking-[0.16em] text-orange-600">
+        {% trans "Что видите вы в личном кабинете" %}
+      </div>
+      <div class="mt-5 grid sm:grid-cols-2 gap-4">
+        {% for d in kp.dashboard %}
+        <div class="rounded-[22px] bg-stone-50 border border-stone-200 p-5">
+          <div class="text-sm font-black text-stone-950">{{ d.t }}</div>
+          <ul class="mt-3 space-y-2 text-sm text-stone-600 leading-relaxed">
+            {% for item in d.items %}
+            <li>• {{ item }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- Note -->
+    <section class="mt-8 sm:mt-10 rounded-[26px] bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-100 p-6 sm:p-7">
+      <p class="text-sm sm:text-[15px] text-stone-700 leading-relaxed">
+        💡 {{ kp.note }}
+      </p>
+    </section>
+
+    <!-- CTA -->
+    <section class="mt-8 sm:mt-10 rounded-[34px] bg-stone-950 text-white overflow-hidden shadow-[0_24px_80px_rgba(15,23,42,.14)]">
+      <div class="px-6 sm:px-8 lg:px-12 py-8 sm:py-10 relative">
+        <div class="absolute inset-0 opacity-35"
+             style="background-image: radial-gradient(circle at 12% 20%, rgba(255,255,255,.16) 0, rgba(255,255,255,0) 32%), radial-gradient(circle at 88% 14%, rgba(251,146,60,.18) 0, rgba(251,146,60,0) 28%);"></div>
+        <div class="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div>
+            <div class="text-[11px] uppercase tracking-[0.18em] font-extrabold text-orange-300">{% trans "Готовы подключиться?" %}</div>
+            <h2 class="mt-2 text-xl sm:text-2xl font-black leading-tight tracking-tight">
+              {% blocktrans with name=kp.name %}Подключим ваш бизнес к Webordo — направление «{{ name }}»{% endblocktrans %}
+            </h2>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <a href="https://wa.me/996558212040" target="_blank" rel="noopener"
+               class="inline-flex items-center justify-center rounded-2xl px-5 py-3 font-black text-white shadow-[0_12px_28px_rgba(37,211,102,.18)]" style="background:#25D366;">
+              WhatsApp
+            </a>
+            <a href="{{ pdf_url }}" target="_blank" rel="noopener"
+               class="inline-flex items-center justify-center rounded-2xl px-5 py-3 font-black text-stone-950 bg-white">
+              📄 {% trans "Скачать PDF" %}
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+{% endblock %}

@@ -583,8 +583,17 @@
 
       <div class="wb-footer-col">
         <div class="wb-footer-col-title">{% trans "Бизнес" %}</div>
-        <a href="{% url 'public_site:restaurants_list' %}">{% trans "Еда" %}</a>
+        <a href="{% url 'public_site:restaurants_list' %}">{% trans "Рестораны" %}</a>
         <a href="{% url 'shops:store_list' %}">{% trans "Магазины" %}</a>
+        <a href="{% url 'barbershop:index' %}">{% trans "Барбершопы" %}</a>
+        <a href="{% url 'karaoke:karaoke_list' %}">{% trans "Караоке" %}</a>
+        <a href="{% url 'simracing:venues_list' %}">{% trans "Симрейсинг" %}</a>
+        <a href="{% url 'hotels:hotel_list' %}">{% trans "Отели" %}</a>
+        <a href="{% url 'realestate:agency_list' %}">{% trans "Агентства недвижимости" %}</a>
+        <a href="{% url 'legal:legal_list' %}">{% trans "Юридические услуги" %}</a>
+        <a href="{% url 'agency:agency_list' %}">{% trans "Диджитал-агентства" %}</a>
+        <a href="{% url 'eco:eco_list' %}">{% trans "Эко-бизнес" %}</a>
+        <a href="{% url 'pharmacy:pharmacy_list' %}">{% trans "Аптеки" %}</a>
       </div>
 
       <div class="wb-footer-col">
@@ -597,6 +606,7 @@
         <div class="wb-footer-col-title">{% trans "Компания" %}</div>
         <a href="{% url 'public_site:about' %}">{% trans "О нас" %}</a>
         <a href="{% url 'public_site:founder' %}">{% trans "Основатель" %}</a>
+        <a href="{% url 'public_site:kp_index' %}">{% trans "Предложения для бизнеса" %}</a>
         <a href="https://wa.me/996558212040" target="_blank" rel="noopener">{% trans "Подключить бизнес" %}</a>
       </div>
     </div>

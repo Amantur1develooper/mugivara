@@ -1405,3 +1405,32 @@ def constructor_build_page(request, branch_id: int, cx_id: int):
         "add_url": f"/{ branch_id }/constructor/add/",
     })
 
+
+
+# ── КП (коммерческие предложения по направлениям) ────────────────────────────
+
+def kp_index(request):
+    from .kp_data import KP_DATA, KP_ORDER
+    items = [{"slug": slug, **KP_DATA[slug]} for slug in KP_ORDER if slug in KP_DATA]
+    return render(request, "public_site/kp_index.html", {"items": items})
+
+
+def kp_detail(request, slug):
+    from .kp_data import KP_DATA
+    from django.templatetags.static import static
+    data = KP_DATA.get(slug)
+    if not data:
+        from django.http import Http404
+        raise Http404("Unknown KP slug")
+    return render(request, "public_site/kp_detail.html", {
+        "slug": slug, "kp": data, "pdf_url": static(f"kp/{slug}.pdf"),
+    })
+
+
+def kp_print(request, slug):
+    from .kp_data import KP_DATA
+    data = KP_DATA.get(slug)
+    if not data:
+        from django.http import Http404
+        raise Http404("Unknown KP slug")
+    return render(request, "public_site/kp_print.html", {"slug": slug, "kp": data})

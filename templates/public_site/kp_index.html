@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Предложения для бизнеса" %}{% endblock %}
+
+{% block content %}
+<div class="relative -mx-4 sm:-mx-6 lg:-mx-8 overflow-hidden">
+  <div class="absolute inset-0 -z-10"
+       style="background:
+         radial-gradient(900px 420px at 10% 0%, rgba(255,122,0,.16), transparent 60%),
+         radial-gradient(760px 380px at 90% 8%, rgba(17,24,39,.09), transparent 58%),
+         linear-gradient(180deg, #fff8f1 0%, #fffaf6 42%, #ffffff 100%);"></div>
+
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+
+    <div class="text-center max-w-2xl mx-auto mb-10 sm:mb-14">
+      <div class="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-[11px] sm:text-xs font-extrabold uppercase tracking-[0.18em] text-orange-600 ring-1 ring-orange-200 bg-orange-50">
+        {% trans "Подключить бизнес" %}
+      </div>
+      <h1 class="mt-5 text-stone-950 font-black tracking-tight leading-[1.02] text-[30px] sm:text-[42px]">
+        {% trans "Предложения для каждого направления" %}
+      </h1>
+      <p class="mt-4 text-stone-600 text-sm sm:text-base leading-relaxed">
+        {% trans "Выберите свою сферу — покажем, что уже работает на платформе для вас, и что вы получите в личном кабинете. Каждое предложение можно скачать в PDF." %}
+      </p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+      {% for it in items %}
+      <a href="{% url 'public_site:kp_detail' it.slug %}"
+         class="group rounded-[26px] bg-white border border-stone-200/80 p-6 shadow-[0_14px_34px_rgba(15,23,42,.05)] transition hover:-translate-y-1 hover:shadow-[0_20px_50px_rgba(15,23,42,.10)]">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-100 to-amber-50 flex items-center justify-center text-2xl">{{ it.emoji }}</div>
+        <div class="mt-4 text-lg font-black text-stone-950">{{ it.name }}</div>
+        <p class="mt-2 text-sm text-stone-500 leading-relaxed line-clamp-2">{{ it.hero_text }}</p>
+        <div class="mt-4 inline-flex items-center gap-1.5 text-sm font-black text-orange-600">
+          {% trans "Смотреть предложение" %}
+          <span class="transition group-hover:translate-x-0.5">→</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

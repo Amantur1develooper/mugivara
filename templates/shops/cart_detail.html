@@ -219,11 +219,32 @@
   .cc-submit-btn:disabled{
     background:#e4e7ec; color:#98a2b3; box-shadow:none; cursor:not-allowed; transform:none;
   }
+
+  .cc-msg{
+    display:flex; align-items:center; gap:10px;
+    padding:13px 16px; border-radius:16px; margin-bottom:16px;
+    font-size:13px; font-weight:600; line-height:1.5;
+  }
+  .cc-msg-error{
+    background:rgba(239,68,68,.07); border:1px solid rgba(239,68,68,.2); color:#b42318;
+  }
+  .cc-msg-success{
+    background:rgba(7,180,136,.08); border:1px solid rgba(7,180,136,.22); color:#03876a;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="cc-page">
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="cc-msg {% if message.tags == 'error' %}cc-msg-error{% else %}cc-msg-success{% endif %}">
+        <span>{% if message.tags == 'error' %}⚠️{% else %}✅{% endif %}</span>
+        <span>{{ message }}</span>
+      </div>
+    {% endfor %}
+  {% endif %}
 
   <div class="cc-header">
     <div>
