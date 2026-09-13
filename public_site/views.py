@@ -811,7 +811,7 @@ def checkout(request, branch_id: int):
     if promo_code_str:
         try:
             promo = PromoCode.objects.get(branch=branch, code=promo_code_str)
-            valid, _ = promo.is_valid()
+            valid, _reason = promo.is_valid()
             if valid:
                 if promo.discount_type == PromoCode.DiscountType.FREE_DELIVERY:
                     delivery_fee = Decimal("0")
@@ -935,21 +935,8 @@ def checkout(request, branch_id: int):
         msg += f"\nДоставка: {delivery_fee} сом"
     msg += f"\nИтого: {total} сом"
 
-    # Редирект в WhatsApp / WhatsApp Business:
-    # приоритет: whatsapp ресторана → телефон филиала → телефон ресторана
-    wa_raw = (
-        branch.restaurant.whatsapp
-        or branch.phone
-        or branch.restaurant.phone
-        or ""
-    )
-    wa_number = "".join(ch for ch in wa_raw if ch.isdigit())
-    if wa_number:
-        # wa.me открывает и обычный WhatsApp, и WhatsApp Business — какое приложение установлено
-        whatsapp_url = f"https://wa.me/{wa_number}?text={quote(msg)}"
-        return redirect(whatsapp_url)
-
-    # если номера нет — страница успеха
+    # Всегда идём на страницу успеха — она сама открывает WhatsApp (через JS)
+    # и показывает вежливое подтверждение + запасной вариант, если WhatsApp не открылся.
     return redirect("public_site:checkout_success", branch_id=branch.id, order_id=order.id)
 
 from urllib.parse import quote
@@ -1071,9 +1058,13 @@ def checkout_success(request, branch_id: int, order_id: int):
 
 
 def about(request):
+    return render(request, "public_site/about.html")
+
+
+def founder(request):
     from core.models import TeamMember
-    team = TeamMember.objects.filter(is_active=True).order_by("sort_order", "id")
-    return render(request, "public_site/about.html", {"team": team})
+    member = TeamMember.objects.filter(is_active=True).order_by("sort_order", "id").first()
+    return render(request, "public_site/founder.html", {"member": member})
 
 
 def privacy(request):

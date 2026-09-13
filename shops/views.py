@@ -178,6 +178,13 @@ def cart_detail(request, branch_id):
 
     total = subtotal + delivery_fee
 
+    min_order_amount = branch.min_order_amount or Decimal("0")
+    below_min_order = (
+        mode == "delivery" and branch.delivery_enabled
+        and min_order_amount and subtotal < min_order_amount
+    )
+    min_order_remain = (min_order_amount - subtotal) if below_min_order else Decimal("0")
+
     return render(request, "shops/cart_detail.html", {
         "branch": branch,
         "mode": mode,
@@ -186,6 +193,10 @@ def cart_detail(request, branch_id):
         "subtotal": subtotal,
         "delivery_fee": delivery_fee,
         "total": total,
+        "min_order_amount": min_order_amount,
+        "below_min_order": below_min_order,
+        "min_order_remain": min_order_remain,
+        "min_order_error": request.GET.get("min_order_error") == "1",
     })
 
 
@@ -348,6 +359,11 @@ def checkout(request, branch_id):
     delivery_fee = Decimal("0")
     if is_delivery and getattr(branch, "delivery_enabled", False):
         delivery_fee = dec(getattr(branch, "delivery_fee", 0))
+
+    # Минимальная сумма заказа для доставки — не пропускаем оформление, если не набрали
+    min_order = dec(getattr(branch, "min_order_amount", 0) or 0)
+    if is_delivery and min_order and cart["subtotal"] < min_order:
+        return redirect(f"{reverse('shops:cart_detail', args=[branch.id])}?min_order_error=1")
 
     product_ids = [r["product_id"] for r in rows]
 

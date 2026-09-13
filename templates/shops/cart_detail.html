@@ -1,168 +1,400 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n i18n_attrs %}
 
 {% block title %}{% trans "Корзина" %} — {{ branch.name_ru }}{% endblock %}
 {% block cta %}{% endblock %}
 
-{% block content %}
-<div class="max-w-4xl mx-auto px-4 py-6">
+{% block head_extra %}
+<style>
+  :root{
+    --cc-bg:#f6f7fb;
+    --cc-card:#ffffff;
+    --cc-text:#101828;
+    --cc-muted:#667085;
+    --cc-border:rgba(16,24,40,.08);
+    --cc-shadow:0 12px 34px rgba(16,24,40,.08);
+    --cc-shadow-lg:0 24px 60px rgba(16,24,40,.12);
+    --cc-accent:#ff6a1a;
+    --cc-accent-2:#ff8a00;
+    --cc-glow:rgba(255,106,26,.28);
+    --cc-green:#07b488;
+  }
+  body{ background:var(--cc-bg) !important; }
 
-  <!-- Header -->
-  <div class="flex items-start justify-between gap-4">
+  .cc-page{ max-width:1080px; margin:0 auto; padding:22px 20px 100px; }
+
+  /* ── Header ── */
+  .cc-header{
+    display:flex; align-items:flex-start; justify-content:space-between;
+    gap:16px; margin-bottom:22px; flex-wrap:wrap;
+  }
+  .cc-title{
+    font-family:'Unbounded',sans-serif;
+    font-size:clamp(22px,3.4vw,30px);
+    font-weight:900; letter-spacing:-1px;
+    color:var(--cc-text); margin:0 0 8px;
+  }
+  .cc-sub{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .cc-pill{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:6px 13px; border-radius:999px;
+    font-size:12px; font-weight:700;
+    border:1px solid var(--cc-border); background:#f6f7fb; color:#475467;
+  }
+  .cc-pill.mode{ background:rgba(255,138,0,.1); color:#c2660a; border-color:rgba(255,138,0,.22); }
+  .cc-back-btn{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:10px 18px; border-radius:14px;
+    background:var(--cc-card); border:1px solid var(--cc-border);
+    color:var(--cc-text); text-decoration:none;
+    font-size:13px; font-weight:700; box-shadow:var(--cc-shadow);
+    transition:transform .18s ease;
+    flex-shrink:0;
+  }
+  .cc-back-btn:hover{ transform:translateY(-2px); }
+
+  /* ── Empty state ── */
+  .cc-empty{
+    text-align:center; background:var(--cc-card);
+    border:1.5px solid var(--cc-border); border-radius:24px;
+    padding:64px 24px; box-shadow:var(--cc-shadow);
+  }
+  .cc-empty-ico{ font-size:56px; margin-bottom:14px; }
+  .cc-empty-title{
+    font-family:'Unbounded',sans-serif; font-size:18px; font-weight:800;
+    color:var(--cc-text); letter-spacing:-.5px; margin-bottom:10px;
+  }
+  .cc-empty-sub{ font-size:14px; color:var(--cc-muted); margin-bottom:22px; }
+  .cc-empty-btn{
+    display:inline-flex; align-items:center; gap:8px;
+    padding:12px 22px; border-radius:16px; text-decoration:none;
+    color:#fff; font-weight:800; font-size:13px;
+    background:linear-gradient(135deg,var(--cc-accent),var(--cc-accent-2));
+    box-shadow:0 10px 24px var(--cc-glow);
+    transition:transform .18s ease;
+  }
+  .cc-empty-btn:hover{ transform:translateY(-2px); }
+
+  /* ── Layout ── */
+  .cc-layout{ display:grid; grid-template-columns:1fr; gap:20px; align-items:start; }
+  @media (min-width:900px){
+    .cc-layout{ grid-template-columns:1.55fr 1fr; }
+  }
+
+  /* ── Items ── */
+  .cc-items{ display:flex; flex-direction:column; gap:12px; }
+  .cc-item{
+    background:var(--cc-card); border:1.5px solid var(--cc-border);
+    border-radius:20px; padding:14px;
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    transition:box-shadow .2s ease, border-color .2s ease;
+  }
+  .cc-item:hover{ box-shadow:var(--cc-shadow); border-color:rgba(16,24,40,.12); }
+  .cc-item-media{
+    width:64px; height:64px; flex-shrink:0; border-radius:15px;
+    overflow:hidden; background:linear-gradient(145deg,#fff8f2,#ffe8d6);
+    display:flex; align-items:center; justify-content:center; font-size:26px; color:#f08b44;
+  }
+  .cc-item-media img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .cc-item-info{ flex:1; min-width:140px; }
+  .cc-item-name{
+    font-family:'Unbounded',sans-serif; font-size:13.5px; font-weight:700;
+    color:var(--cc-text); letter-spacing:-.2px; margin-bottom:4px;
+  }
+  .cc-item-price{ font-size:12.5px; color:var(--cc-muted); }
+  .cc-item-price b{ color:var(--cc-text); font-weight:800; }
+  .cc-item-stock{ font-size:11px; color:var(--cc-muted); margin-top:3px; }
+
+  .cc-item-actions{
+    display:flex; align-items:center; gap:10px; flex-shrink:0;
+    margin-left:auto;
+  }
+  .cc-qty{
+    display:flex; align-items:center; gap:0;
+    border:1.5px solid var(--cc-border); border-radius:12px; overflow:hidden;
+    background:#f9fafb;
+  }
+  .cc-qty-btn{
+    width:36px; height:36px; border:none; background:transparent; cursor:pointer;
+    font-size:16px; font-weight:800; color:var(--cc-text);
+    display:flex; align-items:center; justify-content:center;
+    transition:background .15s ease;
+  }
+  .cc-qty-btn:hover{ background:rgba(16,24,40,.05); }
+  .cc-qty-btn:disabled, .cc-qty-input:disabled{ opacity:.4; cursor:default; }
+  .cc-qty-input{
+    width:44px; height:36px; border:none; background:transparent;
+    text-align:center; font-size:13.5px; font-weight:800; color:var(--cc-text);
+    -moz-appearance:textfield;
+  }
+  .cc-qty-input::-webkit-outer-spin-button,
+  .cc-qty-input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  .cc-remove-btn{
+    width:36px; height:36px; border-radius:11px; border:1.5px solid var(--cc-border);
+    background:var(--cc-card); color:var(--cc-muted); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:15px;
+    transition:all .15s ease;
+  }
+  .cc-remove-btn:hover{ border-color:rgba(239,68,68,.35); background:rgba(239,68,68,.06); color:#ef4444; }
+
+  /* ── Sidebar ── */
+  .cc-side{ display:flex; flex-direction:column; gap:16px; }
+  @media (min-width:900px){
+    .cc-side{ position:sticky; top:108px; }
+  }
+
+  .cc-card{
+    background:var(--cc-card); border:1.5px solid var(--cc-border);
+    border-radius:22px; padding:20px 22px; box-shadow:var(--cc-shadow);
+  }
+  .cc-card-title{
+    font-family:'Unbounded',sans-serif; font-size:14px; font-weight:800;
+    color:var(--cc-text); letter-spacing:-.3px; margin-bottom:16px;
+  }
+  .cc-row{ display:flex; justify-content:space-between; align-items:center; font-size:13.5px; color:var(--cc-muted); }
+  .cc-row + .cc-row{ margin-top:10px; }
+  .cc-row b{ color:var(--cc-text); font-weight:700; }
+  .cc-divider{ height:1px; background:var(--cc-border); margin:14px 0; }
+  .cc-total-row{ display:flex; justify-content:space-between; align-items:baseline; }
+  .cc-total-label{ font-size:14px; font-weight:800; color:var(--cc-text); }
+  .cc-total-value{
+    font-family:'Unbounded',sans-serif; font-size:22px; font-weight:900;
+    color:var(--cc-text); letter-spacing:-.5px;
+  }
+  .cc-min-hint{ font-size:11.5px; color:var(--cc-muted); margin-top:10px; }
+
+  /* ── Min order banner ── */
+  .cc-min-banner{
+    border-radius:18px; padding:16px 18px;
+    display:flex; align-items:flex-start; gap:12px;
+    background:linear-gradient(135deg, rgba(255,106,26,.09), rgba(255,138,0,.06));
+    border:1px solid rgba(255,106,26,.18);
+    transition:box-shadow .3s ease;
+  }
+  .cc-min-banner-ico{ font-size:22px; line-height:1; flex-shrink:0; }
+  .cc-min-banner-title{ font-weight:800; color:var(--cc-text); font-size:13px; margin-bottom:3px; }
+  .cc-min-banner-text{ font-size:12.5px; color:var(--cc-muted); line-height:1.5; }
+  .cc-min-banner-text b{ color:var(--cc-text); }
+  .cc-min-banner.cc-pulse{ box-shadow:0 0 0 4px rgba(255,138,0,.22); }
+
+  /* ── Checkout form ── */
+  .cc-field{ margin-bottom:12px; }
+  .cc-input{
+    width:100%; box-sizing:border-box;
+    padding:13px 15px; border-radius:14px;
+    border:1.5px solid var(--cc-border); background:#f9fafb;
+    font-size:14px; font-family:inherit; color:var(--cc-text);
+    outline:none; transition:border-color .15s ease, background .15s ease;
+  }
+  .cc-input:focus{ border-color:var(--cc-accent); background:#fff; }
+  textarea.cc-input{ resize:vertical; min-height:76px; }
+
+  .cc-pay-label{
+    font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em;
+    color:#98a2b3; margin-bottom:8px;
+  }
+  .cc-pay-group{ display:flex; gap:8px; margin-bottom:16px; }
+  .cc-pay-opt{
+    flex:1; position:relative; cursor:pointer;
+  }
+  .cc-pay-opt input{ position:absolute; opacity:0; inset:0; cursor:pointer; margin:0; }
+  .cc-pay-opt-face{
+    display:flex; align-items:center; justify-content:center; gap:7px;
+    padding:11px 8px; border-radius:13px; border:1.5px solid var(--cc-border);
+    background:#f9fafb; font-size:13px; font-weight:700; color:var(--cc-muted);
+    transition:all .15s ease;
+  }
+  .cc-pay-opt input:checked + .cc-pay-opt-face{
+    border-color:var(--cc-accent); background:rgba(255,106,26,.07); color:var(--cc-accent);
+  }
+
+  .cc-submit-btn{
+    width:100%; padding:16px; border-radius:16px; border:none; cursor:pointer;
+    color:#fff; font-size:14.5px; font-weight:900; font-family:inherit;
+    background:linear-gradient(135deg,var(--cc-accent),var(--cc-accent-2));
+    box-shadow:0 12px 28px var(--cc-glow);
+    transition:transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+  }
+  .cc-submit-btn:hover{ transform:translateY(-2px); box-shadow:0 16px 34px var(--cc-glow); }
+  .cc-submit-btn:disabled{
+    background:#e4e7ec; color:#98a2b3; box-shadow:none; cursor:not-allowed; transform:none;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cc-page">
+
+  <div class="cc-header">
     <div>
-      <h1 class="text-2xl text-white font-extrabold">{% trans "Корзина" %}</h1>
-      <div class="text-white/80 text-sm mt-1">
-        {{ branch.name_ru }} · {{ branch.address }}
-        {% if mode == "delivery" %} · 🚚 {% trans "Доставка" %}{% else %} · 🏬 {% trans "В магазине" %}{% endif %}
+      <h1 class="cc-title">{% trans "Корзина" %}</h1>
+      <div class="cc-sub">
+        <span class="cc-pill">{{ branch.name_ru }}</span>
+        {% if branch.address %}<span class="cc-pill">📍 {{ branch.address }}</span>{% endif %}
+        <span class="cc-pill mode">
+          {% if mode == "delivery" %}🚚 {% trans "Доставка" %}{% else %}🏬 {% trans "В магазине" %}{% endif %}
+        </span>
       </div>
     </div>
 
-    <a href="{% if mode == 'delivery' %}{% url 'shops:branch_catalog_delivery' branch.id %}{% else %}{% url 'shops:branch_catalog_pickup' branch.id %}{% endif %}"
-       class="px-4 py-2 rounded-xl ring-1 text-white ring-white/25 hover:bg-white/10">
+    <a class="cc-back-btn"
+       href="{% if mode == 'delivery' %}{% url 'shops:branch_catalog_delivery' branch.id %}{% else %}{% url 'shops:branch_catalog_pickup' branch.id %}{% endif %}">
       ← {% trans "Назад" %}
     </a>
   </div>
 
   {% if qty_total == 0 %}
-    <div class="mt-6 rounded-2xl ring-1 text-white ring-white/25 p-6 bg-white/5 backdrop-blur">
-      {% trans "Корзина пуста." %}
+    <div class="cc-empty">
+      <div class="cc-empty-ico">🛒</div>
+      <div class="cc-empty-title">{% trans "Корзина пуста" %}</div>
+      <div class="cc-empty-sub">{% trans "Добавьте товары из каталога, чтобы оформить заказ." %}</div>
+      <a class="cc-empty-btn"
+         href="{% if mode == 'delivery' %}{% url 'shops:branch_catalog_delivery' branch.id %}{% else %}{% url 'shops:branch_catalog_pickup' branch.id %}{% endif %}">
+        🛍️ {% trans "Перейти в каталог" %}
+      </a>
     </div>
   {% else %}
 
-    <!-- Rows -->
-    <div class="mt-6 space-y-3">
+  <div class="cc-layout">
+
+    <!-- Items -->
+    <div class="cc-items">
       {% for r in rows %}
-        <div class="rounded-2xl bg-white ring-1 ring-stone-200 p-4
-                    flex flex-col sm:flex-row sm:items-center gap-3"
+        <div class="cc-item"
              data-row="{{ r.product.id }}"
              data-update-url="{% url 'shops:cart_update' branch.id r.product.id %}">
 
-          <div class="flex-1 min-w-0">
-            <div class="font-extrabold truncate">{{ r.product.name_ru }}</div>
-            <div class="text-sm text-stone-500">
-              {{ r.product.price }} {% trans "сом" %}
-              <span class="mx-2 text-stone-300">•</span>
-              <span class="text-stone-700 font-extrabold">
-                <span data-line-total>{{ r.line_total }}</span> {% trans "сом" %}
-              </span>
-            </div>
-            {% if branch.show_stock_qty %}
-            <div class="text-xs text-stone-500 mt-1">
-              {% trans "В наличии" %}: <b>{{ r.stock.qty }}</b> {{ r.product.unit }}
-            </div>
+          <div class="cc-item-media">
+            {% if r.product.photo %}
+              <img src="{{ r.product.photo.url }}" alt="{% t r.product 'name' %}">
+            {% else %}
+              🛍️
             {% endif %}
           </div>
 
-          <div class="flex items-center justify-between sm:justify-end gap-3">
-            <div class="flex items-center gap-2">
-              <button type="button"
-                      class="w-10 h-10 rounded-xl bg-stone-100 ring-1 ring-stone-200 font-extrabold active:scale-95 transition"
-                      data-dec>−</button>
-
-              <input type="number" min="0" value="{{ r.qty }}"
-                     class="w-20 border border-stone-300 rounded-xl px-2 py-2 text-center text-base"
-                     step="1"
-                     data-qty-input>
-
-              <button type="button"
-                      class="w-10 h-10 rounded-xl bg-stone-100 ring-1 ring-stone-200 font-extrabold active:scale-95 transition"
-                      data-inc>+</button>
+          <div class="cc-item-info">
+            <div class="cc-item-name">{% t r.product "name" %}</div>
+            <div class="cc-item-price">
+              {{ r.product.price|floatformat:"0" }} {% trans "сом" %}
+              <span style="opacity:.5">•</span>
+              <b><span data-line-total>{{ r.line_total }}</span> {% trans "сом" %}</b>
             </div>
+            {% if branch.show_stock_qty %}
+            <div class="cc-item-stock">{% trans "В наличии" %}: <b>{{ r.stock.qty|floatformat:"-3" }}</b> {{ r.product.unit }}</div>
+            {% endif %}
+          </div>
 
-            <button type="button"
-                    class="px-3 py-2 rounded-xl ring-1 ring-stone-200 hover:bg-stone-50 active:scale-95 transition"
-                    data-remove>
-              {% trans "Удалить" %}
-            </button>
+          <div class="cc-item-actions">
+            <div class="cc-qty">
+              <button type="button" class="cc-qty-btn" data-dec aria-label="{% trans 'Меньше' %}">−</button>
+              <input type="number" min="0" value="{{ r.qty }}" step="1"
+                     class="cc-qty-input" data-qty-input>
+              <button type="button" class="cc-qty-btn" data-inc aria-label="{% trans 'Больше' %}">+</button>
+            </div>
+            <button type="button" class="cc-remove-btn" data-remove title="{% trans 'Удалить' %}">✕</button>
           </div>
         </div>
       {% endfor %}
     </div>
 
-    <!-- Totals -->
-    <div class="mt-6 rounded-2xl bg-white ring-1 ring-stone-200 p-5">
-      <div class="flex justify-between text-sm text-stone-600">
-        <span>{% trans "Подытог" %}</span>
-        <span><span data-subtotal>{{ subtotal }}</span> {% trans "сом" %}</span>
-      </div>
+    <!-- Sidebar: summary + checkout -->
+    <div class="cc-side">
 
-      {% if mode == "delivery" and branch.delivery_enabled %}
-      <div class="flex justify-between text-sm text-stone-600 mt-2">
-        <span>{% trans "Доставка" %}</span>
-        <span><span data-delivery-fee>{{ delivery_fee }}</span> {% trans "сом" %}</span>
-      </div>
-      {% endif %}
+      <div class="cc-card">
+        <div class="cc-card-title">{% trans "Итого по заказу" %}</div>
 
-      <div class="flex justify-between text-lg font-extrabold mt-3">
-        <span>{% trans "Итого" %}</span>
-        <span><span data-total>{{ total }}</span> {% trans "сом" %}</span>
-      </div>
-
-      {% if mode == "delivery" and branch.delivery_enabled and branch.min_order_amount %}
-        <div class="mt-2 text-xs text-stone-500">
-          {% trans "Мин. сумма доставки:" %} <b>{{ branch.min_order_amount }}</b> {% trans "сом" %}
+        <div class="cc-row">
+          <span>{% trans "Подытог" %}</span>
+          <span><span data-subtotal>{{ subtotal }}</span> {% trans "сом" %}</span>
         </div>
-      {% endif %}
-    </div>
-
-    <!-- Checkout -->
-    <div class="mt-6 rounded-2xl bg-white ring-1 ring-stone-200 p-5">
-      <h2 class="text-xl font-extrabold">{% trans "Оформление" %}</h2>
-
-      <form action="{% url 'shops:checkout' branch.id %}" method="post" class="mt-4 grid gap-3">
-        {% csrf_token %}
-
-        <input name="name" placeholder="{% trans 'Имя (не обязательно)' %}"
-               class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base">
-
-        <!-- REQUIRED phone: +996 + 9 digits -->
-        <input name="phone"
-               id="phone"
-               type="tel"
-               inputmode="numeric"
-               autocomplete="tel"
-               required
-               value="+996"
-               minlength="13"
-               maxlength="13"
-               pattern="^\+996\d{9}$"
-               title="{% trans 'Введите номер в формате +996XXXXXXXXX (9 цифр после +996)' %}"
-               placeholder="+996700123456"
-               class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base">
 
         {% if mode == "delivery" and branch.delivery_enabled %}
-          <!-- address REQUIRED only for delivery -->
-          <input name="address"
-                 required
-                 placeholder="{% trans 'Адрес доставки (обязательно)' %}"
-                 class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base">
-        {% else %}
-          <!-- pickup: not required, can be hidden if you want -->
-          <input name="address"
-                 placeholder="{% trans 'Комментарий (например: приду через 10 минут)' %}"
-                 class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base">
+        <div class="cc-row">
+          <span>{% trans "Доставка" %}</span>
+          <span><span data-delivery-fee>{{ delivery_fee }}</span> {% trans "сом" %}</span>
+        </div>
         {% endif %}
 
-        <textarea name="comment" rows="3" placeholder="{% trans 'Комментарий (не обязательно)' %}"
-                  class="w-full border border-stone-300 rounded-xl px-3 py-3 text-base"></textarea>
+        <div class="cc-divider"></div>
 
-        <div class="grid gap-2">
-          <div class="text-sm font-semibold">{% trans "Способ оплаты" %}</div>
-          <label class="flex items-center gap-2">
-            <input type="radio" name="payment_method" value="cash" checked>
-            <span>{% trans "Наличные" %}</span>
-          </label>
-          <label class="flex items-center gap-2">
-            <input type="radio" name="payment_method" value="online">
-            <span>{% trans "Онлайн" %}</span>
-          </label>
+        <div class="cc-total-row">
+          <span class="cc-total-label">{% trans "Итого" %}</span>
+          <span class="cc-total-value"><span data-total>{{ total }}</span> {% trans "сом" %}</span>
         </div>
 
-        <button class="mt-2 px-4 py-3 rounded-2xl bg-stone-900 text-white font-extrabold shadow hover:bg-stone-800 active:scale-[0.99] transition">
-          {% trans "Подтвердить заказ" %}
-        </button>
-      </form>
+        {% if mode == "delivery" and branch.delivery_enabled and min_order_amount %}
+          <div class="cc-min-hint">
+            {% trans "Мин. сумма доставки:" %} <b>{{ min_order_amount|floatformat:"0" }}</b> {% trans "сом" %}
+          </div>
+        {% endif %}
+      </div>
+
+      {% if mode == "delivery" and branch.delivery_enabled and min_order_amount %}
+      <div id="minOrderBanner" class="cc-min-banner"
+           style="{% if not below_min_order and not min_order_error %}display:none{% endif %}">
+        <div class="cc-min-banner-ico">🛵</div>
+        <div class="min-w-0">
+          <div class="cc-min-banner-title">{% trans "Совсем чуть-чуть до доставки!" %}</div>
+          <div class="cc-min-banner-text">
+            {% trans "Минимальная сумма заказа для доставки" %} —
+            <b>{{ min_order_amount|floatformat:"0" }} {% trans "сом" %}</b>.
+            {% trans "Добавьте товаров ещё на" %}
+            <b id="minOrderRemain">{{ min_order_remain|floatformat:"0" }}</b> {% trans "сом" %},
+            {% trans "и сможете оформить доставку 🙂" %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="cc-card">
+        <div class="cc-card-title">{% trans "Оформление заказа" %}</div>
+
+        <form id="checkoutForm" action="{% url 'shops:checkout' branch.id %}" method="post">
+          {% csrf_token %}
+
+          <div class="cc-field">
+            <input class="cc-input" name="name" placeholder="{% trans 'Имя (не обязательно)' %}">
+          </div>
+
+          <div class="cc-field">
+            <input class="cc-input" name="phone" id="phone" type="tel" inputmode="numeric" autocomplete="tel"
+                   required value="+996" minlength="13" maxlength="13" pattern="^\+996\d{9}$"
+                   title="{% trans 'Введите номер в формате +996XXXXXXXXX (9 цифр после +996)' %}"
+                   placeholder="+996700123456">
+          </div>
+
+          <div class="cc-field">
+            {% if mode == "delivery" and branch.delivery_enabled %}
+              <input class="cc-input" name="address" required placeholder="{% trans 'Адрес доставки (обязательно)' %}">
+            {% else %}
+              <input class="cc-input" name="address" placeholder="{% trans 'Комментарий (например: приду через 10 минут)' %}">
+            {% endif %}
+          </div>
+
+          <div class="cc-field">
+            <textarea class="cc-input" name="comment" rows="3" placeholder="{% trans 'Комментарий (не обязательно)' %}"></textarea>
+          </div>
+
+          <div class="cc-pay-label">{% trans "Способ оплаты" %}</div>
+          <div class="cc-pay-group">
+            <label class="cc-pay-opt">
+              <input type="radio" name="payment_method" value="cash" checked>
+              <span class="cc-pay-opt-face">💵 {% trans "Наличные" %}</span>
+            </label>
+            <label class="cc-pay-opt">
+              <input type="radio" name="payment_method" value="online">
+              <span class="cc-pay-opt-face">💳 {% trans "Онлайн" %}</span>
+            </label>
+          </div>
+
+          <button id="checkoutSubmitBtn" type="submit" class="cc-submit-btn" {% if below_min_order %}disabled{% endif %}>
+            {% trans "Подтвердить заказ" %}
+          </button>
+        </form>
+      </div>
+
     </div>
+  </div>
 
   {% endif %}
 </div>
@@ -173,6 +405,33 @@
     notEnough: "{% trans 'Недостаточно товара' %}",
     notEnoughAvail: "{% trans 'Недостаточно товара. Доступно:' %}",
   };
+
+  // ── Минимальная сумма заказа для доставки ──────────────────────────────────
+  const IS_DELIVERY   = "{{ mode }}" === "delivery";
+  const DELIVERY_ON   = {{ branch.delivery_enabled|yesno:"true,false" }};
+  const MIN_ORDER     = {{ min_order_amount|default:0|floatformat:"0" }};
+  const minOrderBanner = document.getElementById('minOrderBanner');
+  const minOrderRemainEl = document.getElementById('minOrderRemain');
+  const checkoutBtn = document.getElementById('checkoutSubmitBtn');
+
+  function updateMinOrderUI(subtotal){
+    if (!IS_DELIVERY || !DELIVERY_ON || !MIN_ORDER) return;
+    const below = subtotal < MIN_ORDER;
+    if (minOrderBanner) minOrderBanner.style.display = below ? '' : 'none';
+    if (minOrderRemainEl) minOrderRemainEl.textContent = Math.max(0, Math.round(MIN_ORDER - subtotal));
+    if (checkoutBtn) checkoutBtn.disabled = below;
+  }
+
+  {% if min_order_error %}
+  // Клиент попытался оформить заказ, не набрав минимальную сумму — мягко привлекаем внимание
+  document.addEventListener('DOMContentLoaded', () => {
+    if (minOrderBanner) {
+      minOrderBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      minOrderBanner.classList.add('cc-pulse');
+      setTimeout(() => minOrderBanner.classList.remove('cc-pulse'), 1800);
+    }
+  });
+  {% endif %}
 
   function getCookie(name) {
     const v = document.cookie.split('; ').find(row => row.startsWith(name + '='));
@@ -201,7 +460,16 @@
     if (data.subtotal !== undefined) setTextAll('[data-subtotal]', data.subtotal);
     if (data.delivery_fee !== undefined) setTextAll('[data-delivery-fee]', data.delivery_fee);
     if (data.total !== undefined) setTextAll('[data-total]', data.total);
+    if (data.subtotal !== undefined) updateMinOrderUI(parseFloat(data.subtotal) || 0);
   }
+
+  // Подстраховка: не даём отправить форму, если минимальная сумма ещё не набрана
+  document.getElementById('checkoutForm')?.addEventListener('submit', (e) => {
+    if (checkoutBtn && checkoutBtn.disabled) {
+      e.preventDefault();
+      minOrderBanner?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
 
   async function updateRow(rowEl, qty){
     const input = rowEl.querySelector('[data-qty-input]');

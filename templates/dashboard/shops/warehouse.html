@@ -74,6 +74,38 @@
 }
 .wh-transfer-qty { width: 80px; }
 
+.wh-branches-btn {
+  padding: 7px 12px; border-radius: 9px; border: 1.5px solid var(--border); cursor: pointer;
+  background: transparent; color: var(--text2); font-size: 12px; font-weight: 700;
+  white-space: nowrap;
+}
+.wh-branches-btn:hover { border-color: var(--accent); color: var(--accent); }
+.wh-branches-btn.open { border-color: var(--accent); color: var(--accent); background: rgba(255,77,28,.06); }
+
+.wh-branches-panel {
+  display: none; width: 100%; margin-top: 10px;
+  border-top: 1px dashed var(--border); padding-top: 10px;
+}
+.wh-branches-panel.open { display: block; }
+.wh-branch-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 6px 0;
+}
+.wh-branch-name { flex: 1; min-width: 120px; font-size: 12px; color: var(--text2); font-weight: 600; }
+.wh-branch-qty { font-size: 12px; font-weight: 800; color: var(--text); min-width: 50px; }
+.wh-pull-qty {
+  width: 70px; padding: 5px 8px; border-radius: 7px;
+  border: 1.5px solid var(--border); font-size: 12px; font-family: inherit;
+  background: var(--bg); color: var(--text);
+}
+.wh-pull-btn {
+  padding: 5px 10px; border-radius: 7px; border: none; cursor: pointer;
+  background: var(--bg); color: var(--text2); font-size: 11px; font-weight: 700;
+  border: 1.5px solid var(--border); white-space: nowrap;
+}
+.wh-pull-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.wh-pull-btn:disabled { opacity: .35; cursor: default; }
+
 .wh-toast {
   position: fixed; bottom: 24px; left: 50%;
   transform: translateX(-50%) translateY(20px);
@@ -100,7 +132,9 @@
   <div class="wh-hint">
     Здесь остатки хранятся отдельно от филиалов — например, товар, который ещё не развезли по точкам.
     Себестоимость указывается тут же, а маржа (сколько зарабатываете с единицы) считается автоматически.
-    Кнопкой «→ В филиал» можно переместить количество со склада в остаток конкретного филиала.
+    Кнопкой «→ В филиал» можно переместить количество со склада в остаток конкретного филиала,
+    а кнопкой «🏬 По филиалам» — сразу увидеть, сколько товара лежит в каждой точке, и забрать
+    лишнее обратно на склад сети.
   </div>
 
   <div class="wh-list" id="whList">
@@ -137,12 +171,31 @@
       <button class="wh-transfer-btn" onclick="toggleTransfer({{ ws.id }})" {% if not branches %}disabled title="Нет активных филиалов"{% endif %}>→ В филиал</button>
 
       {% if branches %}
+      <button class="wh-branches-btn" id="wh-branches-btn-{{ ws.id }}" onclick="toggleBranches({{ ws.id }})">
+        🏬 По филиалам {% if ws.per_branch %}({{ ws.per_branch|length }}){% endif %}
+      </button>
+
       <div class="wh-transfer-form" id="wh-transfer-{{ ws.id }}">
         <select class="wh-transfer-sel" id="wh-branch-{{ ws.id }}">
           {% for b in branches %}<option value="{{ b.id }}">{{ b.name_ru }}</option>{% endfor %}
         </select>
         <input class="wh-transfer-qty" id="wh-tqty-{{ ws.id }}" type="number" min="0" step="0.001" placeholder="Кол-во">
         <button class="wh-transfer-btn" onclick="submitTransfer({{ ws.id }})">Переместить</button>
+      </div>
+
+      <div class="wh-branches-panel" id="wh-branches-{{ ws.id }}">
+        {% for pb in ws.per_branch %}
+        <div class="wh-branch-row" id="wh-branch-row-{{ ws.id }}-{{ pb.branch.id }}">
+          <div class="wh-branch-name">{{ pb.branch.name_ru }}</div>
+          <div class="wh-branch-qty" id="wh-branch-qty-{{ ws.id }}-{{ pb.branch.id }}">{{ pb.qty|floatformat:"-3" }} шт</div>
+          <input class="wh-pull-qty" type="number" min="0" step="0.001" placeholder="Кол-во"
+                 id="wh-pull-qty-{{ ws.id }}-{{ pb.branch.id }}" {% if not pb.stock_id or pb.qty <= 0 %}disabled{% endif %}>
+          <button class="wh-pull-btn" {% if not pb.stock_id or pb.qty <= 0 %}disabled{% endif %}
+                  onclick="pullFromBranch({{ ws.id }}, {{ pb.branch.id }}, {{ pb.stock_id|default:'null' }})">
+            ← Забрать на склад
+          </button>
+        </div>
+        {% endfor %}
       </div>
       {% endif %}
     </div>
@@ -163,6 +216,7 @@
   data-qty="{% url 'dashboard:shop_warehouse_stock_update' 0 %}"
   data-cost="{% url 'dashboard:shop_warehouse_cost_update' 0 %}"
   data-transfer="{% url 'dashboard:shop_warehouse_transfer' 0 %}"
+  data-pull="{% url 'dashboard:shop_warehouse_pull' 0 %}"
 ></div>
 {% endblock %}
 
@@ -214,6 +268,28 @@ async function saveCost(wsid) {
 
 function toggleTransfer(wsid) {
   document.getElementById(`wh-transfer-${wsid}`)?.classList.toggle('open');
+}
+
+function toggleBranches(wsid) {
+  document.getElementById(`wh-branches-${wsid}`)?.classList.toggle('open');
+  document.getElementById(`wh-branches-btn-${wsid}`)?.classList.toggle('open');
+}
+
+async function pullFromBranch(wsid, branchId, stockId) {
+  if (!stockId) return;
+  const inp = document.getElementById(`wh-pull-qty-${wsid}-${branchId}`);
+  const qty = inp?.value;
+  if (!qty || parseFloat(qty) <= 0) { alert('Укажите количество'); return; }
+  const d = await post(sUrl(WU.pull, stockId), { qty });
+  if (!d.ok) { alert(d.error || 'Ошибка'); return; }
+  document.getElementById(`wh-branch-qty-${wsid}-${branchId}`).textContent = `${d.branch_qty} шт`;
+  document.getElementById(`wh-qty-${wsid}`).textContent = d.warehouse_qty;
+  if (inp) inp.value = '';
+  if (parseFloat(d.branch_qty) <= 0) {
+    inp.disabled = true;
+    inp.nextElementSibling.disabled = true;
+  }
+  toast('✓ Забрано на склад');
 }
 async function submitTransfer(wsid) {
   const branchId = document.getElementById(`wh-branch-${wsid}`).value;

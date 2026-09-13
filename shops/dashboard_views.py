@@ -12,7 +12,9 @@ from .models import (
     StoreStock, StoreOrder, StoreOrderItem, StoreMembership,
     Warehouse, WarehouseStock,
     StoreConstructor, StoreConstructorGroup, StoreConstructorIngredient, StoreConstructorOrderItem,
+    ShopPrintConfig, ShopPrintJob,
 )
+from .print_jobs import create_order_print_job
 
 LOGIN_URL = "dashboard:login"
 
@@ -145,9 +147,14 @@ def shop_branch_edit(request, branch_id):
         return redirect("dashboard:shop_branch_edit", branch_id=branch.id)
 
     work_days_list = branch.work_days.split(",") if branch.work_days else ["0","1","2","3","4","5","6"]
+    try:
+        print_cfg = branch.print_config
+    except ShopPrintConfig.DoesNotExist:
+        print_cfg = None
     return render(request, "dashboard/shops/branch_edit.html", {
         "branch": branch, "store": branch.store,
         "work_days_list": work_days_list,
+        "print_cfg": print_cfg,
     })
 
 
@@ -430,6 +437,23 @@ def shop_warehouse(request, store_id):
     )
     branches = list(store.branches.filter(is_active=True).order_by("name_ru"))
 
+    # Остатки по филиалам — чтобы сразу видеть, где склад сети, а где что лежит в точках,
+    # и можно было двигать товар в обе стороны.
+    branch_stocks_map = {}
+    for s in StoreStock.objects.filter(branch__store=store).only("id", "branch_id", "product_id", "qty"):
+        branch_stocks_map.setdefault(s.product_id, {})[s.branch_id] = {"id": s.id, "qty": s.qty}
+
+    for ws in wstocks:
+        per_branch = []
+        for b in branches:
+            info = branch_stocks_map.get(ws.product_id, {}).get(b.id)
+            per_branch.append({
+                "branch": b,
+                "stock_id": info["id"] if info else None,
+                "qty": info["qty"] if info else Decimal("0"),
+            })
+        ws.per_branch = per_branch
+
     return render(request, "dashboard/shops/warehouse.html", {
         "store": store,
         "warehouse": warehouse,
@@ -514,6 +538,105 @@ def shop_warehouse_transfer(request, wstock_id):
         "branch_qty": _fmt(branch_stock.qty),
         "branch_name": branch.name_ru,
     })
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_warehouse_pull(request, stock_id):
+    """Переместить количество из остатка филиала обратно на склад сети."""
+    stock = get_object_or_404(StoreStock, id=stock_id)
+    store = stock.branch.store
+    if not _has_store_access(request.user, store):
+        return JsonResponse({"ok": False}, status=403)
+
+    try:
+        qty = Decimal(request.POST.get("qty", ""))
+        if qty <= 0:
+            raise ValueError
+    except Exception:
+        return JsonResponse({"ok": False, "error": "Укажите количество для перемещения"})
+
+    if qty > stock.qty:
+        return JsonResponse({"ok": False, "error": "В филиале недостаточно товара"})
+
+    stock.qty = stock.qty - qty
+    stock.save(update_fields=["qty"])
+
+    warehouse = _get_or_create_warehouse(store)
+    wstock, _created = WarehouseStock.objects.get_or_create(
+        warehouse=warehouse, product=stock.product, defaults={"qty": 0},
+    )
+    wstock.qty = wstock.qty + qty
+    wstock.save(update_fields=["qty"])
+
+    return JsonResponse({
+        "ok": True,
+        "branch_qty": _fmt(stock.qty),
+        "warehouse_qty": _fmt(wstock.qty),
+    })
+
+
+# ── ПЕЧАТЬ ЧЕКОВ НА ФИЗИЧЕСКИЙ ПРИНТЕР ───────────────────────────────────────
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_print_save(request, branch_id):
+    branch = get_object_or_404(StoreBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:shop_home")
+    cfg, _created = ShopPrintConfig.objects.get_or_create(branch=branch)
+    cfg.enabled         = request.POST.get("enabled") == "1"
+    cfg.windows_printer = request.POST.get("windows_printer", "").strip()
+    cfg.print_mode      = request.POST.get("print_mode", "image")
+    cfg.codepage        = request.POST.get("codepage", "cp866")
+    if request.POST.get("regen_token"):
+        import secrets
+        cfg.token = secrets.token_urlsafe(32)
+    cfg.save()
+    messages.success(request, "Настройки печати сохранены")
+    return redirect("dashboard:shop_branch_edit", branch_id=branch.id)
+
+
+@login_required(login_url=LOGIN_URL)
+def shop_print_config_dl(request, branch_id):
+    """Скачать shop_config.json для агента печати."""
+    import json as _json
+    from django.http import HttpResponse
+    branch = get_object_or_404(StoreBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:shop_home")
+    cfg, _created = ShopPrintConfig.objects.get_or_create(branch=branch)
+    server_url = request.scheme + "://" + request.get_host()
+    data = {
+        "server_url": server_url,
+        "token": cfg.token,
+        "printer": cfg.windows_printer or "XPrinter XP-80C",
+        "poll_interval": 3,
+        "heartbeat_interval": 30,
+        "print_mode": cfg.print_mode,
+        "codepage": cfg.codepage,
+        "print_width": 384,
+    }
+    content = _json.dumps(data, ensure_ascii=False, indent=2)
+    resp = HttpResponse(content, content_type="application/json")
+    resp["Content-Disposition"] = 'attachment; filename="shop_config.json"'
+    return resp
+
+
+@login_required(login_url=LOGIN_URL)
+def shop_print_agent_dl(request, branch_id):
+    """Скачать shop_agent.py."""
+    from django.http import FileResponse, HttpResponse
+    from pathlib import Path
+    branch = get_object_or_404(StoreBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:shop_home")
+    agent_path = Path(__file__).resolve().parent / "shop_agent.py"
+    if not agent_path.exists():
+        return HttpResponse("shop_agent.py not found on server", status=404)
+    resp = FileResponse(open(agent_path, "rb"), content_type="text/plain")
+    resp["Content-Disposition"] = 'attachment; filename="shop_agent.py"'
+    return resp
 
 
 # ── CATEGORY LIST PAGE ───────────────────────────────────────────────────────
@@ -1002,6 +1125,12 @@ def shop_pos_order_create(request, branch_id):
     order.subtotal = subtotal
     order.total    = subtotal
     order.save(update_fields=["subtotal", "total"])
+
+    # Печать чека на физический принтер (если для филиала включена)
+    try:
+        create_order_print_job(order)
+    except Exception:
+        pass
 
     return JsonResponse({"ok": True, "order_id": order.id, "total": str(subtotal)})
 

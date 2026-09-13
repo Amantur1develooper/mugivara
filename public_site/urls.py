@@ -2,7 +2,7 @@
 from django.urls import path, include
 from django.views.generic import RedirectView
 from .views import (
-    about, privacy, booking_set_status, contacts, hall_plan, home, place_move, reservation, restaurant_about, restaurant_contacts, restaurant_detail, branch_menu, restaurant_branch_menu,
+    about, founder, privacy, booking_set_status, contacts, hall_plan, home, place_move, reservation, restaurant_about, restaurant_contacts, restaurant_detail, branch_menu, restaurant_branch_menu,
     add_to_cart, cart_detail, cart_json, cart_update, cart_remove,
     checkout, checkout_success, restaurants_list, validate_promo, banner_click,
     constructor_add_to_cart, constructor_remove_from_cart, constructor_cx_update,
@@ -62,6 +62,7 @@ urlpatterns = [
     path("b/<int:branch_id>/promo/validate/", validate_promo, name="validate_promo"),
     # path("b/<int:branch_id>/checkout/success/<int:order_id>/", checkout_success, name="checkout_success"),
     path("about/", about, name="about"),
+    path("about/founder/", founder, name="founder"),
     path("privacy/", privacy, name="privacy"),
     # path("contacts/", contacts, name="contacts"),
     path("r/<slug:slug>/contacts/", restaurant_contacts, name="restaurant_contacts"),

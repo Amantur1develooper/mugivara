@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% load i18n static i18n_attrs %}
+{% block title %}{% trans "Основатель Webordo" %}{% endblock %}
+
+{% block content %}
+<div class="relative -mx-4 sm:-mx-6 lg:-mx-8 overflow-hidden">
+  <div class="absolute inset-0 -z-10"
+       style="background:
+         radial-gradient(900px 420px at 12% 0%, rgba(255,122,0,.14), transparent 60%),
+         radial-gradient(760px 380px at 90% 6%, rgba(17,24,39,.08), transparent 58%),
+         linear-gradient(180deg, #fff8f1 0%, #fffaf6 42%, #ffffff 100%);"></div>
+
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 lg:py-20">
+
+    <a href="{% url 'public_site:about' %}"
+       class="inline-flex items-center gap-1.5 text-sm font-bold text-stone-500 hover:text-stone-900 transition">
+      ← {% trans "О Webordo" %}
+    </a>
+
+    <div class="mt-8 sm:mt-10 text-center">
+      <div class="inline-flex items-center gap-2 rounded-full bg-orange-50 border border-orange-200 px-4 py-2 text-[11px] sm:text-xs font-extrabold uppercase tracking-[0.18em] text-orange-600">
+        {% trans "Webordo" %}
+      </div>
+
+      <h1 class="mt-6 font-black tracking-tight leading-[0.92] text-stone-950">
+        <span class="block text-2xl sm:text-3xl lg:text-4xl text-stone-500">{% trans "Это наш" %}</span>
+        <span class="block text-[42px] sm:text-[64px] lg:text-[84px] bg-gradient-to-r from-stone-950 via-stone-800 to-orange-600 bg-clip-text text-transparent">
+          {% trans "ОСНОВАТЕЛЬ" %}
+        </span>
+      </h1>
+
+      {% if member %}
+      <div class="mt-4 inline-flex items-center rounded-full bg-stone-950 text-white px-5 py-2 text-sm sm:text-base font-black uppercase tracking-[0.1em]">
+        {% t member "role" %}
+      </div>
+      {% endif %}
+    </div>
+
+    {% if member %}
+    <div class="mt-12 sm:mt-16 flex flex-col items-center">
+      <div class="w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden ring-4 ring-white shadow-[0_20px_60px_rgba(15,23,42,.18)] bg-gradient-to-br from-stone-100 to-stone-200 flex items-center justify-center flex-shrink-0">
+        {% if member.photo %}
+          <img src="{{ member.photo.url }}" alt="{% t member 'name' %}" class="w-full h-full object-cover">
+        {% else %}
+          <span class="text-6xl">🙂</span>
+        {% endif %}
+      </div>
+
+      <div class="mt-6 text-2xl sm:text-3xl font-black text-stone-950 text-center">{% t member "name" %}</div>
+      <div class="mt-1 text-sm sm:text-base font-bold text-orange-600 text-center">{% t member "role" %}</div>
+
+      {% t member "bio" as member_bio %}
+      {% if member_bio %}
+      <div class="mt-10 sm:mt-12 max-w-2xl">
+        <div class="rounded-[28px] bg-white border border-stone-200/80 shadow-[0_18px_50px_rgba(15,23,42,.06)] p-7 sm:p-9">
+          <div class="text-3xl text-orange-300 font-black leading-none">“</div>
+          <p class="mt-2 text-base sm:text-lg text-stone-700 leading-relaxed">{{ member_bio }}</p>
+          <div class="mt-5 text-sm font-black text-stone-950">
+            {% t member "name" %} <span class="text-stone-400 font-bold">— {% t member "role" %}, Webordo</span>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if member.phone or member.email or member.whatsapp_url or member.instagram_url %}
+      <div class="mt-8 flex flex-wrap justify-center gap-3">
+        {% if member.phone %}
+          <a href="tel:{{ member.phone }}" class="inline-flex items-center gap-2 rounded-2xl bg-white border border-stone-200/80 px-4 py-2.5 text-sm font-bold text-stone-800 hover:-translate-y-0.5 transition">📞 {{ member.phone }}</a>
+        {% endif %}
+        {% if member.email %}
+          <a href="mailto:{{ member.email }}" class="inline-flex items-center gap-2 rounded-2xl bg-white border border-stone-200/80 px-4 py-2.5 text-sm font-bold text-stone-800 hover:-translate-y-0.5 transition">✉️ {{ member.email }}</a>
+        {% endif %}
+        {% if member.whatsapp_url %}
+          <a href="{{ member.whatsapp_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold text-white hover:-translate-y-0.5 transition" style="background:#25D366;">WhatsApp</a>
+        {% endif %}
+        {% if member.instagram_url %}
+          <a href="{{ member.instagram_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-2xl bg-stone-950 px-4 py-2.5 text-sm font-bold text-white hover:-translate-y-0.5 transition">Instagram</a>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="mt-12 text-center text-stone-400 text-sm">
+      {% trans "Информация появится совсем скоро." %}
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

@@ -14,6 +14,7 @@ urlpatterns = [
     path("i18n/", __import__("django.conf.urls.i18n").conf.urls.i18n.set_language, name="set_language"),
     path("api/print/",    include("printing.urls")),
     path("api/sr-print/", include("simracing.print_urls")),
+    path("api/shop-print/", include("shops.print_urls")),
 
     # Swagger / OpenAPI
     path("api/schema/",  SpectacularAPIView.as_view(),                        name="schema"),

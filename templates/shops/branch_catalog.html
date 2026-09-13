@@ -315,6 +315,39 @@
     margin:0 auto;
     padding:28px 20px 120px;
   }
+
+  .sc-notice{
+    display:flex;
+    align-items:center;
+    gap:11px;
+    padding:13px 18px;
+    margin-bottom:22px;
+    background:linear-gradient(135deg, rgba(255,106,26,.07), rgba(255,138,0,.05));
+    border:1px solid rgba(255,106,26,.14);
+    border-radius:16px;
+    font-size:12.5px;
+    color:#8a5a3a;
+    line-height:1.5;
+  }
+  .sc-notice-ico{
+    flex-shrink:0;
+    width:26px; height:26px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:50%;
+    background:rgba(255,106,26,.12);
+    font-size:13px;
+  }
+
+  /* ── Плавное появление секций при скролле (только если JS это включил) ── */
+  .sc-content.sc-anim .sc-cat-section{
+    opacity:0;
+    transform:translateY(16px);
+    transition:opacity .55s cubic-bezier(.22,.68,0,1), transform .55s cubic-bezier(.22,.68,0,1);
+  }
+  .sc-content.sc-anim .sc-cat-section.sc-in-view{
+    opacity:1;
+    transform:translateY(0);
+  }
   .sc-cat-section{ scroll-margin-top:154px; margin-bottom:42px; }
   .sc-cat-header{
     display:flex;
@@ -929,10 +962,8 @@ const T = {
 
   <div class="sc-content" id="sc-top">
 
-    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;margin-bottom:18px;
-                background:rgba(16,24,40,.04);border:1px solid rgba(16,24,40,.07);border-radius:12px;
-                font-size:12px;color:#667085;line-height:1.45">
-      <span style="font-size:15px;flex-shrink:0">ℹ️</span>
+    <div class="sc-notice">
+      <span class="sc-notice-ico">ℹ️</span>
       <span>{% trans "Цены указаны по прайс-листу фирменных магазинов и могут отличаться в других точках продаж." %}</span>
     </div>
 
@@ -1320,6 +1351,26 @@ const T = {
       const top = sections[0].getBoundingClientRect().top;
       if (top > 200) setActive('sc-top');
     }, { passive: true });
+  })();
+
+  // ── Плавное появление секций категорий при прокрутке ─────────
+  (function () {
+    const content = document.getElementById('sc-top');
+    const sections = Array.from(document.querySelectorAll('.sc-cat-section'));
+    if (!content || !sections.length || !('IntersectionObserver' in window)) return;
+
+    content.classList.add('sc-anim');
+
+    const revealObs = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('sc-in-view');
+          revealObs.unobserve(e.target);
+        }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 });
+
+    sections.forEach(s => revealObs.observe(s));
   })();
 
   // ── Дропдаун категорий ──────────────────────────────────────

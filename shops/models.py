@@ -9,6 +9,7 @@ from io import BytesIO
 from django.core.files.base import ContentFile
 from PIL import Image
 import os
+import secrets
 
 
 def _compress(field, max_size=(1200, 900), quality=85):
@@ -389,6 +390,67 @@ class StoreConstructorOrderItem(TimeStampedModel):
 
     def __str__(self):
         return f"{self.order_id}: {self.constructor_name_snapshot or 'Собери сам'} x {self.qty}"
+
+
+class ShopPrintConfig(models.Model):
+    """Настройки печати чеков на физический принтер (как у ресторанов) — один принтер на филиал."""
+    branch = models.OneToOneField(StoreBranch, on_delete=models.CASCADE, related_name="print_config")
+    enabled = models.BooleanField("Печать включена", default=False)
+    token = models.CharField(max_length=64, unique=True, editable=False)
+    windows_printer = models.CharField(
+        "Имя принтера в Windows", max_length=200, blank=True, default="",
+        help_text="Точное имя как в списке принтеров Windows",
+    )
+    last_heartbeat = models.DateTimeField("Последний heartbeat", null=True, blank=True)
+    print_mode = models.CharField(
+        "Режим печати", max_length=10,
+        choices=[("image", "Картинка (рекомендуется)"), ("text", "Текст (ESC/POS)")],
+        default="image",
+    )
+    codepage = models.CharField("Кодовая страница", max_length=20, default="cp866")
+
+    class Meta:
+        verbose_name = "Настройки печати (магазин)"
+        verbose_name_plural = "Настройки печати (магазины)"
+
+    def save(self, *args, **kwargs):
+        if not self.token:
+            self.token = secrets.token_urlsafe(32)
+        super().save(*args, **kwargs)
+
+    def is_agent_online(self):
+        if not self.last_heartbeat:
+            return False
+        return (timezone.now() - self.last_heartbeat).total_seconds() < 300
+
+    def __str__(self):
+        return f"{self.branch} — печать"
+
+
+class ShopPrintJob(models.Model):
+    """Задание на печать чека кассы магазина, агент забирает и печатает."""
+    class Status(models.TextChoices):
+        NEW        = "new",        "Новый"
+        PROCESSING = "processing", "Печатается"
+        PRINTED    = "printed",    "Напечатан"
+        ERROR      = "error",      "Ошибка"
+
+    branch = models.ForeignKey(StoreBranch, on_delete=models.CASCADE, related_name="print_jobs")
+    order  = models.ForeignKey(StoreOrder, on_delete=models.SET_NULL, null=True, blank=True, related_name="print_jobs")
+    content = models.TextField("Содержимое (plain text)")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW)
+    retries = models.PositiveSmallIntegerField(default=0)
+    error_message = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    printed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        verbose_name = "Задание печати (магазин)"
+        verbose_name_plural = "Задания печати (магазины)"
+
+    def __str__(self):
+        return f"ShopJob #{self.id} [{self.status}]"
 
 
 class StoreMembership(models.Model):

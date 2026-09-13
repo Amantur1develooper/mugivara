@@ -26,6 +26,16 @@ def _tg_token() -> str:
     return (getattr(settings, "TG_BOT_TOKEN", "") or getattr(settings, "TELEGRAM_BOT_TOKEN", "") or "").strip()
 
 
+def _qty(v) -> str:
+    """3 знака после запятой, но без лишних нулей: 2.000 → 2, 1.500 → 1.5."""
+    try:
+        d = Decimal(str(v))
+        s = f"{d:.3f}".rstrip("0").rstrip(".")
+        return s or "0"
+    except Exception:
+        return str(v)
+
+
 def _money(v) -> str:
     if v is None:
         return ""
@@ -402,3 +412,108 @@ def notify_call_waiter(place_id: int, note: str = ""):
             )
         except Exception as e:
             print("TG call_waiter ERROR:", r.chat_id, e)
+
+
+# ── Магазины: уведомление о новом заказе (сайт + касса) ──────────────────────
+
+def _shop_order_header(order) -> str:
+    if order.mode == "delivery":
+        return "🛵 ДОСТАВКА — НОВЫЙ ЗАКАЗ"
+    return "🏬 НОВЫЙ ЗАКАЗ В МАГАЗИНЕ"
+
+
+def _shop_order_text(order) -> str:
+    lines = [
+        _shop_order_header(order),
+        f"🧾 Заказ №{order.id}",
+        f"🏪 Филиал: {getattr(order.branch, 'name_ru', str(order.branch))}",
+    ]
+
+    if hasattr(order, "get_status_display"):
+        lines.append(f"🆕 Статус: {order.get_status_display()}")
+
+    pm = order.get_payment_method_display() if hasattr(order, "get_payment_method_display") else ""
+    if pm:
+        lines.append(f"💳 Оплата: {pm}")
+
+    if getattr(order, "name", ""):
+        lines.append(f"👤 Имя: {order.name}")
+    if getattr(order, "phone", ""):
+        lines.append(f"📞 Телефон: {order.phone}")
+    if getattr(order, "address", ""):
+        label = "📍 Адрес" if order.mode == "delivery" else "📝 Комментарий"
+        lines.append(f"{label}: {order.address}")
+    if getattr(order, "comment", ""):
+        lines.append(f"📝 Комментарий: {order.comment}")
+
+    items = list(order.items.select_related("product").all())
+    cx_items = list(order.constructor_items.all())
+    if items or cx_items:
+        lines.append("")
+        lines.append("📋 Состав заказа:")
+        for it in items:
+            name = getattr(it.product, "name_ru", None) or str(it.product)
+            lines.append(f"  • {name} × {_qty(it.qty)}  —  {_money(it.line_total)}")
+        for coi in cx_items:
+            cx_name = coi.constructor_name_snapshot or "Собери сам"
+            entry = f"  • 🧩 {cx_name} × {_qty(coi.qty)}  —  {_money(coi.line_total)}"
+            for sel in (coi.ingredients_snapshot or []):
+                ings = _ing_names(sel.get("ings", []))
+                if sel.get("gname") and ings:
+                    entry += f"\n      {sel['gname']}: {ings}"
+            lines.append(entry)
+    else:
+        lines.append("")
+        lines.append("⚠️ Состав: нет позиций")
+
+    lines.append("")
+    if getattr(order, "delivery_fee", None) and Decimal(str(order.delivery_fee)) > 0:
+        lines.append(f"🛒 Товары: {_money(order.subtotal)}")
+        lines.append(f"🚚 Доставка: {_money(order.delivery_fee)}")
+    lines.append(f"💰 ИТОГО: {_money(order.total)}")
+
+    created = timezone.localtime(order.created_at).strftime("%d.%m.%Y %H:%M")
+    lines.append(f"⏰ {created}")
+
+    return "\n".join(lines)
+
+
+@shared_task
+def notify_new_shop_order(order_id: int):
+    from shops.models import StoreOrder
+    from integrations.models import ShopTelegramRecipient
+
+    token = _tg_token()
+    if not token:
+        return "No TG token"
+
+    order = (
+        StoreOrder.objects
+        .select_related("branch")
+        .prefetch_related("items__product", "constructor_items")
+        .get(id=order_id)
+    )
+
+    recipients = ShopTelegramRecipient.objects.filter(
+        branch=order.branch, is_active=True, notify_new_orders=True
+    )
+    if not recipients.exists():
+        return "No recipients"
+
+    text = _shop_order_text(order)
+
+    sent = 0
+    for r in recipients:
+        try:
+            send_message(
+                bot_token=token,
+                chat_id=str(r.chat_id),
+                text=text,
+                parse_mode=None,
+                message_thread_id=_thread_id_for(r),
+            )
+            sent += 1
+        except Exception as e:
+            print("TG shop order ERROR:", r.chat_id, e)
+
+    return f"sent={sent}"

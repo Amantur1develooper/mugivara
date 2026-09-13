@@ -1,81 +1,173 @@
 {% extends "base.html" %}
 {% load i18n i18n_attrs l10n %}
 
+{% block title %}{% trans "Заказ создан" %} — {{ order.branch.name_ru }}{% endblock %}
+{% block cta %}{% endblock %}
+
+{% block head_extra %}
+<style>
+  :root{
+    --cs-bg:#f6f7fb;
+    --cs-card:#ffffff;
+    --cs-text:#101828;
+    --cs-muted:#667085;
+    --cs-border:rgba(16,24,40,.08);
+    --cs-shadow:0 12px 34px rgba(16,24,40,.08);
+    --cs-accent:#ff6a1a;
+    --cs-accent-2:#ff8a00;
+    --cs-glow:rgba(255,106,26,.28);
+    --cs-green:#07b488;
+  }
+  body{ background:var(--cs-bg) !important; }
+
+  .cs-page{ max-width:640px; margin:0 auto; padding:32px 20px 80px; }
+
+  .cs-card{
+    background:var(--cs-card); border:1.5px solid var(--cs-border);
+    border-radius:26px; padding:26px 24px; box-shadow:var(--cs-shadow);
+  }
+
+  .cs-ico{
+    width:56px; height:56px; border-radius:18px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:26px;
+    background:linear-gradient(135deg, rgba(7,180,136,.15), rgba(7,180,136,.06));
+  }
+  .cs-head{ display:flex; align-items:flex-start; gap:14px; }
+  .cs-title{
+    font-family:'Unbounded',sans-serif; font-size:clamp(19px,3vw,24px);
+    font-weight:900; letter-spacing:-.8px; color:var(--cs-text); margin:0 0 4px;
+  }
+  .cs-order-meta{ font-size:12.5px; color:var(--cs-muted); }
+
+  .cs-confirm{
+    margin-top:18px; border-radius:18px; padding:15px 17px;
+    background:linear-gradient(135deg, rgba(7,180,136,.1), rgba(7,180,136,.04));
+    border:1px solid rgba(7,180,136,.22);
+  }
+  .cs-confirm-title{ font-weight:800; color:#03876a; font-size:13.5px; margin-bottom:4px; }
+  .cs-confirm-text{ font-size:12.5px; color:#3a6f65; line-height:1.55; }
+
+  .cs-preview{
+    margin-top:16px; border-radius:16px; padding:14px 16px;
+    background:#f9fafb; border:1px solid var(--cs-border);
+  }
+  .cs-preview-title{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#98a2b3; margin-bottom:8px; }
+  .cs-preview-line{ font-size:13px; color:var(--cs-text); line-height:1.6; }
+  .cs-preview-total{ margin-top:8px; padding-top:8px; border-top:1px dashed var(--cs-border); font-weight:800; color:var(--cs-text); font-size:14px; }
+
+  .cs-actions{ margin-top:20px; display:flex; flex-direction:column; gap:10px; }
+  .cs-btn{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    padding:14px 16px; border-radius:16px; text-decoration:none;
+    font-size:13.5px; font-weight:800; cursor:pointer; border:none;
+    font-family:inherit; transition:transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+  }
+  .cs-btn:hover{ transform:translateY(-2px); }
+  .cs-btn-wa{ background:#25D366; color:#fff; box-shadow:0 10px 24px rgba(37,211,102,.28); }
+  .cs-btn-wa2{ background:#128C7E; color:#fff; box-shadow:0 10px 24px rgba(18,140,126,.24); }
+  .cs-btn-copy{ background:#f2f4f7; color:var(--cs-text); border:1.5px solid var(--cs-border); }
+  .cs-btn-back{ background:transparent; color:var(--cs-muted); border:1.5px solid var(--cs-border); }
+
+  .cs-copied{
+    margin-top:10px; text-align:center; font-size:12.5px; font-weight:700;
+    color:#03876a; display:none;
+  }
+  .cs-copied.show{ display:block; }
+
+  .cs-fallback{
+    display:none; margin-top:16px; border-radius:16px; padding:14px 16px;
+    background:rgba(255,138,0,.08); border:1px solid rgba(255,138,0,.22);
+    color:#8a5a1a; font-size:12.5px; line-height:1.55;
+  }
+  .cs-fallback.show{ display:block; }
+  .cs-fallback b{ display:block; margin-bottom:3px; color:#6b4315; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-3xl mx-auto px-4 py-8">
-  <div class="rounded-3xl bg-white ring-1 ring-black/5 shadow-xl p-6">
-    <div class="text-2xl font-extrabold">✅ {% trans "Заказ создан" %}</div>
-    <div class="mt-2 text-stone-600">
-      {% trans "Сейчас откроем WhatsApp и отправим заказ в филиал." %}
-    </div>
+<div class="cs-page">
+  <div class="cs-card">
 
-    <div class="mt-5 rounded-2xl bg-stone-50 ring-1 ring-stone-200 p-4">
-      <div class="font-bold text-stone-900">{% trans "Состав (кратко)" %}</div>
-      <div class="mt-2 text-sm text-stone-700">
-        {% for it in preview_items %}
-          • {{ it.product.name }} × {{ it.qty }}<br>
-        {% empty %}
-          —
-        {% endfor %}
-        {% if order.items.all|length > 2 %}…{% endif %}
+    <div class="cs-head">
+      <div class="cs-ico">✅</div>
+      <div>
+        <h1 class="cs-title">{% trans "Заказ принят!" %}</h1>
+        <div class="cs-order-meta">
+          {% trans "Заказ" %} #{{ order.id }} · {{ order.branch.name_ru }}
+          {% if order.mode == "delivery" %} · 🚚 {% trans "Доставка" %}{% else %} · 🏬 {% trans "Самовывоз" %}{% endif %}
+        </div>
       </div>
-      <div class="mt-3 font-extrabold">{% trans "Итого" %}: {{ order.total|som }}</div>
     </div>
 
-    <div class="mt-5 flex flex-col sm:flex-row gap-3">
+    <div class="cs-confirm">
+      <div class="cs-confirm-title">{% trans "Ваш заказ уже принят 🎉" %}</div>
+      <div class="cs-confirm-text">
+        {% trans "С вами скоро свяжутся, чтобы подтвердить заказ — пожалуйста, проверьте, что номер телефона указан верно." %}
+      </div>
+    </div>
+
+    <div class="cs-preview">
+      <div class="cs-preview-title">{% trans "Состав (кратко)" %}</div>
+      {% for it in preview_items %}
+        <div class="cs-preview-line">• {% t it.product "name" %} × {{ it.qty|floatformat:"-3" }}</div>
+      {% empty %}
+        <div class="cs-preview-line">—</div>
+      {% endfor %}
+      {% if order.items.all|length > 2 %}
+        <div class="cs-preview-line" style="color:var(--cs-muted)">…</div>
+      {% endif %}
+      <div class="cs-preview-total">{% trans "Итого" %}: {{ order.total|som }}</div>
+    </div>
+
+    <div class="cs-actions">
       {% if wa_url %}
-        <a href="{{ wa_url }}" class="px-5 py-3 rounded-2xl text-white font-semibold shadow"
-           style="background:#25D366;">
-          📲 WhatsApp
-        </a>
+        <a href="{{ wa_url }}" id="waMainBtn" class="cs-btn cs-btn-wa">📲 {% trans "Открыть WhatsApp" %}</a>
       {% endif %}
       {% if wa_url2 %}
-        <a href="{{ wa_url2 }}" class="px-5 py-3 rounded-2xl text-white font-semibold shadow"
-           style="background:#128C7E;">
-          📲 WhatsApp 2
-        </a>
+        <a href="{{ wa_url2 }}" class="cs-btn cs-btn-wa2">📲 WhatsApp 2</a>
       {% endif %}
-
-      <button id="copyBtn"
-              class="px-5 py-3 rounded-2xl bg-stone-900 text-white font-semibold shadow hover:bg-stone-800">
-        {% trans "Скопировать текст заказа" %}
-      </button>
+      <button type="button" id="copyBtn" class="cs-btn cs-btn-copy">📋 {% trans "Скопировать текст заказа" %}</button>
+      <a href="{% if order.mode == 'delivery' %}{% url 'shops:branch_catalog_delivery' order.branch.id %}{% else %}{% url 'shops:branch_catalog_pickup' order.branch.id %}{% endif %}"
+         class="cs-btn cs-btn-back">← {% trans "Вернуться в каталог" %}</a>
     </div>
 
-    <textarea id="orderText" class="sr-only">{{ order_text }}</textarea>
+    <div id="copied" class="cs-copied">✅ {% trans "Скопировано" %}</div>
 
-    <div id="copied" class="mt-3 text-sm text-emerald-700 hidden">{% trans "Скопировано ✅" %}</div>
-    <div class="mt-6 text-xs text-stone-500">
-      {% trans "Если WhatsApp не открылся — нажми “Скопировать” и отправь вручную." %}
+    <div id="waFallback" class="cs-fallback">
+      <b>{% trans "WhatsApp не открылся?" %}</b>
+      {% trans "Нажмите «Открыть WhatsApp» ещё раз, или скопируйте текст заказа и отправьте его вручную." %}
     </div>
+
+    <textarea id="orderText" class="sr-only" aria-hidden="true">{{ order_text }}</textarea>
   </div>
 </div>
 
 <script>
-  // автопопытка открыть WhatsApp
+  // автопопытка открыть WhatsApp + мягкий фолбэк, если не сработало
   (function(){
     const url = "{{ wa_url|escapejs }}";
     if (!url) return;
     setTimeout(() => { window.location.href = url; }, 400);
+    setTimeout(() => {
+      document.getElementById('waFallback')?.classList.add('show');
+    }, 1800);
   })();
 
   // копирование
   document.getElementById('copyBtn')?.addEventListener('click', async () => {
     const txt = document.getElementById('orderText')?.value || '';
+    const copied = document.getElementById('copied');
     try{
       await navigator.clipboard.writeText(txt);
-      document.getElementById('copied')?.classList.remove('hidden');
-      setTimeout(()=>document.getElementById('copied')?.classList.add('hidden'), 1200);
     }catch(e){
-      // fallback
       const ta = document.getElementById('orderText');
       ta.classList.remove('sr-only');
       ta.select();
       document.execCommand('copy');
       ta.classList.add('sr-only');
-      document.getElementById('copied')?.classList.remove('hidden');
-      setTimeout(()=>document.getElementById('copied')?.classList.add('hidden'), 1200);
     }
+    copied?.classList.add('show');
+    setTimeout(() => copied?.classList.remove('show'), 1600);
   });
 </script>
 {% endblock %}
