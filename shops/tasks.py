@@ -60,7 +60,7 @@ def notify_new_shop_order(order_id: int):
     lines = []
     lines.append("🛒 Новый заказ (магазин)")
     lines.append(f"Заказ: #{order.id}")
-    lines.append(f"Филиал: {getattr(b, 'name', '')}")
+    lines.append(f"Филиал: {getattr(b, 'name_ru', '') or str(b)}")
     lines.append(f"Тип: {'Доставка' if is_delivery else 'В магазине'}")
 
     if getattr(order, "phone", ""):
