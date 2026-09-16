@@ -15,6 +15,7 @@ from .models import (
     ShopPrintConfig, ShopPrintJob,
 )
 from .print_jobs import create_order_print_job
+from . import constructor_utils
 
 LOGIN_URL = "dashboard:login"
 
@@ -999,45 +1000,9 @@ def shop_constructor_ingredient_delete(request, ing_id):
 # ── POS ───────────────────────────────────────────────────────────────────────
 
 def _constructors_json(store):
-    """Данные конструкторов «Собери сам» для POS (аналог CX_DATA в меню ресторана)."""
-    import json as _j
-    constructors = (
-        StoreConstructor.objects
-        .filter(store=store, is_active=True)
-        .prefetch_related("groups__ingredients__product")
-        .order_by("sort_order", "id")
-    )
-    data = {}
-    for cx in constructors:
-        groups = []
-        for g in cx.groups.all().order_by("sort_order", "id"):
-            ings = []
-            for ing in g.ingredients.filter(is_active=True).order_by("sort_order", "id"):
-                p = ing.product
-                ings.append({
-                    "id": ing.id,
-                    "name": p.name_ru,
-                    "price": _fmt(ing.display_price),
-                    "photo": p.photo.url if p.photo else "",
-                    "product_id": p.id,
-                    "write_off_qty": _fmt(ing.write_off_qty),
-                })
-            groups.append({
-                "id": g.id, "name": g.name,
-                "min": g.min_select, "max": g.max_select,
-                "ingredients": ings,
-            })
-        # Готов ли конструктор к продаже: у каждой группы с обязательным выбором
-        # должно быть достаточно товаров, иначе покупатель не сможет его оформить.
-        is_ready = all(g["min"] <= 0 or len(g["ingredients"]) >= g["min"] for g in groups)
-        data[cx.id] = {
-            "id": cx.id, "name": cx.name,
-            "base_price": _fmt(cx.base_price),
-            "photo": cx.photo.url if cx.photo else "",
-            "groups": groups,
-            "ready": is_ready,
-        }
-    return _j.dumps(data, ensure_ascii=False)
+    """Данные конструкторов «Собери сам» (аналог CX_DATA в меню ресторана).
+    Общая логика вынесена в constructor_utils — использует и касса, и витрина."""
+    return constructor_utils.constructors_json(store)
 
 
 @login_required(login_url=LOGIN_URL)

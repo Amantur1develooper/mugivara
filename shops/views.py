@@ -16,8 +16,11 @@ from decimal import Decimal
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db import transaction
-from .models import Store, StoreBranch, StoreCategory, StoreProduct, StoreStock, StoreOrder, StoreOrderItem
-from .cart import get_cart, save_cart, set_mode, get_mode, dec, get_shop_cart, clear_shop_cart
+from .models import Store, StoreBranch, StoreCategory, StoreProduct, StoreStock, StoreOrder, StoreOrderItem, StoreConstructorOrderItem
+from .cart import get_cart, save_cart, set_mode, get_mode, dec, get_shop_cart, clear_shop_cart, get_cx_cart, save_cx_cart, clear_cx_cart
+from . import constructor_utils
+import json
+import uuid
 
 # from .cart import get_cart, save_cart, set_mode, get_mode, dec
 
@@ -143,6 +146,16 @@ def _branch_catalog(request, branch: StoreBranch):
     for pid, q in cart.items():
         total += price_map.get(int(pid), Decimal("0")) * dec(q)
 
+    # «Собери сам» — данные для витрины + учёт уже добавленного в бейдже корзины
+    cx_data = constructor_utils.constructors_data(store)
+    has_constructors = any(cx["ready"] for cx in cx_data.values())
+    cx_cart = get_cx_cart(request, branch.id)
+    for it in cx_cart:
+        resolved = constructor_utils.resolve_cx_item(cx_data, it)
+        if resolved:
+            qty_total += resolved["qty"]
+            total += resolved["line_total"]
+
     return render(request, "shops/branch_catalog.html", {
         "store": store,
         "branch": branch,
@@ -151,6 +164,8 @@ def _branch_catalog(request, branch: StoreBranch):
         "stocks": stocks,
         "cart_qty": qty_total,
         "cart_total": total,
+        "has_constructors": has_constructors,
+        "constructors_json": constructor_utils.constructors_json(store) if has_constructors else "{}",
     })
 
 
@@ -187,6 +202,18 @@ def cart_detail(request, branch_id):
             "line_total": line_total,
         })
 
+    # «Собери сам» — позиции считаем на сервере от актуальных данных конструктора
+    cx_cart = get_cx_cart(request, branch_id)
+    cx_data = constructor_utils.constructors_data(branch.store)
+    cx_rows = []
+    for it in cx_cart:
+        resolved = constructor_utils.resolve_cx_item(cx_data, it)
+        if not resolved:
+            continue
+        subtotal += resolved["line_total"]
+        qty_total += resolved["qty"]
+        cx_rows.append(resolved)
+
     delivery_fee = Decimal("0")
     if mode == "delivery" and branch.delivery_enabled:
         delivery_fee = branch.delivery_fee
@@ -204,6 +231,7 @@ def cart_detail(request, branch_id):
         "branch": branch,
         "mode": mode,
         "rows": rows,
+        "cx_rows": cx_rows,
         "qty_total": qty_total,
         "subtotal": subtotal,
         "delivery_fee": delivery_fee,
@@ -309,6 +337,115 @@ def cart_remove(request, branch_id, product_id):
     save_cart(request, branch_id, cart)
     return JsonResponse({"ok": True})
 
+
+def _combined_totals(request, branch):
+    """qty_total/subtotal/total с учётом обычной корзины + «Собери сам» — для бейджа корзины."""
+    cart = get_cart(request, branch.id)
+    pids = [int(pid) for pid in cart.keys()]
+    products = StoreProduct.objects.filter(id__in=pids).only("id", "price")
+    price_map = {p.id: p.price for p in products}
+    qty_total = sum(dec(v) for v in cart.values())
+    subtotal = sum(price_map.get(int(pid), Decimal("0")) * dec(q) for pid, q in cart.items())
+
+    cx_data = constructor_utils.constructors_data(branch.store)
+    for it in get_cx_cart(request, branch.id):
+        resolved = constructor_utils.resolve_cx_item(cx_data, it)
+        if resolved:
+            qty_total += resolved["qty"]
+            subtotal += resolved["line_total"]
+
+    mode = get_mode(request, branch.id)
+    delivery_fee = branch.delivery_fee if (mode == "delivery" and branch.delivery_enabled) else Decimal("0")
+    total = subtotal + delivery_fee
+    return qty_total, subtotal, delivery_fee, total
+
+
+# ── «Собери сам» в публичной витрине ────────────────────────────────────────
+
+def cx_cart_add(request, branch_id, cx_id):
+    if request.method != "POST":
+        return JsonResponse({"ok": False}, status=405)
+    branch = get_object_or_404(StoreBranch, id=branch_id, is_active=True)
+    cx_data = constructor_utils.constructors_data(branch.store)
+    cx = cx_data.get(cx_id)
+    if not cx or not cx["ready"]:
+        return JsonResponse({"ok": False, "error": "not_available"})
+
+    try:
+        selections = json.loads(request.POST.get("selections") or "{}")
+        if not isinstance(selections, dict):
+            selections = {}
+    except Exception:
+        selections = {}
+    try:
+        qty = max(1, int(dec(request.POST.get("qty") or "1")))
+    except Exception:
+        qty = 1
+
+    err = constructor_utils.validate_cx_selections(cx, selections)
+    if err:
+        return JsonResponse({"ok": False, "error": "validation", "message": err})
+
+    cx_cart = get_cx_cart(request, branch_id)
+    cx_cart.append({
+        "item_id": uuid.uuid4().hex[:10],
+        "cx_id": cx_id,
+        "qty": qty,
+        "selections": selections,
+    })
+    save_cx_cart(request, branch_id, cx_cart)
+
+    qty_total, subtotal, delivery_fee, total = _combined_totals(request, branch)
+    return JsonResponse({
+        "ok": True, "qty_total": str(qty_total), "subtotal": str(subtotal),
+        "delivery_fee": str(delivery_fee), "total": str(total),
+    })
+
+
+def cx_cart_update(request, branch_id, item_id):
+    if request.method != "POST":
+        return JsonResponse({"ok": False}, status=405)
+    branch = get_object_or_404(StoreBranch, id=branch_id, is_active=True)
+    try:
+        qty = int(dec(request.POST.get("qty") or "0"))
+    except Exception:
+        qty = 0
+
+    cx_cart = get_cx_cart(request, branch_id)
+    line_total = Decimal("0")
+    if qty <= 0:
+        cx_cart = [it for it in cx_cart if it["item_id"] != item_id]
+    else:
+        for it in cx_cart:
+            if it["item_id"] == item_id:
+                it["qty"] = qty
+                break
+        cx_data = constructor_utils.constructors_data(branch.store)
+        for it in cx_cart:
+            if it["item_id"] == item_id:
+                resolved = constructor_utils.resolve_cx_item(cx_data, it)
+                if resolved:
+                    line_total = resolved["line_total"]
+                break
+    save_cx_cart(request, branch_id, cx_cart)
+
+    qty_total, subtotal, delivery_fee, total = _combined_totals(request, branch)
+    return JsonResponse({
+        "ok": True, "row_qty": qty if qty > 0 else 0, "line_total": str(line_total),
+        "qty_total": str(qty_total), "subtotal": str(subtotal),
+        "delivery_fee": str(delivery_fee), "total": str(total),
+    })
+
+
+def cx_cart_remove(request, branch_id, item_id):
+    branch = get_object_or_404(StoreBranch, id=branch_id, is_active=True)
+    cx_cart = get_cx_cart(request, branch_id)
+    cx_cart = [it for it in cx_cart if it["item_id"] != item_id]
+    save_cx_cart(request, branch_id, cx_cart)
+    qty_total, subtotal, delivery_fee, total = _combined_totals(request, branch)
+    return JsonResponse({"ok": True, "qty_total": str(qty_total), "subtotal": str(subtotal), "total": str(total)})
+
+
 def _wa_digits(phone: str) -> str:
     return re.sub(r"\D", "", phone or "")
 
@@ -368,8 +505,17 @@ def checkout(request, branch_id):
 
     cart = get_shop_cart(request, branch)
     rows = cart["rows"]
-    if not rows:
+
+    # «Собери сам» — считаем на сервере от актуальных данных конструктора
+    cx_cart = get_cx_cart(request, branch_id)
+    cx_data = constructor_utils.constructors_data(branch.store)
+    cx_rows = [r for r in (constructor_utils.resolve_cx_item(cx_data, it) for it in cx_cart) if r]
+
+    if not rows and not cx_rows:
         return redirect("shops:cart_detail", branch_id=branch.id)
+
+    cx_subtotal = sum((cr["line_total"] for cr in cx_rows), Decimal("0"))
+    combined_subtotal = cart["subtotal"] + cx_subtotal
 
     # режим берём из session (ты его ставишь кнопками delivery/in_store)
     mode = get_mode(request, branch.id)   # "delivery" | "in_store"
@@ -391,10 +537,16 @@ def checkout(request, branch_id):
 
     # Минимальная сумма заказа для доставки — не пропускаем оформление, если не набрали
     min_order = dec(getattr(branch, "min_order_amount", 0) or 0)
-    if is_delivery and min_order and cart["subtotal"] < min_order:
+    if is_delivery and min_order and combined_subtotal < min_order:
         return redirect(f"{reverse('shops:cart_detail', args=[branch.id])}?min_order_error=1")
 
     product_ids = [r["product_id"] for r in rows]
+
+    # сколько ингредиентов «Собери сам» нужно списать со склада филиала (суммарно)
+    cx_ing_needed = {}
+    for cr in cx_rows:
+        for pid, per_unit in cr["wh_deductions"].items():
+            cx_ing_needed[pid] = cx_ing_needed.get(pid, Decimal("0")) + per_unit * cr["qty"]
 
     with transaction.atomic():
         # блокируем остатки
@@ -411,7 +563,22 @@ def checkout(request, branch_id):
                 messages.error(request, _("Нет в наличии: %(name)s") % {"name": r['product'].name_ru})
                 return redirect("shops:cart_detail", branch_id=branch.id)
 
-        subtotal = cart["subtotal"]
+        # проверка наличия ингредиентов для «Собери сам»
+        cx_stock_map = {}
+        if cx_ing_needed:
+            cx_stocks = (StoreStock.objects
+                         .select_for_update()
+                         .filter(branch=branch, product_id__in=list(cx_ing_needed.keys()))
+                         .select_related("product"))
+            cx_stock_map = {s.product_id: s for s in cx_stocks}
+            for pid, needed in cx_ing_needed.items():
+                st = cx_stock_map.get(pid)
+                if (not st) or st.qty < needed:
+                    pname = st.product.name_ru if st else pid
+                    messages.error(request, _("Нет в наличии: %(name)s") % {"name": pname})
+                    return redirect("shops:cart_detail", branch_id=branch.id)
+
+        subtotal = cart["subtotal"] + cx_subtotal
         total = subtotal + delivery_fee
 
         # создаём заказ
@@ -480,6 +647,22 @@ def checkout(request, branch_id):
                 "line_total": line_total,
             })
 
+        # «Собери сам» — позиции заказа + списание ингредиентов со склада филиала
+        for cr in cx_rows:
+            StoreConstructorOrderItem.objects.create(
+                order=order, constructor_id=cr["cx_id"], constructor_name_snapshot=cr["cx_name"],
+                qty=cr["qty"], unit_price=cr["unit_price"], line_total=cr["line_total"],
+                ingredients_snapshot=cr["snapshot"],
+            )
+            items_payload.append({
+                "name": "🧩 " + cr["cx_name"] + (f" ({cr['summary']})" if cr["summary"] else ""),
+                "qty": cr["qty"],
+                "line_total": cr["line_total"],
+            })
+
+        for pid, needed in cx_ing_needed.items():
+            StoreStock.objects.filter(pk=cx_stock_map[pid].pk).update(qty=F("qty") - needed)
+
     # чистим корзину после успешного заказа
     clear_shop_cart(request, branch)
 
@@ -536,7 +719,7 @@ def _wa_digits(phone: str) -> str:
 def checkout_success(request, branch_id, order_id):
     order = (StoreOrder.objects
              .select_related("branch")
-             .prefetch_related("items__product")
+             .prefetch_related("items__product", "constructor_items")
              .get(pk=order_id, branch_id=branch_id))
 
     order_text = request.session.get("shop_last_order_text", "")
@@ -547,7 +730,13 @@ def checkout_success(request, branch_id, order_id):
     wa_phone2 = _wa_digits(order.branch.phone2)
     wa_url2 = f"https://wa.me/{wa_phone2}?text={quote(order_text)}" if wa_phone2 else ""
 
-    preview_items = list(order.items.all()[:2])
+    # Собираем краткий состав: обычные товары + «Собери сам» — в один список
+    all_lines = [{"name": it.product.name_ru, "qty": it.qty} for it in order.items.all()]
+    all_lines += [
+        {"name": "🧩 " + (coi.constructor_name_snapshot or "Собери сам"), "qty": coi.qty}
+        for coi in order.constructor_items.all()
+    ]
+    preview_items = all_lines[:2]
 
     return render(request, "shops/checkout_success.html", {
         "order": order,
@@ -555,4 +744,5 @@ def checkout_success(request, branch_id, order_id):
         "wa_url2": wa_url2,
         "order_text": order_text,
         "preview_items": preview_items,
+        "preview_more": len(all_lines) > 2,
     })

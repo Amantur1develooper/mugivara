@@ -109,11 +109,11 @@
     <div class="cs-preview">
       <div class="cs-preview-title">{% trans "Состав (кратко)" %}</div>
       {% for it in preview_items %}
-        <div class="cs-preview-line">• {% t it.product "name" %} × {{ it.qty|floatformat:"-3" }}</div>
+        <div class="cs-preview-line">• {{ it.name }} × {{ it.qty|floatformat:"-3" }}</div>
       {% empty %}
         <div class="cs-preview-line">—</div>
       {% endfor %}
-      {% if order.items.all|length > 2 %}
+      {% if preview_more %}
         <div class="cs-preview-line" style="color:var(--cs-muted)">…</div>
       {% endif %}
       <div class="cs-preview-total">{% trans "Итого" %}: {{ order.total|som }}</div>

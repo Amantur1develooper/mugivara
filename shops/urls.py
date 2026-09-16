@@ -16,7 +16,13 @@ urlpatterns = [
     path("b/<int:branch_id>/cart/add/<int:product_id>/", views.cart_add, name="cart_add"),
     path("b/<int:branch_id>/cart/update/<int:product_id>/", views.cart_update, name="cart_update"),
     path("b/<int:branch_id>/cart/remove/<int:product_id>/", views.cart_remove, name="cart_remove"),
-    
+
+    # «Собери сам» — корзина
+    path("b/<int:branch_id>/cx/add/<int:cx_id>/", views.cx_cart_add, name="cx_cart_add"),
+    path("b/<int:branch_id>/cx/update/<str:item_id>/", views.cx_cart_update, name="cx_cart_update"),
+    path("b/<int:branch_id>/cx/remove/<str:item_id>/", views.cx_cart_remove, name="cx_cart_remove"),
+
+
      path("b/<int:branch_id>/checkout/success/<int:order_id>/", views.checkout_success, name="checkout_success"),
 
     # checkout/success

@@ -358,6 +358,138 @@
     font-size:13px;
   }
 
+  /* ── «Собери сам» — баннер входа ── */
+  .sc-cx-banner{
+    display:flex; align-items:center; gap:16px;
+    padding:18px 22px;
+    margin-bottom:22px;
+    background:linear-gradient(135deg, var(--sc-dark), var(--sc-dark-2));
+    border-radius:20px;
+    cursor:pointer;
+    box-shadow:0 14px 34px rgba(13,17,23,.22);
+    transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .sc-cx-banner:hover{ transform:translateY(-2px); box-shadow:0 18px 44px rgba(13,17,23,.3); }
+  .sc-cx-banner-ico{
+    flex-shrink:0; width:52px; height:52px; border-radius:16px;
+    background:rgba(255,255,255,.1);
+    display:flex; align-items:center; justify-content:center;
+    font-size:26px;
+  }
+  .sc-cx-banner-text{ flex:1; min-width:0; }
+  .sc-cx-banner-title{
+    font-family:'Unbounded',sans-serif; font-weight:800; font-size:15px;
+    color:#fff; letter-spacing:-.3px;
+  }
+  .sc-cx-banner-sub{ font-size:12.5px; color:rgba(255,255,255,.62); margin-top:3px; line-height:1.4; }
+  .sc-cx-banner-arrow{
+    flex-shrink:0; width:34px; height:34px; border-radius:50%;
+    background:rgba(255,255,255,.12);
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:15px;
+    transition:transform .2s ease;
+  }
+  .sc-cx-banner:hover .sc-cx-banner-arrow{ transform:translateX(3px); }
+
+  /* ── «Собери сам» модалка ── */
+  .cxm-overlay{
+    position:fixed; inset:0; z-index:1200;
+    background:rgba(13,17,23,.5); backdrop-filter:blur(6px);
+    display:flex; align-items:flex-end; justify-content:center;
+    opacity:0; pointer-events:none; transition:opacity .22s ease;
+  }
+  .cxm-overlay.open{ opacity:1; pointer-events:auto; }
+  .cxm-box{
+    width:100%; max-width:560px; max-height:88vh;
+    background:var(--sc-card); border-radius:26px 26px 0 0;
+    display:flex; flex-direction:column; overflow:hidden;
+    transform:translateY(24px); transition:transform .28s cubic-bezier(.22,.68,0,1);
+  }
+  .cxm-overlay.open .cxm-box{ transform:translateY(0); }
+  @media (min-width:640px){
+    .cxm-overlay{ align-items:center; }
+    .cxm-box{ border-radius:26px; max-height:82vh; }
+  }
+  .cxm-head{
+    display:flex; align-items:center; gap:12px;
+    padding:18px 20px; border-bottom:1px solid var(--sc-border);
+    flex-shrink:0;
+  }
+  .cxm-title{ font-family:'Unbounded',sans-serif; font-weight:800; font-size:16px; color:var(--sc-text); flex:1; min-width:0; }
+  .cxm-close{
+    flex-shrink:0; width:32px; height:32px; border-radius:50%; border:none;
+    background:rgba(16,24,40,.06); color:var(--sc-muted); font-size:16px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .cxm-close:hover{ background:rgba(16,24,40,.1); color:var(--sc-text); }
+  .cxm-body{ overflow-y:auto; padding:18px 20px; flex:1; }
+
+  .cxm-pick-list{ display:flex; flex-direction:column; gap:10px; }
+  .cxm-pick-card{
+    display:flex; align-items:center; gap:14px;
+    padding:12px; border-radius:16px; border:1.5px solid var(--sc-border);
+    cursor:pointer; transition:border-color .15s, background .15s;
+  }
+  .cxm-pick-card:hover{ border-color:var(--sc-accent); background:rgba(255,106,26,.04); }
+  .cxm-pick-photo{
+    width:56px; height:56px; border-radius:12px; flex-shrink:0;
+    background:var(--sc-card-2); overflow:hidden;
+    display:flex; align-items:center; justify-content:center; font-size:22px;
+  }
+  .cxm-pick-photo img{ width:100%; height:100%; object-fit:cover; }
+  .cxm-pick-name{ font-weight:700; font-size:14px; color:var(--sc-text); }
+  .cxm-pick-base{ font-size:12px; color:var(--sc-muted); margin-top:2px; }
+  .cxm-pick-empty{ text-align:center; padding:32px 20px; color:var(--sc-muted); font-size:13px; }
+
+  .cxm-group{ margin-bottom:20px; }
+  .cxm-group-title{ font-weight:800; font-size:13.5px; color:var(--sc-text); }
+  .cxm-group-hint{ font-size:11.5px; color:var(--sc-muted); margin-top:2px; margin-bottom:10px; }
+  .cxm-ing-grid{ display:flex; flex-direction:column; gap:8px; }
+  .cxm-ing{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 12px; border-radius:14px; background:var(--sc-card-2);
+    border:1px solid var(--sc-border);
+  }
+  .cxm-ing-photo{
+    width:38px; height:38px; border-radius:10px; flex-shrink:0; overflow:hidden;
+    background:#fff; display:flex; align-items:center; justify-content:center; font-size:16px;
+  }
+  .cxm-ing-photo img{ width:100%; height:100%; object-fit:cover; }
+  .cxm-ing-info{ flex:1; min-width:0; }
+  .cxm-ing-name{ font-size:13px; font-weight:600; color:var(--sc-text); }
+  .cxm-ing-price{ font-size:11.5px; color:var(--sc-muted); margin-top:1px; }
+  .cxm-ing-qty{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .cxm-ing-qty-btn{
+    width:28px; height:28px; border-radius:50%; border:1.5px solid var(--sc-border-strong);
+    background:#fff; font-size:15px; font-weight:700; color:var(--sc-text); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .cxm-ing-qty-btn:active{ background:rgba(16,24,40,.06); }
+  .cxm-ing-qty-val{ min-width:18px; text-align:center; font-weight:800; font-size:14px; color:var(--sc-text); }
+  .cxm-ing.active{ border-color:var(--sc-accent); background:rgba(255,106,26,.05); }
+
+  .cxm-error{ font-size:12px; color:#dc2626; font-weight:600; margin-top:4px; min-height:16px; }
+  .cxm-foot{
+    display:flex; align-items:center; gap:14px;
+    padding:16px 20px; border-top:1px solid var(--sc-border); flex-shrink:0;
+  }
+  .cxm-total{ flex:1; }
+  .cxm-total-label{ font-size:11px; color:var(--sc-muted); }
+  .cxm-total-val{ font-family:'Unbounded',sans-serif; font-weight:900; font-size:19px; color:var(--sc-text); }
+  .cxm-add-btn{
+    padding:13px 24px; border-radius:14px; border:none;
+    background:linear-gradient(135deg, var(--sc-accent), var(--sc-accent-2));
+    color:#fff; font-weight:800; font-size:14px; cursor:pointer;
+    box-shadow:0 10px 26px var(--sc-glow);
+  }
+  .cxm-add-btn:disabled{ opacity:.5; cursor:default; }
+  .cxm-back-btn{
+    flex-shrink:0; width:32px; height:32px; border-radius:50%; border:none;
+    background:rgba(16,24,40,.06); color:var(--sc-muted); font-size:16px; cursor:pointer;
+    display:none; align-items:center; justify-content:center;
+  }
+  .cxm-back-btn.show{ display:flex; }
+
   /* ── Плавное появление секций при скролле (только если JS это включил) ── */
   .sc-content.sc-anim .sc-cat-section{
     opacity:0;
@@ -985,6 +1117,17 @@ const T = {
       <span>{% trans "Цены указаны по прайс-листу фирменных магазинов и могут отличаться в других точках продаж." %}</span>
     </div>
 
+    {% if has_constructors %}
+    <div class="sc-cx-banner" onclick="openCxPicker()">
+      <div class="sc-cx-banner-ico">🧩</div>
+      <div class="sc-cx-banner-text">
+        <div class="sc-cx-banner-title">{% trans "Собери сам" %}</div>
+        <div class="sc-cx-banner-sub">{% trans "Составьте свой букет или набор из отдельных цветов" %}</div>
+      </div>
+      <div class="sc-cx-banner-arrow">→</div>
+    </div>
+    {% endif %}
+
     {% if categories and stocks %}
       {% for c in categories %}
         <section class="sc-cat-section" id="cat-{{ c.id }}" data-cat-section="cat-{{ c.id }}">
@@ -1091,6 +1234,33 @@ const T = {
     </div>
   </div>
 </div>
+
+{% if has_constructors %}
+{# ── «Собери сам» модалка ── #}
+<div class="cxm-overlay" id="cxOverlay" onclick="if(event.target===this)closeCxModal()">
+  <div class="cxm-box">
+    <div class="cxm-head">
+      <button class="cxm-back-btn" id="cxBackBtn" onclick="openCxPicker()" aria-label="{% trans 'Назад' %}">←</button>
+      <div class="cxm-title" id="cxTitle">🧩 {% trans "Собери сам" %}</div>
+      <button class="cxm-close" onclick="closeCxModal()" aria-label="{% trans 'Закрыть' %}">✕</button>
+    </div>
+    <div class="cxm-body">
+      <div class="cxm-pick-list" id="cxPickList"></div>
+      <div id="cxBody" style="display:none"></div>
+    </div>
+    <div class="cxm-foot" id="cxFoot" style="display:none">
+      <div class="cxm-total">
+        <div class="cxm-total-label">{% trans "Итого" %}</div>
+        <div class="cxm-total-val"><span id="cxTotal">0</span> {% cur %}</div>
+        <div class="cxm-error" id="cxError"></div>
+      </div>
+      <button class="cxm-add-btn" id="cxAddBtn" onclick="cxAddToCart()">{% trans "В корзину" %}</button>
+    </div>
+  </div>
+</div>
+<div id="cxDataEl" data-json="{{ constructors_json|escape }}" style="display:none"></div>
+<div id="cxAddUrl" data-url="{% url 'shops:cx_cart_add' branch.id 0 %}" style="display:none"></div>
+{% endif %}
 
 {# URL template for cart_add — replace 0 with product id in JS #}
 <div id="scCartAddUrl" data-url="{% url 'shops:cart_add' branch.id 0 %}" style="display:none"></div>
@@ -1461,5 +1631,166 @@ const T = {
     const origToggle = toggleScCatsDropdown;
     window.toggleScCatsDropdown = function() { recalc(); origToggle(); };
   })();
+
+  /* ── «Собери сам» ─────────────────────────────────────────────────────── */
+  const CX_DATA = (() => {
+    const el = document.getElementById('cxDataEl');
+    if (!el) return {};
+    try { return JSON.parse(el.dataset.json || '{}'); } catch (e) { return {}; }
+  })();
+
+  let _cxId = null, _cxSel = {};
+
+  function openCxPicker() {
+    const overlay = document.getElementById('cxOverlay');
+    if (!overlay) return;
+    document.getElementById('cxBackBtn').classList.remove('show');
+    document.getElementById('cxTitle').textContent = '🧩 ' + "{% trans 'Собери сам' %}";
+    document.getElementById('cxPickList').style.display = '';
+    document.getElementById('cxBody').style.display = 'none';
+    document.getElementById('cxFoot').style.display = 'none';
+    document.getElementById('cxError').textContent = '';
+    _cxId = null;
+
+    const ready = Object.values(CX_DATA).filter(cx => cx.ready);
+    document.getElementById('cxPickList').innerHTML = ready.length
+      ? ready.map(cx => `
+        <div class="cxm-pick-card" onclick="openCxBuilder(${cx.id})">
+          <div class="cxm-pick-photo">${cx.photo ? `<img src="${cx.photo}" alt="">` : '🧩'}</div>
+          <div>
+            <div class="cxm-pick-name">${escH(cx.name)}</div>
+            <div class="cxm-pick-base">${"{% trans 'от' %}"} ${cx.base_price} ${CUR}</div>
+          </div>
+        </div>`).join('')
+      : `<div class="cxm-pick-empty">${"{% trans 'Пока нет доступных наборов' %}"}</div>`;
+
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeCxModal() {
+    document.getElementById('cxOverlay')?.classList.remove('open');
+    document.body.style.overflow = '';
+    _cxId = null;
+  }
+
+  function openCxBuilder(cxId) {
+    const cx = CX_DATA[cxId];
+    if (!cx || !cx.ready) return;
+    _cxId = cxId;
+    _cxSel = {};
+    cx.groups.forEach(g => { _cxSel[g.id] = {}; });
+
+    document.getElementById('cxBackBtn').classList.add('show');
+    document.getElementById('cxTitle').textContent = '🧩 ' + cx.name;
+    document.getElementById('cxPickList').style.display = 'none';
+    document.getElementById('cxFoot').style.display = 'flex';
+    document.getElementById('cxError').textContent = '';
+
+    const body = document.getElementById('cxBody');
+    body.style.display = '';
+    body.innerHTML = cx.groups.map(g => {
+      const maxTxt = g.max > 0 ? ` ({% trans "макс." %} ${g.max})` : '';
+      const reqTxt = g.min > 0 ? `{% trans "Минимум" %} ${g.min}${maxTxt}` : `{% trans "Необязательно" %}${maxTxt}`;
+      const ingsHtml = g.ingredients.map(ing => `
+        <div class="cxm-ing" id="cxIng-${ing.id}">
+          <div class="cxm-ing-photo">${ing.photo ? `<img src="${ing.photo}" alt="">` : '🌸'}</div>
+          <div class="cxm-ing-info">
+            <div class="cxm-ing-name">${escH(ing.name)}</div>
+            <div class="cxm-ing-price">+${ing.price} ${CUR}</div>
+          </div>
+          <div class="cxm-ing-qty">
+            <button class="cxm-ing-qty-btn" type="button" onclick="cxChangeQty(${g.id},${ing.id},-1,${g.max})">−</button>
+            <div class="cxm-ing-qty-val" id="cxQtyVal-${ing.id}">0</div>
+            <button class="cxm-ing-qty-btn" type="button" onclick="cxChangeQty(${g.id},${ing.id},1,${g.max})">+</button>
+          </div>
+        </div>`).join('');
+      return `
+        <div class="cxm-group">
+          <div class="cxm-group-title">${escH(g.name)}</div>
+          <div class="cxm-group-hint">${reqTxt}</div>
+          <div class="cxm-ing-grid">${ingsHtml}</div>
+        </div>`;
+    }).join('');
+
+    cxUpdateTotal();
+  }
+
+  function cxChangeQty(gid, ingId, delta, max) {
+    const map = _cxSel[gid];
+    const cur = map[ingId] || 0;
+    let nq = cur + delta;
+    if (nq < 0) nq = 0;
+    if (nq > 0) {
+      const groupTotal = Object.entries(map).reduce((a, [k, v]) => a + (parseInt(k) === ingId ? 0 : v), 0);
+      if (max > 0 && groupTotal + nq > max) {
+        document.getElementById('cxError').textContent = `{% trans "Максимум" %} ${max} {% trans "в этой группе" %}`;
+        return;
+      }
+    }
+    if (nq === 0) delete map[ingId]; else map[ingId] = nq;
+    document.getElementById('cxError').textContent = '';
+    document.getElementById(`cxQtyVal-${ingId}`).textContent = nq;
+    document.getElementById(`cxIng-${ingId}`)?.classList.toggle('active', nq > 0);
+    cxUpdateTotal();
+  }
+
+  function cxUpdateTotal() {
+    const cx = CX_DATA[_cxId];
+    if (!cx) return;
+    let total = parseFloat(cx.base_price) || 0;
+    cx.groups.forEach(g => {
+      const map = _cxSel[g.id] || {};
+      g.ingredients.forEach(ing => { total += (map[ing.id] || 0) * parseFloat(ing.price); });
+    });
+    document.getElementById('cxTotal').textContent = total.toLocaleString();
+  }
+
+  async function cxAddToCart() {
+    const cx = CX_DATA[_cxId];
+    if (!cx) return;
+    for (const g of cx.groups) {
+      const total = Object.values(_cxSel[g.id] || {}).reduce((a, b) => a + b, 0);
+      if (g.min > 0 && total < g.min) {
+        document.getElementById('cxError').textContent = `{% trans "Выберите минимум" %} ${g.min} {% trans "в" %} «${escH(g.name)}»`;
+        return;
+      }
+    }
+    const btn = document.getElementById('cxAddBtn');
+    btn.disabled = true;
+    const prevText = btn.textContent;
+    btn.textContent = '...';
+    try {
+      const baseUrl = document.getElementById('cxAddUrl').dataset.url;
+      const url = baseUrl.replace('/0/', '/' + _cxId + '/');
+      const fd = new FormData();
+      fd.append('qty', '1');
+      fd.append('selections', JSON.stringify(_cxSel));
+      const csrf = document.getElementById('scCsrfToken').dataset.token;
+      const resp = await fetch(url, {
+        method: 'POST', body: fd,
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrf },
+      });
+      const data = await resp.json();
+      if (data.ok) {
+        updateCartUI(data.qty_total, data.total);
+        showToast(T.added, true);
+        closeCxModal();
+      } else if (data.error === 'validation') {
+        document.getElementById('cxError').textContent = data.message || T.addFail;
+      } else {
+        showToast(T.addFail, false);
+      }
+    } catch (e) {
+      showToast(T.errNet, false);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = prevText;
+    }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeCxModal();
+  });
 </script>
 {% endblock %}

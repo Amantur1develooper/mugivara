@@ -316,6 +316,37 @@
           </div>
         </div>
       {% endfor %}
+
+      {% for r in cx_rows %}
+        <div class="cc-item"
+             data-row="cx-{{ r.item_id }}"
+             data-update-url="{% url 'shops:cx_cart_update' branch.id r.item_id %}">
+
+          <div class="cc-item-media">
+            {% if r.photo %}<img src="{{ r.photo }}" alt="{{ r.cx_name }}">{% else %}🧩{% endif %}
+          </div>
+
+          <div class="cc-item-info">
+            <div class="cc-item-name">🧩 {{ r.cx_name }}</div>
+            {% if r.summary %}<div class="cc-item-stock">{{ r.summary }}</div>{% endif %}
+            <div class="cc-item-price">
+              {{ r.unit_price|floatformat:"0" }} {% trans "сом" %}
+              <span style="opacity:.5">•</span>
+              <b><span data-line-total>{{ r.line_total|floatformat:"0" }}</span> {% trans "сом" %}</b>
+            </div>
+          </div>
+
+          <div class="cc-item-actions">
+            <div class="cc-qty">
+              <button type="button" class="cc-qty-btn" data-dec aria-label="{% trans 'Меньше' %}">−</button>
+              <input type="number" min="0" value="{{ r.qty }}" step="1"
+                     class="cc-qty-input" data-qty-input>
+              <button type="button" class="cc-qty-btn" data-inc aria-label="{% trans 'Больше' %}">+</button>
+            </div>
+            <button type="button" class="cc-remove-btn" data-remove title="{% trans 'Удалить' %}">✕</button>
+          </div>
+        </div>
+      {% endfor %}
     </div>
 
     <!-- Sidebar: summary + checkout -->

@@ -1,4 +1,5 @@
 # shops/cart.py
+import uuid
 from decimal import Decimal, InvalidOperation
 from typing import Dict, Any, List
 
@@ -60,6 +61,46 @@ def save_cart(request, branch_id: int, cart: Dict[str, str]) -> None:
 
 def clear_shop_cart(request, branch) -> None:
     request.session.pop(_cart_key(branch.id), None)
+    clear_cx_cart(request, branch.id)
+    request.session.modified = True
+
+
+# ---------- CX CART (session): «Собери сам» в публичной витрине ----------
+# Храним только «сырые» данные выбора клиента (id конструктора + что выбрал) —
+# цену и состав всегда пересчитываем на сервере из актуальных данных
+# конструктора (constructor_utils.resolve_cx_item), клиенту не доверяем.
+
+def _cx_cart_key(branch_id: int) -> str:
+    return f"shops_cxcart_{branch_id}"
+
+
+def get_cx_cart(request, branch_id: int) -> List[Dict[str, Any]]:
+    data = request.session.get(_cx_cart_key(branch_id), [])
+    if not isinstance(data, list):
+        return []
+    cleaned: List[Dict[str, Any]] = []
+    for it in data:
+        if not isinstance(it, dict):
+            continue
+        try:
+            cleaned.append({
+                "item_id": str(it.get("item_id") or uuid.uuid4().hex[:10]),
+                "cx_id": int(it["cx_id"]),
+                "qty": max(1, int(it.get("qty", 1))),
+                "selections": it.get("selections") or {},
+            })
+        except Exception:
+            continue
+    return cleaned
+
+
+def save_cx_cart(request, branch_id: int, items: List[Dict[str, Any]]) -> None:
+    request.session[_cx_cart_key(branch_id)] = items
+    request.session.modified = True
+
+
+def clear_cx_cart(request, branch_id: int) -> None:
+    request.session.pop(_cx_cart_key(branch_id), None)
     request.session.modified = True
 
 

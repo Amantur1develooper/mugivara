@@ -45,7 +45,7 @@ def notify_new_shop_order(order_id: int):
         order = (
             StoreOrder.objects
             .select_related("branch", "branch__store")
-            .prefetch_related("items__product")
+            .prefetch_related("items__product", "constructor_items")
             .get(pk=order_id)
         )
     except StoreOrder.DoesNotExist:
@@ -85,6 +85,17 @@ def notify_new_shop_order(order_id: int):
             line_total = (it.price or 0) * (it.qty or 0)
 
         lines.append(f"• {pname} × {it.qty} = {_money(line_total)} сом")
+
+    for coi in order.constructor_items.all():
+        cname = coi.constructor_name_snapshot or "Собери сам"
+        ing_names = []
+        for g in (coi.ingredients_snapshot or []):
+            for ing in g.get("ings", []):
+                q = ing.get("qty", 1)
+                nm = ing.get("name", "")
+                ing_names.append(f"{nm} ×{q}" if q and q != 1 else nm)
+        summary = ", ".join(ing_names)
+        lines.append(f"• 🧩 {cname} × {coi.qty} = {_money(coi.line_total)} сом" + (f" ({summary})" if summary else ""))
 
     if getattr(order, "total", None) is not None:
         lines.append("")
