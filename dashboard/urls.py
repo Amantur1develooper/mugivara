@@ -116,6 +116,7 @@ urlpatterns = [
     path("shops/stock/<int:stock_id>/edit/",                sv.shop_product_edit,     name="shop_product_edit"),
     path("shops/stock/<int:stock_id>/delete/",              sv.shop_product_delete,   name="shop_product_delete"),
     path("shops/stock/<int:stock_id>/toggle/",              sv.shop_product_toggle,   name="shop_product_toggle"),
+    path("shops/stock/<int:stock_id>/sell-toggle/",         sv.shop_product_sell_toggle, name="shop_product_sell_toggle"),
     path("shops/branch/<int:branch_id>/categories/",         sv.shop_category_list,    name="shop_category_list"),
     path("shops/branch/<int:branch_id>/category/add/",      sv.shop_category_add,     name="shop_category_add"),
     path("shops/category/<int:category_id>/rename/",        sv.shop_category_rename,  name="shop_category_rename"),

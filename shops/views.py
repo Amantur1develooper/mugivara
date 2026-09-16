@@ -113,19 +113,21 @@ def _branch_catalog(request, branch: StoreBranch):
 
     stocks = (
         StoreStock.objects
-        .filter(branch=branch, product__is_active=True)
+        .filter(branch=branch, product__is_active=True, product__sell_direct=True)
         .select_related("product", "product__category")
         .order_by("product__category__sort_order", "product__id")
     )
 
-    # Показываем только те категории, в которых у этого филиала реально есть товары —
-    # пустые категории (без единого товара на складе филиала) не должны отображаться.
+    # Показываем только те категории, в которых у этого филиала реально есть товары
+    # в прямой продаже — пустые категории и товары «только для Собери сам»
+    # (product__sell_direct=False, например лента/упаковка) в витрине не показываются.
     categories = (
         store.categories
-        .filter(is_active=True, products__is_active=True, products__stocks__branch=branch)
+        .filter(is_active=True, products__is_active=True, products__sell_direct=True,
+                products__stocks__branch=branch)
         .annotate(branch_products_count=Count(
             "products",
-            filter=Q(products__is_active=True, products__stocks__branch=branch),
+            filter=Q(products__is_active=True, products__sell_direct=True, products__stocks__branch=branch),
             distinct=True,
         ))
         .distinct()
@@ -215,7 +217,10 @@ def cart_detail(request, branch_id):
 
 def cart_add(request, branch_id, product_id):
     branch = get_object_or_404(StoreBranch, id=branch_id, is_active=True)
-    stock = get_object_or_404(StoreStock, branch=branch, product_id=product_id, product__is_active=True)
+    stock = get_object_or_404(
+        StoreStock, branch=branch, product_id=product_id,
+        product__is_active=True, product__sell_direct=True,
+    )
 
     qty = dec(request.POST.get("qty") or "1")
     if qty <= 0:
@@ -251,7 +256,10 @@ def cart_add(request, branch_id, product_id):
 
 def cart_update(request, branch_id, product_id):
     branch = get_object_or_404(StoreBranch, id=branch_id, is_active=True)
-    stock = get_object_or_404(StoreStock, branch=branch, product_id=product_id, product__is_active=True)
+    stock = get_object_or_404(
+        StoreStock, branch=branch, product_id=product_id,
+        product__is_active=True, product__sell_direct=True,
+    )
 
     qty = dec(request.POST.get("qty") or "0")
     cart = get_cart(request, branch_id)
@@ -399,7 +407,7 @@ def checkout(request, branch_id):
         # проверка наличия
         for r in rows:
             st = stock_map.get(r["product_id"])
-            if (not st) or st.is_stopped or (int(st.qty) < int(r["qty"])):
+            if (not st) or st.is_stopped or (not st.product.sell_direct) or (int(st.qty) < int(r["qty"])):
                 messages.error(request, _("Нет в наличии: %(name)s") % {"name": r['product'].name_ru})
                 return redirect("shops:cart_detail", branch_id=branch.id)
 

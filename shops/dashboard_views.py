@@ -218,7 +218,9 @@ def shop_stop_list(request, branch_id):
 
     stocks = (
         StoreStock.objects
-        .filter(branch=branch)
+        # товары «только для Собери сам» (sell_direct=False) тут не нужны —
+        # они и так не продаются напрямую, стоп-лист для них не имеет смысла.
+        .filter(branch=branch, product__sell_direct=True)
         .select_related("product", "product__category")
         .order_by("product__category__sort_order", "product__id")
     )
@@ -437,6 +439,20 @@ def shop_product_toggle(request, stock_id):
     p.is_active = not p.is_active
     p.save(update_fields=["is_active"])
     return JsonResponse({"ok": True, "is_active": p.is_active})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_product_sell_toggle(request, stock_id):
+    """Вкл/выкл «продаётся отдельно» — выключенный товар пропадает из витрины
+    и обычной сетки кассы, но остаётся доступен как ингредиент в «Собери сам»."""
+    stock = get_object_or_404(StoreStock, id=stock_id)
+    if not _has_branch_access(request.user, stock.branch):
+        return JsonResponse({"ok": False}, status=403)
+    p = stock.product
+    p.sell_direct = not p.sell_direct
+    p.save(update_fields=["sell_direct"])
+    return JsonResponse({"ok": True, "sell_direct": p.sell_direct})
 
 
 # ── ОТДЕЛЬНЫЙ СКЛАД СЕТИ (не привязан к филиалу) ─────────────────────────────
@@ -1033,7 +1049,9 @@ def shop_pos(request, branch_id):
     categories = list(branch.store.categories.filter(is_active=True).order_by("sort_order", "id"))
     stocks = (
         StoreStock.objects
-        .filter(branch=branch, product__is_active=True)
+        # sell_direct=False — товар только для «Собери сам» (лента, упаковка и т.п.),
+        # в обычной сетке кассы для прямой продажи не показывается.
+        .filter(branch=branch, product__is_active=True, product__sell_direct=True)
         .select_related("product", "product__category")
         .order_by("product__category__sort_order", "product__id")
     )
@@ -1093,7 +1111,7 @@ def shop_pos_order_create(request, branch_id):
             stock = StoreStock.objects.select_related("product").get(
                 id=int(it["stock_id"]), branch=branch, product__is_active=True
             )
-            if stock.is_stopped:
+            if stock.is_stopped or not stock.product.sell_direct:
                 continue
             qty = max(Decimal("1"), Decimal(str(it.get("qty", 1))))
             price = stock.product.price

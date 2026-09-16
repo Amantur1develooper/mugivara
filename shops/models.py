@@ -181,6 +181,11 @@ class StoreProduct(models.Model):
     barcode = models.CharField("Штрих-код", max_length=64, blank=True, default="")
 
     is_active = models.BooleanField(default=True)
+    sell_direct = models.BooleanField(
+        "Продаётся отдельно", default=True,
+        help_text="Если выключено — товар не показывается в витрине и в обычной сетке кассы, "
+                   "но остаётся доступен как ингредиент в «Собери сам» (например лента, упаковка).",
+    )
 
     def save(self, *args, **kwargs):
         result = _compress(self.photo)
