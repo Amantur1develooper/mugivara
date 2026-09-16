@@ -221,6 +221,9 @@ def cart_add(request, branch_id, product_id):
     if qty <= 0:
         return JsonResponse({"ok": False, "error": "qty"})
 
+    if stock.is_stopped:
+        return JsonResponse({"ok": False, "error": "stopped"})
+
     cart = get_cart(request, branch_id)
     current = dec(cart.get(str(product_id), "0"))
     new_qty = current + qty
@@ -256,6 +259,8 @@ def cart_update(request, branch_id, product_id):
     if qty <= 0:
         cart.pop(str(product_id), None)
     else:
+        if stock.is_stopped:
+            return JsonResponse({"ok": False, "error": "stopped"})
         if qty > stock.qty:
             payload = {"ok": False, "error": "not_enough"}
             if branch.show_stock_qty:
@@ -394,7 +399,7 @@ def checkout(request, branch_id):
         # проверка наличия
         for r in rows:
             st = stock_map.get(r["product_id"])
-            if (not st) or (int(st.qty) < int(r["qty"])):
+            if (not st) or st.is_stopped or (int(st.qty) < int(r["qty"])):
                 messages.error(request, _("Нет в наличии: %(name)s") % {"name": r['product'].name_ru})
                 return redirect("shops:cart_detail", branch_id=branch.id)
 

@@ -206,6 +206,43 @@ def shop_product_list(request, branch_id):
     })
 
 
+# ── СТОП-ЛИСТ ────────────────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def shop_stop_list(request, branch_id):
+    """Быстрый список товаров филиала с переключателем «стоп» — временно
+    не продавать, не трогая остаток на складе."""
+    branch = get_object_or_404(StoreBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:shop_home")
+
+    stocks = (
+        StoreStock.objects
+        .filter(branch=branch)
+        .select_related("product", "product__category")
+        .order_by("product__category__sort_order", "product__id")
+    )
+    stopped_count = sum(1 for s in stocks if s.is_stopped)
+
+    return render(request, "dashboard/shops/stop_list.html", {
+        "branch": branch,
+        "store": branch.store,
+        "stocks": stocks,
+        "stopped_count": stopped_count,
+    })
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_stop_toggle(request, stock_id):
+    stock = get_object_or_404(StoreStock, id=stock_id)
+    if not _has_branch_access(request.user, stock.branch):
+        return JsonResponse({"ok": False}, status=403)
+    stock.is_stopped = not stock.is_stopped
+    stock.save(update_fields=["is_stopped"])
+    return JsonResponse({"ok": True, "is_stopped": stock.is_stopped})
+
+
 @require_POST
 @login_required(login_url=LOGIN_URL)
 def shop_stock_update(request, stock_id):
@@ -974,11 +1011,15 @@ def _constructors_json(store):
                 "min": g.min_select, "max": g.max_select,
                 "ingredients": ings,
             })
+        # Готов ли конструктор к продаже: у каждой группы с обязательным выбором
+        # должно быть достаточно товаров, иначе покупатель не сможет его оформить.
+        is_ready = all(g["min"] <= 0 or len(g["ingredients"]) >= g["min"] for g in groups)
         data[cx.id] = {
             "id": cx.id, "name": cx.name,
             "base_price": _fmt(cx.base_price),
             "photo": cx.photo.url if cx.photo else "",
             "groups": groups,
+            "ready": is_ready,
         }
     return _j.dumps(data, ensure_ascii=False)
 
@@ -1052,6 +1093,8 @@ def shop_pos_order_create(request, branch_id):
             stock = StoreStock.objects.select_related("product").get(
                 id=int(it["stock_id"]), branch=branch, product__is_active=True
             )
+            if stock.is_stopped:
+                continue
             qty = max(Decimal("1"), Decimal(str(it.get("qty", 1))))
             price = stock.product.price
             line = price * qty

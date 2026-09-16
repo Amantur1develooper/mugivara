@@ -1,0 +1,181 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Стоп-лист — {{ branch.name_ru }}{% endblock %}
+{% block nav_shops %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+.sl-wrap { max-width: 820px; }
+
+.sl-hint {
+  background: rgba(255,59,48,.06); border: 1px solid rgba(255,59,48,.15);
+  border-radius: 14px; padding: 12px 16px; margin-bottom: 18px;
+  font-size: 13px; color: var(--text2); line-height: 1.5;
+}
+
+.sl-search {
+  width: 100%; padding: 11px 16px; border-radius: 14px;
+  border: 1.5px solid var(--border); background: var(--card);
+  color: var(--text); font-size: 14px; font-family: inherit;
+  outline: none; margin-bottom: 16px; box-sizing: border-box;
+  transition: border-color .15s;
+}
+.sl-search:focus { border-color: var(--accent); }
+
+.sl-list {
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 18px; overflow: hidden;
+}
+.sl-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 13px 16px; border-bottom: 1px solid var(--border);
+  transition: background .15s;
+}
+.sl-row:last-child { border-bottom: none; }
+.sl-row.is-stopped { background: rgba(255,59,48,.04); }
+
+.sl-photo {
+  width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+  background: var(--bg); object-fit: cover; overflow: hidden;
+  display: flex; align-items: center; justify-content: center; font-size: 16px;
+}
+.sl-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.sl-info { flex: 1; min-width: 0; }
+.sl-name { font-size: 13.5px; font-weight: 700; color: var(--text); }
+.sl-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.sl-badge {
+  font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 7px;
+  flex-shrink: 0; white-space: nowrap;
+}
+.sl-badge.stopped { background: rgba(255,59,48,.1); color: #ff3b30; }
+.sl-badge.ok { background: rgba(0,184,150,.1); color: var(--teal); }
+
+/* toggle switch */
+.sl-switch {
+  position: relative; width: 46px; height: 26px; flex-shrink: 0;
+  border-radius: 999px; border: none; cursor: pointer;
+  background: rgba(0,184,150,.25); transition: background .2s;
+}
+.sl-switch::after {
+  content: ""; position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px; border-radius: 50%; background: var(--teal);
+  transition: transform .2s;
+}
+.sl-switch.stopped { background: rgba(255,59,48,.18); }
+.sl-switch.stopped::after { background: #ff3b30; transform: translateX(20px); }
+.sl-switch:disabled { opacity: .5; cursor: default; }
+
+.sl-empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 14px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">🛑 Стоп-лист</div>
+    <div class="db-breadcrumb">{{ store.name_ru }} — {{ branch.name_ru }}</div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <a href="{% url 'dashboard:shop_product_list' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📦 Товары</a>
+    <a href="{% url 'dashboard:shop_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
+  </div>
+</div>
+
+<div class="sl-wrap">
+  <div class="sl-hint">
+    Включите тумблер у товара, если его нужно временно снять с продажи — на сайте и в кассе он
+    сразу покажется как «Нет в наличии», а остаток на складе при этом не изменится. Выключите
+    тумблер, когда товар снова можно продавать.
+    {% if stopped_count %}<br><b>Сейчас в стоп-листе: {{ stopped_count }}</b>{% endif %}
+  </div>
+
+  <input type="text" class="sl-search" id="slSearch" placeholder="Поиск по названию...">
+
+  <div class="sl-list" id="slList">
+    {% for s in stocks %}
+    <div class="sl-row {% if s.is_stopped %}is-stopped{% endif %}" data-name="{{ s.product.name_ru|lower }}">
+      <div class="sl-photo">
+        {% if s.product.photo %}<img src="{{ s.product.photo.url }}" alt=""> {% else %}🛍️{% endif %}
+      </div>
+      <div class="sl-info">
+        <div class="sl-name">{{ s.product.name_ru }}</div>
+        <div class="sl-meta">
+          {% if s.product.category %}{{ s.product.category.name_ru }} · {% endif %}
+          Остаток: {{ s.qty|floatformat:"-3" }}
+        </div>
+      </div>
+      <span class="sl-badge {% if s.is_stopped %}stopped{% else %}ok{% endif %}" id="sl-badge-{{ s.id }}">
+        {% if s.is_stopped %}Стоп{% else %}Продаётся{% endif %}
+      </span>
+      <button class="sl-switch {% if s.is_stopped %}stopped{% endif %}" id="sl-switch-{{ s.id }}"
+              onclick="toggleStop({{ s.id }})" aria-label="Стоп-лист"></button>
+    </div>
+    {% empty %}
+    <div class="sl-empty">В этом филиале пока нет товаров.</div>
+    {% endfor %}
+  </div>
+  <div class="sl-empty" id="slNoResults" style="display:none">Ничего не найдено.</div>
+</div>
+
+<div class="sl-toast" id="slToast" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:rgba(16,185,129,.95);color:#fff;padding:10px 22px;border-radius:12px;font-size:13px;font-weight:700;
+  opacity:0;transition:all .22s ease;pointer-events:none;z-index:9999;white-space:nowrap"></div>
+
+<div id="slUrls" style="display:none" data-toggle="{% url 'dashboard:shop_stop_toggle' 0 %}"></div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+const CSRF = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
+const WU = document.getElementById('slUrls').dataset;
+function sUrl(tmpl, id) { return tmpl.replace('/0/', `/${id}/`); }
+
+let _toastTimer;
+function toast(msg) {
+  const el = document.getElementById('slToast');
+  el.textContent = msg;
+  el.style.opacity = '1';
+  el.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(-50%) translateY(20px)';
+  }, 1600);
+}
+
+async function toggleStop(stockId) {
+  const btn = document.getElementById(`sl-switch-${stockId}`);
+  const badge = document.getElementById(`sl-badge-${stockId}`);
+  const row = btn.closest('.sl-row');
+  btn.disabled = true;
+  try {
+    const r = await fetch(sUrl(WU.toggle, stockId), {
+      method: 'POST', headers: { 'X-CSRFToken': CSRF },
+    });
+    const d = await r.json();
+    if (!d.ok) { alert(d.error || 'Ошибка'); return; }
+    btn.classList.toggle('stopped', d.is_stopped);
+    row.classList.toggle('is-stopped', d.is_stopped);
+    badge.textContent = d.is_stopped ? 'Стоп' : 'Продаётся';
+    badge.className = `sl-badge ${d.is_stopped ? 'stopped' : 'ok'}`;
+    toast(d.is_stopped ? '🛑 Добавлено в стоп-лист' : '✓ Снято со стоп-листа');
+  } catch (e) {
+    alert('Ошибка сети');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('slSearch').addEventListener('input', (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  let visible = 0;
+  document.querySelectorAll('#slList .sl-row').forEach(row => {
+    const match = row.dataset.name.includes(q);
+    row.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  document.getElementById('slNoResults').style.display = (visible === 0 && q) ? '' : 'none';
+});
+</script>
+{% endblock %}

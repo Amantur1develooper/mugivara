@@ -881,6 +881,7 @@ const T = {
   added: "{% trans 'Добавлено в корзину' %}",
   addedShort: "{% trans '✓ Добавлено' %}",
   notEnough: "{% trans 'Недостаточно товара' %}",
+  stopped: "{% trans 'Товар временно не продаётся' %}",
   addFail: "{% trans 'Не удалось добавить' %}",
   errNet: "{% trans 'Ошибка сети' %}",
   inStock: "{% trans 'В наличии:' %}",
@@ -1005,7 +1006,7 @@ const T = {
                   data-unit="{{ s.product.get_unit_display }}"
                   data-cat="{% t c 'name' %}"
                   data-photo="{% if s.product.photo %}{{ s.product.photo.url }}{% endif %}"
-                  data-in-stock="{% if s.qty > 0 %}1{% else %}0{% endif %}">
+                  data-in-stock="{% if s.qty > 0 and not s.is_stopped %}1{% else %}0{% endif %}">
                   <div class="sc-card-media" onclick="openProductModal(this.closest('.sc-card'))">
                     {% if s.product.photo %}
                       <img src="{{ s.product.photo.url }}" alt="{% t s.product 'name' %}" loading="lazy" decoding="async">
@@ -1013,7 +1014,7 @@ const T = {
                       <div class="sc-card-placeholder">🛍️</div>
                     {% endif %}
                     <div class="sc-media-grad"></div>
-                    {% if s.qty <= 0 %}
+                    {% if s.qty <= 0 or s.is_stopped %}
                     <span class="sc-stock-badge out">{% trans "Нет в наличии" %}</span>
                     {% elif branch.show_stock_qty %}
                     <span class="sc-stock-badge">{% trans "Есть" %}: {{ s.qty|floatformat:"-3" }}</span>
@@ -1036,14 +1037,14 @@ const T = {
 
                     <div class="sc-card-footer">
                       <div class="sc-price-wrap">
-                        {% if s.qty <= 0 %}
+                        {% if s.qty <= 0 or s.is_stopped %}
                         <div class="sc-stock-note">{% trans "Нет в наличии" %}</div>
                         {% elif branch.show_stock_qty %}
                         <div class="sc-stock-note">{% trans "В наличии" %}: <b>{{ s.qty|floatformat:"-3" }}</b>{% if s.product.unit %} {{ s.product.unit }}{% endif %}</div>
                         {% endif %}
                       </div>
 
-                      {% if s.qty > 0 %}
+                      {% if s.qty > 0 and not s.is_stopped %}
                         <form action="{% url 'shops:cart_add' branch.id s.product.id %}" method="post" data-add-to-cart>
                           {% csrf_token %}
                           <input type="hidden" name="qty" value="1">
@@ -1190,6 +1191,8 @@ const T = {
           }, 850);
         }
         showToast(T.added, true);
+      } else if (data.error === 'stopped') {
+        showToast(T.stopped, false);
       } else if (data.error === 'not_enough') {
         showToast(T.notEnough, false);
         if (btn) {
@@ -1316,6 +1319,8 @@ const T = {
           btn.textContent = T.addCartAlt;
           btn.classList.remove('pulse');
         }, 1200);
+      } else if (data.error === 'stopped') {
+        showToast(T.stopped, false);
       } else if (data.error === 'not_enough') {
         showToast(T.notEnough, false);
         btn.classList.remove('loading');

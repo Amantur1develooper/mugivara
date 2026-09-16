@@ -209,9 +209,18 @@ class StoreStock(models.Model):
     branch = models.ForeignKey(StoreBranch, on_delete=models.CASCADE, related_name="stocks")
     product = models.ForeignKey(StoreProduct, on_delete=models.CASCADE, related_name="stocks")
     qty = models.DecimalField(max_digits=12, decimal_places=3, default=0)  # 1.000, 0.500 и т.д.
+    is_stopped = models.BooleanField(
+        "Стоп-лист", default=False,
+        help_text="Временно не продаётся в этом филиале (стоп-лист) — остаток при этом не обнуляется.",
+    )
 
     class Meta:
         unique_together = ("branch", "product")
+
+    @property
+    def is_orderable(self):
+        """Можно ли купить товар прямо сейчас: есть остаток и не в стоп-листе."""
+        return self.qty > 0 and not self.is_stopped
 
     def __str__(self):
         return f"{self.branch}: {self.product} = {self.qty}"

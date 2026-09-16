@@ -425,6 +425,7 @@
   const T = {
     notEnough: "{% trans 'Недостаточно товара' %}",
     notEnoughAvail: "{% trans 'Недостаточно товара. Доступно:' %}",
+    stopped: "{% trans 'Товар временно не продаётся' %}",
   };
 
   // ── Минимальная сумма заказа для доставки ──────────────────────────────────
@@ -503,7 +504,9 @@
     try{
       const data = await postQty(url, qty);
       if (!data.ok){
-        if (data.error === "not_enough"){
+        if (data.error === "stopped"){
+          alert(T.stopped);
+        } else if (data.error === "not_enough"){
           alert(SHOW_STOCK_QTY ? (T.notEnoughAvail + " " + (data.available || "")) : T.notEnough);
         }
         return;

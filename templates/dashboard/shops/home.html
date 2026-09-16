@@ -71,7 +71,7 @@
         </div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <a href="{% url 'dashboard:shop_warehouse' item.store.id %}" class="db-btn db-btn-ghost db-btn-sm">📦 Склад</a>
+        <a href="{% url 'dashboard:shop_warehouse' item.store.id %}" class="db-btn db-btn-ghost db-btn-sm" title="Общий склад всей сети магазинов — отдельно от остатков филиалов ниже">🏢 Склад сети</a>
         <a href="{% url 'dashboard:shop_constructor_list' item.store.id %}" class="db-btn db-btn-ghost db-btn-sm">🧩 Собери сам</a>
         <a href="{% url 'dashboard:shop_store_edit' item.store.id %}" class="db-btn db-btn-ghost db-btn-sm">✏️ Настройки магазина</a>
         {% if request.user.is_superuser %}
@@ -126,7 +126,7 @@
 
         <div class="sh-btns">
           <a href="{% url 'dashboard:shop_branch_edit' branch.id %}" class="btn-s">⚙️ Настройки</a>
-          <a href="{% url 'dashboard:shop_product_list' branch.id %}" class="btn-p">📦 Товары</a>
+          <a href="{% url 'dashboard:shop_product_list' branch.id %}" class="btn-p" title="Остатки и склад этого филиала">📦 Товары / склад филиала</a>
         </div>
         <div class="sh-btns">
           <a href="{% url 'dashboard:shop_orders' branch.id %}" class="btn-orders" style="position:relative">

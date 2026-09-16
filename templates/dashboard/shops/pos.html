@@ -464,6 +464,7 @@
       <a href="{% url 'dashboard:shop_pos_history' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📋 История</a>
       <a href="{% url 'dashboard:shop_orders' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📦 Заказы</a>
       <a href="{% url 'dashboard:shop_product_list' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📦 Товары</a>
+      <a href="{% url 'dashboard:shop_stop_list' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">🛑 Стоп-лист</a>
       <a href="{% url 'dashboard:shop_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Магазины</a>
     </div>
   </div>
@@ -496,7 +497,7 @@
       {% for stock in stocks %}
       {% with p=stock.product %}
       {% if p.qty > 0 or stock.qty > 0 %}
-      <div class="pos-item {% if stock.qty == 0 %}out{% endif %}"
+      <div class="pos-item {% if stock.qty == 0 or stock.is_stopped %}out{% endif %}"
            id="pos-stock-{{ stock.id }}"
            data-cat="{% if p.category_id %}{{ p.category_id }}{% else %}0{% endif %}"
            data-stock="{{ stock.id }}"
@@ -504,15 +505,17 @@
            data-price="{{ p.price|floatformat:0 }}"
            data-qty="{{ stock.qty|floatformat:0 }}"
            data-barcode="{{ p.barcode }}"
-           {% if stock.qty > 0 %}onclick="addToCart({{ stock.id }}, '{{ p.name_ru|escapejs }}', {{ p.price|floatformat:0 }}, {{ stock.qty|floatformat:0 }})"{% endif %}
-           title="{{ p.name_ru }}">
+           {% if stock.qty > 0 and not stock.is_stopped %}onclick="addToCart({{ stock.id }}, '{{ p.name_ru|escapejs }}', {{ p.price|floatformat:0 }}, {{ stock.qty|floatformat:0 }})"{% endif %}
+           title="{% if stock.is_stopped %}В стоп-листе{% else %}{{ p.name_ru }}{% endif %}">
         <div class="pos-item-photo">
           {% if p.photo %}<img src="{{ p.photo.url }}" alt="" loading="lazy">{% else %}📦{% endif %}
         </div>
         <div class="pos-item-name">{{ p.name_ru }}</div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
           <div class="pos-item-price">{{ p.price|floatformat:0 }} сом</div>
-          {% if stock.qty == 0 %}
+          {% if stock.is_stopped %}
+            <span class="pos-item-stock out">Стоп</span>
+          {% elif stock.qty == 0 %}
             <span class="pos-item-stock out">Нет</span>
           {% elif stock.qty <= 3 %}
             <span class="pos-item-stock low">{{ stock.qty|floatformat:0 }} шт</span>
@@ -697,7 +700,9 @@ let _cxId = null, _cxSel = {};
 
 function openCxPicker() {
   document.getElementById("cxPickList").innerHTML = Object.values(CX_DATA).map(cx =>
-    `<div class="cx-pick-card" onclick="openCxBuilder(${cx.id})">${esc(cx.name)}</div>`
+    cx.ready
+      ? `<div class="cx-pick-card" onclick="openCxBuilder(${cx.id})">${esc(cx.name)}</div>`
+      : `<div class="cx-pick-card" style="opacity:.45;cursor:not-allowed" title="Не настроен до конца — не хватает товаров в одной из групп" onclick="alert('«${esc(cx.name)}» не настроен до конца: в одной из групп не хватает товаров для обязательного выбора. Откройте «Собери сам» в разделе магазина и добавьте товары.')">${esc(cx.name)} · ⚠️ не готов</div>`
   ).join("") || `<div style="font-size:12px;color:var(--muted)">Нет активных конструкторов</div>`;
   document.getElementById("cxBody").style.display = "none";
   document.getElementById("cxFoot").style.display = "none";
@@ -712,7 +717,7 @@ function closeCxModal() {
 
 function openCxBuilder(cxId) {
   const cx = CX_DATA[cxId];
-  if (!cx) return;
+  if (!cx || !cx.ready) return;
   _cxId = cxId;
   _cxSel = {};
   cx.groups.forEach(g => { _cxSel[g.id] = {}; });

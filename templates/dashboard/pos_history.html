@@ -70,6 +70,14 @@ table.hist-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .cancel-btn:hover { background: rgba(255,59,48,.08); }
 .cancel-btn:disabled { opacity: .4; cursor: not-allowed; }
 
+.print-btn {
+  padding: 5px 10px; border-radius: 8px; font-size: 13px;
+  border: 1.5px solid var(--border); background: none;
+  color: var(--text2); cursor: pointer; transition: background .12s, border-color .12s;
+  margin-right: 6px;
+}
+.print-btn:hover { background: rgba(0,0,0,.04); border-color: var(--text); color: var(--text); }
+
 .hist-empty { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 14px; }
 </style>
 {% endblock %}
@@ -161,7 +169,10 @@ table.hist-table { width: 100%; border-collapse: collapse; font-size: 13px; }
               {% else %}{{ o.get_status_display }}{% endif %}
             </span>
           </td>
-          <td>
+          <td style="white-space:nowrap">
+            <button class="print-btn" onclick="printReceipt({{ o.id }})" title="Распечатать чек ещё раз">
+              🖨
+            </button>
             {% if o.status != "cancelled" %}
             <button class="cancel-btn" id="cbtn-{{ o.id }}"
                     onclick="cancelOrder({{ o.id }}, this)">
@@ -185,8 +196,13 @@ table.hist-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 </div>
 
 <script>
-const CANCEL_URL = "{% url 'dashboard:pos_order_cancel' 0 %}".replace("/0/", "/{id}/");
+const CANCEL_URL  = "{% url 'dashboard:pos_order_cancel' 0 %}".replace("/0/", "/{id}/");
+const RECEIPT_URL = "{% url 'dashboard:pos_receipt' 0 %}".replace("/0/", "/{id}/");
 const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+
+function printReceipt(orderId) {
+  window.open(RECEIPT_URL.replace("{id}", orderId) + "?auto=1", "_blank");
+}
 
 async function cancelOrder(id, btn) {
   if (!confirm("Отменить заказ #" + id + "?")) return;

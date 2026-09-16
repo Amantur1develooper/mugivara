@@ -98,6 +98,14 @@
 .cx-limit-saved { font-size: 10px; color: #10b981; opacity: 0; transition: opacity .3s; }
 .cx-limit-saved.show { opacity: 1; }
 
+.cx-group-warn {
+  display: none; align-items: center; gap: 5px;
+  margin: 0 14px 10px; padding: 6px 10px; border-radius: 10px;
+  background: rgba(249,115,22,.08); border: 1px solid rgba(249,115,22,.2);
+  color: #ea580c; font-size: 11px; font-weight: 700;
+}
+.cx-group-warn.show { display: flex; }
+
 /* ── Ingredient chips ── */
 .cx-ings { display: flex; flex-wrap: wrap; gap: 7px; padding: 11px 14px 8px; }
 .cx-ing-chip {
@@ -309,7 +317,10 @@
   <p style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6">
     Создайте конструктор (букет, набор и т.д.) → добавьте группы (например «Цветы», «Упаковка») →
     добавьте в них товары магазина с ценой и количеством списания со склада. При оформлении заказа
-    в кассе выбранные товары автоматически спишутся со склада филиала.
+    в кассе выбранные товары автоматически спишутся со склада (остатков) этого филиала.
+    <br><b>Важно:</b> если у группы указан «Мин» больше 0, в неё нужно добавить хотя бы столько же
+    товаров — иначе кнопка «🧩 Собери сам» в кассе не будет открываться для этого конструктора
+    (мы это подсветим оранжевым ⚠️).
   </p>
 
   {# ── Создать конструктор ── #}
@@ -380,6 +391,8 @@
             </div>
             <button class="cx-btn cx-btn-danger cx-btn-sm" onclick="deleteGroup({{ g.id }})">✕ Удалить</button>
           </div>
+
+          <div class="cx-group-warn" id="cxwarn-{{ g.id }}">⚠️ Добавьте ещё товаров — иначе в кассе этот конструктор не откроется</div>
 
           <div class="cx-ings" id="cx-ings-{{ g.id }}">
             {% for ing in g.ingredients.all %}
@@ -510,6 +523,18 @@ async function post(url, data = {}, files = null) {
   return r.json();
 }
 
+function updateGroupWarn(gid) {
+  const warn = document.getElementById(`cxwarn-${gid}`);
+  if (!warn) return;
+  const min = parseInt(document.getElementById(`cxmin-${gid}`)?.value || '0');
+  const count = document.getElementById(`cx-ings-${gid}`)?.querySelectorAll('.cx-ing-chip').length || 0;
+  warn.classList.toggle('show', min > 0 && count < min);
+}
+document.querySelectorAll('.cx-group').forEach(el => {
+  const gid = el.id.replace('cxg-', '');
+  updateGroupWarn(gid);
+});
+
 function toast(msg, type = '') {
   const t = document.getElementById('cxToast');
   t.textContent = msg;
@@ -580,6 +605,7 @@ function saveGroupLimits(gid) {
     if (d.ok) {
       const s = document.getElementById(`cxlim-saved-${gid}`);
       if (s) { s.classList.add('show'); setTimeout(() => s.classList.remove('show'), 1500); }
+      updateGroupWarn(gid);
     } else toast(d.error || 'Ошибка сохранения', 'err');
   }, 600);
 }
@@ -627,6 +653,7 @@ async function addGroup(cxId) {
     </div>
     <button class="cx-btn cx-btn-danger cx-btn-sm" onclick="deleteGroup(${d.id})">✕ Удалить</button>
   </div>
+  <div class="cx-group-warn" id="cxwarn-${d.id}">⚠️ Добавьте ещё товаров — иначе в кассе этот конструктор не откроется</div>
   <div class="cx-ings" id="cx-ings-${d.id}">
     <span class="cx-ings-empty" id="cx-empty-${d.id}">Пусто — добавьте товары ниже</span>
   </div>
@@ -641,6 +668,7 @@ async function addGroup(cxId) {
   </div>
 </div>`;
   document.getElementById(`cx-groups-${cxId}`).insertAdjacentHTML('beforeend', html);
+  updateGroupWarn(d.id);
   toast('Группа добавлена', 'ok');
 }
 
@@ -709,6 +737,7 @@ function _appendChip(groupId, productId, d) {
   <button class="cx-ing-del" onclick="deleteIng(${d.id},${groupId},${productId})" title="Убрать">×</button>
 </span>`;
   document.getElementById(`cx-ings-${groupId}`).insertAdjacentHTML('beforeend', chip);
+  updateGroupWarn(groupId);
 }
 
 function startPriceEdit(ingId) {
@@ -760,6 +789,7 @@ async function deleteIng(ingId, groupId, productId) {
   if (ings && !ings.querySelector('.cx-ing-chip')) {
     ings.insertAdjacentHTML('beforeend', `<span class="cx-ings-empty" id="cx-empty-${groupId}">Пусто — добавьте товары ниже</span>`);
   }
+  updateGroupWarn(groupId);
   toast('Удалено', 'ok');
 }
 

@@ -465,11 +465,12 @@ const PM_CATS = [
 
 <div class="db-topbar">
   <div>
-    <div class="db-page-title">📦 Товары</div>
-    <div class="db-breadcrumb">{{ store.name_ru }} — {{ branch.name_ru }}</div>
+    <div class="db-page-title">📦 Товары и склад филиала</div>
+    <div class="db-breadcrumb">{{ store.name_ru }} — {{ branch.name_ru }} · остатки (склад) именно этого филиала — не путать со складом сети</div>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <a href="{% url 'dashboard:shop_category_list' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📁 Категории</a>
+    <a href="{% url 'dashboard:shop_stop_list' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">🛑 Стоп-лист</a>
     <a href="{% url 'dashboard:shop_orders' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📋 Заказы</a>
     <a href="{% url 'dashboard:shop_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
   </div>
