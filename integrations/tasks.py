@@ -1,3 +1,4 @@
+import logging
 from collections import Counter
 
 from celery import shared_task
@@ -5,6 +6,8 @@ from django.conf import settings
 from django.utils import timezone
 from django.utils.html import escape
 from decimal import Decimal
+
+logger = logging.getLogger(__name__)
 
 
 def _ing_names(ings):
@@ -478,8 +481,8 @@ def _shop_order_text(order) -> str:
     return "\n".join(lines)
 
 
-@shared_task
-def notify_new_shop_order(order_id: int):
+@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=60, max_retries=5)
+def notify_new_shop_order(self, order_id: int):
     from shops.models import StoreOrder
     from integrations.models import ShopTelegramRecipient
 
@@ -500,9 +503,18 @@ def notify_new_shop_order(order_id: int):
     if not recipients.exists():
         return "No recipients"
 
-    text = _shop_order_text(order)
+    # Строим текст ВНУТРИ try — если тут исключение (например, необычные
+    # данные заказа), это раньше молча роняло всю задачу и заказ просто
+    # не приходил в группу без единого следа. Теперь ошибка логируется
+    # и задача уходит на повтор (autoretry), а не пропадает навсегда.
+    try:
+        text = _shop_order_text(order)
+    except Exception:
+        logger.exception("notify_new_shop_order: failed to build text for order %s", order_id)
+        raise
 
     sent = 0
+    errors = []
     for r in recipients:
         try:
             send_message(
@@ -514,6 +526,13 @@ def notify_new_shop_order(order_id: int):
             )
             sent += 1
         except Exception as e:
-            print("TG shop order ERROR:", r.chat_id, e)
+            logger.warning("notify_new_shop_order: send failed for order %s, chat %s: %s", order_id, r.chat_id, e)
+            errors.append(str(e))
 
-    return f"sent={sent}"
+    if errors and sent == 0:
+        # Никому не доставилось (например, Telegram временно недоступен
+        # или сработал rate-limit при всплеске заказов в акцию) — пусть
+        # Celery повторит попытку, а не тихо потеряет уведомление.
+        raise Exception(f"TG shop order: 0/{recipients.count()} delivered for order {order_id}: {errors}")
+
+    return f"sent={sent} errors={len(errors)}"
