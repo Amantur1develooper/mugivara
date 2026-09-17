@@ -161,7 +161,7 @@
 ></div>
 {% endblock %}
 
-{% block page_scripts %}
+{% block extra_js %}
 <script>
 const CSRF = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
 const U    = document.getElementById('plUrls').dataset;

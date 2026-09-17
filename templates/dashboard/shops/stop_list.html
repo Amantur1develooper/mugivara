@@ -125,7 +125,7 @@
 <div id="slUrls" style="display:none" data-toggle="{% url 'dashboard:shop_stop_toggle' 0 %}"></div>
 {% endblock %}
 
-{% block page_scripts %}
+{% block extra_js %}
 <script>
 const CSRF = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || '';
 const WU = document.getElementById('slUrls').dataset;
