@@ -496,11 +496,24 @@ def notify_new_shop_order(self, order_id: int):
         .prefetch_related("items__product", "constructor_items")
         .get(id=order_id)
     )
+    branch = order.branch
 
-    recipients = ShopTelegramRecipient.objects.filter(
-        branch=order.branch, is_active=True, notify_new_orders=True
-    )
-    if not recipients.exists():
+    # Получатели собираются из ДВУХ источников и объединяются по chat_id, чтобы
+    # никого не потерять и не задвоить сообщение:
+    #  1) ShopTelegramRecipient — «официальный» способ настройки (через раздел
+    #     интеграций в админке);
+    #  2) tg_group_chat_id / tg_manager_chat_id прямо на филиале — их видно и
+    #     заполняют через карточку филиала в стандартной админке Django, это
+    #     тоже валидный способ настройки и должен работать.
+    chat_map = {}  # chat_id (str) -> thread_id
+    for r in ShopTelegramRecipient.objects.filter(branch=branch, is_active=True, notify_new_orders=True):
+        chat_map[str(r.chat_id)] = _thread_id_for(r)
+    if getattr(branch, "tg_group_chat_id", None):
+        chat_map.setdefault(str(branch.tg_group_chat_id), getattr(branch, "tg_thread_id", None))
+    if getattr(branch, "tg_manager_chat_id", None):
+        chat_map.setdefault(str(branch.tg_manager_chat_id), None)
+
+    if not chat_map:
         return "No recipients"
 
     # Строим текст ВНУТРИ try — если тут исключение (например, необычные
@@ -515,24 +528,24 @@ def notify_new_shop_order(self, order_id: int):
 
     sent = 0
     errors = []
-    for r in recipients:
+    for chat_id, thread_id in chat_map.items():
         try:
             send_message(
                 bot_token=token,
-                chat_id=str(r.chat_id),
+                chat_id=chat_id,
                 text=text,
                 parse_mode=None,
-                message_thread_id=_thread_id_for(r),
+                message_thread_id=thread_id,
             )
             sent += 1
         except Exception as e:
-            logger.warning("notify_new_shop_order: send failed for order %s, chat %s: %s", order_id, r.chat_id, e)
+            logger.warning("notify_new_shop_order: send failed for order %s, chat %s: %s", order_id, chat_id, e)
             errors.append(str(e))
 
     if errors and sent == 0:
         # Никому не доставилось (например, Telegram временно недоступен
         # или сработал rate-limit при всплеске заказов в акцию) — пусть
         # Celery повторит попытку, а не тихо потеряет уведомление.
-        raise Exception(f"TG shop order: 0/{recipients.count()} delivered for order {order_id}: {errors}")
+        raise Exception(f"TG shop order: 0/{len(chat_map)} delivered for order {order_id}: {errors}")
 
     return f"sent={sent} errors={len(errors)}"
