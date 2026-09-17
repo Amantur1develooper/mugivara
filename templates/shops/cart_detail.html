@@ -103,6 +103,11 @@
   }
   .cc-item-price{ font-size:12.5px; color:var(--cc-muted); }
   .cc-item-price b{ color:var(--cc-text); font-weight:800; }
+  .cc-price-old{ text-decoration:line-through; opacity:.65; margin-right:5px; }
+  .cc-discount-chip{
+    display:inline-block; margin-left:6px; padding:2px 8px; border-radius:999px;
+    background:#e11d48; color:#fff; font-size:10.5px; font-weight:800; vertical-align:middle;
+  }
   .cc-item-stock{ font-size:11px; color:var(--cc-muted); margin-top:3px; }
 
   .cc-item-actions{
@@ -296,7 +301,13 @@
           <div class="cc-item-info">
             <div class="cc-item-name">{% t r.product "name" %}</div>
             <div class="cc-item-price">
-              {{ r.product.price|floatformat:"0" }} {% trans "сом" %}
+              {% if r.discount_percent %}
+                <span class="cc-price-old">{{ r.orig_price|floatformat:"0" }} {% trans "сом" %}</span>
+                {{ r.price|floatformat:"0" }} {% trans "сом" %}
+                <span class="cc-discount-chip">−{{ r.discount_percent }}%</span>
+              {% else %}
+                {{ r.price|floatformat:"0" }} {% trans "сом" %}
+              {% endif %}
               <span style="opacity:.5">•</span>
               <b><span data-line-total>{{ r.line_total }}</span> {% trans "сом" %}</b>
             </div>

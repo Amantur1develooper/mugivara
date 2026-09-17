@@ -1,0 +1,391 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Акции — {{ store.name_ru }}{% endblock %}
+{% block nav_shops %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+.pr-wrap { max-width: 780px; }
+
+.pr-intro {
+  font-size: 13px; color: var(--muted); margin-bottom: 22px; line-height: 1.6;
+}
+
+/* ── Создать акцию ── */
+.pr-create-box {
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 20px; padding: 22px; margin-bottom: 28px;
+}
+.pr-create-title { font-weight: 800; font-size: 15px; margin-bottom: 18px; color: var(--text); }
+
+.pr-field { margin-bottom: 18px; }
+.pr-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
+  color: var(--muted); margin-bottom: 9px; display: block;
+}
+.pr-inp {
+  width: 100%; padding: 11px 14px; border-radius: 12px;
+  border: 1.5px solid var(--border); background: var(--bg);
+  font-size: 13.5px; color: var(--text); outline: none;
+  transition: border-color .15s; font-family: inherit; box-sizing: border-box;
+}
+.pr-inp:focus { border-color: var(--accent); }
+
+/* День недели — 7 пилюль */
+.pr-days { display: flex; gap: 7px; flex-wrap: wrap; }
+.pr-day {
+  flex: 1; min-width: 62px; padding: 12px 6px; border-radius: 12px;
+  border: 1.5px solid var(--border); background: var(--bg);
+  font-size: 12.5px; font-weight: 700; color: var(--text2); text-align: center;
+  cursor: pointer; transition: all .15s; user-select: none;
+}
+.pr-day:hover { border-color: var(--accent); }
+.pr-day.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: transparent; color: #fff;
+  box-shadow: 0 4px 12px rgba(255,77,28,.25);
+}
+
+/* Область действия: все / категории */
+.pr-scope-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.pr-scope-tab {
+  flex: 1; padding: 10px; border-radius: 12px; text-align: center;
+  border: 1.5px solid var(--border); background: var(--bg);
+  font-size: 12.5px; font-weight: 700; color: var(--text2);
+  cursor: pointer; transition: all .15s;
+}
+.pr-scope-tab.active {
+  border-color: var(--accent); background: rgba(255,77,28,.07); color: var(--accent);
+}
+.pr-cats-grid {
+  display: none; flex-wrap: wrap; gap: 8px; padding: 14px;
+  background: var(--bg); border-radius: 14px; border: 1px dashed var(--border);
+}
+.pr-cats-grid.show { display: flex; }
+.pr-cat-chip {
+  padding: 7px 14px; border-radius: 100px; font-size: 12.5px; font-weight: 600;
+  border: 1.5px solid var(--border); background: var(--card); color: var(--text2);
+  cursor: pointer; transition: all .15s; user-select: none;
+}
+.pr-cat-chip:hover { border-color: var(--accent); }
+.pr-cat-chip.picked {
+  border-color: var(--accent); background: rgba(255,77,28,.08); color: var(--accent);
+}
+.pr-cats-empty { font-size: 12.5px; color: var(--muted); padding: 4px; }
+
+/* Скидка % — крупный удобный инпут */
+.pr-percent-row { display: flex; align-items: center; gap: 12px; }
+.pr-percent-inp {
+  width: 100px; padding: 11px 14px; border-radius: 12px;
+  border: 1.5px solid var(--border); background: var(--bg);
+  font-size: 18px; font-weight: 800; color: var(--accent); text-align: center;
+  outline: none; font-family: inherit;
+}
+.pr-percent-inp:focus { border-color: var(--accent); }
+.pr-percent-suffix { font-size: 15px; font-weight: 800; color: var(--accent); }
+.pr-percent-hint { font-size: 12px; color: var(--muted); }
+
+.pr-submit-btn {
+  width: 100%; padding: 14px; border-radius: 14px; border: none; cursor: pointer;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; font-weight: 800; font-size: 14px; font-family: inherit;
+  box-shadow: 0 8px 22px rgba(255,77,28,.25); transition: opacity .15s;
+}
+.pr-submit-btn:hover { opacity: .9; }
+.pr-form-error {
+  font-size: 12.5px; color: #ef4444; font-weight: 600; margin-top: 10px; min-height: 16px;
+}
+
+/* ── Список акций ── */
+.pr-list-title {
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--muted); margin-bottom: 12px;
+}
+.pr-card {
+  background: var(--card); border: 1.5px solid var(--border);
+  border-radius: 18px; padding: 16px 18px; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  transition: opacity .2s;
+}
+.pr-card.is-off { opacity: .5; }
+.pr-card-day {
+  flex-shrink: 0; width: 56px; height: 56px; border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-weight: 800;
+}
+.pr-card.is-off .pr-card-day { background: var(--bg); color: var(--muted); }
+.pr-card-day-name { font-size: 10px; text-transform: uppercase; letter-spacing: .3px; opacity: .85; }
+.pr-card-day-pct { font-size: 15px; }
+.pr-card-info { flex: 1; min-width: 160px; }
+.pr-card-name { font-weight: 800; font-size: 13.5px; color: var(--text); }
+.pr-card-scope { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.pr-card-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+.pr-switch {
+  position: relative; width: 44px; height: 25px; border-radius: 999px; border: none;
+  background: rgba(0,0,0,.12); cursor: pointer; transition: background .2s; flex-shrink: 0;
+}
+.pr-switch::after {
+  content: ""; position: absolute; top: 2.5px; left: 2.5px; width: 20px; height: 20px;
+  border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.pr-switch.on { background: #10b981; }
+.pr-switch.on::after { transform: translateX(19px); }
+
+.pr-del-btn {
+  width: 32px; height: 32px; border-radius: 10px; border: 1.5px solid var(--border);
+  background: transparent; color: var(--muted); cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center; transition: all .15s;
+}
+.pr-del-btn:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,.06); }
+
+.pr-empty {
+  text-align: center; padding: 48px 20px; background: var(--card);
+  border: 1.5px dashed var(--border); border-radius: 18px; color: var(--muted);
+}
+.pr-empty-ico { font-size: 40px; margin-bottom: 10px; }
+
+.pr-toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: #111118; color: #fff; padding: 10px 20px; border-radius: 12px;
+  font-size: 13px; font-weight: 600; opacity: 0; transition: all .22s ease;
+  pointer-events: none; z-index: 9999; white-space: nowrap;
+}
+.pr-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.pr-toast.err { background: #b91c1c; }
+
+@media (max-width: 560px) {
+  .pr-day { min-width: 40px; font-size: 11px; padding: 10px 4px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">🏷️ Акции</div>
+    <div class="db-breadcrumb">{{ store.name_ru }} — скидки по дням недели, действуют во всех филиалах</div>
+  </div>
+  <a href="{% url 'dashboard:shop_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
+</div>
+
+<div class="pr-wrap">
+  <p class="pr-intro">
+    Выберите день недели, на все товары или на отдельные категории — и укажите скидку в процентах.
+    В этот день цена автоматически снижается на сайте, в корзине и в кассе для всех филиалов сети —
+    ничего вручную менять не нужно, скидка появится и исчезнет сама по расписанию.
+  </p>
+
+  {# ── Форма создания ── #}
+  <div class="pr-create-box">
+    <div class="pr-create-title">➕ Новая акция</div>
+
+    <div class="pr-field">
+      <label class="pr-label">Название (необязательно)</label>
+      <input class="pr-inp" id="prName" placeholder="Например: Пятничная скидка на цветы">
+    </div>
+
+    <div class="pr-field">
+      <label class="pr-label">День недели</label>
+      <div class="pr-days" id="prDays">
+        {% for val, label in weekdays %}
+        <div class="pr-day" data-day="{{ val }}" onclick="pickDay({{ val }})">{{ label|slice:":2" }}</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="pr-field">
+      <label class="pr-label">На что действует скидка</label>
+      <div class="pr-scope-tabs">
+        <div class="pr-scope-tab active" id="prScopeAllTab" onclick="setScope(true)">🛍️ На все товары</div>
+        <div class="pr-scope-tab" id="prScopeCatTab" onclick="setScope(false)">📁 Выбрать категории</div>
+      </div>
+      <div class="pr-cats-grid" id="prCatsGrid">
+        {% for c in categories %}
+          <div class="pr-cat-chip" data-cat="{{ c.id }}" onclick="toggleCat({{ c.id }}, this)">{{ c.name_ru }}</div>
+        {% empty %}
+          <div class="pr-cats-empty">В этом магазине пока нет категорий</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="pr-field">
+      <label class="pr-label">Размер скидки</label>
+      <div class="pr-percent-row">
+        <input class="pr-percent-inp" id="prPercent" type="number" min="1" max="90" value="10">
+        <span class="pr-percent-suffix">%</span>
+        <span class="pr-percent-hint">от текущей цены товара</span>
+      </div>
+    </div>
+
+    <button class="pr-submit-btn" onclick="createPromo()">Создать акцию</button>
+    <div class="pr-form-error" id="prError"></div>
+  </div>
+
+  {# ── Список акций ── #}
+  <div class="pr-list-title">Все акции ({{ promotions|length }})</div>
+  <div id="prList">
+    {% for p in promotions %}
+    <div class="pr-card {% if not p.is_active %}is-off{% endif %}" id="promo-{{ p.id }}">
+      <div class="pr-card-day">
+        <div class="pr-card-day-name">{{ p.get_weekday_display|slice:":2" }}</div>
+        <div class="pr-card-day-pct">−{{ p.discount_percent }}%</div>
+      </div>
+      <div class="pr-card-info">
+        {% if p.name %}<div class="pr-card-name">{{ p.name }}</div>{% endif %}
+        <div class="pr-card-scope">
+          {{ p.get_weekday_display }} ·
+          {% if p.apply_to_all %}на все товары{% else %}{% for c in p.categories.all %}{{ c.name_ru }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}
+        </div>
+      </div>
+      <div class="pr-card-actions">
+        <button class="pr-switch {% if p.is_active %}on{% endif %}" id="promo-switch-{{ p.id }}"
+                onclick="togglePromo({{ p.id }})" aria-label="Вкл/выкл акцию"></button>
+        <button class="pr-del-btn" onclick="deletePromo({{ p.id }})" title="Удалить">✕</button>
+      </div>
+    </div>
+    {% empty %}
+    <div class="pr-empty" id="prEmpty">
+      <div class="pr-empty-ico">🏷️</div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:4px">Пока нет ни одной акции</div>
+      <div style="font-size:12.5px">Создайте первую выше — например, «Пятница −15% на всё»</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="pr-toast" id="prToast"></div>
+
+<div id="pr-url-map" style="display:none"
+  data-add="{% url 'dashboard:shop_promotion_add' store.id %}"
+  data-toggle="{% url 'dashboard:shop_promotion_toggle' 0 %}"
+  data-delete="{% url 'dashboard:shop_promotion_delete' 0 %}">
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+const _m = document.getElementById('pr-url-map').dataset;
+const U = {
+  add: _m.add,
+  toggle: id => _m.toggle.replace('0', id),
+  del: id => _m.delete.replace('0', id),
+};
+const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+const WEEKDAY_LABELS = {{ weekdays_json|default:"[]"|safe }};
+
+async function post(url, data = {}) {
+  const fd = new FormData();
+  for (const [k, v] of Object.entries(data)) {
+    if (Array.isArray(v)) v.forEach(item => fd.append(k, item));
+    else fd.append(k, v);
+  }
+  const r = await fetch(url, { method: 'POST', body: fd, headers: { 'X-CSRFToken': CSRF() } });
+  return r.json();
+}
+
+function toast(msg, type = '') {
+  const t = document.getElementById('prToast');
+  t.textContent = msg;
+  t.className = `pr-toast show ${type}`;
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.className = 'pr-toast', 2400);
+}
+
+let _day = null;
+function pickDay(day) {
+  _day = day;
+  document.querySelectorAll('.pr-day').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.day) === day);
+  });
+}
+// день по умолчанию — сегодня
+pickDay(new Date().getDay() === 0 ? 6 : new Date().getDay() - 1);
+
+let _applyToAll = true;
+function setScope(all) {
+  _applyToAll = all;
+  document.getElementById('prScopeAllTab').classList.toggle('active', all);
+  document.getElementById('prScopeCatTab').classList.toggle('active', !all);
+  document.getElementById('prCatsGrid').classList.toggle('show', !all);
+}
+
+let _pickedCats = new Set();
+function toggleCat(catId, el) {
+  if (_pickedCats.has(catId)) { _pickedCats.delete(catId); el.classList.remove('picked'); }
+  else { _pickedCats.add(catId); el.classList.add('picked'); }
+}
+
+async function createPromo() {
+  const errEl = document.getElementById('prError');
+  errEl.textContent = '';
+
+  if (_day === null) { errEl.textContent = 'Выберите день недели'; return; }
+  const percent = parseInt(document.getElementById('prPercent').value || '0');
+  if (!percent || percent < 1 || percent > 90) { errEl.textContent = 'Скидка должна быть от 1 до 90%'; return; }
+  if (!_applyToAll && _pickedCats.size === 0) { errEl.textContent = 'Выберите хотя бы одну категорию'; return; }
+
+  const name = document.getElementById('prName').value.trim();
+  const d = await post(U.add, {
+    name, weekday: _day, discount_percent: percent,
+    apply_to_all: _applyToAll ? '1' : '0',
+    categories: _applyToAll ? [] : [..._pickedCats],
+  });
+  if (!d.ok) { errEl.textContent = d.error || 'Ошибка'; return; }
+
+  document.getElementById('prEmpty')?.remove();
+  const dayShort = (WEEKDAY_LABELS[_day] || '').slice(0, 2);
+  const html = `
+<div class="pr-card" id="promo-${d.id}">
+  <div class="pr-card-day">
+    <div class="pr-card-day-name">${dayShort}</div>
+    <div class="pr-card-day-pct">−${percent}%</div>
+  </div>
+  <div class="pr-card-info">
+    ${name ? `<div class="pr-card-name">${_esc(name)}</div>` : ''}
+    <div class="pr-card-scope">${_esc(d.weekday_display)} · ${_esc(d.scope)}</div>
+  </div>
+  <div class="pr-card-actions">
+    <button class="pr-switch on" id="promo-switch-${d.id}" onclick="togglePromo(${d.id})" aria-label="Вкл/выкл акцию"></button>
+    <button class="pr-del-btn" onclick="deletePromo(${d.id})" title="Удалить">✕</button>
+  </div>
+</div>`;
+  document.getElementById('prList').insertAdjacentHTML('beforeend', html);
+
+  document.getElementById('prName').value = '';
+  toast('Акция создана 🎉', 'ok');
+}
+
+async function togglePromo(id) {
+  const btn = document.getElementById(`promo-switch-${id}`);
+  const card = document.getElementById(`promo-${id}`);
+  btn.disabled = true;
+  const d = await post(U.toggle(id));
+  btn.disabled = false;
+  if (!d.ok) { toast('Ошибка', 'err'); return; }
+  btn.classList.toggle('on', d.is_active);
+  card.classList.toggle('is-off', !d.is_active);
+  toast(d.is_active ? 'Акция включена' : 'Акция выключена');
+}
+
+async function deletePromo(id) {
+  if (!confirm('Удалить эту акцию?')) return;
+  const d = await post(U.del(id));
+  if (!d.ok) { toast('Ошибка', 'err'); return; }
+  document.getElementById(`promo-${id}`)?.remove();
+  if (!document.querySelector('.pr-card')) {
+    document.getElementById('prList').innerHTML = `
+      <div class="pr-empty" id="prEmpty">
+        <div class="pr-empty-ico">🏷️</div>
+        <div style="font-weight:700;font-size:14px;margin-bottom:4px">Пока нет ни одной акции</div>
+        <div style="font-size:12.5px">Создайте первую выше — например, «Пятница −15% на всё»</div>
+      </div>`;
+  }
+  toast('Акция удалена');
+}
+
+function _esc(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+</script>
+{% endblock %}

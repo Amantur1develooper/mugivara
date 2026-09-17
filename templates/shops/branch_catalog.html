@@ -391,6 +391,20 @@
   }
   .sc-cx-banner:hover .sc-cx-banner-arrow{ transform:translateX(3px); }
 
+  /* ── Баннер акции дня ── */
+  .sc-promo-banner{
+    display:flex; align-items:center; gap:14px;
+    padding:16px 20px; margin-bottom:22px; border-radius:20px;
+    background:linear-gradient(135deg, #e11d48, #fb7185);
+    box-shadow:0 14px 30px rgba(225,29,72,.24);
+    color:#fff;
+  }
+  .sc-promo-banner-ico{ font-size:26px; flex-shrink:0; }
+  .sc-promo-banner-title{
+    font-family:'Unbounded',sans-serif; font-weight:800; font-size:14.5px; letter-spacing:-.2px;
+  }
+  .sc-promo-banner-text{ font-size:12.5px; opacity:.92; margin-top:2px; line-height:1.5; }
+
   /* ── «Собери сам» модалка ── */
   .cxm-overlay{
     position:fixed; inset:0; z-index:1200;
@@ -605,6 +619,23 @@
     color:#fff;
     border:1px solid rgba(255,255,255,.14);
   }
+  .sc-price-badge.discount{
+    background:linear-gradient(135deg, var(--sc-accent), var(--sc-accent-2));
+    border-color:transparent;
+  }
+  .sc-price-badge .sc-price-old{
+    opacity:.7; text-decoration:line-through; font-weight:600; margin-right:2px;
+  }
+  .sc-discount-tag{
+    position:absolute; left:10px; bottom:10px;
+    display:inline-flex; align-items:center;
+    padding:5px 10px; border-radius:999px;
+    font-size:11px; font-weight:900; color:#fff;
+    background:#e11d48; box-shadow:0 4px 10px rgba(225,29,72,.35);
+  }
+  .sc-note-price-old{
+    text-decoration:line-through; color:var(--sc-muted); font-weight:600; margin-right:6px;
+  }
   .sc-stock-badge{
     left:10px;
     top:10px;
@@ -616,6 +647,11 @@
     background:rgba(13,17,23,.72);
     color:#fff;
     border-color:rgba(255,255,255,.12);
+  }
+  .sc-stock-badge.preorder{
+    background:rgba(124,58,237,.14);
+    color:#6d28d9;
+    border-color:rgba(124,58,237,.22);
   }
 
   .sc-card-body{
@@ -967,6 +1003,13 @@
     padding-top:18px; flex-wrap:wrap;
   }
   .sc-modal-price{ font-family:'Unbounded',sans-serif; font-size:22px; font-weight:900; color:var(--sc-text); }
+  .sc-modal-price .sc-modal-price-old{
+    font-size:15px; font-weight:700; color:var(--sc-muted); text-decoration:line-through; margin-right:8px;
+  }
+  .sc-modal-price .sc-modal-discount-pill{
+    display:inline-block; margin-left:8px; padding:3px 9px; border-radius:999px;
+    background:#e11d48; color:#fff; font-size:12px; font-weight:800; vertical-align:middle;
+  }
   .sc-modal-stock{ font-size:12px; color:var(--sc-muted); margin-top:4px; }
   .sc-modal-add{
     flex-shrink:0;
@@ -1018,6 +1061,7 @@ const T = {
   errNet: "{% trans 'Ошибка сети' %}",
   inStock: "{% trans 'В наличии:' %}",
   soldOut: "{% trans 'Нет в наличии' %}",
+  preorder: "{% trans 'Под заказ' %}",
 };
 </script>
 <div class="sc-toast-wrap" id="scToastWrap" aria-live="polite"></div>
@@ -1112,6 +1156,16 @@ const T = {
 
   <div class="sc-content" id="sc-top">
 
+    {% if promo_lines %}
+    <div class="sc-promo-banner">
+      <div class="sc-promo-banner-ico">🔥</div>
+      <div>
+        <div class="sc-promo-banner-title">{% trans "Акция сегодня!" %}</div>
+        <div class="sc-promo-banner-text">{{ promo_lines|join:" · " }}</div>
+      </div>
+    </div>
+    {% endif %}
+
     <div class="sc-notice">
       <span class="sc-notice-ico">ℹ️</span>
       <span>{% trans "Цены указаны по прайс-листу фирменных магазинов и могут отличаться в других точках продаж." %}</span>
@@ -1144,12 +1198,14 @@ const T = {
                 <article class="sc-card"
                   data-pid="{{ s.product.id }}"
                   data-name="{% t s.product 'name' %}"
-                  data-price="{{ s.product.price|floatformat:'0' }}"
+                  data-price="{{ s.promo_price|floatformat:'0' }}"
+                  data-orig-price="{{ s.product.price|floatformat:'0' }}"
+                  data-discount="{{ s.promo_percent|default:0 }}"
                   data-qty="{{ s.qty|floatformat:'-3' }}"
                   data-unit="{{ s.product.get_unit_display }}"
                   data-cat="{% t c 'name' %}"
                   data-photo="{% if s.product.photo %}{{ s.product.photo.url }}{% endif %}"
-                  data-in-stock="{% if s.qty > 0 and not s.is_stopped %}1{% else %}0{% endif %}">
+                  data-in-stock="{% if s.is_orderable %}1{% else %}0{% endif %}">
                   <div class="sc-card-media" onclick="openProductModal(this.closest('.sc-card'))">
                     {% if s.product.photo %}
                       <img src="{{ s.product.photo.url }}" alt="{% t s.product 'name' %}" loading="lazy" decoding="async">
@@ -1157,12 +1213,19 @@ const T = {
                       <div class="sc-card-placeholder">🛍️</div>
                     {% endif %}
                     <div class="sc-media-grad"></div>
-                    {% if s.qty <= 0 or s.is_stopped %}
+                    {% if not s.is_orderable %}
                     <span class="sc-stock-badge out">{% trans "Нет в наличии" %}</span>
+                    {% elif s.qty <= 0 %}
+                    <span class="sc-stock-badge preorder">{% trans "Под заказ" %}</span>
                     {% elif branch.show_stock_qty %}
                     <span class="sc-stock-badge">{% trans "Есть" %}: {{ s.qty|floatformat:"-3" }}</span>
                     {% endif %}
+                    {% if s.promo_percent %}
+                    <span class="sc-discount-tag">−{{ s.promo_percent }}%</span>
+                    <span class="sc-price-badge discount"><span class="sc-price-old">{{ s.product.price|som }}</span>{{ s.promo_price|som }}</span>
+                    {% else %}
                     <span class="sc-price-badge">{{ s.product.price|som }}</span>
+                    {% endif %}
                   </div>
 
                   <div class="sc-card-body">
@@ -1180,14 +1243,16 @@ const T = {
 
                     <div class="sc-card-footer">
                       <div class="sc-price-wrap">
-                        {% if s.qty <= 0 or s.is_stopped %}
+                        {% if not s.is_orderable %}
                         <div class="sc-stock-note">{% trans "Нет в наличии" %}</div>
+                        {% elif s.qty <= 0 %}
+                        <div class="sc-stock-note">{% trans "Под заказ" %}</div>
                         {% elif branch.show_stock_qty %}
                         <div class="sc-stock-note">{% trans "В наличии" %}: <b>{{ s.qty|floatformat:"-3" }}</b>{% if s.product.unit %} {{ s.product.unit }}{% endif %}</div>
                         {% endif %}
                       </div>
 
-                      {% if s.qty > 0 and not s.is_stopped %}
+                      {% if s.is_orderable %}
                         <form action="{% url 'shops:cart_add' branch.id s.product.id %}" method="post" data-add-to-cart>
                           {% csrf_token %}
                           <input type="hidden" name="qty" value="1">
@@ -1416,10 +1481,17 @@ const T = {
     // texts
     document.getElementById('scModalCat').textContent   = d.cat || '';
     document.getElementById('scModalTitle').textContent = d.name || '';
-    document.getElementById('scModalPrice').textContent = (d.price || '0') + ' ' + CUR;
+    const discount = parseInt(d.discount || '0');
+    document.getElementById('scModalPrice').innerHTML = discount > 0
+      ? `<span class="sc-modal-price-old">${d.origPrice} ${CUR}</span>${d.price} ${CUR}<span class="sc-modal-discount-pill">−${discount}%</span>`
+      : `${d.price || '0'} ${CUR}`;
     const modalStockEl = document.getElementById('scModalStock');
+    const qtyNum = parseFloat(d.qty) || 0;
     if (!inStock) {
       modalStockEl.textContent = T.soldOut;
+      modalStockEl.style.display = '';
+    } else if (qtyNum <= 0) {
+      modalStockEl.textContent = T.preorder;
       modalStockEl.style.display = '';
     } else if (SHOW_STOCK_QTY) {
       modalStockEl.textContent = T.inStock + ' ' + d.qty + ' ' + (d.unit || '');

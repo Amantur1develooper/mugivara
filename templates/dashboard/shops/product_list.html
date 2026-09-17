@@ -187,6 +187,19 @@
 }
 .pm-sell-toggle.loading { opacity: .5; pointer-events: none; }
 
+/* «продавать без остатка (под заказ)» toggle badge */
+.pm-preorder-toggle {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 100px;
+  font-size: 11px; font-weight: 700; cursor: pointer;
+  border: 1.5px solid rgba(0,0,0,.1); background: rgba(0,0,0,.04); color: var(--muted);
+  transition: all .15s; user-select: none; flex-shrink: 0;
+}
+.pm-preorder-toggle.on {
+  background: rgba(124,58,237,.1); border-color: rgba(124,58,237,.3); color: #7c3aed;
+}
+.pm-preorder-toggle.loading { opacity: .5; pointer-events: none; }
+
 /* dim hidden product row */
 .pm-product.pm-inactive { opacity: .45; }
 .pm-product.pm-inactive .pm-thumb,
@@ -465,6 +478,7 @@
   data-stock-delete="{% url 'dashboard:shop_product_delete' 0 %}"
   data-stock-toggle="{% url 'dashboard:shop_product_toggle' 0 %}"
   data-stock-sell-toggle="{% url 'dashboard:shop_product_sell_toggle' 0 %}"
+  data-stock-preorder-toggle="{% url 'dashboard:shop_product_preorder_toggle' 0 %}"
   data-cat-rename="{% url 'dashboard:shop_category_rename' 0 %}"
   data-cat-delete="{% url 'dashboard:shop_category_delete' 0 %}"
   data-cat-reorder="{% url 'dashboard:shop_category_reorder' branch.id %}"
@@ -1212,6 +1226,15 @@ async function toggleSell(stockId, badgeEl) {
   badgeEl.className = `pm-sell-toggle ${direct ? 'direct' : 'cx-only'}`;
   badgeEl.textContent = direct ? '🛒 В продаже' : '🧩 Только конструктор';
 }
+async function togglePreorder(stockId, badgeEl) {
+  badgeEl.classList.add('loading');
+  const d = await postFD(sUrl(URLS.stockPreorderToggle, stockId), {});
+  badgeEl.classList.remove('loading');
+  if (!d.ok) return;
+  const on = d.sell_out_of_stock;
+  badgeEl.className = `pm-preorder-toggle ${on ? 'on' : ''}`;
+  badgeEl.textContent = on ? '🔁 Под заказ' : '📦 По остатку';
+}
 async function ctxDelete() {
   document.getElementById('pmCtx').classList.remove('open');
   if (!confirm(`Удалить «${_ctxData.name_ru}»?`)) return;
@@ -1318,6 +1341,8 @@ function productRowHTML(p) {
               onclick="toggleVis(${sid}, this)">${isActive ? '● Активен' : '○ Скрыт'}</span>
         <span class="pm-sell-toggle ${p.sell_direct === false ? 'cx-only' : 'direct'}" id="psell-${sid}"
               onclick="toggleSell(${sid}, this)" title="Нажмите, чтобы переключить">${p.sell_direct === false ? '🧩 Только конструктор' : '🛒 В продаже'}</span>
+        <span class="pm-preorder-toggle ${p.sell_out_of_stock ? 'on' : ''}" id="ppreorder-${sid}"
+              onclick="togglePreorder(${sid}, this)" title="Нажмите, чтобы переключить">${p.sell_out_of_stock ? '🔁 Под заказ' : '📦 По остатку'}</span>
         <span class="pm-status ${sc}" id="pdot-${sid}"></span>
         <span class="pm-meta" id="pmeta-${sid}" style="margin:0">${p.unit_display}</span>
       </div>

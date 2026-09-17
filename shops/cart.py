@@ -4,6 +4,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Dict, Any, List
 
 from .models import StoreStock
+from .pricing import PromoResolver
 
 
 def dec(x) -> Decimal:
@@ -123,6 +124,8 @@ def get_shop_cart(request, branch) -> Dict[str, Any]:
     )
     stock_map = {s.product_id: s for s in stocks}
 
+    promo = PromoResolver(branch.store)
+
     rows: List[Dict[str, Any]] = []
     subtotal = Decimal("0")
     qty_total = 0
@@ -137,7 +140,8 @@ def get_shop_cart(request, branch) -> Dict[str, Any]:
         if qty <= 0:
             continue
 
-        price = dec(stock.product.price)
+        price, discount_percent = promo.price_for(stock.product)
+        orig_price = dec(stock.product.price)
         line_total = price * qty
 
         rows.append({
@@ -146,6 +150,8 @@ def get_shop_cart(request, branch) -> Dict[str, Any]:
             "stock": stock,
             "qty": qty,
             "price": price,
+            "orig_price": orig_price,
+            "discount_percent": discount_percent,
             "line_total": line_total,
         })
         subtotal += line_total

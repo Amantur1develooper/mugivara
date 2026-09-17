@@ -3,7 +3,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-16 18:43+0600\n"
+"POT-Creation-Date: 2026-09-17 17:29+0600\n"
 "Language: en\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -53,13 +53,13 @@ msgstr "Your cart is empty."
 
 #: pharmacy/views.py:226 templates/pharmacy/cart_detail.html:91
 #: templates/public_site/cart_detail.html:305
-#: templates/shops/cart_detail.html:434
+#: templates/shops/cart_detail.html:445
 msgid "Наличные"
 msgstr "Cash"
 
 #: pharmacy/views.py:226 templates/pharmacy/cart_detail.html:95
 #: templates/public_site/cart_detail.html:309
-#: templates/shops/cart_detail.html:438
+#: templates/shops/cart_detail.html:449
 msgid "Онлайн"
 msgstr "Online"
 
@@ -144,11 +144,11 @@ msgstr "Invalid status."
 msgid "Статус брони обновлён."
 msgstr "Booking status updated."
 
-#: shops/views.py:531
+#: shops/views.py:560
 msgid "Укажите адрес для доставки"
 msgstr "Please enter a delivery address"
 
-#: shops/views.py:563 shops/views.py:578
+#: shops/views.py:592 shops/views.py:595 shops/views.py:609 shops/views.py:612
 #, python-format
 msgid "Нет в наличии: %(name)s"
 msgstr "Out of stock: %(name)s"
@@ -372,8 +372,8 @@ msgstr "Selected services"
 #: templates/public_site/table_cart.html:226
 #: templates/public_site/table_checkout.html:23
 #: templates/public_site/table_menu.html:900
-#: templates/shops/branch_catalog.html:1253
-#: templates/shops/cart_detail.html:373
+#: templates/shops/branch_catalog.html:1318
+#: templates/shops/cart_detail.html:384
 #: templates/shops/checkout_success.html:119 templates/simracing/venue.html:223
 msgid "Итого"
 msgstr "Total"
@@ -396,9 +396,9 @@ msgstr "Loading barbers…"
 #: templates/public_site/restaurant_about.html:38
 #: templates/public_site/restaurants_list.html:669
 #: templates/public_site/еуые/restaurant_contacts.html:179
-#: templates/shops/branch_catalog.html:1035
-#: templates/shops/branch_catalog.html:1243
-#: templates/shops/cart_detail.html:263 templates/shops/store_detail.html:284
+#: templates/shops/branch_catalog.html:1079
+#: templates/shops/branch_catalog.html:1308
+#: templates/shops/cart_detail.html:268 templates/shops/store_detail.html:284
 #: templates/simracing/venue.html:161 templates/simracing/venue.html:174
 #: templates/simracing/venue.html:184 templates/simracing/venue.html:209
 msgid "Назад"
@@ -788,7 +788,7 @@ msgstr "Open on the map"
 #: templates/shops/1212/branch_catalog.html:650
 #: templates/shops/1212/branch_catalog2.html:652
 #: templates/shops/1212/store_detail.html:157 templates/shops/base.html:226
-#: templates/shops/base.html:276 templates/shops/branch_catalog.html:1080
+#: templates/shops/base.html:276 templates/shops/branch_catalog.html:1124
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:186
 msgid "Позвонить"
 msgstr "Call"
@@ -1016,9 +1016,9 @@ msgstr "Branches"
 #: templates/shops/1212/store_detail.html:126
 #: templates/shops/1212/store_list2.html:282
 #: templates/shops/1212/store_list2.html:340
-#: templates/shops/branch_catalog.html:1061
-#: templates/shops/branch_catalog.html:1068
-#: templates/shops/cart_detail.html:256 templates/shops/cart_detail.html:365
+#: templates/shops/branch_catalog.html:1105
+#: templates/shops/branch_catalog.html:1112
+#: templates/shops/cart_detail.html:261 templates/shops/cart_detail.html:376
 #: templates/shops/checkout_success.html:97
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:166
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:176
@@ -1177,7 +1177,7 @@ msgstr "/ night"
 #: templates/public_site/branch_menu.html:613
 #: templates/public_site/constructor_build.html:310
 #: templates/public_site/table_menu.html:654
-#: templates/shops/branch_catalog.html:1727
+#: templates/shops/branch_catalog.html:1799
 msgid "Максимум"
 msgstr "Maximum"
 
@@ -1263,7 +1263,7 @@ msgstr "— Choose a session —"
 
 #: templates/hotels/hotel_branch.html:367
 #: templates/printshop/_product_card.html:20
-#: templates/shops/branch_catalog.html:1662
+#: templates/shops/branch_catalog.html:1734
 msgid "от"
 msgstr "from"
 
@@ -1571,14 +1571,14 @@ msgstr "Cart is empty"
 msgid "позиций"
 msgstr "items"
 
-#: templates/karaoke/menu.html:198 templates/shops/branch_catalog.html:1011
+#: templates/karaoke/menu.html:198 templates/shops/branch_catalog.html:1054
 msgid "+ В корзину"
 msgstr "+ Add to cart"
 
 #: templates/karaoke/menu.html:199 templates/karaoke/menu.html:319
 #: templates/public_site/cart_detail2.html:907
 #: templates/public_site/table_cart.html:233
-#: templates/shops/cart_detail.html:443
+#: templates/shops/cart_detail.html:454
 msgid "Подтвердить заказ"
 msgstr "Confirm order"
 
@@ -1692,8 +1692,8 @@ msgstr "Branches"
 #: templates/public_site/еуые/branch_menu.html:268
 #: templates/shops/1212/branch_catalog.html:696
 #: templates/shops/1212/branch_catalog2.html:698
-#: templates/shops/branch_catalog.html:1092
-#: templates/shops/branch_catalog.html:1105
+#: templates/shops/branch_catalog.html:1136
+#: templates/shops/branch_catalog.html:1149
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:211
 #: templates/shops/store_detail.html:313
 msgid "Все"
@@ -1703,8 +1703,8 @@ msgstr "All"
 #: templates/pharmacy/drug_detail.html:51
 #: templates/shops/1212/branch_catalog.html:748
 #: templates/shops/1212/branch_catalog2.html:750
-#: templates/shops/branch_catalog.html:1186
-#: templates/shops/cart_detail.html:304
+#: templates/shops/branch_catalog.html:1251
+#: templates/shops/cart_detail.html:315
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:264
 msgid "В наличии"
 msgstr "In stock"
@@ -1732,8 +1732,8 @@ msgstr "Price"
 #: templates/public_site/branch_menu.html:1750
 #: templates/shops/1212/branch_catalog.html:755
 #: templates/shops/1212/branch_catalog2.html:757
-#: templates/shops/branch_catalog.html:1194
-#: templates/shops/branch_catalog.html:1257
+#: templates/shops/branch_catalog.html:1259
+#: templates/shops/branch_catalog.html:1322
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:276
 msgid "В корзину"
 msgstr "Add to cart"
@@ -1763,7 +1763,7 @@ msgstr "Network / server error"
 #: templates/shops/1212/branch_catalog.html:624
 #: templates/shops/1212/branch_catalog2.html:626
 #: templates/shops/1212/store_list2.html:339 templates/shops/cart_detail.html:4
-#: templates/shops/cart_detail.html:251
+#: templates/shops/cart_detail.html:256
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:198
 msgid "Корзина"
 msgstr "Cart"
@@ -1801,13 +1801,14 @@ msgstr "Cart"
 #: templates/shops/1212/branch_catalog2.html:643
 #: templates/shops/1212/branch_catalog2.html:749
 #: templates/shops/1212/branch_catalog2.html:780
-#: templates/shops/branch_catalog.html:1066
-#: templates/shops/branch_catalog.html:1275
-#: templates/shops/cart_detail.html:299 templates/shops/cart_detail.html:301
-#: templates/shops/cart_detail.html:333 templates/shops/cart_detail.html:335
-#: templates/shops/cart_detail.html:360 templates/shops/cart_detail.html:366
-#: templates/shops/cart_detail.html:374 templates/shops/cart_detail.html:379
-#: templates/shops/cart_detail.html:392 templates/shops/cart_detail.html:394
+#: templates/shops/branch_catalog.html:1110
+#: templates/shops/branch_catalog.html:1340
+#: templates/shops/cart_detail.html:305 templates/shops/cart_detail.html:306
+#: templates/shops/cart_detail.html:309 templates/shops/cart_detail.html:312
+#: templates/shops/cart_detail.html:344 templates/shops/cart_detail.html:346
+#: templates/shops/cart_detail.html:371 templates/shops/cart_detail.html:377
+#: templates/shops/cart_detail.html:385 templates/shops/cart_detail.html:390
+#: templates/shops/cart_detail.html:403 templates/shops/cart_detail.html:405
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:176
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:200
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:260
@@ -1821,7 +1822,7 @@ msgstr "Refresh"
 
 #: templates/pharmacy/cart_detail.html:51
 #: templates/public_site/cart_detail2.html:805
-#: templates/shops/cart_detail.html:315 templates/shops/cart_detail.html:346
+#: templates/shops/cart_detail.html:326 templates/shops/cart_detail.html:357
 msgid "Удалить"
 msgstr "Remove"
 
@@ -1857,7 +1858,7 @@ msgstr "Comment (optional)"
 #: templates/pharmacy/cart_detail.html:88
 #: templates/public_site/branch_menu.html:634
 #: templates/public_site/cart_detail.html:301
-#: templates/shops/cart_detail.html:430
+#: templates/shops/cart_detail.html:441
 msgid "Способ оплаты"
 msgstr "Payment method"
 
@@ -2024,8 +2025,8 @@ msgstr "Popular"
 #: templates/printshop/branch_catalog.html:306
 #: templates/public_site/branch_menu.html:603
 #: templates/public_site/branch_menu.html:1699
-#: templates/shops/branch_catalog.html:1010
-#: templates/shops/branch_catalog.html:1277
+#: templates/shops/branch_catalog.html:1053
+#: templates/shops/branch_catalog.html:1342
 msgid "шт"
 msgstr "pcs"
 
@@ -2044,7 +2045,7 @@ msgstr "Failed to add"
 
 #: templates/printshop/branch_catalog.html:196
 #: templates/public_site/branch_menu.html:601
-#: templates/shops/branch_catalog.html:1013
+#: templates/shops/branch_catalog.html:1056
 msgid "Добавлено в корзину"
 msgstr "Added to cart"
 
@@ -2052,7 +2053,7 @@ msgstr "Added to cart"
 #: templates/public_site/branch_menu.html:598
 #: templates/public_site/cart_detail.html:171
 #: templates/public_site/cart_detail2.html:758
-#: templates/shops/cart_detail.html:270
+#: templates/shops/cart_detail.html:275
 msgid "Корзина пуста"
 msgstr "Your cart is empty"
 
@@ -2071,7 +2072,7 @@ msgstr "🚚 To free delivery, order for another"
 #: templates/public_site/cart_detail2.html:727
 #: templates/public_site/cart_detail2.html:827
 #: templates/public_site/checkout_success.html:97
-#: templates/shops/cart_detail.html:359
+#: templates/shops/cart_detail.html:370
 msgid "Подытог"
 msgstr "Subtotal"
 
@@ -2099,7 +2100,7 @@ msgstr "Minimum order amount —"
 
 #: templates/printshop/branch_catalog.html:210
 #: templates/public_site/cart_detail.html:277
-#: templates/shops/cart_detail.html:402
+#: templates/shops/cart_detail.html:413
 msgid "Оформление заказа"
 msgstr "Checkout"
 
@@ -2116,13 +2117,13 @@ msgid "Комментарий к заказу"
 msgstr "Order comment"
 
 #: templates/printshop/branch_catalog.html:293
-#: templates/shops/branch_catalog.html:1210
+#: templates/shops/branch_catalog.html:1275
 msgid "Каталог пока пуст"
 msgstr "The catalog is empty for now"
 
 #: templates/printshop/branch_catalog.html:303
 #: templates/public_site/branch_menu.html:1696
-#: templates/shops/branch_catalog.html:1274
+#: templates/shops/branch_catalog.html:1339
 msgid "Ваша корзина"
 msgstr "Your cart"
 
@@ -2589,12 +2590,12 @@ msgstr "Error"
 #: templates/public_site/branch_menu.html:600
 #: templates/public_site/constructor_build.html:309
 #: templates/public_site/table_menu.html:638
-#: templates/shops/branch_catalog.html:1018
+#: templates/shops/branch_catalog.html:1061
 msgid "Ошибка сети"
 msgstr "Network error"
 
 #: templates/public_site/branch_menu.html:602
-#: templates/shops/branch_catalog.html:1017
+#: templates/shops/branch_catalog.html:1060
 msgid "Не удалось добавить"
 msgstr "Couldn't add"
 
@@ -2612,7 +2613,7 @@ msgstr "Required"
 #: templates/public_site/branch_menu.html:606
 #: templates/public_site/constructor_build.html:361
 #: templates/public_site/table_menu.html:652
-#: templates/shops/branch_catalog.html:1694
+#: templates/shops/branch_catalog.html:1766
 msgid "Необязательно"
 msgstr "Optional"
 
@@ -2649,14 +2650,14 @@ msgstr "Done ✓"
 #: templates/public_site/branch_menu.html:614
 #: templates/public_site/constructor_build.html:310
 #: templates/public_site/table_menu.html:655
-#: templates/shops/branch_catalog.html:1755
+#: templates/shops/branch_catalog.html:1827
 msgid "Выберите минимум"
 msgstr "Select at least"
 
 #: templates/public_site/branch_menu.html:615
 #: templates/public_site/constructor_build.html:310
 #: templates/public_site/table_menu.html:656
-#: templates/shops/branch_catalog.html:1755
+#: templates/shops/branch_catalog.html:1827
 msgid "в"
 msgstr "in"
 
@@ -2784,15 +2785,15 @@ msgstr "24/7"
 #: templates/public_site/table_menu.html:837
 #: templates/public_site/table_menu.html:850
 #: templates/public_site/table_menu.html:892
-#: templates/shops/branch_catalog.html:1124
-#: templates/shops/branch_catalog.html:1244
-#: templates/shops/branch_catalog.html:1648
+#: templates/shops/branch_catalog.html:1178
+#: templates/shops/branch_catalog.html:1309
+#: templates/shops/branch_catalog.html:1720
 msgid "Собери сам"
 msgstr "Build your own"
 
 #: templates/public_site/branch_menu.html:747
 #: templates/public_site/table_menu.html:719
-#: templates/shops/branch_catalog.html:1098
+#: templates/shops/branch_catalog.html:1142
 msgid "Все категории"
 msgstr "All categories"
 
@@ -2810,14 +2811,14 @@ msgstr "The restaurant hasn't added dishes yet"
 
 #: templates/public_site/branch_menu.html:1703
 #: templates/public_site/table_menu.html:1096
-#: templates/shops/branch_catalog.html:1280
+#: templates/shops/branch_catalog.html:1345
 msgid "Наверх"
 msgstr "Back to top"
 
 #: templates/public_site/branch_menu.html:1721
 #: templates/public_site/branch_menu.html:1735
 #: templates/public_site/table_menu.html:867
-#: templates/shops/branch_catalog.html:1245
+#: templates/shops/branch_catalog.html:1310
 msgid "Закрыть"
 msgstr "Close"
 
@@ -2895,7 +2896,7 @@ msgid "Оставьте контакты, чтобы ресторан быстр
 msgstr "Leave your contacts so the restaurant can process the order quickly."
 
 #: templates/public_site/cart_detail2.html:867
-#: templates/shops/cart_detail.html:408
+#: templates/shops/cart_detail.html:419
 msgid "Имя (не обязательно)"
 msgstr "Name (optional)"
 
@@ -2904,7 +2905,7 @@ msgid "Адрес / стол / кабинка"
 msgstr "Address / table / room"
 
 #: templates/public_site/cart_detail2.html:900
-#: templates/shops/cart_detail.html:427
+#: templates/shops/cart_detail.html:438
 msgid "Комментарий (не обязательно)"
 msgstr "Comment (optional)"
 
@@ -4303,7 +4304,7 @@ msgstr "No contact provided"
 #: templates/shops/1212/store_detail.html:38
 #: templates/shops/1212/store_detail.html:142
 #: templates/shops/1212/store_list.html:113
-#: templates/shops/cart_detail.html:256
+#: templates/shops/cart_detail.html:261
 #: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:166
 msgid "В магазине"
 msgstr "In the shop"
@@ -4342,7 +4343,7 @@ msgstr "Delivery orders only"
 
 #: templates/shops/1212/branch_catalog.html:680
 #: templates/shops/1212/branch_catalog2.html:682
-#: templates/shops/branch_catalog.html:1061
+#: templates/shops/branch_catalog.html:1105
 msgid "Покупка в магазине"
 msgstr "In-store purchase"
 
@@ -4365,7 +4366,7 @@ msgstr "TBC"
 
 #: templates/shops/1212/branch_catalog.html:727
 #: templates/shops/1212/branch_catalog2.html:729
-#: templates/shops/branch_catalog.html:1163
+#: templates/shops/branch_catalog.html:1221
 msgid "Есть"
 msgstr "Available"
 
@@ -4373,10 +4374,10 @@ msgstr "Available"
 #: templates/shops/1212/branch_catalog.html:758
 #: templates/shops/1212/branch_catalog2.html:731
 #: templates/shops/1212/branch_catalog2.html:760
-#: templates/shops/branch_catalog.html:1020
-#: templates/shops/branch_catalog.html:1161
-#: templates/shops/branch_catalog.html:1184
-#: templates/shops/branch_catalog.html:1197
+#: templates/shops/branch_catalog.html:1063
+#: templates/shops/branch_catalog.html:1217
+#: templates/shops/branch_catalog.html:1247
+#: templates/shops/branch_catalog.html:1262
 msgid "Нет в наличии"
 msgstr "Out of stock"
 
@@ -4595,49 +4596,59 @@ msgstr "Made for restaurants of Kyrgyzstan"
 msgid "Разработка Amantur Agency"
 msgstr "Built by Amantur Agency"
 
-#: templates/shops/branch_catalog.html:1012
+#: templates/shops/branch_catalog.html:1055
 msgid "＋ В корзину"
 msgstr "＋ Add to cart"
 
-#: templates/shops/branch_catalog.html:1014
+#: templates/shops/branch_catalog.html:1057
 msgid "✓ Добавлено"
 msgstr "✓ Added"
 
-#: templates/shops/branch_catalog.html:1015
-#: templates/shops/cart_detail.html:457
+#: templates/shops/branch_catalog.html:1058
+#: templates/shops/cart_detail.html:468
 msgid "Недостаточно товара"
 msgstr "Not enough stock"
 
-#: templates/shops/branch_catalog.html:1016
-#: templates/shops/cart_detail.html:459
+#: templates/shops/branch_catalog.html:1059
+#: templates/shops/cart_detail.html:470
 msgid "Товар временно не продаётся"
 msgstr "This item is temporarily unavailable"
 
-#: templates/shops/branch_catalog.html:1019
+#: templates/shops/branch_catalog.html:1062
 msgid "В наличии:"
 msgstr "In stock:"
 
-#: templates/shops/branch_catalog.html:1048
+#: templates/shops/branch_catalog.html:1064
+#: templates/shops/branch_catalog.html:1219
+#: templates/shops/branch_catalog.html:1249
+msgid "Под заказ"
+msgstr "Pre-order"
+
+#: templates/shops/branch_catalog.html:1092
 msgid "Каталог филиала"
 msgstr "Branch catalog"
 
-#: templates/shops/branch_catalog.html:1066
+#: templates/shops/branch_catalog.html:1110
 msgid "Мин. заказ"
 msgstr "Min. order"
 
-#: templates/shops/branch_catalog.html:1072
+#: templates/shops/branch_catalog.html:1116
 msgid "Инд. заказы:"
 msgstr "Custom orders:"
 
-#: templates/shops/branch_catalog.html:1075
+#: templates/shops/branch_catalog.html:1119
 msgid "Каталог открыт"
 msgstr "Catalog open"
 
-#: templates/shops/branch_catalog.html:1084
+#: templates/shops/branch_catalog.html:1128
 msgid "Инд. заказ"
 msgstr "Custom order"
 
-#: templates/shops/branch_catalog.html:1117
+#: templates/shops/branch_catalog.html:1163
+msgid "Акция сегодня!"
+msgstr "Deal of the day!"
+
+#: templates/shops/branch_catalog.html:1171
 msgid ""
 "Цены указаны по прайс-листу фирменных магазинов и могут отличаться в других "
 "точках продаж."
@@ -4645,83 +4656,83 @@ msgstr ""
 "Prices are listed per the brand stores' price list and may differ at other "
 "points of sale."
 
-#: templates/shops/branch_catalog.html:1125
+#: templates/shops/branch_catalog.html:1179
 msgid "Составьте свой букет или набор из отдельных цветов"
 msgstr "Put together your own bouquet or set from individual flowers"
 
-#: templates/shops/branch_catalog.html:1211
+#: templates/shops/branch_catalog.html:1276
 msgid "Товары для этого филиала ещё не добавлены."
 msgstr "Products for this branch haven't been added yet."
 
-#: templates/shops/branch_catalog.html:1665
+#: templates/shops/branch_catalog.html:1737
 msgid "Пока нет доступных наборов"
 msgstr "No sets available yet"
 
-#: templates/shops/branch_catalog.html:1693
+#: templates/shops/branch_catalog.html:1765
 msgid "макс."
 msgstr "max."
 
-#: templates/shops/branch_catalog.html:1694
+#: templates/shops/branch_catalog.html:1766
 msgid "Минимум"
 msgstr "Minimum"
 
-#: templates/shops/branch_catalog.html:1727
+#: templates/shops/branch_catalog.html:1799
 msgid "в этой группе"
 msgstr "in this group"
 
-#: templates/shops/cart_detail.html:271
+#: templates/shops/cart_detail.html:276
 msgid "Добавьте товары из каталога, чтобы оформить заказ."
 msgstr "Add items from the catalog to place an order."
 
-#: templates/shops/cart_detail.html:274
+#: templates/shops/cart_detail.html:279
 msgid "Перейти в каталог"
 msgstr "Go to catalog"
 
-#: templates/shops/cart_detail.html:310 templates/shops/cart_detail.html:341
+#: templates/shops/cart_detail.html:321 templates/shops/cart_detail.html:352
 msgid "Меньше"
 msgstr "Less"
 
-#: templates/shops/cart_detail.html:313 templates/shops/cart_detail.html:344
+#: templates/shops/cart_detail.html:324 templates/shops/cart_detail.html:355
 msgid "Больше"
 msgstr "More"
 
-#: templates/shops/cart_detail.html:356
+#: templates/shops/cart_detail.html:367
 msgid "Итого по заказу"
 msgstr "Order summary"
 
-#: templates/shops/cart_detail.html:379
+#: templates/shops/cart_detail.html:390
 msgid "Мин. сумма доставки:"
 msgstr "Min. delivery amount:"
 
-#: templates/shops/cart_detail.html:389
+#: templates/shops/cart_detail.html:400
 msgid "Совсем чуть-чуть до доставки!"
 msgstr "Almost there for delivery!"
 
-#: templates/shops/cart_detail.html:391
+#: templates/shops/cart_detail.html:402
 msgid "Минимальная сумма заказа для доставки"
 msgstr "The minimum order amount for delivery is"
 
-#: templates/shops/cart_detail.html:393
+#: templates/shops/cart_detail.html:404
 msgid "Добавьте товаров ещё на"
 msgstr "Add items for another"
 
-#: templates/shops/cart_detail.html:395
+#: templates/shops/cart_detail.html:406
 msgid "и сможете оформить доставку 🙂"
 msgstr "and you'll be able to order delivery 🙂"
 
-#: templates/shops/cart_detail.html:414
+#: templates/shops/cart_detail.html:425
 msgid "Введите номер в формате +996XXXXXXXXX (9 цифр после +996)"
 msgstr "Enter a number in the format +996XXXXXXXXX (9 digits after +996)"
 
-#: templates/shops/cart_detail.html:420
+#: templates/shops/cart_detail.html:431
 msgid "Адрес доставки (обязательно)"
 msgstr "Delivery address (required)"
 
-#: templates/shops/cart_detail.html:422
+#: templates/shops/cart_detail.html:433
 msgid "Комментарий (например: приду через 10 минут)"
 msgstr "Comment (e.g. I'll arrive in 10 minutes)"
 
-#: templates/shops/cart_detail.html:458
+#: templates/shops/cart_detail.html:469
 msgid "Недостаточно товара. Доступно:"
 msgstr "Not enough stock. Available:"
 

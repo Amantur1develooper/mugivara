@@ -50,6 +50,14 @@
         {% if p.sell_direct %}🛒 В продаже{% else %}🧩 Только конструктор{% endif %}
       </span>
 
+      {# «Продавать без остатка (под заказ)» toggle badge #}
+      <span class="pm-preorder-toggle {% if p.sell_out_of_stock %}on{% endif %}"
+            id="ppreorder-{{ stock.id }}"
+            onclick="togglePreorder({{ stock.id }}, this)"
+            title="Нажмите, чтобы переключить">
+        {% if p.sell_out_of_stock %}🔁 Под заказ{% else %}📦 По остатку{% endif %}
+      </span>
+
       <span class="pm-status {% if not p.is_active %}off{% elif qty == 0 %}none{% elif qty < 3 %}low{% else %}ok{% endif %}"
             id="pdot-{{ stock.id }}"></span>
       <span class="pm-meta" id="pmeta-{{ stock.id }}" style="margin:0">{{ p.get_unit_display }}</span>

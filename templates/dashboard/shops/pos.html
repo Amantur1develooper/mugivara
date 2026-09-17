@@ -180,6 +180,11 @@
 .pos-item-photo img { width: 100%; height: 100%; object-fit: cover; }
 .pos-item-name  { font-size: 12px; font-weight: 700; color: var(--text); line-height: 1.3; }
 .pos-item-price { font-size: 13px; font-weight: 900; color: var(--accent); }
+.pos-price-old { text-decoration: line-through; color: var(--muted); font-weight: 600; font-size: 11px; }
+.pos-discount-chip {
+  display: inline-block; margin-left: 3px; padding: 1px 6px; border-radius: 999px;
+  background: #e11d48; color: #fff; font-size: 9.5px; font-weight: 800; vertical-align: middle;
+}
 .pos-item-stock {
   font-size: 10px;
   font-weight: 700;
@@ -191,6 +196,7 @@
 .pos-item-stock.ok  { background: rgba(0,184,150,.10); color: var(--teal); }
 .pos-item-stock.low { background: rgba(255,149,0,.12); color: #ff9500; }
 .pos-item-stock.out { background: rgba(255,59,48,.10);  color: #ff3b30; }
+.pos-item-stock.preorder { background: rgba(124,58,237,.10); color: #7c3aed; }
 .pos-item-barcode { font-size: 9px; color: var(--muted); font-family: monospace; }
 
 /* ── RIGHT: CART ── */
@@ -496,25 +502,34 @@
     <div class="pos-items" id="posItems">
       {% for stock in stocks %}
       {% with p=stock.product %}
-      {% if p.qty > 0 or stock.qty > 0 %}
-      <div class="pos-item {% if stock.qty == 0 or stock.is_stopped %}out{% endif %}"
+      {% if stock.qty > 0 or p.sell_out_of_stock %}
+      <div class="pos-item {% if not stock.is_orderable %}out{% endif %}"
            id="pos-stock-{{ stock.id }}"
            data-cat="{% if p.category_id %}{{ p.category_id }}{% else %}0{% endif %}"
            data-stock="{{ stock.id }}"
            data-name="{{ p.name_ru|escapejs }}"
-           data-price="{{ p.price|floatformat:0 }}"
+           data-price="{{ stock.promo_price|floatformat:0 }}"
            data-qty="{{ stock.qty|floatformat:0 }}"
            data-barcode="{{ p.barcode }}"
-           {% if stock.qty > 0 and not stock.is_stopped %}onclick="addToCart({{ stock.id }}, '{{ p.name_ru|escapejs }}', {{ p.price|floatformat:0 }}, {{ stock.qty|floatformat:0 }})"{% endif %}
+           {% if stock.is_orderable %}onclick="addToCart({{ stock.id }}, '{{ p.name_ru|escapejs }}', {{ stock.promo_price|floatformat:0 }}, {% if stock.qty > 0 %}{{ stock.qty|floatformat:0 }}{% else %}999{% endif %})"{% endif %}
            title="{% if stock.is_stopped %}В стоп-листе{% else %}{{ p.name_ru }}{% endif %}">
         <div class="pos-item-photo">
           {% if p.photo %}<img src="{{ p.photo.url }}" alt="" loading="lazy">{% else %}📦{% endif %}
         </div>
         <div class="pos-item-name">{{ p.name_ru }}</div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
-          <div class="pos-item-price">{{ p.price|floatformat:0 }} сом</div>
+          <div class="pos-item-price">
+            {% if stock.promo_percent %}
+              <span class="pos-price-old">{{ p.price|floatformat:0 }}</span> {{ stock.promo_price|floatformat:0 }} сом
+              <span class="pos-discount-chip">−{{ stock.promo_percent }}%</span>
+            {% else %}
+              {{ p.price|floatformat:0 }} сом
+            {% endif %}
+          </div>
           {% if stock.is_stopped %}
             <span class="pos-item-stock out">Стоп</span>
+          {% elif stock.qty == 0 and p.sell_out_of_stock %}
+            <span class="pos-item-stock preorder">Под заказ</span>
           {% elif stock.qty == 0 %}
             <span class="pos-item-stock out">Нет</span>
           {% elif stock.qty <= 3 %}

@@ -16,9 +16,10 @@ from decimal import Decimal
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db import transaction
-from .models import Store, StoreBranch, StoreCategory, StoreProduct, StoreStock, StoreOrder, StoreOrderItem, StoreConstructorOrderItem
+from .models import Store, StoreBranch, StoreCategory, StoreProduct, StoreStock, StoreOrder, StoreOrderItem, StoreConstructorOrderItem, StorePromotion
 from .cart import get_cart, save_cart, set_mode, get_mode, dec, get_shop_cart, clear_shop_cart, get_cx_cart, save_cx_cart, clear_cx_cart
 from . import constructor_utils
+from .pricing import PromoResolver
 import json
 import uuid
 
@@ -114,7 +115,7 @@ def _branch_catalog(request, branch: StoreBranch):
     store = branch.store
     mode = get_mode(request, branch.id)
 
-    stocks = (
+    stocks = list(
         StoreStock.objects
         .filter(branch=branch, product__is_active=True, product__sell_direct=True)
         .select_related("product", "product__category")
@@ -137,12 +138,17 @@ def _branch_catalog(request, branch: StoreBranch):
         .order_by("sort_order", "id")
     )
 
+    # Акции на сегодня — считаем скидку один раз на магазин и подставляем в каждую карточку
+    promo = PromoResolver(store)
+    for s in stocks:
+        s.promo_price, s.promo_percent = promo.price_for(s.product)
+
     # cart badge
     cart = get_cart(request, branch.id)
     qty_total = sum(dec(v) for v in cart.values())
     total = Decimal("0")
-    # быстро посчитаем total по текущим ценам
-    price_map = {s.product_id: s.product.price for s in stocks}
+    # быстро посчитаем total по текущим ценам (с учётом акции)
+    price_map = {s.product_id: s.promo_price for s in stocks}
     for pid, q in cart.items():
         total += price_map.get(int(pid), Decimal("0")) * dec(q)
 
@@ -156,6 +162,19 @@ def _branch_catalog(request, branch: StoreBranch):
             qty_total += resolved["qty"]
             total += resolved["line_total"]
 
+    # Баннер акции на сегодня (человекочитаемый список)
+    from datetime import date as _date
+    today_promos = (
+        StorePromotion.objects
+        .filter(store=store, is_active=True, weekday=_date.today().weekday())
+        .prefetch_related("categories")
+    )
+    promo_lines = []
+    for p in today_promos:
+        scope = "на все товары" if p.apply_to_all else ", ".join(c.name_ru for c in p.categories.all())
+        if scope:
+            promo_lines.append(f"{scope} −{p.discount_percent}%")
+
     return render(request, "shops/branch_catalog.html", {
         "store": store,
         "branch": branch,
@@ -166,6 +185,7 @@ def _branch_catalog(request, branch: StoreBranch):
         "cart_total": total,
         "has_constructors": has_constructors,
         "constructors_json": constructor_utils.constructors_json(store) if has_constructors else "{}",
+        "promo_lines": promo_lines,
     })
 
 
@@ -178,9 +198,10 @@ def cart_detail(request, branch_id):
     stocks = (
         StoreStock.objects
         .filter(branch=branch, product_id__in=product_ids)
-        .select_related("product")
+        .select_related("product", "product__category")
     )
     stock_map = {s.product_id: s for s in stocks}
+    promo = PromoResolver(branch.store)
 
     rows = []
     subtotal = Decimal("0")
@@ -192,13 +213,17 @@ def cart_detail(request, branch_id):
         if not s:
             continue
         qty = dec(qty_str)
-        line_total = s.product.price * qty
+        price, discount_percent = promo.price_for(s.product)
+        line_total = price * qty
         subtotal += line_total
         qty_total += qty
         rows.append({
             "product": s.product,
             "stock": s,
             "qty": qty,
+            "price": price,
+            "orig_price": s.product.price,
+            "discount_percent": discount_percent,
             "line_total": line_total,
         })
 
@@ -261,8 +286,8 @@ def cart_add(request, branch_id, product_id):
     current = dec(cart.get(str(product_id), "0"))
     new_qty = current + qty
 
-    # проверка остатков
-    if new_qty > stock.qty:
+    # проверка остатков — пропускаем, если товар помечен «продавать без остатка»
+    if not stock.product.sell_out_of_stock and new_qty > stock.qty:
         payload = {"ok": False, "error": "not_enough"}
         if branch.show_stock_qty:
             payload["available"] = str(stock.qty)
@@ -273,10 +298,11 @@ def cart_add(request, branch_id, product_id):
 
     # totals
     qty_total = sum(dec(v) for v in cart.values())
-    # total считаем по товарам этой корзины
+    # total считаем по товарам этой корзины (цена — с учётом акции на сегодня)
     pids = [int(pid) for pid in cart.keys()]
-    products = StoreProduct.objects.filter(id__in=pids).only("id", "price")
-    price_map = {p.id: p.price for p in products}
+    products = StoreProduct.objects.filter(id__in=pids).only("id", "price", "category_id")
+    promo = PromoResolver(branch.store)
+    price_map = {p.id: promo.price_for(p)[0] for p in products}
     total = sum(price_map.get(int(pid), Decimal("0")) * dec(q) for pid, q in cart.items())
 
     return JsonResponse({"ok": True, "qty_total": str(qty_total), "total": str(total)})
@@ -297,7 +323,7 @@ def cart_update(request, branch_id, product_id):
     else:
         if stock.is_stopped:
             return JsonResponse({"ok": False, "error": "stopped"})
-        if qty > stock.qty:
+        if not stock.product.sell_out_of_stock and qty > stock.qty:
             payload = {"ok": False, "error": "not_enough"}
             if branch.show_stock_qty:
                 payload["available"] = str(stock.qty)
@@ -306,10 +332,12 @@ def cart_update(request, branch_id, product_id):
 
     save_cart(request, branch_id, cart)
 
+    promo = PromoResolver(branch.store)
+
     qty_total = sum(dec(v) for v in cart.values())
     pids = [int(pid) for pid in cart.keys()]
-    products = StoreProduct.objects.filter(id__in=pids).only("id", "price")
-    price_map = {p.id: p.price for p in products}
+    products = StoreProduct.objects.filter(id__in=pids).only("id", "price", "category_id")
+    price_map = {p.id: promo.price_for(p)[0] for p in products}
     subtotal = sum(price_map.get(int(pid), Decimal("0")) * dec(q) for pid, q in cart.items())
 
     mode = get_mode(request, branch_id)
@@ -319,7 +347,8 @@ def cart_update(request, branch_id, product_id):
 
     total = subtotal + delivery_fee
 
-    line_total = stock.product.price * qty if qty > 0 else Decimal("0")
+    row_price = promo.price_for(stock.product)[0] if qty > 0 else Decimal("0")
+    line_total = row_price * qty if qty > 0 else Decimal("0")
     return JsonResponse({
         "ok": True,
         "row_qty": str(qty),
@@ -556,10 +585,13 @@ def checkout(request, branch_id):
                   .select_related("product"))
         stock_map = {s.product_id: s for s in stocks}
 
-        # проверка наличия
+        # проверка наличия — «продавать без остатка» пропускает только сравнение количества
         for r in rows:
             st = stock_map.get(r["product_id"])
-            if (not st) or st.is_stopped or (not st.product.sell_direct) or (int(st.qty) < int(r["qty"])):
+            if not st or st.is_stopped or not st.product.sell_direct:
+                messages.error(request, _("Нет в наличии: %(name)s") % {"name": r['product'].name_ru})
+                return redirect("shops:cart_detail", branch_id=branch.id)
+            if not st.product.sell_out_of_stock and int(st.qty) < int(r["qty"]):
                 messages.error(request, _("Нет в наличии: %(name)s") % {"name": r['product'].name_ru})
                 return redirect("shops:cart_detail", branch_id=branch.id)
 
@@ -573,9 +605,11 @@ def checkout(request, branch_id):
             cx_stock_map = {s.product_id: s for s in cx_stocks}
             for pid, needed in cx_ing_needed.items():
                 st = cx_stock_map.get(pid)
-                if (not st) or st.qty < needed:
-                    pname = st.product.name_ru if st else pid
-                    messages.error(request, _("Нет в наличии: %(name)s") % {"name": pname})
+                if not st:
+                    messages.error(request, _("Нет в наличии: %(name)s") % {"name": pid})
+                    return redirect("shops:cart_detail", branch_id=branch.id)
+                if not st.product.sell_out_of_stock and st.qty < needed:
+                    messages.error(request, _("Нет в наличии: %(name)s") % {"name": st.product.name_ru})
                     return redirect("shops:cart_detail", branch_id=branch.id)
 
         subtotal = cart["subtotal"] + cx_subtotal
@@ -624,10 +658,10 @@ def checkout(request, branch_id):
 
         items_payload = []
 
-        # позиции + списание
+        # позиции + списание (цена — из корзины, уже с учётом акции на сегодня)
         for r in rows:
             st = stock_map[r["product_id"]]
-            price = dec(st.product.price)
+            price = r["price"]
             qty = int(r["qty"])
             line_total = price * qty
 
@@ -671,12 +705,12 @@ def checkout(request, branch_id):
     request.session["shop_last_order_text"] = order_text
     request.session.modified = True
 
-    # TG
-    # from shops.tasks import notify_new_shop_order
-    # notify_new_shop_order.delay(order.id)
-    from shops.tasks import notify_new_shop_order
-    notify_new_shop_order.delay(order.id)
-
+    # Уведомление в Telegram отправляет integrations/signals.py (post_save на StoreOrder) —
+    # он срабатывает автоматически для ЛЮБОГО способа создания заказа (сайт, касса и т.д.)
+    # и уже включает состав «Собери сам». Раньше здесь ЕЩЁ ОТДЕЛЬНО вызывался
+    # shops.tasks.notify_new_shop_order — устаревший дублирующий путь без учёта
+    # «Собери сам», из-за которого в группу через раз приходило то полное, то пустое
+    # сообщение по одному и тому же заказу. Убрано, чтобы не дублировать.
 
     return redirect("shops:checkout_success", branch_id=branch.id, order_id=order.id)
 

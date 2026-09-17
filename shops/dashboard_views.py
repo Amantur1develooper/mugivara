@@ -12,10 +12,11 @@ from .models import (
     StoreStock, StoreOrder, StoreOrderItem, StoreMembership,
     Warehouse, WarehouseStock,
     StoreConstructor, StoreConstructorGroup, StoreConstructorIngredient, StoreConstructorOrderItem,
-    ShopPrintConfig, ShopPrintJob,
+    ShopPrintConfig, ShopPrintJob, StorePromotion,
 )
 from .print_jobs import create_order_print_job
 from . import constructor_utils
+from .pricing import PromoResolver
 
 LOGIN_URL = "dashboard:login"
 
@@ -456,6 +457,20 @@ def shop_product_sell_toggle(request, stock_id):
     return JsonResponse({"ok": True, "sell_direct": p.sell_direct})
 
 
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_product_preorder_toggle(request, stock_id):
+    """Вкл/выкл «продавать без остатка» — товар остаётся доступен для покупки
+    (на сайте и в кассе), даже если остаток на складе филиала равен нулю."""
+    stock = get_object_or_404(StoreStock, id=stock_id)
+    if not _has_branch_access(request.user, stock.branch):
+        return JsonResponse({"ok": False}, status=403)
+    p = stock.product
+    p.sell_out_of_stock = not p.sell_out_of_stock
+    p.save(update_fields=["sell_out_of_stock"])
+    return JsonResponse({"ok": True, "sell_out_of_stock": p.sell_out_of_stock})
+
+
 # ── ОТДЕЛЬНЫЙ СКЛАД СЕТИ (не привязан к филиалу) ─────────────────────────────
 
 def _get_or_create_warehouse(store):
@@ -816,6 +831,96 @@ def shop_order_status(request, order_id):
     return redirect("dashboard:shop_orders", branch_id=order.branch_id)
 
 
+# ── АКЦИИ (скидка по дням недели) ────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def shop_promotions(request, store_id):
+    store = get_object_or_404(Store, id=store_id)
+    if not _has_store_access(request.user, store):
+        return redirect("dashboard:shop_home")
+
+    promotions = (
+        StorePromotion.objects
+        .filter(store=store)
+        .prefetch_related("categories")
+        .order_by("weekday", "-discount_percent")
+    )
+    categories = store.categories.filter(is_active=True).order_by("sort_order", "name_ru")
+
+    import json as _j
+    weekday_labels = [label for _val, label in StorePromotion.Weekday.choices]
+
+    return render(request, "dashboard/shops/promotions.html", {
+        "store": store,
+        "promotions": promotions,
+        "categories": categories,
+        "weekdays": StorePromotion.Weekday.choices,
+        "weekdays_json": _j.dumps(weekday_labels, ensure_ascii=False),
+    })
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_promotion_add(request, store_id):
+    store = get_object_or_404(Store, id=store_id)
+    if not _has_store_access(request.user, store):
+        return JsonResponse({"ok": False}, status=403)
+
+    name = (request.POST.get("name") or "").strip()
+    try:
+        weekday = int(request.POST.get("weekday"))
+        assert 0 <= weekday <= 6
+    except (TypeError, ValueError, AssertionError):
+        return JsonResponse({"ok": False, "error": "Выберите день недели"})
+
+    try:
+        percent = int(request.POST.get("discount_percent"))
+        assert 1 <= percent <= 90
+    except (TypeError, ValueError, AssertionError):
+        return JsonResponse({"ok": False, "error": "Скидка должна быть от 1 до 90%"})
+
+    apply_to_all = request.POST.get("apply_to_all") == "1"
+    cat_ids = [int(c) for c in request.POST.getlist("categories") if c.isdigit()]
+
+    if not apply_to_all and not cat_ids:
+        return JsonResponse({"ok": False, "error": "Выберите категории или включите «На все товары»"})
+
+    promo = StorePromotion.objects.create(
+        store=store, name=name, weekday=weekday,
+        apply_to_all=apply_to_all, discount_percent=percent, is_active=True,
+    )
+    if not apply_to_all:
+        cats = StoreCategory.objects.filter(store=store, id__in=cat_ids)
+        promo.categories.set(cats)
+
+    return JsonResponse({
+        "ok": True, "id": promo.id,
+        "weekday_display": promo.get_weekday_display(),
+        "scope": "На все товары" if apply_to_all else ", ".join(c.name_ru for c in promo.categories.all()),
+    })
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_promotion_toggle(request, promo_id):
+    promo = get_object_or_404(StorePromotion, id=promo_id)
+    if not _has_store_access(request.user, promo.store):
+        return JsonResponse({"ok": False}, status=403)
+    promo.is_active = not promo.is_active
+    promo.save(update_fields=["is_active"])
+    return JsonResponse({"ok": True, "is_active": promo.is_active})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_promotion_delete(request, promo_id):
+    promo = get_object_or_404(StorePromotion, id=promo_id)
+    if not _has_store_access(request.user, promo.store):
+        return JsonResponse({"ok": False}, status=403)
+    promo.delete()
+    return JsonResponse({"ok": True})
+
+
 # ── КОНСТРУКТОР «СОБЕРИ САМ» ────────────────────────────────────────────────
 
 @login_required(login_url=LOGIN_URL)
@@ -1012,7 +1117,7 @@ def shop_pos(request, branch_id):
         return redirect("dashboard:shop_home")
 
     categories = list(branch.store.categories.filter(is_active=True).order_by("sort_order", "id"))
-    stocks = (
+    stocks = list(
         StoreStock.objects
         # sell_direct=False — товар только для «Собери сам» (лента, упаковка и т.п.),
         # в обычной сетке кассы для прямой продажи не показывается.
@@ -1020,6 +1125,10 @@ def shop_pos(request, branch_id):
         .select_related("product", "product__category")
         .order_by("product__category__sort_order", "product__id")
     )
+    # Акция на сегодня — считаем один раз и подставляем цену в каждую позицию кассы
+    promo = PromoResolver(branch.store)
+    for s in stocks:
+        s.promo_price, s.promo_percent = promo.price_for(s.product)
     # Live online orders (NEW / CONFIRMED)
     live_orders = (
         StoreOrder.objects
@@ -1070,16 +1179,17 @@ def shop_pos_order_create(request, branch_id):
         phone="-",
     )
 
+    promo = PromoResolver(branch.store)
     subtotal = Decimal("0")
     for it in items_data:
         try:
-            stock = StoreStock.objects.select_related("product").get(
+            stock = StoreStock.objects.select_related("product", "product__category").get(
                 id=int(it["stock_id"]), branch=branch, product__is_active=True
             )
             if stock.is_stopped or not stock.product.sell_direct:
                 continue
             qty = max(Decimal("1"), Decimal(str(it.get("qty", 1))))
-            price = stock.product.price
+            price = promo.price_for(stock.product)[0]
             line = price * qty
             StoreOrderItem.objects.create(
                 order=order, product=stock.product,

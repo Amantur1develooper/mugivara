@@ -5,6 +5,7 @@ from django.db import models, transaction
 from django.utils.text import slugify
 from django.utils import timezone
 from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
 from io import BytesIO
 from django.core.files.base import ContentFile
 from PIL import Image
@@ -186,6 +187,12 @@ class StoreProduct(models.Model):
         help_text="Если выключено — товар не показывается в витрине и в обычной сетке кассы, "
                    "но остаётся доступен как ингредиент в «Собери сам» (например лента, упаковка).",
     )
+    sell_out_of_stock = models.BooleanField(
+        "Продавать без остатка (под заказ)", default=False,
+        help_text="Товар остаётся в наличии для покупателей, даже если остаток на складе филиала "
+                   "равен нулю — полезно для товаров под заказ/предзаказ. Стоп-лист по-прежнему "
+                   "работает и имеет приоритет.",
+    )
 
     def save(self, *args, **kwargs):
         result = _compress(self.photo)
@@ -210,6 +217,41 @@ class StoreProduct(models.Model):
         return round((self.margin / self.price) * 100, 1)
 
 
+class StorePromotion(TimeStampedModel):
+    """Акция сети: в выбранный день недели скидка N% на все товары или на
+    выбранные категории. Действует во всех филиалах магазина."""
+
+    class Weekday(models.IntegerChoices):
+        MON = 0, "Понедельник"
+        TUE = 1, "Вторник"
+        WED = 2, "Среда"
+        THU = 3, "Четверг"
+        FRI = 4, "Пятница"
+        SAT = 5, "Суббота"
+        SUN = 6, "Воскресенье"
+
+    store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name="promotions")
+    name = models.CharField("Название", max_length=200, blank=True, default="")
+    weekday = models.PositiveSmallIntegerField("День недели", choices=Weekday.choices)
+    apply_to_all = models.BooleanField("На все товары", default=False)
+    categories = models.ManyToManyField(
+        StoreCategory, blank=True, related_name="promotions", verbose_name="Категории",
+    )
+    discount_percent = models.PositiveSmallIntegerField(
+        "Скидка, %", validators=[MinValueValidator(1), MaxValueValidator(90)],
+    )
+    is_active = models.BooleanField("Активна", default=True)
+
+    class Meta:
+        ordering = ["weekday", "-discount_percent"]
+        verbose_name = "Акция"
+        verbose_name_plural = "Акции"
+
+    def __str__(self):
+        scope = "на все товары" if self.apply_to_all else f"{self.categories.count()} категорий"
+        return f"{self.store}: -{self.discount_percent}% ({self.get_weekday_display()}, {scope})"
+
+
 class StoreStock(models.Model):
     branch = models.ForeignKey(StoreBranch, on_delete=models.CASCADE, related_name="stocks")
     product = models.ForeignKey(StoreProduct, on_delete=models.CASCADE, related_name="stocks")
@@ -224,8 +266,11 @@ class StoreStock(models.Model):
 
     @property
     def is_orderable(self):
-        """Можно ли купить товар прямо сейчас: есть остаток и не в стоп-листе."""
-        return self.qty > 0 and not self.is_stopped
+        """Можно ли купить товар прямо сейчас: не в стоп-листе, и (есть остаток
+        ИЛИ у товара включено «Продавать без остатка»)."""
+        if self.is_stopped:
+            return False
+        return self.qty > 0 or self.product.sell_out_of_stock
 
     def __str__(self):
         return f"{self.branch}: {self.product} = {self.qty}"
