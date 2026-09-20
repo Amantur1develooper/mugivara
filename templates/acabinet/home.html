@@ -1,0 +1,164 @@
+{% extends "acabinet/_base.html" %}
+{% block title %}Склад машин{% endblock %}
+{% block nav_home %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .ac-stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:22px; }
+  .ac-stat{ background:var(--ac-card); border:1px solid var(--ac-border); border-radius:16px; padding:16px 18px; }
+  .ac-stat-val{ font-size:26px; font-weight:900; letter-spacing:-.5px; }
+  .ac-stat-label{ font-size:11.5px; color:var(--ac-muted); font-weight:600; margin-top:2px; }
+  .ac-stat.available .ac-stat-val{ color:var(--ac-green); }
+  .ac-stat.reserved .ac-stat-val{ color:var(--ac-orange); }
+  .ac-stat.sold .ac-stat-val{ color:var(--ac-muted); }
+  .ac-stat.leads .ac-stat-val{ color:var(--ac-purple); }
+
+  .ac-filters{ display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
+  .ac-input{ padding:9px 13px; border-radius:10px; border:1.5px solid var(--ac-border); background:var(--ac-card);
+             font-size:13px; font-family:inherit; outline:none; }
+  .ac-input:focus{ border-color:var(--ac-accent); }
+
+  .ac-table-wrap{ background:var(--ac-card); border:1px solid var(--ac-border); border-radius:16px; overflow:hidden; }
+  table.ac-table{ width:100%; border-collapse:collapse; font-size:13px; }
+  .ac-table th{ text-align:left; padding:10px 14px; font-size:10.5px; font-weight:800; text-transform:uppercase;
+                letter-spacing:.4px; color:var(--ac-muted); border-bottom:1.5px solid var(--ac-border); white-space:nowrap; }
+  .ac-table td{ padding:10px 14px; border-bottom:1px solid var(--ac-border); vertical-align:middle; }
+  .ac-table tr:last-child td{ border-bottom:none; }
+  .ac-table tr:hover td{ background:var(--ac-card2); }
+  .ac-car-thumb{ width:52px; height:38px; border-radius:8px; object-fit:cover; background:var(--ac-bg); flex-shrink:0; }
+  .ac-car-cell{ display:flex; align-items:center; gap:10px; }
+  .ac-car-title{ font-weight:700; }
+  .ac-car-sub{ font-size:11px; color:var(--ac-muted); }
+
+  .ac-badge{ display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; }
+  .ac-badge.available{ background:rgba(16,185,129,.1); color:var(--ac-green); }
+  .ac-badge.reserved{ background:rgba(245,158,11,.12); color:var(--ac-orange); }
+  .ac-badge.sold{ background:rgba(16,24,40,.06); color:var(--ac-muted); }
+  .ac-badge.hidden{ background:rgba(239,68,68,.08); color:var(--ac-red); }
+
+  .ac-status-select{ font-size:11px; font-weight:700; border-radius:8px; padding:4px 6px; border:1.5px solid var(--ac-border); background:var(--ac-card); font-family:inherit; }
+  .ac-row-actions{ display:flex; gap:6px; }
+  .ac-empty{ text-align:center; padding:56px 20px; color:var(--ac-muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ac-topbar">
+  <div>
+    <div class="ac-title">🏠 Склад машин</div>
+    <div class="ac-sub">{{ dealership.name }} — сколько машин сейчас в наличии, видно сразу</div>
+  </div>
+  <a href="{% url 'acabinet:car_add' dealership.id %}" class="ac-btn ac-btn-primary">+ Добавить автомобиль</a>
+</div>
+
+<div class="ac-stats">
+  <div class="ac-stat available">
+    <div class="ac-stat-val">{{ stock.available }}</div>
+    <div class="ac-stat-label">В наличии</div>
+  </div>
+  <div class="ac-stat reserved">
+    <div class="ac-stat-val">{{ stock.reserved }}</div>
+    <div class="ac-stat-label">Забронировано</div>
+  </div>
+  <div class="ac-stat sold">
+    <div class="ac-stat-val">{{ stock.sold }}</div>
+    <div class="ac-stat-label">Продано всего</div>
+  </div>
+  <div class="ac-stat">
+    <div class="ac-stat-val">{{ stock.total }}</div>
+    <div class="ac-stat-label">Всего на складе</div>
+  </div>
+  <div class="ac-stat leads">
+    <div class="ac-stat-val">{{ new_leads }}</div>
+    <div class="ac-stat-label">Новых лидов</div>
+  </div>
+</div>
+
+<form class="ac-filters" method="get">
+  <input class="ac-input" type="text" name="q" value="{{ q }}" placeholder="Поиск: марка, модель, VIN...">
+  <select class="ac-input" name="status" onchange="this.form.submit()">
+    <option value="">Все статусы</option>
+    {% for val, label in statuses %}
+      <option value="{{ val }}" {% if status_f == val %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="ac-btn ac-btn-sm">Найти</button>
+</form>
+
+<div class="ac-table-wrap">
+  {% if cars %}
+  <table class="ac-table">
+    <thead>
+      <tr>
+        <th>Автомобиль</th>
+        <th>Год</th>
+        <th>Пробег</th>
+        <th>Цена</th>
+        <th>Статус</th>
+        <th>Менеджер</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in cars %}
+      <tr id="car-row-{{ c.id }}">
+        <td>
+          <a href="{% url 'acabinet:car_edit' c.id %}" class="ac-car-cell">
+            {% if c.main_photo %}<img class="ac-car-thumb" src="{{ c.main_photo.photo.url }}" alt="">
+            {% else %}<div class="ac-car-thumb" style="display:flex;align-items:center;justify-content:center">🚗</div>{% endif %}
+            <div>
+              <div class="ac-car-title">{{ c.brand }} {{ c.model_name }}</div>
+              <div class="ac-car-sub">{{ c.get_condition_display }}{% if c.color %} · {{ c.color }}{% endif %}</div>
+            </div>
+          </a>
+        </td>
+        <td>{{ c.year }}</td>
+        <td>{{ c.mileage_display|default:"—" }}</td>
+        <td>{{ c.price_display|default:"—" }}</td>
+        <td>
+          <select class="ac-status-select" onchange="setCarStatus({{ c.id }}, this.value)">
+            {% for val, label in statuses %}
+              <option value="{{ val }}" {% if c.status == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td>{{ c.manager.user.get_username|default:"—" }}</td>
+        <td class="ac-row-actions">
+          <a href="{% url 'acabinet:car_edit' c.id %}" class="ac-btn ac-btn-sm">✏️</a>
+          <button class="ac-btn ac-btn-sm" onclick="deleteCar({{ c.id }})" title="Удалить">✕</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="ac-empty">
+    <div style="font-size:42px;margin-bottom:10px">🚗</div>
+    <div style="font-weight:700;margin-bottom:4px">Пока нет автомобилей</div>
+    <div style="font-size:12.5px">Добавьте первый — кнопка выше</div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+const STATUS_URL = "{% url 'acabinet:car_status' 0 %}".replace('/0/', '/{id}/');
+const DELETE_URL = "{% url 'acabinet:car_delete' 0 %}".replace('/0/', '/{id}/');
+
+async function setCarStatus(carId, status) {
+  const fd = new FormData();
+  fd.append('status', status);
+  const r = await fetch(STATUS_URL.replace('{id}', carId), { method: 'POST', body: fd, headers: { 'X-CSRFToken': CSRF() } });
+  const d = await r.json();
+  if (!d.ok) { alert('Не удалось изменить статус'); location.reload(); }
+}
+
+async function deleteCar(carId) {
+  if (!confirm('Удалить этот автомобиль?')) return;
+  const r = await fetch(DELETE_URL.replace('{id}', carId), { method: 'POST', headers: { 'X-CSRFToken': CSRF() } });
+  if (r.ok) document.getElementById(`car-row-${carId}`)?.remove();
+}
+</script>
+{% endblock %}

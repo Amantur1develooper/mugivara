@@ -549,3 +549,71 @@ def notify_new_shop_order(self, order_id: int):
         raise Exception(f"TG shop order: 0/{len(chat_map)} delivered for order {order_id}: {errors}")
 
     return f"sent={sent} errors={len(errors)}"
+
+
+def _autosalon_lead_text(lead) -> str:
+    lines = [
+        "🚗 НОВАЯ ЗАЯВКА (автосалон)",
+        f"🏢 Автосалон: {lead.dealership.name}",
+    ]
+    if lead.name:
+        lines.append(f"👤 Имя: {lead.name}")
+    lines.append(f"📞 Телефон: {lead.phone}")
+    if lead.car_id:
+        car = lead.car
+        price = f" — {car.price_display}" if car.price_display else ""
+        lines.append(f"🚙 Автомобиль: {car.brand} {car.model_name} ({car.year}){price}")
+    if lead.message:
+        lines.append(f"📝 Сообщение: {lead.message}")
+    lines.append(f"📍 Источник: {lead.get_source_display()}")
+
+    created = timezone.localtime(lead.created_at).strftime("%d.%m.%Y %H:%M")
+    lines.append(f"⏰ {created}")
+
+    return "\n".join(lines)
+
+
+@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=60, max_retries=5)
+def notify_new_autosalon_lead(self, lead_id: int):
+    from autosalon.models import Lead
+    from integrations.models import AutosalonTelegramRecipient
+
+    token = _tg_token()
+    if not token:
+        return "No TG token"
+
+    lead = Lead.objects.select_related("dealership", "car").get(id=lead_id)
+
+    chat_map = {}
+    for r in AutosalonTelegramRecipient.objects.filter(dealership=lead.dealership, is_active=True, notify_new_leads=True):
+        chat_map[str(r.chat_id)] = _thread_id_for(r)
+
+    if not chat_map:
+        return "No recipients"
+
+    try:
+        text = _autosalon_lead_text(lead)
+    except Exception:
+        logger.exception("notify_new_autosalon_lead: failed to build text for lead %s", lead_id)
+        raise
+
+    sent = 0
+    errors = []
+    for chat_id, thread_id in chat_map.items():
+        try:
+            send_message(
+                bot_token=token,
+                chat_id=chat_id,
+                text=text,
+                parse_mode=None,
+                message_thread_id=thread_id,
+            )
+            sent += 1
+        except Exception as e:
+            logger.warning("notify_new_autosalon_lead: send failed for lead %s, chat %s: %s", lead_id, chat_id, e)
+            errors.append(str(e))
+
+    if errors and sent == 0:
+        raise Exception(f"TG autosalon lead: 0/{len(chat_map)} delivered for lead {lead_id}: {errors}")
+
+    return f"sent={sent} errors={len(errors)}"

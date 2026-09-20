@@ -1,0 +1,81 @@
+{% extends "acabinet/_base.html" %}
+{% block title %}Лиды{% endblock %}
+{% block nav_leads %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .ac-tabs{ display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap; }
+  .ac-tab{ padding:8px 14px; border-radius:10px; font-size:12.5px; font-weight:700; border:1.5px solid var(--ac-border);
+           background:var(--ac-card); color:var(--ac-muted); cursor:pointer; }
+  .ac-tab.active{ border-color:var(--ac-accent); background:rgba(10,132,255,.08); color:var(--ac-accent); }
+  .ac-tab-count{ opacity:.7; margin-left:4px; }
+
+  .ac-lead-card{ background:var(--ac-card); border:1px solid var(--ac-border); border-radius:16px; padding:16px 18px; margin-bottom:10px;
+                 display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap; }
+  .ac-lead-main{ flex:1; min-width:200px; }
+  .ac-lead-name{ font-weight:800; font-size:14px; }
+  .ac-lead-phone{ font-size:12.5px; color:var(--ac-accent); font-weight:700; }
+  .ac-lead-car{ font-size:12px; color:var(--ac-muted); margin-top:3px; }
+  .ac-lead-msg{ font-size:12.5px; color:var(--ac-text); margin-top:6px; background:var(--ac-card2); padding:8px 10px; border-radius:10px; }
+  .ac-lead-time{ font-size:11px; color:var(--ac-muted); margin-top:6px; }
+  .ac-lead-actions{ display:flex; flex-direction:column; gap:6px; align-items:flex-end; }
+  .ac-empty{ text-align:center; padding:56px 20px; color:var(--ac-muted); background:var(--ac-card); border:1px dashed var(--ac-border); border-radius:16px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ac-topbar">
+  <div>
+    <div class="ac-title">📥 Лиды</div>
+    <div class="ac-sub">{{ dealership.name }} — заявки с сайта, не теряются, можно вести до сделки</div>
+  </div>
+</div>
+
+<div class="ac-tabs">
+  <a href="?" class="ac-tab {% if not status_f %}active{% endif %}">Все</a>
+  {% for val, label, count in status_tabs %}
+    <a href="?status={{ val }}" class="ac-tab {% if status_f == val %}active{% endif %}">{{ label }} <span class="ac-tab-count">{{ count }}</span></a>
+  {% endfor %}
+</div>
+
+{% if leads %}
+  {% for l in leads %}
+  <div class="ac-lead-card" id="lead-{{ l.id }}">
+    <div class="ac-lead-main">
+      <div class="ac-lead-name">{{ l.name|default:"Без имени" }}</div>
+      <a class="ac-lead-phone" href="tel:{{ l.phone }}">{{ l.phone }}</a>
+      {% if l.car %}<div class="ac-lead-car">🚗 {{ l.car.brand }} {{ l.car.model_name }} ({{ l.car.year }})</div>{% endif %}
+      {% if l.message %}<div class="ac-lead-msg">{{ l.message }}</div>{% endif %}
+      <div class="ac-lead-time">{{ l.created_at|date:"d.m.Y H:i" }} · {{ l.get_source_display }}</div>
+    </div>
+    <div class="ac-lead-actions">
+      <select class="ac-status-select" onchange="updateLead({{ l.id }}, {status: this.value})" style="font-size:11px;font-weight:700;border-radius:8px;padding:5px 8px;border:1.5px solid var(--ac-border);background:var(--ac-card);font-family:inherit">
+        {% for val, label in statuses %}<option value="{{ val }}" {% if l.status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <a href="https://wa.me/{{ l.phone_digits }}" target="_blank" class="ac-btn ac-btn-sm">📲 WhatsApp</a>
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="ac-empty">
+    <div style="font-size:42px;margin-bottom:10px">📥</div>
+    <div style="font-weight:700;margin-bottom:4px">Заявок пока нет</div>
+    <div style="font-size:12.5px">Они появятся, когда клиент оставит заявку на сайте</div>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+const UPDATE_URL = "{% url 'acabinet:lead_update' 0 %}".replace('/0/', '/{id}/');
+
+async function updateLead(leadId, data) {
+  const fd = new FormData();
+  for (const [k, v] of Object.entries(data)) fd.append(k, v);
+  const r = await fetch(UPDATE_URL.replace('{id}', leadId), { method: 'POST', body: fd, headers: { 'X-CSRFToken': CSRF() } });
+  const d = await r.json();
+  if (!d.ok) alert('Не удалось сохранить');
+}
+</script>
+{% endblock %}

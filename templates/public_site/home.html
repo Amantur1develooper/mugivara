@@ -562,7 +562,7 @@
     {% if store_cards %}
     <a href="#stores" class="cat-pill" data-section="stores">{% trans "🛍️ Магазины" %}</a>
     {% endif %}
-    {% if karaoke_cards or market_cards or hotel_cards or pharmacy_cards or barbershop_cards or printshop_cards or legal_cards or eco_cards or agency_cards or realty_cards %}
+    {% if karaoke_cards or market_cards or hotel_cards or pharmacy_cards or barbershop_cards or printshop_cards or legal_cards or eco_cards or agency_cards or realty_cards or autosalon_cards %}
     <a href="#services" class="cat-pill" data-section="services">{% trans "⚡ Услуги" %}</a>
     {% endif %}
 
@@ -674,7 +674,7 @@
 {% endif %}
 
 <!-- ═══════════════════ УСЛУГИ ═══════════════════ -->
-{% if legal_cards or eco_cards or agency_cards or market_cards or hotel_cards or pharmacy_cards or karaoke_cards or simracing_cards or realty_cards %}
+{% if legal_cards or eco_cards or agency_cards or market_cards or hotel_cards or pharmacy_cards or karaoke_cards or simracing_cards or realty_cards or autosalon_cards %}
 <section id="services" style="background:linear-gradient(160deg,rgba(37,99,235,.03) 0%,rgba(5,150,105,.04) 100%);">
   <div class="sec-wrap">
 
@@ -910,6 +910,31 @@
               {% else %}<div class="svc-card-img-ph">🏠</div>{% endif %}
             </div>
             <div class="svc-card-name">{{ ra.name }}</div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if autosalon_cards %}
+      <div class="svc-block" id="svc-autosalon">
+        <div class="svc-block-head">
+          <div class="svc-block-icon" style="background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.2);">🚗</div>
+          <div>
+            <div class="svc-block-title">{% trans "Автосалоны" %}</div>
+            <div class="svc-block-sub">{% trans "Новые и подержанные авто от дилеров" %}</div>
+          </div>
+          <a href="{% url 'autosalon:dealership_list' %}" class="svc-block-all" style="color:#dc2626;border-color:rgba(220,38,38,.3);">{% trans "Все →" %}</a>
+        </div>
+        <div class="svc-cards-grid">
+          {% for d in autosalon_cards %}
+          <a href="{% url 'autosalon:dealership_detail' d.slug %}" class="svc-card" id="autosalon-{{ d.slug }}">
+            <div class="svc-card-img">
+              {% if d.cover %}<img src="{{ d.cover.url }}" alt="{{ d.name }}" loading="lazy">
+              {% elif d.logo %}<img src="{{ d.logo.url }}" alt="{{ d.name }}" loading="lazy">
+              {% else %}<div class="svc-card-img-ph">🚗</div>{% endif %}
+            </div>
+            <div class="svc-card-name">{{ d.name }}</div>
           </a>
           {% endfor %}
         </div>

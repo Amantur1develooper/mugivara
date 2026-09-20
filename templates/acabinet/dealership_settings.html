@@ -1,0 +1,59 @@
+{% extends "acabinet/_base.html" %}
+{% block title %}Настройки автосалона{% endblock %}
+{% block nav_settings %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .ac-form-card{ background:var(--ac-card); border:1px solid var(--ac-border); border-radius:18px; padding:24px; max-width:640px; }
+  .ac-field{ margin-bottom:14px; }
+  .ac-label{ font-size:11px; font-weight:700; color:var(--ac-muted); margin-bottom:6px; display:block; text-transform:uppercase; letter-spacing:.3px; }
+  .ac-input, textarea.ac-input{
+    width:100%; padding:10px 13px; border-radius:10px; border:1.5px solid var(--ac-border); background:var(--ac-card2);
+    font-size:13.5px; font-family:inherit; outline:none; box-sizing:border-box;
+  }
+  .ac-input:focus{ border-color:var(--ac-accent); background:#fff; }
+  textarea.ac-input{ min-height:100px; resize:vertical; }
+  .ac-media-row{ display:flex; gap:16px; margin-bottom:18px; }
+  .ac-media-box{ text-align:center; }
+  .ac-media-preview{ width:120px; height:80px; border-radius:12px; background:var(--ac-bg); object-fit:cover; margin-bottom:6px; display:block; }
+  .ac-link{ font-size:12px; color:var(--ac-accent); margin-top:14px; display:inline-block; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ac-topbar">
+  <div>
+    <div class="ac-title">⚙️ Настройки автосалона</div>
+    <div class="ac-sub">{{ dealership.name }}</div>
+  </div>
+  <a href="{% url 'acabinet:home' %}" class="ac-btn">← Назад</a>
+</div>
+
+<form class="ac-form-card" method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+
+  <div class="ac-media-row">
+    <div class="ac-media-box">
+      {% if dealership.logo %}<img class="ac-media-preview" src="{{ dealership.logo.url }}">{% else %}<div class="ac-media-preview"></div>{% endif %}
+      <label class="ac-label">Логотип</label>
+      <input type="file" name="logo" accept="image/*">
+    </div>
+    <div class="ac-media-box">
+      {% if dealership.cover %}<img class="ac-media-preview" src="{{ dealership.cover.url }}">{% else %}<div class="ac-media-preview"></div>{% endif %}
+      <label class="ac-label">Обложка</label>
+      <input type="file" name="cover" accept="image/*">
+    </div>
+  </div>
+
+  <div class="ac-field"><label class="ac-label">Название</label><input class="ac-input" name="name" value="{{ dealership.name }}" required></div>
+  <div class="ac-field"><label class="ac-label">Телефон / WhatsApp</label><input class="ac-input" name="phone" value="{{ dealership.phone }}" placeholder="+996700123456"></div>
+  <div class="ac-field"><label class="ac-label">Город</label><input class="ac-input" name="city" value="{{ dealership.city }}"></div>
+  <div class="ac-field"><label class="ac-label">Адрес</label><input class="ac-input" name="address" value="{{ dealership.address }}"></div>
+  <div class="ac-field"><label class="ac-label">Режим работы</label><input class="ac-input" name="work_hours" value="{{ dealership.work_hours }}" placeholder="Пн–Вс 09:00–19:00"></div>
+  <div class="ac-field"><label class="ac-label">Описание</label><textarea class="ac-input" name="description">{{ dealership.description }}</textarea></div>
+
+  <button type="submit" class="ac-btn ac-btn-primary">Сохранить</button>
+  <br>
+  <a class="ac-link" href="{% url 'autosalon:dealership_detail' dealership.slug %}" target="_blank">👁 Посмотреть витрину →</a>
+</form>
+{% endblock %}

@@ -11,7 +11,7 @@ class TelegramRecipientAdmin(admin.ModelAdmin):
     search_fields = ("title", "chat_id")
     # integrations/admin.py
 from django.contrib import admin
-from .models import TelegramRecipient, BranchTelegramLink, ShopTelegramRecipient
+from .models import TelegramRecipient, BranchTelegramLink, ShopTelegramRecipient, AutosalonTelegramRecipient
 
 class BranchTelegramLinkInline(admin.TabularInline):
     model = BranchTelegramLink
@@ -26,6 +26,14 @@ class ShopTelegramRecipientAdmin(admin.ModelAdmin):
     list_filter = ("kind", "is_active")
     search_fields = ("title", "chat_id", "branch__name_ru")
     autocomplete_fields = ("branch",)
+
+
+@admin.register(AutosalonTelegramRecipient)
+class AutosalonTelegramRecipientAdmin(admin.ModelAdmin):
+    list_display = ("id", "dealership", "title", "kind", "chat_id", "is_active", "notify_new_leads")
+    list_filter = ("kind", "is_active")
+    search_fields = ("title", "chat_id", "dealership__name")
+    autocomplete_fields = ("dealership",)
 
 
 

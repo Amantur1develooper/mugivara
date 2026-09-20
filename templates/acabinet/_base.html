@@ -1,0 +1,138 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Кабинет автосалона{% endblock %} — Webordo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+  :root{
+    --ac-bg:#f6f7fb; --ac-card:#ffffff; --ac-card2:#fbfbfd;
+    --ac-text:#101828; --ac-muted:#667085; --ac-border:rgba(16,24,40,.09);
+    --ac-accent:#0a84ff; --ac-accent2:#0066cc;
+    --ac-green:#10b981; --ac-orange:#f59e0b; --ac-red:#ef4444; --ac-purple:#7c3aed;
+    --ac-shadow:0 2px 10px rgba(16,24,40,.05);
+    --ac-sidebar-w:220px;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--ac-bg); color:var(--ac-text);
+    font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;
+    font-size:14px; -webkit-font-smoothing:antialiased;
+  }
+  a{ color:inherit; text-decoration:none; }
+
+  .ac-shell{ display:flex; min-height:100vh; }
+  .ac-sidebar{
+    width:var(--ac-sidebar-w); flex-shrink:0; background:var(--ac-card);
+    border-right:1px solid var(--ac-border); padding:22px 16px; position:sticky; top:0; height:100vh;
+    display:flex; flex-direction:column;
+  }
+  .ac-brand{ font-weight:900; font-size:16px; letter-spacing:-.4px; margin-bottom:4px; }
+  .ac-brand span{ color:var(--ac-accent); }
+  .ac-dealer-name{ font-size:12px; color:var(--ac-muted); margin-bottom:22px; }
+
+  .ac-nav{ display:flex; flex-direction:column; gap:3px; flex:1; }
+  .ac-nav a{
+    display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:10px;
+    font-size:13px; font-weight:600; color:var(--ac-muted); transition:all .15s;
+  }
+  .ac-nav a:hover{ background:var(--ac-card2); color:var(--ac-text); }
+  .ac-nav a.active{ background:rgba(10,132,255,.1); color:var(--ac-accent); }
+  .ac-nav-badge{
+    margin-left:auto; background:var(--ac-red); color:#fff; font-size:10px; font-weight:800;
+    padding:1px 6px; border-radius:999px; min-width:16px; text-align:center;
+  }
+  .ac-nav-sep{ height:1px; background:var(--ac-border); margin:10px 4px; }
+  .ac-switch-btn{
+    display:flex; align-items:center; gap:10px; width:100%; padding:9px 12px; border-radius:10px;
+    font-size:13px; font-weight:600; color:var(--ac-muted); background:none; border:none;
+    cursor:pointer; font-family:inherit; text-align:left; transition:all .15s;
+  }
+  .ac-switch-btn:hover{ background:var(--ac-card2); color:var(--ac-text); }
+  .ac-switch-btn[data-active="1"]{ color:var(--ac-accent); font-weight:800; }
+  .ac-logout{
+    font-size:12.5px; font-weight:700; color:var(--ac-muted); padding:9px 12px; border-radius:10px;
+  }
+  .ac-logout:hover{ background:var(--ac-card2); color:var(--ac-red); }
+
+  .ac-main{ flex:1; min-width:0; padding:28px 32px 60px; max-width:1180px; }
+  .ac-topbar{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:24px; flex-wrap:wrap; }
+  .ac-title{ font-size:22px; font-weight:900; letter-spacing:-.6px; }
+  .ac-sub{ font-size:12.5px; color:var(--ac-muted); margin-top:4px; }
+
+  .ac-btn{
+    display:inline-flex; align-items:center; gap:6px; padding:9px 16px; border-radius:10px;
+    font-size:12.5px; font-weight:700; cursor:pointer; border:1.5px solid var(--ac-border);
+    background:var(--ac-card); color:var(--ac-text); transition:all .15s; font-family:inherit;
+  }
+  .ac-btn:hover{ border-color:var(--ac-accent); color:var(--ac-accent); }
+  .ac-btn-primary{ background:var(--ac-accent); border-color:var(--ac-accent); color:#fff; }
+  .ac-btn-primary:hover{ background:var(--ac-accent2); color:#fff; opacity:.95; }
+  .ac-btn-sm{ padding:6px 12px; font-size:11.5px; }
+
+  .ac-msg{
+    padding:12px 16px; border-radius:12px; margin-bottom:18px; font-size:13px; font-weight:600;
+  }
+  .ac-msg-error{ background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.2); color:#b42318; }
+  .ac-msg-success{ background:rgba(16,185,129,.08); border:1px solid rgba(16,185,129,.22); color:#03876a; }
+
+  @media (max-width: 860px){
+    .ac-sidebar{ display:none; }
+    .ac-main{ padding:18px 16px 50px; }
+  }
+</style>
+{% block head_extra %}{% endblock %}
+</head>
+<body>
+{% if dealership %}
+<div class="ac-shell">
+  <aside class="ac-sidebar">
+    <div class="ac-brand">🚗 Webordo <span>Авто</span></div>
+    <div class="ac-dealer-name">{{ dealership.name }}</div>
+    <nav class="ac-nav">
+      <a href="{% url 'acabinet:home' %}" class="{% block nav_home %}{% endblock %}">🏠 Склад машин</a>
+      <a href="{% url 'acabinet:leads' %}" class="{% block nav_leads %}{% endblock %}">
+        📥 Лиды
+        {% if new_leads %}<span class="ac-nav-badge">{{ new_leads }}</span>{% endif %}
+      </a>
+      <a href="{% url 'acabinet:reports' %}" class="{% block nav_reports %}{% endblock %}">📊 Отчёты</a>
+      {% if is_director %}
+      <a href="{% url 'acabinet:dealership_settings' dealership.id %}" class="{% block nav_settings %}{% endblock %}">⚙️ Настройки</a>
+      {% endif %}
+      <a href="{% url 'autosalon:dealership_detail' dealership.slug %}" target="_blank">👁 Витрина сайта</a>
+      {% if dealerships and dealerships.count > 1 %}
+        <div class="ac-nav-sep"></div>
+        {% for d in dealerships %}
+          <form method="post" action="{% url 'acabinet:switch_dealership' d.id %}">
+            {% csrf_token %}
+            <button type="submit" class="ac-switch-btn" {% if d.id == dealership.id %}data-active="1"{% endif %}>🏢 {{ d.name }}</button>
+          </form>
+        {% endfor %}
+      {% endif %}
+    </nav>
+    <div class="ac-nav-sep"></div>
+    <a href="{% url 'acabinet:logout' %}" class="ac-logout">🚪 Выйти</a>
+  </aside>
+
+  <main class="ac-main">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="ac-msg {% if message.tags == 'error' %}ac-msg-error{% else %}ac-msg-success{% endif %}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% else %}
+  <div style="max-width:480px;margin:80px auto;text-align:center;padding:0 20px">
+    {% if messages %}
+      {% for message in messages %}<div class="ac-msg ac-msg-error">{{ message }}</div>{% endfor %}
+    {% endif %}
+    <a href="{% url 'acabinet:logout' %}" class="ac-btn">🚪 Выйти</a>
+  </div>
+{% endif %}
+{% block extra_js %}{% endblock %}
+</body>
+</html>

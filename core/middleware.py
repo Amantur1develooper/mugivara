@@ -18,6 +18,7 @@ _SECTION_PREFIXES = [
     ("/printshop",              "printshop"),
     ("/realty",                 "realty"),
     ("/agency",                 "agency"),
+    ("/autosalon",              "autosalon"),
     ("/room/",                  "hotels"),   # QR-страница номера отеля
     ("/t/",                     "restaurant"),   # меню за столиком
     # публичные страницы ресторанов вида /ru/<slug>/

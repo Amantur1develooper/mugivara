@@ -60,8 +60,10 @@ urlpatterns += i18n_patterns(
     path("eco/", include(("eco.urls", "eco"), namespace="eco")),
     path("printshop/", include(("printshop.urls", "printshop"), namespace="printshop")),
     path("realty/", include(("realestate.urls", "realestate"), namespace="realestate")),
+    path("autosalon/", include(("autosalon.urls", "autosalon"), namespace="autosalon")),
     path("cabinet/", include(("dashboard.urls", "dashboard"), namespace="dashboard")),
     path("rcabinet/", include(("realestate.cabinet_urls", "rcabinet"), namespace="rcabinet")),
+    path("acabinet/", include(("autosalon.cabinet_urls", "acabinet"), namespace="acabinet")),
     path("", include("public_site.urls")),
 )
 

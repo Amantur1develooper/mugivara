@@ -198,6 +198,7 @@ def home(request):
     from printshop.models import PrintCenter
     from simracing.models import SimRacingVenue
     from realestate.models import RealtyAgency
+    from autosalon.models import AutoDealership
 
     # ── РЕСТОРАНЫ ────────────────────────────────────────────────────────────
     top_restaurants = list(
@@ -293,6 +294,11 @@ def home(request):
         RealtyAgency.objects.filter(is_active=True).order_by("sort_order", "name")[:12]
     )
 
+    # ── АВТОСАЛОНЫ ───────────────────────────────────────────────────────────
+    autosalon_cards = list(
+        AutoDealership.objects.filter(is_active=True).order_by("sort_order", "name")[:12]
+    )
+
     # ── СТАТИСТИКА ────────────────────────────────────────────────────────────
     stats = {
         "restaurant_count": Restaurant.objects.filter(is_active=True).count(),
@@ -308,6 +314,7 @@ def home(request):
         "barbershop_count":   Barbershop.objects.filter(is_active=True).count(),
         "printshop_count":    PrintCenter.objects.filter(is_active=True).count(),
         "realty_count":       RealtyAgency.objects.filter(is_active=True).count(),
+        "autosalon_count":    AutoDealership.objects.filter(is_active=True).count(),
         "branch_count": (
             Branch.objects.filter(is_active=True).count()
             + StoreBranch.objects.filter(is_active=True).count()
@@ -318,7 +325,7 @@ def home(request):
         + stats["market_count"] + stats["hotel_count"] + stats["legal_count"]
         + stats["eco_count"] + stats["agency_count"] + stats["karaoke_count"]
         + stats["simracing_count"] + stats["barbershop_count"] + stats["printshop_count"]
-        + stats["realty_count"]
+        + stats["realty_count"] + stats["autosalon_count"]
     )
 
     try:
@@ -384,6 +391,7 @@ def home(request):
         "barbershop_cards":   barbershop_cards,
         "printshop_cards":    printshop_cards,
         "realty_cards":       realty_cards,
+        "autosalon_cards":    autosalon_cards,
         "stats":            stats,
         "map_points_json":  _json.dumps(map_points, ensure_ascii=False),
     })

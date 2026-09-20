@@ -3,7 +3,7 @@
 msgid ""
 msgstr ""
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-17 17:29+0600\n"
+"POT-Creation-Date: 2026-09-18 17:49+0600\n"
 "Language: en\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -40,6 +40,150 @@ msgstr "Support"
 #: templates/printshop/branch_catalog.html:286
 msgid "Другое"
 msgstr "Other"
+
+#: autosalon/models.py:96 templates/autosalon/car_detail.html:120
+#: templates/autosalon/dealership_detail.html:140
+msgid "Новый"
+msgstr "New"
+
+#: autosalon/models.py:97 templates/autosalon/dealership_detail.html:117
+msgid "С пробегом"
+msgstr "Used"
+
+#: autosalon/models.py:100
+msgid "Седан"
+msgstr "Sedan"
+
+#: autosalon/models.py:101
+msgid "Хэтчбек"
+msgstr "Hatchback"
+
+#: autosalon/models.py:102
+msgid "Внедорожник"
+msgstr "SUV"
+
+#: autosalon/models.py:103
+msgid "Кроссовер"
+msgstr "Crossover"
+
+#: autosalon/models.py:104
+msgid "Минивэн"
+msgstr "Minivan"
+
+#: autosalon/models.py:105
+msgid "Пикап"
+msgstr "Pickup"
+
+#: autosalon/models.py:106
+msgid "Купе"
+msgstr "Coupe"
+
+#: autosalon/models.py:107
+msgid "Универсал"
+msgstr "Wagon"
+
+#: autosalon/models.py:108
+msgid "Кабриолет"
+msgstr "Convertible"
+
+#: autosalon/models.py:111
+msgid "Бензин"
+msgstr "Petrol"
+
+#: autosalon/models.py:112
+msgid "Дизель"
+msgstr "Diesel"
+
+#: autosalon/models.py:113
+msgid "Гибрид"
+msgstr "Hybrid"
+
+#: autosalon/models.py:114
+msgid "Электро"
+msgstr "Electric"
+
+#: autosalon/models.py:115
+msgid "Газ"
+msgstr "Gas (LPG)"
+
+#: autosalon/models.py:118
+msgid "Механика"
+msgstr "Manual"
+
+#: autosalon/models.py:119
+msgid "Автомат"
+msgstr "Automatic"
+
+#: autosalon/models.py:120
+msgid "Робот"
+msgstr "Automated manual"
+
+#: autosalon/models.py:121
+msgid "Вариатор"
+msgstr "CVT"
+
+#: autosalon/models.py:124
+msgid "Передний"
+msgstr "Front-wheel"
+
+#: autosalon/models.py:125
+msgid "Задний"
+msgstr "Rear-wheel"
+
+#: autosalon/models.py:126
+msgid "Полный"
+msgstr "All-wheel"
+
+#: autosalon/models.py:129 templates/autosalon/dealership_list.html:78
+#: templates/pharmacy/branch_catalog.html:84
+#: templates/pharmacy/drug_detail.html:51
+#: templates/shops/1212/branch_catalog.html:748
+#: templates/shops/1212/branch_catalog2.html:750
+#: templates/shops/branch_catalog.html:1251
+#: templates/shops/cart_detail.html:315
+#: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:264
+msgid "В наличии"
+msgstr "In stock"
+
+#: autosalon/models.py:130 realestate/models.py:90
+#: templates/autosalon/car_detail.html:121
+#: templates/autosalon/dealership_detail.html:138
+msgid "Забронирована"
+msgstr "Booked"
+
+#: autosalon/models.py:131 realestate/models.py:91
+#: templates/autosalon/car_detail.html:122
+#: templates/autosalon/dealership_detail.html:139
+msgid "Продана"
+msgstr "Sold"
+
+#: autosalon/models.py:132 realestate/models.py:92
+msgid "Снята с продажи"
+msgstr "Delisted"
+
+#: autosalon/models.py:244
+msgid "Новая"
+msgstr "New"
+
+#: autosalon/models.py:245
+msgid "Связались"
+msgstr "Contacted"
+
+#: autosalon/models.py:246
+msgid "Сделка"
+msgstr "Deal closed"
+
+#: autosalon/models.py:247
+msgid "Отказ"
+msgstr "Declined"
+
+#: autosalon/models.py:250
+msgid "Страница автомобиля"
+msgstr "Car page"
+
+#: autosalon/models.py:251
+msgid "Страница автосалона"
+msgstr "Dealership page"
 
 #: catalog/models.py:173 templates/printshop/_product_card.html:12
 msgid "Акция"
@@ -99,18 +243,6 @@ msgstr "Designer"
 #: realestate/models.py:89
 msgid "Свободна"
 msgstr "Available"
-
-#: realestate/models.py:90
-msgid "Забронирована"
-msgstr "Booked"
-
-#: realestate/models.py:91
-msgid "Продана"
-msgstr "Sold"
-
-#: realestate/models.py:92
-msgid "Снята с продажи"
-msgstr "Delisted"
 
 #: reservations/views.py:113
 msgid "Статус: гость пришёл ✅"
@@ -180,7 +312,7 @@ msgstr "All agencies"
 
 #: templates/agency/agency_detail.html:296 templates/barbershop/book.html:90
 #: templates/barbershop/book.html:170 templates/base.html:459
-#: templates/base.html:518 templates/base.html:600
+#: templates/base.html:518 templates/base.html:601
 #: templates/hotels/hotel_branch.html:573 templates/public_site/home.html:686
 msgid "Услуги"
 msgstr "Services"
@@ -221,7 +353,8 @@ msgid "Заявка"
 msgstr "Request"
 
 #: templates/agency/agency_detail.html:401
-#: templates/agency/agency_detail.html:421 templates/barbershop/book.html:145
+#: templates/agency/agency_detail.html:421
+#: templates/autosalon/car_detail.html:162 templates/barbershop/book.html:145
 #: templates/hotels/hotel_branch.html:536
 #: templates/hotels/hotel_branch.html:665 templates/karaoke/detail.html:255
 #: templates/printshop/branch_catalog.html:211
@@ -334,6 +467,181 @@ msgstr "Coming soon"
 #: templates/agency/agency_list.html:246
 msgid "IT агентства добавляются администратором"
 msgstr "IT agencies are added by the administrator"
+
+#: templates/autosalon/car_detail.html:102
+#: templates/autosalon/dealership_list.html:4 templates/base.html:593
+msgid "Автосалоны"
+msgstr "Car dealerships"
+
+#: templates/autosalon/car_detail.html:117
+msgid "года"
+msgstr "model year"
+
+#: templates/autosalon/car_detail.html:130
+msgid "Характеристики"
+msgstr "Specifications"
+
+#: templates/autosalon/car_detail.html:132
+msgid "Год выпуска"
+msgstr "Year"
+
+#: templates/autosalon/car_detail.html:133
+msgid "Состояние"
+msgstr "Condition"
+
+#: templates/autosalon/car_detail.html:134
+msgid "Кузов"
+msgstr "Body type"
+
+#: templates/autosalon/car_detail.html:135
+msgid "Пробег"
+msgstr "Mileage"
+
+#: templates/autosalon/car_detail.html:136
+msgid "Объём двигателя"
+msgstr "Engine size"
+
+#: templates/autosalon/car_detail.html:137
+msgid "Мощность"
+msgstr "Power"
+
+#: templates/autosalon/car_detail.html:137
+msgid "л.с."
+msgstr "hp"
+
+#: templates/autosalon/car_detail.html:138
+msgid "Топливо"
+msgstr "Fuel"
+
+#: templates/autosalon/car_detail.html:139
+msgid "Коробка передач"
+msgstr "Transmission"
+
+#: templates/autosalon/car_detail.html:140
+msgid "Привод"
+msgstr "Drivetrain"
+
+#: templates/autosalon/car_detail.html:141
+msgid "Цвет"
+msgstr "Color"
+
+#: templates/autosalon/car_detail.html:149 templates/base.html:560
+#: templates/karaoke/detail.html:160 templates/legal/legal_detail.html:249
+#: templates/pharmacy/drug_detail.html:136
+#: templates/public_site/booking_success.html:35
+#: templates/public_site/kp_detail.html:51
+#: templates/realestate/agency_detail.html:76
+#: templates/simracing/appt_success.html:69 templates/simracing/success.html:23
+msgid "Написать в WhatsApp"
+msgstr "Message on WhatsApp"
+
+#: templates/autosalon/car_detail.html:152
+msgid "Автомобиль уже продан"
+msgstr "This car has been sold"
+
+#: templates/autosalon/car_detail.html:158
+msgid "Оставить заявку"
+msgstr "Leave a request"
+
+#: templates/autosalon/car_detail.html:159
+msgid "Оставьте номер — перезвоним и расскажем всё об этом автомобиле"
+msgstr "Leave your number — we'll call back with all the details about this car"
+
+#: templates/autosalon/car_detail.html:164
+#: templates/pharmacy/cart_detail.html:84
+#: templates/printshop/branch_catalog.html:193
+#: templates/printshop/branch_catalog.html:332
+#: templates/public_site/branch_menu.html:633
+#: templates/public_site/cart_detail.html:299
+#: templates/public_site/hall_plan.html:90
+#: templates/public_site/reservation.html:204
+msgid "Комментарий (необязательно)"
+msgstr "Comment (optional)"
+
+#: templates/autosalon/car_detail.html:165
+#: templates/hotels/room_request.html:124
+#: templates/hotels/room_request.html:142 templates/legal/legal_detail.html:335
+#: templates/legal/legal_detail.html:344
+msgid "Отправить заявку"
+msgstr "Send request"
+
+#: templates/autosalon/car_detail.html:173
+msgid "Похожие автомобили"
+msgstr "Similar cars"
+
+#: templates/autosalon/dealership_detail.html:105
+msgid "Написать"
+msgstr "Message"
+
+#: templates/autosalon/dealership_detail.html:111
+msgid "Все марки"
+msgstr "All brands"
+
+#: templates/autosalon/dealership_detail.html:115
+msgid "Новые и с пробегом"
+msgstr "New and used"
+
+#: templates/autosalon/dealership_detail.html:116
+msgid "Новые"
+msgstr "New"
+
+#: templates/autosalon/dealership_detail.html:120
+msgid "Любой кузов"
+msgstr "Any body type"
+
+#: templates/autosalon/dealership_detail.html:123
+msgid "Цена до"
+msgstr "Price up to"
+
+#: templates/autosalon/dealership_detail.html:124
+#: templates/shops/store_list.html:298
+msgid "Поиск..."
+msgstr "Searching…"
+
+#: templates/autosalon/dealership_detail.html:125 templates/home.html:83
+#: templates/pharmacy/pharmacy_list.html:290
+#: templates/pharmacy/старый/pharmacy_list.html:47
+#: templates/printshop/center_list.html:51
+#: templates/public_site/restaurants_list.html:624
+#: templates/realestate/agency_detail.html:84
+#: templates/shops/1212/store_list.html:50
+#: templates/shops/1212/store_list2.html:264
+#: templates/shops/store_list.html:299
+msgid "Найти"
+msgstr "Search"
+
+#: templates/autosalon/dealership_detail.html:127
+#: templates/realestate/agency_detail.html:85
+msgid "Сбросить"
+msgstr "Reset"
+
+#: templates/autosalon/dealership_detail.html:131
+msgid "автомобилей найдено"
+msgstr "cars found"
+
+#: templates/autosalon/dealership_detail.html:151
+msgid "По вашему запросу ничего не найдено"
+msgstr "Nothing matches your search"
+
+#: templates/autosalon/dealership_list.html:62
+msgid "Webordo · Автомобили"
+msgstr "Webordo · Cars"
+
+#: templates/autosalon/dealership_list.html:63
+msgid "Найдите свой автомобиль"
+msgstr "Find your car"
+
+#: templates/autosalon/dealership_list.html:64
+msgid ""
+"Проверенные автосалоны Кыргызстана в одном месте — актуальные цены, живые "
+"фото, прямая связь с продавцом."
+msgstr ""
+"Trusted car dealerships of Kyrgyzstan in one place — current prices, real "
+"photos, direct contact with the seller."
+
+#: templates/autosalon/dealership_list.html:84
+msgid "Пока нет доступных автосалонов"
+msgstr "No dealerships available yet"
 
 #: templates/barbershop/book.html:7
 msgid "Запись"
@@ -590,7 +898,7 @@ msgstr "Products & orders"
 msgid "Юристы, эко, барбершопы и другое"
 msgstr "Lawyers, eco, barbershops and more"
 
-#: templates/base.html:463 templates/base.html:519 templates/base.html:602
+#: templates/base.html:463 templates/base.html:519 templates/base.html:603
 #: templates/karaoke/list.html:3 templates/simracing/list.html:3
 msgid "Развлечения"
 msgstr "Entertainment"
@@ -599,7 +907,7 @@ msgstr "Entertainment"
 msgid "Караоке, симрейсинг"
 msgstr "Karaoke, sim racing"
 
-#: templates/base.html:471 templates/base.html:524 templates/base.html:610
+#: templates/base.html:471 templates/base.html:524 templates/base.html:611
 #: templates/public_site/kp_index.html:17
 msgid "Подключить бизнес"
 msgstr "Add your business"
@@ -622,7 +930,7 @@ msgstr "Menu"
 msgid "Бизнес"
 msgstr "Business"
 
-#: templates/base.html:521 templates/base.html:607
+#: templates/base.html:521 templates/base.html:608
 #: templates/public_site/restaurant_about.html:9
 #: templates/public_site/restaurant_about.html:33
 #: templates/public_site/еуые/restaurant_contacts.html:286
@@ -658,16 +966,6 @@ msgstr ""
 #: templates/base.html:559
 msgid "ПАРТНЁР"
 msgstr "PARTNER"
-
-#: templates/base.html:560 templates/karaoke/detail.html:160
-#: templates/legal/legal_detail.html:249
-#: templates/pharmacy/drug_detail.html:136
-#: templates/public_site/booking_success.html:35
-#: templates/public_site/kp_detail.html:51
-#: templates/realestate/agency_detail.html:76
-#: templates/simracing/appt_success.html:69 templates/simracing/success.html:23
-msgid "Написать в WhatsApp"
-msgstr "Message on WhatsApp"
 
 #: templates/base.html:562
 msgid "О платформе"
@@ -707,49 +1005,49 @@ msgstr "Hotels"
 msgid "Агентства недвижимости"
 msgstr "Real estate agencies"
 
-#: templates/base.html:593 templates/legal/legal_detail.html:4
+#: templates/base.html:594 templates/legal/legal_detail.html:4
 #: templates/legal/legal_list.html:4
 msgid "Юридические услуги"
 msgstr "Legal services"
 
-#: templates/base.html:594
+#: templates/base.html:595
 msgid "Диджитал-агентства"
 msgstr "Digital agencies"
 
-#: templates/base.html:595
+#: templates/base.html:596
 msgid "Эко-бизнес"
 msgstr "Eco business"
 
-#: templates/base.html:596 templates/pharmacy/pharmacy_list.html:275
+#: templates/base.html:597 templates/pharmacy/pharmacy_list.html:275
 #: templates/pharmacy/старый/pharmacy_list.html:4
 #: templates/pharmacy/старый/pharmacy_list.html:20
 #: templates/public_site/home.html:798
 msgid "Аптеки"
 msgstr "Pharmacies"
 
-#: templates/base.html:601
+#: templates/base.html:602
 msgid "Все услуги"
 msgstr "All services"
 
-#: templates/base.html:606
+#: templates/base.html:607
 msgid "Компания"
 msgstr "Company"
 
-#: templates/base.html:608
+#: templates/base.html:609
 msgid "Основатель"
 msgstr "Founder"
 
-#: templates/base.html:609 templates/public_site/about.html:63
+#: templates/base.html:610 templates/public_site/about.html:63
 #: templates/public_site/about.html:273 templates/public_site/kp_index.html:3
 msgid "Предложения для бизнеса"
 msgstr "Business proposals"
 
-#: templates/base.html:615 templates/pharmacy/pharmacy_list.html:306
+#: templates/base.html:616 templates/pharmacy/pharmacy_list.html:306
 #: templates/pharmacy/pharmacy_list.html:340 templates/shops/base.html:338
 msgid "Кыргызстан"
 msgstr "Kyrgyzstan"
 
-#: templates/base.html:617 templates/public_site/privacy.html:3
+#: templates/base.html:618 templates/public_site/privacy.html:3
 #: templates/public_site/privacy.html:15
 msgid "Политика конфиденциальности"
 msgstr "Privacy policy"
@@ -944,17 +1242,6 @@ msgstr "Search for a restaurant..."
 #: templates/public_site/еуые/restaurant_contacts.html:207
 msgid "Открыто сейчас"
 msgstr "Open now"
-
-#: templates/home.html:83 templates/pharmacy/pharmacy_list.html:290
-#: templates/pharmacy/старый/pharmacy_list.html:47
-#: templates/printshop/center_list.html:51
-#: templates/public_site/restaurants_list.html:624
-#: templates/realestate/agency_detail.html:84
-#: templates/shops/1212/store_list.html:50
-#: templates/shops/1212/store_list2.html:264
-#: templates/shops/store_list.html:299
-msgid "Найти"
-msgstr "Search"
 
 #: templates/home.html:90
 #: templates/pharmacy/старый/pharmacy_list.html:52
@@ -1435,12 +1722,6 @@ msgstr "Your name (optional)"
 msgid "Комментарий (например: 2 бутылки воды, без сахара…)"
 msgstr "Comment (e.g. 2 bottles of water, no sugar…)"
 
-#: templates/hotels/room_request.html:124
-#: templates/hotels/room_request.html:142 templates/legal/legal_detail.html:335
-#: templates/legal/legal_detail.html:344
-msgid "Отправить заявку"
-msgstr "Send request"
-
 #: templates/hotels/room_request.html:130
 msgid "Опишите, что нужно — заявка уйдёт на ресепшн."
 msgstr "Describe what you need — the request goes to the front desk."
@@ -1699,16 +1980,6 @@ msgstr "Branches"
 msgid "Все"
 msgstr "All"
 
-#: templates/pharmacy/branch_catalog.html:84
-#: templates/pharmacy/drug_detail.html:51
-#: templates/shops/1212/branch_catalog.html:748
-#: templates/shops/1212/branch_catalog2.html:750
-#: templates/shops/branch_catalog.html:1251
-#: templates/shops/cart_detail.html:315
-#: ⁨templates/shops/shops/branch_catalog.html (каталог с категориями, sticky, подсветка активной категории, кнопка корзины)  shops/branch_catalog.html⁩:264
-msgid "В наличии"
-msgstr "In stock"
-
 #: templates/pharmacy/branch_catalog.html:89
 #: templates/pharmacy/drug_detail.html:57
 #: templates/public_site/cart_detail2.html:736
@@ -1844,16 +2115,6 @@ msgstr "Phone / WhatsApp (optional)"
 #: templates/pharmacy/cart_detail.html:81
 msgid "Адрес (необязательно)"
 msgstr "Address (optional)"
-
-#: templates/pharmacy/cart_detail.html:84
-#: templates/printshop/branch_catalog.html:193
-#: templates/printshop/branch_catalog.html:332
-#: templates/public_site/branch_menu.html:633
-#: templates/public_site/cart_detail.html:299
-#: templates/public_site/hall_plan.html:90
-#: templates/public_site/reservation.html:204
-msgid "Комментарий (необязательно)"
-msgstr "Comment (optional)"
 
 #: templates/pharmacy/cart_detail.html:88
 #: templates/public_site/branch_menu.html:634
@@ -4192,10 +4453,6 @@ msgstr "apartments"
 msgid "Поиск по адресу, району, площади, комнатам..."
 msgstr "Search by address, district, area, rooms..."
 
-#: templates/realestate/agency_detail.html:85
-msgid "Сбросить"
-msgstr "Reset"
-
 #: templates/realestate/agency_detail.html:99
 msgid "Без адреса"
 msgstr "No address"
@@ -4803,10 +5060,6 @@ msgstr "Detecting…"
 #: templates/shops/store_list.html:291
 msgid "магазинов в витрине"
 msgstr "shops in the showcase"
-
-#: templates/shops/store_list.html:298
-msgid "Поиск..."
-msgstr "Searching…"
 
 #: templates/shops/store_list.html:327
 msgid "Попробуйте другой запрос."

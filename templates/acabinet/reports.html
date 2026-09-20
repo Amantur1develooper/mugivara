@@ -1,0 +1,93 @@
+{% extends "acabinet/_base.html" %}
+{% block title %}Отчёты{% endblock %}
+{% block nav_reports %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .ac-period{ display:flex; gap:8px; margin-bottom:22px; }
+  .ac-period a{ padding:7px 14px; border-radius:10px; font-size:12.5px; font-weight:700; border:1.5px solid var(--ac-border); color:var(--ac-muted); }
+  .ac-period a.active{ border-color:var(--ac-accent); background:rgba(10,132,255,.08); color:var(--ac-accent); }
+
+  .ac-report-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin-bottom:24px; }
+  .ac-report-card{ background:var(--ac-card); border:1px solid var(--ac-border); border-radius:18px; padding:20px; }
+  .ac-report-card-title{ font-size:11.5px; font-weight:700; color:var(--ac-muted); text-transform:uppercase; letter-spacing:.4px; margin-bottom:10px; }
+  .ac-report-val{ font-size:28px; font-weight:900; letter-spacing:-.6px; }
+  .ac-report-hint{ font-size:11.5px; color:var(--ac-muted); margin-top:4px; }
+
+  .ac-section-title{ font-weight:800; font-size:14px; margin:26px 0 12px; }
+  .ac-brand-row{ display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--ac-border); font-size:13px; }
+  .ac-brand-row:last-child{ border-bottom:none; }
+  .ac-brand-bar{ height:6px; border-radius:999px; background:var(--ac-accent); }
+
+  .ac-export-row{ display:flex; gap:10px; margin-top:22px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ac-topbar">
+  <div>
+    <div class="ac-title">📊 Отчёты</div>
+    <div class="ac-sub">{{ dealership.name }} — продажи, лиды и склад за период</div>
+  </div>
+</div>
+
+<div class="ac-period">
+  <a href="?period=7"   class="{% if period == 7 %}active{% endif %}">7 дней</a>
+  <a href="?period=30"  class="{% if period == 30 %}active{% endif %}">30 дней</a>
+  <a href="?period=90"  class="{% if period == 90 %}active{% endif %}">90 дней</a>
+  <a href="?period=365" class="{% if period == 365 %}active{% endif %}">Год</a>
+</div>
+
+<div class="ac-report-grid">
+  <div class="ac-report-card">
+    <div class="ac-report-card-title">Продано за период</div>
+    <div class="ac-report-val">{{ sold_period_count }}</div>
+    <div class="ac-report-hint">машин</div>
+  </div>
+  <div class="ac-report-card">
+    <div class="ac-report-card-title">Выручка за период</div>
+    <div class="ac-report-val">{{ revenue|floatformat:"0" }}</div>
+    <div class="ac-report-hint">сом (по проданным)</div>
+  </div>
+  <div class="ac-report-card">
+    <div class="ac-report-card-title">Новых лидов</div>
+    <div class="ac-report-val">{{ leads_total }}</div>
+    <div class="ac-report-hint">{{ leads_won }} довели до сделки</div>
+  </div>
+  <div class="ac-report-card">
+    <div class="ac-report-card-title">Конверсия в сделку</div>
+    <div class="ac-report-val">{{ conversion }}%</div>
+    <div class="ac-report-hint">лидов → сделок</div>
+  </div>
+  <div class="ac-report-card">
+    <div class="ac-report-card-title">Просмотров витрины</div>
+    <div class="ac-report-val">{{ total_views }}</div>
+    <div class="ac-report-hint">за выбранный период</div>
+  </div>
+</div>
+
+<div class="ac-section-title">📦 Склад сейчас</div>
+<div class="ac-report-grid">
+  <div class="ac-report-card"><div class="ac-report-card-title">В наличии</div><div class="ac-report-val" style="color:var(--ac-green)">{{ stock.available }}</div></div>
+  <div class="ac-report-card"><div class="ac-report-card-title">Забронировано</div><div class="ac-report-val" style="color:var(--ac-orange)">{{ stock.reserved }}</div></div>
+  <div class="ac-report-card"><div class="ac-report-card-title">Продано всего</div><div class="ac-report-val">{{ stock.sold_total }}</div></div>
+</div>
+
+{% if by_brand %}
+<div class="ac-section-title">🏷️ Марки в наличии</div>
+<div class="ac-report-card">
+  {% for row in by_brand %}
+  <div class="ac-brand-row">
+    <span>{{ row.brand }}</span>
+    <b>{{ row.n }}</b>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="ac-section-title">📄 Выгрузка (CSV)</div>
+<div class="ac-export-row">
+  <a href="{% url 'acabinet:reports_export_cars' dealership.id %}" class="ac-btn">⬇️ Все автомобили</a>
+  <a href="{% url 'acabinet:reports_export_leads' dealership.id %}" class="ac-btn">⬇️ Все лиды</a>
+</div>
+{% endblock %}

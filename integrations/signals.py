@@ -8,7 +8,8 @@ from django.dispatch import receiver
 
 from orders.models import Order
 from shops.models import StoreOrder
-from integrations.tasks import notify_new_order, notify_new_shop_order
+from autosalon.models import Lead as AutosalonLead
+from integrations.tasks import notify_new_order, notify_new_shop_order, notify_new_autosalon_lead
 
 logger = logging.getLogger(__name__)
 
@@ -60,5 +61,19 @@ def shop_order_created(sender, instance: StoreOrder, created: bool, **kwargs):
             notify_new_shop_order.delay(instance.id)
         except Exception as e:
             logger.error("notify_new_shop_order failed for order %s: %s", instance.id, e)
+
+    transaction.on_commit(_on_commit)
+
+
+@receiver(post_save, sender=AutosalonLead)
+def autosalon_lead_created(sender, instance: AutosalonLead, created: bool, **kwargs):
+    if not created:
+        return
+
+    def _on_commit():
+        try:
+            notify_new_autosalon_lead.delay(instance.id)
+        except Exception as e:
+            logger.error("notify_new_autosalon_lead failed for lead %s: %s", instance.id, e)
 
     transaction.on_commit(_on_commit)
