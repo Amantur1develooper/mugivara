@@ -5,6 +5,7 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.db import DatabaseError, DataError
 from django.db.models import Count, Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -18,13 +19,25 @@ MAX_PHOTOS = 12
 
 
 def _decimal(raw):
+    """Возвращает Decimal или None — никогда не бросает исключение, даже на
+    мусорном вводе (важно: раньше отсутствие защиты тут роняло страницу
+    с 500 при добавлении машины с телефона, если в поле цены/объёма
+    двигателя попадал нечисловой текст)."""
     raw = (raw or "").strip().replace("\xa0", "").replace(" ", "").replace(",", ".")
-    return raw or None
+    if not raw:
+        return None
+    try:
+        return Decimal(raw)
+    except InvalidOperation:
+        return None
 
 
 def _int(raw):
     raw = (raw or "").strip()
-    return int(raw) if raw.isdigit() else None
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
 
 
 def _user_dealerships(user):
@@ -151,16 +164,28 @@ def _fill_car_from_post(car, post, is_director, membership):
     car.brand         = post.get("brand", "").strip()
     car.model_name    = post.get("model_name", "").strip()
     car.generation    = post.get("generation", "").strip()
-    car.year          = _int(post.get("year")) or car.year or timezone.now().year
+
+    year = _int(post.get("year")) or car.year or timezone.now().year
+    # PositiveSmallIntegerField в БД — max 32767; защита от случайного огромного
+    # числа с мобильного степпера/автозаполнения, которое иначе уронит save() с 500.
+    car.year = max(1950, min(int(year), timezone.now().year + 1))
+
     car.condition     = post.get("condition", Car.Condition.USED)
     car.body_type     = post.get("body_type", "").strip()
-    car.mileage_km    = _int(post.get("mileage_km"))
+
+    mileage = _int(post.get("mileage_km"))
+    car.mileage_km = max(0, min(mileage, 2_000_000)) if mileage is not None else None
+
     car.fuel_type     = post.get("fuel_type", "").strip()
     car.transmission  = post.get("transmission", "").strip()
     car.drive_type    = post.get("drive_type", "").strip()
     engine = _decimal(post.get("engine_volume"))
-    car.engine_volume = Decimal(engine) if engine else None
-    car.power_hp      = _int(post.get("power_hp"))
+    # поле в БД — NUMERIC(3,1), максимум 99.9; иначе PostgreSQL уронит save() с 500
+    car.engine_volume = max(Decimal("0"), min(engine, Decimal("99.9"))) if engine is not None else None
+
+    power = _int(post.get("power_hp"))
+    car.power_hp = max(0, min(power, 32000)) if power is not None else None
+
     car.color         = post.get("color", "").strip()
     car.vin           = post.get("vin", "").strip()
     car.price         = _decimal(post.get("price"))
@@ -196,11 +221,18 @@ def car_add(request, dealership_id):
     if request.method == "POST":
         car = Car(dealership=dealership)
         _fill_car_from_post(car, request.POST, is_director, membership)
-        car.save()
+        try:
+            car.save()
+        except (DatabaseError, DataError, InvalidOperation) as e:
+            messages.error(request, f"Не удалось сохранить: проверьте введённые числа (год, цена, объём двигателя). {e}")
+            return render(request, "acabinet/car_form.html", {
+                "dealership": dealership, "car": car, "Car": Car, "is_director": is_director, "managers": managers,
+                "max_photos": MAX_PHOTOS,
+            })
         for f in request.FILES.getlist("photos")[:MAX_PHOTOS]:
             CarPhoto.objects.create(car=car, photo=f)
-        messages.success(request, "Автомобиль добавлен.")
-        return redirect("acabinet:home")
+        messages.success(request, "Автомобиль добавлен. Можно сразу добавить ещё фото ниже.")
+        return redirect("acabinet:car_edit", car_id=car.id)
 
     return render(request, "acabinet/car_form.html", {
         "dealership": dealership, "car": None, "Car": Car, "is_director": is_director, "managers": managers,
@@ -226,15 +258,17 @@ def car_edit(request, car_id):
 
     if request.method == "POST":
         _fill_car_from_post(car, request.POST, is_director, membership)
-        car.save()
+        try:
+            car.save()
+        except (DatabaseError, DataError, InvalidOperation) as e:
+            messages.error(request, f"Не удалось сохранить: проверьте введённые числа (год, цена, объём двигателя). {e}")
+            return render(request, "acabinet/car_form.html", {
+                "dealership": dealership, "car": car, "Car": Car, "is_director": is_director, "managers": managers,
+                "max_photos": MAX_PHOTOS,
+            })
 
-        for pid in request.POST.getlist("delete_photo"):
-            CarPhoto.objects.filter(id=pid, car=car).delete()
-
-        existing = car.photos.count()
-        slots = max(0, MAX_PHOTOS - existing)
-        for f in request.FILES.getlist("photos")[:slots]:
-            CarPhoto.objects.create(car=car, photo=f)
+        # Фото на этой форме теперь управляются отдельно, сразу через AJAX
+        # (car_photo_upload / car_photo_delete) — без пересохранения всей формы.
 
         messages.success(request, "Автомобиль обновлён.")
         return redirect("acabinet:home")
@@ -243,6 +277,50 @@ def car_edit(request, car_id):
         "dealership": dealership, "car": car, "Car": Car, "is_director": is_director, "managers": managers,
         "max_photos": MAX_PHOTOS,
     })
+
+
+def _photo_access_ok(user, car):
+    dealership = car.dealership
+    if not _check_access(user, dealership):
+        return False
+    if _is_director(user, dealership):
+        return True
+    membership = _membership(user, dealership)
+    return car.manager_id == (membership.id if membership else None)
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def car_photo_upload(request, car_id):
+    """Загрузка ОДНОГО фото сразу, без пересохранения всей формы — чтобы можно
+    было докидывать фото по одному с телефона, не боясь потерять остальные поля."""
+    car = get_object_or_404(Car, id=car_id)
+    if not _photo_access_ok(request.user, car):
+        return JsonResponse({"ok": False, "error": "Нет доступа"}, status=403)
+
+    if car.photos.count() >= MAX_PHOTOS:
+        return JsonResponse({"ok": False, "error": f"Максимум {MAX_PHOTOS} фото"})
+
+    f = request.FILES.get("photo")
+    if not f:
+        return JsonResponse({"ok": False, "error": "Файл не получен"})
+
+    try:
+        photo = CarPhoto.objects.create(car=car, photo=f, sort_order=car.photos.count())
+    except Exception:
+        return JsonResponse({"ok": False, "error": "Не удалось обработать фото — попробуйте другой файл"})
+
+    return JsonResponse({"ok": True, "id": photo.id, "url": photo.photo.url})
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def car_photo_delete(request, photo_id):
+    photo = get_object_or_404(CarPhoto, id=photo_id)
+    if not _photo_access_ok(request.user, photo.car):
+        return JsonResponse({"ok": False}, status=403)
+    photo.delete()
+    return JsonResponse({"ok": True})
 
 
 @require_POST

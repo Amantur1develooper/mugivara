@@ -1,5 +1,5 @@
 {% extends "acabinet/_base.html" %}
-{% block title %}{% if car %}Редактировать{% else %}Новый автомобиль{% endif %}{% endblock %}
+{% block title %}{% if car.pk %}Редактировать{% else %}Новый автомобиль{% endif %}{% endblock %}
 {% block nav_home %}active{% endblock %}
 
 {% block head_extra %}
@@ -18,12 +18,29 @@
   .ac-input:focus, .ac-select:focus{ border-color:var(--ac-accent); background:#fff; }
   textarea.ac-input{ min-height:90px; resize:vertical; }
 
-  .ac-photos-grid{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:12px; }
-  .ac-photo-thumb{ position:relative; width:84px; height:64px; border-radius:10px; overflow:hidden; background:var(--ac-bg); }
-  .ac-photo-thumb img{ width:100%; height:100%; object-fit:cover; }
-  .ac-photo-del{ position:absolute; top:3px; right:3px; background:rgba(0,0,0,.6); color:#fff; border:none; border-radius:50%;
-                 width:18px; height:18px; font-size:11px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-  .ac-photo-del input{ display:none; }
+  .ac-drop-zone{
+    border:2px dashed var(--ac-border); border-radius:16px; padding:28px 16px; text-align:center;
+    cursor:pointer; transition:all .15s; background:var(--ac-card2); margin-bottom:14px;
+  }
+  .ac-drop-zone:hover, .ac-drop-zone.dragover{ border-color:var(--ac-accent); background:rgba(10,132,255,.05); }
+  .ac-drop-icon{ font-size:30px; margin-bottom:6px; }
+  .ac-drop-text{ font-weight:700; font-size:13px; }
+  .ac-drop-hint{ font-size:11.5px; color:var(--ac-muted); margin-top:3px; }
+
+  .ac-photos-grid{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:8px; }
+  .ac-photo-thumb{ position:relative; width:92px; height:70px; border-radius:12px; overflow:hidden; background:var(--ac-bg);
+                    box-shadow:0 1px 4px rgba(16,24,40,.08); }
+  .ac-photo-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .ac-photo-thumb.pending img{ opacity:.5; }
+  .ac-photo-spinner{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px;
+    color:var(--ac-accent); font-weight:800; background:rgba(255,255,255,.5);
+  }
+  .ac-photo-del{ position:absolute; top:3px; right:3px; background:rgba(0,0,0,.62); color:#fff; border:none; border-radius:50%;
+                 width:20px; height:20px; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+                 padding:0; line-height:1; }
+  .ac-photo-del:hover{ background:#ef4444; }
+  .ac-photos-counter{ font-size:11.5px; color:var(--ac-muted); margin-bottom:12px; }
 
   .ac-submit-row{ display:flex; gap:10px; margin-top:22px; }
 </style>
@@ -32,7 +49,7 @@
 {% block content %}
 <div class="ac-topbar">
   <div>
-    <div class="ac-title">{% if car %}✏️ {{ car.brand }} {{ car.model_name }}{% else %}+ Новый автомобиль{% endif %}</div>
+    <div class="ac-title">{% if car.pk %}✏️ {{ car.brand }} {{ car.model_name }}{% else %}+ Новый автомобиль{% endif %}</div>
     <div class="ac-sub">{{ dealership.name }}</div>
   </div>
   <a href="{% url 'acabinet:home' %}" class="ac-btn">← Назад</a>
@@ -131,21 +148,135 @@
   <div class="ac-field"><textarea class="ac-input" name="description">{{ car.description|default:'' }}</textarea></div>
 
   <div class="ac-form-section-title">📷 Фото (до {{ max_photos }})</div>
-  {% if car and car.photos.all %}
-  <div class="ac-photos-grid">
-    {% for p in car.photos.all %}
-    <label class="ac-photo-thumb">
-      <img src="{{ p.photo.url }}" alt="">
-      <span class="ac-photo-del"><input type="checkbox" name="delete_photo" value="{{ p.id }}" onchange="this.parentElement.parentElement.style.opacity=this.checked?0.3:1">✕</span>
-    </label>
-    {% endfor %}
+
+  <div class="ac-drop-zone" id="acDropZone">
+    <div class="ac-drop-icon">📷</div>
+    <div class="ac-drop-text">Нажмите или перетащите фото сюда</div>
+    <div class="ac-drop-hint">С телефона откроется выбор: камера или галерея · можно сразу несколько</div>
   </div>
-  {% endif %}
-  <input class="ac-input" type="file" name="photos" multiple accept="image/*">
+  <input type="file" id="acFileInput" accept="image/*" multiple style="display:none">
+  {% if not car.pk %}<input type="file" name="photos" id="acRealInput" multiple style="display:none">{% endif %}
+
+  <div class="ac-photos-grid" id="acPhotosGrid">
+    {% if car.pk %}
+      {% for p in car.photos.all %}
+      <div class="ac-photo-thumb" id="ac-photo-{{ p.id }}">
+        <img src="{{ p.photo.url }}" alt="">
+        <button type="button" class="ac-photo-del" onclick="acDeleteExisting({{ p.id }})">✕</button>
+      </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+  <div class="ac-photos-counter" id="acPhotosCounter"></div>
 
   <div class="ac-submit-row">
-    <button type="submit" class="ac-btn ac-btn-primary">{% if car %}Сохранить{% else %}Добавить автомобиль{% endif %}</button>
+    <button type="submit" class="ac-btn ac-btn-primary">{% if car.pk %}Сохранить{% else %}Добавить автомобиль{% endif %}</button>
     <a href="{% url 'acabinet:home' %}" class="ac-btn">Отмена</a>
   </div>
 </form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+const MAX_PHOTOS = {{ max_photos }};
+const CAR_ID = {% if car.pk %}{{ car.id }}{% else %}null{% endif %};
+const UPLOAD_URL = CAR_ID ? "{% url 'acabinet:car_photo_upload' car.id|default:0 %}" : null;
+const DELETE_URL = "{% url 'acabinet:car_photo_delete' 0 %}".replace('/0/', '/{id}/');
+
+const dropZone = document.getElementById('acDropZone');
+const fileInput = document.getElementById('acFileInput');
+const grid = document.getElementById('acPhotosGrid');
+const counterEl = document.getElementById('acPhotosCounter');
+let pendingFiles = [];  // только для режима «новый автомобиль» (car ещё не создан)
+
+function acPhotoCount() {
+  return grid.querySelectorAll('.ac-photo-thumb').length;
+}
+function acUpdateCounter() {
+  counterEl.textContent = `${acPhotoCount()} / ${MAX_PHOTOS} фото`;
+}
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  acHandleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', () => { acHandleFiles(fileInput.files); fileInput.value = ''; });
+
+function acHandleFiles(fileList) {
+  const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+  const room = MAX_PHOTOS - acPhotoCount();
+  if (room <= 0) { alert(`Максимум ${MAX_PHOTOS} фото`); return; }
+  files.slice(0, room).forEach(f => CAR_ID ? acUploadNow(f) : acAddPending(f));
+}
+
+/* ── Режим «редактирование» — фото сразу загружаются на сервер ── */
+async function acUploadNow(file) {
+  const tempId = 'tmp-' + Math.random().toString(36).slice(2);
+  const url = URL.createObjectURL(file);
+  const div = document.createElement('div');
+  div.className = 'ac-photo-thumb pending';
+  div.id = tempId;
+  div.innerHTML = `<img src="${url}"><div class="ac-photo-spinner">...</div>`;
+  grid.appendChild(div);
+  acUpdateCounter();
+
+  const fd = new FormData();
+  fd.append('photo', file);
+  try {
+    const r = await fetch(UPLOAD_URL, { method: 'POST', body: fd, headers: { 'X-CSRFToken': CSRF() } });
+    const d = await r.json();
+    if (!d.ok) { div.remove(); acUpdateCounter(); alert(d.error || 'Не удалось загрузить фото'); return; }
+    div.id = `ac-photo-${d.id}`;
+    div.className = 'ac-photo-thumb';
+    div.innerHTML = `<img src="${d.url}"><button type="button" class="ac-photo-del" onclick="acDeleteExisting(${d.id})">✕</button>`;
+  } catch (e) {
+    div.remove(); acUpdateCounter();
+    alert('Ошибка сети при загрузке фото');
+  }
+}
+
+async function acDeleteExisting(photoId) {
+  const el = document.getElementById(`ac-photo-${photoId}`);
+  const r = await fetch(DELETE_URL.replace('{id}', photoId), { method: 'POST', headers: { 'X-CSRFToken': CSRF() } });
+  const d = await r.json();
+  if (d.ok) { el?.remove(); acUpdateCounter(); }
+  else alert('Не удалось удалить фото');
+}
+
+/* ── Режим «новый автомобиль» — фото копятся локально до сохранения формы ── */
+function acAddPending(file) {
+  const url = URL.createObjectURL(file);
+  const idx = pendingFiles.length;
+  pendingFiles.push(file);
+  const div = document.createElement('div');
+  div.className = 'ac-photo-thumb';
+  div.dataset.idx = idx;
+  div.innerHTML = `<img src="${url}"><button type="button" class="ac-photo-del" onclick="acRemovePending(this)">✕</button>`;
+  grid.appendChild(div);
+  acUpdateCounter();
+  acSyncRealInput();
+}
+function acRemovePending(btn) {
+  const div = btn.closest('.ac-photo-thumb');
+  const idx = parseInt(div.dataset.idx);
+  pendingFiles[idx] = null;
+  div.remove();
+  acUpdateCounter();
+  acSyncRealInput();
+}
+function acSyncRealInput() {
+  const real = document.getElementById('acRealInput');
+  if (!real) return;
+  const dt = new DataTransfer();
+  pendingFiles.forEach(f => { if (f) dt.items.add(f); });
+  real.files = dt.files;
+}
+
+acUpdateCounter();
+</script>
 {% endblock %}
