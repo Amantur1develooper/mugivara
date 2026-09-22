@@ -152,18 +152,31 @@ def import_data(
                 name_ru = it["name_ru"]
                 price = Decimal(str(it["price"]))
 
-                item, item_created = Item.objects.get_or_create(
-                    restaurant=restaurant,
-                    name_ru=name_ru,
-                    defaults={
-                        "name_ky": it.get("name_ky", ""),
-                        "name_en": it.get("name_en", ""),
-                        "base_price": price,
-                        "description_ru": it.get("desc_ru", ""),
-                        "description_ky": it.get("desc_ky", ""),
-                        "description_en": it.get("desc_en", ""),
-                    },
-                )
+                # NOTE: используем filter().first() вместо get_or_create() —
+                # в существующем ресторане могут уже быть задвоенные Item с
+                # одинаковым name_ru (расхождение до этого импорта), и
+                # get_or_create() падает на них с MultipleObjectsReturned.
+                # first() детерминированно берёт самый старый (по id) и не трогает
+                # остальные дубли — их можно почистить позже отдельно.
+                dupes = list(Item.objects.filter(restaurant=restaurant, name_ru=name_ru).order_by("id"))
+                if len(dupes) > 1:
+                    print(f"    ⚠  Найдено {len(dupes)} задвоенных Item с именем "
+                          f"'{name_ru}' (id={[d.id for d in dupes]}) — использую id={dupes[0].id}, "
+                          f"остальные не трогаю.")
+                item = dupes[0] if dupes else None
+                item_created = False
+                if item is None:
+                    item = Item.objects.create(
+                        restaurant=restaurant,
+                        name_ru=name_ru,
+                        name_ky=it.get("name_ky", ""),
+                        name_en=it.get("name_en", ""),
+                        base_price=price,
+                        description_ru=it.get("desc_ru", ""),
+                        description_ky=it.get("desc_ky", ""),
+                        description_en=it.get("desc_en", ""),
+                    )
+                    item_created = True
                 if item_created:
                     stat["items_new"] += 1
                 else:
@@ -203,15 +216,17 @@ def import_data(
                 )
 
                 for b in branches:
-                    branch_item, bi_created = BranchItem.objects.get_or_create(
-                        branch=b, item=item,
-                        defaults={
-                            "price": price,
-                            "is_available": True,
-                            "sort_order": item_sort,
-                            "delivery_available": True,
-                        },
-                    )
+                    # Тот же защитный паттерн — BranchItem не имеет unique_together
+                    # на (branch, item), так что теоретически тоже могут быть дубли.
+                    bi_dupes = list(BranchItem.objects.filter(branch=b, item=item).order_by("id"))
+                    branch_item = bi_dupes[0] if bi_dupes else None
+                    bi_created = False
+                    if branch_item is None:
+                        branch_item = BranchItem.objects.create(
+                            branch=b, item=item, price=price, is_available=True,
+                            sort_order=item_sort, delivery_available=True,
+                        )
+                        bi_created = True
                     if bi_created:
                         stat["branch_items_new"] += 1
                     elif update_prices and branch_item.price != price:
