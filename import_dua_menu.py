@@ -22,6 +22,11 @@
     --overwrite-photos     перезаписать фото, даже если уже загружены
     --update-prices        обновить base_price/BranchItem.price для уже существующих позиций
                             (по умолчанию цены существующих позиций не трогаются)
+    --wipe-existing         удалить старое меню ресторана (категории + блюда) перед импортом
+                            нового. Блюда с историей заказов удалить нельзя (PROTECT в БД) —
+                            они будут скрыты (is_available=False на всех филиалах), а не
+                            удалены, чтобы не потерять историю заказов. Спросит подтверждение.
+    --yes                   не спрашивать подтверждение для --wipe-existing
 
 Требования: pip install pillow  (requests НЕ нужен — фото берутся локально)
 """
@@ -43,6 +48,7 @@ django.setup()
 
 from django.core.files.base import ContentFile
 from django.db import transaction
+from django.db.models import ProtectedError
 
 from core.models import Restaurant, Branch
 from catalog.models import (
@@ -61,6 +67,8 @@ def import_data(
     no_photos: bool = False,
     overwrite_photos: bool = False,
     update_prices: bool = False,
+    wipe_existing: bool = False,
+    yes: bool = False,
 ):
     total_items = sum(len(c["items"]) for c in CATEGORIES)
     items_w_photo = sum(1 for c in CATEGORIES for it in c["items"] if it.get("photo"))
@@ -96,6 +104,48 @@ def import_data(
         print(f"Филиалов найдено: {len(branches)}")
         for b in branches:
             print(f"   — {b.name_ru} (id={b.pk})")
+
+        # ── Удаление старого меню (--wipe-existing) ──
+        if wipe_existing:
+            old_items = list(Item.objects.filter(restaurant=restaurant))
+            old_menusets = list(MenuSet.objects.filter(restaurant=restaurant))
+            old_cats_count = Category.objects.filter(menu_set__in=old_menusets).count()
+
+            print(f"\n⚠️  --wipe-existing: будет удалено старое меню ресторана «{restaurant}»:")
+            print(f"      блюд:     {len(old_items)}")
+            print(f"      категорий: {old_cats_count}")
+            print(f"      наборов меню (MenuSet): {len(old_menusets)}")
+            print("    Блюда, у которых есть история заказов (OrderItem), удалить нельзя "
+                  "(защита в БД) — они будут вместо этого СКРЫТЫ (is_available=False на "
+                  "всех филиалах), а не удалены, чтобы не потерять историю заказов.")
+
+            if not yes:
+                confirm = input(f"\n    Введите название ресторана «{restaurant.name_ru}» "
+                                 f"для подтверждения удаления: ")
+                if confirm.strip() != restaurant.name_ru:
+                    print("❌ Подтверждение не совпало. Отмена — ничего не удалено и не изменено.")
+                    sys.exit(1)
+
+            deleted_items = 0
+            hidden_items = 0
+            for old_item in old_items:
+                try:
+                    with transaction.atomic():
+                        old_item.delete()
+                    deleted_items += 1
+                except ProtectedError:
+                    # У блюда есть история заказов — удалить нельзя, скрываем вместо этого.
+                    BranchItem.objects.filter(item=old_item).update(is_available=False)
+                    hidden_items += 1
+
+            # Категории/MenuSet'ы старого меню безопасно удалять — они не защищены
+            # PROTECT, и оставшиеся (скрытые) блюда от них не зависят.
+            for ms in old_menusets:
+                ms.delete()
+
+            print(f"    ✅ Удалено блюд: {deleted_items}")
+            print(f"    ✅ Скрыто блюд (есть история заказов, is_available=False): {hidden_items}")
+            print(f"    ✅ Удалено наборов меню/категорий: {len(old_menusets)} / {old_cats_count}")
 
         # ── MenuSet (один на ресторан, общий для всех филиалов) ──
         menu_set, cr = MenuSet.objects.get_or_create(
@@ -258,6 +308,13 @@ def main():
     ap.add_argument("--overwrite-photos", action="store_true")
     ap.add_argument("--update-prices", action="store_true",
                      help="Обновить цены у уже существующих позиций/BranchItem")
+    ap.add_argument("--wipe-existing", action="store_true",
+                     help="Удалить ВСЁ старое меню ресторана (категории и блюда) перед импортом "
+                          "нового. Блюда с историей заказов удалить нельзя (защита в БД) — "
+                          "они будут скрыты (is_available=False), а не удалены. Спросит "
+                          "подтверждение (название ресторана), если не передан --yes.")
+    ap.add_argument("--yes", action="store_true",
+                     help="Не спрашивать подтверждение для --wipe-existing (для неинтерактивного запуска)")
     args = ap.parse_args()
 
     import_data(
@@ -267,6 +324,8 @@ def main():
         no_photos=args.no_photos,
         overwrite_photos=args.overwrite_photos,
         update_prices=args.update_prices,
+        wipe_existing=args.wipe_existing,
+        yes=args.yes,
     )
 
 
