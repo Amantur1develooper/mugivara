@@ -545,6 +545,53 @@
   body.wb-drawer-open .bm-top-btn { opacity: 0; pointer-events: none; transform: translateY(8px); }
 
   /* ════════════════════════════════════════
+     КОНТАКТНАЯ FAB-КНОПКА (низ-лево)
+  ════════════════════════════════════════ */
+  .bm-contact-fab {
+    position: fixed; bottom: 104px; left: 24px; z-index: 9000;
+  }
+  .bm-contact-fab.hide,
+  body.wb-drawer-open .bm-contact-fab { opacity: 0; pointer-events: none; transform: translateY(8px); }
+
+  .bm-contact-toggle {
+    width: 48px; height: 48px; border-radius: 50%; cursor: pointer;
+    background: var(--accent); border: none; flex-shrink: 0;
+    box-shadow: 0 8px 32px var(--glow), 0 0 0 1px rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 20px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative; z-index: 1;
+  }
+  .bm-contact-toggle:hover { transform: translateY(-2px) scale(1.04); }
+  .bm-contact-fab.open .bm-contact-toggle { transform: rotate(45deg); }
+
+  /* столбик кнопок разворачивается ВВЕРХ от главной кнопки */
+  .bm-contact-actions {
+    position: absolute; left: 0; bottom: 58px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    max-height: 0; overflow: hidden; opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.2s ease;
+  }
+  .bm-contact-fab.open .bm-contact-actions {
+    max-height: 420px; opacity: 1;
+  }
+  .bm-contact-btn {
+    width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; text-decoration: none;
+    background: var(--card); border: 1.5px solid var(--border);
+    color: var(--text);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    transition: transform 0.2s ease;
+  }
+  .bm-contact-btn:hover { transform: translateY(-2px); }
+  .bm-contact-btn.wa   { background: #25D366; border-color: #25D366; color: #fff; }
+  .bm-contact-btn.tel  { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .bm-contact-btn.ig   { background: radial-gradient(circle at 30% 110%, #ffdb8b, #ee2a7b 40%, #6228d7 90%); border-color: transparent; color: #fff; }
+  .bm-contact-btn.tg   { background: #229ED9; border-color: #229ED9; color: #fff; }
+  .bm-contact-btn.tt   { background: #010101; border-color: #010101; color: #fff; }
+
+  /* ════════════════════════════════════════
      EMPTY STATE
   ════════════════════════════════════════ */
   .bm-empty {
@@ -1701,6 +1748,50 @@ function _showErr(msg) {
 
 {# ══ КНОПКА НАВЕРХ ══ #}
 <button id="bm-top-btn" class="bm-top-btn hide" type="button" aria-label="{% trans 'Наверх' %}">↑</button>
+
+{# ══ КОНТАКТНАЯ FAB-КНОПКА (телефон/WhatsApp/адрес/соцсети) ══ #}
+{% with r=branch.restaurant phone=branch.phone|default:branch.restaurant.phone %}
+{% if phone or r.whatsapp or branch.map_url or r.instagram or r.telegram or r.tiktok %}
+<div class="bm-contact-fab" id="bmContactFab">
+  <button type="button" class="bm-contact-toggle" aria-label="{% trans 'Контакты' %}"
+          onclick="document.getElementById('bmContactFab').classList.toggle('open')">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+  </button>
+  <div class="bm-contact-actions">
+    {% if phone %}
+      <a href="tel:{{ phone }}" class="bm-contact-btn tel" aria-label="{% trans 'Позвонить' %}" title="{% trans 'Позвонить' %}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+      </a>
+    {% endif %}
+    {% if r.whatsapp or phone %}
+      <a href="https://wa.me/{{ r.whatsapp|default:phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}"
+         target="_blank" rel="noopener" class="bm-contact-btn wa" aria-label="WhatsApp" title="WhatsApp">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-1-.3-.1-.5-.1-.7.1s-.8 1-.9 1.2-.3.2-.6 0c-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5s0-.4 0-.5c0-.2-.7-1.7-1-2.3C9.3 8.1 9 8.1 8.8 8.1H8.3c-.2 0-.5.1-.8.4C7.2 8.8 6.3 9.6 6.3 11.3s1.2 3.5 1.4 3.7c.2.2 2.4 3.7 5.9 5.2 2.3 1 3.2 1.1 4.3.9.7-.1 2.2-.9 2.5-1.7.3-.8.3-1.5.2-1.7-.1-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.9.5 3.7 1.4 5.3L2 22l4.9-1.3C8.3 21.5 10.1 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>
+      </a>
+    {% endif %}
+    {% if branch.map_url %}
+      <a href="{{ branch.map_url }}" target="_blank" rel="noopener" class="bm-contact-btn map" aria-label="{% trans 'Адрес' %}" title="{{ branch.address }}">📍</a>
+    {% endif %}
+    {% if r.instagram %}
+      <a href="{{ r.instagram }}" target="_blank" rel="noopener" class="bm-contact-btn ig" aria-label="Instagram" title="Instagram">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c2.7 0 3.05.01 4.12.06 1.07.05 1.79.22 2.43.46.66.26 1.21.6 1.76 1.15.5.5.9 1.1 1.15 1.76.24.64.41 1.36.46 2.43.05 1.07.06 1.42.06 4.12s-.01 3.05-.06 4.12c-.05 1.07-.22 1.79-.46 2.43a4.9 4.9 0 0 1-1.15 1.76c-.5.5-1.1.9-1.76 1.15-.64.24-1.36.41-2.43.46-1.07.05-1.42.06-4.12.06s-3.05-.01-4.12-.06c-1.07-.05-1.79-.22-2.43-.46a4.9 4.9 0 0 1-1.76-1.15 4.9 4.9 0 0 1-1.15-1.76c-.24-.64-.41-1.36-.46-2.43C2.01 15.05 2 14.7 2 12s.01-3.05.06-4.12c.05-1.07.22-1.79.46-2.43.26-.66.6-1.21 1.15-1.76A4.9 4.9 0 0 1 5.43 2.5c.64-.24 1.36-.41 2.43-.46C8.93 2.01 9.28 2 12 2zm0 5a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 8.2a3.2 3.2 0 1 1 0-6.4 3.2 3.2 0 0 1 0 6.4zm5.4-8.4a1.17 1.17 0 1 1-2.34 0 1.17 1.17 0 0 1 2.34 0z"/></svg>
+      </a>
+    {% endif %}
+    {% if r.telegram %}
+      <a href="{% if r.telegram|slice:':1' == '@' %}https://t.me/{{ r.telegram|slice:'1:' }}{% elif 'http' in r.telegram %}{{ r.telegram }}{% else %}https://t.me/{{ r.telegram }}{% endif %}"
+         target="_blank" rel="noopener" class="bm-contact-btn tg" aria-label="Telegram" title="Telegram">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.3 18.7 20c-.2 1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.3-4.9L18 6.5c.4-.4-.1-.6-.6-.2L6.1 13.5l-4.8-1.5c-1-.3-1-1 .2-1.5L20.6 3.3c.9-.3 1.6.2 1.3 1z"/></svg>
+      </a>
+    {% endif %}
+    {% if r.tiktok %}
+      <a href="{{ r.tiktok }}" target="_blank" rel="noopener" class="bm-contact-btn tt" aria-label="TikTok" title="TikTok">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 5.8c-.9-.9-1.4-2.1-1.4-3.5h-3.3v13.5c0 1.6-1.3 2.9-2.9 2.9s-2.9-1.3-2.9-2.9 1.3-2.9 2.9-2.9c.3 0 .6 0 .9.1V9.6c-.3 0-.6-.1-.9-.1-3.4 0-6.2 2.8-6.2 6.2S5.6 22 9 22s6.2-2.8 6.2-6.2V9c1.3 1 2.9 1.5 4.6 1.5V7.2c-1 0-1.9-.3-2.6-.9-.2-.1-.4-.3-.6-.5z"/></svg>
+      </a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+{% endwith %}
 
 {# ══ МОДАЛЬНОЕ ОКНО КОРЗИНЫ ══ #}
 <div id="cartModal" class="cm-backdrop" onclick="backdropClose(event)">

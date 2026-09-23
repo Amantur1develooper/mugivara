@@ -485,11 +485,13 @@
         <input type="hidden" name="next" value="{{ request.path }}">
         <button class="wb-lang-btn{% if LANGUAGE_CODE == 'ky' %} active{% endif %}" type="submit" name="language" value="ky">KY</button>
       </form>
+      {% if request.resolver_match.url_name != 'home' %}
       <form action="{% url 'set_language' %}" method="post">
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ request.path }}">
         <button class="wb-lang-btn{% if LANGUAGE_CODE == 'en' %} active{% endif %}" type="submit" name="language" value="en">EN</button>
       </form>
+      {% endif %}
     </div>
 
     <button class="wb-burger" id="burgerBtn" type="button" aria-label="{% trans 'Меню' %}">
@@ -534,10 +536,12 @@
           {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
           <button class="wb-lang-btn{% if LANGUAGE_CODE == 'ky' %} active{% endif %}" type="submit" name="language" value="ky">KY</button>
         </form>
+        {% if request.resolver_match.url_name != 'home' %}
         <form action="{% url 'set_language' %}" method="post">
           {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
           <button class="wb-lang-btn{% if LANGUAGE_CODE == 'en' %} active{% endif %}" type="submit" name="language" value="en">EN</button>
         </form>
+        {% endif %}
       </div>
     </div>
   </div>
