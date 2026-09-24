@@ -24,7 +24,9 @@ def _compress_photo(field, max_side=1080, quality=78):
         buf = BytesIO()
         img.save(buf, format="WEBP", quality=quality, method=6)
         buf.seek(0)
-        name = os.path.splitext(field.name)[0] + ".webp"
+        # basename, не field.name — иначе upload_to подставится дважды (см. тот же
+        # фикс в catalog/models.py).
+        name = os.path.splitext(os.path.basename(field.name))[0] + ".webp"
         field.save(name, ContentFile(buf.read()), save=False)
         return True
     except Exception:

@@ -41,7 +41,10 @@ def _compress_photo(field, max_side=900, quality=82):
         buf = BytesIO()
         img.save(buf, format="WEBP", quality=quality, method=6)
         buf.seek(0)
-        name = os.path.splitext(field.name)[0] + ".webp"
+        # basename, не field.name — иначе upload_to подставится дважды: field.name
+        # уже содержит префикс (например "items/photos/x.jpg") после первого
+        # сохранения, а field.save() сам заново применяет upload_to к имени.
+        name = os.path.splitext(os.path.basename(field.name))[0] + ".webp"
         field.save(name, ContentFile(buf.read()), save=False)
         return True
     except Exception:
@@ -78,6 +81,7 @@ class Item(TimeStampedModel):
     class Meta:
         verbose_name = "Блюдо"
         verbose_name_plural = "Блюда"
+        unique_together = ("restaurant", "name_ru")
 
 class ItemCategory(TimeStampedModel):
     """Блюдо может быть в нескольких категориях в рамках одного MenuSet."""
@@ -153,6 +157,7 @@ class BranchItem(TimeStampedModel):
     class Meta:
         verbose_name = "Блюдо Филиал"
         verbose_name_plural = "Блюды Филиал"
+        unique_together = ("branch", "item")
 
     def __str__(self):
         return f"{self.branch.name_ru} — {self.item.name_ru} "

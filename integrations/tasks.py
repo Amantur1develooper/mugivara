@@ -229,8 +229,8 @@ def _table_order_text(order: Order) -> str:
     return "\n".join(lines)
 
 
-@shared_task
-def notify_new_order(order_id: int):
+@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=60, max_retries=5)
+def notify_new_order(self, order_id: int):
     token = _tg_token()
     if not token:
         return "No TG token"
@@ -242,19 +242,28 @@ def notify_new_order(order_id: int):
         .get(id=order_id)
     )
 
-    recipients = TelegramRecipient.objects.filter(
+    recipients = list(TelegramRecipient.objects.filter(
         branch=order.branch, is_active=True, notify_new_orders=True
-    )
-    if not recipients.exists():
+    ))
+    if not recipients:
         return "No recipients"
 
-    # Use short format for table (dine-in) orders
-    if getattr(order, "table_place_id", None):
-        text = _table_order_text(order)
-    else:
-        text = _order_text(order)
+    # Строим текст ВНУТРИ try — если тут исключение (необычные данные заказа),
+    # это раньше молча роняло всю задачу и заказ просто не приходил в группу
+    # без единого следа. Теперь ошибка логируется и задача уходит на повтор
+    # (autoretry), а не пропадает навсегда.
+    try:
+        # Use short format for table (dine-in) orders
+        if getattr(order, "table_place_id", None):
+            text = _table_order_text(order)
+        else:
+            text = _order_text(order)
+    except Exception:
+        logger.exception("notify_new_order: failed to build text for order %s", order_id)
+        raise
 
     sent = 0
+    errors = []
     for r in recipients:
         try:
             send_message(
@@ -266,13 +275,20 @@ def notify_new_order(order_id: int):
             )
             sent += 1
         except Exception as e:
-            print("TG ERROR:", r.chat_id, e)
+            logger.warning("notify_new_order: send failed for order %s, chat %s: %s", order_id, r.chat_id, e)
+            errors.append(str(e))
 
-    return f"sent={sent}"
+    if errors and sent == 0:
+        # Никому не доставилось (например, Telegram временно недоступен или
+        # сработал rate-limit) — пусть Celery повторит попытку, а не тихо
+        # потеряет уведомление о заказе.
+        raise Exception(f"TG order: 0/{len(recipients)} delivered for order {order_id}: {errors}")
+
+    return f"sent={sent} errors={len(errors)}"
 
 
-@shared_task
-def notify_extra_order(order_id: int, new_items: list):
+@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=60, max_retries=5)
+def notify_extra_order(self, order_id: int, new_items: list):
     """
     Уведомление о дозаказе на стол.
     new_items — список {"name": str, "qty": int} только добавленных блюд.
@@ -287,33 +303,38 @@ def notify_extra_order(order_id: int, new_items: list):
         .get(id=order_id)
     )
 
-    recipients = TelegramRecipient.objects.filter(
+    recipients = list(TelegramRecipient.objects.filter(
         branch=order.branch, is_active=True, notify_new_orders=True
-    )
-    if not recipients.exists():
+    ))
+    if not recipients:
         return "No recipients"
 
-    place = order.table_place
-    place_title = f"Стол {place.title}" if place else "стол"
-    floor_name = getattr(getattr(place, "floor", None), "name_ru", "") or ""
-    if floor_name:
-        place_title += f"  |  Зал {floor_name}"
+    try:
+        place = order.table_place
+        place_title = f"Стол {place.title}" if place else "стол"
+        floor_name = getattr(getattr(place, "floor", None), "name_ru", "") or ""
+        if floor_name:
+            place_title += f"  |  Зал {floor_name}"
 
-    now = timezone.localtime().strftime("%H:%M")
-    lines = [
-        f"➕ ДОЗАКАЗ — {place_title}",
-        f"🏪 {getattr(order.branch, 'name_ru', str(order.branch))}",
-        f"🧾 Заказ №{order.id}",
-        "",
-        "📋 Добавлено:",
-    ]
-    for it in new_items:
-        lines.append(f"  • {it['name']}  ×{it['qty']}")
+        now = timezone.localtime().strftime("%H:%M")
+        lines = [
+            f"➕ ДОЗАКАЗ — {place_title}",
+            f"🏪 {getattr(order.branch, 'name_ru', str(order.branch))}",
+            f"🧾 Заказ №{order.id}",
+            "",
+            "📋 Добавлено:",
+        ]
+        for it in new_items:
+            lines.append(f"  • {it['name']}  ×{it['qty']}")
 
-    lines.append(f"\n⏰ {now}")
-    text = "\n".join(lines)
+        lines.append(f"\n⏰ {now}")
+        text = "\n".join(lines)
+    except Exception:
+        logger.exception("notify_extra_order: failed to build text for order %s", order_id)
+        raise
 
     sent = 0
+    errors = []
     for r in recipients:
         try:
             send_message(
@@ -325,12 +346,16 @@ def notify_extra_order(order_id: int, new_items: list):
             )
             sent += 1
         except Exception as e:
-            print("TG ERROR:", r.chat_id, e)
+            logger.warning("notify_extra_order: send failed for order %s, chat %s: %s", order_id, r.chat_id, e)
+            errors.append(str(e))
 
-    return f"sent={sent}"
+    if errors and sent == 0:
+        raise Exception(f"TG extra order: 0/{len(recipients)} delivered for order {order_id}: {errors}")
+
+    return f"sent={sent} errors={len(errors)}"
 
 
-@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, max_retries=5)
+@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=60, max_retries=5)
 def notify_order_status(self, order_id: int, old_status: str, new_status: str):
     token = _tg_token()
     if not token:
@@ -343,17 +368,22 @@ def notify_order_status(self, order_id: int, old_status: str, new_status: str):
         .get(id=order_id)
     )
 
-    recipients = TelegramRecipient.objects.filter(
+    recipients = list(TelegramRecipient.objects.filter(
         branch=order.branch, is_active=True, notify_status_changes=True
-    )
-    if not recipients.exists():
+    ))
+    if not recipients:
         return "No recipients"
 
-    # Русский статус через get_status_display()
-    title = f"🔄 <b>СТАТУС ИЗМЕНЁН</b>\n➡️ Было: <b>{escape(old_status)}</b>\n➡️ Стало: <b>{escape(new_status)}</b>"
-    text = _order_text(order, title_override=title)
+    try:
+        # Русский статус через get_status_display()
+        title = f"🔄 <b>СТАТУС ИЗМЕНЁН</b>\n➡️ Было: <b>{escape(old_status)}</b>\n➡️ Стало: <b>{escape(new_status)}</b>"
+        text = _order_text(order, title_override=title)
+    except Exception:
+        logger.exception("notify_order_status: failed to build text for order %s", order_id)
+        raise
 
     sent = 0
+    errors = []
     for r in recipients:
         try:
             send_message(
@@ -365,13 +395,17 @@ def notify_order_status(self, order_id: int, old_status: str, new_status: str):
             )
             sent += 1
         except Exception as e:
-            print("TG ERROR:", r.chat_id, e)
+            logger.warning("notify_order_status: send failed for order %s, chat %s: %s", order_id, r.chat_id, e)
+            errors.append(str(e))
 
-    return f"sent={sent}"
+    if errors and sent == 0:
+        raise Exception(f"TG order status: 0/{len(recipients)} delivered for order {order_id}: {errors}")
+
+    return f"sent={sent} errors={len(errors)}"
 # $mPx32u5
 
-@shared_task
-def notify_call_waiter(place_id: int, note: str = ""):
+@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=60, max_retries=5)
+def notify_call_waiter(self, place_id: int, note: str = ""):
     token = _tg_token()
     if not token:
         return "No TG token"
@@ -380,30 +414,36 @@ def notify_call_waiter(place_id: int, note: str = ""):
     branch = place.floor.branch
     floor  = place.floor
 
-    recs = TelegramRecipient.objects.filter(
+    recs = list(TelegramRecipient.objects.filter(
         branch=branch,
         is_active=True,
         notify_new_orders=True,
-    )
-    if not recs.exists():
+    ))
+    if not recs:
         return "No recipients"
 
-    t = timezone.localtime().strftime("%d.%m.%Y %H:%M")
+    try:
+        t = timezone.localtime().strftime("%d.%m.%Y %H:%M")
 
-    lines = [
-        "🔔 ВЫЗОВ ОФИЦИАНТА",
-        "",
-        f"Ресторан: {branch.name_ru}",
-        f"Место: {place.title}",
-    ]
-    if floor.name_ru:
-        lines.append(f"Зал: {floor.name_ru}")
-    if note:
-        lines.append(f"Заметка: {note}")
-    lines.append(f"Время: {t}")
+        lines = [
+            "🔔 ВЫЗОВ ОФИЦИАНТА",
+            "",
+            f"Ресторан: {branch.name_ru}",
+            f"Место: {place.title}",
+        ]
+        if floor.name_ru:
+            lines.append(f"Зал: {floor.name_ru}")
+        if note:
+            lines.append(f"Заметка: {note}")
+        lines.append(f"Время: {t}")
 
-    text = "\n".join(lines)
+        text = "\n".join(lines)
+    except Exception:
+        logger.exception("notify_call_waiter: failed to build text for place %s", place_id)
+        raise
 
+    sent = 0
+    errors = []
     for r in recs:
         try:
             send_message(
@@ -413,8 +453,15 @@ def notify_call_waiter(place_id: int, note: str = ""):
                 parse_mode=None,
                 message_thread_id=r.message_thread_id,
             )
+            sent += 1
         except Exception as e:
-            print("TG call_waiter ERROR:", r.chat_id, e)
+            logger.warning("notify_call_waiter: send failed for place %s, chat %s: %s", place_id, r.chat_id, e)
+            errors.append(str(e))
+
+    if errors and sent == 0:
+        raise Exception(f"TG call_waiter: 0/{len(recs)} delivered for place {place_id}: {errors}")
+
+    return f"sent={sent} errors={len(errors)}"
 
 
 # ── Магазины: уведомление о новом заказе (сайт + касса) ──────────────────────
