@@ -353,19 +353,6 @@
   }
   .dish-rating-val { color: var(--text2); font-weight: 600; font-size: 12px; }
 
-  /* бейдж цены поверх фото */
-  .dish-price-badge {
-    position: absolute; bottom: 10px; right: 10px;
-    padding: 5px 12px; border-radius: 100px;
-    font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 800;
-    background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.15);
-    backdrop-filter: blur(8px); color: white; letter-spacing: -0.3px;
-  }
-  .dish-price-badge.on-promo {
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border-color: transparent;
-  }
-
   /* ── ТЕЛО КАРТОЧКИ ── */
   .dish-body {
     padding: 14px 16px 16px;
@@ -906,7 +893,6 @@ const T = {
                 {% if bi.is_on_promo %}
                 <div class="dish-promo-badge">🏷️ {{ bi.promo_badge_text }}{% if bi.discount_pct %} −{{ bi.discount_pct }}%{% endif %}</div>
                 {% endif %}
-                <div class="dish-price-badge{% if bi.is_on_promo %} on-promo{% endif %}">{{ bi.price|som }}</div>
               </div>
 
               {# BODY #}
