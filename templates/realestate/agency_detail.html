@@ -33,6 +33,7 @@
   .re-status-free{color:#047857}.re-status-booked{color:#B45309}.re-status-sold{color:#6B7280}
   .re-card-body { padding: 16px }
   .re-card-addr { font-weight: 600; font-size: 14px; margin-bottom: 4px }
+  .re-card-complex { font-size: 12px; color: var(--re-teal); font-weight: 600; margin-bottom: 4px }
   .re-card-meta { font-size: 12px; color: var(--re-muted); margin-bottom: 10px }
   .re-card-price { font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 17px; color: var(--re-teal) }
   .re-empty { text-align: center; padding: 70px 24px; border: 1px solid var(--re-border); border-radius: 20px; background: var(--re-card); }
@@ -80,7 +81,7 @@
   </div>
 
   <form method="get" class="re-search-row">
-    <input type="text" name="q" value="{{ q }}" placeholder="{% trans 'Поиск по адресу, району, площади, комнатам...' %}">
+    <input type="text" name="q" value="{{ q }}" placeholder="{% trans 'Поиск по адресу, району, ЖК, площади, комнатам...' %}">
     <button type="submit">{% trans "Найти" %}</button>
     {% if q %}<a href="{% url 'realestate:agency_detail' agency.slug %}" class="re-search-clear">{% trans "Сбросить" %}</a>{% endif %}
   </form>
@@ -97,6 +98,7 @@
       </div>
       <div class="re-card-body">
         <div class="re-card-addr">{{ apt.address|default:_("Без адреса") }}</div>
+        {% if apt.complex_name %}<div class="re-card-complex">🏢 {{ apt.complex_name }}</div>{% endif %}
         <div class="re-card-meta">
           {% if apt.area %}{% blocktrans with a=apt.area %}{{ a }} м²{% endblocktrans %}{% endif %}{% if apt.rooms %} · {% blocktrans with r=apt.rooms %}{{ r }}-комн.{% endblocktrans %}{% endif %}{% if apt.district %} · {{ apt.district }}{% endif %}
         </div>

@@ -15,7 +15,10 @@ def _apply_search(qs, q):
     if not q:
         return qs
     q = q.strip()
-    filters = Q(address__icontains=q) | Q(district__icontains=q) | Q(city__icontains=q)
+    filters = (
+        Q(address__icontains=q) | Q(district__icontains=q) | Q(city__icontains=q)
+        | Q(complex_name__icontains=q)
+    )
     if q.isdigit():
         filters |= Q(rooms=int(q))
     try:
@@ -236,6 +239,7 @@ def apartment_add(request, agency_id):
         apt = Apartment(agency=agency)
         apt.city          = request.POST.get("city", "").strip()
         apt.district      = request.POST.get("district", "").strip()
+        apt.complex_name  = request.POST.get("complex_name", "").strip()
         apt.address       = request.POST.get("address", "").strip()
         apt.area          = _decimal(request.POST.get("area"))
         rooms             = request.POST.get("rooms", "").strip()
@@ -291,6 +295,7 @@ def apartment_edit(request, apartment_id):
     if request.method == "POST":
         apt.city          = request.POST.get("city", "").strip()
         apt.district      = request.POST.get("district", "").strip()
+        apt.complex_name  = request.POST.get("complex_name", "").strip()
         apt.address       = request.POST.get("address", "").strip()
         apt.area          = _decimal(request.POST.get("area"))
         rooms             = request.POST.get("rooms", "").strip()

@@ -19,7 +19,10 @@ def agency_detail(request, slug):
         status=Apartment.Status.SOLD
     ).prefetch_related("photos")
     if q:
-        filters = Q(address__icontains=q) | Q(district__icontains=q) | Q(city__icontains=q)
+        filters = (
+            Q(address__icontains=q) | Q(district__icontains=q) | Q(city__icontains=q)
+            | Q(complex_name__icontains=q)
+        )
         if q.isdigit():
             filters |= Q(rooms=int(q))
         try:

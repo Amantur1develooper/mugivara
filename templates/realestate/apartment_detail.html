@@ -101,6 +101,7 @@
       <div class="re-loc">{% if apartment.district %}{{ apartment.district }}{% if apartment.city %}, {{ apartment.city }}{% endif %}{% else %}{{ apartment.city }}{% endif %}</div>
 
       <div class="re-specs">
+        {% if apartment.complex_name %}<div class="re-spec"><div class="re-spec-label">{% trans "ЖК" %}</div><div class="re-spec-value">{{ apartment.complex_name }}</div></div>{% endif %}
         {% if apartment.area %}<div class="re-spec"><div class="re-spec-label">{% trans "Площадь" %}</div><div class="re-spec-value">{% blocktrans with a=apartment.area %}{{ a }} м²{% endblocktrans %}</div></div>{% endif %}
         {% if apartment.rooms %}<div class="re-spec"><div class="re-spec-label">{% trans "Комнат" %}</div><div class="re-spec-value">{{ apartment.rooms }}</div></div>{% endif %}
         {% if apartment.floor %}<div class="re-spec"><div class="re-spec-label">{% trans "Этаж" %}</div><div class="re-spec-value">{{ apartment.floor }}{% if apartment.floors_total %} {% blocktrans with t=apartment.floors_total %}из {{ t }}{% endblocktrans %}{% endif %}</div></div>{% endif %}

@@ -11,14 +11,14 @@ class ApartmentPhotoInline(admin.TabularInline):
 
 @admin.register(Apartment)
 class ApartmentAdmin(admin.ModelAdmin):
-    list_display  = ("id", "address", "agency", "realtor", "price", "currency", "status", "is_active", "sort_order")
+    list_display  = ("id", "address", "complex_name", "agency", "realtor", "price", "currency", "status", "is_active", "sort_order")
     list_filter   = ("agency", "status", "renovation", "is_active")
-    search_fields = ("address", "city", "district")
+    search_fields = ("address", "city", "district", "complex_name")
     list_editable = ("status", "is_active", "sort_order")
     inlines       = [ApartmentPhotoInline]
     fieldsets = (
         (None, {"fields": ("agency", "realtor", "status", "is_active", "sort_order")}),
-        ("Адрес", {"fields": ("city", "district", "address")}),
+        ("Адрес", {"fields": ("city", "district", "complex_name", "address")}),
         ("Параметры", {"fields": ("area", "rooms", "floor", "floors_total", "renovation")}),
         ("Цена и описание", {"fields": ("price", "price_per_sqm", "currency", "description", "description_en")}),
         ("Обзоры", {"fields": ("review_url_1", "review_url_2")}),

@@ -105,6 +105,8 @@ class Apartment(TimeStampedModel):
 
     city         = models.CharField("Город", max_length=120, blank=True, default="")
     district     = models.CharField("Район", max_length=120, blank=True, default="")
+    complex_name = models.CharField("ЖК", max_length=150, blank=True, default="",
+                                    help_text="Название жилого комплекса, например «Политех Сити»")
     address      = models.CharField("Адрес", max_length=300, blank=True, default="")
 
     area         = models.DecimalField("Площадь, м²", max_digits=7, decimal_places=1, null=True, blank=True)
