@@ -8,7 +8,99 @@
     <div class="pg-title">♻️ {{ project.name }}</div>
     <div class="pg-sub">Заявки на эко-услуги</div>
   </div>
-  <a href="{% url 'dashboard:eco_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
+  <div style="display:flex;gap:8px">
+    <button id="ecoAddAppToggle" type="button" class="db-btn db-btn-primary db-btn-sm" onclick="document.getElementById('ecoAddAppForm').style.display='block';document.getElementById('ecoAddAppToggle').style.display='none'">+ Добавить заявку</button>
+    <a href="{% url 'dashboard:eco_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
+  </div>
+</div>
+
+<div style="background:linear-gradient(135deg,#052e16,#14532d);border-radius:16px;
+            padding:18px 22px;margin-bottom:22px;max-width:760px;
+            display:flex;align-items:center;gap:16px;color:#fff">
+  <div style="width:48px;height:48px;border-radius:50%;flex-shrink:0;background:rgba(255,255,255,.15);
+              display:flex;align-items:center;justify-content:center;font-size:22px">♻️</div>
+  <div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#86efac">
+      Основатель и Директор
+    </div>
+    <div style="font-size:16px;font-weight:800;margin-top:2px">Эркинов Амантур Эркинович</div>
+  </div>
+</div>
+
+<!-- Форма ручного добавления заявки (дата — любая, задаётся вручную) -->
+<div id="ecoAddAppForm" style="display:none;background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:20px 22px;margin-bottom:24px;max-width:760px">
+  <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px">Добавить заявку вручную</div>
+  <form method="post" action="{% url 'dashboard:eco_application_add' project.id %}">
+    {% csrf_token %}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--sub);display:block;margin-bottom:4px">ФИО *</label>
+        <input name="fio" type="text" placeholder="Иванов Иван" required
+               style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);
+                      background:var(--bg);color:var(--text);font-size:14px;box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--sub);display:block;margin-bottom:4px">Телефон</label>
+        <input name="phone" type="text" placeholder="+996 ..."
+               style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);
+                      background:var(--bg);color:var(--text);font-size:14px;box-sizing:border-box">
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;font-weight:600;color:var(--sub);display:block;margin-bottom:4px">Адрес / район *</label>
+      <input name="address" type="text" placeholder="ул. ..., район ..." required
+             style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);
+                    background:var(--bg);color:var(--text);font-size:14px;box-sizing:border-box">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--sub);display:block;margin-bottom:4px">Услуга</label>
+        <select name="service_id" onchange="document.getElementById('ecoAppServiceName').value=this.options[this.selectedIndex].text==='— своя формулировка —'?'':this.options[this.selectedIndex].text"
+                style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);
+                       background:var(--bg);color:var(--text);font-size:14px;box-sizing:border-box">
+          <option value="">— своя формулировка —</option>
+          {% for svc in project.services.all %}
+          <option value="{{ svc.id }}">{{ svc.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--sub);display:block;margin-bottom:4px">Название услуги (если не из списка)</label>
+        <input id="ecoAppServiceName" name="service_name" type="text" placeholder="Например: Вывоз мусора"
+               style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);
+                      background:var(--bg);color:var(--text);font-size:14px;box-sizing:border-box">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--sub);display:block;margin-bottom:4px">Дата и время заявки</label>
+        <input name="created_at" type="datetime-local"
+               style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);
+                      background:var(--bg);color:var(--text);font-size:14px;box-sizing:border-box">
+        <div style="font-size:11px;color:var(--sub);margin-top:4px">Можно указать любую дату — прошлую или будущую. Пусто = сейчас.</div>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:600;color:var(--sub);display:block;margin-bottom:4px">Статус</label>
+        <select name="status"
+                style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);
+                       background:var(--bg);color:var(--text);font-size:14px;box-sizing:border-box">
+          {% for val, label in statuses %}
+          <option value="{{ val }}" {% if val == "new" %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;font-weight:600;color:var(--sub);display:block;margin-bottom:4px">Комментарий</label>
+      <input name="comment" type="text" placeholder="Необязательно"
+             style="width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);
+                    background:var(--bg);color:var(--text);font-size:14px;box-sizing:border-box">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button type="submit" class="db-btn db-btn-primary db-btn-sm">+ Добавить</button>
+      <button type="button" class="db-btn db-btn-ghost db-btn-sm" onclick="document.getElementById('ecoAddAppForm').style.display='none';document.getElementById('ecoAddAppToggle').style.display=''">Отмена</button>
+    </div>
+  </form>
 </div>
 
 <!-- Счётчики по статусам -->

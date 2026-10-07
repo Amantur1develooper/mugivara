@@ -297,6 +297,7 @@ urlpatterns = [
     # ── ECO ──────────────────────────────────────────────────────────────────
     path("eco/",                                              ev.eco_home,                name="eco_home"),
     path("eco/<int:project_id>/applications/",               ev.eco_applications,        name="eco_applications"),
+    path("eco/<int:project_id>/applications/add/",            ev.eco_application_add,     name="eco_application_add"),
     path("eco/application/<int:app_id>/status/",             ev.eco_application_status,  name="eco_application_status"),
     path("eco/<int:project_id>/services/",                   ev.eco_services,            name="eco_services"),
     path("eco/<int:project_id>/services/add/",               ev.eco_service_add,         name="eco_service_add"),

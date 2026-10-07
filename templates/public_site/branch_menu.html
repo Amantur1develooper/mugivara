@@ -540,6 +540,12 @@
   .bm-contact-fab.hide,
   body.wb-drawer-open .bm-contact-fab { opacity: 0; pointer-events: none; transform: translateY(8px); }
 
+  /* На мобильных прячем кнопку контактов, пока открыто модальное окно
+     (корзина или карточка блюда) — не мешает чтению/оформлению заказа. */
+  @media (max-width: 640px) {
+    body.wb-modal-open .bm-contact-fab { opacity: 0; pointer-events: none; transform: translateY(8px); }
+  }
+
   .bm-contact-toggle {
     width: 48px; height: 48px; border-radius: 50%; cursor: pointer;
     background: var(--accent); border: none; flex-shrink: 0;
@@ -1387,10 +1393,12 @@ function openCxModal(id) {
 
   document.getElementById('cxOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+  document.body.classList.add('wb-modal-open');
 }
 function closeCxModal() {
   document.getElementById('cxOverlay').classList.remove('open');
   document.body.style.overflow = '';
+  document.body.classList.remove('wb-modal-open');
   _cxId = null;
 }
 window.openCxModal = openCxModal;
@@ -2404,6 +2412,7 @@ document.addEventListener('click', e => {
   window.openCartModal = function() {
     modal.classList.add('open');
     document.body.style.overflow = 'hidden';
+    document.body.classList.add('wb-modal-open');
     if (cartRendered) {
       silentRefresh();   // уже отрисован — только обновить данные
     } else {
@@ -2413,6 +2422,7 @@ document.addEventListener('click', e => {
   window.closeCartModal = function() {
     modal.classList.remove('open');
     document.body.style.overflow = '';
+    document.body.classList.remove('wb-modal-open');
   };
   window.backdropClose = function(e) {
     if (e.target === modal) closeCartModal();
@@ -2952,12 +2962,14 @@ document.addEventListener('click', e => {
 
     backdrop.classList.add('open');
     document.body.style.overflow = 'hidden';
+    document.body.classList.add('wb-modal-open');
     if (topBtn) topBtn.classList.add('hide');
   }
 
   window.closeDishModal = function() {
     backdrop.classList.remove('open');
     document.body.style.overflow = '';
+    document.body.classList.remove('wb-modal-open');
     if (topBtn) topBtn.classList.toggle('hide', window.scrollY < 600);
   };
 

@@ -1,6 +1,9 @@
+from datetime import datetime
+
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .models import EcoProject, EcoService, EcoMembership, EcoApplication
@@ -47,6 +50,75 @@ def eco_applications(request, project_id):
             "cancelled": EcoApplication.objects.filter(project=project, status="cancelled").count(),
         },
     })
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def eco_application_add(request, project_id):
+    """
+    Ручное добавление заявки из кабинета — с произвольной датой создания.
+
+    Временный инструмент (по просьбе владельца платформы): позволяет внести
+    заявку задним/любым числом, если её приняли не через сайт (например по
+    телефону), либо нужно перенести старые записи. Дату задаёт сам
+    пользователь кабинета — поле created_at не обязано совпадать с реальным
+    моментом ввода.
+    """
+    project = get_object_or_404(EcoProject, id=project_id)
+    if not _check_access(request.user, project):
+        messages.error(request, "Нет доступа.")
+        return redirect("dashboard:eco_home")
+
+    fio     = request.POST.get("fio", "").strip()
+    phone   = request.POST.get("phone", "").strip()
+    address = request.POST.get("address", "").strip()
+    comment = request.POST.get("comment", "").strip()
+    status  = request.POST.get("status", EcoApplication.Status.NEW)
+    service_id = request.POST.get("service_id", "").strip()
+    service_name_raw = request.POST.get("service_name", "").strip()
+    created_raw = request.POST.get("created_at", "").strip()
+
+    if not fio or not address:
+        messages.error(request, "Укажите ФИО и адрес.")
+        return redirect("dashboard:eco_applications", project_id=project_id)
+
+    service = None
+    service_name = service_name_raw
+    if service_id and service_id.isdigit():
+        service = EcoService.objects.filter(id=int(service_id), project=project).first()
+        if service and not service_name:
+            service_name = service.name
+    if not service_name:
+        messages.error(request, "Укажите услугу.")
+        return redirect("dashboard:eco_applications", project_id=project_id)
+
+    valid_statuses = [s for s, _ in EcoApplication.Status.choices]
+    if status not in valid_statuses:
+        status = EcoApplication.Status.NEW
+
+    # Дата — любая, какую укажет пользователь (поле datetime-local, без таймзоны).
+    # Если не указана или некорректна — используем текущий момент.
+    created_at = timezone.now()
+    if created_raw:
+        try:
+            naive = datetime.strptime(created_raw, "%Y-%m-%dT%H:%M")
+            created_at = timezone.make_aware(naive) if timezone.is_naive(naive) else naive
+        except ValueError:
+            messages.warning(request, "Дата указана в неверном формате — использована текущая дата.")
+
+    EcoApplication.objects.create(
+        project=project,
+        service=service,
+        service_name=service_name,
+        fio=fio,
+        phone=phone,
+        address=address,
+        comment=comment,
+        status=status,
+        created_at=created_at,
+    )
+    messages.success(request, "Заявка добавлена.")
+    return redirect("dashboard:eco_applications", project_id=project_id)
 
 
 @require_POST
