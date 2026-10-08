@@ -552,7 +552,13 @@ def _build_branch_menu_context(request, branch):
 
 
 def branch_menu(request, branch_id: int):
-    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    # restaurant__is_active=True — если ресторан выключен, меню филиала
+    # (включая ссылку по QR-коду на столе) не должно открываться, даже если
+    # сам филиал формально ещё активен.
+    branch = get_object_or_404(
+        Branch.objects.select_related("restaurant"),
+        id=branch_id, is_active=True, restaurant__is_active=True,
+    )
     ctx = _build_branch_menu_context(request, branch)
     return render(request, "public_site/branch_menu.html", ctx)
 
@@ -560,9 +566,11 @@ def branch_menu(request, branch_id: int):
 def restaurant_branch_menu(request, restaurant_slug: str, branch_id: int):
     """Clean URL: /restaurant-slug/<branch_id>/"""
     branch = get_object_or_404(
-        Branch, id=branch_id,
+        Branch.objects.select_related("restaurant"),
+        id=branch_id,
         restaurant__slug=restaurant_slug,
         is_active=True,
+        restaurant__is_active=True,
     )
     ctx = _build_branch_menu_context(request, branch)
     ctx["restaurant_slug"] = restaurant_slug  # for back link in template
@@ -855,14 +863,14 @@ def checkout(request, branch_id: int):
             payment_status=Order.PaymentStatus.UNPAID,
         )
 
-        # увеличиваем рейтинг ресторана (cap 9.9 — max_digits=3,decimal_places=1)
-        from django.db.models import Case, When, Value
-        Restaurant.objects.filter(pk=branch.restaurant_id).update(
-            rating=Case(
-                When(rating__lt=Decimal("9.8"), then=F("rating") + Decimal("0.1")),
-                default=Decimal("9.9"),
-            )
-        )
+        # Автоинкремент Restaurant.rating при заказе убран по просьбе пользователя:
+        # поле — DecimalField(max_digits=3, decimal_places=1), т.е. максимум 99.9.
+        # В table-заказах (public_site/views_table.py) этот же инкремент был БЕЗ
+        # ограничения и, набрав ~100, ронял INSERT/UPDATE с ошибкой БД
+        # "numeric field overflow" — вся транзакция заказа откатывалась, и
+        # сделать заказ становилось невозможно. Здесь инкремент был с капом
+        # (не крашил), но раз рейтинг мешает заказам — просто отключаем
+        # обновление рейтинга при заказе везде, а не просто поднимаем потолок.
 
         # учитываем использование промокода
         if promo:
@@ -1107,7 +1115,10 @@ from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 
 def hall_plan(request, branch_id: int):
-    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    branch = get_object_or_404(
+        Branch.objects.select_related("restaurant"),
+        id=branch_id, is_active=True, restaurant__is_active=True,
+    )
     floors = Floor.objects.filter(branch=branch, is_active=True).prefetch_related("places").order_by("sort_order","id")
 
     busy_ids = set(

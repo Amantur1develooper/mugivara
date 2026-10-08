@@ -201,7 +201,7 @@ from reservations.tasks import notify_new_booking
 def reservation_page(request, branch_id: int):
     branch = get_object_or_404(
         Branch.objects.select_related("restaurant__place_category"),
-        id=branch_id, is_active=True,
+        id=branch_id, is_active=True, restaurant__is_active=True,
     )
 
     floors = (Floor.objects
@@ -238,7 +238,10 @@ def reservation_page(request, branch_id: int):
 
 @require_POST
 def reserve_create(request, branch_id: int, place_id: int):
-    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    branch = get_object_or_404(
+        Branch.objects.select_related("restaurant"),
+        id=branch_id, is_active=True, restaurant__is_active=True,
+    )
     place = get_object_or_404(Place, id=place_id, floor__branch=branch, is_active=True)
 
     name = (request.POST.get("name") or "").strip()

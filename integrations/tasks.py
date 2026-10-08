@@ -192,9 +192,13 @@ def _table_order_text(order: Order) -> str:
         lines.append("")
         for it in items:
             name = getattr(it.item, "name_ru", None) or str(it.item)
-            line = f"• {name}  ×{it.qty}"
+            lt = getattr(it, "line_total", None)
+            if lt is not None:
+                line = f"• {name}  ×{it.qty}  —  {_money(lt)}"
+            else:
+                line = f"• {name}  ×{it.qty}"
             if getattr(it, "is_on_promo", False):
-                line += "  🏷️ акция"
+                line += f"  🏷️ (было {_money(it.old_price_snapshot * it.qty)})"
             lines.append(line)
         for coi in cx_items:
             cx_name = coi.constructor_name_snapshot or "Собери сам"

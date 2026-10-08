@@ -4,7 +4,7 @@ import json
 from collections import Counter
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_POST
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.contrib import messages
 from django.utils.translation import gettext as _
 from decimal import Decimal
@@ -17,6 +17,26 @@ from catalog.models import BranchCategory, BranchCategoryItem, BranchItem, ItemC
 from orders.models import Order, OrderItem, ConstructorOrderItem
 from .cart import get_cart, cart_details, clear_cart
 from public_site.cart import get_table_cart, set_table_cart, clear_table_cart, table_cart_totals
+
+
+def _get_active_place_and_branch(token: str):
+    """
+    Находит место (стол) по QR-токену и филиал, которому оно принадлежит.
+
+    Если место, его филиал ИЛИ ресторан филиала не активны (is_active=False) —
+    QR-меню/заказ/корзина/вызов официанта для этого стола не должны работать:
+    бросаем 404, как будто такого стола вообще нет. Это единая точка проверки
+    для всех table_*-вьюх ниже — раньше каждая проверяла только Place.is_active,
+    и выключенный ресторан/филиал никак не блокировал уже открытые QR-коды.
+    """
+    place = get_object_or_404(
+        Place.objects.select_related("floor__branch__restaurant"),
+        token=token, is_active=True,
+    )
+    branch = place.floor.branch
+    if not branch.is_active or not branch.restaurant.is_active:
+        raise Http404("Branch or restaurant is not active")
+    return place, branch
 
 
 def _table_cart_key(token: str) -> str:
@@ -117,8 +137,7 @@ def _build_branch_menu(branch):
 
 @require_POST
 def table_add_to_cart(request, token, branch_item_id: int):
-    place = get_object_or_404(Place, token=token, is_active=True)
-    branch = place.floor.branch
+    place, branch = _get_active_place_and_branch(token)
 
     bi = get_object_or_404(BranchItem, id=branch_item_id, branch=branch, is_available=True)
 
@@ -139,8 +158,7 @@ def table_add_to_cart(request, token, branch_item_id: int):
 @require_POST
 def table_add_constructor(request, token: str, cx_id: int):
     """Add a constructor dish to the table cart."""
-    place = get_object_or_404(Place, token=token, is_active=True)
-    branch = place.floor.branch
+    place, branch = _get_active_place_and_branch(token)
     cx = get_object_or_404(DishConstructor, id=cx_id, branch=branch, is_active=True)
 
     try:
@@ -198,8 +216,7 @@ def table_add_constructor(request, token: str, cx_id: int):
 @require_POST
 def table_cx_update(request, token: str):
     """Update qty or remove a constructor cart item."""
-    place = get_object_or_404(Place, token=token, is_active=True)
-    branch = place.floor.branch
+    place, branch = _get_active_place_and_branch(token)
 
     idx = int(request.POST.get("idx") or -1)
     action = (request.POST.get("action") or "").strip()
@@ -257,8 +274,7 @@ def _activate_qr_lang(request):
 def table_cart(request, token):
     _activate_qr_lang(request)
 
-    place = get_object_or_404(Place, token=token, is_active=True)
-    branch = place.floor.branch
+    place, branch = _get_active_place_and_branch(token)
 
     cart = _get_cart(request, token)
     rows, reg_qty, reg_total = _cart_calc(branch, cart)
@@ -282,8 +298,7 @@ def table_cart(request, token):
 def table_checkout(request, token):
     _activate_qr_lang(request)
 
-    place = get_object_or_404(Place, token=token, is_active=True)
-    branch = place.floor.branch
+    place, branch = _get_active_place_and_branch(token)
 
     cart = _get_cart(request, token)
     rows, cart_qty, cart_total = _cart_calc(branch, cart)
@@ -342,8 +357,11 @@ def table_checkout(request, token):
         # ✅ очищаем корзину
         _save_cart(request, token, {})
 
-        # увеличиваем рейтинг ресторана
-        Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
+        # Автоинкремент Restaurant.rating убран: был БЕЗ ограничения, а поле
+        # DecimalField(max_digits=3, decimal_places=1) хранит максимум 99.9 —
+        # набрав ~100, F("rating")+0.1 ронял UPDATE ошибкой БД "numeric field
+        # overflow" прямо внутри этой атомарной транзакции, и весь заказ
+        # откатывался (пользователь не мог заказать).
 
         # Кухонный чек — после коммита транзакции
         # Если print_on_accept включён — печать только по нажатию «Принять заказ» кассиром
@@ -380,8 +398,7 @@ def table_checkout(request, token):
 
 def table_success(request, token, order_id: int):
     _activate_qr_lang(request)
-    place = get_object_or_404(Place, token=token, is_active=True)
-    branch = place.floor.branch
+    place, branch = _get_active_place_and_branch(token)
     order = get_object_or_404(Order, id=order_id, branch=branch)
 
     return render(request, "public_site/table_success.html", {
@@ -393,8 +410,7 @@ def table_success(request, token, order_id: int):
 def table_menu(request, token: str):
     _activate_qr_lang(request)
 
-    place = get_object_or_404(Place, token=token, is_active=True)
-    branch = place.floor.branch
+    place, branch = _get_active_place_and_branch(token)
 
     categories = BranchCategory.objects.filter(branch=branch, is_active=True).order_by("sort_order", "id")
 
@@ -471,8 +487,7 @@ from django.views.decorators.http import require_POST
 
 @require_POST
 def table_cart_update(request, token):
-    place = get_object_or_404(Place, token=token, is_active=True)
-    branch = place.floor.branch
+    place, branch = _get_active_place_and_branch(token)
 
     action = (request.POST.get("action") or "").strip()
     bi_id = int(request.POST.get("branch_item_id") or 0)
@@ -526,8 +541,7 @@ from django.http import HttpResponse
 
 @require_POST
 def table_call_waiter(request, token):
-    place = get_object_or_404(Place, token=token, is_active=True)
-    branch = place.floor.branch
+    place, branch = _get_active_place_and_branch(token)
 
     # можно добавить короткий текст
     note = (request.POST.get("note") or "").strip()[:200]
@@ -542,8 +556,7 @@ from catalog.models import BranchItem
 
 @require_POST
 def table_create_order(request, token):
-    place = get_object_or_404(Place, token=token, is_active=True)
-    branch = place.floor.branch
+    place, branch = _get_active_place_and_branch(token)
 
     customer_name = (request.POST.get("customer_name") or "").strip()[:120]
     comment = (request.POST.get("comment") or "").strip()
@@ -664,7 +677,8 @@ def table_create_order(request, token):
                     ingredients_snapshot=cx_item.get("selections", []),
                 )
 
-            Restaurant.objects.filter(pk=branch.restaurant_id).update(rating=F("rating") + Decimal("0.1"))
+            # Автоинкремент Restaurant.rating убран — см. пояснение у первого
+            # такого же вызова выше в этом файле (table_create_order).
 
     _save_cart(request, token, {})
     _save_cx_cart(request, token, [])
@@ -706,7 +720,11 @@ def table_create_order(request, token):
 def branch_tables_page(request, branch_id):
     from core.models import Branch
     from reservations.models import Floor
-    branch = get_object_or_404(Branch, id=branch_id, is_active=True)
+    branch = get_object_or_404(
+        Branch.objects.select_related("restaurant"), id=branch_id, is_active=True,
+    )
+    if not branch.restaurant.is_active:
+        raise Http404("Restaurant is not active")
 
     # Open orders for this branch
     _OPEN = [Order.Status.NEW, Order.Status.ACCEPTED, Order.Status.COOKING, Order.Status.READY]

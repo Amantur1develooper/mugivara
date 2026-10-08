@@ -11,6 +11,20 @@ from catalog.models import BranchCategory, BranchCategoryItem, BranchItem
 from orders.models import Order, OrderItem
 from tables.models import Table, TableSession
 from api.v1.serializers import MenuCategorySerializer
+from django.http import Http404
+
+
+def _get_active_table_and_branch(token: str):
+    """Та же защита, что и в веб-QR-потоке (public_site/views_table.py):
+    если стол, его филиал или ресторан филиала не активны — 404, как будто
+    такого стола нет."""
+    table = get_object_or_404(
+        Table.objects.select_related("branch__restaurant"), qr_token=token,
+    )
+    branch = table.branch
+    if not branch.is_active or not branch.restaurant.is_active:
+        raise Http404("Branch or restaurant is not active")
+    return table, branch
 
 
 # ── Схемы для документации ────────────────────────────────────────────────────
@@ -74,8 +88,7 @@ _OrderStatusResponse = inline_serializer("QrOrderStatusResponse", fields={
 )
 @api_view(["GET"])
 def qr_menu(request, token: str):
-    table  = get_object_or_404(Table, qr_token=token)
-    branch = table.branch
+    table, branch = _get_active_table_and_branch(token)
 
     branch_cats = (
         BranchCategory.objects
@@ -151,8 +164,7 @@ def qr_menu(request, token: str):
 )
 @api_view(["POST"])
 def qr_order_create(request, token: str):
-    table  = get_object_or_404(Table, qr_token=token)
-    branch = table.branch
+    table, branch = _get_active_table_and_branch(token)
 
     rows = request.data.get("items", [])
     if not rows:
