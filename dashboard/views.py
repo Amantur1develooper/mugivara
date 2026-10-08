@@ -613,14 +613,21 @@ def item_edit(request, branch_item_id):
     item = bi.item
     branch = bi.branch
 
+    current_bci = bi.categories_in_branch.select_related("branch_category").first()
+    current_cat_id = current_bci.branch_category_id if current_bci else None
+
+    # Текущая категория блюда должна попасть в список выбора, даже если она
+    # скрыта (is_active=False) — иначе <select> не сможет показать её выбранной,
+    # по умолчанию откатится на «Без категории», и ЛЮБОЕ сохранение формы
+    # (хоть просто ради скидки) тихо отвяжет блюдо от категории и уберёт его
+    # из меню доставки/самовывоза.
     branch_categories = (
         BranchCategory.objects
-        .filter(branch=branch, is_active=True)
+        .filter(branch=branch)
+        .filter(Q(is_active=True) | Q(id=current_cat_id))
         .select_related("category")
         .order_by("sort_order", "id")
     )
-    current_bci = bi.categories_in_branch.select_related("branch_category").first()
-    current_cat_id = current_bci.branch_category_id if current_bci else None
 
     if request.method == "POST":
         name = request.POST.get("name_ru", "").strip()

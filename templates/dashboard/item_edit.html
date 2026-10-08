@@ -144,7 +144,7 @@
             <option value="">— Без категории —</option>
             {% for bc in branch_categories %}
             <option value="{{ bc.id }}" {% if bc.id == current_cat_id %}selected{% endif %}>
-              {{ bc.category.name_ru }}
+              {{ bc.category.name_ru }}{% if not bc.is_active %} (скрыта){% endif %}
             </option>
             {% endfor %}
           </select>
