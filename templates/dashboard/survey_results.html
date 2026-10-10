@@ -1,0 +1,125 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Опрос заведений{% endblock %}
+{% block nav_analytics %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .sr-title { font-family:'Unbounded',sans-serif; font-weight:900; font-size:24px; letter-spacing:-1px; color:var(--text); margin-bottom:6px; }
+  .sr-sub { font-size:14px; color:var(--muted); margin-bottom:28px; }
+  .sr-link { color:var(--accent); font-weight:600; text-decoration:none; }
+
+  .sr-kpi-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; margin-bottom:24px; }
+  .sr-kpi { background:var(--card); border:1.5px solid var(--border); border-radius:18px; padding:18px 20px; }
+  .sr-kpi-label { font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }
+  .sr-kpi-value { font-size:28px; font-weight:800; color:var(--text); margin-top:6px; }
+  .sr-kpi-value small { font-size:14px; font-weight:600; color:var(--muted); }
+
+  .sr-nps-row { display:flex; gap:10px; margin-bottom:28px; flex-wrap:wrap; }
+  .sr-nps-chip { display:flex; align-items:center; gap:8px; padding:9px 14px; border-radius:100px; border:1.5px solid var(--border); background:var(--card); font-size:13px; font-weight:600; color:var(--text2); }
+  .sr-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .sr-dot.bad{background:#EF4444;} .sr-dot.mid{background:var(--accent2);} .sr-dot.good{background:var(--teal);}
+
+  .sr-card { background:var(--card); border:1.5px solid var(--border); border-radius:18px; padding:22px 24px; margin-bottom:24px; }
+  .sr-card h3 { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 0 16px; }
+
+  .sr-hist { display:flex; align-items:flex-end; gap:8px; height:140px; }
+  .sr-bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end; }
+  .sr-bar { width:100%; max-width:34px; border-radius:6px 6px 2px 2px; background:linear-gradient(180deg,var(--accent2),var(--accent)); min-height:3px; }
+  .sr-bar-count { font-size:11px; font-weight:700; color:var(--text2); }
+  .sr-bar-label { font-size:11px; color:var(--muted); font-family:monospace; margin-top:4px; }
+
+  .sr-words-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media (max-width:640px){.sr-words-grid{grid-template-columns:1fr;}}
+  .sr-chip-list { display:flex; flex-wrap:wrap; gap:7px; }
+  .sr-chip { background:var(--bg); border:1px solid var(--border); border-radius:100px; padding:5px 12px; font-size:12.5px; color:var(--text2); }
+  .sr-chip b { color:var(--accent); margin-left:4px; }
+  .sr-empty { color:var(--muted); font-size:13px; font-style:italic; }
+
+  .sr-entry { background:var(--card); border:1.5px solid var(--border); border-radius:16px; padding:18px 20px; margin-bottom:12px; }
+  .sr-entry-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px; flex-wrap:wrap; }
+  .sr-entry-name { font-weight:700; font-size:14.5px; color:var(--text); }
+  .sr-entry-meta { font-size:11.5px; color:var(--muted); margin-top:2px; }
+  .sr-entry-score { font-family:monospace; font-weight:800; font-size:14px; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:4px 10px; white-space:nowrap; }
+  .sr-qa { display:grid; gap:8px; margin-top:4px; }
+  .sr-qa-q { font-size:11px; font-weight:700; color:var(--muted); display:block; }
+  .sr-qa-a { font-size:13.5px; color:var(--text2); white-space:pre-wrap; }
+  .sr-log-empty { text-align:center; color:var(--muted); padding:40px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sr-title">Опрос заведений</div>
+<p class="sr-sub">
+  Ответы с публичной формы <a class="sr-link" href="{% url 'public_site:survey' %}" target="_blank">webordo.kg/survey/</a> —
+  как заведения сейчас принимают заказы, что болит, и насколько им интересен Webordo.
+</p>
+
+<div class="sr-kpi-row">
+  <div class="sr-kpi"><div class="sr-kpi-label">Всего ответов</div><div class="sr-kpi-value">{{ n }}</div></div>
+  <div class="sr-kpi"><div class="sr-kpi-label">Средний балл</div><div class="sr-kpi-value">{{ avg_score|default:"—" }} <small>/ 10</small></div></div>
+  <div class="sr-kpi"><div class="sr-kpi-label">Готовы подключиться (9–10)</div><div class="sr-kpi-value">{{ ready }}</div></div>
+</div>
+
+<div class="sr-nps-row">
+  <div class="sr-nps-chip"><span class="sr-dot bad"></span>1–6 скептики: {{ skeptics }}</div>
+  <div class="sr-nps-chip"><span class="sr-dot mid"></span>7–8 заинтересованы: {{ interested }}</div>
+  <div class="sr-nps-chip"><span class="sr-dot good"></span>9–10 готовы подключиться: {{ ready }}</div>
+</div>
+
+<div class="sr-card">
+  <h3>Распределение оценок (1–10)</h3>
+  <div class="sr-hist">
+    {% for score, count in histogram %}
+    <div class="sr-bar-col">
+      <div class="sr-bar-count">{% if count %}{{ count }}{% endif %}</div>
+      <div class="sr-bar" style="height:{% widthratio count max_count 100 %}%"></div>
+      <div class="sr-bar-label">{{ score }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="sr-words-grid">
+  <div class="sr-card">
+    <h3>Частые слова — каналы заказов (вопрос 1)</h3>
+    {% if words_q1 %}
+      <div class="sr-chip-list">
+        {% for w, c in words_q1 %}<span class="sr-chip">{{ w }}<b>{{ c }}</b></span>{% endfor %}
+      </div>
+    {% else %}<p class="sr-empty">Пока недостаточно данных.</p>{% endif %}
+  </div>
+  <div class="sr-card">
+    <h3>Частые слова — проблемы (вопрос 2)</h3>
+    {% if words_q2 %}
+      <div class="sr-chip-list">
+        {% for w, c in words_q2 %}<span class="sr-chip">{{ w }}<b>{{ c }}</b></span>{% endfor %}
+      </div>
+    {% else %}<p class="sr-empty">Пока недостаточно данных.</p>{% endif %}
+  </div>
+</div>
+
+<div class="sr-card">
+  <h3>Журнал ответов ({{ n }})</h3>
+  {% if responses %}
+    {% for r in responses %}
+    <div class="sr-entry">
+      <div class="sr-entry-head">
+        <div>
+          <div class="sr-entry-name">{{ r.restaurant_name|default:"Без названия" }}{% if r.phone %} · {{ r.phone }}{% endif %}</div>
+          <div class="sr-entry-meta">{{ r.created_at|date:"d.m.Y H:i" }}</div>
+        </div>
+        <div class="sr-entry-score">{{ r.score }}/10</div>
+      </div>
+      <div class="sr-qa">
+        <div><span class="sr-qa-q">1. Как принимают заказы и управляют меню</span><span class="sr-qa-a">{{ r.q1|default:"—" }}</span></div>
+        <div><span class="sr-qa-q">2. Что не нравится в процессе</span><span class="sr-qa-a">{{ r.q2|default:"—" }}</span></div>
+        <div><span class="sr-qa-q">3. Насколько сильно это влияет на работу и доход</span><span class="sr-qa-a">{{ r.q3|default:"—" }}</span></div>
+        <div><span class="sr-qa-q">4. Как решают проблемы сейчас</span><span class="sr-qa-a">{{ r.q4|default:"—" }}</span></div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="sr-log-empty">Пока нет ответов — поделитесь ссылкой на форму с заведениями.</div>
+  {% endif %}
+</div>
+{% endblock %}

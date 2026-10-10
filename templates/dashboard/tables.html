@@ -666,7 +666,9 @@ function buildQrCard(url, { venue, tableLabel }) {
   ctx.strokeStyle = 'rgba(0,0,0,.06)'; ctx.lineWidth = 2;
   rr(bx, qrTop, box, box, 40); ctx.stroke();
 
-  // модули QR со скруглением
+  // модули QR — квадратные, без скругления и без зазоров между ними
+  // (не «точки»/кружки — так код надёжно читается камерой телефона даже
+  // при распечатке мелким размером или под углом)
   const quiet = 4, m = box / (N + quiet * 2);
   const ox = bx + quiet * m, oy = qrTop + quiet * m;
   const inFinder = (r, col) =>
@@ -674,14 +676,16 @@ function buildQrCard(url, { venue, tableLabel }) {
   ctx.fillStyle = '#141414';
   for (let r = 0; r < N; r++) for (let col = 0; col < N; col++) {
     if (inFinder(r, col) || !qr.isDark(r, col)) continue;
-    rr(ox + col * m + m * 0.09, oy + r * m + m * 0.09, m * 0.82, m * 0.82, m * 0.34);
-    ctx.fill();
+    ctx.fillRect(ox + col * m, oy + r * m, m, m);
   }
+  // «глазки»-финдеры в углах — обязательно строго квадратные (без скругления),
+  // по ним сканер определяет и выравнивает QR-код; скруглённые углы снижают
+  // надёжность распознавания
   const finder = (fr, fc) => {
     const x = ox + fc * m, yy = oy + fr * m;
-    ctx.fillStyle = '#141414'; rr(x, yy, 7 * m, 7 * m, 7 * m * 0.24); ctx.fill();
-    ctx.fillStyle = '#fff'; rr(x + m, yy + m, 5 * m, 5 * m, 5 * m * 0.22); ctx.fill();
-    ctx.fillStyle = '#141414'; rr(x + 2 * m, yy + 2 * m, 3 * m, 3 * m, 3 * m * 0.28); ctx.fill();
+    ctx.fillStyle = '#141414'; ctx.fillRect(x, yy, 7 * m, 7 * m);
+    ctx.fillStyle = '#fff';    ctx.fillRect(x + m, yy + m, 5 * m, 5 * m);
+    ctx.fillStyle = '#141414'; ctx.fillRect(x + 2 * m, yy + 2 * m, 3 * m, 3 * m);
   };
   finder(0, 0); finder(0, N - 7); finder(N - 7, 0);
 

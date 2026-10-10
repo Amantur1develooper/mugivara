@@ -70,6 +70,7 @@ urlpatterns = [
     path("analytics/", views.analytics,        name="analytics"),
     path("orders/",    views.orders_analytics, name="orders"),
     path("clients/",   views.clients,          name="clients"),
+    path("survey/",    views.survey_results,   name="survey_results"),
 
     # ── POS (Касса) ─────────────────────────────────────────────────────────
     path("pos/<int:branch_id>/",              views.pos,               name="pos"),

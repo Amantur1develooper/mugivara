@@ -8,6 +8,7 @@ from .views import (
     constructor_add_to_cart, constructor_remove_from_cart, constructor_cx_update,
     constructor_build_page,
     kp_index, kp_detail, kp_print,
+    survey_page,
 )
 from reservations import views as r
 from public_site.views_table import (
@@ -64,6 +65,7 @@ urlpatterns = [
     # path("b/<int:branch_id>/checkout/success/<int:order_id>/", checkout_success, name="checkout_success"),
     path("about/", about, name="about"),
     path("about/founder/", founder, name="founder"),
+    path("survey/", survey_page, name="survey"),
     path("kp/", kp_index, name="kp_index"),
     path("kp/<slug:slug>/", kp_detail, name="kp_detail"),
     path("kp/<slug:slug>/print/", kp_print, name="kp_print"),

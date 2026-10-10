@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Опрос для заведений" %} — Webordo{% endblock %}
+
+{% block head_extra %}
+<style>
+  .sv-wrap{max-width:760px;margin:0 auto;padding:28px 16px 70px;}
+  .sv-eyebrow{
+    display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:800;
+    letter-spacing:.14em;text-transform:uppercase;color:#c2410c;
+    background:#fff7ed;border:1px solid #fed7aa;border-radius:100px;padding:6px 14px;
+  }
+  .sv-dot{width:7px;height:7px;border-radius:50%;background:#fb923c;flex-shrink:0;}
+  .sv-h1{
+    font-family:"Unbounded",system-ui,sans-serif;font-weight:800;letter-spacing:-.01em;
+    font-size:clamp(26px,4.2vw,36px);color:#1c1917;margin:16px 0 10px;text-wrap:balance;
+  }
+  .sv-lead{color:#57534e;font-size:15px;line-height:1.6;max-width:58ch;margin:0;}
+  .sv-card{
+    background:#ffffff;border:1px solid #efebe4;border-radius:24px;
+    box-shadow:0 20px 50px rgba(28,25,23,.07);margin-top:26px;padding:28px;
+  }
+  .sv-q{padding:20px 0;border-top:1px solid #f1ece2;}
+  .sv-q:first-of-type{border-top:none;padding-top:2px;}
+  .sv-num{font-size:11px;font-weight:800;letter-spacing:.08em;color:#ea580c;}
+  .sv-title{font-weight:700;font-size:15.5px;color:#1c1917;margin:5px 0 3px;}
+  .sv-hint{font-size:12.5px;color:#8a8580;margin:0 0 10px;}
+  .sv-input,.sv-textarea{
+    width:100%;background:#fafaf9;border:1px solid #e7e2d8;border-radius:12px;
+    padding:11px 14px;font:inherit;font-size:14px;color:#1c1917;resize:vertical;
+  }
+  .sv-textarea{min-height:76px;}
+  .sv-input:focus,.sv-textarea:focus{outline:none;border-color:#fb923c;box-shadow:0 0 0 3px rgba(251,146,60,.15);}
+  .sv-row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:520px){.sv-row2{grid-template-columns:1fr;}}
+  .sv-scale{display:flex;gap:6px;flex-wrap:wrap;}
+  .sv-peg{
+    width:40px;height:40px;border-radius:11px;border:1px solid #e7e2d8;background:#fafaf9;
+    color:#1c1917;font-weight:700;font-size:14px;cursor:pointer;
+  }
+  .sv-peg:hover{border-color:#fb923c;}
+  .sv-ends{display:flex;justify-content:space-between;font-size:11.5px;color:#8a8580;margin-top:8px;}
+  .sv-submit{
+    margin-top:24px;padding-top:22px;border-top:1px solid #f1ece2;
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  }
+  .sv-btn{
+    appearance:none;border:none;cursor:pointer;font-weight:800;font-size:14px;color:#fff;
+    background:linear-gradient(135deg,#f97316,#ea580c);padding:13px 26px;border-radius:12px;
+    box-shadow:0 10px 24px rgba(234,88,12,.28);
+  }
+  .sv-note{font-size:12px;color:#8a8580;}
+  .sv-thanks{
+    background:#ffffff;border:1px solid #efebe4;border-radius:24px;padding:48px 32px;
+    text-align:center;box-shadow:0 20px 50px rgba(28,25,23,.07);margin-top:26px;
+  }
+  .sv-thanks-icon{font-size:40px;}
+  .sv-thanks h2{font-family:"Unbounded",sans-serif;font-size:22px;margin:14px 0 8px;color:#1c1917;}
+  .sv-thanks p{color:#57534e;font-size:14.5px;max-width:48ch;margin:0 auto;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sv-wrap">
+  <span class="sv-eyebrow"><span class="sv-dot"></span>{% trans "Webordo · опрос заведений" %}</span>
+  <h1 class="sv-h1">{% trans "Как вам сейчас удобно принимать заказы?" %}</h1>
+  <p class="sv-lead">
+    {% trans "5 коротких вопросов — поможете нам сделать Webordo полезнее для вашего кафе или ресторана. Это займёт меньше двух минут." %}
+  </p>
+
+  {% if done %}
+  <div class="sv-thanks">
+    <div class="sv-thanks-icon">✅</div>
+    <h2>{% trans "Спасибо за ответы!" %}</h2>
+    <p>{% trans "Мы учтём это в развитии Webordo. Если оставили телефон — иногда свяжемся, чтобы показать, как решить то, о чём вы рассказали." %}</p>
+  </div>
+  {% else %}
+  <form class="sv-card" method="post" action="{% url 'public_site:survey' %}">
+    {% csrf_token %}
+
+    <div class="sv-q">
+      <div class="sv-row2">
+        <div>
+          <label class="sv-title" for="restaurant_name">{% trans "Заведение" %}</label>
+          <input class="sv-input" type="text" id="restaurant_name" name="restaurant_name"
+                 placeholder="{% trans "напр. Кафе «Дастур»" %}">
+        </div>
+        <div>
+          <label class="sv-title" for="phone">{% trans "Телефон (необязательно)" %}</label>
+          <input class="sv-input" type="text" id="phone" name="phone" placeholder="+996 ___ ___ ___">
+        </div>
+      </div>
+    </div>
+
+    <div class="sv-q">
+      <div class="sv-num">{% trans "ВОПРОС 1" %}</div>
+      <div class="sv-title">{% trans "Как вы сейчас принимаете заказы и управляете меню?" %}</div>
+      <p class="sv-hint">{% trans "Например: WhatsApp, Instagram, по телефону, бумажное меню или свой сайт." %}</p>
+      <textarea class="sv-textarea" name="q1" placeholder="{% trans "Ваш ответ…" %}"></textarea>
+    </div>
+
+    <div class="sv-q">
+      <div class="sv-num">{% trans "ВОПРОС 2" %}</div>
+      <div class="sv-title">{% trans "Что вам больше всего не нравится в этом процессе?" %}</div>
+      <p class="sv-hint">{% trans "Например: теряются заказы, приходится постоянно отвечать на сообщения, сложно менять цены и меню, неудобно отслеживать заказы." %}</p>
+      <textarea class="sv-textarea" name="q2" placeholder="{% trans "Ваш ответ…" %}"></textarea>
+    </div>
+
+    <div class="sv-q">
+      <div class="sv-num">{% trans "ВОПРОС 3" %}</div>
+      <div class="sv-title">{% trans "Насколько сильно эти проблемы влияют на вашу работу и доход?" %}</div>
+      <p class="sv-hint">{% trans "Мешают ли обслуживать клиентов быстрее, увеличивать количество заказов или экономить время сотрудников?" %}</p>
+      <textarea class="sv-textarea" name="q3" placeholder="{% trans "Ваш ответ…" %}"></textarea>
+    </div>
+
+    <div class="sv-q">
+      <div class="sv-num">{% trans "ВОПРОС 4" %}</div>
+      <div class="sv-title">{% trans "Как вы сейчас решаете эти проблемы?" %}</div>
+      <p class="sv-hint">{% trans "Используете дополнительные программы, нанимаете сотрудников, ведёте записи вручную — или просто миритесь с неудобствами?" %}</p>
+      <textarea class="sv-textarea" name="q4" placeholder="{% trans "Ваш ответ…" %}"></textarea>
+    </div>
+
+    <div class="sv-q">
+      <div class="sv-num">{% trans "ВОПРОС 5" %}</div>
+      <div class="sv-title">{% trans "Оцените от 1 до 10: насколько интересна система Webordo (приём заказов, меню, QR-столы, аналитика) для вашего заведения?" %}</div>
+      <div class="sv-scale" role="radiogroup" aria-label="{% trans "Оценка от 1 до 10" %}">
+        <label class="sv-peg" style="display:flex;align-items:center;justify-content:center;">
+          <input type="radio" name="score" value="1" style="position:absolute;opacity:0;width:0;height:0;" required>1
+        </label>
+        <label class="sv-peg" style="display:flex;align-items:center;justify-content:center;">
+          <input type="radio" name="score" value="2" style="position:absolute;opacity:0;width:0;height:0;">2
+        </label>
+        <label class="sv-peg" style="display:flex;align-items:center;justify-content:center;">
+          <input type="radio" name="score" value="3" style="position:absolute;opacity:0;width:0;height:0;">3
+        </label>
+        <label class="sv-peg" style="display:flex;align-items:center;justify-content:center;">
+          <input type="radio" name="score" value="4" style="position:absolute;opacity:0;width:0;height:0;">4
+        </label>
+        <label class="sv-peg" style="display:flex;align-items:center;justify-content:center;">
+          <input type="radio" name="score" value="5" style="position:absolute;opacity:0;width:0;height:0;">5
+        </label>
+        <label class="sv-peg" style="display:flex;align-items:center;justify-content:center;">
+          <input type="radio" name="score" value="6" style="position:absolute;opacity:0;width:0;height:0;">6
+        </label>
+        <label class="sv-peg" style="display:flex;align-items:center;justify-content:center;">
+          <input type="radio" name="score" value="7" style="position:absolute;opacity:0;width:0;height:0;">7
+        </label>
+        <label class="sv-peg" style="display:flex;align-items:center;justify-content:center;">
+          <input type="radio" name="score" value="8" style="position:absolute;opacity:0;width:0;height:0;">8
+        </label>
+        <label class="sv-peg" style="display:flex;align-items:center;justify-content:center;">
+          <input type="radio" name="score" value="9" style="position:absolute;opacity:0;width:0;height:0;">9
+        </label>
+        <label class="sv-peg" style="display:flex;align-items:center;justify-content:center;">
+          <input type="radio" name="score" value="10" style="position:absolute;opacity:0;width:0;height:0;">10
+        </label>
+      </div>
+      <div class="sv-ends"><span>{% trans "1 — совсем не нужна" %}</span><span>{% trans "10 — подключились бы прямо сейчас" %}</span></div>
+    </div>
+
+    <div class="sv-submit">
+      <button type="submit" class="sv-btn">{% trans "Отправить ответы" %}</button>
+      <span class="sv-note">{% trans "Без спама — используем только для улучшения продукта." %}</span>
+    </div>
+  </form>
+  {% endif %}
+</div>
+
+<style>
+  .sv-peg:has(input:checked){background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border-color:#ea580c;}
+</style>
+{% endblock %}

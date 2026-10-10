@@ -1453,3 +1453,34 @@ def kp_print(request, slug):
         from django.http import Http404
         raise Http404("Unknown KP slug")
     return render(request, "public_site/kp_print.html", {"slug": slug, "kp": data})
+
+
+# ── ОПРОС ЗАВЕДЕНИЙ (customer discovery) ──────────────────────────────────────
+
+def survey_page(request):
+    from .models import SurveyResponse
+
+    if request.method == "POST":
+        score_raw = (request.POST.get("score") or "").strip()
+        try:
+            score = int(score_raw)
+            if score < 1 or score > 10:
+                raise ValueError
+        except ValueError:
+            messages.error(request, _("Поставьте оценку от 1 до 10."))
+            return redirect("public_site:survey")
+
+        SurveyResponse.objects.create(
+            restaurant_name=(request.POST.get("restaurant_name") or "").strip()[:150],
+            phone=(request.POST.get("phone") or "").strip()[:32],
+            q1=(request.POST.get("q1") or "").strip(),
+            q2=(request.POST.get("q2") or "").strip(),
+            q3=(request.POST.get("q3") or "").strip(),
+            q4=(request.POST.get("q4") or "").strip(),
+            score=score,
+        )
+        return redirect(request.path + "?ok=1")
+
+    return render(request, "public_site/survey.html", {
+        "done": request.GET.get("ok") == "1",
+    })

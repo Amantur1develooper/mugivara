@@ -2673,3 +2673,65 @@ def constructor_group_update(request, group_id):
     g.max_select = max_s
     g.save()
     return JsonResponse({"ok": True, "min_select": g.min_select, "max_select": g.max_select})
+
+
+# ── ОПРОС ЗАВЕДЕНИЙ: анализ ответов (только staff/superuser) ──────────────────
+
+_SURVEY_STOPWORDS = set(
+    "и в на не что как с по для это а но то же из у к о об от до или если когда "
+    "все всё его их она он вы мы я бы ли уже очень просто можно нужно надо есть "
+    "быть было были будет такой такие таких этого этом этой эти эту него нее "
+    "себя свои свой своих тем при без ещё еще также только более менее чем "
+    "чтобы который которые которых наш наша наши вам нам них им мне тебя тебе "
+    "там тут здесь сейчас пока какой какая какие ну да нет каждый всего всех "
+    "этих этим эта".split()
+)
+
+
+def _survey_top_words(responses, field, limit=8):
+    import re
+    from collections import Counter
+    freq = Counter()
+    for r in responses:
+        text = (getattr(r, field) or "").lower()
+        words = re.findall(r"[a-zа-яё0-9-]+", text)
+        for w in words:
+            if len(w) > 2 and w not in _SURVEY_STOPWORDS:
+                freq[w] += 1
+    return freq.most_common(limit)
+
+
+@login_required(login_url="dashboard:login")
+def survey_results(request):
+    from public_site.models import SurveyResponse
+
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, "Недостаточно прав для просмотра опроса.")
+        return redirect("dashboard:home")
+
+    responses = list(SurveyResponse.objects.all())
+    n = len(responses)
+    avg_score = round(sum(r.score for r in responses) / n, 1) if n else 0
+
+    histogram = [sum(1 for r in responses if r.score == i) for i in range(1, 11)]
+    max_count = max(histogram) or 1
+
+    skeptics   = sum(1 for r in responses if r.score <= 6)
+    interested = sum(1 for r in responses if 7 <= r.score <= 8)
+    ready      = sum(1 for r in responses if r.score >= 9)
+
+    words_q1 = _survey_top_words(responses, "q1")
+    words_q2 = _survey_top_words(responses, "q2")
+
+    return render(request, "dashboard/survey_results.html", {
+        "responses": responses,
+        "n": n,
+        "avg_score": avg_score,
+        "histogram": list(zip(range(1, 11), histogram)),
+        "max_count": max_count,
+        "skeptics": skeptics,
+        "interested": interested,
+        "ready": ready,
+        "words_q1": words_q1,
+        "words_q2": words_q2,
+    })
