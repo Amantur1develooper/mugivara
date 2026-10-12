@@ -7,184 +7,469 @@
   <title>{% t venue "name" %} — {% trans "Бронирование" %}</title>
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    :root{
+      --bg:#f7f6f3; --surface:#ffffff;
+      --ink:#1c1917; --ink-2:#57534e; --muted:#a8a29e;
+      --line:#e7e5e4; --line-2:#f1efec;
+      --accent:#ea580c; --accent-2:#ff8a00; --accent-soft:#fff7ed;
+      --teal:#00b896; --good:#16a34a; --danger:#dc2626;
+    }
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Inter',sans-serif;background:#0d0d0d;color:#f0f0f0;min-height:100vh}
-    .page{max-width:640px;margin:0 auto;padding:0 0 80px}
+    body{
+      font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);
+      min-height:100vh;-webkit-font-smoothing:antialiased;
+    }
+    a{color:inherit}
+    :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
 
-    /* Hero */
-    .hero{position:relative;height:200px;overflow:hidden;background:linear-gradient(135deg,#0f172a,#1e3a5f);}
-    .hero-cover{position:absolute;inset:0;object-fit:cover;width:100%;height:100%;opacity:.4;}
-    .hero-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 30%,#0d0d0d);}
-    .hero-content{position:relative;z-index:1;padding:20px 20px 0;display:flex;align-items:flex-end;height:100%;padding-bottom:20px;}
-    .hero-logo{width:56px;height:56px;border-radius:14px;object-fit:cover;border:2px solid rgba(255,255,255,.15);flex-shrink:0;}
-    .hero-logo-icon{width:56px;height:56px;border-radius:14px;background:rgba(249,115,22,.15);border:2px solid rgba(249,115,22,.3);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;}
-    .hero-info{margin-left:14px;}
-    .hero-name{font-family:'Unbounded',sans-serif;font-size:20px;font-weight:900;line-height:1.2;}
-    .hero-sub{font-size:12px;color:#aaa;margin-top:4px;}
+    /* ── Шапка Webordo ── */
+    .topbar{
+      position:sticky;top:0;z-index:50;background:rgba(247,246,243,.9);
+      backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
+    }
+    .topbar-in{
+      max-width:660px;margin:0 auto;padding:12px 20px;
+      display:flex;align-items:center;justify-content:space-between;gap:14px;
+    }
+    .wb-logo{
+      font-family:'Unbounded',sans-serif;font-weight:900;font-size:18px;letter-spacing:-1px;
+      background:linear-gradient(135deg,var(--accent),var(--accent-2));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      text-decoration:none;display:inline-flex;align-items:center;
+    }
+    .wb-logo span{-webkit-text-fill-color:var(--teal)}
+    .wb-logo i{
+      font-style:normal;font-size:12px;font-weight:700;letter-spacing:0;
+      -webkit-text-fill-color:var(--muted);margin-left:1px;
+    }
+    .topbar-venue{
+      font-size:12.5px;color:var(--ink-2);font-weight:500;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:45%;text-align:right;
+    }
 
-    .inner{padding:24px 20px 0;}
+    .page{max-width:660px;margin:0 auto;padding:18px 20px 70px}
+    .card{
+      background:var(--surface);border:1px solid var(--line);border-radius:18px;
+    }
 
-    /* Steps indicator */
-    .steps{display:flex;gap:0;margin-bottom:28px;}
-    .step{flex:1;text-align:center;position:relative;}
-    .step-num{width:30px;height:30px;border-radius:50%;border:2px solid #333;background:#111;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 5px;transition:all .2s;}
-    .step.active .step-num{background:linear-gradient(135deg,#f97316,#ea580c);border-color:transparent;color:#fff;}
-    .step.done .step-num{background:#16a34a;border-color:transparent;color:#fff;}
-    .step-label{font-size:10px;color:#555;transition:color .2s;}
-    .step.active .step-label{color:#f97316;font-weight:600;}
-    .step::after{content:'';position:absolute;top:14px;right:-50%;width:100%;height:2px;background:#222;z-index:-1;}
-    .step:last-child::after{display:none;}
+    /* ── Карточка заведения ── */
+    .venue{overflow:hidden;margin-bottom:16px}
+    .venue-cover{display:block;width:100%;height:132px;object-fit:cover}
+    .venue-body{padding:16px 18px;display:flex;align-items:center;gap:14px}
+    .venue-logo{
+      width:52px;height:52px;border-radius:14px;object-fit:cover;
+      border:1px solid var(--line);flex-shrink:0;background:var(--bg);
+    }
+    .venue-logo-icon{
+      width:52px;height:52px;border-radius:14px;background:var(--accent-soft);
+      border:1px solid #fed7aa;display:flex;align-items:center;justify-content:center;
+      font-size:24px;flex-shrink:0;
+    }
+    .venue-name{font-family:'Unbounded',sans-serif;font-weight:700;font-size:18px;line-height:1.25;letter-spacing:-.4px}
+    .venue-sub{font-size:12.5px;color:var(--ink-2);margin-top:3px}
 
-    /* Panels */
-    .panel{display:none;}
-    .panel.active{display:block;}
+    /* ── Баннер акции ── */
+    .promo{
+      display:flex;align-items:center;gap:10px;margin:0 18px 14px;
+      background:linear-gradient(135deg,#fff7ed,#ffedd5);
+      border:1px solid #fdba74;border-radius:13px;padding:11px 13px;
+    }
+    .promo-badge{
+      flex:0 0 auto;font-family:'Unbounded',sans-serif;font-weight:700;font-size:15px;
+      color:#fff;background:linear-gradient(135deg,#f97316,var(--accent));
+      border-radius:9px;padding:5px 9px;letter-spacing:-.5px;
+    }
+    .promo-text{font-size:12.5px;font-weight:600;color:#9a3412;line-height:1.35}
+    .promo-hint{font-size:12px;font-weight:600;color:#c2410c;background:var(--accent-soft);border:1px solid #fed7aa;border-radius:10px;padding:8px 11px;margin-bottom:12px;line-height:1.4}
 
-    /* Section label */
-    .section-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#555;margin-bottom:12px;margin-top:4px;}
+    /* метка скидки на слоте и в карточке сессии */
+    .disc-tag{
+      display:inline-block;font-size:10px;font-weight:700;color:#fff;
+      background:var(--accent);border-radius:5px;padding:1px 4px;margin-left:5px;
+      vertical-align:middle;letter-spacing:-.2px;
+    }
+    .slot.has-disc{border-color:#fdba74;background:#fff7ed}
+    .slot.has-disc.selected{border-color:var(--accent);background:var(--accent);color:#fff}
+    .slot.has-disc.selected .disc-tag{background:#fff;color:var(--accent)}
+    .summary-row.disc span:last-child{color:var(--accent)}
+    .price-was{text-decoration:line-through;color:var(--muted);font-weight:500;margin-right:5px}
 
-    /* Type cards */
-    .type-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:8px;}
-    .type-card{background:#1a1a1a;border:2px solid transparent;border-radius:16px;padding:18px 20px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:16px;}
-    .type-card:hover{border-color:rgba(249,115,22,.4);}
-    .type-card.selected{border-color:#f97316;background:rgba(249,115,22,.07);}
-    .type-icon{font-size:32px;flex-shrink:0;}
-    .type-name{font-size:15px;font-weight:700;}
-    .type-desc{font-size:12px;color:#777;margin-top:2px;}
-    .type-check{width:22px;height:22px;border-radius:50%;border:2px solid #444;background:#111;display:flex;align-items:center;justify-content:center;font-size:12px;margin-left:auto;flex-shrink:0;transition:all .15s;}
-    .type-card.selected .type-check{background:#f97316;border-color:#f97316;color:#fff;}
+    /* ── Кнопки действий в шапке ── */
+    .acts{display:flex;gap:8px;padding:0 18px 12px;flex-wrap:wrap}
+    .act{
+      flex:1 1 0;min-width:104px;min-height:42px;
+      display:inline-flex;align-items:center;justify-content:center;gap:6px;
+      font-size:13px;font-weight:600;text-decoration:none;color:var(--ink);
+      background:var(--surface);border:1px solid var(--line);border-radius:12px;
+      padding:9px 12px;transition:border-color .15s,background .15s,color .15s;
+    }
+    .act:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+    .act-wa{border-color:#86efac;color:#15803d;background:#f0fdf4}
+    .act-wa:hover{border-color:#22c55e;color:#15803d;background:#dcfce7}
 
-    /* Session option cards */
-    .session-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;}
-    .session-card{background:#1a1a1a;border:2px solid transparent;border-radius:14px;padding:16px 14px;cursor:pointer;transition:all .15s;text-align:center;}
-    .session-card:hover{border-color:rgba(249,115,22,.4);}
-    .session-card.selected{border-color:#f97316;background:rgba(249,115,22,.07);}
-    .session-dur{font-size:22px;font-weight:900;color:#f97316;}
-    .session-dur-label{font-size:11px;color:#777;margin-top:1px;}
-    .session-price{font-size:14px;font-weight:700;color:#fff;margin-top:8px;}
+    /* ── Инфо-чипы ── */
+    .chips{display:flex;flex-wrap:wrap;gap:7px;padding:0 18px 16px}
+    .chip{
+      display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-2);
+      background:var(--bg);border:1px solid var(--line);border-radius:100px;padding:6px 11px;
+      text-decoration:none;
+    }
+    .chip a{color:var(--accent);text-decoration:none;font-weight:600}
 
-    /* Quantity */
-    .qty-row{display:flex;align-items:center;gap:16px;justify-content:center;margin:4px 0 8px;}
-    .qty-btn{width:44px;height:44px;border-radius:12px;background:#1a1a1a;border:2px solid #333;color:#f0f0f0;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;line-height:1;}
-    .qty-btn:hover{border-color:#f97316;color:#f97316;}
-    .qty-val{font-size:28px;font-weight:900;min-width:40px;text-align:center;}
-    .qty-total{background:#1a1a1a;border-radius:12px;padding:10px 16px;font-size:14px;font-weight:600;color:#f97316;text-align:center;margin-top:4px;}
+    /* ── Прогресс шагов ── */
+    .steps{display:flex;gap:6px;margin:0 0 20px}
+    .step{flex:1;min-width:0}
+    .step-num{display:none}
+    .step::before{
+      content:'';display:block;height:4px;border-radius:999px;background:var(--line);
+      transition:background .25s ease;
+    }
+    .step.active::before{background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+    .step.done::before{background:var(--good)}
+    .step-label{
+      font-size:10.5px;color:var(--muted);margin-top:7px;text-align:center;
+      overflow-wrap:anywhere;transition:color .2s ease;
+    }
+    .step.active .step-label{color:var(--accent);font-weight:600}
+    .step.done .step-label{color:var(--ink-2)}
+    @media (max-width:380px){ .step-label{display:none} }
 
-    /* Date */
-    .date-input{width:100%;padding:14px 16px;background:#1a1a1a;border:2px solid #333;border-radius:12px;color:#f0f0f0;font-size:16px;outline:none;font-family:inherit;margin-bottom:14px;}
-    .date-input:focus{border-color:#f97316;}
+    /* ── Панели шагов ── */
+    .panel{display:none}
+    .panel.active{display:block;padding:20px 18px 18px}
+    .section-label{
+      font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+      color:var(--muted);margin-bottom:12px;
+    }
 
-    /* Slots */
-    .slots-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;}
-    .slot{padding:10px 16px;background:#1a1a1a;border:2px solid #333;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;transition:all .15s;}
-    .slot:hover{border-color:rgba(249,115,22,.5);}
-    .slot.selected{border-color:#f97316;background:rgba(249,115,22,.1);color:#f97316;}
-    .slot-none{color:#555;font-size:14px;padding:16px 0;}
+    /* ── Тип машины ── */
+    .type-grid{display:grid;grid-template-columns:1fr;gap:10px}
+    .type-card{
+      background:var(--surface);border:1px solid var(--line);border-radius:14px;
+      padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:14px;
+      transition:border-color .15s,background .15s;
+    }
+    .type-card:hover{border-color:#fdba74}
+    .type-card.selected{border-color:var(--accent);background:var(--accent-soft)}
+    .type-icon{font-size:26px;flex-shrink:0;line-height:1}
+    .type-name{font-size:14.5px;font-weight:600}
+    .type-desc{font-size:12px;color:var(--ink-2);margin-top:2px;line-height:1.4}
+    .type-check{
+      width:22px;height:22px;border-radius:50%;border:1px solid var(--line);
+      background:var(--bg);color:transparent;display:flex;align-items:center;justify-content:center;
+      font-size:12px;margin-left:auto;flex-shrink:0;transition:all .15s;
+    }
+    .type-card.selected .type-check{background:var(--accent);border-color:var(--accent);color:#fff}
 
-    /* Contact */
-    .field{margin-bottom:14px;}
-    .field label{display:block;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#666;margin-bottom:6px;}
-    .field input{width:100%;padding:14px 16px;background:#1a1a1a;border:2px solid #333;border-radius:12px;color:#f0f0f0;font-size:15px;outline:none;font-family:inherit;transition:border-color .2s;}
-    .field input:focus{border-color:#f97316;}
+    /* ── Сессии (прайс) ── */
+    .session-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .session-card{
+      background:var(--surface);border:1px solid var(--line);border-radius:14px;
+      padding:15px 12px;cursor:pointer;text-align:center;transition:border-color .15s,background .15s;
+    }
+    .session-card:hover{border-color:#fdba74}
+    .session-card.selected{border-color:var(--accent);background:var(--accent-soft)}
+    .session-dur{font-family:'Unbounded',sans-serif;font-size:24px;font-weight:700;color:var(--ink);line-height:1}
+    .session-dur-label{font-size:11px;color:var(--muted);margin-top:4px}
+    .session-price{font-size:14px;font-weight:700;color:var(--accent);margin-top:8px}
 
-    /* Summary */
-    .summary{background:#1a1a1a;border-radius:16px;padding:18px;margin-bottom:18px;border:1px solid rgba(255,255,255,.06);}
-    .summary-row{display:flex;justify-content:space-between;font-size:14px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);}
-    .summary-row:last-child{border-bottom:none;font-weight:800;font-size:16px;padding-top:10px;margin-top:4px;color:#f97316;}
+    /* ── Количество ── */
+    .qty-layout{display:flex;align-items:flex-end;gap:14px}
+    .qty-main{flex:1;min-width:0}
+    .qty-row{display:flex;align-items:center;gap:18px;justify-content:center;margin:6px 0 14px}
+    .qty-btn{
+      width:46px;height:46px;border-radius:14px;background:var(--surface);
+      border:1px solid var(--line);color:var(--ink);font-size:22px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;line-height:1;
+      transition:border-color .15s,color .15s;
+    }
+    .qty-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .qty-val{font-family:'Unbounded',sans-serif;font-size:30px;font-weight:700;min-width:48px;text-align:center}
+    .qty-total{
+      background:var(--accent-soft);border:1px solid #fed7aa;border-radius:12px;
+      padding:11px 16px;font-size:13.5px;font-weight:600;color:#c2410c;text-align:center;
+    }
 
-    /* Buttons */
-    .btn-next{width:100%;padding:16px;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s;margin-top:18px;}
-    .btn-next:disabled{opacity:.4;cursor:not-allowed;}
-    .btn-back{background:none;border:2px solid #333;color:#aaa;width:100%;padding:13px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:10px;transition:border-color .2s;}
-    .btn-back:hover{border-color:#555;}
+    /* ── Колёса заездов ──
+       Три слоя, чтобы анимации не конфликтовали из-за одного transform:
+       .wh — парит, .wheel — появление/прокол (масштаб), .wheel::before — вращается. */
+    .wheels{position:relative;width:98px;height:214px;flex:0 0 auto;pointer-events:none}
+    @media (max-width:420px){ .wheels{width:82px;height:186px} }
+    .wh{position:absolute;--spin:2.4s;animation:wh-float 4.4s ease-in-out infinite;will-change:transform}
+    .wheel{display:block;position:relative;width:100%;height:100%}
+    .wheel::before{
+      content:'';position:absolute;inset:0;border-radius:50%;box-sizing:border-box;
+      border:5px solid #272320;                                                   /* покрышка */
+      background:
+        radial-gradient(circle, #78716c 0 16%, transparent 17%),                  /* ступица */
+        repeating-conic-gradient(from 0deg, #f5f5f4 0 36deg, #cfcac4 36deg 72deg);/* 5 спиц */
+      box-shadow:0 5px 14px rgba(28,25,23,.32), inset 0 0 0 1px rgba(0,0,0,.28);
+      animation:wh-spin var(--spin) linear infinite;
+    }
+    @media (max-width:420px){ .wheel::before{border-width:4px} }
+    .wheel.rolling-in{animation:wh-in .46s cubic-bezier(.34,1.5,.64,1) both}
+    .wheel.blown{animation:wh-blow .4s ease-out forwards}
+    .wheel.blown::after{
+      content:'';position:absolute;inset:-8px;border-radius:50%;
+      border:2px solid rgba(120,113,108,.5);animation:wh-smoke .4s ease-out forwards;
+    }
+    @keyframes wh-spin{ to{transform:rotate(360deg)} }
+    @keyframes wh-float{
+      0%,100%{transform:translate(0,0)}
+      30%{transform:translate(3px,-7px)}
+      60%{transform:translate(-3px,-11px)}
+    }
+    @keyframes wh-in{
+      0%{transform:scale(.2);opacity:0}
+      65%{transform:scale(1.12);opacity:1}
+      100%{transform:scale(1);opacity:1}
+    }
+    /* прокол: раздулась → сплющилась → спустила */
+    @keyframes wh-blow{
+      0%{transform:scale(1,1) rotate(0);opacity:1}
+      22%{transform:scale(1.2,.82) rotate(-5deg);opacity:1}
+      55%{transform:scale(.78,1.08) rotate(7deg);opacity:.85}
+      100%{transform:scale(.42,.28) rotate(15deg);opacity:0}
+    }
+    @keyframes wh-smoke{
+      0%{transform:scale(.6);opacity:.85}
+      100%{transform:scale(2);opacity:0}
+    }
 
-    /* Info bar */
-    .info-bar{display:flex;gap:16px;flex-wrap:wrap;padding:14px 0;border-bottom:1px solid #1a1a1a;margin-bottom:24px;}
-    .info-item{display:flex;align-items:center;gap:6px;font-size:12px;color:#888;}
-    .info-item a{color:#f97316;text-decoration:none;}
+    /* ── Дата: полоса дней ── */
+    .days{
+      display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;margin:0 -2px 10px;
+      scrollbar-width:none;-webkit-overflow-scrolling:touch;
+    }
+    .days::-webkit-scrollbar{display:none}
+    .day{
+      flex:0 0 auto;min-width:64px;padding:9px 10px 10px;border-radius:14px;cursor:pointer;
+      background:var(--surface);border:1px solid var(--line);text-align:center;
+      transition:border-color .15s,background .15s,color .15s;
+    }
+    .day:hover{border-color:#fdba74}
+    .day-wd{font-size:10.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.3px}
+    .day-num{font-family:'Unbounded',sans-serif;font-size:19px;font-weight:700;line-height:1.15;margin-top:3px}
+    .day-mon{font-size:10.5px;color:var(--muted);margin-top:1px}
+    .day.selected{background:var(--accent);border-color:var(--accent)}
+    .day.selected .day-wd,.day.selected .day-num,.day.selected .day-mon{color:#fff}
+
+    /* ── Дата: ручной выбор ── */
+    .other-date{
+      display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+      padding:10px 14px;margin-bottom:20px;
+      background:var(--bg);border:1px solid var(--line);border-radius:12px;cursor:pointer;
+    }
+    .other-date-cap{font-size:12.5px;color:var(--ink-2);font-weight:600;white-space:nowrap}
+    .date-input{
+      flex:1;min-width:150px;padding:8px 10px;background:var(--surface);
+      border:1px solid var(--line);border-radius:9px;color:var(--ink);font-size:14px;
+      outline:none;font-family:inherit;
+    }
+    .date-input:focus{border-color:var(--accent)}
+
+    /* ── Слоты: заголовок и группы ── */
+    .slots-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+    .slots-head .section-label{margin-bottom:12px}
+    .slots-count{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}
+    .slot-group{margin-bottom:14px}
+    .slot-group:last-child{margin-bottom:0}
+    .slot-group-label{
+      font-size:11px;font-weight:700;color:var(--ink-2);margin-bottom:8px;
+      display:flex;align-items:center;gap:7px;
+    }
+    .slot-group-label::after{content:'';flex:1;height:1px;background:var(--line-2)}
+
+    /* ── Слоты ── */
+    .slots-grid{display:flex;flex-wrap:wrap;gap:8px}
+    .slot{
+      min-height:44px;padding:11px 15px;background:var(--surface);border:1px solid var(--line);
+      border-radius:11px;cursor:pointer;font-size:14px;font-weight:600;
+      display:inline-flex;align-items:center;transition:border-color .15s,background .15s,color .15s;
+    }
+    .slot:hover{border-color:#fdba74}
+    .slot.selected{border-color:var(--accent);background:var(--accent);color:#fff}
+    .slot-none{color:var(--muted);font-size:13.5px;padding:14px 0}
+
+    /* ── Контакты ── */
+    .field{margin-bottom:14px}
+    .field label{
+      display:block;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+      color:var(--muted);margin-bottom:6px;
+    }
+    .field input{
+      width:100%;padding:13px 15px;background:var(--surface);border:1px solid var(--line);
+      border-radius:12px;color:var(--ink);font-size:15px;outline:none;font-family:inherit;
+      transition:border-color .2s;
+    }
+    .field input:focus{border-color:var(--accent)}
+    .field input::placeholder{color:#cfcac4}
+
+    /* ── Итог ── */
+    .summary{
+      background:var(--bg);border:1px solid var(--line);border-radius:14px;
+      padding:6px 16px;margin-bottom:16px;
+    }
+    .summary-row{
+      display:flex;justify-content:space-between;gap:12px;font-size:13.5px;
+      padding:10px 0;border-bottom:1px solid var(--line-2);color:var(--ink-2);
+    }
+    .summary-row span:last-child{color:var(--ink);font-weight:600;text-align:right}
+    .summary-row:last-child{
+      border-bottom:none;font-size:15px;padding:12px 0;
+    }
+    .summary-row:last-child span:last-child{color:var(--accent);font-weight:800}
+
+    /* ── Кнопки ── */
+    .btn-next{
+      width:100%;padding:15px;background:linear-gradient(135deg,#f97316,var(--accent));
+      color:#fff;border:none;border-radius:13px;font-size:15.5px;font-weight:700;
+      cursor:pointer;font-family:inherit;margin-top:18px;
+      box-shadow:0 8px 20px rgba(234,88,12,.22);transition:opacity .2s,box-shadow .2s;
+    }
+    .btn-next:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+    .btn-back{
+      background:none;border:none;color:var(--muted);width:100%;padding:12px;
+      font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:6px;
+      transition:color .15s;
+    }
+    .btn-back:hover{color:var(--ink-2)}
+
+    .foot{text-align:center;font-size:11.5px;color:var(--muted);margin-top:22px}
+    .foot a{color:var(--muted);text-decoration:none}
+
+    @media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
   </style>
 </head>
 <body>
-{% include "_webordo_ethno.html" %}
+
+<!-- Шапка Webordo -->
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="wb-logo" href="{% url 'public_site:home' %}">Web<span>o</span>rdo<i>.kg</i></a>
+    <div class="topbar-venue">{% t venue "name" %}</div>
+  </div>
+</header>
+
 <div class="page">
-  <!-- Hero -->
-  <div class="hero">
+
+  <!-- Карточка заведения -->
+  <div class="card venue">
     {% if venue.cover %}
-      <img class="hero-cover" src="{{ venue.cover.url }}" alt="">
+      <img class="venue-cover" src="{{ venue.cover.url }}" alt="">
     {% endif %}
-    <div class="hero-overlay"></div>
-    <div class="hero-content">
+    <div class="venue-body">
       {% if venue.logo %}
-        <img class="hero-logo" src="{{ venue.logo.url }}" alt="{% t venue 'name' %}">
+        <img class="venue-logo" src="{{ venue.logo.url }}" alt="{% t venue 'name' %}">
       {% else %}
-        <div class="hero-logo-icon">🏎️</div>
+        <div class="venue-logo-icon">🏎️</div>
       {% endif %}
-      <div class="hero-info">
-        <div class="hero-name">{% t venue "name" %}</div>
-        {% t venue "tagline" as vtag %}{% if vtag %}<div class="hero-sub">{{ vtag }}</div>{% endif %}
+      <div>
+        <div class="venue-name">{% t venue "name" %}</div>
+        {% t venue "tagline" as vtag %}{% if vtag %}<div class="venue-sub">{{ vtag }}</div>{% endif %}
       </div>
     </div>
-  </div>
-
-  <div class="inner">
-    <!-- Info bar -->
-    {% if venue.address or venue.working_hours or venue.phone or venue.whatsapp %}
-    <div class="info-bar">
-      {% if venue.address %}<div class="info-item">📍 {{ venue.address }}</div>{% endif %}
-      {% if venue.working_hours %}<div class="info-item">🕐 {{ venue.working_hours }}</div>{% endif %}
-      {% if venue.phone %}<div class="info-item">📞 <a href="tel:{{ venue.phone }}">{{ venue.phone }}</a></div>{% endif %}
-      {% if venue.whatsapp %}<div class="info-item">💬 <a href="https://wa.me/{{ venue.whatsapp }}" target="_blank">WhatsApp</a></div>{% endif %}
+    {% if venue.discount_percent %}
+    <div class="promo">
+      <span class="promo-badge">−{{ venue.discount_percent }}%</span>
+      <span class="promo-text">
+        {% if venue.discount_until %}
+          {% blocktrans with t=venue.discount_until|time:"H:i" %}Скидка на все заезды до {{ t }}{% endblocktrans %}
+        {% else %}
+          {% trans "Скидка на все заезды" %}
+        {% endif %}{% if venue.discount_weekdays_only %} · {% trans "по будням" %}{% endif %}
+      </span>
     </div>
     {% endif %}
-
-    <!-- Steps -->
-    <div class="steps">
-      <div class="step active" id="step-ind-1"><div class="step-num">1</div><div class="step-label">{% trans "Тип" %}</div></div>
-      <div class="step" id="step-ind-2"><div class="step-num">2</div><div class="step-label">{% trans "Сессия" %}</div></div>
-      <div class="step" id="step-ind-3"><div class="step-num">3</div><div class="step-label">{% trans "Заезды" %}</div></div>
-      <div class="step" id="step-ind-4"><div class="step-num">4</div><div class="step-label">{% trans "Дата/время" %}</div></div>
-      <div class="step" id="step-ind-5"><div class="step-num">5</div><div class="step-label">{% trans "Контакты" %}</div></div>
+    {% if venue.phone or map_url or wa_number %}
+    <div class="acts">
+      {% if venue.phone %}
+        <a class="act" href="tel:{{ venue.phone }}">📞 {% trans "Позвонить" %}</a>
+      {% endif %}
+      {% if map_url %}
+        <a class="act" href="{{ map_url }}" target="_blank" rel="noopener">📍 {% trans "Карта" %}</a>
+      {% endif %}
+      {% if wa_number %}
+        <a class="act act-wa" href="https://wa.me/{{ wa_number }}" target="_blank" rel="noopener">💬 WhatsApp</a>
+      {% endif %}
     </div>
+    {% endif %}
+    {% if venue.address or venue.working_hours or venue.open_time %}
+    <div class="chips">
+      {% if venue.open_time and venue.close_time %}
+        <span class="chip">🕐 {{ venue.open_time|time:"H:i" }}–{{ venue.close_time|time:"H:i" }}</span>
+      {% endif %}
+      {% if venue.working_hours %}<span class="chip">📅 {{ venue.working_hours }}</span>{% endif %}
+      {% if venue.address %}<span class="chip">📍 {{ venue.address }}</span>{% endif %}
+    </div>
+    {% endif %}
+  </div>
 
-    <!-- Step 1: Machine type -->
+  <!-- Прогресс -->
+  <div class="steps">
+    <div class="step active" id="step-ind-1"><div class="step-num">1</div><div class="step-label">{% trans "Тип" %}</div></div>
+    <div class="step" id="step-ind-2"><div class="step-num">2</div><div class="step-label">{% trans "Сессия" %}</div></div>
+    <div class="step" id="step-ind-3"><div class="step-num">3</div><div class="step-label">{% trans "Заезды" %}</div></div>
+    <div class="step" id="step-ind-4"><div class="step-num">4</div><div class="step-label">{% trans "Дата/время" %}</div></div>
+    <div class="step" id="step-ind-5"><div class="step-num">5</div><div class="step-label">{% trans "Контакты" %}</div></div>
+  </div>
+
+  <div class="card">
+    <!-- Шаг 1: тип машины -->
     <div class="panel active" id="panel-1">
       <div class="section-label">{% trans "Выберите тип" %}</div>
       <div class="type-grid" id="type-list"></div>
       <button class="btn-next" id="btn1" disabled onclick="goStep(2)">{% trans "Далее →" %}</button>
     </div>
 
-    <!-- Step 2: Session type -->
+    <!-- Шаг 2: сессия -->
     <div class="panel" id="panel-2">
       <div class="section-label">{% trans "Выберите сессию из прайс-листа" %}</div>
-      <div class="session-grid" id="session-list"></div>
+      {% if venue.discount_percent %}<div class="promo-hint">🔥 {% if venue.discount_until %}{% blocktrans with p=venue.discount_percent t=venue.discount_until|time:"H:i" %}−{{ p }}% на заезды, которые начинаются до {{ t }}{% endblocktrans %}{% else %}{% blocktrans with p=venue.discount_percent %}−{{ p }}% на все заезды{% endblocktrans %}{% endif %}{% if venue.discount_weekdays_only %} ({% trans "по будням" %}){% endif %}</div>{% endif %}
+            <div class="session-grid" id="session-list"></div>
       <div id="no-sessions" style="display:none" class="slot-none">{% trans "Прайс-лист не настроен для этого типа" %}</div>
       <button class="btn-next" id="btn2" disabled onclick="goStep(3)">{% trans "Далее →" %}</button>
       <button class="btn-back" onclick="goStep(1)">← {% trans "Назад" %}</button>
     </div>
 
-    <!-- Step 3: Quantity -->
+    <!-- Шаг 3: количество -->
     <div class="panel" id="panel-3">
       <div class="section-label">{% trans "Количество заездов" %}</div>
-      <div class="qty-row">
-        <button class="qty-btn" onclick="changeQty(-1)">−</button>
-        <div class="qty-val" id="qty-display">1</div>
-        <button class="qty-btn" onclick="changeQty(+1)">+</button>
+      <div class="qty-layout">
+        <div class="qty-main">
+          <div class="qty-row">
+            <button class="qty-btn" onclick="changeQty(-1)" aria-label="−">−</button>
+            <div class="qty-val" id="qty-display">1</div>
+            <button class="qty-btn" onclick="changeQty(+1)" aria-label="+">+</button>
+          </div>
+          <div class="qty-total" id="qty-total">{% trans "Итого: — сом · — мин" %}</div>
+          {% if venue.discount_percent %}<div class="promo-hint">🔥 {% if venue.discount_until %}{% blocktrans with p=venue.discount_percent t=venue.discount_until|time:"H:i" %}−{{ p }}% на заезды, которые начинаются до {{ t }}{% endblocktrans %}{% else %}{% blocktrans with p=venue.discount_percent %}−{{ p }}% на все заезды{% endblocktrans %}{% endif %}{% if venue.discount_weekdays_only %} ({% trans "по будням" %}){% endif %}</div>{% endif %}
+              </div>
+        <div class="wheels" id="wheels" aria-hidden="true"></div>
       </div>
-      <div class="qty-total" id="qty-total">{% trans "Итого: — сом · — мин" %}</div>
-      <button class="btn-next" onclick="goStep(4)" style="margin-top:18px;">{% trans "Далее →" %}</button>
+      <button class="btn-next" onclick="goStep(4)">{% trans "Далее →" %}</button>
       <button class="btn-back" onclick="goStep(2)">← {% trans "Назад" %}</button>
     </div>
 
-    <!-- Step 4: Date + time -->
+    <!-- Шаг 4: дата и время -->
     <div class="panel" id="panel-4">
       <div class="section-label">{% trans "Дата посещения" %}</div>
-      <input type="date" class="date-input" id="date-input">
-      <div class="section-label" style="margin-top:4px;">{% trans "Доступное время" %}</div>
+      <div class="days" id="days-strip"></div>
+      <label class="other-date">
+        <span class="other-date-cap">{% trans "Другая дата" %}</span>
+        <input type="date" class="date-input" id="date-input">
+      </label>
+
+      <div class="slots-head">
+        <div class="section-label">{% trans "Доступное время" %}</div>
+        <div class="slots-count" id="slots-count"></div>
+      </div>
       <div id="slots-wrap"><div class="slot-none">{% trans "Выберите дату выше" %}</div></div>
       <button class="btn-next" id="btn4" disabled onclick="goStep(5)">{% trans "Далее →" %}</button>
       <button class="btn-back" onclick="goStep(3)">← {% trans "Назад" %}</button>
     </div>
 
-    <!-- Step 5: Contacts + confirm -->
+    <!-- Шаг 5: контакты -->
     <div class="panel" id="panel-5">
       <div class="summary" id="summary"></div>
       <form method="post" action="{% url 'simracing:book_appt' venue.slug %}">
@@ -195,21 +480,23 @@
         <input type="hidden" name="appt_date"       id="f-date">
         <input type="hidden" name="appt_time"       id="f-time">
         <div class="field">
-          <label>{% trans "Ваше имя" %}</label>
-          <input type="text" name="name" placeholder="{% trans 'Имя' %}">
+          <label for="name-input">{% trans "Ваше имя" %}</label>
+          <input type="text" id="name-input" name="name" placeholder="{% trans 'Имя' %}" autocomplete="name">
         </div>
         <div class="field">
-          <label>{% trans "Телефон" %} *</label>
+          <label for="phone-input">{% trans "Телефон" %} *</label>
           <input type="tel" name="phone" id="phone-input" placeholder="+996 700 000 000" required autocomplete="tel">
-          <div id="phone-error" style="display:none;color:#f97316;font-size:12px;margin-top:5px;">
+          <div id="phone-error" style="display:none;color:var(--danger);font-size:12px;margin-top:6px;">
             {% trans "Введите номер в формате +996 700 000 000" %}
           </div>
         </div>
-        <button type="submit" class="btn-next" onclick="return prepareAndValidate(event)">✅ {% trans "Подтвердить запись" %}</button>
+        <button type="submit" class="btn-next" onclick="return prepareAndValidate(event)">{% trans "Подтвердить запись" %}</button>
         <button type="button" class="btn-back" onclick="goStep(4)">← {% trans "Назад" %}</button>
       </form>
     </div>
   </div>
+
+  <div class="foot"><a href="{% url 'public_site:home' %}">Webordo.kg</a></div>
 </div>
 
 <script>
@@ -233,6 +520,14 @@ const T = {
   metaStd: "{% trans 'Классические карты для всей семьи' %}",
   metaEuro: "{% trans 'Спортивные Евро-карты — больше скорости' %}",
   metaSim: "{% trans 'Полноценный автосимулятор на большом экране' %}",
+  today: "{% trans 'Сегодня' %}",
+  tomorrow: "{% trans 'Завтра' %}",
+  morning: "{% trans 'Утро' %}",
+  daytime: "{% trans 'День' context 'время суток' %}",
+  evening: "{% trans 'Вечер' %}",
+  free: "{% trans 'Свободно' %}",
+  pickDate: "{% trans 'Выберите дату выше' %}",
+  discount: "{% trans 'Скидка' %}",
 };
 </script>
 <script>
@@ -247,6 +542,13 @@ const TYPE_META = {
 };
 
 let sel = { mtype: null, mtypeLabel: null, st: null, qty: 1, date: null, time: null };
+
+/* Скидка по времени: какие слоты попадают и сколько процентов.
+   Присылает сервер вместе со слотами — здесь только показываем. */
+const DISC = { slots: new Set(), percent: 0 };
+function discForSelected() {
+  return (sel.time && DISC.slots.has(sel.time)) ? DISC.percent : 0;
+}
 
 /* ─── Step 1: Machine types ─── */
 function buildTypes() {
@@ -314,9 +616,74 @@ function selectSession(id, duration, price) {
 
 /* ─── Step 3: Quantity ─── */
 function changeQty(delta) {
-  sel.qty = Math.max(1, Math.min(10, sel.qty + delta));
+  sel.qty = Math.max(1, Math.min(QTY_MAX, sel.qty + delta));
   document.getElementById('qty-display').textContent = sel.qty;
   updateQtyTotal();
+  syncWheels();
+}
+
+/* ─── Колёса заездов ───
+   Одно колесо = один заезд. Добавили заезд — колесо вкатывается и крутится,
+   убрали — пробивает покрышку. Чисто декоративный слой: настоящее число
+   заездов всегда в sel.qty и в счётчике #qty-display. */
+const QTY_MAX  = 10;
+const BLOW_MS  = 420;   // должно совпадать с длительностью wh-blow в CSS
+
+function wheelGeometry(i, W, H) {
+  const size = 30 + (i % 3) * 4;                       // 30 / 34 / 38
+  const lane = i % 3;
+  const left = Math.round((W - size) * lane / 2);      // три дорожки по ширине
+  const step = (H - size) / (QTY_MAX - 1);             // равномерно до верха
+  return { size, left, bottom: Math.round(step * i) };
+}
+
+function addWheel(i, animate) {
+  const wrap = document.getElementById('wheels');
+  const W = wrap.clientWidth  || 98;
+  const H = wrap.clientHeight || 214;
+  const g = wheelGeometry(i, W, H);
+
+  const slot = document.createElement('div');
+  slot.className = 'wh';
+  slot.dataset.idx = i;
+  slot.style.left = g.left + 'px';
+  slot.style.bottom = g.bottom + 'px';
+  slot.style.width = g.size + 'px';
+  slot.style.height = g.size + 'px';
+  // рассинхронизируем парение и скорость вращения, чтобы колёса не шли строем
+  slot.style.animationDuration = (4 + (i % 3) * 0.6).toFixed(1) + 's';
+  slot.style.animationDelay = '-' + (i * 0.37).toFixed(2) + 's';
+  slot.style.setProperty('--spin', (2 + (i % 4) * 0.45).toFixed(2) + 's');
+
+  const wheel = document.createElement('i');
+  wheel.className = 'wheel' + (animate ? ' rolling-in' : '');
+  slot.appendChild(wheel);
+  wrap.appendChild(slot);
+
+  if (animate) setTimeout(() => wheel.classList.remove('rolling-in'), 480);
+}
+
+function syncWheels(animate = true) {
+  const wrap = document.getElementById('wheels');
+  if (!wrap) return;
+  const live = [...wrap.querySelectorAll('.wh:not(.gone)')];
+  if (sel.qty > live.length) {
+    for (let i = live.length; i < sel.qty; i++) addWheel(i, animate);
+  } else if (sel.qty < live.length) {
+    // пробиваем лишние, начиная с верхнего
+    live.slice(sel.qty).reverse().forEach(slot => {
+      slot.classList.add('gone');
+      slot.querySelector('.wheel')?.classList.add('blown');
+      // не ждём animationend: при prefers-reduced-motion анимация не запускается
+      setTimeout(() => slot.remove(), BLOW_MS);
+    });
+  }
+}
+
+function resetWheels() {
+  const wrap = document.getElementById('wheels');
+  if (wrap) wrap.innerHTML = '';
+  syncWheels(true);
 }
 
 function updateQtyTotal() {
@@ -325,6 +692,56 @@ function updateQtyTotal() {
   const total = sel.st.price * sel.qty;
   const mins  = sel.st.duration * sel.qty;
   el.textContent = `${T.total}: ${total.toLocaleString()} ${CUR} · ${mins} ${T.min}`;
+}
+
+/* ─── Step 4: полоса дней ─── */
+const DAYS_AHEAD = 14;
+
+function ymd(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+       + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function buildDays() {
+  const wrap = document.getElementById('days-strip');
+  if (wrap.children.length) return;          // строим один раз
+  const today = new Date();
+  let html = '';
+  for (let i = 0; i < DAYS_AHEAD; i++) {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+    const key = ymd(d);
+    const wd = i === 0 ? T.today
+             : i === 1 ? T.tomorrow
+             : d.toLocaleDateString(LOCALE, { weekday: 'short' });
+    const mon = d.toLocaleDateString(LOCALE, { month: 'short' }).replace('.', '');
+    html += `<div class="day" id="day-${key}" onclick="setDate('${key}')">
+      <div class="day-wd">${wd}</div>
+      <div class="day-num">${d.getDate()}</div>
+      <div class="day-mon">${mon}</div>
+    </div>`;
+  }
+  wrap.innerHTML = html;
+}
+
+/* Единая точка выбора даты — и для полосы дней, и для поля «другая дата» */
+function setDate(dateStr) {
+  if (!dateStr) return;
+  sel.date = dateStr;
+  sel.time = null;
+  document.getElementById('btn4').disabled = true;
+  document.querySelectorAll('.day').forEach(el => el.classList.remove('selected'));
+  document.getElementById('day-' + dateStr)?.classList.add('selected');
+  const inp = document.getElementById('date-input');
+  if (inp.value !== dateStr) inp.value = dateStr;   // программная установка не вызывает change
+  if (sel.mtype && sel.st) loadSlots(dateStr);
+}
+
+function resetDateStep() {
+  document.querySelectorAll('.day').forEach(el => el.classList.remove('selected'));
+  document.getElementById('date-input').value = '';
+  document.getElementById('slots-count').textContent = '';
+  document.getElementById('slots-wrap').innerHTML = '<div class="slot-none">' + T.pickDate + '</div>';
+  document.getElementById('btn4').disabled = true;
 }
 
 /* ─── Step 4: Date + Slots ─── */
@@ -342,19 +759,81 @@ async function loadSlots(dateStr) {
   try {
     const r = await fetch(`${SLOTS_URL}?${params}`);
     const d = await r.json();
+    const cnt = document.getElementById('slots-count');
     if (!d.slots || !d.slots.length) {
+      cnt.textContent = '';
       wrap.innerHTML = '<div class="slot-none">' + T.noSlots + '</div>';
       return;
     }
-    let html = '<div class="slots-grid">';
+    // Группируем по времени суток, чтобы не было стены из цифр
+    const groups = [
+      { label: T.morning, items: [] },   // до 12:00
+      { label: T.daytime, items: [] },   // 12:00–17:00
+      { label: T.evening, items: [] },   // после 17:00
+    ];
     d.slots.forEach(t => {
-      html += `<div class="slot" id="slot-${t.replace(':','-')}" onclick="selectSlot('${t}')">${t}</div>`;
+      const h = parseInt(t.split(':')[0], 10);
+      const gi = h < 12 ? 0 : (h < 17 ? 1 : 2);
+      groups[gi].items.push(t);
     });
-    html += '</div>';
+    // слоты со скидкой приходят с сервера — правило живёт в одном месте
+    DISC.slots = new Set(d.discounted || []);
+    DISC.percent = d.discount_percent || 0;
+    let html = '';
+    groups.forEach(g => {
+      if (!g.items.length) return;
+      html += `<div class="slot-group"><div class="slot-group-label">${g.label}</div><div class="slots-grid">`;
+      g.items.forEach(t => {
+        const on = DISC.slots.has(t);
+        const tag = on ? `<span class="disc-tag">−${DISC.percent}%</span>` : '';
+        html += `<div class="slot${on ? ' has-disc' : ''}" id="slot-${t.replace(':','-')}" onclick="selectSlot('${t}')">${t}${tag}</div>`;
+      });
+      html += '</div></div>';
+    });
+    cnt.textContent = `${T.free}: ${d.slots.length}`;
     wrap.innerHTML = html;
+    prunePastSlots();   // на случай расхождения часов браузера и сервера
   } catch(e) {
+    document.getElementById('slots-count').textContent = '';
     wrap.innerHTML = '<div class="slot-none">' + T.loadErr + '</div>';
   }
+}
+
+/* Прошедшее время не должно оставаться в списке, даже если страница
+   открыта давно: сервер отдал слоты на момент загрузки, дальше подчищаем сами.
+   Буфер 15 минут — такой же, как на сервере. */
+const SLOT_BUFFER_MIN = 15;
+
+function slotIsPast(t) {
+  const now = new Date();
+  if (!sel.date || sel.date !== ymd(now)) return false;   // не сегодня — не трогаем
+  const [h, m] = t.split(':').map(Number);
+  const slotDt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+  return slotDt <= new Date(now.getTime() + SLOT_BUFFER_MIN * 60000);
+}
+
+function prunePastSlots() {
+  const wrap = document.getElementById('slots-wrap');
+  if (!wrap || !sel.date) return;
+  let removed = 0;
+  wrap.querySelectorAll('.slot').forEach(el => {
+    const t = el.id.slice(5).replace('-', ':');
+    if (!slotIsPast(t)) return;
+    if (sel.time === t) {                 // выбранный слот успел пройти
+      sel.time = null;
+      document.getElementById('btn4').disabled = true;
+    }
+    el.remove();
+    removed++;
+  });
+  if (!removed) return;
+  wrap.querySelectorAll('.slot-group').forEach(g => {
+    if (!g.querySelector('.slot')) g.remove();
+  });
+  const left = wrap.querySelectorAll('.slot').length;
+  const cnt = document.getElementById('slots-count');
+  if (cnt) cnt.textContent = left ? `${T.free}: ${left}` : '';
+  if (!left) wrap.innerHTML = '<div class="slot-none">' + T.noSlots + '</div>';
 }
 
 function selectSlot(t) {
@@ -367,18 +846,27 @@ function selectSlot(t) {
 
 /* ─── Step 5: Summary + form fill ─── */
 function buildSummary() {
-  const total = sel.st.price * sel.qty;
+  const base  = sel.st.price * sel.qty;
+  const pct   = discForSelected();
+  const total = base - Math.floor(base * pct / 100);
   const mins  = sel.st.duration * sel.qty;
   const dateDisp = sel.date
     ? new Date(sel.date + 'T12:00:00').toLocaleDateString(LOCALE, {day:'numeric', month:'long', weekday:'short'})
     : '';
+  const discRow = pct
+    ? `<div class="summary-row disc"><span>${T.discount}</span><span>−${pct}% · −${(base-total).toLocaleString()} ${CUR}</span></div>`
+    : '';
+  const payVal = pct
+    ? `<span class="price-was">${base.toLocaleString()}</span>${total.toLocaleString()} ${CUR}`
+    : `${total.toLocaleString()} ${CUR}`;
   document.getElementById('summary').innerHTML = `
-    <div class="summary-row"><span>🏎️ ${T.type}</span><span>${sel.mtypeLabel}</span></div>
-    <div class="summary-row"><span>⏱ ${T.session}</span><span>${sel.st.duration} ${T.min} · ${sel.st.price.toLocaleString()} ${CUR}</span></div>
-    <div class="summary-row"><span>🔁 ${T.runs}</span><span>${sel.qty}</span></div>
-    <div class="summary-row"><span>📅 ${T.dateTime}</span><span>${dateDisp}, ${sel.time}</span></div>
-    <div class="summary-row"><span>⏳ ${T.totalDuration}</span><span>${mins} ${T.min}</span></div>
-    <div class="summary-row"><span>💰 ${T.toPay}</span><span>${total.toLocaleString()} ${CUR}</span></div>
+    <div class="summary-row"><span>${T.type}</span><span>${sel.mtypeLabel}</span></div>
+    <div class="summary-row"><span>${T.session}</span><span>${sel.st.duration} ${T.min} · ${sel.st.price.toLocaleString()} ${CUR}</span></div>
+    <div class="summary-row"><span>${T.runs}</span><span>${sel.qty}</span></div>
+    <div class="summary-row"><span>${T.dateTime}</span><span>${dateDisp}, ${sel.time}</span></div>
+    <div class="summary-row"><span>${T.totalDuration}</span><span>${mins} ${T.min}</span></div>
+    ${discRow}
+    <div class="summary-row"><span>${T.toPay}</span><span>${payVal}</span></div>
   `;
   document.getElementById('f-mtype').value = sel.mtype;
   document.getElementById('f-stid').value  = sel.st.id;
@@ -396,7 +884,7 @@ function prepareAndValidate(e) {
   if (inp.value && inp.value !== '+996 ' && local.length !== 9) {
     e.preventDefault();
     err.style.display = 'block';
-    inp.style.borderColor = '#f97316';
+    inp.style.borderColor = '#dc2626';
     inp.focus();
     return false;
   }
@@ -415,18 +903,24 @@ function goStep(n) {
   document.getElementById('panel-' + n).classList.add('active');
   window.scrollTo(0, 0);
   if (n === 2) buildSessions();
-  if (n === 3) { document.getElementById('qty-display').textContent = sel.qty; updateQtyTotal(); }
+  if (n === 3) {
+    document.getElementById('qty-display').textContent = sel.qty;
+    updateQtyTotal();
+    resetWheels();   // панель только что стала видимой — размеры контейнера уже известны
+  }
+  if (n === 4) {
+    buildDays();
+    // после смены типа/сессии дата сбрасывается — показываем чистый шаг
+    if (sel.date) setDate(sel.date); else resetDateStep();
+  }
   if (n === 5) buildSummary();
 }
 
 /* ─── Date picker ─── */
-const todayStr = new Date().toISOString().split('T')[0];
+const todayStr = ymd(new Date());
 document.getElementById('date-input').min = todayStr;
 document.getElementById('date-input').addEventListener('change', function () {
-  sel.date = this.value;
-  sel.time = null;
-  document.getElementById('btn4').disabled = true;
-  if (sel.date && sel.mtype && sel.st) loadSlots(sel.date);
+  setDate(this.value);
 });
 
 /* ─── Phone mask ─── */
@@ -461,6 +955,17 @@ document.getElementById('date-input').addEventListener('change', function () {
   });
   inp.addEventListener('blur', function () { if (inp.value === PREFIX) inp.value = ''; });
 })();
+
+/* Пока открыт шаг «Дата и время», раз в 30 секунд убираем ушедшее время,
+   и дополнительно сразу при возврате на вкладку. */
+setInterval(() => {
+  if (document.getElementById('panel-4')?.classList.contains('active')) prunePastSlots();
+}, 30000);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && document.getElementById('panel-4')?.classList.contains('active')) {
+    prunePastSlots();
+  }
+});
 
 buildTypes();
 </script>

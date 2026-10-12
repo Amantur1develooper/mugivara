@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load i18n static i18n_attrs %}
-{% block title %}{% trans "Развлечения" %} — {% trans "Симрейсинг" %}{% endblock %}
+{% block title %}{% trans "Развлечения" %} — {% trans "Картинг" %}{% endblock %}
 {% block cta %}{% endblock %}
 {% block head_extra %}
 <style>
@@ -22,6 +22,7 @@
   .sr-card-cover{height:180px;background:linear-gradient(135deg,#211318,#150e12);display:flex;align-items:center;justify-content:center;font-size:48px;position:relative;overflow:hidden;}
   .sr-card-cover img{width:100%;height:100%;object-fit:cover;opacity:.85;transition:transform .4s;}
   .sr-card:hover .sr-card-cover img{transform:scale(1.05);}
+  .sr-promo{position:absolute;top:12px;left:12px;background:var(--sr-grad);color:#fff;font-family:'Unbounded',sans-serif;font-weight:800;font-size:12px;padding:6px 10px;border-radius:9px;box-shadow:0 4px 14px rgba(255,77,28,.4);}
   .sr-card-body{padding:20px;}
   .sr-card-name{font-family:'Unbounded',sans-serif;font-weight:800;font-size:15px;color:var(--sr-text);margin-bottom:6px;}
   .sr-card-tag{font-size:13px;color:var(--sr-muted);}
@@ -40,7 +41,7 @@
     <div class="sr-hero-grid"></div>
     <a href="/" class="sr-back">← {% trans "Главная" %}</a>
     <div class="sr-hero-ew">WEBORDO · {% trans "РАЗВЛЕЧЕНИЯ" %}</div>
-    <div class="sr-hero-title">🏎️ <span>{% trans "Симрейсинг" %}</span></div>
+    <div class="sr-hero-title">🏎️ <span>{% trans "Картинг" %}</span></div>
     <div class="sr-hero-sub">{% trans "Выберите клуб, забронируйте карт и почувствуйте скорость" %}</div>
   </div>
   {% if venues %}
@@ -49,13 +50,14 @@
     <a href="{% url 'simracing:venue' v.slug %}" class="sr-card">
       <div class="sr-card-cover">
         {% if v.cover %}<img src="{{ v.cover.url }}" alt="{% t v 'name' %}" loading="lazy">{% else %}🏎️{% endif %}
+        {% if v.discount_percent %}<div class="sr-promo">−{{ v.discount_percent }}%{% if v.discount_until %} {% trans "до" context "времени" %} {{ v.discount_until|time:"H:i" }}{% endif %}</div>{% endif %}
       </div>
       <div class="sr-card-body">
         <div class="sr-card-name">{% t v "name" %}</div>
         {% t v "tagline" as vtag %}{% if vtag %}<div class="sr-card-tag">{{ vtag }}</div>{% endif %}
         <div class="sr-card-meta">
           {% if v.address %}<span>📍 {{ v.address|truncatechars:30 }}</span>{% endif %}
-          {% if v.working_hours %}<span>🕐 {{ v.working_hours }}</span>{% endif %}
+          {% if v.open_time and v.close_time %}<span>🕐 {{ v.open_time|time:"H:i" }}–{{ v.close_time|time:"H:i" }}</span>{% elif v.working_hours %}<span>🕐 {{ v.working_hours }}</span>{% endif %}
           <span>🏁 {% blocktrans count n=v.machines.count %}{{ n }} карт{% plural %}{{ n }} карт{% endblocktrans %}</span>
         </div>
         <div class="sr-card-btn">{% trans "Забронировать →" %}</div>

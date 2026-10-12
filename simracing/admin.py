@@ -9,7 +9,10 @@ class SimRacingVenueAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {"fields": ("place_category", "name", "name_en", "slug", "is_active", "sort_order")}),
         ("Слоган и описание", {"fields": ("tagline", "tagline_en", "description", "description_en", "logo", "cover")}),
-        ("Контакты", {"fields": ("address", "phone", "whatsapp", "working_hours")}),
+        ("Контакты", {"fields": ("address", "phone", "whatsapp", "map_url")}),
+        ("Время работы", {"fields": ("open_time", "close_time", "working_hours")}),
+        ("Скидка по времени", {"fields": ("discount_percent", "discount_from",
+                                          "discount_until", "discount_weekdays_only")}),
     )
 
 

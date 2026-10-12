@@ -267,7 +267,7 @@ class PageView(models.Model):
         ("restaurant", "Рестораны / меню"),
         ("barbershop", "Барбершопы"),
         ("karaoke",    "Караоке"),
-        ("simracing",  "Симрейсинг"),
+        ("simracing",  "Картинг"),
         ("printshop",  "Полиграфия"),
         ("realty",     "Недвижимость"),
         ("agency",     "Агентства"),

@@ -28,32 +28,60 @@ def _tg_notify(venue, text):
 
 
 def _parse_working_hours(working_hours_str):
-    """Parse '10:00 - 22:00' → (time(10,0), time(22,0)) or None."""
+    """Разбор текстовой подписи часов работы — только для старых записей,
+    у которых ещё не заполнены open_time/close_time.
+    Понимает «10:00-22:00», «10:00 — 22:00», «с 10:00 до 22:00», «10-22»."""
     if not working_hours_str:
         return None, None
     import re
-    m = re.search(r'(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})', working_hours_str)
-    if not m:
+    t = working_hours_str.lower().replace('—', '-').replace('–', '-')
+    m = re.search(r'(\d{1,2})[:.](\d{2})\s*(?:-|до)\s*(\d{1,2})[:.](\d{2})', t)
+    if m:
+        h1, m1, h2, m2 = (int(x) for x in m.groups())
+    else:
+        m = re.search(r'(?:с\s*)?(\d{1,2})\s*(?:-|до)\s*(\d{1,2})(?!\d|[:.])', t)
+        if not m:
+            return None, None
+        h1, m1, h2, m2 = int(m.group(1)), 0, int(m.group(2)), 0
+    if not (0 <= h1 <= 23 and 0 <= h2 <= 23 and 0 <= m1 <= 59 and 0 <= m2 <= 59):
         return None, None
-    return time(int(m.group(1)), int(m.group(2))), time(int(m.group(3)), int(m.group(4)))
+    return time(h1, m1), time(h2, m2)
 
 
-def _generate_slots(open_t, close_t, duration_total, appt_date, booked_intervals):
-    """Generate 30-min interval slots between open/close, filtering booked + past."""
+def _venue_hours(v):
+    """Часы работы площадки. Приоритет — у структурированных полей open_time/close_time;
+    текстовая подпись разбирается только как подстраховка для старых записей."""
+    if v.open_time and v.close_time:
+        return v.open_time, v.close_time
+    return _parse_working_hours(v.working_hours)
+
+
+def _generate_slots(open_t, close_t, duration_total, appt_date, booked_intervals,
+                    step_minutes=15):
+    """Слоты строго внутри часов работы, без прошедших и занятых.
+    step_minutes — шаг сетки времени: по умолчанию равен длительности одного
+    заезда, чтобы заезды шли один за другим без дыр и наложений.
+    Если часы работы не заданы — слотов нет (бронировать на закрытое время нельзя)."""
     slots = []
     if not open_t or not close_t:
-        # fallback: 10:00–22:00
-        open_t, close_t = time(10, 0), time(22, 0)
+        return slots
+    step = timedelta(minutes=max(5, int(step_minutes or 15)))
 
     cursor = datetime.combine(appt_date, open_t)
     end_boundary = datetime.combine(appt_date, close_t)
-    now_dt = datetime.now()
+    # Работа после полуночи (например 14:00–02:00): ограничиваемся выбранными сутками.
+    # Запись хранится как «дата + время», поэтому слот в 01:00 было бы непонятно,
+    # к какой ночи относить. Лучше предложить меньше, чем записать на закрытое время.
+    if end_boundary <= cursor:
+        end_boundary = datetime.combine(appt_date, time(0, 0)) + timedelta(days=1)
+    # «сейчас» по часовому поясу заведения, а не по часам сервера
+    now_dt = timezone.localtime(timezone.now()).replace(tzinfo=None)
 
     while cursor + timedelta(minutes=duration_total) <= end_boundary:
         slot_end = cursor + timedelta(minutes=duration_total)
-        # skip past slots (with 15-min buffer for today)
-        if appt_date == date.today() and cursor <= now_dt + timedelta(minutes=15):
-            cursor += timedelta(minutes=30)
+        # прошедшие слоты не показываем (с запасом 15 минут на сегодня)
+        if appt_date == now_dt.date() and cursor <= now_dt + timedelta(minutes=15):
+            cursor += step
             continue
         # check conflicts with existing appointments
         conflict = False
@@ -63,7 +91,7 @@ def _generate_slots(open_t, close_t, duration_total, appt_date, booked_intervals
                 break
         if not conflict:
             slots.append(cursor.strftime("%H:%M"))
-        cursor += timedelta(minutes=30)
+        cursor += step
 
     return slots
 
@@ -123,12 +151,22 @@ def venue(request, slug):
             "session_types_json": json.dumps(st_by_type.get(m.type, [])),
         })
 
+    # Кнопки в шапке: WhatsApp и карта.
+    # Если у площадки не заполнен whatsapp — берём телефон (как в book_appt),
+    # если не заполнена ссылка на карту — ищем по адресу.
+    wa_number = "".join(ch for ch in (v.whatsapp or v.phone or "") if ch.isdigit())
+    map_url = v.map_url
+    if not map_url and v.address:
+        map_url = "https://www.google.com/maps/search/?api=1&query=" + quote(v.address)
+
     return render(request, "simracing/venue.html", {
         "venue": v,
         "machines_data": machines_data,
         "st_by_type_json": json.dumps(st_by_type, ensure_ascii=False),
         "machine_types_json": json.dumps(machine_types_available, ensure_ascii=False),
         "slots_url": f"/simracing/{slug}/slots.json",
+        "wa_number": wa_number,
+        "map_url": map_url,
     })
 
 
@@ -164,12 +202,15 @@ def slots_json(request, slug):
 
     duration_total = duration_per_session * quantity
 
-    # Booked intervals for that date + machine_type
+    # Booked intervals for that date + machine_type.
+    # Время занимают ТОЛЬКО подтверждённые записи: пока владелец не подтвердил
+    # заявку в кабинете, это ещё не бронь — время остаётся свободным в публичной
+    # форме и не показывается занятым другим клиентам.
     existing = SimRacingAppointment.objects.filter(
         venue=v,
         machine_type=machine_type,
         appt_date=appt_date,
-        status__in=["new", "confirmed"],
+        status=SimRacingAppointment.Status.CONFIRMED,
     )
     booked_intervals = []
     for appt in existing:
@@ -177,9 +218,24 @@ def slots_json(request, slug):
         b_end = b_start + timedelta(minutes=appt.duration_minutes)
         booked_intervals.append((b_start, b_end))
 
-    open_t, close_t = _parse_working_hours(v.working_hours)
-    slots = _generate_slots(open_t, close_t, duration_total, appt_date, booked_intervals)
-    return JsonResponse({"slots": slots})
+    open_t, close_t = _venue_hours(v)
+    if not open_t or not close_t:
+        # часы работы не настроены — бронировать «вслепую» нельзя
+        return JsonResponse({"slots": [], "reason": "no_hours"})
+    slots = _generate_slots(open_t, close_t, duration_total, appt_date,
+                            booked_intervals, step_minutes=duration_per_session)
+
+    # Какие из слотов попадают под скидку — считаем здесь, чтобы правило
+    # жило в одном месте и не разъезжалось с серверным расчётом цены.
+    discounted = [
+        s for s in slots
+        if v.discount_for(appt_date, datetime.strptime(s, "%H:%M").time())
+    ]
+    return JsonResponse({
+        "slots": slots,
+        "discounted": discounted,
+        "discount_percent": v.discount_percent,
+    })
 
 
 @require_POST
@@ -203,8 +259,42 @@ def book_appt(request, slug):
     except Exception:
         return redirect("simracing:venue", slug=slug)
 
-    total_price = st.price * quantity
+    base_price = st.price * quantity
     duration_total = st.duration_minutes * quantity
+
+    # Скидку считаем на сервере по времени заезда — то, что прислал браузер,
+    # на цену не влияет.
+    discount_percent = v.discount_for(appt_date, appt_time)
+    total_price = base_price - (base_price * discount_percent // 100)
+
+    # ── Проверка на сервере: записаться можно только на рабочее время ──
+    # JS показывает лишь допустимые слоты, но форму можно отправить и напрямую
+    # (или со страницы, открытой час назад), поэтому проверяем здесь ещё раз.
+    open_t, close_t = _venue_hours(v)
+    if not open_t or not close_t:
+        return redirect("simracing:venue", slug=slug)
+
+    start_dt = datetime.combine(appt_date, appt_time)
+    end_dt = start_dt + timedelta(minutes=duration_total)
+    open_dt = datetime.combine(appt_date, open_t)
+    close_dt = datetime.combine(appt_date, close_t)
+    if close_dt <= open_dt:                       # работа после полуночи
+        close_dt = datetime.combine(appt_date, time(0, 0)) + timedelta(days=1)
+    now_local = timezone.localtime(timezone.now()).replace(tzinfo=None)
+
+    if start_dt < open_dt or end_dt > close_dt or start_dt < now_local:
+        return redirect("simracing:venue", slug=slug)
+
+    # время, уже занятое подтверждённой бронью, не принимаем
+    busy = SimRacingAppointment.objects.filter(
+        venue=v, machine_type=machine_type, appt_date=appt_date,
+        status=SimRacingAppointment.Status.CONFIRMED,
+    )
+    for b in busy:
+        b_start = datetime.combine(appt_date, b.appt_time)
+        b_end = b_start + timedelta(minutes=b.duration_minutes)
+        if start_dt < b_end and end_dt > b_start:
+            return redirect("simracing:venue", slug=slug)
 
     appt = SimRacingAppointment.objects.create(
         venue=v,
@@ -216,6 +306,7 @@ def book_appt(request, slug):
         customer_name=customer_name or "Гость",
         customer_phone=customer_phone,
         total_price=total_price,
+        discount_percent=discount_percent,
         duration_minutes=duration_total,
         status=SimRacingAppointment.Status.NEW,
     )
@@ -223,11 +314,16 @@ def book_appt(request, slug):
     weekday_ru = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"]
     date_fmt = appt_date.strftime("%d.%m.%Y") + f" ({weekday_ru[appt_date.weekday()]})"
     type_label = dict(Machine.Type.choices).get(machine_type, machine_type)
+    disc_line = (
+        f"Скидка: −{discount_percent}% (без скидки {int(base_price)} сом)\n"
+        if discount_percent else ""
+    )
     _tg_notify(
         v,
         f"🏎 <b>Новая запись #{appt.id}</b>\n"
         f"Тип: {type_label}\n"
         f"Сессия: {st.duration_minutes} мин × {quantity} заезд(а) = {duration_total} мин\n"
+        f"{disc_line}"
         f"Итого: {int(total_price)} сом\n"
         f"Дата: {date_fmt} в {time_str}\n"
         f"Клиент: {customer_name or 'Гость'}\n"
@@ -237,15 +333,21 @@ def book_appt(request, slug):
     # Redirect to WhatsApp with pre-filled text
     wa_number = "".join(ch for ch in (v.whatsapp or v.phone or "") if ch.isdigit())
     if wa_number:
+        # Текст уходит от клиента владельцу площадки, поэтому написан от первого
+        # лица и сразу просит реквизиты: бронь закрепляется только после предоплаты.
         wa_text = (
-            f"🏎️ Бронирование симрейсинг\n\n"
+            f"🏎️ Картинг — заявка на бронь №{appt.id}\n\n"
             f"Тип: {type_label}\n"
             f"Сессия: {st.duration_minutes} мин × {quantity} заезд(а) = {duration_total} мин\n"
-            f"Итого: {int(total_price)} сом\n"
-            f"Дата: {date_fmt} в {time_str}\n"
+            f"Дата: {date_fmt}\n"
+            f"Время: {time_str}\n"
+            f"{disc_line}"
+            f"К оплате: {int(total_price)} сом\n\n"
             f"Клиент: {customer_name or 'Гость'}\n"
             f"Телефон: {customer_phone or '—'}\n\n"
-            f"📋 Запись #{appt.id}"
+            f"Подскажите, пожалуйста, куда внести предоплату — "
+            f"бронь подтверждается после неё, и это время закрепляется за мной. "
+            f"Жду реквизиты 🙏"
         )
         return redirect(f"https://wa.me/{wa_number}?text={quote(wa_text)}")
 

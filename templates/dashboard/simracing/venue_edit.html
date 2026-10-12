@@ -35,9 +35,53 @@
         <input name="address" class="db-input" value="{{ venue.address }}">
       </div>
       <div>
-        <label class="db-label">Часы работы</label>
-        <input name="working_hours" class="db-input" value="{{ venue.working_hours }}" placeholder="10:00 – 22:00">
+        <label class="db-label">Часы работы — подпись на сайте</label>
+        <input name="working_hours" class="db-input" value="{{ venue.working_hours }}" placeholder="Пн–Сб, вс выходной">
       </div>
+    </div>
+
+    <div style="background:rgba(255,77,28,.05);border:1.5px solid rgba(255,77,28,.2);border-radius:14px;padding:16px;margin-bottom:16px;">
+      <label class="db-label" style="margin-bottom:4px;">🕐 Время работы для брони</label>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+        Клиенты смогут записаться только на это время. Если не заполнить — запись будет недоступна.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label class="db-label" style="font-size:10px;">Открытие</label>
+          <input type="time" name="open_time" class="db-input" value="{{ venue.open_time|time:'H:i' }}">
+        </div>
+        <div>
+          <label class="db-label" style="font-size:10px;">Закрытие</label>
+          <input type="time" name="close_time" class="db-input" value="{{ venue.close_time|time:'H:i' }}">
+        </div>
+      </div>
+    </div>
+
+    <div style="background:rgba(255,138,0,.06);border:1.5px solid rgba(255,138,0,.25);border-radius:14px;padding:16px;margin-bottom:16px;">
+      <label class="db-label" style="margin-bottom:4px;">🔥 Скидка по времени (акция)</label>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+        Скидка применяется к заездам, которые <b>начинаются</b> в указанном интервале.
+        Видна клиентам на странице, на слотах времени и в итоговой сумме. 0% — акция выключена.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+        <div>
+          <label class="db-label" style="font-size:10px;">Скидка, %</label>
+          <input type="number" name="discount_percent" class="db-input" min="0" max="90"
+                 value="{{ venue.discount_percent }}">
+        </div>
+        <div>
+          <label class="db-label" style="font-size:10px;">С (пусто = с открытия)</label>
+          <input type="time" name="discount_from" class="db-input" value="{{ venue.discount_from|time:'H:i' }}">
+        </div>
+        <div>
+          <label class="db-label" style="font-size:10px;">До (напр. 17:00)</label>
+          <input type="time" name="discount_until" class="db-input" value="{{ venue.discount_until|time:'H:i' }}">
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:var(--text2);cursor:pointer;">
+        <input type="checkbox" name="discount_weekdays_only" {% if venue.discount_weekdays_only %}checked{% endif %}>
+        Только по будням (Пн–Пт)
+      </label>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">

@@ -5208,3 +5208,111 @@ msgstr "Sport Euro karts — more speed"
 #: templates/simracing/venue.html:235
 msgid "Полноценный автосимулятор на большом экране"
 msgstr "A full driving simulator on a big screen"
+
+#: templates/base.html:12 templates/public_site/home.html:4
+msgid "Глобальная цифровая экосистема"
+msgstr "Global digital ecosystem"
+
+#: templates/public_site/home.html:545
+msgid "🌍 Глобальная цифровая экосистема"
+msgstr "🌍 Global Digital Ecosystem"
+
+#: templates/base.html:577
+msgid "Глобальная цифровая экосистема — рестораны, магазины и услуги в одном месте"
+msgstr "Global digital ecosystem — restaurants, shops and services in one place"
+
+#: templates/base.html:620
+msgid "Работаем по всему миру"
+msgstr "Worldwide"
+
+#: templates/public_site/home.html:925
+msgid "Новые и подержанные авто от дилеров"
+msgstr "New and used cars from dealers"
+
+#: templates/base.html:594 templates/public_site/home.html:974
+#: templates/simracing/list.html:3 templates/simracing/list.html:43
+msgid "Картинг"
+msgstr "Karting"
+
+#: templates/base.html:463
+msgid "Караоке, картинг"
+msgstr "Karaoke, karting"
+
+#: templates/public_site/home.html:975
+msgid "Заезды и симуляторы"
+msgstr "Races and simulators"
+
+#: templates/public_site/about.html:123
+msgid "Караоке, картинг, отели, юристы, агентства, эко, аптеки и другое."
+msgstr "Karaoke, karting, hotels, lawyers, agencies, eco, pharmacies and more."
+
+
+#: templates/simracing/appt_success.html:7
+msgid "Заявка принята"
+msgstr "Request received"
+
+#: templates/simracing/appt_success.html:36
+#, python-format
+msgid "Заявка #%(id)s — свяжемся с вами, чтобы подтвердить время"
+msgstr "Request #%(id)s — we'll contact you to confirm the time"
+
+#: templates/simracing/appt_success.html:62
+msgid "уточняется"
+msgstr "to be confirmed"
+
+#: templates/simracing/venue.html
+msgid "Сегодня"
+msgstr "Today"
+
+#: templates/simracing/venue.html
+msgid "Завтра"
+msgstr "Tomorrow"
+
+#: templates/simracing/venue.html
+msgid "Другая дата"
+msgstr "Another date"
+
+#: templates/simracing/venue.html
+msgid "Утро"
+msgstr "Morning"
+
+#: templates/simracing/venue.html
+msgid "Вечер"
+msgstr "Evening"
+
+#: templates/simracing/venue.html
+msgctxt "время суток"
+msgid "День"
+msgstr "Afternoon"
+
+#: templates/simracing/venue.html
+msgid "по будням"
+msgstr "on weekdays"
+
+#: templates/simracing/list.html
+msgctxt "времени"
+msgid "до"
+msgstr "until"
+
+#: templates/simracing/venue.html
+msgid "Скидка на все заезды"
+msgstr "Discount on all races"
+
+#: templates/simracing/venue.html
+#, python-format
+msgid "Скидка на все заезды до %(t)s"
+msgstr "Discount on all races before %(t)s"
+
+#: templates/simracing/venue.html
+#, python-format
+msgid "−%(p)s%% на все заезды"
+msgstr "−%(p)s%% on all races"
+
+#: templates/simracing/venue.html
+#, python-format
+msgid "−%(p)s%% на заезды, которые начинаются до %(t)s"
+msgstr "−%(p)s%% on races starting before %(t)s"
+
+#: templates/simracing/appt_success.html
+msgid "Бронь подтверждается после предоплаты — напишите нам, и мы пришлём реквизиты. До этого время не закреплено."
+msgstr "Your booking is confirmed after a deposit — message us and we'll send the payment details. Until then the time is not reserved."

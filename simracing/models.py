@@ -46,17 +46,60 @@ class SimRacingVenue(models.Model):
     phone        = models.CharField("Телефон", max_length=50, blank=True, default="")
     whatsapp     = models.CharField("WhatsApp", max_length=30, blank=True, default="",
                                     help_text="996700123456 — без + и пробелов")
-    working_hours = models.CharField("Часы работы", max_length=200, blank=True, default="")
+    working_hours = models.CharField(
+        "Часы работы (подпись)", max_length=200, blank=True, default="",
+        help_text="Необязательно, только для показа на сайте — например «Пн–Сб, вс выходной». "
+                  "На доступное для брони время НЕ влияет.",
+    )
+    open_time = models.TimeField(
+        "Открытие", null=True, blank=True,
+        help_text="С этого времени можно бронировать заезды.",
+    )
+    close_time = models.TimeField(
+        "Закрытие", null=True, blank=True,
+        help_text="До этого времени можно бронировать. Если закрытие раньше открытия "
+                  "(например 14:00–02:00) — считается, что работаете после полуночи.",
+    )
     map_url      = models.URLField("Ссылка на карту", blank=True, default="")
     tg_chat_id   = models.CharField("TG Chat ID", max_length=50, blank=True, default="")
     tg_thread_id = models.PositiveIntegerField("TG Thread ID", null=True, blank=True)
+    # ── Скидка по времени («счастливые часы») ──────────────────────────────
+    discount_percent = models.PositiveSmallIntegerField(
+        "Скидка, %", default=0,
+        help_text="0 — скидки нет. Например 20 — минус 20% на все сессии в указанные часы.",
+    )
+    discount_from = models.TimeField(
+        "Скидка с", null=True, blank=True,
+        help_text="Пусто — с момента открытия.",
+    )
+    discount_until = models.TimeField(
+        "Скидка до", null=True, blank=True,
+        help_text="Например 17:00 — скидка действует на заезды, которые начинаются раньше этого времени.",
+    )
+    discount_weekdays_only = models.BooleanField(
+        "Только по будням", default=True,
+        help_text="Пн–Пт. Снимите галочку, чтобы скидка работала и в выходные.",
+    )
+
     is_active    = models.BooleanField("Активен", default=True)
     sort_order   = models.PositiveSmallIntegerField("Порядок", default=0)
     created_at   = models.DateTimeField(auto_now_add=True)
 
+    def discount_for(self, on_date, at_time):
+        """Процент скидки для конкретных даты и времени начала заезда (0 — нет)."""
+        if not self.discount_percent:
+            return 0
+        if self.discount_weekdays_only and on_date.weekday() >= 5:
+            return 0
+        if self.discount_from and at_time < self.discount_from:
+            return 0
+        if self.discount_until and at_time >= self.discount_until:
+            return 0
+        return self.discount_percent
+
     class Meta:
-        verbose_name = "Симрейсинг-площадка"
-        verbose_name_plural = "Симрейсинг-площадки"
+        verbose_name = "Картинг-площадка"
+        verbose_name_plural = "Картинг-площадки"
         ordering = ["sort_order", "name"]
 
     def __str__(self):
@@ -83,8 +126,8 @@ class SimRacingMembership(models.Model):
                    "завершённых сессий, остальные скрыты целиком.")
 
     class Meta:
-        verbose_name = "Доступ к симрейсингу"
-        verbose_name_plural = "Доступы к симрейсингу"
+        verbose_name = "Доступ к картингу"
+        verbose_name_plural = "Доступы к картингу"
         unique_together = ("user", "venue")
 
     def __str__(self):
@@ -258,6 +301,10 @@ class SimRacingAppointment(models.Model):
     customer_name  = models.CharField("Имя клиента", max_length=200, blank=True, default="")
     customer_phone = models.CharField("Телефон", max_length=80, blank=True, default="")
     total_price  = models.DecimalField("Итого (сом)", max_digits=10, decimal_places=0, default=0)
+    discount_percent = models.PositiveSmallIntegerField(
+        "Скидка, %", default=0,
+        help_text="Скидка по времени, зафиксированная на момент записи. Итог уже с её учётом.",
+    )
     duration_minutes = models.PositiveIntegerField("Длительность (мин)", default=0)
     status       = models.CharField("Статус", max_length=20, choices=Status.choices, default=Status.NEW)
     notes        = models.TextField("Заметки", blank=True, default="")
@@ -291,8 +338,8 @@ class SimRacingPrintConfig(models.Model):
     codepage        = models.CharField("Кодовая страница", max_length=20, default="cp866")
 
     class Meta:
-        verbose_name = "Настройки печати (симрейсинг)"
-        verbose_name_plural = "Настройки печати (симрейсинг)"
+        verbose_name = "Настройки печати (картинг)"
+        verbose_name_plural = "Настройки печати (картинг)"
 
     def save(self, *args, **kwargs):
         if not self.token:
@@ -331,8 +378,8 @@ class SimRacingPrintJob(models.Model):
 
     class Meta:
         ordering = ["created_at"]
-        verbose_name = "Задание печати (симрейсинг)"
-        verbose_name_plural = "Задания печати (симрейсинг)"
+        verbose_name = "Задание печати (картинг)"
+        verbose_name_plural = "Задания печати (картинг)"
 
     def __str__(self):
         return f"SRJob #{self.id} [{self.status}]"

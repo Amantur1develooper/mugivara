@@ -937,7 +937,7 @@ def analytics(request):
         {"icon": "🏨",  "label": "Отели",      "total_period": hotel_tp,  "total_all": hotel_ta,  "rows_all": hotel_rows},
         {"icon": "✂️",  "label": "Барбершопы", "total_period": barber_tp, "total_all": barber_ta, "rows_all": barber_rows},
         {"icon": "🎤",  "label": "Караоке",    "total_period": krk_tp,    "total_all": krk_ta,    "rows_all": krk_rows},
-        {"icon": "🏎️",  "label": "Симрейсинг", "total_period": sim_tp,    "total_all": sim_ta,    "rows_all": sim_rows},
+        {"icon": "🏎️",  "label": "Картинг", "total_period": sim_tp,    "total_all": sim_ta,    "rows_all": sim_rows},
         {"icon": "🖨️",  "label": "Полиграфия", "total_period": print_tp,  "total_all": print_ta,  "rows_all": print_rows},
     ]
 
@@ -1006,7 +1006,7 @@ def clients(request):
         ("hotel", "Отель",      "🏨",  HotelBooking,        "branch__hotel_id",      "customer_name", "customer_phone", "total",          "branch__hotel__name_ru"),
         ("barber","Барбершоп",  "✂️",  BarberAppointment,   "barbershop_id",         "customer_name", "customer_phone", "price_snapshot", "barbershop__name"),
         ("krk",   "Караоке",    "🎤",  KaraokeBooking,      "venue_id",              "customer_name", "customer_phone", None,             "venue__name"),
-        ("sim",   "Симрейсинг", "🏎️",  SimRacingAppointment,"venue_id",              "customer_name", "customer_phone", "total_price",    "venue__name"),
+        ("sim",   "Картинг", "🏎️",  SimRacingAppointment,"venue_id",              "customer_name", "customer_phone", "total_price",    "venue__name"),
         ("print", "Полиграфия", "🖨️",  PrintOrder,          "branch__center_id",     "name",          "phone",          "total",          "branch__center__name_ru"),
     ]
 

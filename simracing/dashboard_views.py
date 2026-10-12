@@ -124,6 +124,24 @@ def sr_venue_edit(request, venue_id):
             setattr(v, f, request.POST.get(f, "").strip())
         tgt = request.POST.get("tg_thread_id", "").strip()
         v.tg_thread_id = int(tgt) if tgt.isdigit() else None
+        # Время работы для брони и окно скидки: пустое поле = не задано.
+        # parse_time понимает и «10:00», и «10:00:00» — разные браузеры присылают
+        # по-разному, а раньше вариант с секундами молча терялся.
+        from django.utils.dateparse import parse_time
+        for field in ("open_time", "close_time", "discount_from", "discount_until"):
+            raw = (request.POST.get(field) or "").strip()
+            if not raw:
+                setattr(v, field, None)
+                continue
+            parsed = parse_time(raw)
+            if parsed is not None:
+                setattr(v, field, parsed)
+        raw_pct = (request.POST.get("discount_percent") or "").strip()
+        if raw_pct.isdigit():
+            v.discount_percent = min(int(raw_pct), 90)
+        elif not raw_pct:
+            v.discount_percent = 0
+        v.discount_weekdays_only = request.POST.get("discount_weekdays_only") == "on"
         if request.FILES.get("logo"):
             v.logo = request.FILES["logo"]
         if request.FILES.get("cover"):
