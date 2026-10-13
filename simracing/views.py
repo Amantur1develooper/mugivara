@@ -57,10 +57,11 @@ def _venue_hours(v):
 
 
 def _generate_slots(open_t, close_t, duration_total, appt_date, booked_intervals,
-                    step_minutes=15):
+                    step_minutes=30):
     """Слоты строго внутри часов работы, без прошедших и занятых.
-    step_minutes — шаг сетки времени: по умолчанию равен длительности одного
-    заезда, чтобы заезды шли один за другим без дыр и наложений.
+    step_minutes — шаг сетки времени, по умолчанию 30 минут: время предлагается
+    на :00 и :30. Длина самой брони берётся из duration_total, поэтому заезд
+    может быть и короче шага.
     Если часы работы не заданы — слотов нет (бронировать на закрытое время нельзя)."""
     slots = []
     if not open_t or not close_t:
@@ -222,8 +223,7 @@ def slots_json(request, slug):
     if not open_t or not close_t:
         # часы работы не настроены — бронировать «вслепую» нельзя
         return JsonResponse({"slots": [], "reason": "no_hours"})
-    slots = _generate_slots(open_t, close_t, duration_total, appt_date,
-                            booked_intervals, step_minutes=duration_per_session)
+    slots = _generate_slots(open_t, close_t, duration_total, appt_date, booked_intervals)
 
     # Какие из слотов попадают под скидку — считаем здесь, чтобы правило
     # жило в одном месте и не разъезжалось с серверным расчётом цены.
