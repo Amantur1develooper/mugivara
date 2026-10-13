@@ -57,6 +57,16 @@
       </div>
     </div>
 
+    <div style="background:rgba(0,184,150,.06);border:1.5px solid rgba(0,184,150,.25);border-radius:14px;padding:16px;margin-bottom:16px;">
+      <label class="db-label" style="margin-bottom:4px;">🏎️ Сколько машин можно забронировать на одно время</label>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">
+        Лимит на каждую категорию отдельно. Например 7 — значит на 15:00 примем до 7 броней
+        стандартных картов; восьмая бронь на это время уже не пройдёт, слот исчезнет из списка.
+      </div>
+      <input type="number" name="max_parallel_bookings" class="db-input" min="1" max="99"
+             style="max-width:140px;" value="{{ venue.max_parallel_bookings }}">
+    </div>
+
     <div style="background:rgba(255,138,0,.06);border:1.5px solid rgba(255,138,0,.25);border-radius:14px;padding:16px;margin-bottom:16px;">
       <label class="db-label" style="margin-bottom:4px;">🔥 Скидка по времени (акция)</label>
       <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">

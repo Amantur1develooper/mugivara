@@ -136,6 +136,9 @@ def sr_venue_edit(request, venue_id):
             parsed = parse_time(raw)
             if parsed is not None:
                 setattr(v, field, parsed)
+        raw_cap = (request.POST.get("max_parallel_bookings") or "").strip()
+        if raw_cap.isdigit() and int(raw_cap) >= 1:
+            v.max_parallel_bookings = min(int(raw_cap), 99)
         raw_pct = (request.POST.get("discount_percent") or "").strip()
         if raw_pct.isdigit():
             v.discount_percent = min(int(raw_pct), 90)

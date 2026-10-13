@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import reports
 from hotels import dashboard_views as hv
 from shops import dashboard_views as sv
 from legal import dashboard_views as lv
@@ -71,6 +72,10 @@ urlpatterns = [
     path("orders/",    views.orders_analytics, name="orders"),
     path("clients/",   views.clients,          name="clients"),
     path("survey/",    views.survey_results,   name="survey_results"),
+    path("reports/",        reports.reports,        name="reports"),
+    path("reports/export/", reports.reports_export, name="reports_export"),
+    path("branch/<int:branch_id>/report/",        reports.branch_report,        name="branch_report"),
+    path("branch/<int:branch_id>/report/export/", reports.branch_report_export, name="branch_report_export"),
 
     # ── POS (Касса) ─────────────────────────────────────────────────────────
     path("pos/<int:branch_id>/",              views.pos,               name="pos"),

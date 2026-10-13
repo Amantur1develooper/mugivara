@@ -108,9 +108,15 @@ def _order_text(order: Order, title_override: str = None) -> str:
     if getattr(order, "customer_phone", ""):
         lines.append(f"📞 Телефон: {order.customer_phone}")
 
-    # адрес/стол (всегда показываем — там может быть номер стола)
+    # Адрес / стол / комментарий к самовывозу — метка зависит от типа заказа,
+    # иначе у самовывоза получалось бессмысленное «Стол/место».
     if getattr(order, "delivery_address", ""):
-        label = "📍 Адрес" if order.type == Order.Type.DELIVERY else "🪑 Стол/место"
+        if order.type == Order.Type.DELIVERY:
+            label = "📍 Адрес"
+        elif order.type == Order.Type.PICKUP:
+            label = "🥡 К самовывозу"
+        else:
+            label = "🪑 Стол/место"
         lines.append(f"{label}: {order.delivery_address}")
 
     if getattr(order, "comment", ""):

@@ -56,8 +56,29 @@ def _venue_hours(v):
     return _parse_working_hours(v.working_hours)
 
 
+def _max_concurrent(window_start, window_end, intervals):
+    """Максимум одновременно занятых машин внутри окна [start, end).
+    Считаем именно пик одновременности, а не число пересечений: семь коротких
+    заездов, идущих друг за другом, занимают одну машину, а не семь."""
+    events = []
+    for b_start, b_end in intervals:
+        if b_start < window_end and b_end > window_start:
+            events.append((max(b_start, window_start), 1))
+            events.append((min(b_end, window_end), -1))
+    if not events:
+        return 0
+    # при совпадении времени сначала освобождение (-1), потом занятие (+1):
+    # бронь, которая кончается в 14:30, освобождает машину для той, что с 14:30
+    events.sort()
+    current = peak = 0
+    for _, delta in events:
+        current += delta
+        peak = max(peak, current)
+    return peak
+
+
 def _generate_slots(open_t, close_t, duration_total, appt_date, booked_intervals,
-                    step_minutes=30):
+                    step_minutes=30, capacity=1):
     """Слоты строго внутри часов работы, без прошедших и занятых.
     step_minutes — шаг сетки времени, по умолчанию 30 минут: время предлагается
     на :00 и :30. Длина самой брони берётся из duration_total, поэтому заезд
@@ -84,13 +105,8 @@ def _generate_slots(open_t, close_t, duration_total, appt_date, booked_intervals
         if appt_date == now_dt.date() and cursor <= now_dt + timedelta(minutes=15):
             cursor += step
             continue
-        # check conflicts with existing appointments
-        conflict = False
-        for (b_start, b_end) in booked_intervals:
-            if cursor < b_end and slot_end > b_start:
-                conflict = True
-                break
-        if not conflict:
+        # слот доступен, пока в категории есть свободная машина
+        if _max_concurrent(cursor, slot_end, booked_intervals) < max(1, capacity):
             slots.append(cursor.strftime("%H:%M"))
         cursor += step
 
@@ -223,7 +239,8 @@ def slots_json(request, slug):
     if not open_t or not close_t:
         # часы работы не настроены — бронировать «вслепую» нельзя
         return JsonResponse({"slots": [], "reason": "no_hours"})
-    slots = _generate_slots(open_t, close_t, duration_total, appt_date, booked_intervals)
+    slots = _generate_slots(open_t, close_t, duration_total, appt_date, booked_intervals,
+                            capacity=v.max_parallel_bookings)
 
     # Какие из слотов попадают под скидку — считаем здесь, чтобы правило
     # жило в одном месте и не разъезжалось с серверным расчётом цены.
@@ -285,16 +302,19 @@ def book_appt(request, slug):
     if start_dt < open_dt or end_dt > close_dt or start_dt < now_local:
         return redirect("simracing:venue", slug=slug)
 
-    # время, уже занятое подтверждённой бронью, не принимаем
+    # Вместимость категории: принимаем заявку, пока на это время есть свободная
+    # машина. Считается по подтверждённым броням — заявки слот не занимают.
     busy = SimRacingAppointment.objects.filter(
         venue=v, machine_type=machine_type, appt_date=appt_date,
         status=SimRacingAppointment.Status.CONFIRMED,
     )
-    for b in busy:
-        b_start = datetime.combine(appt_date, b.appt_time)
-        b_end = b_start + timedelta(minutes=b.duration_minutes)
-        if start_dt < b_end and end_dt > b_start:
-            return redirect("simracing:venue", slug=slug)
+    busy_intervals = [
+        (datetime.combine(appt_date, b.appt_time),
+         datetime.combine(appt_date, b.appt_time) + timedelta(minutes=b.duration_minutes))
+        for b in busy
+    ]
+    if _max_concurrent(start_dt, end_dt, busy_intervals) >= max(1, v.max_parallel_bookings):
+        return redirect("simracing:venue", slug=slug)
 
     appt = SimRacingAppointment.objects.create(
         venue=v,

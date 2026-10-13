@@ -251,7 +251,7 @@ const T = {
         <span><span data-subtotal>{{ subtotal }}</span> {% cur %}</span>
       </div>
       {% if branch.delivery_enabled %}
-      <div class="cart-totals-row">
+      <div class="cart-totals-row" id="delivery-row">
         <span>{% trans "Доставка" %}</span>
         <span><span data-delivery-fee>{{ delivery_fee }}</span> {% cur %}</span>
       </div>
@@ -280,6 +280,22 @@ const T = {
         {% csrf_token %}
         <input type="hidden" name="promo_code" id="promo-code-hidden">
 
+        {% if branch.delivery_enabled %}
+        <label class="cart-label">{% trans "Как получите заказ" %}</label>
+        <div class="cart-radio-group" id="order-type-group">
+          <label class="cart-radio-option">
+            <input type="radio" name="order_type" value="delivery" checked>
+            <span>🛵 {% trans "Доставка" %}</span>
+          </label>
+          <label class="cart-radio-option">
+            <input type="radio" name="order_type" value="pickup">
+            <span>🏃 {% trans "Самовывоз" %}</span>
+          </label>
+        </div>
+        {% else %}
+        <input type="hidden" name="order_type" value="pickup">
+        {% endif %}
+
         <input name="name" required placeholder="{% trans 'Ваше имя' %}" class="cart-field">
 
         <input name="phone" id="phone" type="tel" inputmode="numeric" autocomplete="tel"
@@ -288,12 +304,14 @@ const T = {
                title="{% trans 'Формат: +996XXXXXXXXX' %}"
                placeholder="+996700123456" class="cart-field">
 
-        <input name="address" required
+        <input name="address" id="address-field" required
+               data-ph-delivery="{% trans 'Адрес доставки' %}"
+               data-ph-pickup="{% trans 'Комментарий к самовывозу (необязательно)' %}"
                placeholder="{% if branch.delivery_enabled %}{% trans 'Адрес доставки' %}{% else %}{% trans 'Номер стола / кабинки' %}{% endif %}"
                class="cart-field">
 
         {% if branch.delivery_enabled %}
-          <div class="min-order-note">{% blocktrans with amt=branch.min_order_amount|som %}Минимальная сумма доставки: {{ amt }}{% endblocktrans %}</div>
+          <div class="min-order-note" id="min-order-note">{% blocktrans with amt=branch.min_order_amount|som %}Минимальная сумма доставки: {{ amt }}{% endblocktrans %}</div>
         {% endif %}
 
         <textarea name="comment" rows="2" placeholder="{% trans 'Комментарий (необязательно)' %}" class="cart-field" style="resize:vertical"></textarea>
@@ -402,6 +420,41 @@ document.addEventListener('change', async e => {
   let qty = parseInt(input.value || '0', 10) || 0;
   await updateRow(rowEl, Math.max(0, qty));
 });
+
+/* ── Доставка / самовывоз ── */
+(function(){
+  const group = document.getElementById('order-type-group');
+  if (!group) return;                 // у филиала нет доставки — выбора нет
+  const delRow  = document.getElementById('delivery-row');
+  const minNote = document.getElementById('min-order-note');
+  const addr    = document.getElementById('address-field');
+  const totalEl = document.querySelector('[data-total]');
+  const feeEl   = document.querySelector('[data-delivery-fee]');
+
+  const num = el => parseFloat(String(el ? el.textContent : '0').replace(/\s/g, '')) || 0;
+  // итог со страницы уже включает доставку — запоминаем оба варианта
+  const totalWithDelivery = num(totalEl);
+  const fee = num(feeEl);
+
+  function apply(isPickup) {
+    if (delRow)  delRow.style.display  = isPickup ? 'none' : '';
+    if (minNote) minNote.style.display = isPickup ? 'none' : '';
+    if (addr) {
+      addr.required = !isPickup;
+      const ph = isPickup ? addr.dataset.phPickup : addr.dataset.phDelivery;
+      if (ph) addr.placeholder = ph;
+      if (isPickup) addr.value = '';
+    }
+    if (totalEl) {
+      const v = isPickup ? Math.max(0, totalWithDelivery - fee) : totalWithDelivery;
+      document.querySelectorAll('[data-total]').forEach(el => el.textContent = v);
+    }
+  }
+
+  group.querySelectorAll('input[name="order_type"]').forEach(r => {
+    r.addEventListener('change', () => apply(r.value === 'pickup' && r.checked));
+  });
+})();
 
 /* ── PROMO ── */
 (function(){

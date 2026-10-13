@@ -11,6 +11,7 @@ class SimRacingVenueAdmin(admin.ModelAdmin):
         ("Слоган и описание", {"fields": ("tagline", "tagline_en", "description", "description_en", "logo", "cover")}),
         ("Контакты", {"fields": ("address", "phone", "whatsapp", "map_url")}),
         ("Время работы", {"fields": ("open_time", "close_time", "working_hours")}),
+        ("Вместимость", {"fields": ("max_parallel_bookings",)}),
         ("Скидка по времени", {"fields": ("discount_percent", "discount_from",
                                           "discount_until", "discount_weekdays_only")}),
     )

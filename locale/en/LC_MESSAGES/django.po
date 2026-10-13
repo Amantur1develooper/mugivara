@@ -5316,3 +5316,11 @@ msgstr "−%(p)s%% on races starting before %(t)s"
 #: templates/simracing/appt_success.html
 msgid "Бронь подтверждается после предоплаты — напишите нам, и мы пришлём реквизиты. До этого время не закреплено."
 msgstr "Your booking is confirmed after a deposit — message us and we'll send the payment details. Until then the time is not reserved."
+
+#: templates/public_site/cart_detail.html templates/public_site/branch_menu.html
+msgid "Как получите заказ"
+msgstr "How you'll get your order"
+
+#: templates/public_site/cart_detail.html templates/public_site/branch_menu.html
+msgid "Комментарий к самовывозу (необязательно)"
+msgstr "Pickup note (optional)"

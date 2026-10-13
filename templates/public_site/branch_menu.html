@@ -661,6 +661,8 @@ const T = {
   minDeliverySum: "{% trans 'Минимальная сумма доставки:' %}",
   subtotal: "{% trans 'Подытог' %}",
   delivery: "{% trans 'Доставка' %}",
+  pickup: "{% trans 'Самовывоз' %}",
+  howReceive: "{% trans 'Как получите заказ' %}",
   total: "{% trans 'Итого' %}",
   havePromo: "{% trans '🎟 Есть промокод?' %}",
   enterPromo: "{% trans 'Введите промокод' %}",
@@ -669,6 +671,7 @@ const T = {
   checkoutTitle: "{% trans '📝 Оформление заказа' %}",
   yourName: "{% trans 'Ваше имя' %}",
   deliveryAddr: "{% trans 'Адрес доставки' %}",
+  pickupNote: "{% trans 'Комментарий к самовывозу (необязательно)' %}",
   tableNum: "{% trans 'Номер стола / кабинки' %}",
   commentOpt: "{% trans 'Комментарий (необязательно)' %}",
   payMethod: "{% trans 'Способ оплаты' %}",
@@ -2595,7 +2598,7 @@ document.addEventListener('click', e => {
       : `<span id="cmDeliveryFee">${d.delivery_fee} ${CUR}</span>`;
 
     const deliveryRow = d.delivery_enabled
-      ? `<div class="cm-total-row"><span>${T.delivery}</span>${deliveryLabel}</div>` : '';
+      ? `<div class="cm-total-row" id="cmDeliveryRow"><span>${T.delivery}</span>${deliveryLabel}</div>` : '';
 
     const minNote = d.delivery_enabled && parseFloat(d.min_order_amount) > 0
       ? `<div class="cm-min-note">${T.minDeliverySum} ${d.min_order_amount} ${CUR}</div>` : '';
@@ -2630,6 +2633,13 @@ document.addEventListener('click', e => {
           <input type="hidden" name="csrfmiddlewaretoken" value="${CSRF}">
           <input type="hidden" name="promo_code" id="cmPromoHidden" value="${promoCode}">
 
+          ${d.delivery_enabled ? `
+          <label style="font-size:12px;font-weight:600;color:var(--text2,#555);display:block;margin-bottom:8px">${T.howReceive}</label>
+          <div class="cm-radio-group" id="cmOrderType">
+            <label class="cm-radio-opt"><input type="radio" name="order_type" value="delivery" checked><span>🛵 ${T.delivery}</span></label>
+            <label class="cm-radio-opt"><input type="radio" name="order_type" value="pickup"><span>🏃 ${T.pickup}</span></label>
+          </div>` : `<input type="hidden" name="order_type" value="pickup">`}
+
           <input name="name" required placeholder="${T.yourName}" class="cm-field">
 
           <input name="phone" id="cmPhone" type="tel" inputmode="numeric" autocomplete="tel"
@@ -2637,10 +2647,10 @@ document.addEventListener('click', e => {
                  pattern="^\\+996\\d{9}$" title="${T.phoneFormat}"
                  placeholder="+996700123456" class="cm-field">
 
-          <input name="address" required
+          <input name="address" id="cmAddress" required
                  placeholder="${d.delivery_enabled ? T.deliveryAddr : T.tableNum}"
                  class="cm-field">
-          ${minNote}
+          <div id="cmMinNote">${minNote}</div>
 
           <textarea name="comment" rows="2" placeholder="${T.commentOpt}"
                     class="cm-field" style="resize:vertical"></textarea>
@@ -2667,11 +2677,44 @@ document.addEventListener('click', e => {
     bindModalEvents();
   }
 
+  /* ── Доставка / самовывоз в модале ── */
+  function bindOrderType() {
+    const group = document.getElementById('cmOrderType');
+    if (!group) return;                        // доставки у филиала нет
+    const delRow  = document.getElementById('cmDeliveryRow');
+    const minNote = document.getElementById('cmMinNote');
+    const addr    = document.getElementById('cmAddress');
+    const totalEl = document.getElementById('cmTotal');
+
+    const num = t => parseFloat(String(t || '').replace(/[^\d.]/g, '')) || 0;
+    const totalWithDelivery = num(totalEl && totalEl.textContent);
+    const fee = num(urls.deliveryFee);
+
+    function apply(isPickup) {
+      if (delRow)  delRow.style.display  = isPickup ? 'none' : '';
+      if (minNote) minNote.style.display = isPickup ? 'none' : '';
+      if (addr) {
+        addr.required = !isPickup;
+        addr.placeholder = isPickup ? T.pickupNote : T.deliveryAddr;
+        if (isPickup) addr.value = '';
+      }
+      if (totalEl) {
+        const v = isPickup ? Math.max(0, totalWithDelivery - fee) : totalWithDelivery;
+        totalEl.textContent = v + ' ' + CUR;
+      }
+    }
+
+    group.querySelectorAll('input[name="order_type"]').forEach(r => {
+      r.addEventListener('change', () => apply(r.value === 'pickup' && r.checked));
+    });
+  }
+
   /* ── Привязать события в модале ── */
   function bindModalEvents() {
     const form      = document.getElementById('cmCheckoutForm');
     const submitBtn = document.getElementById('cmSubmitBtn');
 
+    bindOrderType();
     _updateSubmitState();
 
     form.addEventListener('submit', e => {

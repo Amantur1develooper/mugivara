@@ -779,6 +779,21 @@ def checkout(request, branch_id: int):
     address = (request.POST.get("address") or "").strip()
     comment = (request.POST.get("comment") or "").strip()
 
+    # Способ получения выбирает клиент. Самовывоз доступен всегда, доставка —
+    # только если она включена у филиала. Что бы ни пришло из браузера, решает сервер.
+    requested_type = (request.POST.get("order_type") or "").strip()
+    if requested_type == Order.Type.PICKUP:
+        order_type = Order.Type.PICKUP
+    elif requested_type == Order.Type.DELIVERY and branch.delivery_enabled:
+        order_type = Order.Type.DELIVERY
+    else:
+        # поле не пришло (старая страница) — как было раньше
+        order_type = Order.Type.DELIVERY if branch.delivery_enabled else Order.Type.PICKUP
+
+    # Клиент сам забирает заказ — адрес не нужен. Поле остаётся обязательным
+    # там, где оно означает номер стола (филиал без доставки).
+    pickup_chosen = order_type == Order.Type.PICKUP and branch.delivery_enabled
+
     # обязательные поля
     if not name:
         messages.error(request, _("Укажите ваше имя."))
@@ -786,16 +801,16 @@ def checkout(request, branch_id: int):
     if not phone:
         messages.error(request, _("Укажите телефон."))
         return redirect("public_site:cart_detail", branch_id=branch.id)
-    if not address:
+    if not address and not pickup_chosen:
         messages.error(request, _("Укажите адрес / стол / кабинку."))
         return redirect("public_site:cart_detail", branch_id=branch.id)
+    # При самовывозе адрес остаётся пустым: тип заказа и так виден везде,
+    # а заполнять адресное поле словом «Самовывоз» — мусор в данных.
+    # Если клиент что-то написал, это его комментарий к самовывозу.
 
     payment_method = request.POST.get("payment_method") or Order.PaymentMethod.CASH
     if payment_method not in [Order.PaymentMethod.CASH, Order.PaymentMethod.ONLINE]:
         payment_method = Order.PaymentMethod.CASH
-
-    # если у филиала есть доставка — считаем как доставка, иначе самовывоз
-    order_type = Order.Type.DELIVERY if branch.delivery_enabled else Order.Type.PICKUP
 
     # полный подытог = обычные блюда + конструктор
     cx_subtotal = sum(Decimal(str(x["unit_price"])) * int(x["qty"]) for x in cx_cart)

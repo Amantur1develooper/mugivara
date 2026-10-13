@@ -63,6 +63,12 @@ class SimRacingVenue(models.Model):
     map_url      = models.URLField("Ссылка на карту", blank=True, default="")
     tg_chat_id   = models.CharField("TG Chat ID", max_length=50, blank=True, default="")
     tg_thread_id = models.PositiveIntegerField("TG Thread ID", null=True, blank=True)
+    max_parallel_bookings = models.PositiveSmallIntegerField(
+        "Макс. одновременных броней в категории", default=7,
+        help_text="Сколько машин в одной категории можно забронировать на одно и то же время. "
+                  "Например 7 — на 15:00 примем до 7 броней стандартных картов, восьмую уже нет.",
+    )
+
     # ── Скидка по времени («счастливые часы») ──────────────────────────────
     discount_percent = models.PositiveSmallIntegerField(
         "Скидка, %", default=0,

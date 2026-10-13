@@ -1,0 +1,142 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Отчёты{% endblock %}
+{% block nav_reports %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .rp-title{font-family:'Unbounded',sans-serif;font-weight:900;font-size:24px;letter-spacing:-1px;color:var(--text);margin-bottom:6px;}
+  .rp-sub{font-size:14px;color:var(--muted);margin-bottom:24px;}
+
+  .rp-filters{background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:20px;margin-bottom:22px;}
+  .rp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;align-items:end;}
+  .rp-field label{display:block;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+  .rp-input{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font:inherit;font-size:14px;}
+  .rp-input:focus{outline:none;border-color:var(--accent);}
+  .rp-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+  .rp-btn{appearance:none;border:none;cursor:pointer;font:700 13.5px 'Inter',sans-serif;padding:12px 20px;border-radius:11px;
+          background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;text-decoration:none;display:inline-flex;align-items:center;gap:7px;}
+  .rp-btn-x{background:#1D6F42;}
+  .rp-hint{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.5;}
+
+  .rp-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:22px;}
+  .rp-kpi{background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:16px 18px;}
+  .rp-kpi-label{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);}
+  .rp-kpi-val{font-size:25px;font-weight:800;color:var(--text);margin-top:5px;}
+
+  .rp-sum{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:22px;}
+  .rp-chip{background:var(--card);border:1.5px solid var(--border);border-radius:100px;padding:8px 14px;font-size:13px;color:var(--text2);font-weight:600;}
+  .rp-chip b{color:var(--accent);}
+
+  .rp-table-wrap{background:var(--card);border:1.5px solid var(--border);border-radius:18px;overflow:hidden;}
+  .rp-scroll{overflow-x:auto;}
+  table.rp{width:100%;border-collapse:collapse;min-width:820px;}
+  table.rp th{background:var(--bg);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);
+               text-align:left;padding:12px 14px;white-space:nowrap;}
+  table.rp td{padding:11px 14px;font-size:13.5px;color:var(--text2);border-top:1px solid var(--border);white-space:nowrap;}
+  table.rp td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:var(--text);}
+  table.rp tr:hover td{background:var(--bg);}
+  .rp-empty{padding:48px 20px;text-align:center;color:var(--muted);}
+  .rp-more{padding:14px;text-align:center;font-size:12.5px;color:var(--muted);border-top:1px solid var(--border);background:var(--bg);}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rp-title">Отчёты</div>
+<p class="rp-sub">Заказы и записи по заведению за любой период — с точностью до минуты. Можно выгрузить в Excel.</p>
+
+<form class="rp-filters" method="get">
+  <div class="rp-grid">
+    <div class="rp-field" style="grid-column:span 2;min-width:200px;">
+      <label for="venue">Заведение</label>
+      <select class="rp-input" id="venue" name="venue">
+        <option value="">Все заведения</option>
+        {% for v in venues %}
+        <option value="{{ v.value }}" {% if v.value == venue_value %}selected{% endif %}>{{ v.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="rp-field">
+      <label for="date_from">Дата с</label>
+      <input class="rp-input" type="date" id="date_from" name="date_from" value="{{ date_from }}">
+    </div>
+    <div class="rp-field">
+      <label for="time_from">Время с</label>
+      <input class="rp-input" type="time" id="time_from" name="time_from" value="{{ time_from }}">
+    </div>
+    <div class="rp-field">
+      <label for="date_to">Дата по</label>
+      <input class="rp-input" type="date" id="date_to" name="date_to" value="{{ date_to }}">
+    </div>
+    <div class="rp-field">
+      <label for="time_to">Время по</label>
+      <input class="rp-input" type="time" id="time_to" name="time_to" value="{{ time_to }}">
+    </div>
+  </div>
+  <div class="rp-actions">
+    <button type="submit" class="rp-btn">Показать</button>
+    <a href="{% url 'dashboard:reports_export' %}{% if export_qs %}?{{ export_qs }}{% endif %}" class="rp-btn rp-btn-x">
+      ⬇ Скачать Excel
+    </a>
+  </div>
+  <div class="rp-hint">
+    Период считается как непрерывный интервал: с «Дата с / Время с» до «Дата по / Время по» включительно.
+    Например с 13.10 18:00 по 14.10 02:00 — это ночная смена.
+  </div>
+</form>
+
+<div class="rp-kpis">
+  <div class="rp-kpi">
+    <div class="rp-kpi-label">Записей за период</div>
+    <div class="rp-kpi-val">{{ grand.count }}</div>
+  </div>
+  <div class="rp-kpi">
+    <div class="rp-kpi-label">Сумма</div>
+    <div class="rp-kpi-val">{{ grand.amount|floatformat:0 }} <span style="font-size:14px;color:var(--muted);font-weight:600;">сом</span></div>
+  </div>
+</div>
+
+{% if totals %}
+<div class="rp-sum">
+  {% for label, t in totals %}
+  <span class="rp-chip">{{ t.icon }} {{ label }}: <b>{{ t.count }}</b>{% if t.amount %} · {{ t.amount|floatformat:0 }} сом{% endif %}</span>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="rp-table-wrap">
+  {% if rows %}
+  <div class="rp-scroll">
+    <table class="rp">
+      <thead>
+        <tr>
+          <th>Дата</th><th>Время</th><th>Направление</th><th>Заведение</th>
+          <th>№</th><th>Клиент</th><th>Телефон</th><th style="text-align:right">Сумма</th><th>Статус</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.date }}</td>
+          <td>{{ r.time }}</td>
+          <td>{{ r.section }}</td>
+          <td>{{ r.venue }}</td>
+          <td>{{ r.id }}</td>
+          <td>{{ r.customer|default:"—" }}</td>
+          <td>{{ r.phone|default:"—" }}</td>
+          <td class="num">{% if r.amount %}{{ r.amount|floatformat:0 }}{% else %}—{% endif %}</td>
+          <td>{{ r.status|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if truncated %}
+  <div class="rp-more">
+    На экране показаны первые {{ preview_limit }} из {{ rows_total }} записей — в файле Excel будут все.
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="rp-empty">За выбранный период записей нет. Измените даты или выберите другое заведение.</div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -249,6 +249,9 @@
             <a href="{% url 'dashboard:constructor_list' branch.id %}" class="ba">🧩 Конструктор</a>
             <a href="{% url 'dashboard:promo_list' branch.id %}" class="ba">🎟 Промо</a>
           </div>
+          <div class="branch-actions-row">
+            <a href="{% url 'dashboard:branch_report' branch.id %}" class="ba">📑 Отчёты по часам</a>
+          </div>
         </div>
       </div>
       {% endfor %}

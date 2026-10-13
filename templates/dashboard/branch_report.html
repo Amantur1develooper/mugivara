@@ -1,0 +1,194 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Отчёт — {{ branch.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+  .br-title{font-family:'Unbounded',sans-serif;font-weight:900;font-size:23px;letter-spacing:-1px;color:var(--text);margin-bottom:4px;}
+  .br-sub{font-size:13.5px;color:var(--muted);margin-bottom:22px;}
+  .br-sub a{color:var(--accent);text-decoration:none;font-weight:600;}
+
+  .br-card{background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:20px;margin-bottom:20px;}
+  .br-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;align-items:end;}
+  .br-field label{display:block;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+  .br-input{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font:inherit;font-size:14px;}
+  .br-input:focus{outline:none;border-color:var(--accent);}
+  .br-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+  .br-btn{appearance:none;border:none;cursor:pointer;font:700 13.5px 'Inter',sans-serif;padding:12px 20px;border-radius:11px;
+          background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;text-decoration:none;display:inline-flex;align-items:center;gap:7px;}
+  .br-btn-x{background:#1D6F42;}
+  .br-quick{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+  .br-quick a{font-size:12px;font-weight:600;color:var(--text2);background:var(--bg);border:1.5px solid var(--border);
+              border-radius:100px;padding:7px 13px;text-decoration:none;}
+  .br-quick a:hover{border-color:var(--accent);color:var(--accent);}
+
+  .br-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:14px;margin-bottom:20px;}
+  .br-kpi{background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:16px 18px;}
+  .br-kpi-label{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);}
+  .br-kpi-val{font-size:25px;font-weight:800;color:var(--text);margin-top:5px;}
+  .br-kpi-val small{font-size:13px;color:var(--muted);font-weight:600;}
+
+  .br-h3{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:14px;}
+
+  /* по часам */
+  .br-hours{display:flex;flex-direction:column;gap:8px;}
+  .br-hour{display:grid;grid-template-columns:54px 1fr 96px 74px;gap:12px;align-items:center;}
+  .br-hour-t{font-size:13px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
+  .br-bar-bg{background:var(--bg);border-radius:7px;height:22px;overflow:hidden;}
+  .br-bar{height:100%;border-radius:7px;background:linear-gradient(90deg,var(--accent2),var(--accent));min-width:3px;}
+  .br-hour-sum{font-size:13px;font-weight:700;color:var(--text);text-align:right;font-variant-numeric:tabular-nums;}
+  .br-hour-cnt{font-size:12px;color:var(--muted);text-align:right;}
+
+  .br-chips{display:flex;gap:9px;flex-wrap:wrap;}
+  .br-chip{background:var(--bg);border:1.5px solid var(--border);border-radius:100px;padding:8px 14px;font-size:13px;color:var(--text2);font-weight:600;}
+  .br-chip b{color:var(--accent);}
+
+  .br-scroll{overflow-x:auto;}
+  table.br{width:100%;border-collapse:collapse;min-width:860px;}
+  table.br th{background:var(--bg);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);
+               text-align:left;padding:12px 14px;white-space:nowrap;}
+  table.br td{padding:11px 14px;font-size:13.5px;color:var(--text2);border-top:1px solid var(--border);white-space:nowrap;}
+  table.br td.num{text-align:right;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;}
+  table.br tr.cancelled td{opacity:.5;text-decoration:line-through;}
+  .br-empty{padding:44px 20px;text-align:center;color:var(--muted);}
+  .br-more{padding:14px;text-align:center;font-size:12.5px;color:var(--muted);border-top:1px solid var(--border);background:var(--bg);}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="br-title">📑 {{ branch.name_ru }}</div>
+<p class="br-sub">
+  {{ branch.restaurant.name_ru }} · отчёт по заказам с детализацией по часам ·
+  <a href="{% url 'dashboard:home' %}">← в кабинет</a>
+</p>
+
+<form class="br-card" method="get">
+  <div class="br-grid">
+    <div class="br-field">
+      <label for="date_from">Дата с</label>
+      <input class="br-input" type="date" id="date_from" name="date_from" value="{{ date_from }}">
+    </div>
+    <div class="br-field">
+      <label for="time_from">Время с</label>
+      <input class="br-input" type="time" id="time_from" name="time_from" value="{{ time_from }}">
+    </div>
+    <div class="br-field">
+      <label for="date_to">Дата по</label>
+      <input class="br-input" type="date" id="date_to" name="date_to" value="{{ date_to }}">
+    </div>
+    <div class="br-field">
+      <label for="time_to">Время по</label>
+      <input class="br-input" type="time" id="time_to" name="time_to" value="{{ time_to }}">
+    </div>
+  </div>
+  <div class="br-actions">
+    <button type="submit" class="br-btn">Показать</button>
+    <a href="{% url 'dashboard:branch_report_export' branch.id %}{% if export_qs %}?{{ export_qs }}{% endif %}"
+       class="br-btn br-btn-x">⬇ Скачать Excel</a>
+  </div>
+  <div class="br-quick">
+    <a href="?date_from={{ today_str }}&date_to={{ today_str }}&time_from=00:00&time_to=23:59" id="q-today">Сегодня</a>
+    <a href="#" id="q-yesterday">Вчера</a>
+    <a href="#" id="q-week">7 дней</a>
+    <a href="#" id="q-month">30 дней</a>
+    <a href="?date_from={{ date_from }}&date_to={{ date_to }}&time_from=18:00&time_to=23:59">Вечер 18:00–23:59</a>
+  </div>
+</form>
+
+<div class="br-kpis">
+  <div class="br-kpi"><div class="br-kpi-label">Заказов</div><div class="br-kpi-val">{{ count }}</div></div>
+  <div class="br-kpi"><div class="br-kpi-label">Выручка</div><div class="br-kpi-val">{{ revenue|floatformat:0 }} <small>сом</small></div></div>
+  <div class="br-kpi"><div class="br-kpi-label">Средний чек</div><div class="br-kpi-val">{{ avg|floatformat:0 }} <small>сом</small></div></div>
+  <div class="br-kpi"><div class="br-kpi-label">Отменённых</div><div class="br-kpi-val">{{ cancelled }}</div></div>
+</div>
+
+<div class="br-card">
+  <div class="br-h3">Выручка по часам</div>
+  {% if hours %}
+  <div class="br-hours">
+    {% for h in hours %}
+    <div class="br-hour">
+      <div class="br-hour-t">{{ h.hour }}</div>
+      <div class="br-bar-bg"><div class="br-bar" style="width:{{ h.bar }}%"></div></div>
+      <div class="br-hour-sum">{{ h.amount|floatformat:0 }} сом</div>
+      <div class="br-hour-cnt">{{ h.count }} зак.</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="br-empty">За выбранный период заказов нет.</div>
+  {% endif %}
+</div>
+
+{% if by_type or by_pay %}
+<div class="br-card">
+  <div class="br-h3">Разрез по типу и оплате</div>
+  <div class="br-chips">
+    {% for label, t in by_type %}
+    <span class="br-chip">{{ label }}: <b>{{ t.count }}</b> · {{ t.amount|floatformat:0 }} сом</span>
+    {% endfor %}
+    {% for label, p in by_pay %}
+    <span class="br-chip">💳 {{ label }}: <b>{{ p.count }}</b> · {{ p.amount|floatformat:0 }} сом</span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="br-card" style="padding:0;overflow:hidden;">
+  {% if rows %}
+  <div class="br-scroll">
+    <table class="br">
+      <thead>
+        <tr>
+          <th>Дата</th><th>Время</th><th>№</th><th>Тип</th><th>Клиент</th>
+          <th>Телефон</th><th>Адрес / стол</th><th style="text-align:right">Сумма</th>
+          <th>Оплата</th><th>Статус</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr{% if r.cancelled %} class="cancelled"{% endif %}>
+          <td>{{ r.date }}</td>
+          <td>{{ r.time }}</td>
+          <td>{{ r.id }}</td>
+          <td>{{ r.type }}</td>
+          <td>{{ r.customer|default:"—" }}</td>
+          <td>{{ r.phone|default:"—" }}</td>
+          <td>{{ r.address|default:"—"|truncatechars:34 }}</td>
+          <td class="num">{{ r.amount|floatformat:0 }}</td>
+          <td>{{ r.pay|default:"—" }}</td>
+          <td>{{ r.status }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if truncated %}
+  <div class="br-more">Показаны первые {{ preview_limit }} из {{ rows_total }} заказов — в Excel будут все.</div>
+  {% endif %}
+  {% else %}
+  <div class="br-empty">Заказов за период нет. Измените даты или время.</div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* Быстрые периоды — считаем даты в браузере, по местному времени */
+(function () {
+  const pad = n => String(n).padStart(2, '0');
+  const ymd = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  const go = (from, to) => {
+    const p = new URLSearchParams({ date_from: ymd(from), date_to: ymd(to),
+                                    time_from: '00:00', time_to: '23:59' });
+    location.search = '?' + p.toString();
+  };
+  const today = new Date();
+  const shift = n => new Date(today.getFullYear(), today.getMonth(), today.getDate() - n);
+
+  document.getElementById('q-today').addEventListener('click', e => { e.preventDefault(); go(today, today); });
+  document.getElementById('q-yesterday').addEventListener('click', e => { e.preventDefault(); go(shift(1), shift(1)); });
+  document.getElementById('q-week').addEventListener('click', e => { e.preventDefault(); go(shift(6), today); });
+  document.getElementById('q-month').addEventListener('click', e => { e.preventDefault(); go(shift(29), today); });
+})();
+</script>
+{% endblock %}
