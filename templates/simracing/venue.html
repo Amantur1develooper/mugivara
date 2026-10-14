@@ -189,6 +189,7 @@
       background:var(--accent-soft);border:1px solid #fed7aa;border-radius:12px;
       padding:11px 16px;font-size:13.5px;font-weight:600;color:#c2410c;text-align:center;
     }
+    .qty-limit{font-size:11.5px;color:var(--muted);text-align:center;margin-top:8px}
 
     /* ── Колёса заездов ──
        Три слоя, чтобы анимации не конфликтовали из-за одного transform:
@@ -443,6 +444,9 @@
             <button class="qty-btn" onclick="changeQty(+1)" aria-label="+">+</button>
           </div>
           <div class="qty-total" id="qty-total">{% trans "Итого: — сом · — мин" %}</div>
+          <div class="qty-limit">
+            {% blocktrans with n=venue.max_parallel_bookings %}Максимум {{ n }} заездов за одну запись{% endblocktrans %}
+          </div>
           {% if venue.discount_percent %}<div class="promo-hint">🔥 {% if venue.discount_until %}{% blocktrans with p=venue.discount_percent t=venue.discount_until|time:"H:i" %}−{{ p }}% на заезды, которые начинаются до {{ t }}{% endblocktrans %}{% else %}{% blocktrans with p=venue.discount_percent %}−{{ p }}% на все заезды{% endblocktrans %}{% endif %}{% if venue.discount_weekdays_only %} ({% trans "по будням" %}){% endif %}</div>{% endif %}
               </div>
         <div class="wheels" id="wheels" aria-hidden="true"></div>
@@ -626,7 +630,9 @@ function changeQty(delta) {
    Одно колесо = один заезд. Добавили заезд — колесо вкатывается и крутится,
    убрали — пробивает покрышку. Чисто декоративный слой: настоящее число
    заездов всегда в sel.qty и в счётчике #qty-display. */
-const QTY_MAX  = 10;
+/* Максимум заездов за одну запись — из настроек площадки (кабинет → «Сколько
+   машин можно забронировать»). Сервер проверяет это же значение. */
+const QTY_MAX  = {{ venue.max_parallel_bookings|default:7 }};
 const BLOW_MS  = 420;   // должно совпадать с длительностью wh-blow в CSS
 
 function wheelGeometry(i, W, H) {

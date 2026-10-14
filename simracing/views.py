@@ -201,6 +201,9 @@ def slots_json(request, slug):
     except Exception:
         return JsonResponse({"slots": []})
 
+    # Больше, чем разрешено настройкой площадки, за одну запись брать нельзя
+    quantity = min(quantity, max(1, v.max_parallel_bookings))
+
     if appt_date < date.today():
         return JsonResponse({"slots": []})
 
@@ -274,6 +277,10 @@ def book_appt(request, slug):
         appt_time = datetime.strptime(time_str, "%H:%M").time()
         quantity = max(1, int(qty_raw))
     except Exception:
+        return redirect("simracing:venue", slug=slug)
+
+    # Лимит заездов за одну запись — из настроек площадки
+    if quantity > max(1, v.max_parallel_bookings):
         return redirect("simracing:venue", slug=slug)
 
     base_price = st.price * quantity

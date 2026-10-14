@@ -5324,3 +5324,8 @@ msgstr "How you'll get your order"
 #: templates/public_site/cart_detail.html templates/public_site/branch_menu.html
 msgid "Комментарий к самовывозу (необязательно)"
 msgstr "Pickup note (optional)"
+
+#: templates/simracing/venue.html
+#, python-format
+msgid "Максимум %(n)s заездов за одну запись"
+msgstr "Maximum %(n)s races per booking"
