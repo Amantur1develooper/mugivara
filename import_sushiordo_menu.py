@@ -29,6 +29,7 @@ django.setup()
 
 from django.core.files import File                      # noqa: E402
 from django.db import transaction                        # noqa: E402
+from django.db.models.deletion import ProtectedError     # noqa: E402
 
 from core.models import Branch                           # noqa: E402
 from catalog.models import (                             # noqa: E402
@@ -89,10 +90,19 @@ def wipe_menu(branch, dry=False):
     links.delete()
     bis.delete()
     bcs.delete()
-    # сами Item удаляем только если они больше нигде не используются
+    # Сами блюда удаляем, только если они больше нигде не используются.
+    # Блюда, попавшие в историю заказов, Django защищает (OrderItem.item = PROTECT) —
+    # такие оставляем: из меню они уже убраны, а старые чеки останутся целыми.
+    kept = 0
     for it in Item.objects.filter(id__in=item_ids):
-        if not BranchItem.objects.filter(item=it).exists():
+        if BranchItem.objects.filter(item=it).exists():
+            continue
+        try:
             it.delete()
+        except ProtectedError:
+            kept += 1
+    if kept:
+        print(f"  оставлено блюд из истории заказов: {kept}")
 
 
 def attach_photo(item, path):
@@ -167,14 +177,20 @@ def main():
             bc.save(update_fields=["sort_order", "is_active"])
 
             for ii, data in enumerate(cat["items"], start=1):
-                item = Item.objects.create(
-                    restaurant=branch.restaurant,
-                    name_ru=data["ru"], name_ky=data["ky"], name_en=data["en"],
-                    description_ru=data.get("d_ru", ""),
-                    description_ky=data.get("d_ky", ""),
-                    description_en=data.get("d_en", ""),
-                    base_price=data["price"],
+                # Блюдо с таким названием может остаться от старого меню
+                # (если оно есть в истории заказов и его нельзя было удалить) —
+                # тогда переиспользуем его и обновляем поля, а не плодим дубликат:
+                # у Item уникальна пара (ресторан, название).
+                item, _created = Item.objects.get_or_create(
+                    restaurant=branch.restaurant, name_ru=data["ru"],
                 )
+                item.name_ky = data["ky"]
+                item.name_en = data["en"]
+                item.description_ru = data.get("d_ru", "")
+                item.description_ky = data.get("d_ky", "")
+                item.description_en = data.get("d_en", "")
+                item.base_price = data["price"]
+                item.save()
                 # фото
                 path = None
                 if cat["slug"] == "pizza":
