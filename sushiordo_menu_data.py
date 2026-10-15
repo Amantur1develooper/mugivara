@@ -522,7 +522,7 @@ CATEGORIES += [
              "d_ky": "Жарым пицца 35 см, Тоок менен бышырылган, Кызыл балык менен бышырылган, Фри L, Кока-кола 1 л.",
              "d_en": "Half-and-half pizza 35 cm, Baked with chicken, Baked with salmon, Fries L, Coca-Cola 1 L.",
              "price": 1477, "old_price": 1765},
-            {"ru": "Комбо «Делюкс Микс» большой", "ky": "«Делюкс Микс» чоң комбосу", "en": "Combo Deluxe Mix Large",
+            {"ru": "Комбо «Пати»", "ky": "«Пати» комбосу", "en": "Combo Party",
              "d_ru": "Пицца мясная делюкс 30 см, Пицца чикен барбекю 30 см, Сырный ролл, Гриль чикен, Суши бургер с курицей, Бургер ордо, Бургер от шефа, Фри L, Кока-кола 2 л.",
              "d_ky": "Эт делюкс пицца 30 см, Чикен барбекю пицца 30 см, Сыр роллу, Гриль чикен, Тоок менен суши бургер, Ордо бургери, Шеф бургери, Фри L, Кока-кола 2 л.",
              "d_en": "Meat deluxe pizza 30 cm, Chicken BBQ pizza 30 cm, Cheese roll, Grill chicken, Sushi burger with chicken, Ordo burger, Chef burger, Fries L, Coca-Cola 2 L.",

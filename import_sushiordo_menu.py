@@ -38,28 +38,64 @@ from catalog.models import (                             # noqa: E402
 )
 from sushiordo_menu_data import CATEGORIES               # noqa: E402
 
-# Явная привязка фото пицц к названиям. Ключ — номер снимка в папке
-# (файлы сортируются по имени: 1-й, 2-й … 16-й).
-# ВНИМАНИЕ: подобрано по виду пиццы на фото. Перед запуском на проде
-# сверьтесь со сводкой, которую печатает скрипт.
-PIZZA_PHOTO_BY_INDEX = {
-    1:  "4 сыра",                  # белая сырная, без томатного соуса
-    2:  "Маргарита",               # томатная основа с соусной решёткой
-    3:  "Американ хот",            # пепперони + халапеньо
-    4:  "4 сезона",                # четыре разные четверти
-    5:  "Диабло",                  # пепперони + халапеньо, светлая основа
-    6:  "Мясная делюкс",           # ассорти мяса
-    7:  "Курочка терияки",         # курица, перец, томаты
-    8:  "Пепперони",               # ровная классика
-    9:  "Чикен барбекю",           # курица с тёмным соусом барбекю
-    10: "Жульен с курочкой",       # грибы и курица в сливочном
-    11: "Чизбургер",               # с солёными огурцами
-    12: "Курица в сладком чили",   # грибы, лук, светлая
-    13: "Банана мама",             # шоколадный топпинг
-    14: "Сладкий ордо",            # малина, сахарная пудра
-    15: "Половинка",               # половина сыр / половина пепперони
-    16: "Ням-Ням",                 # ананас, вишня, кокос
+# Надпись на бейдже у позиций со скидкой (пусто → подставится «Акция»)
+PROMO_LABEL = "Выгода"
+
+# Привязка фото пицц к названиям по ИМЕНИ ФАЙЛА — сверено поштучно с
+# фотографиями пицц из PDF (стр. 4): каждое фото из папки сличалось с
+# эталоном в меню. Ключ — имя файла (без учёта регистра).
+PIZZA_PHOTO_BY_FILE = {
+    "whatsapp image 2026-10-14 at 21.02.49 (1).jpeg": "4 сыра",                # белая сырная
+    "whatsapp image 2026-10-14 at 21.02.49 (2).jpeg": "Курочка терияки",       # решётка соуса
+    "whatsapp image 2026-10-14 at 21.02.49 (3).jpeg": "Американ хот",          # пепперони + халапеньо
+    "whatsapp image 2026-10-14 at 21.02.49.jpeg":     "4 сезона",              # четыре четверти
+    "whatsapp image 2026-10-14 at 21.02.50 (1).jpeg": "Диабло",                # густо пепперони + халапеньо
+    "whatsapp image 2026-10-14 at 21.02.50 (2).jpeg": "Мясная делюкс",         # мясное ассорти
+    "whatsapp image 2026-10-14 at 21.02.50.jpeg":     "Маргарита",             # томаты, зелень
+    "whatsapp image 2026-10-14 at 21.02.51 (1).jpeg": "Пепперони",             # ровная классика
+    "whatsapp image 2026-10-14 at 21.02.51 (2).jpeg": "Чикен барбекю",         # тёмный соус барбекю
+    "whatsapp image 2026-10-14 at 21.02.51 (3).jpeg": "Курица в сладком чили", # курица, крошка
+    "whatsapp image 2026-10-14 at 21.02.51 (4).jpeg": "Чизбургер",             # солёные огурцы
+    "whatsapp image 2026-10-14 at 21.02.51 (5).jpeg": "Жульен с курочкой",     # грибы и курица
+    "whatsapp image 2026-10-14 at 21.02.51 (6).jpeg": "Банана мама",           # шоколадная решётка
+    "whatsapp image 2026-10-14 at 21.02.51 (7).jpeg": "Сладкий ордо",          # малина, сливочный соус
+    "whatsapp image 2026-10-14 at 21.02.51.jpeg":     "Половинка",             # половина сыр / пепперони
+    "whatsapp image 2026-10-14 at 21.02.52.jpeg":     "Ням-Ням",               # ананас, вишня, кокос
 }
+
+# Запасной вариант, если файлы переименуют: порядок сортировки по имени.
+PIZZA_PHOTO_BY_INDEX = {
+    i: name for i, name in enumerate(PIZZA_PHOTO_BY_FILE.values(), start=1)
+}
+
+
+def resolve_pizza_photos(folder):
+    """Возвращает {название пиццы: путь к файлу}.
+
+    Порядок попыток для каждого файла:
+      1) имя файла — транслит названия пиццы (папка sushiordo_pizza_named);
+         тогда порядок и переименования файлов ни на что не влияют;
+      2) исходное имя из WhatsApp;
+      3) в последнюю очередь — порядковый номер в сортировке по имени.
+    """
+    files = sorted(f for f in os.listdir(folder)
+                   if f.lower().endswith((".jpg", ".jpeg", ".png")))
+    by_slug = {slugify_ru(n): n for n in PIZZA_PHOTO_BY_FILE.values()}
+    out = {}
+    for idx, fname in enumerate(files, start=1):
+        stem = os.path.splitext(fname)[0].lower()
+        name = (by_slug.get(stem)
+                or PIZZA_PHOTO_BY_FILE.get(fname.lower())
+                or PIZZA_PHOTO_BY_INDEX.get(idx))
+        if not name:
+            print(f"   снимок {idx:2} ({fname[:40]}) → не опознан, пропуск")
+            continue
+        out[name] = os.path.join(folder, fname)
+        print(f"   {name:24} ← {fname[:44]}")
+    missing = [n for n in PIZZA_PHOTO_BY_FILE.values() if n not in out]
+    if missing:
+        print(f"   ! без фото останутся: {', '.join(missing)}")
+    return out
 
 
 def slugify_ru(s: str) -> str:
@@ -141,15 +177,8 @@ def main():
 
     pizza_photo = {}
     if args.pizza and os.path.isdir(args.pizza):
-        files = sorted(f for f in os.listdir(args.pizza)
-                       if f.lower().endswith((".jpg", ".jpeg", ".png")))
-        print("\nпривязка фото пицц (сверьте глазами!):")
-        for idx, fname in enumerate(files, start=1):
-            name = PIZZA_PHOTO_BY_INDEX.get(idx)
-            if not name:
-                continue
-            pizza_photo[name] = os.path.join(args.pizza, fname)
-            print(f"   снимок {idx:2} ({fname[:34]:36}) → {name}")
+        print("\nпривязка фото пицц:")
+        pizza_photo = resolve_pizza_photos(args.pizza)
 
     with transaction.atomic():
         print("\nудаляю старое меню…")
@@ -206,9 +235,12 @@ def main():
                 ItemCategory.objects.get_or_create(
                     item=item, category=category, defaults={"sort_order": ii})
 
+                # На позициях со старой ценой бейдж подписываем «Выгода»
+                # (если текст не задать, подставляется «Акция»).
                 bi = BranchItem.objects.create(
                     branch=branch, item=item, price=data["price"],
                     old_price=data.get("old_price"),
+                    promo_label=PROMO_LABEL if data.get("old_price") else "",
                     is_available=True, delivery_available=True, sort_order=ii)
 
                 BranchCategoryItem.objects.get_or_create(
