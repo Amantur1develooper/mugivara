@@ -5,6 +5,8 @@ from django.utils.translation import get_language
 from integrations.tasks import notify_new_order
 from decimal import Decimal
 from django.shortcuts import render, get_object_or_404, redirect
+from django.template.loader import get_template
+from django.template import TemplateDoesNotExist
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.utils.translation import get_language
@@ -551,6 +553,24 @@ def _build_branch_menu_context(request, branch):
     }
 
 
+def _menu_template(branch):
+    """Шаблон страницы меню: индивидуальный дизайн филиала или стандартный.
+
+    Если у филиала задан template_slug, но шаблона нет на диске (тему ещё не
+    залили, опечатка в коде), тихо откатываемся на стандартный — меню должно
+    открываться всегда.
+    """
+    slug = (branch.template_slug or "").strip()
+    if slug:
+        custom = f"custom/{slug}/menu.html"
+        try:
+            get_template(custom)
+            return custom
+        except TemplateDoesNotExist:
+            pass
+    return "public_site/branch_menu.html"
+
+
 def branch_menu(request, branch_id: int):
     # restaurant__is_active=True — если ресторан выключен, меню филиала
     # (включая ссылку по QR-коду на столе) не должно открываться, даже если
@@ -560,7 +580,7 @@ def branch_menu(request, branch_id: int):
         id=branch_id, is_active=True, restaurant__is_active=True,
     )
     ctx = _build_branch_menu_context(request, branch)
-    return render(request, "public_site/branch_menu.html", ctx)
+    return render(request, _menu_template(branch), ctx)
 
 
 def restaurant_branch_menu(request, restaurant_slug: str, branch_id: int):
@@ -574,7 +594,7 @@ def restaurant_branch_menu(request, restaurant_slug: str, branch_id: int):
     )
     ctx = _build_branch_menu_context(request, branch)
     ctx["restaurant_slug"] = restaurant_slug  # for back link in template
-    return render(request, "public_site/branch_menu.html", ctx)
+    return render(request, _menu_template(branch), ctx)
 
 
 

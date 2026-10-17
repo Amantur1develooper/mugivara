@@ -246,6 +246,24 @@
     </div>
   </div>
 
+  {% if request.user.is_superuser %}
+  {# ── ИНДИВИДУАЛЬНЫЙ ДИЗАЙН (доп. услуга, включает только администратор) ── #}
+  <div class="db-card">
+    <div class="db-card-title">🎨 Индивидуальный дизайн меню</div>
+    <div class="db-form-group">
+      <label class="db-label" for="template_slug">Код темы оформления</label>
+      <input class="db-input" id="template_slug" name="template_slug"
+             value="{{ branch.template_slug }}" placeholder="например: ny-burgers">
+      <div class="db-hint">
+        Пусто — стандартная страница меню. Если указан код, меню рендерится
+        индивидуальным шаблоном (<code>templates/custom/&lt;код&gt;/menu.html</code>).
+        Цены, корзина, заказы, промокоды и кабинет остаются общими.
+        Если шаблона с таким кодом нет — откроется стандартное меню.
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   {# ── ГЛАВНОЕ ФОТО ФИЛИАЛА ── #}
   <div class="db-card">
     <div class="db-card-title">📷 Главное фото филиала</div>

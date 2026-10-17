@@ -5329,3 +5329,119 @@ msgstr "Pickup note (optional)"
 #, python-format
 msgid "Максимум %(n)s заездов за одну запись"
 msgstr "Maximum %(n)s races per booking"
+
+msgid "Выберите услугу или напишите, что нужно"
+msgstr "Select a service or describe what you need"
+
+msgid "Заявка отправлена! Скоро подойдём."
+msgstr "Request sent! Someone will come shortly."
+
+msgid "Заявка отправлена! Скоро принесём."
+msgstr "Request sent! We'll bring it shortly."
+
+# ── тема NY Burgers ──
+
+msgid "12 слоёв · ничего лишнего"
+msgstr "12 layers · nothing extra"
+
+msgid "Double Cheese, картофель фри, сырные палочки и халапеньо. Всё горячее, в фирменной коробке."
+msgstr "Double Cheese, French fries, cheese sticks and jalapeños. All hot, in our signature box."
+
+msgid "Без лука, больше соуса…"
+msgstr "No onion, extra sauce…"
+
+msgid "Булочка бриошь"
+msgstr "Brioche bun"
+
+msgid "Всё"
+msgstr "All"
+
+msgid "Две говяжьи котлеты, тянущийся чеддер и бриошь с кунжутом. Каждый бургер собираем под заказ."
+msgstr "Two beef patties, melting cheddar and a sesame brioche bun. Every burger is made to order."
+
+msgid "Добавить ещё"
+msgstr "Add one more"
+
+msgid "Добавить комбо"
+msgstr "Add combo"
+
+msgid "Добавьте блюда из меню."
+msgstr "Add something from the menu."
+
+msgid "Добавьте что-нибудь из меню."
+msgstr "Add something from the menu."
+
+msgid "Доставка по Ошу"
+msgstr "Delivery across Osh"
+
+msgid "Жарим"
+msgstr "Grilled"
+
+msgid "Жарим под заказ"
+msgstr "Grilled to order"
+
+msgid "Заказ уйдёт в заведение сразу после отправки."
+msgstr "Your order reaches the restaurant as soon as you send it."
+
+msgid "Заполните имя и телефон, чтобы отправить заказ."
+msgstr "Fill in your name and phone to send the order."
+
+msgid "Как к вам обращаться"
+msgstr "What should we call you"
+
+msgid "Комбо"
+msgstr "Combo"
+
+msgid "Комбо на вечер"
+msgstr "Combo for the evening"
+
+msgid "Корзина пустая."
+msgstr "Your cart is empty."
+
+msgid "Листайте"
+msgstr "Scroll"
+
+msgid "Нью-Йорк"
+msgstr "New York"
+
+msgid "Нью-Йорке"
+msgstr "New York"
+
+msgid "О бургере"
+msgstr "The burger"
+
+msgid "Смотреть по слоям"
+msgstr "See it layer by layer"
+
+msgid "Собран"
+msgstr "Built"
+
+msgid "Сочная говядина"
+msgstr "Juicy beef"
+
+msgid "Убрать одну"
+msgstr "Remove one"
+
+msgid "Укажите адрес доставки."
+msgstr "Enter the delivery address."
+
+msgid "Улица, дом, ориентир"
+msgstr "Street, building, landmark"
+
+msgid "Чеддер"
+msgstr "Cheddar"
+
+msgid "бургер · фри · палочки · халапеньо"
+msgstr "burger · fries · sticks · jalapeños"
+
+msgid "в одном"
+msgstr "in one"
+
+msgid "как в"
+msgstr "like in"
+
+msgid "меню и заказ онлайн"
+msgstr "menu and online ordering"
+
+msgid "под заказ"
+msgstr "to order"

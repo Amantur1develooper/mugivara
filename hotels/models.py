@@ -120,12 +120,18 @@ class Room(TimeStampedModel):
         verbose_name="Категория",
     )
     name_ru = models.CharField("Название номера", max_length=200)
+    name_ky = models.CharField("Название (KY)", max_length=200, blank=True, default="")
+    name_en = models.CharField("Название (EN)", max_length=200, blank=True, default="")
     description_ru = models.TextField("Описание", blank=True, default="")
+    description_ky = models.TextField("Описание (KY)", blank=True, default="")
+    description_en = models.TextField("Описание (EN)", blank=True, default="")
     amenities_ru = models.TextField(
         "Что включено",
         blank=True, default="",
         help_text="Каждый пункт с новой строки: WiFi, Завтрак, TV ..."
     )
+    amenities_ky = models.TextField("Что включено (KY)", blank=True, default="")
+    amenities_en = models.TextField("Что включено (EN)", blank=True, default="")
     price_per_night = models.DecimalField(
         "Базовая цена (1 гость) / ночь (сом)",
         max_digits=10, decimal_places=0, default=0,
@@ -242,7 +248,11 @@ class Room(TimeStampedModel):
 class HotelService(TimeStampedModel):
     branch      = models.ForeignKey(HotelBranch, on_delete=models.CASCADE, related_name="services")
     name_ru     = models.CharField("Название", max_length=200)
+    name_ky     = models.CharField("Название (KY)", max_length=200, blank=True, default="")
+    name_en     = models.CharField("Название (EN)", max_length=200, blank=True, default="")
     description_ru = models.TextField("Описание", blank=True, default="")
+    description_ky = models.TextField("Описание (KY)", blank=True, default="")
+    description_en = models.TextField("Описание (EN)", blank=True, default="")
     price       = models.DecimalField("Цена (сом)", max_digits=10, decimal_places=0, default=0)
     photo1      = models.ImageField("Фото 1", upload_to="hotels/services/", blank=True, null=True)
     photo2      = models.ImageField("Фото 2", upload_to="hotels/services/", blank=True, null=True)

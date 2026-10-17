@@ -1,0 +1,196 @@
+{% load static i18n i18n_attrs l10n %}{% get_current_language as LANG %}
+<!doctype html>
+<html lang="{{ LANG|default:'ru' }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% t branch.restaurant "name" %} — {% t branch "name" %}</title>
+<meta name="description" content="{% t branch.restaurant "name" %} — {% trans "меню и заказ онлайн" %}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Golos+Text:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="{% static 'custom/ny-burgers/css/style.css' %}">
+<style>
+  /* переключатель языка — часть темы, поверх шапки */
+  .langs{display:flex;gap:4px;margin-left:auto}
+  .langs a{font:700 11px/1 'Golos Text',system-ui,sans-serif;letter-spacing:.04em;
+    padding:7px 9px;border-radius:8px;text-decoration:none;color:var(--fg,#f4e6cf);
+    border:1px solid rgba(255,255,255,.22);opacity:.75}
+  .langs a.on{background:var(--red,#e3261f);border-color:transparent;color:#fff;opacity:1}
+  .nav .wrap{gap:14px}
+  @media(max-width:520px){ .langs a{padding:6px 7px} }
+</style>
+</head>
+<body>
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a class="logo" href="#top"><i>NY</i>{% t branch.restaurant "name" %}</a>
+    <nav class="nav-links">
+      <a href="#film">{% trans "О бургере" %}</a>
+      <a href="#menu">{% trans "Меню" %}</a>
+      <button class="cart-btn" id="cartBtn" aria-label="{% trans 'Открыть корзину' %}">{% trans "Корзина" %} <b id="cartCount">0</b></button>
+    </nav>
+    <div class="langs">
+      <a href="/ru/{{ branch.id }}/menu/" {% if LANG == 'ru' %}class="on"{% endif %}>RU</a>
+      <a href="/ky/{{ branch.id }}/menu/" {% if LANG == 'ky' %}class="on"{% endif %}>KG</a>
+      <a href="/en/{{ branch.id }}/menu/" {% if LANG == 'en' %}class="on"{% endif %}>EN</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <section class="film" id="film">
+    <div class="stage" id="stage">
+      <div class="glow" id="glow"></div>
+      <div class="floor" id="floor"></div>
+
+      <div class="hero-copy" id="heroCopy">
+        <div class="eyebrow">Est. New York City · {% t branch "name" %}</div>
+        <h1>{% trans "Собран" %}<br><span class="o">{% trans "как в" %}</span><br><span class="y">{% trans "Нью-Йорке" %}</span></h1>
+        <p>{% trans "Две говяжьи котлеты, тянущийся чеддер и бриошь с кунжутом. Каждый бургер собираем под заказ." %}</p>
+        <div class="row">
+          <a class="btn btn-red" href="#menu">{% trans "Заказать" %} →</a>
+          <a class="btn btn-ghost" href="#film" id="scrollBtn">{% trans "Смотреть по слоям" %}</a>
+        </div>
+      </div>
+      <div class="scroll-hint" id="scrollHint">{% trans "Листайте" %}<i></i></div>
+
+      <div class="paper" id="paper"></div>
+      <img class="photo-burger" id="photoBurger" src="{% static 'custom/ny-burgers/img/double.webp' %}" alt="Double Cheese">
+      <div class="cam" id="cam"></div>
+
+      <div class="big" id="bigA">{% trans "Жарим" %}<br><span class="r">{% trans "под заказ" %}</span><span class="big-sub">{% trans "12 слоёв · ничего лишнего" %}</span></div>
+      <div class="big" id="bigB">{% trans "Всё" %}<br><span class="r">{% trans "в одном" %}</span><span class="big-sub">{% trans "бургер · фри · палочки · халапеньо" %}</span></div>
+
+      <div class="scene3d" id="scene3d"><div class="box3d" id="box3d"></div></div>
+
+      <div class="combo-copy" id="comboCopy">
+        <div class="eyebrow">{% trans "Комбо на вечер" %}</div>
+        <h2 style="margin-top:12px">{% trans "Комбо" %}<br><span>{% trans "Нью-Йорк" %}</span></h2>
+        <p>{% trans "Double Cheese, картофель фри, сырные палочки и халапеньо. Всё горячее, в фирменной коробке." %}</p>
+        <div class="row"><div class="pr" id="comboPrice"></div><button class="btn btn-red" id="comboAdd">{% trans "Добавить комбо" %}</button></div>
+      </div>
+      <div class="progress"><i id="prog"></i></div>
+    </div>
+  </section>
+
+  <div class="ticker" aria-hidden="true"><div id="tick"></div></div>
+
+  <section class="menu wrap" id="menu">
+    <div class="menu-head">
+      <div>
+        <div class="eyebrow">{% trans "Меню" %} · {% t branch.restaurant "name" %}</div>
+        <h2 style="margin-top:12px">The <span>Lineup</span></h2>
+      </div>
+      <div class="tabs" role="tablist" id="tabs">
+        <button role="tab" aria-selected="true" data-cat="all">{% trans "Всё" %}</button>
+        {% for group in menu %}
+          {% t group.branch_category.category "name" as cname %}
+          <button role="tab" aria-selected="false" data-cat="c{{ group.branch_category.id }}">{{ cname }}</button>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="grid" id="grid"></div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div><b style="color:var(--bun)">{% t branch.restaurant "name" %}</b> · {{ branch.address|default:"" }}</div>
+    <div>
+      {% if branch.restaurant.instagram %}
+        Instagram: <a href="{{ branch.restaurant.instagram }}" target="_blank" rel="noopener">@newyork.burgers.osh</a>
+      {% endif %}
+    </div>
+  </div>
+</footer>
+
+<div class="bar" id="bar">
+  <div class="sum"><span id="barTotal">0 {% cur %}</span><small id="barCount">0</small></div>
+  <button id="barOpen">{% trans "Оформить заказ" %}</button>
+</div>
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="{% trans 'Корзина' %}" aria-hidden="true">
+  <div class="d-head"><h3>{% trans "Ваш заказ" %}</h3><button class="x" id="closeDrawer" aria-label="{% trans 'Закрыть' %}">✕</button></div>
+  <div class="d-body">
+    <div id="lines"></div>
+    <form id="orderForm" method="post" action="{% url 'public_site:checkout' branch.id %}" style="display:grid;gap:14px">
+      {% csrf_token %}
+      {% if branch.delivery_enabled %}
+      <div class="seg" role="radiogroup">
+        <label><input type="radio" name="order_type" id="mDel" value="delivery" checked>{% trans "Доставка" %}</label>
+        <label><input type="radio" name="order_type" id="mPick" value="pickup">{% trans "Самовывоз" %}</label>
+      </div>
+      {% else %}
+        <input type="hidden" name="order_type" value="pickup">
+      {% endif %}
+      <label class="field"><span>{% trans "Имя" %}</span>
+        <input name="name" id="name" autocomplete="name" placeholder="{% trans 'Как к вам обращаться' %}" required></label>
+      <label class="field"><span>{% trans "Телефон" %}</span>
+        <input name="phone" id="phone" type="tel" autocomplete="tel" placeholder="+996 ___ ___ ___" required></label>
+      <label class="field" id="fAddr"><span>{% trans "Адрес доставки" %}</span>
+        <input name="address" id="addr" autocomplete="street-address" placeholder="{% trans 'Улица, дом, ориентир' %}"></label>
+      <label class="field"><span>{% trans "Промокод" %}</span>
+        <input name="promo_code" id="promo" placeholder="{% trans 'Если есть' %}" autocapitalize="characters"></label>
+      <label class="field"><span>{% trans "Комментарий" %}</span>
+        <textarea name="comment" id="note" rows="2" placeholder="{% trans 'Без лука, больше соуса…' %}"></textarea></label>
+      {% if branch.pay_cash_enabled and branch.pay_online_enabled %}
+      <div class="seg" role="radiogroup">
+        <label><input type="radio" name="payment_method" value="cash" checked>{% trans "Наличные" %}</label>
+        <label><input type="radio" name="payment_method" value="online">{% trans "Онлайн" %}</label>
+      </div>
+      {% elif branch.pay_online_enabled %}
+        <input type="hidden" name="payment_method" value="online">
+      {% else %}
+        <input type="hidden" name="payment_method" value="cash">
+      {% endif %}
+    </form>
+  </div>
+  <div class="d-foot">
+    <div class="total"><span>{% trans "Итого" %}</span><b id="total">0 {% cur %}</b></div>
+    <button class="send" id="send" type="submit" form="orderForm" disabled>{% trans "Оформить заказ" %}</button>
+    <p class="hint" id="hint">{% trans "Добавьте блюда из меню." %}</p>
+  </div>
+</aside>
+
+{% csrf_token %}
+<script>
+window.NYB = {
+  cur: "{% cur %}",
+  lang: "{{ LANG|default:'ru' }}",
+  imgBase: "{% static 'custom/ny-burgers/img/' %}",
+  csrf: document.querySelector('input[name=csrfmiddlewaretoken]').value,
+  urls: {
+    add:      "{% url 'public_site:add_to_cart' 0 %}",
+    update:   "{% url 'public_site:cart_update' branch.id 0 %}",
+    cart:     "{% url 'public_site:cart_json' branch.id %}",
+    checkout: "{% url 'public_site:checkout' branch.id %}"
+  },
+  i18n: {
+    add:     "{% trans 'В корзину' %}",
+    empty:   "{% trans 'Корзина пустая.' %}",
+    emptyHi: "{% trans 'Добавьте что-нибудь из меню.' %}",
+    hintEmpty:"{% trans 'Добавьте блюда из меню.' %}",
+    hintOk:  "{% trans 'Заказ уйдёт в заведение сразу после отправки.' %}",
+    hintFill:"{% trans 'Заполните имя и телефон, чтобы отправить заказ.' %}",
+    hintAddr:"{% trans 'Укажите адрес доставки.' %}",
+    items:   "{% trans 'позиций' %}",
+    dec:     "{% trans 'Убрать одну' %}",
+    inc:     "{% trans 'Добавить ещё' %}"
+  },
+  ticker: ["{% trans 'Сочная говядина' %}", "{% trans 'Чеддер' %}", "{% trans 'Булочка бриошь' %}",
+           "Osh × NYC", "{% trans 'Жарим под заказ' %}", "{% trans 'Доставка по Ошу' %}"],
+  menu: [
+{% for group in menu %}{% t group.branch_category.category "name" as cname %}{% for row in group.items %}{% with bi=row.branch_item %}{% t bi.item "name" as iname %}{% t bi.item "description" as idesc %}
+    {id:{{ bi.id }}, cat:"c{{ group.branch_category.id }}", catName:"{{ cname|escapejs }}",
+     name:"{{ iname|escapejs }}", desc:"{{ idesc|escapejs }}",
+     price:{{ bi.price|floatformat:0 }}, old:{% if bi.is_on_promo %}{{ bi.old_price|floatformat:0 }}{% else %}null{% endif %},
+     badge:{% if bi.badge_text %}"{{ bi.badge_text|escapejs }}"{% else %}null{% endif %},
+     img:"{% if bi.item.photo %}{{ bi.item.photo.url }}{% endif %}"},{% endwith %}{% endfor %}{% endfor %}
+  ],
+  cartQty: {{ cart_qty|default:0 }}
+};
+</script>
+<script src="{% static 'custom/ny-burgers/js/app.js' %}"></script>
+</body>
+</html>

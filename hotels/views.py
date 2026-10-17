@@ -5,6 +5,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.urls import reverse
+from django.utils.translation import gettext as _
 
 from .models import (
     Hotel, HotelBranch, RoomCategory, Room, HotelBooking, HotelService,
@@ -316,7 +317,28 @@ def _get_room_by_code(code):
     )
 
 
+def _switch_language(request, code):
+    """?lang=ru|ky|en — гость выбирает язык сам.
+
+    Страница номера живёт вне i18n_patterns (QR-ссылка должна быть короткой и
+    неизменной), поэтому язык запоминаем в куке — её подхватит LocaleMiddleware.
+    """
+    lang = request.GET.get("lang")
+    if lang not in dict(settings.LANGUAGES):
+        return None
+    resp = redirect("hotel_room_request", code=code)
+    resp.set_cookie(
+        settings.LANGUAGE_COOKIE_NAME, lang,
+        max_age=60 * 60 * 24 * 30, samesite="Lax",
+    )
+    return resp
+
+
 def room_request_page(request, code):
+    switched = _switch_language(request, code)
+    if switched:
+        return switched
+
     room = _get_room_by_code(code)
     if not room:
         return render(request, "hotels/room_request.html", {"not_found": True}, status=404)
@@ -351,7 +373,7 @@ def room_request_submit(request, code):
     )) if kind == RoomRequest.Kind.SERVICE else []
 
     if kind == RoomRequest.Kind.SERVICE and not services and not comment:
-        messages.error(request, "Выберите услугу или напишите, что нужно")
+        messages.error(request, _("Выберите услугу или напишите, что нужно"))
         return redirect("hotel_room_request", code=code)
 
     total = sum((s.price for s in services), 0)
@@ -380,5 +402,7 @@ def room_request_submit(request, code):
         msg += f"Комментарий: {comment}\n"
     _notify_hotel_booking(branch, msg)
 
-    messages.success(request, "Заявка отправлена! Скоро подойдём." if kind == RoomRequest.Kind.LOBBY else "Заявка отправлена! Скоро принесём.")
+    messages.success(request, _("Заявка отправлена! Скоро подойдём.")
+                     if kind == RoomRequest.Kind.LOBBY
+                     else _("Заявка отправлена! Скоро принесём."))
     return redirect("hotel_room_request", code=code)

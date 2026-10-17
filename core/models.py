@@ -142,6 +142,17 @@ class Branch(TimeStampedModel):
     lat = models.DecimalField("Широта",  max_digits=10, decimal_places=7, null=True, blank=True)
     lon = models.DecimalField("Долгота", max_digits=10, decimal_places=7, null=True, blank=True)
 
+    # ── Индивидуальный дизайн страницы меню (доп. услуга) ───────────────────
+    template_slug = models.SlugField(
+        "Индивидуальный дизайн", max_length=60, blank=True, default="",
+        help_text=(
+            "Код темы оформления. Пусто — стандартная страница меню. "
+            "Если заполнено, меню рендерится шаблоном templates/custom/<код>/menu.html, "
+            "а статика берётся из static/custom/<код>/. Корзина, заказы, цены "
+            "и кабинет остаются общими."
+        ),
+    )
+
     def save(self, *args, **kwargs):
         self.photo_compression = None
         if self.promo_photo and hasattr(self.promo_photo, 'file'):

@@ -129,6 +129,16 @@
         </div>
 
         <div class="db-form-group">
+          <label class="db-label" for="label">Метка на карточке</label>
+          <input class="db-input" id="label" name="label" type="text" maxlength="20"
+                 placeholder="Хит, Новинка, Острое…" value="{{ bi.label }}">
+          <div class="db-hint">
+            Небольшой бейдж на фото блюда. Если запущена акция, вместо метки
+            показывается бейдж акции. Оставьте пустым, чтобы бейджа не было.
+          </div>
+        </div>
+
+        <div class="db-form-group">
           <label class="db-label">КБЖУ на порцию (необязательно)</label>
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
             <input class="db-input" name="calories" type="number" min="0" placeholder="Ккал" value="{{ item.calories|default:'' }}">

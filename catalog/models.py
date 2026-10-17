@@ -36,7 +36,12 @@ def _compress_photo(field, max_side=900, quality=82):
     try:
         field.file.seek(0)
         img = Image.open(field)
-        img = img.convert("RGB")
+        # Прозрачный фон сохраняем: блюдо «вырезанное» из фона красиво ложится
+        # на любую подложку. convert("RGB") залил бы альфу чёрным.
+        has_alpha = img.mode in ("RGBA", "LA") or (
+            img.mode == "P" and "transparency" in img.info
+        )
+        img = img.convert("RGBA" if has_alpha else "RGB")
         img.thumbnail((max_side, max_side), Image.LANCZOS)
         buf = BytesIO()
         img.save(buf, format="WEBP", quality=quality, method=6)
@@ -153,6 +158,11 @@ class BranchItem(TimeStampedModel):
         "Текст бейджа", max_length=20, blank=True, default="",
         help_text="Например «Акция» или «Скидка». Если оставить пустым — «Акция».",
     )
+    label = models.CharField(
+        "Метка на карточке", max_length=20, blank=True, default="",
+        help_text="Например «Хит», «Новинка», «Острое». Показывается без скидки; "
+                  "если запущена акция, бейдж акции важнее.",
+    )
 
     class Meta:
         verbose_name = "Блюдо Филиал"
@@ -176,6 +186,13 @@ class BranchItem(TimeStampedModel):
     def promo_badge_text(self):
         from django.utils.translation import gettext
         return self.promo_label.strip() or gettext("Акция")
+
+    @property
+    def badge_text(self):
+        """Что показать на карточке: бейдж акции важнее обычной метки."""
+        if self.is_on_promo:
+            return self.promo_badge_text
+        return self.label.strip()
     
     
 class BranchCategoryItem(TimeStampedModel):

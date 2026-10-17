@@ -420,6 +420,11 @@ def branch_edit(request, branch_id):
 
         branch.external_url = request.POST.get("external_url", "").strip()
 
+        # Тему оформления меняет только администратор: это платная доп. услуга,
+        # и неверный код просто вернул бы филиал на стандартное меню.
+        if request.user.is_superuser and "template_slug" in request.POST:
+            branch.template_slug = request.POST.get("template_slug", "").strip()
+
         lat_raw = request.POST.get("lat", "").strip()
         lon_raw = request.POST.get("lon", "").strip()
         branch.lat = lat_raw if lat_raw else None
@@ -657,6 +662,7 @@ def item_edit(request, branch_item_id):
         else:
             bi.old_price = None
         bi.promo_label = request.POST.get("promo_label", "").strip()[:20]
+        bi.label = request.POST.get("label", "").strip()[:20]
 
         bi.is_available = request.POST.get("is_available") == "on"
         # «Только в зале» — блюдо скрыто из онлайн-меню (доставка/самовывоз),
@@ -668,8 +674,8 @@ def item_edit(request, branch_item_id):
             item.photo = photo
 
         item.save()
-        bi.save(update_fields=["price", "old_price", "promo_label", "is_available",
-                               "delivery_available", "updated_at"])
+        bi.save(update_fields=["price", "old_price", "promo_label", "label",
+                               "is_available", "delivery_available", "updated_at"])
 
         # Update category assignment
         new_cat_id = request.POST.get("branch_category_id", "").strip()

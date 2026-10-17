@@ -155,8 +155,14 @@ def hotel_room_add(request, branch_id):
             branch=branch,
             category=category,
             name_ru=name,
+            name_ky=request.POST.get("name_ky", "").strip(),
+            name_en=request.POST.get("name_en", "").strip(),
             description_ru=request.POST.get("description_ru", "").strip(),
+            description_ky=request.POST.get("description_ky", "").strip(),
+            description_en=request.POST.get("description_en", "").strip(),
             amenities_ru=request.POST.get("amenities_ru", "").strip(),
+            amenities_ky=request.POST.get("amenities_ky", "").strip(),
+            amenities_en=request.POST.get("amenities_en", "").strip(),
             price_per_night=_dec(request.POST.get("price_per_night")),
             price_per_extra_guest=_dec(request.POST.get("price_per_extra_guest")),
             max_guests=max(1, int(request.POST.get("max_guests") or 2)),
@@ -194,8 +200,14 @@ def hotel_room_edit(request, room_id):
         name = request.POST.get("name_ru", "").strip()
         if name:
             room.name_ru = name
+        room.name_ky              = request.POST.get("name_ky", "").strip()
+        room.name_en              = request.POST.get("name_en", "").strip()
         room.description_ru       = request.POST.get("description_ru", "").strip()
+        room.description_ky       = request.POST.get("description_ky", "").strip()
+        room.description_en       = request.POST.get("description_en", "").strip()
         room.amenities_ru         = request.POST.get("amenities_ru", "").strip()
+        room.amenities_ky         = request.POST.get("amenities_ky", "").strip()
+        room.amenities_en         = request.POST.get("amenities_en", "").strip()
         room.price_per_night      = _dec(request.POST.get("price_per_night"))
         room.price_per_extra_guest = _dec(request.POST.get("price_per_extra_guest"))
         try:
@@ -597,7 +609,11 @@ def hotel_service_edit(request, branch_id=None, service_id=None):
             service = HotelService(branch=branch)
 
         service.name_ru = name
+        service.name_ky = request.POST.get("name_ky", "").strip()
+        service.name_en = request.POST.get("name_en", "").strip()
         service.description_ru = request.POST.get("description_ru", "").strip()
+        service.description_ky = request.POST.get("description_ky", "").strip()
+        service.description_en = request.POST.get("description_en", "").strip()
         service.price = _dec(request.POST.get("price"))
         service.is_active = request.POST.get("is_active") == "on"
         service.show_in_room = request.POST.get("show_in_room") == "on"
