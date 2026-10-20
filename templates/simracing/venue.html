@@ -284,13 +284,26 @@
     /* ── Слоты ── */
     .slots-grid{display:flex;flex-wrap:wrap;gap:8px}
     .slot{
-      min-height:44px;padding:11px 15px;background:var(--surface);border:1px solid var(--line);
+      min-height:44px;padding:8px 13px;background:var(--surface);border:1px solid var(--line);
       border-radius:11px;cursor:pointer;font-size:14px;font-weight:600;
-      display:inline-flex;align-items:center;transition:border-color .15s,background .15s,color .15s;
+      display:inline-flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;
+      transition:border-color .15s,background .15s,color .15s;
     }
     .slot:hover{border-color:#fdba74}
     .slot.selected{border-color:var(--accent);background:var(--accent);color:#fff}
     .slot-none{color:var(--muted);font-size:13.5px;padding:14px 0}
+    /* сколько машин свободно на этом времени */
+    .slot-free{font-size:10.5px;font-weight:600;color:var(--muted);letter-spacing:-.1px}
+    .slot.selected .slot-free{color:rgba(255,255,255,.85)}
+    .slot.is-last .slot-free{color:var(--accent)}
+    .slot.is-last.selected .slot-free{color:#fff}
+    /* подпись «свободно N машин» над счётчиком */
+    .free-note{
+      font-size:13px;font-weight:600;color:var(--ink-2);background:var(--bg);
+      border:1px solid var(--line);border-radius:11px;padding:10px 13px;margin-bottom:14px;
+    }
+    .free-note:empty{display:none}
+    .qty-btn:disabled{opacity:.35;cursor:not-allowed}
 
     /* ── Контакты ── */
     .field{margin-bottom:14px}
@@ -410,8 +423,8 @@
   <div class="steps">
     <div class="step active" id="step-ind-1"><div class="step-num">1</div><div class="step-label">{% trans "Тип" %}</div></div>
     <div class="step" id="step-ind-2"><div class="step-num">2</div><div class="step-label">{% trans "Сессия" %}</div></div>
-    <div class="step" id="step-ind-3"><div class="step-num">3</div><div class="step-label">{% trans "Заезды" %}</div></div>
-    <div class="step" id="step-ind-4"><div class="step-num">4</div><div class="step-label">{% trans "Дата/время" %}</div></div>
+    <div class="step" id="step-ind-3"><div class="step-num">3</div><div class="step-label">{% trans "Дата/время" %}</div></div>
+    <div class="step" id="step-ind-4"><div class="step-num">4</div><div class="step-label">{% trans "Машины" %}</div></div>
     <div class="step" id="step-ind-5"><div class="step-num">5</div><div class="step-label">{% trans "Контакты" %}</div></div>
   </div>
 
@@ -433,30 +446,8 @@
       <button class="btn-back" onclick="goStep(1)">← {% trans "Назад" %}</button>
     </div>
 
-    <!-- Шаг 3: количество -->
+    <!-- Шаг 3: дата и время -->
     <div class="panel" id="panel-3">
-      <div class="section-label">{% trans "Количество заездов" %}</div>
-      <div class="qty-layout">
-        <div class="qty-main">
-          <div class="qty-row">
-            <button class="qty-btn" onclick="changeQty(-1)" aria-label="−">−</button>
-            <div class="qty-val" id="qty-display">1</div>
-            <button class="qty-btn" onclick="changeQty(+1)" aria-label="+">+</button>
-          </div>
-          <div class="qty-total" id="qty-total">{% trans "Итого: — сом · — мин" %}</div>
-          <div class="qty-limit">
-            {% blocktrans with n=venue.max_parallel_bookings %}Максимум {{ n }} заездов за одну запись{% endblocktrans %}
-          </div>
-          {% if venue.discount_percent %}<div class="promo-hint">🔥 {% if venue.discount_until %}{% blocktrans with p=venue.discount_percent t=venue.discount_until|time:"H:i" %}−{{ p }}% на заезды, которые начинаются до {{ t }}{% endblocktrans %}{% else %}{% blocktrans with p=venue.discount_percent %}−{{ p }}% на все заезды{% endblocktrans %}{% endif %}{% if venue.discount_weekdays_only %} ({% trans "по будням" %}){% endif %}</div>{% endif %}
-              </div>
-        <div class="wheels" id="wheels" aria-hidden="true"></div>
-      </div>
-      <button class="btn-next" onclick="goStep(4)">{% trans "Далее →" %}</button>
-      <button class="btn-back" onclick="goStep(2)">← {% trans "Назад" %}</button>
-    </div>
-
-    <!-- Шаг 4: дата и время -->
-    <div class="panel" id="panel-4">
       <div class="section-label">{% trans "Дата посещения" %}</div>
       <div class="days" id="days-strip"></div>
       <label class="other-date">
@@ -469,7 +460,28 @@
         <div class="slots-count" id="slots-count"></div>
       </div>
       <div id="slots-wrap"><div class="slot-none">{% trans "Выберите дату выше" %}</div></div>
-      <button class="btn-next" id="btn4" disabled onclick="goStep(5)">{% trans "Далее →" %}</button>
+      <button class="btn-next" id="btn-date" disabled onclick="goStep(4)">{% trans "Далее →" %}</button>
+      <button class="btn-back" onclick="goStep(2)">← {% trans "Назад" %}</button>
+    </div>
+
+    <!-- Шаг 4: сколько машин -->
+    <div class="panel" id="panel-4">
+      <div class="section-label">{% trans "Сколько машин" %}</div>
+      <div class="free-note" id="free-note"></div>
+      <div class="qty-layout">
+        <div class="qty-main">
+          <div class="qty-row">
+            <button class="qty-btn" onclick="changeQty(-1)" aria-label="−">−</button>
+            <div class="qty-val" id="qty-display">1</div>
+            <button class="qty-btn" id="qty-plus" onclick="changeQty(+1)" aria-label="+">+</button>
+          </div>
+          <div class="qty-total" id="qty-total">{% trans "Итого: — сом · — мин" %}</div>
+          <div class="qty-limit" id="qty-limit"></div>
+          {% if venue.discount_percent %}<div class="promo-hint">🔥 {% if venue.discount_until %}{% blocktrans with p=venue.discount_percent t=venue.discount_until|time:"H:i" %}−{{ p }}% на заезды, которые начинаются до {{ t }}{% endblocktrans %}{% else %}{% blocktrans with p=venue.discount_percent %}−{{ p }}% на все заезды{% endblocktrans %}{% endif %}{% if venue.discount_weekdays_only %} ({% trans "по будням" %}){% endif %}</div>{% endif %}
+              </div>
+        <div class="wheels" id="wheels" aria-hidden="true"></div>
+      </div>
+      <button class="btn-next" onclick="goStep(5)">{% trans "Далее →" %}</button>
       <button class="btn-back" onclick="goStep(3)">← {% trans "Назад" %}</button>
     </div>
 
@@ -518,6 +530,14 @@ const T = {
   type: "{% trans 'Тип' %}",
   session: "{% trans 'Сессия' %}",
   runs: "{% trans 'Заездов' %}",
+  cars: "{% trans 'Машин' %}",
+  carOne: "{% trans 'машина' %}",
+  carFew: "{% trans 'машины' %}",
+  carMany: "{% trans 'машин' %}",
+  carShort: "{% trans 'своб.' %}",
+  freeAt: "{% trans 'Свободно на' %}",
+  maxOnTime: "{% trans 'Максимум на это время' %}",
+  maxPerBooking: "{% trans 'Максимум за одну запись' %}",
   dateTime: "{% trans 'Дата и время' %}",
   totalDuration: "{% trans 'Общая длительность' %}",
   toPay: "{% trans 'К оплате' %}",
@@ -545,7 +565,9 @@ const TYPE_META = {
   simulator:     { icon: "🎮", desc: T.metaSim },
 };
 
-let sel = { mtype: null, mtypeLabel: null, st: null, qty: 1, date: null, time: null };
+let sel = { mtype: null, mtypeLabel: null, st: null, qty: 1, date: null, time: null, free: 0 };
+let FREE = {};          // время → сколько машин свободно
+let CAPACITY = 0;       // всего машин в категории
 
 /* Скидка по времени: какие слоты попадают и сколько процентов.
    Присылает сервер вместе со слотами — здесь только показываем. */
@@ -618,12 +640,49 @@ function selectSession(id, duration, price) {
   updateQtyTotal();
 }
 
-/* ─── Step 3: Quantity ─── */
+/* ─── Шаг 4: сколько машин ───
+   Верхняя граница — не только настройка площадки, но и сколько машин реально
+   свободно на выбранном времени. */
+function qtyMax() {
+  const free = sel.free > 0 ? sel.free : QTY_MAX;
+  return Math.max(1, Math.min(QTY_MAX, free));
+}
+
 function changeQty(delta) {
-  sel.qty = Math.max(1, Math.min(QTY_MAX, sel.qty + delta));
+  sel.qty = Math.max(1, Math.min(qtyMax(), sel.qty + delta));
   document.getElementById('qty-display').textContent = sel.qty;
+  const plus = document.getElementById('qty-plus');
+  if (plus) plus.disabled = sel.qty >= qtyMax();
   updateQtyTotal();
   syncWheels();
+}
+
+/* Подписи шага: сколько свободно и чем ограничен выбор */
+function renderQtyStep() {
+  const note = document.getElementById('free-note');
+  const lim  = document.getElementById('qty-limit');
+  const max  = qtyMax();
+  if (note) {
+    note.textContent = sel.time
+      ? `${T.freeAt} ${sel.time}: ${sel.free} ${plural(sel.free, T.carOne, T.carFew, T.carMany)}`
+      : '';
+  }
+  if (lim) {
+    lim.textContent = (sel.free && sel.free <= QTY_MAX)
+      ? `${T.maxOnTime}: ${max}`
+      : `${T.maxPerBooking}: ${QTY_MAX}`;
+  }
+  document.getElementById('qty-display').textContent = sel.qty;
+  const plus = document.getElementById('qty-plus');
+  if (plus) plus.disabled = sel.qty >= max;
+}
+
+/* «3 машины» / «1 машина» — чтобы подпись не выглядела машинным переводом */
+function plural(n, one, few, many) {
+  const m = n % 10, h = n % 100;
+  if (m === 1 && h !== 11) return one;
+  if (m >= 2 && m <= 4 && (h < 10 || h >= 20)) return few;
+  return many;
 }
 
 /* ─── Колёса заездов ───
@@ -695,8 +754,9 @@ function resetWheels() {
 function updateQtyTotal() {
   const el = document.getElementById('qty-total');
   if (!sel.st) { el.textContent = T.totalDash; return; }
+  // машины едут одновременно: цена умножается, время заезда — нет
   const total = sel.st.price * sel.qty;
-  const mins  = sel.st.duration * sel.qty;
+  const mins  = sel.st.duration;
   el.textContent = `${T.total}: ${total.toLocaleString()} ${CUR} · ${mins} ${T.min}`;
 }
 
@@ -734,7 +794,7 @@ function setDate(dateStr) {
   if (!dateStr) return;
   sel.date = dateStr;
   sel.time = null;
-  document.getElementById('btn4').disabled = true;
+  document.getElementById('btn-date').disabled = true;
   document.querySelectorAll('.day').forEach(el => el.classList.remove('selected'));
   document.getElementById('day-' + dateStr)?.classList.add('selected');
   const inp = document.getElementById('date-input');
@@ -747,19 +807,18 @@ function resetDateStep() {
   document.getElementById('date-input').value = '';
   document.getElementById('slots-count').textContent = '';
   document.getElementById('slots-wrap').innerHTML = '<div class="slot-none">' + T.pickDate + '</div>';
-  document.getElementById('btn4').disabled = true;
+  document.getElementById('btn-date').disabled = true;
 }
 
 /* ─── Step 4: Date + Slots ─── */
 async function loadSlots(dateStr) {
   sel.time = null;
-  document.getElementById('btn4').disabled = true;
+  document.getElementById('btn-date').disabled = true;
   const wrap = document.getElementById('slots-wrap');
   wrap.innerHTML = '<div class="slot-none">' + T.loading + '</div>';
   const params = new URLSearchParams({
     machine_type: sel.mtype,
     session_type_id: sel.st.id,
-    quantity: sel.qty,
     date: dateStr,
   });
   try {
@@ -785,6 +844,9 @@ async function loadSlots(dateStr) {
     // слоты со скидкой приходят с сервера — правило живёт в одном месте
     DISC.slots = new Set(d.discounted || []);
     DISC.percent = d.discount_percent || 0;
+    // сколько машин свободно в каждом слоте — показываем прямо на плитке
+    FREE = d.free || {};
+    CAPACITY = d.capacity || QTY_MAX;
     let html = '';
     groups.forEach(g => {
       if (!g.items.length) return;
@@ -792,7 +854,11 @@ async function loadSlots(dateStr) {
       g.items.forEach(t => {
         const on = DISC.slots.has(t);
         const tag = on ? `<span class="disc-tag">−${DISC.percent}%</span>` : '';
-        html += `<div class="slot${on ? ' has-disc' : ''}" id="slot-${t.replace(':','-')}" onclick="selectSlot('${t}')">${t}${tag}</div>`;
+        const free = FREE[t] || 0;
+        const low  = free === 1 ? ' is-last' : '';
+        html += `<div class="slot${on ? ' has-disc' : ''}${low}" id="slot-${t.replace(':','-')}" onclick="selectSlot('${t}')">`
+              + `<span class="slot-time">${t}${tag}</span>`
+              + `<span class="slot-free">${free} ${T.carShort}</span></div>`;
       });
       html += '</div></div>';
     });
@@ -827,7 +893,7 @@ function prunePastSlots() {
     if (!slotIsPast(t)) return;
     if (sel.time === t) {                 // выбранный слот успел пройти
       sel.time = null;
-      document.getElementById('btn4').disabled = true;
+      document.getElementById('btn-date').disabled = true;
     }
     el.remove();
     removed++;
@@ -847,7 +913,10 @@ function selectSlot(t) {
   const sid = 'slot-' + t.replace(':','-');
   document.getElementById(sid)?.classList.add('selected');
   sel.time = t;
-  document.getElementById('btn4').disabled = false;
+  sel.free = FREE[t] || 0;
+  // если на этом времени машин меньше, чем уже выбрано, — подрезаем
+  if (sel.qty > qtyMax()) sel.qty = qtyMax();
+  document.getElementById('btn-date').disabled = false;
 }
 
 /* ─── Step 5: Summary + form fill ─── */
@@ -855,7 +924,7 @@ function buildSummary() {
   const base  = sel.st.price * sel.qty;
   const pct   = discForSelected();
   const total = base - Math.floor(base * pct / 100);
-  const mins  = sel.st.duration * sel.qty;
+  const mins  = sel.st.duration;          // машины едут одновременно
   const dateDisp = sel.date
     ? new Date(sel.date + 'T12:00:00').toLocaleDateString(LOCALE, {day:'numeric', month:'long', weekday:'short'})
     : '';
@@ -868,8 +937,8 @@ function buildSummary() {
   document.getElementById('summary').innerHTML = `
     <div class="summary-row"><span>${T.type}</span><span>${sel.mtypeLabel}</span></div>
     <div class="summary-row"><span>${T.session}</span><span>${sel.st.duration} ${T.min} · ${sel.st.price.toLocaleString()} ${CUR}</span></div>
-    <div class="summary-row"><span>${T.runs}</span><span>${sel.qty}</span></div>
     <div class="summary-row"><span>${T.dateTime}</span><span>${dateDisp}, ${sel.time}</span></div>
+    <div class="summary-row"><span>${T.cars}</span><span>${sel.qty} ${plural(sel.qty, T.carOne, T.carFew, T.carMany)}</span></div>
     <div class="summary-row"><span>${T.totalDuration}</span><span>${mins} ${T.min}</span></div>
     ${discRow}
     <div class="summary-row"><span>${T.toPay}</span><span>${payVal}</span></div>
@@ -910,14 +979,14 @@ function goStep(n) {
   window.scrollTo(0, 0);
   if (n === 2) buildSessions();
   if (n === 3) {
-    document.getElementById('qty-display').textContent = sel.qty;
-    updateQtyTotal();
-    resetWheels();   // панель только что стала видимой — размеры контейнера уже известны
-  }
-  if (n === 4) {
     buildDays();
     // после смены типа/сессии дата сбрасывается — показываем чистый шаг
     if (sel.date) setDate(sel.date); else resetDateStep();
+  }
+  if (n === 4) {
+    renderQtyStep();
+    updateQtyTotal();
+    resetWheels();   // панель только что стала видимой — размеры контейнера уже известны
   }
   if (n === 5) buildSummary();
 }

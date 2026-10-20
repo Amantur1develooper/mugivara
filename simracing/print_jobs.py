@@ -87,7 +87,7 @@ def _appt_receipt(appt):
         B + _center(f"ЗАПИСЬ #{appt.id}") + b,
         SEP,
         f"Тип: {type_label}",
-        f"Сессия: {dur_per} мин × {appt.quantity} заезд(а)",
+        f"Машин: {appt.quantity} × {dur_per} мин",
         _row("Дата:", date_str),
         _row("Время:", appt.appt_time.strftime("%H:%M")),
         _row("Итог. длит.:", f"{appt.duration_minutes} мин"),

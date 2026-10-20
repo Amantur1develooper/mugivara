@@ -64,9 +64,11 @@ class SimRacingVenue(models.Model):
     tg_chat_id   = models.CharField("TG Chat ID", max_length=50, blank=True, default="")
     tg_thread_id = models.PositiveIntegerField("TG Thread ID", null=True, blank=True)
     max_parallel_bookings = models.PositiveSmallIntegerField(
-        "Макс. одновременных броней в категории", default=7,
-        help_text="Сколько машин в одной категории можно забронировать на одно и то же время. "
-                  "Например 7 — на 15:00 примем до 7 броней стандартных картов, восьмую уже нет.",
+        "Макс. заездов в одной записи", default=7,
+        help_text="Сколько заездов клиент может взять за одну запись — это верхняя "
+                  "граница поля «Заезды» в форме брони. "
+                  "Сколько броней влезет на одно и то же время, считается отдельно: "
+                  "по числу машин категории, которые «в работе».",
     )
 
     # ── Скидка по времени («счастливые часы») ──────────────────────────────

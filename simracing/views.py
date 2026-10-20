@@ -56,15 +56,39 @@ def _venue_hours(v):
     return _parse_working_hours(v.working_hours)
 
 
+def _capacity(v, machine_type):
+    """Сколько броней на одно время выдержит категория.
+
+    Это количество машин в категории, которые «в работе». Настройку
+    max_parallel_bookings сюда брать нельзя: она ограничивает, сколько заездов
+    клиент берёт за одну запись, и если там стоит 7, а карт всего один, время
+    после подтверждения так и остаётся свободным для остальных.
+
+    Если машины ещё не заведены, падаем на старое поведение — иначе площадка
+    без заполненного парка вообще перестала бы принимать записи.
+    """
+    n = Machine.objects.filter(venue=v, type=machine_type, is_active=True).count()
+    if n:
+        return n
+    return max(1, v.max_parallel_bookings)
+
+
 def _max_concurrent(window_start, window_end, intervals):
     """Максимум одновременно занятых машин внутри окна [start, end).
-    Считаем именно пик одновременности, а не число пересечений: семь коротких
-    заездов, идущих друг за другом, занимают одну машину, а не семь."""
+
+    Считаем именно пик одновременности, а не число пересечений: два заезда,
+    идущие друг за другом, занимают одну машину, а не две.
+
+    intervals — (начало, конец) или (начало, конец, сколько машин). Бронь на
+    три карта занимает три машины сразу, поэтому вес обязателен.
+    """
     events = []
-    for b_start, b_end in intervals:
+    for item in intervals:
+        b_start, b_end = item[0], item[1]
+        weight = item[2] if len(item) > 2 else 1
         if b_start < window_end and b_end > window_start:
-            events.append((max(b_start, window_start), 1))
-            events.append((min(b_end, window_end), -1))
+            events.append((max(b_start, window_start), weight))
+            events.append((min(b_end, window_end), -weight))
     if not events:
         return 0
     # при совпадении времени сначала освобождение (-1), потом занятие (+1):
@@ -77,6 +101,11 @@ def _max_concurrent(window_start, window_end, intervals):
     return peak
 
 
+def _free_machines(window_start, window_end, intervals, capacity):
+    """Сколько машин свободно на всём протяжении окна."""
+    return max(0, capacity - _max_concurrent(window_start, window_end, intervals))
+
+
 def _generate_slots(open_t, close_t, duration_total, appt_date, booked_intervals,
                     step_minutes=30, capacity=1):
     """Слоты строго внутри часов работы, без прошедших и занятых.
@@ -84,7 +113,7 @@ def _generate_slots(open_t, close_t, duration_total, appt_date, booked_intervals
     на :00 и :30. Длина самой брони берётся из duration_total, поэтому заезд
     может быть и короче шага.
     Если часы работы не заданы — слотов нет (бронировать на закрытое время нельзя)."""
-    slots = []
+    slots = {}
     if not open_t or not close_t:
         return slots
     step = timedelta(minutes=max(5, int(step_minutes or 15)))
@@ -105,9 +134,11 @@ def _generate_slots(open_t, close_t, duration_total, appt_date, booked_intervals
         if appt_date == now_dt.date() and cursor <= now_dt + timedelta(minutes=15):
             cursor += step
             continue
-        # слот доступен, пока в категории есть свободная машина
-        if _max_concurrent(cursor, slot_end, booked_intervals) < max(1, capacity):
-            slots.append(cursor.strftime("%H:%M"))
+        # слот показываем, пока в категории есть хотя бы одна свободная машина,
+        # и сразу считаем, сколько их — клиент выбирает количество уже зная это
+        free = _free_machines(cursor, slot_end, booked_intervals, max(1, capacity))
+        if free > 0:
+            slots[cursor.strftime("%H:%M")] = free
         cursor += step
 
     return slots
@@ -193,19 +224,14 @@ def slots_json(request, slug):
     machine_type = request.GET.get("machine_type", "")
     date_str = request.GET.get("date", "")
     st_id = request.GET.get("session_type_id", "")
-    qty_raw = request.GET.get("quantity", "1")
 
     try:
         appt_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-        quantity = max(1, int(qty_raw))
     except Exception:
-        return JsonResponse({"slots": []})
-
-    # Больше, чем разрешено настройкой площадки, за одну запись брать нельзя
-    quantity = min(quantity, max(1, v.max_parallel_bookings))
+        return JsonResponse({"slots": [], "free": {}})
 
     if appt_date < date.today():
-        return JsonResponse({"slots": []})
+        return JsonResponse({"slots": [], "free": {}})
 
     # Get duration for this session type
     duration_per_session = 0
@@ -220,7 +246,9 @@ def slots_json(request, slug):
         # fallback: 30 min
         duration_per_session = 30
 
-    duration_total = duration_per_session * quantity
+    # Длительность не зависит от количества: несколько машин едут одновременно,
+    # а не одна подряд несколько раз.
+    duration_total = duration_per_session
 
     # Booked intervals for that date + machine_type.
     # Время занимают ТОЛЬКО подтверждённые записи: пока владелец не подтвердил
@@ -236,14 +264,17 @@ def slots_json(request, slug):
     for appt in existing:
         b_start = datetime.combine(appt_date, appt.appt_time)
         b_end = b_start + timedelta(minutes=appt.duration_minutes)
-        booked_intervals.append((b_start, b_end))
+        booked_intervals.append((b_start, b_end, max(1, appt.quantity)))
 
     open_t, close_t = _venue_hours(v)
     if not open_t or not close_t:
         # часы работы не настроены — бронировать «вслепую» нельзя
-        return JsonResponse({"slots": [], "reason": "no_hours"})
-    slots = _generate_slots(open_t, close_t, duration_total, appt_date, booked_intervals,
-                            capacity=v.max_parallel_bookings)
+        return JsonResponse({"slots": [], "free": {}, "reason": "no_hours"})
+
+    capacity = _capacity(v, machine_type)
+    free_by_slot = _generate_slots(open_t, close_t, duration_total, appt_date,
+                                   booked_intervals, capacity=capacity)
+    slots = list(free_by_slot.keys())
 
     # Какие из слотов попадают под скидку — считаем здесь, чтобы правило
     # жило в одном месте и не разъезжалось с серверным расчётом цены.
@@ -253,8 +284,11 @@ def slots_json(request, slug):
     ]
     return JsonResponse({
         "slots": slots,
+        "free": free_by_slot,          # время → сколько машин свободно
+        "capacity": capacity,          # всего машин в категории
         "discounted": discounted,
         "discount_percent": v.discount_percent,
+        "duration_minutes": duration_per_session,
     })
 
 
@@ -279,12 +313,14 @@ def book_appt(request, slug):
     except Exception:
         return redirect("simracing:venue", slug=slug)
 
-    # Лимит заездов за одну запись — из настроек площадки
+    # Лимит машин за одну запись — из настроек площадки
     if quantity > max(1, v.max_parallel_bookings):
         return redirect("simracing:venue", slug=slug)
 
+    # Количество — это машины, которые едут ОДНОВРЕМЕННО: цена умножается,
+    # а время заезда остаётся прежним.
     base_price = st.price * quantity
-    duration_total = st.duration_minutes * quantity
+    duration_total = st.duration_minutes
 
     # Скидку считаем на сервере по времени заезда — то, что прислал браузер,
     # на цену не влияет.
@@ -317,10 +353,13 @@ def book_appt(request, slug):
     )
     busy_intervals = [
         (datetime.combine(appt_date, b.appt_time),
-         datetime.combine(appt_date, b.appt_time) + timedelta(minutes=b.duration_minutes))
+         datetime.combine(appt_date, b.appt_time) + timedelta(minutes=b.duration_minutes),
+         max(1, b.quantity))
         for b in busy
     ]
-    if _max_concurrent(start_dt, end_dt, busy_intervals) >= max(1, v.max_parallel_bookings):
+    # Свободных машин должно хватить на все, что просит клиент
+    free = _free_machines(start_dt, end_dt, busy_intervals, _capacity(v, machine_type))
+    if quantity > free:
         return redirect("simracing:venue", slug=slug)
 
     appt = SimRacingAppointment.objects.create(
@@ -349,7 +388,7 @@ def book_appt(request, slug):
         v,
         f"🏎 <b>Новая запись #{appt.id}</b>\n"
         f"Тип: {type_label}\n"
-        f"Сессия: {st.duration_minutes} мин × {quantity} заезд(а) = {duration_total} мин\n"
+        f"Машин: {quantity} × {st.duration_minutes} мин (едут одновременно)\n"
         f"{disc_line}"
         f"Итого: {int(total_price)} сом\n"
         f"Дата: {date_fmt} в {time_str}\n"
@@ -365,7 +404,7 @@ def book_appt(request, slug):
         wa_text = (
             f"🏎️ Картинг — заявка на бронь №{appt.id}\n\n"
             f"Тип: {type_label}\n"
-            f"Сессия: {st.duration_minutes} мин × {quantity} заезд(а) = {duration_total} мин\n"
+            f"Машин: {quantity} × {st.duration_minutes} мин (едут одновременно)\n"
             f"Дата: {date_fmt}\n"
             f"Время: {time_str}\n"
             f"{disc_line}"
