@@ -1,4 +1,4 @@
-{% load static i18n %}
+{% load static i18n %}{% load i18n_attrs %}
 <!doctype html>
 <html lang="{{ LANGUAGE_CODE }}">
 <head>
@@ -477,18 +477,18 @@
     <div class="wb-nav-langs" style="display:flex;gap:6px;">
       <form action="{% url 'set_language' %}" method="post">
         {% csrf_token %}
-        <input type="hidden" name="next" value="{{ request.path }}">
+        <input type="hidden" name="next" value="{% url_in_lang 'ru' %}">
         <button class="wb-lang-btn{% if LANGUAGE_CODE == 'ru' %} active{% endif %}" type="submit" name="language" value="ru">RU</button>
       </form>
       <form action="{% url 'set_language' %}" method="post">
         {% csrf_token %}
-        <input type="hidden" name="next" value="{{ request.path }}">
+        <input type="hidden" name="next" value="{% url_in_lang 'ky' %}">
         <button class="wb-lang-btn{% if LANGUAGE_CODE == 'ky' %} active{% endif %}" type="submit" name="language" value="ky">KY</button>
       </form>
       {% if request.resolver_match.url_name != 'home' %}
       <form action="{% url 'set_language' %}" method="post">
         {% csrf_token %}
-        <input type="hidden" name="next" value="{{ request.path }}">
+        <input type="hidden" name="next" value="{% url_in_lang 'en' %}">
         <button class="wb-lang-btn{% if LANGUAGE_CODE == 'en' %} active{% endif %}" type="submit" name="language" value="en">EN</button>
       </form>
       {% endif %}
@@ -529,16 +529,16 @@
       <div class="wb-drawer-langs">
         <div style="font-size:12px;color:var(--muted);margin-bottom:8px;width:100%;">{% trans "Язык / Тил / Language" %}</div>
         <form action="{% url 'set_language' %}" method="post">
-          {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+          {% csrf_token %}<input type="hidden" name="next" value="{% url_in_lang 'ru' %}">
           <button class="wb-lang-btn{% if LANGUAGE_CODE == 'ru' %} active{% endif %}" type="submit" name="language" value="ru">RU</button>
         </form>
         <form action="{% url 'set_language' %}" method="post">
-          {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+          {% csrf_token %}<input type="hidden" name="next" value="{% url_in_lang 'ky' %}">
           <button class="wb-lang-btn{% if LANGUAGE_CODE == 'ky' %} active{% endif %}" type="submit" name="language" value="ky">KY</button>
         </form>
         {% if request.resolver_match.url_name != 'home' %}
         <form action="{% url 'set_language' %}" method="post">
-          {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+          {% csrf_token %}<input type="hidden" name="next" value="{% url_in_lang 'en' %}">
           <button class="wb-lang-btn{% if LANGUAGE_CODE == 'en' %} active{% endif %}" type="submit" name="language" value="en">EN</button>
         </form>
         {% endif %}

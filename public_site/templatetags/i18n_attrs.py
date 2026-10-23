@@ -45,3 +45,34 @@ def t(obj, base_field: str):
 
     # fallback если нет *_ru полей
     return getattr(obj, base_field, "") or ""
+
+
+@register.simple_tag(takes_context=True)
+def url_in_lang(context, lang_code):
+    """Текущий адрес в другом языке.
+
+    Переключатель языка отправлял в set_language текущий путь вместе со старым
+    префиксом (/ky/...). Django менял язык, редиректил обратно на этот путь, а
+    LocaleMiddleware по префиксу снова включал прежний язык — переключение
+    «залипало». Отдаём адрес, уже переписанный под нужный язык.
+    """
+    from django.conf import settings
+    from django.urls import translate_url
+    request = context.get("request")
+    if not request:
+        return "/"
+    path = request.get_full_path()
+    try:
+        translated = translate_url(path, lang_code)
+    except Exception:
+        translated = path
+    if translated != path:
+        return translated
+    # translate_url не справился. Так бывает, когда маршрут объявлен и внутри
+    # i18n_patterns, и вне его (страницы QR-столов): reverse даёт адрес без
+    # префикса, и перевод возвращает исходный путь. Подменяем префикс сами.
+    codes = {code for code, _ in settings.LANGUAGES}
+    head, _, tail = path[1:].partition("/")
+    if head in codes:
+        return f"/{lang_code}/{tail}"
+    return path
