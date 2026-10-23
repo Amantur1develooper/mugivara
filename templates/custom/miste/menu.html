@@ -1,0 +1,125 @@
+{% load static i18n i18n_attrs l10n %}{% get_current_language as LANG %}
+<!doctype html>
+<html lang="{{ LANG|default:'ru' }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% t branch.restaurant "name" %} — {% trans "меню" %}</title>
+<meta name="description" content="{% t branch.restaurant "name" %}, {{ branch.address }} — {% trans "меню и заказ онлайн" %}">
+<meta name="theme-color" content="#7b4535">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="{% static 'custom/miste/css/style.css' %}">
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-in">
+    <a class="logo" href="#top">
+      <b>{% t branch.restaurant "name" %}</b>
+      <span>{% trans "кофе жана тамак" %}</span>
+    </a>
+    <nav class="langs">
+      <a href="/ru/{{ branch.id }}/menu/" {% if LANG == 'ru' %}class="on"{% endif %}>RU</a>
+      <a href="/ky/{{ branch.id }}/menu/" {% if LANG == 'ky' %}class="on"{% endif %}>KG</a>
+      <a href="/en/{{ branch.id }}/menu/" {% if LANG == 'en' %}class="on"{% endif %}>EN</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap" id="top">
+
+  <div class="hero">
+    {% if branch.cover_photo %}
+      <img src="{{ branch.cover_photo.url }}" alt="{% t branch.restaurant "name" %}">
+    {% elif menu.0.branch_category.category.photo %}
+      <img src="{{ menu.0.branch_category.category.photo.url }}" alt="{% t branch.restaurant "name" %}">
+    {% endif %}
+    <div class="hero-txt">
+      <h1>{% t branch.restaurant "name" %}</h1>
+      <p>{% trans "Качество на первом месте" %}</p>
+      <div class="hero-meta">
+        {% if branch.is_open_24h %}
+          <span class="open">{% trans "Круглосуточно" %}</span>
+        {% elif branch.open_time and branch.close_time %}
+          <span class="open">{{ branch.open_time|time:"H:i" }}–{{ branch.close_time|time:"H:i" }}</span>
+        {% endif %}
+        {% if branch.address %}<span>📍 {{ branch.address }}</span>{% endif %}
+        {% if branch.phone %}<a href="tel:{{ branch.phone }}">📞 {{ branch.phone }}</a>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# разделы с обложками #}
+  <div class="cats">
+    {% for group in menu %}
+      {% t group.branch_category.category "name" as cname %}
+      <a class="cat" href="#sec-{{ group.branch_category.id }}">
+        {% if group.branch_category.category.photo %}
+          <img src="{{ group.branch_category.category.photo.url }}" alt="{{ cname }}" loading="lazy">
+        {% endif %}
+        <i>{{ group.items|length }}</i>
+        <b>{{ cname }}</b>
+      </a>
+    {% endfor %}
+  </div>
+
+  {# липкая лента разделов #}
+  <nav class="tabs">
+    {% for group in menu %}
+      {% t group.branch_category.category "name" as cname %}
+      <a href="#sec-{{ group.branch_category.id }}" {% if forloop.first %}class="on"{% endif %}>{{ cname }}</a>
+    {% endfor %}
+  </nav>
+
+  <div id="sections"></div>
+
+  <footer>
+    <div class="f-row">
+      <div><b>{% t branch.restaurant "name" %}</b> · {{ branch.address }}</div>
+      {% if branch.phone %}<div><a href="tel:{{ branch.phone }}">{{ branch.phone }}</a></div>{% endif %}
+      {% if branch.map_url %}<div><a href="{{ branch.map_url }}" target="_blank" rel="noopener">{% trans "Карта" %}</a></div>{% endif %}
+      <div>{% trans "Работает на Webordo" %}</div>
+    </div>
+  </footer>
+</main>
+
+<div class="bar" id="bar">
+  <div class="bar-in">
+    <div class="bar-sum"><b id="bar-total">0 {% cur %}</b><small id="bar-count">0</small></div>
+    <a href="{% url 'public_site:cart_detail' branch.id %}">{% trans "Оформить заказ" %}</a>
+  </div>
+</div>
+
+{% csrf_token %}
+<script>
+window.MISTE = {
+  cur: "{% cur %}",
+  csrf: document.querySelector('input[name=csrfmiddlewaretoken]').value,
+  urls: {
+    update: "{% url 'public_site:cart_update' branch.id 0 %}",
+    cart:   "{% url 'public_site:cart_json' branch.id %}"
+  },
+  i18n: {
+    add:   "{% trans 'В корзину' %}",
+    items: "{% trans 'поз.' %}",
+    dec:   "{% trans 'Убрать одну' %}",
+    inc:   "{% trans 'Добавить ещё' %}"
+  },
+  cats: [
+    {% for group in menu %}{% t group.branch_category.category "name" as cname %}
+    {id: {{ group.branch_category.id }}, name: "{{ cname|escapejs }}"},{% endfor %}
+  ],
+  menu: [
+    {% for group in menu %}{% for row in group.items %}{% with bi=row.branch_item %}{% t bi.item "name" as iname %}{% t bi.item "description" as idesc %}
+    {id: {{ bi.id }}, cat: {{ group.branch_category.id }},
+     name: "{{ iname|escapejs }}", desc: "{{ idesc|escapejs }}",
+     price: {{ bi.price|floatformat:0 }},
+     img: "{% if bi.item.photo %}{{ bi.item.photo.url }}{% endif %}"},{% endwith %}{% endfor %}{% endfor %}
+  ]
+};
+</script>
+<script src="{% static 'custom/miste/js/app.js' %}"></script>
+</body>
+</html>

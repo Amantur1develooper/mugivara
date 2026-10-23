@@ -58,6 +58,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", required=True, help="модуль с меню, напр. pizzburg_menu_data")
     ap.add_argument("--photos", required=True, help="папка с фото блюд")
+    ap.add_argument("--cat-photos", default="", dest="cat_photos",
+                    help="папка с обложками категорий (по умолчанию — та же, что у блюд)")
     ap.add_argument("--branches", default="", help='названия филиалов через «|»')
     ap.add_argument("--theme", default="", help="код индивидуального дизайна (template_slug)")
     ap.add_argument("--dry-run", action="store_true")
@@ -135,6 +137,14 @@ def main():
             category.name_ky, category.name_en = cat["ky"], cat["en"]
             category.save(update_fields=["name_ky", "name_en"])
 
+            # обложка раздела: ставим, только если её ещё нет
+            cover = cat.get("photo")
+            if cover and not category.photo:
+                cover_path = os.path.join(args.cat_photos or args.photos, cover)
+                if os.path.exists(cover_path):
+                    with open(cover_path, "rb") as fh:
+                        category.photo.save(cover, ContentFile(fh.read()), save=True)
+
             rows = []
             for ii, d in enumerate(cat["items"], start=1):
                 item, _ = Item.objects.get_or_create(restaurant=rest, name_ru=d["ru"])
@@ -173,6 +183,19 @@ def main():
             branch.name_en = b.get("en", "")
             branch.address = b.get("address", "")
             branch.is_active = True
+            # контакты и часы работы, если указаны в данных меню
+            if b.get("phone"):
+                branch.phone = b["phone"]
+            if b.get("map_url"):
+                branch.map_url = b["map_url"]
+            if b.get("open_time") and b.get("close_time"):
+                from django.utils.dateparse import parse_time
+                ot, ct = parse_time(b["open_time"]), parse_time(b["close_time"])
+                if ot and ct:
+                    branch.open_time, branch.close_time = ot, ct
+                    branch.is_open_24h = False
+            if b.get("work_days"):
+                branch.work_days = b["work_days"]
             if args.theme:
                 branch.template_slug = args.theme
             branch.save()

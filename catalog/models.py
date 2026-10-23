@@ -21,7 +21,14 @@ class Category(TimeStampedModel):
     name_ru = models.CharField(max_length=200)
     name_ky = models.CharField(max_length=200, blank=True, default="")
     name_en = models.CharField(max_length=200, blank=True, default="")
+    photo = models.ImageField(
+        "Фото категории", upload_to="categories/photos/", blank=True, null=True,
+        help_text="Обложка раздела меню. Показывается в оформлении, которое её поддерживает.",
+    )
 
+    def save(self, *args, **kwargs):
+        _compress_photo(self.photo)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.menu_set.name}: {self.name_ru}"

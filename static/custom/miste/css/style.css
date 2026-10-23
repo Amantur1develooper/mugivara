@@ -1,0 +1,181 @@
+/* Miste — тема оформления меню для Webordo.
+   Палитра взята из фирменного стиля кафе: тёплый кофейный коричневый,
+   охра, песочный. Вёрстка сделана «от телефона»: базовые правила — мобильные,
+   десктоп добавляется медиазапросами. */
+
+:root{
+  --ink:#2a1b14;          /* основной текст — тёмный кофе */
+  --ink-2:#6b5546;        /* вторичный текст */
+  --muted:#9c8775;
+  --bg:#faf6f0;           /* кремовый фон */
+  --surface:#ffffff;
+  --line:#ece2d6;
+  --brand:#7b4535;        /* фирменный коричневый */
+  --brand-2:#9f5727;      /* охра */
+  --sand:#fbd692;         /* песочный акцент */
+  --deep:#003a50;         /* тёмно-синий из фирменных цветов */
+  --good:#2f7d5d;
+  --radius:16px;
+  --shadow:0 1px 2px rgba(42,27,20,.05), 0 8px 24px rgba(42,27,20,.07);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg);color:var(--ink);
+  font:16px/1.5 'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:84px;           /* место под нижнюю панель корзины */
+}
+img{display:block;max-width:100%}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--brand-2);outline-offset:2px;border-radius:8px}
+
+.wrap{max-width:1120px;margin:0 auto;padding-inline:16px}
+
+/* ── шапка ── */
+.top{
+  position:sticky;top:0;z-index:40;background:rgba(250,246,240,.92);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
+}
+.top-in{display:flex;align-items:center;gap:12px;min-height:58px}
+.logo{display:flex;flex-direction:column;line-height:1;margin-right:auto}
+.logo b{font-size:23px;font-weight:700;letter-spacing:-.5px;color:var(--brand)}
+.logo span{font-size:8.5px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase;margin-top:3px}
+.langs{display:flex;gap:4px}
+.langs a{
+  font-size:11px;font-weight:700;letter-spacing:.03em;padding:7px 9px;border-radius:9px;
+  color:var(--ink-2);border:1px solid var(--line);background:var(--surface);
+}
+.langs a.on{background:var(--brand);border-color:var(--brand);color:#fff}
+
+/* ── обложка заведения ── */
+.hero{position:relative;margin:14px 0 18px;border-radius:var(--radius);overflow:hidden;background:var(--brand)}
+.hero img{width:100%;height:190px;object-fit:cover;opacity:.85}
+.hero-txt{position:absolute;inset:auto 0 0 0;padding:16px;background:linear-gradient(transparent,rgba(42,27,20,.78))}
+.hero h1{font-size:25px;font-weight:700;color:#fff;letter-spacing:-.4px}
+.hero p{font-size:13px;color:rgba(255,255,255,.85);margin-top:4px}
+.hero-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.hero-meta span, .hero-meta a{
+  font-size:11.5px;font-weight:600;color:var(--ink);background:rgba(255,255,255,.92);
+  border-radius:100px;padding:5px 10px;
+}
+.hero-meta .open{background:var(--sand)}
+
+/* ── разделы с обложками ── */
+.cats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:22px}
+.cat{
+  position:relative;border-radius:14px;overflow:hidden;background:var(--brand);
+  aspect-ratio:16/10;box-shadow:var(--shadow);
+}
+.cat img{width:100%;height:100%;object-fit:cover;opacity:.82;transition:transform .35s ease}
+.cat:hover img{transform:scale(1.05)}
+.cat b{
+  position:absolute;inset:auto 0 0 0;padding:10px 11px;color:#fff;font-size:14px;font-weight:700;
+  background:linear-gradient(transparent,rgba(42,27,20,.82));
+}
+.cat i{
+  position:absolute;top:8px;right:8px;font-style:normal;font-size:10.5px;font-weight:700;
+  background:rgba(255,255,255,.92);color:var(--ink);border-radius:100px;padding:3px 8px;
+}
+
+/* ── липкая лента разделов ── */
+.tabs{
+  position:sticky;top:58px;z-index:30;display:flex;gap:7px;overflow-x:auto;
+  padding:10px 16px;margin:0 -16px 16px;background:var(--bg);
+  border-bottom:1px solid var(--line);scrollbar-width:none;
+}
+.tabs::-webkit-scrollbar{display:none}
+.tabs a{
+  flex:0 0 auto;font-size:13px;font-weight:600;color:var(--ink-2);
+  background:var(--surface);border:1px solid var(--line);border-radius:100px;padding:8px 14px;
+}
+.tabs a.on{background:var(--brand);border-color:var(--brand);color:#fff}
+
+/* ── блюда ── */
+.sec{margin-bottom:26px;scroll-margin-top:118px}
+.sec-head{display:flex;align-items:baseline;gap:9px;margin-bottom:12px}
+.sec-head h2{font-size:19px;font-weight:700;letter-spacing:-.3px}
+.sec-head span{font-size:12px;color:var(--muted);font-weight:600}
+
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow);
+}
+.card-pic{aspect-ratio:4/3;background:#f3ece3;overflow:hidden;flex:0 0 auto}
+.card-pic img{width:100%;height:100%;object-fit:cover}
+.card-pic.empty{display:grid;place-items:center;color:var(--muted);font-size:11.5px;
+  text-align:center;padding:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.card-body{padding:11px 12px 12px;display:flex;flex-direction:column;flex:1;gap:5px}
+.card h3{font-size:14.5px;font-weight:700;line-height:1.25;overflow-wrap:anywhere}
+.card p{font-size:12px;color:var(--ink-2);line-height:1.4;flex:1}
+.card-buy{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px}
+.price{font-size:17px;font-weight:700;white-space:nowrap}
+.price small{font-size:11px;font-weight:600;color:var(--muted);margin-left:3px}
+.add{
+  background:var(--brand);color:#fff;font-weight:700;font-size:13px;
+  padding:8px 14px;border-radius:100px;transition:transform .12s ease,background .15s;
+}
+.add:active{transform:scale(.95)}
+.step{display:flex;align-items:center;background:var(--brand);color:#fff;border-radius:100px;font-weight:700}
+.step button{width:32px;height:32px;color:#fff;font-size:17px;line-height:1}
+.step span{min-width:20px;text-align:center;font-size:14px;font-variant-numeric:tabular-nums}
+
+/* ── нижняя панель корзины ── */
+.bar{
+  position:fixed;inset:auto 0 0 0;z-index:45;transform:translateY(110%);
+  transition:transform .25s ease;background:var(--surface);
+  border-top:1px solid var(--line);box-shadow:0 -6px 24px rgba(42,27,20,.1);
+  padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));
+}
+.bar.on{transform:none}
+.bar-in{max-width:1120px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.bar-sum{display:flex;flex-direction:column;line-height:1.25;margin-right:auto}
+.bar-sum b{font-size:17px}
+.bar-sum small{font-size:11.5px;color:var(--muted)}
+.bar a{
+  background:var(--brand);color:#fff;font-weight:700;font-size:14px;
+  padding:12px 20px;border-radius:100px;
+}
+
+footer{border-top:1px solid var(--line);margin-top:28px;padding:22px 0 10px;color:var(--muted);font-size:12.5px}
+footer b{color:var(--brand)}
+footer .f-row{display:flex;flex-wrap:wrap;gap:10px 18px}
+
+/* ── планшет и десктоп ── */
+@media (min-width:600px){
+  .cats{grid-template-columns:repeat(3,1fr);gap:12px}
+  .grid{grid-template-columns:repeat(3,1fr);gap:14px}
+  .hero img{height:250px}
+  .hero h1{font-size:31px}
+  .card h3{font-size:15.5px}
+}
+@media (min-width:960px){
+  .wrap{padding-inline:24px}
+  .cats{grid-template-columns:repeat(4,1fr)}
+  .grid{grid-template-columns:repeat(4,1fr)}
+  .hero img{height:300px}
+  .card-body{padding:13px 14px 14px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+
+/* ── Узкий экран: цена и кнопка не помещаются в строку ──────────────────────
+   В двух колонках на 360–400 px «В корзину» ломалась на две строки и налезала
+   на цену. Ставим их друг под другом, кнопка — во всю ширину карточки. */
+@media (max-width:560px){
+  .card-buy{flex-direction:column;align-items:stretch;gap:8px}
+  .price{font-size:16px}
+  .ctl{width:100%}
+  .add{width:100%;text-align:center;padding:9px 12px}
+  .step{width:100%;justify-content:space-between}
+  .step button{width:38px;height:36px}
+  .card h3{font-size:14px}
+  .card p{font-size:11.5px}
+  .card-body{padding:10px 11px 11px;gap:4px}
+  .cat b{font-size:13px;padding:9px 10px}
+  .hero h1{font-size:23px}
+}
