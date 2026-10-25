@@ -46,10 +46,13 @@ def prepare_photo(path):
         img.mode == "P" and "transparency" in img.info
     )
     img = img.convert("RGBA" if has_alpha else "RGB")
-    if max(img.size) > 1100:
-        img.thumbnail((1100, 1100), Image.LANCZOS)
+    # 700 px хватает с запасом: карточка блюда шире 320 px не бывает, то есть
+    # даже на retina-экране это двойной размер. Раньше грузили 1100 px — лишние
+    # 40% веса, которые пользователь всё равно не видит.
+    if max(img.size) > 700:
+        img.thumbnail((700, 700), Image.LANCZOS)
     buf = BytesIO()
-    img.save(buf, format="WEBP", quality=86, method=6)
+    img.save(buf, format="WEBP", quality=78, method=6)
     buf.seek(0)
     return ContentFile(buf.read())
 

@@ -43,6 +43,10 @@ def _compress_photo(field, max_side=900, quality=82):
     try:
         field.file.seek(0)
         img = Image.open(field)
+        # Уже готовый лёгкий WebP не трогаем: повторное кодирование не уменьшает
+        # файл, а качество съедает (и нередко делает его даже тяжелее).
+        if img.format == "WEBP" and max(img.size) <= max_side:
+            return False
         # Прозрачный фон сохраняем: блюдо «вырезанное» из фона красиво ложится
         # на любую подложку. convert("RGB") залил бы альфу чёрным.
         has_alpha = img.mode in ("RGBA", "LA") or (
