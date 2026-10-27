@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load l10n %}
 {% block title %}{{ product.name_ru }} — товар{% endblock %}
 {% block nav_printshop %}active{% endblock %}
 
@@ -48,6 +49,32 @@
         <label class="db-label">Описание</label>
         <textarea class="db-input" name="description_ru" rows="3" style="resize:vertical">{{ product.description_ru }}</textarea>
       </div>
+
+      {# Витрина трёхъязычная: если перевода нет, клиенту показывается русский #}
+      <details class="pd-group-card" {% if product.name_ky or product.name_en %}open{% endif %}>
+        <summary style="cursor:pointer;font-weight:700;font-size:13px">
+          🌐 Кыргызча жана English
+          <span style="font-weight:400;color:var(--muted)">— необязательно, пусто = покажем русский</span>
+        </summary>
+        <div style="margin-top:12px">
+          <div class="db-form-group">
+            <label class="db-label">Название (кыргызча)</label>
+            <input class="db-input" type="text" name="name_ky" value="{{ product.name_ky }}">
+          </div>
+          <div class="db-form-group">
+            <label class="db-label">Описание (кыргызча)</label>
+            <textarea class="db-input" name="description_ky" rows="2" style="resize:vertical">{{ product.description_ky }}</textarea>
+          </div>
+          <div class="db-form-group">
+            <label class="db-label">Название (English)</label>
+            <input class="db-input" type="text" name="name_en" value="{{ product.name_en }}">
+          </div>
+          <div class="db-form-group" style="margin-bottom:0">
+            <label class="db-label">Описание (English)</label>
+            <textarea class="db-input" name="description_en" rows="2" style="resize:vertical">{{ product.description_en }}</textarea>
+          </div>
+        </div>
+      </details>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
         <div class="db-form-group">
           <label class="db-label">Категория</label>
@@ -65,14 +92,70 @@
       </div>
       <div class="db-form-group">
         <label class="db-label">Базовая цена (если нет вариантов)</label>
-        <input class="db-input" type="number" name="base_price" value="{{ product.base_price }}" min="0" step="1">
+        <input class="db-input" type="number" name="base_price" value="{{ product.base_price|unlocalize }}" min="0" step="0.01">
       </div>
+
+      <div class="db-form-group" style="background:var(--db-card2,#f7f7f9);border-radius:12px;padding:14px">
+        <label class="db-label" style="margin-bottom:4px">Диапазон заказа</label>
+        <div style="font-size:12px;color:#6b7280;margin-bottom:12px">
+          Для тиражей: визитки — от 100 шт шагом 50, футболки — от 10 шт.
+          Оставьте единицы, если товар продаётся поштучно.
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px">
+          <div class="db-form-group">
+            <label class="db-label">Минимум, шт</label>
+            <input class="db-input" type="number" name="min_qty"
+                   value="{{ product.min_qty }}" min="1" step="1">
+          </div>
+          <div class="db-form-group">
+            <label class="db-label">Шаг, шт</label>
+            <input class="db-input" type="number" name="qty_step"
+                   value="{{ product.qty_step }}" min="1" step="1">
+          </div>
+          <div class="db-form-group">
+            <label class="db-label">Максимум, шт</label>
+            <input class="db-input" type="number" name="max_qty"
+                   value="{{ product.max_qty }}" min="0" step="1" placeholder="0 — без ограничения">
+          </div>
+        </div>
+        <div style="font-size:12px;color:#6b7280" id="dbQtyPreview"></div>
+      </div>
+      <script>
+      /* Показываем владельцу, какой ряд количеств увидит клиент. */
+      (function () {
+        const f = document.currentScript.closest('form');
+        const min = f.querySelector('[name=min_qty]');
+        const step = f.querySelector('[name=qty_step]');
+        const max = f.querySelector('[name=max_qty]');
+        const out = f.querySelector('#dbQtyPreview');
+        function draw() {
+          const lo = Math.max(1, Number(min.value) || 1);
+          const st = Math.max(1, Number(step.value) || 1);
+          const hi = Number(max.value) || 0;
+          if (lo === 1 && st === 1) {
+            out.textContent = 'Клиент сможет заказать любое количество: 1, 2, 3…';
+            return;
+          }
+          const row = [];
+          for (let i = 0, v = lo; i < 4 && (!hi || v <= hi); i++, v += st) row.push(v);
+          out.textContent = 'Клиент увидит: ' + row.join(', ') + (hi ? ' … до ' + hi : ' …') + ' шт';
+        }
+        [min, step, max].forEach(el => el.addEventListener('input', draw));
+        draw();
+      })();
+      </script>
       <div class="db-form-group">
         <label class="db-label">Главное фото</label>
         {% if product.main_photo %}
           <img src="{{ product.main_photo.url }}" style="width:96px;height:96px;border-radius:12px;object-fit:cover;margin-bottom:8px;display:block">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;margin-bottom:8px">
+            <input type="checkbox" name="main_photo_clear"> Удалить это фото
+          </label>
         {% endif %}
         <input class="db-input" type="file" name="main_photo" accept="image/*">
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">
+          Выберите файл, чтобы заменить фото.
+        </div>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:16px">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
@@ -128,7 +211,7 @@
         <form method="post" action="{% url 'dashboard:printshop_variant_edit' v.id %}" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1">
           {% csrf_token %}
           <input class="db-input pd-mini-input" type="text" name="label" value="{{ v.label }}">
-          <input class="db-input pd-mini-input" type="number" name="price" value="{{ v.price }}" min="0" step="1">
+          <input class="db-input pd-mini-input" type="number" name="price" value="{{ v.price|unlocalize }}" min="0" step="0.01">
           <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer">
             <input type="checkbox" name="is_default" {% if v.is_default %}checked{% endif %}> по умолч.
           </label>
@@ -153,7 +236,7 @@
       </div>
       <div class="db-form-group">
         <label class="db-label">Цена</label>
-        <input class="db-input pd-mini-input" type="number" name="price" min="0" step="1" required>
+        <input class="db-input pd-mini-input" type="number" name="price" min="0" step="0.01" required>
       </div>
       <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding-bottom:10px">
         <input type="checkbox" name="is_default"> по умолч.
@@ -206,7 +289,7 @@
       <form method="post" action="{% url 'dashboard:printshop_option_value_add' group.id %}" class="pd-inline-form">
         {% csrf_token %}
         <input class="db-input pd-mini-input" type="text" name="label" placeholder="Значение" required>
-        <input class="db-input pd-mini-input" type="number" name="price_delta" placeholder="Доплата" min="0" step="1" value="0">
+        <input class="db-input pd-mini-input" type="number" name="price_delta" placeholder="Доплата" min="0" step="0.01" value="0">
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;padding-bottom:10px">
           <input type="checkbox" name="is_default"> по умолч.
         </label>
@@ -225,6 +308,23 @@
         <input type="checkbox" name="allow_multiple"> чекбоксы (множественный выбор)
       </label>
       <button type="submit" class="db-btn db-btn-primary db-btn-sm">＋ Добавить группу</button>
+    </form>
+  </div>
+
+  {# ── УДАЛЕНИЕ ── #}
+  <div class="db-form-card" style="border-color:#f3c2c2">
+    <div class="db-form-section-title" style="color:#c0392b">Удаление товара</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:12px">
+      Товар исчезнет с витрины вместе с фото, вариантами и параметрами.
+      Если он уже встречается в заказах, удалить его нельзя — скройте его
+      переключателем «В наличии», история заказов тогда останется целой.
+    </div>
+    <form method="post" action="{% url 'dashboard:printshop_product_delete' product.id %}"
+          onsubmit="return confirm('Удалить «{{ product.name_ru|escapejs }}» без возможности восстановить?')">
+      {% csrf_token %}
+      <button type="submit" class="db-btn db-btn-sm" style="background:#c0392b;color:#fff">
+        🗑 Удалить товар
+      </button>
     </form>
   </div>
 

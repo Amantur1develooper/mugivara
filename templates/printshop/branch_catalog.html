@@ -105,6 +105,8 @@
 .pc-pm-qty button{ width:40px; height:40px; border:none; cursor:pointer; background:transparent; font-size:18px; font-weight:700; color: var(--pc-text); }
 .pc-pm-qty button:hover{ background: var(--pc-card2); }
 .pc-pm-qty span{ min-width:36px; text-align:center; font-family:'Unbounded',sans-serif; font-weight:800; font-size:14px; }
+.pc-pm-qty-rule{ margin-left:8px; font-weight:600; font-size:12px; color: var(--pc-muted); text-transform:none; letter-spacing:0; }
+.pc-card-minqty{ font-size:11px; font-weight:700; color: var(--pc-muted); margin-top:2px; }
 .pc-pm-comment{ width:100%; padding:12px 14px; border:1.5px solid var(--pc-border); border-radius:12px; font-size:13px; font-family:inherit; resize:vertical; min-height:56px; }
 .pc-pm-footer{ display:flex; align-items:center; justify-content:space-between; gap:14px; margin-top:auto; padding-top:14px; border-top:1px solid var(--pc-border); }
 .pc-pm-price{ font-family:'Unbounded',sans-serif; font-size:22px; font-weight:900; color: var(--pc-accent); }
@@ -190,6 +192,8 @@ const T = {
   pcs: "{% trans 'шт' %}",
   variant: "{% trans 'Вариант' %}",
   qty: "{% trans 'Количество' %}",
+  minQty: "{% trans 'от' %}",
+  stepQty: "{% trans 'шаг' %}",
   commentOpt: "{% trans 'Комментарий (необязательно)' %}",
   addToCart: "{% trans 'В корзину' %}",
   addErr: "{% trans 'Ошибка добавления' %}",
@@ -321,7 +325,9 @@ const T = {
       <div id="pcPmVariants"></div>
       <div id="pcPmOptions"></div>
       <div>
-        <div class="pc-pm-section-label">{% trans "Количество" %}</div>
+        <div class="pc-pm-section-label">
+          {% trans "Количество" %}<span id="pcPmQtyRule" class="pc-pm-qty-rule"></span>
+        </div>
         <div class="pc-pm-qty">
           <button type="button" onclick="pcPmChangeQty(-1)">−</button>
           <span id="pcPmQty">1</span>
@@ -438,9 +444,10 @@ function pcOpenProduct(id) {
   const p = PC_PRODUCTS[id];
   if (!p) return;
   pcCurrentProduct = p;
-  pcQty = 1;
+  pcQty = pcQtyRule(p).min;          // карточка сразу открывается с минимальным тиражом
   pcSelectedOptions = {};
-  document.getElementById('pcPmQty').textContent = '1';
+  document.getElementById('pcPmQty').textContent = pcQty;
+  pcRenderQtyRule(p);
   document.getElementById('pcPmComment').value = '';
 
   document.getElementById('pcPmName').textContent = p.name;
@@ -534,10 +541,33 @@ function pcUpdatePmPrice() {
   document.getElementById('pcPmPrice').textContent = (price * pcQty).toFixed(0) + ' ' + CUR;
 }
 
+/* Тиражи: визитки от 100 шагом по 50, футболки от 10 и т. п.
+   Шагаем от минимума, чтобы ряд был 100, 150, 200 — а не 100, 150, 100. */
+function pcQtyRule(p) {
+  return {
+    min: Math.max(1, Number(p && p.min_qty) || 1),
+    step: Math.max(1, Number(p && p.qty_step) || 1),
+    max: Number(p && p.max_qty) || 0,
+  };
+}
+
 function pcPmChangeQty(delta) {
-  pcQty = Math.max(1, Math.min(99, pcQty + delta));
+  const r = pcQtyRule(pcCurrentProduct);
+  let next = pcQty + delta * r.step;
+  if (next < r.min) next = r.min;
+  if (r.max && next > r.max) next = r.min + Math.floor((r.max - r.min) / r.step) * r.step;
+  pcQty = next;
   document.getElementById('pcPmQty').textContent = pcQty;
   pcUpdatePmPrice();
+}
+
+function pcRenderQtyRule(p) {
+  const r = pcQtyRule(p);
+  const el = document.getElementById('pcPmQtyRule');
+  const parts = [];
+  if (r.min > 1) parts.push(`${T.minQty} ${r.min} ${T.pcs}`);
+  if (r.step > 1) parts.push(`${T.stepQty} ${r.step}`);
+  el.textContent = parts.length ? '· ' + parts.join(', ') : '';
 }
 
 async function pcAddToCart() {
@@ -655,9 +685,9 @@ async function pcRefreshCart(promo) {
         <div class="pc-cm-row-name">${pcEsc(it.name)}</div>
         ${metaParts.length ? `<div class="pc-cm-row-meta">${metaParts.join(' · ')}</div>` : ''}
         <div class="pc-cm-qty" style="margin-top:6px">
-          <button onclick="pcCartQty('${it.line_id}',${it.qty - 1})">−</button>
-          <span>${it.qty}</span>
-          <button onclick="pcCartQty('${it.line_id}',${it.qty + 1})">+</button>
+          <button onclick="pcCartQty('${it.line_id}',${it.qty - (it.qty_step || 1)})">−</button>
+          <span>${it.qty}${(it.min_qty > 1 || it.qty_step > 1) ? ' ' + T.pcs : ''}</span>
+          <button onclick="pcCartQty('${it.line_id}',${it.qty + (it.qty_step || 1)})">+</button>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">

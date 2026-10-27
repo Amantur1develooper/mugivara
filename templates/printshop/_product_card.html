@@ -18,6 +18,12 @@
       <div>
         <div class="pc-card-price">{{ p.display_price|som }}</div>
         {% if p.variants.count %}<div class="pc-card-price-sub">{% trans "от" %}</div>{% endif %}
+        {% if p.has_qty_rule %}
+          <div class="pc-card-minqty">
+            {% if p.order_min > 1 %}{% trans "от" %} {{ p.order_min }} {% trans "шт" %}{% endif %}
+            {% if p.order_step > 1 %}· {% trans "шаг" %} {{ p.order_step }}{% endif %}
+          </div>
+        {% endif %}
       </div>
       <button type="button" class="pc-add-btn" onclick="event.stopPropagation(); pcOpenProduct({{ p.id }})">+</button>
     </div>

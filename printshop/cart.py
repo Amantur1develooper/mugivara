@@ -29,9 +29,24 @@ def clear_cart(request, branch_id):
     request.session.modified = True
 
 
+HARD_MAX = 100000   # потолок на случай опечатки в форме; тиражи бывают большими
+
+
+def _product_rule(product_id):
+    """Правило тиража товара. None — если товар не найден."""
+    return PrintProduct.objects.filter(id=product_id).only(
+        "id", "min_qty", "qty_step", "max_qty").first()
+
+
+def _clamp(product, qty):
+    qty = min(HARD_MAX, max(0, int(qty or 0)))
+    return product.clamp_qty(qty) if product else max(1, qty)
+
+
 def add_line(request, branch_id, product_id, variant_id=None, option_value_ids=None, qty=1, comment=""):
     option_value_ids = sorted(int(x) for x in (option_value_ids or []))
-    qty = max(1, min(99, int(qty or 1)))
+    product = _product_rule(product_id)
+    qty = _clamp(product, qty)
     comment = (comment or "").strip()[:300]
 
     cart = get_cart(request, branch_id)
@@ -44,7 +59,8 @@ def add_line(request, branch_id, product_id, variant_id=None, option_value_ids=N
             and sorted(line.get("option_value_ids", [])) == option_value_ids
             and line.get("comment", "") == comment
         ):
-            line["qty"] = max(1, min(99, line["qty"] + qty))
+            # складываем тиражи: 100 + 100 = 200, кратность при этом сохраняется
+            line["qty"] = _clamp(product, line["qty"] + qty)
             save_cart(request, branch_id, cart)
             return
 
@@ -64,10 +80,15 @@ def update_qty(request, branch_id, line_id, qty):
     if line_id not in cart:
         return
     qty = int(qty or 0)
-    if qty <= 0:
+    product = _product_rule(cart[line_id]["product_id"])
+    # «минус» на минимальном тираже убирает позицию целиком — иначе кнопка
+    # выглядела бы сломанной: нажимаешь, а число не меняется
+    if product and qty < product.order_min:
+        cart.pop(line_id, None)
+    elif qty <= 0:
         cart.pop(line_id, None)
     else:
-        cart[line_id]["qty"] = min(99, qty)
+        cart[line_id]["qty"] = _clamp(product, qty)
     save_cart(request, branch_id, cart)
 
 

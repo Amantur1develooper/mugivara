@@ -59,9 +59,20 @@ class PrintOptionGroupInline(admin.StackedInline):
 @admin.register(PrintProduct)
 class PrintProductAdmin(admin.ModelAdmin):
     list_display = (
-        "center", "name_ru", "category", "base_price",
+        "center", "name_ru", "category", "base_price", "order_range",
         "is_available", "is_new", "is_popular", "is_promo", "sort_order",
     )
+
+    @admin.display(description="Диапазон заказа")
+    def order_range(self, obj):
+        if not obj.has_qty_rule:
+            return "—"
+        parts = ["от %d шт" % obj.order_min]
+        if obj.order_step > 1:
+            parts.append("шаг %d" % obj.order_step)
+        if obj.order_max:
+            parts.append("до %d" % obj.order_max)
+        return ", ".join(parts)
     list_filter = ("center", "category", "is_available", "is_new", "is_popular", "is_promo")
     search_fields = ("name_ru", "sku")
     inlines = (PrintProductPhotoInline, PrintProductVariantInline, PrintOptionGroupInline)

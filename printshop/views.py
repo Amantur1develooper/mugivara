@@ -1,3 +1,4 @@
+from decimal import Decimal
 from urllib.parse import quote
 
 from django.conf import settings
@@ -5,6 +6,7 @@ from django.db import transaction
 from django.db.models import F
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from . import cart as cart_api
@@ -35,42 +37,73 @@ def _calc_promo(promo, subtotal):
     return 0, False
 
 
-def _build_order_text(order):
-    lines = [f"🖨️ Новый заказ №{order.id}"]
-    if order.name:
-        lines += ["", "Имя:", order.name]
-    lines += ["", "Телефон:", order.phone]
-    if order.address:
-        lines += ["", "Адрес:", order.address]
+def _money(value):
+    """150 → «150», 4.5 → «4,5». Лишние нули в заказе только мешают читать."""
+    q = Decimal(value or 0).quantize(Decimal("0.01"))
+    s = f"{q:.2f}".rstrip("0").rstrip(".")
+    return s.replace(".", ",") if s else "0"
 
-    lines += ["", "Товары:"]
-    for item in order.items.all():
-        lines.append(item.product_name_snapshot)
+
+def _build_order_text(order, channel="wa"):
+    """Короткое сообщение о заказе.
+
+    Раньше каждое поле занимало две строки («Телефон:» и значение под ним),
+    и заказ из трёх позиций разворачивался на полэкрана. Теперь одна позиция —
+    одна строка: что, сколько, почём и на какую сумму.
+
+    channel="tg" — в группу заведения, добавляем филиал и время: групп на центр
+    может быть одна на все точки. channel="wa" — текст подставляется клиенту
+    в WhatsApp, там филиал и так известен, лишнее только удлиняет.
+    """
+    L = []
+    if channel == "tg":
+        when = timezone.localtime(order.created_at).strftime("%d.%m %H:%M")
+        L.append(f"🖨 Заказ №{order.id} · {order.branch.name_ru} · {when}")
+    else:
+        L.append(f"🖨 Заказ №{order.id}")
+
+    who = " · ".join(x for x in (order.name, order.phone) if x)
+    L.append(f"👤 {who}")
+    if order.address:
+        L.append(f"📍 {order.address}")
+    if order.comment:
+        L.append(f"💬 {order.comment}")
+
+    L.append("")
+    items = list(order.items.all())
+    for n, item in enumerate(items, 1):
+        prefix = f"{n}. " if len(items) > 1 else ""
+        L.append(
+            f"{prefix}{item.product_name_snapshot} — "
+            f"{item.qty} шт × {_money(item.unit_price)} = {_money(item.line_total)} сом"
+        )
         sel = item.selection_snapshot or {}
+        details = []
         variant = sel.get("variant")
-        if variant:
-            lines.append(f"Вариант: {variant.get('label')}")
+        if variant and variant.get("label"):
+            details.append(str(variant["label"]))
         for opt in sel.get("options", []):
             delta = opt.get("price_delta")
-            extra = f" (+{delta} сом)" if delta and str(delta) not in ("0", "0.00") else ""
-            lines.append(f"{opt['group_name']}: {opt['value_label']}{extra}")
-        lines.append(f"Количество: {item.qty}")
-        lines.append(f"Цена: {item.unit_price:.0f} сом")
+            extra = f" +{_money(delta)}" if delta and str(delta) not in ("0", "0.00") else ""
+            details.append(f"{opt['value_label']}{extra}")
+        if details:
+            L.append("   " + " · ".join(details))
         if item.comment:
-            lines.append(f"Комментарий: {item.comment}")
-        lines.append("")
+            L.append(f"   💬 {item.comment}")
 
-    if order.comment:
-        lines += ["Комментарий к заказу:", order.comment, ""]
-
-    lines.append(f"Подытог: {order.subtotal:.0f} сом")
+    L.append("")
+    # подытог показываем только когда итог от него отличается — иначе это
+    # просто та же сумма дважды
+    extras = []
     if order.delivery_fee:
-        lines.append(f"Доставка: {order.delivery_fee:.0f} сом")
-    if order.promo_code:
-        lines.append(f"Промокод: {order.promo_code.code}")
-        lines.append(f"Скидка: {order.discount_amount:.0f} сом")
-    lines.append(f"Итого к оплате: {order.total:.0f} сом")
-    return "\n".join(lines)
+        extras.append(f"доставка {_money(order.delivery_fee)}")
+    if order.discount_amount:
+        code = f" {order.promo_code.code}" if order.promo_code else ""
+        extras.append(f"скидка{code} −{_money(order.discount_amount)}")
+    if extras:
+        L.append(f"Товары {_money(order.subtotal)} · " + " · ".join(extras))
+    L.append(f"💰 Итого: {_money(order.total)} сом")
+    return "\n".join(L)
 
 
 def _send_telegram(branch, text):
@@ -142,6 +175,9 @@ def branch_catalog(request, slug, branch_id):
             "name": p.name_ru,
             "description": p.description_ru,
             "base_price": str(p.base_price),
+            "min_qty": p.order_min,
+            "qty_step": p.order_step,
+            "max_qty": p.order_max,
             "main_photo": p.main_photo.url if p.main_photo else "",
             "photos": [ph.photo.url for ph in p.photos.all()],
             "variants": [
@@ -212,6 +248,10 @@ def _cart_payload(branch, cart, promo_code=""):
                 "options": [f"{o.group.name}: {o.label}" for o in r["options"]],
                 "comment": r["comment"],
                 "qty": r["qty"],
+                # правило тиража нужно и в корзине: «−» и «+» там шагают так же,
+                # как в карточке товара
+                "qty_step": r["product"].order_step,
+                "min_qty": r["product"].order_min,
                 "unit_price": str(r["unit_price"]),
                 "line_total": str(r["line_total"]),
                 "photo_url": r["product"].main_photo.url if r["product"].main_photo else "",
@@ -360,12 +400,12 @@ def checkout(request, branch_id):
 
     cart_api.clear_cart(request, branch.id)
 
-    order_text = _build_order_text(order)
-    _send_telegram(branch, order_text)
+    _send_telegram(branch, _build_order_text(order, channel="tg"))
 
     wa_phone = _digits(branch.whatsapp or branch.phone)
     if wa_phone:
-        return redirect(f"https://wa.me/{wa_phone}?text={quote(order_text)}")
+        wa_text = _build_order_text(order, channel="wa")
+        return redirect(f"https://wa.me/{wa_phone}?text={quote(wa_text)}")
 
     return redirect("printshop:checkout_success", slug=branch.center.slug, branch_id=branch.id, order_id=order.id)
 
@@ -374,7 +414,7 @@ def checkout_success(request, slug, branch_id, order_id):
     branch = get_object_or_404(PrintBranch, id=branch_id)
     order = get_object_or_404(PrintOrder.objects.prefetch_related("items"), id=order_id, branch=branch)
 
-    order_text = _build_order_text(order)
+    order_text = _build_order_text(order, channel="wa")
     wa_phone = _digits(branch.whatsapp or branch.phone)
     whatsapp_url = f"https://wa.me/{wa_phone}?text={quote(order_text)}" if wa_phone else ""
     whatsapp_deeplink = f"whatsapp://send?phone={wa_phone}&text={quote(order_text)}" if wa_phone else ""

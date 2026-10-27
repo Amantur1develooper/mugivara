@@ -186,6 +186,22 @@ class PrintProduct(models.Model):
         help_text="Используется, если у товара нет вариантов",
     )
 
+    # Полиграфия почти всегда продаётся тиражами: визитки от 100 шт шагом по 50,
+    # футболки от 10 шт и т. п. Количество в корзине всегда кратно шагу
+    # и не меньше минимума.
+    min_qty = models.PositiveIntegerField(
+        "Минимальный заказ, шт", default=1,
+        help_text="Например 100 для визиток. 1 = без ограничения",
+    )
+    qty_step = models.PositiveIntegerField(
+        "Шаг заказа, шт", default=1,
+        help_text="Например 50 — тогда 100, 150, 200… 1 = любое количество",
+    )
+    max_qty = models.PositiveIntegerField(
+        "Максимальный заказ, шт", default=0,
+        help_text="0 = без ограничения",
+    )
+
     is_available = models.BooleanField("В наличии", default=True)
     is_new = models.BooleanField("Новинка", default=False)
     is_popular = models.BooleanField("Популярное", default=False)
@@ -212,6 +228,41 @@ class PrintProduct(models.Model):
         """Цена для карточки в каталоге: самый дешёвый активный вариант, иначе базовая цена."""
         variant = self.variants.filter(is_active=True).order_by("price").first()
         return variant.price if variant else self.base_price
+
+    @property
+    def has_qty_rule(self):
+        """Есть ли у товара ограничение по тиражу — показывать ли подпись «от N шт»."""
+        return self.order_min > 1 or self.order_step > 1
+
+    @property
+    def order_min(self):
+        return max(1, self.min_qty or 1)
+
+    @property
+    def order_step(self):
+        return max(1, self.qty_step or 1)
+
+    @property
+    def order_max(self):
+        """0 в поле означает «без ограничения» — отдаём разумный потолок."""
+        return self.max_qty if self.max_qty and self.max_qty > 0 else 0
+
+    def clamp_qty(self, qty):
+        """Приводит количество к допустимому: не ниже минимума, кратно шагу."""
+        try:
+            qty = int(qty)
+        except (TypeError, ValueError):
+            qty = self.order_min
+        lo, step = self.order_min, self.order_step
+        if qty <= lo:
+            return lo
+        # округляем вверх до ближайшего «минимум + k×шаг»
+        steps = -(-(qty - lo) // step)
+        qty = lo + steps * step
+        hi = self.order_max
+        if hi:
+            qty = min(qty, lo + ((hi - lo) // step) * step if hi > lo else lo)
+        return qty
 
 
 class PrintProductPhoto(models.Model):

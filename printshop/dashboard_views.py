@@ -3,6 +3,7 @@ from decimal import Decimal, InvalidOperation
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Max, Sum, Count
+from django.db.models.deletion import ProtectedError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -32,6 +33,13 @@ def _dec(val, default="0"):
         return Decimal(val or default)
     except InvalidOperation:
         return Decimal(default)
+
+
+def _int(val, default=0):
+    try:
+        return int(str(val).strip())
+    except (TypeError, ValueError):
+        return default
 
 
 def _user_centers(user):
@@ -294,8 +302,20 @@ def product_detail(request, product_id):
         if name_ru:
             product.name_ru = name_ru
         product.description_ru = request.POST.get("description_ru", "").strip()
+        # переводы необязательны: пусто — витрина подставит русский
+        product.name_ky = request.POST.get("name_ky", "").strip()
+        product.name_en = request.POST.get("name_en", "").strip()
+        product.description_ky = request.POST.get("description_ky", "").strip()
+        product.description_en = request.POST.get("description_en", "").strip()
         product.sku = request.POST.get("sku", "").strip()
         product.base_price = _dec(request.POST.get("base_price", str(product.base_price)))
+
+        # диапазон заказа: минимум и шаг не меньше 1, максимум 0 = без ограничения
+        product.min_qty = max(1, _int(request.POST.get("min_qty"), product.min_qty))
+        product.qty_step = max(1, _int(request.POST.get("qty_step"), product.qty_step))
+        product.max_qty = max(0, _int(request.POST.get("max_qty"), product.max_qty))
+        if product.max_qty and product.max_qty < product.min_qty:
+            product.max_qty = 0      # противоречивый максимум просто снимаем
 
         category_id = request.POST.get("category_id") or None
         product.category = (
@@ -309,6 +329,9 @@ def product_detail(request, product_id):
 
         if request.FILES.get("main_photo"):
             product.main_photo = request.FILES["main_photo"]
+        elif request.POST.get("main_photo_clear") == "on" and product.main_photo:
+            product.main_photo.delete(save=False)
+            product.main_photo = None
         product.save()
         messages.success(request, "Товар сохранён")
         return redirect("dashboard:printshop_product_detail", product_id=product.id)
@@ -349,8 +372,16 @@ def product_delete(request, product_id):
     try:
         product.delete()
         messages.success(request, "Товар удалён")
-    except Exception:
-        messages.error(request, "Товар используется в заказах и не может быть удалён")
+    except ProtectedError:
+        # заказы ссылаются на товар — удалять нельзя, иначе порвётся история.
+        # Снимаем с витрины: для владельца результат тот же.
+        product.is_available = False
+        product.save(update_fields=["is_available"])
+        messages.warning(
+            request,
+            "Товар встречается в заказах, поэтому удалить его нельзя — "
+            "он снят с витрины и больше не виден клиентам.",
+        )
     return redirect("dashboard:printshop_product_list", center_id=center_id)
 
 
@@ -522,8 +553,39 @@ def option_value_delete(request, value_id):
 
 # ── ORDERS ───────────────────────────────────────────────────────────────
 
+def _daily_orders(qs, days=30):
+    """Ряд по дням: подписи, число заказов и выручка за каждый день.
+
+    Дни без заказов тоже попадают в ряд нулями — иначе на графике
+    получились бы разрывы и он врал бы о динамике.
+    """
+    from datetime import timedelta
+    from django.db.models.functions import TruncDate
+
+    today = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
+    start = today - timedelta(days=days - 1)
+    rows = (
+        qs.filter(created_at__gte=start)
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(n=Count("id"), s=Sum("total"))
+    )
+    by_day = {r["day"]: r for r in rows}
+    labels, counts, sums = [], [], []
+    for i in range(days):
+        day = (start + timedelta(days=i)).date()
+        r = by_day.get(day)
+        labels.append(day.strftime("%d.%m"))
+        counts.append(r["n"] if r else 0)
+        sums.append(float(r["s"] or 0) if r else 0.0)
+    return labels, counts, sums
+
+
 @login_required(login_url=LOGIN_URL)
 def order_list(request, branch_id):
+    import json as _json
+    from datetime import timedelta
+
     branch = get_object_or_404(PrintBranch, id=branch_id)
     if not _has_branch_access(request.user, branch):
         return redirect("dashboard:printshop_home")
@@ -534,9 +596,30 @@ def order_list(request, branch_id):
         qs = qs.filter(status=status_filter)
     orders = qs.order_by("-created_at")[:100]
 
+    # счётчики и график считаем по всем заказам филиала, а не по текущему
+    # фильтру статуса — иначе цифры прыгали бы при переключении вкладок
+    all_orders = PrintOrder.objects.filter(branch=branch)
+    live = all_orders.exclude(status=PrintOrder.Status.CANCELED)
+    today = timezone.localtime().replace(hour=0, minute=0, second=0, microsecond=0)
+    week = today - timedelta(days=today.weekday())
+    month = today.replace(day=1)
+    kpi = {
+        "today": live.filter(created_at__gte=today).count(),
+        "week": live.filter(created_at__gte=week).count(),
+        "month": live.filter(created_at__gte=month).count(),
+        "all": live.count(),
+        "new": all_orders.filter(status=PrintOrder.Status.NEW).count(),
+    }
+    labels, counts, sums = _daily_orders(live, days=30)
+
     return render(request, "dashboard/printshop/orders.html", {
         "branch": branch, "center": branch.center, "orders": orders,
         "status_filter": status_filter, "status_choices": PrintOrder.Status.choices,
+        "kpi": kpi,
+        "chart_labels": _json.dumps(labels, ensure_ascii=False),
+        "chart_counts": _json.dumps(counts),
+        "chart_sums": _json.dumps(sums),
+        "chart_has_data": any(counts),
     })
 
 
@@ -659,20 +742,8 @@ def stats(request, center_id):
         .order_by("-revenue")[:10]
     )
 
-    # ── daily revenue trend, last 30 days ──
-    period_start = today_start - timedelta(days=29)
-    daily_rows = (
-        base.filter(created_at__gte=period_start)
-        .annotate(day=TruncDate("created_at"))
-        .values("day")
-        .annotate(s=Sum("total"))
-    )
-    daily_map = {r["day"]: r["s"] or 0 for r in daily_rows}
-    daily_labels, daily_values = [], []
-    for i in range(30):
-        day = (period_start + timedelta(days=i)).date()
-        daily_labels.append(day.strftime("%d.%m"))
-        daily_values.append(float(daily_map.get(day, 0)))
+    # ── динамика за 30 дней: и выручка, и число заказов ──
+    daily_labels, daily_counts, daily_values = _daily_orders(base, days=30)
 
     # ── order status breakdown (all orders, incl. canceled) ──
     status_counts = dict(
@@ -694,6 +765,7 @@ def stats(request, center_id):
         "center": center, "rev": rev, "top_products": top_products,
         "daily_labels": _json.dumps(daily_labels, ensure_ascii=False),
         "daily_values": _json.dumps(daily_values),
+        "daily_counts": _json.dumps(daily_counts),
         "status_breakdown": status_breakdown,
         "total_orders": total_orders,
     })
