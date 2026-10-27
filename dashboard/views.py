@@ -523,21 +523,31 @@ def item_add(request, branch_id):
         description = request.POST.get("description_ru", "").strip()
         photo = request.FILES.get("photo")
 
-        # создаём Item
-        item = Item(
-            restaurant=restaurant,
-            name_ru=name,
-            name_ky=request.POST.get("name_ky", "").strip(),
-            name_en=request.POST.get("name_en", "").strip(),
-            description_ru=description,
-            description_ky=request.POST.get("description_ky", "").strip(),
-            description_en=request.POST.get("description_en", "").strip(),
-            base_price=price,
-            calories=_int_or_none(request.POST.get("calories")),
-            protein=_decimal_or_none(request.POST.get("protein")),
-            fat=_decimal_or_none(request.POST.get("fat")),
-            carbs=_decimal_or_none(request.POST.get("carbs")),
-        )
+        # Названия блюд уникальны в пределах ресторана, а филиалов у него
+        # несколько. Если блюдо уже заведено (пусть и для другой точки) —
+        # не плодим второе, а подключаем существующее к этому филиалу.
+        # Раньше тут была просто вставка, и повтор названия ронял страницу в 500.
+        item = Item.objects.filter(restaurant=restaurant, name_ru=name).first()
+        if item and BranchItem.objects.filter(branch=branch, item=item).exists():
+            messages.error(
+                request,
+                f"Блюдо «{name}» уже есть в этом филиале. "
+                f"Измените название или отредактируйте существующее.",
+            )
+            return redirect("dashboard:item_add", branch_id=branch.id)
+
+        if item is None:
+            item = Item(restaurant=restaurant, name_ru=name)
+        item.name_ky = request.POST.get("name_ky", "").strip()
+        item.name_en = request.POST.get("name_en", "").strip()
+        item.description_ru = description
+        item.description_ky = request.POST.get("description_ky", "").strip()
+        item.description_en = request.POST.get("description_en", "").strip()
+        item.base_price = price
+        item.calories = _int_or_none(request.POST.get("calories"))
+        item.protein = _decimal_or_none(request.POST.get("protein"))
+        item.fat = _decimal_or_none(request.POST.get("fat"))
+        item.carbs = _decimal_or_none(request.POST.get("carbs"))
         if photo:
             item.photo = photo
         item.save()
@@ -636,7 +646,11 @@ def item_edit(request, branch_item_id):
 
     if request.method == "POST":
         name = request.POST.get("name_ru", "").strip()
-        if name:
+        if name and name != item.name_ru:
+            # имя занято другим блюдом ресторана — иначе сохранение упало бы в 500
+            if Item.objects.filter(restaurant=item.restaurant, name_ru=name).exclude(id=item.id).exists():
+                messages.error(request, f"Блюдо «{name}» уже есть в меню. Выберите другое название.")
+                return redirect("dashboard:item_edit", branch_item_id=bi.id)
             item.name_ru = name
         item.name_ky = request.POST.get("name_ky", "").strip()
         item.name_en = request.POST.get("name_en", "").strip()

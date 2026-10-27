@@ -214,7 +214,10 @@ const T = {
   checkoutTitle: "{% trans 'Оформление заказа' %}",
   yourName: "{% trans 'Ваше имя' %}",
   phoneReq: "{% trans 'Телефон *' %}",
+  phoneFormat: "{% trans 'Формат: +996XXXXXXXXX' %}",
   addrDelivery: "{% trans 'Адрес (для доставки)' %}",
+  addrPickup: "{% trans 'Комментарий к самовывозу (необязательно)' %}",
+  badPhone: "{% trans 'Введите номер в формате +996XXXXXXXXX' %}",
   commentOrder: "{% trans 'Комментарий к заказу' %}",
   placeOrder: "{% trans 'Оформить заказ' %}",
 };
@@ -727,15 +730,47 @@ async function pcRefreshCart(promo) {
     <input type="hidden" name="promo_code" id="pcPromoHidden" value="${appliedPromo}">
     <div class="pc-pm-section-label">${T.checkoutTitle}</div>
     ${modeHtml}
-    <input class="pc-field" name="name" placeholder="${T.yourName}">
-    <input class="pc-field" name="phone" placeholder="${T.phoneReq}" required>
-    <input class="pc-field" name="address" placeholder="${T.addrDelivery}">
+    <input class="pc-field" name="name" placeholder="${T.yourName}" required>
+    <input class="pc-field" name="phone" id="pcPhone" type="tel" inputmode="numeric"
+           autocomplete="tel" required value="+996" minlength="13" maxlength="13"
+           pattern="^\\+996\\d{9}$" title="${T.phoneFormat}"
+           placeholder="+996700123456">
+    <input class="pc-field" name="address" id="pcAddress" placeholder="${T.addrDelivery}"
+           ${d.delivery_enabled ? 'required' : ''}>
     <textarea class="pc-field" name="comment" placeholder="${T.commentOrder}" style="resize:vertical;min-height:48px"></textarea>
     ${minNote}
     <button type="submit" class="pc-submit">${T.placeOrder}</button>
   </form>`;
 
   body.innerHTML = freeBanner + `<div>${itemsHtml}</div>` + totalsHtml + promoHtml + formHtml;
+  pcBindCheckoutForm();
+}
+
+/* Телефон: держим +996 и ровно 9 цифр после него — иначе в заказ приходили
+   «00000000000000» и перезвонить было некуда. Адрес обязателен только при
+   доставке: на самовывоз он не нужен. */
+function pcBindCheckoutForm() {
+  const ph = document.getElementById('pcPhone');
+  if (ph) {
+    ph.addEventListener('input', () => {
+      let v = ph.value.replace(/[^\d+]/g, '');
+      if (!v.startsWith('+996')) v = '+996' + v.replace(/\D/g, '').replace(/^996/, '');
+      if (v.length > 13) v = v.slice(0, 13);
+      ph.value = v;
+    });
+    ph.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && ph.value === '+996') e.preventDefault();
+    });
+  }
+  const addr = document.getElementById('pcAddress');
+  document.querySelectorAll('input[name="mode"]').forEach(r => {
+    r.addEventListener('change', () => {
+      if (!addr) return;
+      const delivery = document.querySelector('input[name="mode"]:checked').value === 'delivery';
+      addr.required = delivery;
+      addr.placeholder = delivery ? T.addrDelivery : T.addrPickup;
+    });
+  });
 }
 
 async function pcCartQty(lineId, qty) {

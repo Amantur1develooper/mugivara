@@ -37,6 +37,29 @@ def _calc_promo(promo, subtotal):
     return 0, False
 
 
+def _clean_phone(raw):
+    """Приводит номер к виду +996XXXXXXXXX. Пустая строка — номер негодный.
+
+    Принимаем то, как люди реально пишут: 0700123456, 700123456,
+    996700123456, +996 700 12-34-56. Всё остальное — в том числе
+    «0000000000000000», ради которого это и сделано, — отбрасываем.
+    Проверка на сервере, потому что HTML-паттерн обходится в два клика.
+    """
+    digits = "".join(ch for ch in (raw or "") if ch.isdigit())
+    if len(digits) == 12 and digits.startswith("996"):
+        local = digits[3:]
+    elif len(digits) == 10 and digits.startswith("0"):
+        local = digits[1:]
+    elif len(digits) == 9:
+        local = digits
+    else:
+        return ""
+    # кыргызский номер после кода страны с нуля не начинается
+    if local[0] == "0":
+        return ""
+    return "+996" + local
+
+
 def _money(value):
     """150 → «150», 4.5 → «4,5». Лишние нули в заказе только мешают читать."""
     q = Decimal(value or 0).quantize(Decimal("0.01"))
@@ -345,7 +368,10 @@ def checkout(request, branch_id):
     order_mode = request.POST.get("mode", "delivery" if branch.delivery_enabled else "pickup")
     is_delivery = order_mode == "delivery" and branch.delivery_enabled
 
+    phone = _clean_phone(phone)
     if not phone:
+        return redirect("printshop:branch_catalog", slug=branch.center.slug, branch_id=branch.id)
+    if is_delivery and not address:
         return redirect("printshop:branch_catalog", slug=branch.center.slug, branch_id=branch.id)
     if is_delivery and branch.min_order_amount and subtotal < branch.min_order_amount:
         return redirect("printshop:branch_catalog", slug=branch.center.slug, branch_id=branch.id)
