@@ -57,6 +57,16 @@ def _has_branch_access(user, branch):
     return _has_center_access(user, branch.center)
 
 
+def _deny(request):
+    """Нет доступа к центру — объясняем, а не выкидываем молча."""
+    messages.error(
+        request,
+        "Нет доступа к этому полиграфическому центру. "
+        "Попросите владельца платформы выдать права на него.",
+    )
+    return redirect("dashboard:printshop_home")
+
+
 # ── HOME ─────────────────────────────────────────────────────────────────
 
 @login_required(login_url=LOGIN_URL)
@@ -87,7 +97,7 @@ def printshop_home(request):
 def center_edit(request, center_id):
     center = get_object_or_404(PrintCenter, id=center_id)
     if not _has_center_access(request.user, center):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
 
     if request.method == "POST":
         name = request.POST.get("name_ru", "").strip()
@@ -110,7 +120,7 @@ def center_edit(request, center_id):
 def branch_edit(request, branch_id):
     branch = get_object_or_404(PrintBranch, id=branch_id)
     if not _has_branch_access(request.user, branch):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
 
     if request.method == "POST":
         branch.name_ru = request.POST.get("name_ru", branch.name_ru).strip()
@@ -161,7 +171,7 @@ def branch_edit(request, branch_id):
 def branch_toggle(request, branch_id):
     branch = get_object_or_404(PrintBranch, id=branch_id)
     if not _has_branch_access(request.user, branch):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
     branch.is_active = not branch.is_active
     branch.save(update_fields=["is_active"])
     return redirect("dashboard:printshop_home")
@@ -173,7 +183,7 @@ def branch_toggle(request, branch_id):
 def category_list(request, center_id):
     center = get_object_or_404(PrintCenter, id=center_id)
     if not _has_center_access(request.user, center):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
 
     categories = center.categories.order_by("sort_order", "id")
     counts = (
@@ -248,7 +258,7 @@ def category_reorder(request, center_id):
 def product_list(request, center_id):
     center = get_object_or_404(PrintCenter, id=center_id)
     if not _has_center_access(request.user, center):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
 
     products = list(
         center.products.select_related("category").order_by("category__sort_order", "sort_order", "id")
@@ -273,7 +283,7 @@ def product_list(request, center_id):
 def product_add(request, center_id):
     center = get_object_or_404(PrintCenter, id=center_id)
     if not _has_center_access(request.user, center):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
 
     name_ru = request.POST.get("name_ru", "").strip()
     if not name_ru:
@@ -295,7 +305,7 @@ def product_add(request, center_id):
 def product_detail(request, product_id):
     product = get_object_or_404(PrintProduct, id=product_id)
     if not _has_center_access(request.user, product.center):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
 
     if request.method == "POST":
         name_ru = request.POST.get("name_ru", "").strip()
@@ -367,7 +377,7 @@ def product_toggle(request, product_id):
 def product_delete(request, product_id):
     product = get_object_or_404(PrintProduct, id=product_id)
     if not _has_center_access(request.user, product.center):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
     center_id = product.center_id
     try:
         product.delete()
@@ -408,7 +418,7 @@ def product_reorder(request, center_id):
 def photo_upload(request, product_id):
     product = get_object_or_404(PrintProduct, id=product_id)
     if not _has_center_access(request.user, product.center):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
 
     if product.photos.count() >= 5:
         messages.error(request, "У товара уже 5 фото — максимум для галереи")
@@ -430,7 +440,7 @@ def photo_upload(request, product_id):
 def photo_delete(request, photo_id):
     photo = get_object_or_404(PrintProductPhoto, id=photo_id)
     if not _has_center_access(request.user, photo.product.center):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
     product_id = photo.product_id
     photo.delete()
     return redirect("dashboard:printshop_product_detail", product_id=product_id)
@@ -443,7 +453,7 @@ def photo_delete(request, photo_id):
 def variant_add(request, product_id):
     product = get_object_or_404(PrintProduct, id=product_id)
     if not _has_center_access(request.user, product.center):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
     label = request.POST.get("label", "").strip()
     if not label:
         messages.error(request, "Укажите название варианта")
@@ -464,7 +474,7 @@ def variant_add(request, product_id):
 def variant_edit(request, variant_id):
     variant = get_object_or_404(PrintProductVariant, id=variant_id)
     if not _has_center_access(request.user, variant.product.center):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
     label = request.POST.get("label", "").strip()
     if label:
         variant.label = label
@@ -483,7 +493,7 @@ def variant_edit(request, variant_id):
 def variant_delete(request, variant_id):
     variant = get_object_or_404(PrintProductVariant, id=variant_id)
     if not _has_center_access(request.user, variant.product.center):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
     product_id = variant.product_id
     variant.delete()
     return redirect("dashboard:printshop_product_detail", product_id=product_id)
@@ -496,7 +506,7 @@ def variant_delete(request, variant_id):
 def option_group_add(request, product_id):
     product = get_object_or_404(PrintProduct, id=product_id)
     if not _has_center_access(request.user, product.center):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
     name = request.POST.get("name", "").strip()
     if not name:
         messages.error(request, "Укажите название группы")
@@ -516,7 +526,7 @@ def option_group_add(request, product_id):
 def option_group_delete(request, group_id):
     group = get_object_or_404(PrintOptionGroup, id=group_id)
     if not _has_center_access(request.user, group.product.center):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
     product_id = group.product_id
     group.delete()
     return redirect("dashboard:printshop_product_detail", product_id=product_id)
@@ -527,7 +537,7 @@ def option_group_delete(request, group_id):
 def option_value_add(request, group_id):
     group = get_object_or_404(PrintOptionGroup, id=group_id)
     if not _has_center_access(request.user, group.product.center):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
     label = request.POST.get("label", "").strip()
     if not label:
         messages.error(request, "Укажите значение")
@@ -545,7 +555,7 @@ def option_value_add(request, group_id):
 def option_value_delete(request, value_id):
     value = get_object_or_404(PrintOptionValue, id=value_id)
     if not _has_center_access(request.user, value.group.product.center):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
     product_id = value.group.product_id
     value.delete()
     return redirect("dashboard:printshop_product_detail", product_id=product_id)
@@ -588,7 +598,7 @@ def order_list(request, branch_id):
 
     branch = get_object_or_404(PrintBranch, id=branch_id)
     if not _has_branch_access(request.user, branch):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
 
     status_filter = request.GET.get("status", "")
     qs = PrintOrder.objects.filter(branch=branch).prefetch_related("items")
@@ -628,7 +638,7 @@ def order_list(request, branch_id):
 def order_status(request, order_id):
     order = get_object_or_404(PrintOrder, id=order_id)
     if not _has_branch_access(request.user, order.branch):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
     new_status = request.POST.get("status")
     if new_status in dict(PrintOrder.Status.choices):
         order.status = new_status
@@ -642,7 +652,7 @@ def order_status(request, order_id):
 def promo_list(request, branch_id):
     branch = get_object_or_404(PrintBranch, id=branch_id)
     if not _has_branch_access(request.user, branch):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
 
     if request.method == "POST":
         code = request.POST.get("code", "").strip().upper()
@@ -677,7 +687,7 @@ def promo_list(request, branch_id):
 def promo_toggle(request, promo_id):
     promo = get_object_or_404(PrintPromoCode, id=promo_id)
     if not _has_branch_access(request.user, promo.branch):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
     promo.is_active = not promo.is_active
     promo.save(update_fields=["is_active", "updated_at"])
     return redirect("dashboard:printshop_promo_list", branch_id=promo.branch_id)
@@ -688,7 +698,7 @@ def promo_toggle(request, promo_id):
 def promo_delete(request, promo_id):
     promo = get_object_or_404(PrintPromoCode, id=promo_id)
     if not _has_branch_access(request.user, promo.branch):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
     branch_id = promo.branch_id
     promo.delete()
     messages.success(request, "Промокод удалён")
@@ -715,7 +725,7 @@ def stats(request, center_id):
 
     center = get_object_or_404(PrintCenter, id=center_id)
     if not _has_center_access(request.user, center):
-        return redirect("dashboard:printshop_home")
+        return _deny(request)
 
     now = timezone.now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
