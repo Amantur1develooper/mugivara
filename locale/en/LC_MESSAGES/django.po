@@ -5445,3 +5445,13 @@ msgstr "menu and online ordering"
 
 msgid "под заказ"
 msgstr "to order"
+
+msgid "Поиск по меню"
+msgstr "Search the menu"
+
+msgid "Найти блюдо"
+msgstr "Find a dish"
+
+msgid "Попробуйте другое слово — например «плов» или «салат»"
+msgstr "Try another word — for example “plov” or “salad”"
+

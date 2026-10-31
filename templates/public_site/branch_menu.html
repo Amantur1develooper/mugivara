@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% load static i18n i18n_attrs l10n %}
 
-{% block title %}{% t branch "name" %} — {% trans "Меню" %} · Webordo{% endblock %}
+{% block title %}{% t branch "name" %} — {% trans "Меню" %} · Webordo
+{% endblock %}
 
 {% block cta %}{% endblock %}
 
@@ -153,6 +154,41 @@
     box-shadow: 0 14px 36px rgba(13,17,23,0.09), 0 2px 10px rgba(13,17,23,0.05);
     padding: 6px;
   }
+  /* ── ПОИСК ПО МЕНЮ ──
+     Поле живёт в той же липкой «таблетке», что и категории, и раскрывается
+     по кнопке: постоянная строка поиска съедала бы верх экрана на телефоне. */
+  .bm-search-btn {
+    flex-shrink: 0; width: 34px; height: 34px; margin-right: 4px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; border-radius: 50%; cursor: pointer;
+    background: var(--card2); color: var(--text2); transition: all .18s;
+  }
+  .bm-search-btn:hover { background: var(--border); color: var(--text); }
+  .bm-search-wrap { display: none; flex: 1; align-items: center; gap: 8px; padding: 0 6px 0 14px; }
+  .bm-cats-row.searching .bm-cats-inner,
+  .bm-cats-row.searching .bm-cats-more-btn,
+  .bm-cats-row.searching .bm-search-btn { display: none; }
+  .bm-cats-row.searching .bm-search-wrap { display: flex; }
+  .bm-search-wrap svg { width: 17px; height: 17px; color: var(--muted); flex-shrink: 0; }
+  .bm-search-input {
+    flex: 1; min-width: 0; border: 0; outline: 0; background: transparent;
+    font-family: inherit; font-size: 14px; color: var(--text); padding: 7px 0;
+  }
+  .bm-search-close {
+    flex-shrink: 0; width: 30px; height: 30px; border: none; border-radius: 50%;
+    background: var(--card2); color: var(--text2); cursor: pointer; font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .bm-search-close:hover { background: var(--border); }
+  .bm-search-empty {
+    display: none; text-align: center; padding: 56px 20px; color: var(--muted);
+  }
+  .bm-search-empty-icon { font-size: 44px; margin-bottom: 12px; }
+  .bm-search-empty-title {
+    font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 15px;
+    color: var(--text); margin-bottom: 6px;
+  }
+
   .bm-cats-inner {
     flex: 1; min-width: 0;
     padding: 4px 4px 4px 14px;
@@ -786,6 +822,18 @@ const T = {
         {% endfor %}
       </div>
 
+      <!-- Поиск по меню -->
+      <button class="bm-search-btn" id="bmSearchBtn" onclick="bmOpenSearch()"
+              aria-label="{% trans 'Поиск по меню' %}">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M10 18a8 8 0 1 1 5.293-14.293A8 8 0 0 1 10 18Zm11.707 2.293-5.11-5.11a10 10 0 1 0-1.414 1.414l5.11 5.11a1 1 0 0 0 1.414-1.414Z"/></svg>
+      </button>
+      <div class="bm-search-wrap" id="bmSearchWrap">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 18a8 8 0 1 1 5.293-14.293A8 8 0 0 1 10 18Zm11.707 2.293-5.11-5.11a10 10 0 1 0-1.414 1.414l5.11 5.11a1 1 0 0 0 1.414-1.414Z"/></svg>
+        <input class="bm-search-input" id="bmSearchInput" type="text" autocomplete="off"
+               placeholder="{% trans 'Найти блюдо' %}">
+        <button class="bm-search-close" onclick="bmCloseSearch()" aria-label="{% trans 'Закрыть' %}">✕</button>
+      </div>
+
       <!-- Кнопка стрелка вниз -->
       <button class="bm-cats-more-btn" id="catsMoreBtn" onclick="toggleCatsDropdown()" aria-label="{% trans 'Все категории' %}">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -961,6 +1009,13 @@ const T = {
         <div style="font-size:14px;color:var(--muted);">{% trans "Ресторан ещё не добавил блюда" %}</div>
       </div>
     {% endif %}
+
+    {# показывается, когда поиск ничего не нашёл #}
+    <div class="bm-search-empty" id="bmSearchEmpty">
+      <div class="bm-search-empty-icon">🔍</div>
+      <div class="bm-search-empty-title">{% trans "Ничего не найдено" %}</div>
+      <div style="font-size:13px">{% trans "Попробуйте другое слово — например «плов» или «салат»" %}</div>
+    </div>
 
 
     <style>
@@ -3030,6 +3085,84 @@ document.addEventListener('click', e => {
     card.querySelectorAll('.dish-clickable').forEach(el => {
       el.addEventListener('click', () => openDishModal(card));
     });
+  });
+})();
+</script>
+<script>
+/* ── ПОИСК ПО МЕНЮ ──
+   Фильтруем на месте: карточки уже отрисованы сервером и несут
+   data-dish-name и data-dish-desc, поэтому ходить на сервер незачем. */
+(function () {
+  const row    = document.querySelector('.bm-cats-row');
+  const input  = document.getElementById('bmSearchInput');
+  const empty  = document.getElementById('bmSearchEmpty');
+  if (!row || !input) return;
+
+  const cards    = Array.from(document.querySelectorAll('.dish-card'));
+  const sections = Array.from(document.querySelectorAll('.bm-cat-section'));
+  const moreBtn  = document.getElementById('catsMoreBtn');
+  // счётчик у заголовка категории показывает исходное число — при поиске
+  // подменяем на найденное, иначе «Супы 25» рядом с четырьмя блюдами врёт
+  sections.forEach(sec => {
+    const c = sec.querySelector('.bm-cat-count');
+    if (c) c.dataset.total = c.textContent.trim();
+  });
+
+  const norm = t => (t || '').toLowerCase().replace(/ё/g, 'е').trim();
+
+  function apply(q) {
+    q = norm(q);
+    if (!q) { reset(); return; }
+    let shown = 0;
+    cards.forEach(card => {
+      const hay = norm(card.dataset.dishName) + ' ' + norm(card.dataset.dishDesc);
+      const hit = hay.includes(q);
+      card.style.display = hit ? '' : 'none';
+      if (hit) shown++;
+    });
+    // категорию без совпадений прячем целиком вместе с заголовком,
+    // иначе остаются пустые разделы с цифрой в счётчике
+    sections.forEach(sec => {
+      const hits = sec.querySelectorAll('.dish-card:not([style*="display: none"])').length;
+      sec.style.display = hits ? '' : 'none';
+      const c = sec.querySelector('.bm-cat-count');
+      if (c) c.textContent = hits;
+    });
+    empty.style.display = shown ? 'none' : 'block';
+  }
+
+  function reset() {
+    cards.forEach(c => { c.style.display = ''; });
+    sections.forEach(sec => {
+      sec.style.display = '';
+      const c = sec.querySelector('.bm-cat-count');
+      if (c && c.dataset.total) c.textContent = c.dataset.total;
+    });
+    empty.style.display = 'none';
+  }
+
+  window.bmOpenSearch = function () {
+    row.classList.add('searching');
+    // шеврон «ещё категории» ставит себе display инлайном из своего скрипта,
+    // поэтому css-правилом его не спрятать
+    if (moreBtn) moreBtn.style.display = 'none';
+    input.focus();
+  };
+  window.bmCloseSearch = function () {
+    row.classList.remove('searching');
+    input.value = '';
+    reset();
+    // пусть тот же скрипт сам решит, нужен ли шеврон
+    window.dispatchEvent(new Event('resize'));
+  };
+
+  let t = null;
+  input.addEventListener('input', () => {
+    clearTimeout(t);
+    t = setTimeout(() => apply(input.value), 120);
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Escape') bmCloseSearch();
   });
 })();
 </script>
