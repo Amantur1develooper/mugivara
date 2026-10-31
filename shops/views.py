@@ -8,6 +8,7 @@ from django.urls import reverse
 from django.db import transaction
 from .cart import dec, get_cart, get_mode, get_shop_cart, clear_shop_cart, save_cart, set_mode  # ✅ добавь это
 from django.db.models import Prefetch
+from . import stock as shop_stock
 from .models import Store, StoreBranch, StoreCategory, StoreProduct, StoreStock
 from urllib.parse import quote
 import re
@@ -657,8 +658,9 @@ def checkout(request, branch_id):
 
 
         items_payload = []
+        plan_qty = {}          # product_id -> сколько списать, когда дойдёт до дела
 
-        # позиции + списание (цена — из корзины, уже с учётом акции на сегодня)
+        # позиции + план списания (цена — из корзины, уже с учётом акции на сегодня)
         for r in rows:
             st = stock_map[r["product_id"]]
             price = r["price"]
@@ -673,7 +675,7 @@ def checkout(request, branch_id):
                 line_total=line_total,
             )
 
-            StoreStock.objects.filter(pk=st.pk).update(qty=F("qty") - qty)
+            plan_qty[st.product_id] = plan_qty.get(st.product_id, Decimal("0")) + Decimal(qty)
 
             items_payload.append({
                 "name": getattr(st.product, "name_ru", str(st.product)),
@@ -695,7 +697,17 @@ def checkout(request, branch_id):
             })
 
         for pid, needed in cx_ing_needed.items():
-            StoreStock.objects.filter(pk=cx_stock_map[pid].pk).update(qty=F("qty") - needed)
+            plan_qty[pid] = plan_qty.get(pid, Decimal("0")) + needed
+
+        # Доставку со склада не снимаем до подтверждения: заказ ещё могут
+        # отменить, а товар всё это время числился бы проданным.
+        # Продажу в магазине списываем сразу — товар уже отдали.
+        order.stock_plan = shop_stock.build_plan(plan_qty)
+        if is_delivery:
+            order.save(update_fields=["stock_plan"])
+        else:
+            order.save(update_fields=["stock_plan"])
+            shop_stock.write_off(order)
 
     # чистим корзину после успешного заказа
     clear_shop_cart(request, branch)

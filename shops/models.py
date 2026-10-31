@@ -352,6 +352,17 @@ class StoreOrder(TimeStampedModel):
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
+    # Заказ на доставку не трогает склад, пока его не подтвердили: до звонка
+    # менеджера он может отмениться, а товар всё это время числился бы
+    # проданным и пропадал из витрины.
+    #
+    # План списания фиксируем в момент оформления — {product_id: количество},
+    # включая ингредиенты «Собери сам». Пересчитывать его при подтверждении
+    # нельзя: состав конструктора к тому времени могли поменять, и со склада
+    # ушло бы не то, что человек заказал.
+    stock_plan = models.JSONField("План списания со склада", default=dict, blank=True)
+    stock_written_off = models.BooleanField("Списано со склада", default=False)
+
     def __str__(self):
         return f"#{self.id} {self.branch} {self.order_type} {self.total}"
 

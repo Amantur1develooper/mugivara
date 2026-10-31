@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from django.db.models import Sum, Count, Q, Max
 from django.db import models as _models
 
+from . import stock as shop_stock
 from .models import (
     Store, StoreBranch, StoreCategory, StoreProduct,
     StoreStock, StoreOrder, StoreOrderItem, StoreMembership,
@@ -847,6 +848,16 @@ def shop_order_status(request, order_id):
     if new_status in dict(StoreOrder.Status.choices):
         order.status = new_status
         order.save(update_fields=["status"])
+
+        # Склад двигается здесь, а не при оформлении: заказ на доставку
+        # до подтверждения может отмениться, и держать товар списанным нельзя.
+        if new_status in (StoreOrder.Status.CONFIRMED, StoreOrder.Status.DONE):
+            shortages = shop_stock.write_off(order)
+            if shortages:
+                messages.warning(request, shop_stock.shortage_text(order, shortages))
+        elif new_status == StoreOrder.Status.CANCELED:
+            # отменили уже подтверждённый — возвращаем товар на полку
+            shop_stock.restore(order)
     return redirect("dashboard:shop_orders", branch_id=order.branch_id)
 
 
