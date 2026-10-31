@@ -53,10 +53,10 @@
 
 /* ── HERO ── */
 .rch-hero {
-  position: relative; border-radius: 0 0 24px 24px;
-  overflow: hidden; min-height: 190px;
+  position: relative; border-radius: 0 0 20px 20px;
+  overflow: hidden; min-height: 86px;
   display: flex; flex-direction: column; justify-content: flex-end;
-  padding: 20px 24px; margin: 0 -16px 28px;
+  padding: 44px 20px 14px; margin: 0 -16px 22px;
 }
 .rch-hero-bg {
   position: absolute; inset: 0;
@@ -80,9 +80,9 @@
   mask-image: radial-gradient(ellipse 100% 100% at 100% 0%, black 30%, transparent 70%);
 }
 .rch-back {
-  position: absolute; top: 16px; left: 20px; z-index: 3;
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 7px 16px; border-radius: 100px; font-size: 13px; font-weight: 600;
+  position: absolute; top: 11px; left: 16px; z-index: 3;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 13px; border-radius: 100px; font-size: 12px; font-weight: 600;
   background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18);
   color: rgba(255,255,255,.8); text-decoration: none;
   backdrop-filter: blur(10px); transition: all .2s;
@@ -112,8 +112,8 @@
 }
 .rch-title {
   font-family: 'Unbounded', sans-serif; font-weight: 900;
-  font-size: clamp(17px, 3.2vw, 26px); letter-spacing: -1px;
-  color: #fff; line-height: 1.05; margin-bottom: 8px;
+  font-size: clamp(17px, 2.4vw, 22px); letter-spacing: -.7px;
+  color: #fff; line-height: 1.1; margin-bottom: 0;
 }
 .rch-pills { display: flex; flex-wrap: wrap; gap: 8px; }
 .rch-pill {
@@ -278,12 +278,9 @@
 
 /* ════ MOBILE ════ */
 @media (max-width: 520px) {
-  .rch-hero { min-height: 160px; padding: 14px 14px; border-radius: 0 0 18px 18px; }
-  .rch-logo { width: 48px; height: 48px; border-radius: 13px; }
-  .rch-logo-letter { font-size: 19px; }
-  .rch-hero-content { gap: 12px; }
-  .rch-title { font-size: 17px; letter-spacing: -.6px; margin-bottom: 5px; }
-  .rch-back { top: 10px; left: 12px; padding: 5px 12px; font-size: 11px; }
+  .rch-hero { min-height: 78px; padding: 38px 14px 11px; border-radius: 0 0 16px 16px; }
+  .rch-title { font-size: 17px; letter-spacing: -.5px; }
+  .rch-back { top: 8px; left: 12px; padding: 4px 11px; font-size: 11px; }
 
   .bc-cover { aspect-ratio: 4/3; }
   .bc-cover-name { font-size: 13px; }
@@ -315,52 +312,7 @@
     <a href="{% url 'public_site:restaurants_list' %}" class="rch-back">← {% trans "Рестораны" %}</a>
 
     <div class="rch-hero-content">
-      <div class="rch-logo">
-        {% if restaurant.logo %}
-          <img src="{{ restaurant.logo.url }}" alt="{% t restaurant 'name' %}" loading="lazy">
-        {% else %}
-          {% t restaurant "name" as rn %}
-          <span class="rch-logo-letter">{{ rn|slice:":1" }}</span>
-        {% endif %}
-      </div>
-      <div class="rch-hero-info">
-        <div class="rch-eyebrow">{% trans "Ресторан · Webordo" %}</div>
-        <h1 class="rch-title">{% t restaurant "name" %}</h1>
-        <div class="rch-pills">
-          <span class="rch-pill">🏢 {{ branches|length }}
-            {% if branches|length == 1 %}{% trans "филиал" %}{% else %}{% trans "филиала" %}{% endif %}
-          </span>
-          {% if is_open %}
-            <span class="rch-pill open">
-              <span style="width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 2.5s infinite;flex-shrink:0"></span>
-              {% trans "Открыто" %}
-            </span>
-          {% endif %}
-          {% if restaurant.phone %}
-            <a href="tel:{{ restaurant.phone }}" class="rch-pill" style="text-decoration:none">📞 {{ restaurant.phone }}</a>
-          {% endif %}
-          {% if restaurant.whatsapp %}
-            <a href="https://wa.me/{{ restaurant.whatsapp|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" rel="noopener" class="rch-pill" style="background:rgba(37,211,102,.18);border-color:rgba(37,211,102,.35);color:#4ee08a;text-decoration:none">
-              WhatsApp
-            </a>
-          {% endif %}
-          {% if restaurant.instagram %}
-            <a href="{{ restaurant.instagram }}" target="_blank" rel="noopener" class="rch-pill" style="text-decoration:none">📷 Instagram</a>
-          {% endif %}
-          {% if restaurant.telegram %}
-            <a href="{% if restaurant.telegram|slice:':1' == '@' %}https://t.me/{{ restaurant.telegram|slice:'1:' }}{% elif 'http' in restaurant.telegram %}{{ restaurant.telegram }}{% else %}https://t.me/{{ restaurant.telegram }}{% endif %}"
-               target="_blank" rel="noopener" class="rch-pill" style="text-decoration:none">✈️ Telegram</a>
-          {% endif %}
-          {% if restaurant.map_url %}
-            <a href="{{ restaurant.map_url }}" target="_blank" rel="noopener" class="rch-pill" style="text-decoration:none">📍 {% trans "На карте" %}</a>
-          {% endif %}
-          {% if restaurant.external_url %}
-            <a href="{{ restaurant.external_url }}" target="_blank" rel="noopener" class="rch-pill" style="background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.3);color:#fff;text-decoration:none">
-              🌐 {% trans "Сайт" %} ↗
-            </a>
-          {% endif %}
-        </div>
-      </div>
+      <h1 class="rch-title">{% t restaurant "name" %}</h1>
     </div>
   </div>
 
