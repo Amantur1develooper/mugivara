@@ -9,7 +9,7 @@
 /* ════════════════════════════════
    RESTAURANT LANDING — same language as /r/<slug>/contacts/
 ════════════════════════════════ */
-.rc-page { max-width: 860px; margin: 0 auto; padding: 0 16px 80px; }
+.rc-page { max-width: 1140px; margin: 0 auto; padding: 0 16px 80px; }
 
 /* ── HERO ── */
 .rch-hero {
@@ -109,7 +109,20 @@
 }
 
 /* ── BRANCH CARDS ── */
-.bc-list { display: flex; flex-direction: column; gap: 16px; }
+.bc-list {
+  display: grid; gap: 18px;
+  grid-template-columns: 1fr;
+}
+/* с двух филиалов и шире 760px показываем по две карточки в ряд,
+   на больших экранах — по три: иначе страница на ПК почти пустая */
+@media (min-width: 760px)  { .bc-list { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1180px) { .bc-list { grid-template-columns: repeat(3, 1fr); } }
+/* Один филиал — не растягиваем сетку: карточка в треть экрана с пустотой
+   справа выглядит как недогруженная страница. Селектор из двух классов,
+   чтобы перебить медиазапросы выше независимо от порядка. */
+.bc-list.bc-list--single { grid-template-columns: 1fr; max-width: 520px; }
+.bc { display: flex; flex-direction: column; }
+.bc-body { flex: 1; }
 
 .bc {
   background: var(--card); border: 1.5px solid var(--border);
@@ -138,7 +151,9 @@
 .bc-cover-empty-icon { font-size: 64px; opacity: .25; }
 .bc-cover-grad {
   position: absolute; inset: 0;
-  background: linear-gradient(to bottom, transparent 30%, rgba(0,0,0,.65) 100%);
+  background:
+    linear-gradient(to bottom, rgba(0,0,0,.45) 0%, transparent 38%),
+    linear-gradient(to top, rgba(0,0,0,.92) 0%, rgba(0,0,0,.55) 42%, transparent 72%);
 }
 /* Status badge */
 .bc-status {
@@ -147,8 +162,8 @@
   padding: 5px 11px; border-radius: 100px; font-size: 11px; font-weight: 700;
   backdrop-filter: blur(10px); border: 1px solid transparent;
 }
-.bc-status.open  { background: rgba(0,184,150,.2); border-color: rgba(0,184,150,.3); color: #00cba8; }
-.bc-status.closed { background: rgba(0,0,0,.45); border-color: rgba(255,255,255,.1); color: rgba(255,255,255,.7); }
+.bc-status.open  { background: rgba(4,46,38,.82); border-color: rgba(0,220,170,.45); color: #2ff0bd; }
+.bc-status.closed { background: rgba(0,0,0,.72); border-color: rgba(255,255,255,.22); color: rgba(255,255,255,.9); }
 .bc-status-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 .bc-status.open .bc-status-dot { animation: blink 2.5s infinite; box-shadow: 0 0 0 3px rgba(0,184,150,.3); }
 @keyframes blink {
@@ -159,16 +174,24 @@
 .bc-hours {
   position: absolute; top: 12px; right: 12px;
   padding: 4px 10px; border-radius: 100px; font-size: 10px; font-weight: 700;
-  background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.12);
-  backdrop-filter: blur(10px); color: rgba(255,255,255,.85);
+  background: rgba(0,0,0,.72); border: 1px solid rgba(255,255,255,.2);
+  backdrop-filter: blur(10px); color: #fff;
 }
 /* Name on photo */
 .bc-cover-bottom { position: absolute; bottom: 0; left: 0; right: 0; padding: 14px 16px; }
 .bc-cover-name {
-  font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 15px;
-  color: #fff; letter-spacing: -.3px; text-shadow: 0 2px 8px rgba(0,0,0,.5);
+  font-family: 'Unbounded', sans-serif; font-weight: 800; font-size: 16px;
+  color: #fff; letter-spacing: -.3px; text-shadow: 0 2px 10px rgba(0,0,0,.75);
+  line-height: 1.2;
 }
-.bc-cover-addr { font-size: 11px; color: rgba(255,255,255,.65); margin-top: 3px; }
+/* Адрес — главное отличие филиалов друг от друга, поэтому он на сплошном
+   фоне в теле карточки, а не поверх фотографии, где его не видно. */
+.bc-addr {
+  display: flex; align-items: flex-start; gap: 7px;
+  font-size: 13px; line-height: 1.45; color: var(--text2);
+  margin-bottom: 12px;
+}
+.bc-addr svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; color: var(--accent,#ff4d1c); }
 
 /* Body */
 .bc-body { padding: 16px 18px 0; }
@@ -185,9 +208,22 @@
 .bc-chip.delivery { background: rgba(255,138,0,.08); border-color: rgba(255,138,0,.25); color: #b86c00; }
 .bc-chip.allday   { background: rgba(0,184,150,.08); border-color: rgba(0,184,150,.25); color: var(--teal,#00cba8); }
 
-/* Actions — крупнее, чем на странице контактов */
+/* Второстепенные действия — компактным рядом: три крупные кнопки на карточку
+   растягивали страницу так, что четыре филиала не помещались на экран. */
 .bc-actions { display: flex; flex-direction: column; gap: 10px; }
-.bc-actions-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.bc-actions-row { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
+.bc-mini {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  padding: 10px 6px; border-radius: 14px; font-size: 11px; font-weight: 700;
+  border: 1.5px solid var(--border); background: var(--bg); color: var(--text2);
+  text-decoration: none; transition: all .15s; text-align: center; line-height: 1.1;
+}
+.bc-mini:hover { background: var(--card2); transform: translateY(-1px); }
+.bc-mini svg { width: 18px; height: 18px; }
+.bc-mini.wa   { background: rgba(37,211,102,.1); border-color: rgba(37,211,102,.3); color: #12a150; }
+.bc-mini.wa:hover { background: rgba(37,211,102,.18); }
+.bc-mini.map  { background: rgba(255,77,28,.07); border-color: rgba(255,77,28,.22); color: var(--accent,#ff4d1c); }
+.bc-mini.book { background: rgba(37,99,235,.07); border-color: rgba(37,99,235,.22); color: #2563eb; }
 
 .bc-btn {
   display: flex; align-items: center; justify-content: center; gap: 8px;
@@ -216,9 +252,12 @@
 /* CTA divider */
 .bc-cta-row {
   border-top: 1px solid var(--border);
-  margin-top: 16px;
+  /* auto, а не фиксированный отступ: адреса разной длины, и без этого
+     кнопки «Открыть меню» в соседних карточках стояли на разной высоте */
+  margin-top: auto;
   padding: 16px 18px 18px;
 }
+.bc-body { padding-bottom: 16px; }
 
 /* ── ABOUT BLOCK ── */
 .rch-about {
@@ -254,7 +293,8 @@
 
 /* ════ MOBILE ════ */
 @media (max-width: 520px) {
-  .rch-hero { min-height: 160px; padding: 14px 14px; border-radius: 0 0 18px 18px; }
+  /* отступ сверху под кнопку «Рестораны»: в колонку логотип вставал прямо под неё */
+  .rch-hero { min-height: 170px; padding: 46px 14px 14px; border-radius: 0 0 18px 18px; }
   .rch-logo { width: 48px; height: 48px; border-radius: 13px; }
   .rch-logo-letter { font-size: 19px; }
   .rch-hero-content { gap: 12px; }
@@ -263,14 +303,19 @@
 
   .rc-search { padding: 10px 16px; margin-bottom: 20px; }
 
-  .bc-cover { height: 150px; }
-  .bc-cover-name { font-size: 13px; }
-  .bc-cover-addr { display: none; }
-  .bc-body { padding: 14px 14px 0; }
+  .bc-cover { height: 148px; }
+  .bc-cover-name { font-size: 14px; }
+  .bc-addr { font-size: 12.5px; margin-bottom: 10px; }
+  .bc-body { padding: 13px 14px 0; }
   .bc-chip { font-size: 10px; padding: 4px 10px; }
-  .bc-btn { padding: 12px 14px; font-size: 13px; gap: 6px; }
-  .bc-btn.menu { font-size: 14px; padding: 15px 14px; }
-  .bc-cta-row { padding: 14px 14px 16px; }
+  .bc-mini { font-size: 10px; padding: 9px 4px; }
+  .bc-mini svg { width: 16px; height: 16px; }
+  .bc-btn.menu { font-size: 14px; padding: 14px; }
+  .bc-cta-row { padding: 12px 14px 14px; }
+  /* логотип и чипы в шапке налезали друг на друга на узком экране */
+  .rch-hero-content { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .rch-pills { gap: 6px; }
+  .rch-pill { padding: 6px 12px; font-size: 11px; }
   .rch-about-body { padding: 18px; }
   .rch-about-text { font-size: 14px; }
 }
@@ -358,7 +403,7 @@
   <div class="rc-label">{% trans "Филиалы" %}</div>
   <h2 class="rc-heading">{% trans "Выберите филиал" %}</h2>
 
-  <div class="bc-list" id="branchesGrid">
+  <div class="bc-list {% if branches|length == 1 %}bc-list--single{% endif %}" id="branchesGrid">
     {% for b in branches %}
     {% t b "name" as b_name %}
     <div class="bc branch-card" data-name="{{ b_name|default:'' }} {{ b.address|default:'' }}">
@@ -385,12 +430,17 @@
 
         <div class="bc-cover-bottom">
           <div class="bc-cover-name">{{ b_name }}</div>
-          {% if b.address %}<div class="bc-cover-addr">📍 {{ b.address }}</div>{% endif %}
         </div>
       </div>
 
       <!-- Body -->
       <div class="bc-body">
+        {% if b.address %}
+        <div class="bc-addr">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>
+          <span>{{ b.address }}</span>
+        </div>
+        {% endif %}
         <div class="bc-chips">
           {% if b.delivery_enabled %}
             <span class="bc-chip delivery">🚚 {% trans "Доставка" %} · {{ b.delivery_fee|floatformat:"0" }} {% trans "сом" %}</span>
@@ -406,23 +456,23 @@
         </div>
 
         <div class="bc-actions">
-          {% if b.phone %}
           <div class="bc-actions-row">
-            <a href="tel:{{ b.phone }}" class="bc-btn call">
+            {% if b.phone %}
+            <a href="tel:{{ b.phone }}" class="bc-mini" title="{{ b.phone }}">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
               {% trans "Позвонить" %}
             </a>
             <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}"
-               target="_blank" rel="noopener" class="bc-btn wa">
+               target="_blank" rel="noopener" class="bc-mini wa">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.7-.8-2-1-.3-.1-.5-.1-.7.1s-.8 1-.9 1.2-.3.2-.6 0c-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.3-.5s0-.4 0-.5c0-.2-.7-1.7-1-2.3C9.3 8.1 9 8.1 8.8 8.1H8.3c-.2 0-.5.1-.8.4C7.2 8.8 6.3 9.6 6.3 11.3s1.2 3.5 1.4 3.7c.2.2 2.4 3.7 5.9 5.2 2.3 1 3.2 1.1 4.3.9.7-.1 2.2-.9 2.5-1.7.3-.8.3-1.5.2-1.7-.1-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.9.5 3.7 1.4 5.3L2 22l4.9-1.3C8.3 21.5 10.1 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2z"/></svg>
               WhatsApp
             </a>
-          </div>
-          {% endif %}
-
-          <div class="bc-actions-row">
+            {% endif %}
             {% if b.map_url %}
-            <a href="{{ b.map_url }}" target="_blank" rel="noopener" class="bc-btn map">📍 {% trans "Маршрут" %}</a>
+            <a href="{{ b.map_url }}" target="_blank" rel="noopener" class="bc-mini map">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>
+              {% trans "Маршрут" %}
+            </a>
             {% endif %}
             {% if b.phone %}
               {% with wa=b.phone|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' %}
@@ -432,10 +482,16 @@
 Дата: __.__.____
 Время: __:__
 Гостей: __
-Имя: __{% endblocktrans %}{% endfilter %}" target="_blank" rel="noopener" class="bc-btn book">🗓️ {% trans "Бронирование" %}</a>
+Имя: __{% endblocktrans %}{% endfilter %}" target="_blank" rel="noopener" class="bc-mini book">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 2v2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7Zm12 7v10H5V9h14Z"/></svg>
+                {% trans "Бронь" %}
+              </a>
               {% endwith %}
             {% else %}
-              <a href="{% url 'public_site:reservation' b.id %}" class="bc-btn book">🗓️ {% trans "Бронирование" %}</a>
+              <a href="{% url 'public_site:reservation' b.id %}" class="bc-mini book">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 2v2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7Zm12 7v10H5V9h14Z"/></svg>
+                {% trans "Бронь" %}
+              </a>
             {% endif %}
           </div>
         </div>
