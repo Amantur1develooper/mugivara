@@ -171,6 +171,34 @@
     </div>
   </div>
 
+  <div class="db-form-card">
+    <div class="db-form-section-title">💬 Telegram-уведомления о заказах</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.5">
+      Каждый новый заказ — и самовывоз, и доставка — будет приходить в группу
+      со списком товаров, суммой, телефоном и адресом.<br>
+      Чтобы узнать Chat ID: добавьте бота в группу, напишите там любое сообщение
+      и перешлите его боту <b>@getmyid_bot</b>. У групп ID отрицательный,
+      начинается с <code>-100</code>.
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
+      <div class="db-form-group">
+        <label class="db-label">Chat ID группы</label>
+        <input class="db-input" type="text" name="tg_group_chat_id"
+               value="{{ branch.tg_group_chat_id|default:'' }}" placeholder="-1001234567890">
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Thread ID <span style="font-weight:400;color:var(--muted)">— если группа с темами</span></label>
+        <input class="db-input" type="number" name="tg_thread_id"
+               value="{{ branch.tg_thread_id|default:'' }}" placeholder="необязательно">
+      </div>
+      <div class="db-form-group">
+        <label class="db-label">Chat ID менеджера <span style="font-weight:400;color:var(--muted)">— в личку</span></label>
+        <input class="db-input" type="text" name="tg_manager_chat_id"
+               value="{{ branch.tg_manager_chat_id|default:'' }}" placeholder="необязательно">
+      </div>
+    </div>
+  </div>
+
   <button type="submit" class="db-btn db-btn-primary">💾 Сохранить</button>
 </form>
 

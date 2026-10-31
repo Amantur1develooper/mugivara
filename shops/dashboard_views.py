@@ -42,6 +42,18 @@ def _has_store_access(user, store):
     return StoreMembership.objects.filter(user=user, store=store).exists()
 
 
+def _tg_id(raw):
+    """Chat ID из формы: пусто → None, иначе целое. У групп оно отрицательное,
+    поэтому обычный isdigit() не подходит."""
+    raw = (raw or "").strip().replace(" ", "")
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except ValueError:
+        return None
+
+
 def _has_branch_access(user, branch):
     return _has_store_access(user, branch.store)
 
@@ -141,6 +153,13 @@ def shop_branch_edit(request, branch_id):
         branch.close_time = ct or None
         work_days_list = request.POST.getlist("work_days")
         branch.work_days = ",".join(work_days_list)
+        # Telegram: уведомления о заказах. Поля на модели были давно, но задать
+        # их можно было только через админку Django — владелец магазина до них
+        # не доставал, поэтому уведомления на практике никому не приходили.
+        branch.tg_group_chat_id   = _tg_id(request.POST.get("tg_group_chat_id"))
+        branch.tg_thread_id       = _tg_id(request.POST.get("tg_thread_id"))
+        branch.tg_manager_chat_id = _tg_id(request.POST.get("tg_manager_chat_id"))
+
         if request.FILES.get("cover_photo"):
             branch.cover_photo = request.FILES["cover_photo"]
         branch.save()
