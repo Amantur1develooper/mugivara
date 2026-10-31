@@ -14,9 +14,9 @@
 /* ── HERO ── */
 .rch-hero {
   position: relative; border-radius: 0 0 20px 20px;
-  overflow: hidden; min-height: 132px;
+  overflow: hidden; min-height: 86px;
   display: flex; flex-direction: column; justify-content: flex-end;
-  padding: 46px 20px 16px; margin: 0 -16px 18px;
+  padding: 44px 20px 14px; margin: 0 -16px 18px;
 }
 .rch-hero-bg {
   position: absolute; inset: 0;
@@ -72,8 +72,8 @@
 }
 .rch-title {
   font-family: 'Unbounded', sans-serif; font-weight: 900;
-  font-size: clamp(16px, 2.4vw, 21px); letter-spacing: -.7px;
-  color: #fff; line-height: 1.05; margin-bottom: 6px;
+  font-size: clamp(17px, 2.4vw, 22px); letter-spacing: -.7px;
+  color: #fff; line-height: 1.1; margin-bottom: 0;
 }
 .rch-pills { display: flex; flex-wrap: wrap; gap: 8px; }
 .rch-pill {
@@ -295,11 +295,8 @@
 /* ════ MOBILE ════ */
 @media (max-width: 520px) {
   /* отступ сверху под кнопку «Рестораны»: в колонку логотип вставал прямо под неё */
-  .rch-hero { min-height: 118px; padding: 42px 14px 12px; border-radius: 0 0 16px 16px; }
-  .rch-logo { width: 38px; height: 38px; border-radius: 11px; }
-  .rch-logo-letter { font-size: 16px; }
-  .rch-title { font-size: 16px; letter-spacing: -.5px; margin-bottom: 4px; }
-  .rch-eyebrow { font-size: 8px; letter-spacing: 1.8px; }
+  .rch-hero { min-height: 78px; padding: 38px 14px 11px; border-radius: 0 0 16px 16px; }
+  .rch-title { font-size: 17px; letter-spacing: -.5px; }
   .rch-back { top: 8px; left: 12px; padding: 4px 11px; font-size: 11px; }
 
   .rc-search { padding: 10px 16px; margin-bottom: 20px; }
@@ -347,9 +344,6 @@
   .bc-list--single .bc-mini { font-size: 11px; padding: 10px 6px; }
   .bc-list--single .bc-btn.menu { font-size: 15px; padding: 15px; }
   .bc-list--single .bc-cta-row { padding: 14px; }
-  .rch-hero-content { gap: 8px; }
-  .rch-pills { gap: 6px; }
-  .rch-pill { padding: 6px 12px; font-size: 11px; }
   .rch-about-body { padding: 18px; }
   .rch-about-text { font-size: 14px; }
 }
@@ -373,55 +367,7 @@
     <a href="{% url 'public_site:restaurants_list' %}" class="rch-back">← {% trans "Рестораны" %}</a>
 
     <div class="rch-hero-content">
-      <div class="rch-logo">
-        {% if restaurant.logo %}
-          <img src="{{ restaurant.logo.url }}" alt="{% t restaurant 'name' %}" loading="lazy">
-        {% else %}
-          {% t restaurant "name" as rn %}
-          <span class="rch-logo-letter">{{ rn|slice:":1" }}</span>
-        {% endif %}
-      </div>
-      <div class="rch-hero-info">
-        <div class="rch-eyebrow">{% trans "Ресторан · Webordo" %}</div>
-        <h1 class="rch-title">{% t restaurant "name" %}</h1>
-        <div class="rch-pills">
-          <span class="rch-pill">🏢 {{ branches|length }}
-            {% if branches|length == 1 %}{% trans "филиал" %}{% else %}{% trans "филиала" %}{% endif %}
-          </span>
-          {% if is_open %}
-            <span class="rch-pill open">
-              <span style="width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 2.5s infinite;flex-shrink:0"></span>
-              {% trans "Открыто" %}
-            </span>
-          {% endif %}
-          {% if restaurant.phone %}
-            <a href="tel:{{ restaurant.phone }}" class="rch-pill" style="text-decoration:none">📞 {{ restaurant.phone }}</a>
-          {% endif %}
-          {% if restaurant.whatsapp %}
-            <a href="https://wa.me/{{ restaurant.whatsapp|cut:'+'|cut:' '|cut:'-'|cut:'('|cut:')' }}" target="_blank" rel="noopener" class="rch-pill" style="background:rgba(37,211,102,.18);border-color:rgba(37,211,102,.35);color:#4ee08a;text-decoration:none">
-              WhatsApp
-            </a>
-          {% endif %}
-          {% if restaurant.telegram %}
-            <a href="{% if restaurant.telegram|slice:':1' == '@' %}https://t.me/{{ restaurant.telegram|slice:'1:' }}{% elif 'http' in restaurant.telegram %}{{ restaurant.telegram }}{% else %}https://t.me/{{ restaurant.telegram }}{% endif %}"
-               target="_blank" rel="noopener" class="rch-pill" style="text-decoration:none">✈️ Telegram</a>
-          {% endif %}
-          {% if restaurant.instagram %}
-            <a href="{{ restaurant.instagram }}" target="_blank" rel="noopener" class="rch-pill" style="text-decoration:none">📷 Instagram</a>
-          {% endif %}
-          {% if restaurant.tiktok %}
-            <a href="{{ restaurant.tiktok }}" target="_blank" rel="noopener" class="rch-pill" style="text-decoration:none">🎵 TikTok</a>
-          {% endif %}
-          {% if restaurant.map_url %}
-            <a href="{{ restaurant.map_url }}" target="_blank" rel="noopener" class="rch-pill" style="text-decoration:none">📍 {% trans "На карте" %}</a>
-          {% endif %}
-          {% if restaurant.external_url %}
-            <a href="{{ restaurant.external_url }}" target="_blank" rel="noopener" class="rch-pill" style="background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.3);color:#fff;text-decoration:none">
-              🌐 {% trans "Сайт" %} ↗
-            </a>
-          {% endif %}
-        </div>
-      </div>
+      <h1 class="rch-title">{% t restaurant "name" %}</h1>
     </div>
   </div>
 
