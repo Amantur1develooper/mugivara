@@ -207,6 +207,7 @@
 .bc-chip:is(a):hover { background: var(--card2); }
 .bc-chip.delivery { background: rgba(255,138,0,.08); border-color: rgba(255,138,0,.25); color: #b86c00; }
 .bc-chip.allday   { background: rgba(0,184,150,.08); border-color: rgba(0,184,150,.25); color: var(--teal,#00cba8); }
+.bc-chip.hours    { display: none; }   /* на ПК часы показывает бейдж на обложке */
 
 /* Второстепенные действия — компактным рядом: три крупные кнопки на карточку
    растягивали страницу так, что четыре филиала не помещались на экран. */
@@ -303,15 +304,48 @@
 
   .rc-search { padding: 10px 16px; margin-bottom: 20px; }
 
-  .bc-cover { height: 148px; }
-  .bc-cover-name { font-size: 14px; }
-  .bc-addr { font-size: 12.5px; margin-bottom: 10px; }
-  .bc-body { padding: 13px 14px 0; }
-  .bc-chip { font-size: 10px; padding: 4px 10px; }
-  .bc-mini { font-size: 10px; padding: 9px 4px; }
-  .bc-mini svg { width: 16px; height: 16px; }
-  .bc-btn.menu { font-size: 14px; padding: 14px; }
-  .bc-cta-row { padding: 12px 14px 14px; }
+  /* Два филиала и больше — по две карточки в ряд: иначе до нижних
+     приходится листать полэкрана на каждую. Один филиал остаётся
+     во всю ширину (.bc-list--single выше). */
+  .bc-list { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+  .bc { border-radius: 18px; }
+  .bc-cover { height: 104px; }
+  .bc-cover-bottom { padding: 8px 10px; }
+  .bc-cover-name { font-size: 12px; letter-spacing: -.2px; }
+  .bc-addr {
+    font-size: 11px; gap: 5px; margin-bottom: 8px; line-height: 1.35;
+    /* длинные адреса с ориентирами иначе растягивают карточку втрое */
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .bc-addr svg { width: 12px; height: 12px; }
+  .bc-body { padding: 10px 10px 0; }
+  .bc-chips { gap: 4px; margin-bottom: 9px; }
+  .bc-chip { font-size: 9px; padding: 3px 7px; }
+  .bc-status, .bc-hours { font-size: 9px; padding: 3px 7px; top: 8px; }
+  .bc-status { left: 8px; } .bc-hours { right: 8px; }
+  /* четыре кнопки в один ряд не влезали в карточку шириной ~170px
+     и вылезали за край — раскладываем 2×2 */
+  .bc-actions-row { grid-auto-flow: row; grid-template-columns: repeat(2, 1fr); }
+  /* у филиала без карты кнопок три — последняя иначе висит половинкой */
+  .bc-actions-row > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .bc-mini { font-size: 9px; padding: 7px 2px; gap: 3px; border-radius: 11px; }
+  .bc-mini svg { width: 15px; height: 15px; }
+  /* на обложке бейдж часов налезал на «Открыто» — переносим в чипы */
+  .bc-hours { display: none; }
+  .bc-chip.hours { display: inline-flex; }
+  .bc-btn.menu { font-size: 12px; padding: 11px 8px; border-radius: 13px; }
+  .bc-cta-row { padding: 9px 10px 10px; }
+
+  /* один филиал — прежний просторный вид */
+  .bc-list--single .bc-cover { height: 150px; }
+  .bc-list--single .bc-cover-name { font-size: 15px; }
+  .bc-list--single .bc-addr { font-size: 13px; -webkit-line-clamp: 3; }
+  .bc-list--single .bc-body { padding: 14px 14px 0; }
+  .bc-list--single .bc-mini { font-size: 11px; padding: 10px 6px; }
+  .bc-list--single .bc-btn.menu { font-size: 15px; padding: 15px; }
+  .bc-list--single .bc-cta-row { padding: 14px; }
   /* логотип и чипы в шапке налезали друг на друга на узком экране */
   .rch-hero-content { flex-direction: column; align-items: flex-start; gap: 10px; }
   .rch-pills { gap: 6px; }
@@ -452,6 +486,8 @@
           {% endif %}
           {% if b.is_open_24h %}
             <span class="bc-chip allday">🌙 24/7</span>
+          {% elif b.open_time and b.close_time %}
+            <span class="bc-chip hours">🕒 {{ b.open_time|time:"H:i" }}–{{ b.close_time|time:"H:i" }}</span>
           {% endif %}
         </div>
 
