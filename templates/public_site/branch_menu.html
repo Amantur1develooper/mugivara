@@ -156,30 +156,64 @@
   }
   /* ── ПОИСК ПО МЕНЮ ──
      Поле живёт в той же липкой «таблетке», что и категории, и раскрывается
-     по кнопке: постоянная строка поиска съедала бы верх экрана на телефоне. */
+     по кнопке: постоянная строка поиска съедала бы верх экрана на телефоне.
+     Кнопка подписана и подкрашена акцентом — одна серая иконка среди чипов
+     категорий читалась как украшение, а не как «тут можно искать». */
   .bm-search-btn {
-    flex-shrink: 0; width: 34px; height: 34px; margin-right: 4px;
-    display: flex; align-items: center; justify-content: center;
-    border: none; border-radius: 50%; cursor: pointer;
-    background: var(--card2); color: var(--text2); transition: all .18s;
+    flex-shrink: 0; height: 36px; padding: 0 14px 0 11px; margin-right: 6px;
+    display: inline-flex; align-items: center; gap: 7px;
+    border: 1.5px solid rgba(255,77,28,.28); border-radius: 999px; cursor: pointer;
+    /* фон непрозрачный: чипы категорий прокручиваются под кнопкой,
+       и сквозь полупрозрачную подложку просвечивал их текст */
+    background: linear-gradient(rgba(255,77,28,.09), rgba(255,77,28,.09)), var(--card, #fff);
+    color: var(--accent, #ff4d1c);
+    font-family: inherit; font-size: 13px; font-weight: 700; white-space: nowrap;
+    transition: background .18s, border-color .18s, transform .12s;
+    position: relative; z-index: 2;
   }
-  .bm-search-btn:hover { background: var(--border); color: var(--text); }
-  .bm-search-wrap { display: none; flex: 1; align-items: center; gap: 8px; padding: 0 6px 0 14px; }
+  .bm-search-btn::before {
+    /* мягкий край: чип, уезжающий под кнопку, не обрывается резко */
+    content: ''; position: absolute; right: 100%; top: -6px; bottom: -6px; width: 22px;
+    background: linear-gradient(to right, transparent, var(--card, #fff));
+    pointer-events: none;
+  }
+  .bm-search-btn:hover {
+    background: linear-gradient(rgba(255,77,28,.17), rgba(255,77,28,.17)), var(--card, #fff);
+    border-color: rgba(255,77,28,.45);
+  }
+  .bm-search-btn:active { transform: scale(.96); }
+  .bm-search-btn svg { width: 17px; height: 17px; flex-shrink: 0; }
+
+  .bm-search-wrap {
+    display: none; flex: 1; align-items: center; gap: 10px;
+    padding: 0 6px 0 14px;
+  }
+  .bm-cats-row.searching { border-color: rgba(255,77,28,.35); }
   .bm-cats-row.searching .bm-cats-inner,
   .bm-cats-row.searching .bm-cats-more-btn,
   .bm-cats-row.searching .bm-search-btn { display: none; }
   .bm-cats-row.searching .bm-search-wrap { display: flex; }
-  .bm-search-wrap svg { width: 17px; height: 17px; color: var(--muted); flex-shrink: 0; }
+  .bm-search-wrap > svg { width: 18px; height: 18px; color: var(--accent, #ff4d1c); flex-shrink: 0; }
   .bm-search-input {
     flex: 1; min-width: 0; border: 0; outline: 0; background: transparent;
-    font-family: inherit; font-size: 14px; color: var(--text); padding: 7px 0;
+    font-family: inherit; font-size: 15px; font-weight: 600; color: var(--text);
+    padding: 8px 0;
   }
+  .bm-search-input::placeholder { color: var(--muted); font-weight: 500; }
   .bm-search-close {
-    flex-shrink: 0; width: 30px; height: 30px; border: none; border-radius: 50%;
+    flex-shrink: 0; width: 32px; height: 32px; border: none; border-radius: 50%;
     background: var(--card2); color: var(--text2); cursor: pointer; font-size: 15px;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; align-items: center; justify-content: center; transition: all .15s;
   }
-  .bm-search-close:hover { background: var(--border); }
+  .bm-search-close:hover { background: var(--border); color: var(--text); }
+
+  /* сколько блюд нашлось — сразу под полем, чтобы не считать глазами */
+  .bm-search-count {
+    display: none; max-width: 1200px; margin: 10px auto 0; padding: 0 4px;
+    font-size: 13px; font-weight: 600; color: var(--muted);
+  }
+  .bm-search-count b { color: var(--accent, #ff4d1c); }
+
   .bm-search-empty {
     display: none; text-align: center; padding: 56px 20px; color: var(--muted);
   }
@@ -645,6 +679,8 @@
     .bm-hero-row { align-items: flex-start; }
     .bm-content { padding: 20px 16px 120px; }
     .bm-cats-sticky { padding: 0 12px; }
+    .bm-search-btn { padding: 0; width: 36px; justify-content: center; }
+    .bm-search-btn span { display: none; }
     .bm-cats-inner { padding: 4px 4px 4px 10px; }
     .bm-grid { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 12px; }
     .dish-photo { height: 150px; }
@@ -824,13 +860,22 @@ const T = {
 
       <!-- Поиск по меню -->
       <button class="bm-search-btn" id="bmSearchBtn" onclick="bmOpenSearch()"
-              aria-label="{% trans 'Поиск по меню' %}">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M10 18a8 8 0 1 1 5.293-14.293A8 8 0 0 1 10 18Zm11.707 2.293-5.11-5.11a10 10 0 1 0-1.414 1.414l5.11 5.11a1 1 0 0 0 1.414-1.414Z"/></svg>
+              aria-label="{% trans 'Поиск по меню' %}" title="{% trans 'Поиск по меню' %}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m20 20-3.6-3.6"></path>
+        </svg>
+        <span>{% trans "Поиск" %}</span>
       </button>
       <div class="bm-search-wrap" id="bmSearchWrap">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 18a8 8 0 1 1 5.293-14.293A8 8 0 0 1 10 18Zm11.707 2.293-5.11-5.11a10 10 0 1 0-1.414 1.414l5.11 5.11a1 1 0 0 0 1.414-1.414Z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path d="m20 20-3.6-3.6"></path>
+        </svg>
         <input class="bm-search-input" id="bmSearchInput" type="text" autocomplete="off"
-               placeholder="{% trans 'Найти блюдо' %}">
+               placeholder="{% trans 'Найти блюдо — название или состав' %}">
         <button class="bm-search-close" onclick="bmCloseSearch()" aria-label="{% trans 'Закрыть' %}">✕</button>
       </div>
 
@@ -859,6 +904,8 @@ const T = {
     </div>
   </div>
 
+
+  <div class="bm-search-count" id="bmSearchCount"></div>
 
   <div class="bm-content" id="bm-top">
 
@@ -3096,7 +3143,17 @@ document.addEventListener('click', e => {
   const row    = document.querySelector('.bm-cats-row');
   const input  = document.getElementById('bmSearchInput');
   const empty  = document.getElementById('bmSearchEmpty');
+  const countEl = document.getElementById('bmSearchCount');
   if (!row || !input) return;
+
+  // «блюдо / блюда / блюд» — без этого получается «найдено 4 блюдо»
+  function plural(n) {
+    const a = Math.abs(n) % 100, b = a % 10;
+    if (a > 10 && a < 20) return 'блюд';
+    if (b > 1 && b < 5) return 'блюда';
+    if (b === 1) return 'блюдо';
+    return 'блюд';
+  }
 
   const cards    = Array.from(document.querySelectorAll('.dish-card'));
   const sections = Array.from(document.querySelectorAll('.bm-cat-section'));
@@ -3129,6 +3186,10 @@ document.addEventListener('click', e => {
       if (c) c.textContent = hits;
     });
     empty.style.display = shown ? 'none' : 'block';
+    if (countEl) {
+      countEl.style.display = shown ? 'block' : 'none';
+      countEl.innerHTML = 'Найдено <b>' + shown + '</b> ' + plural(shown);
+    }
   }
 
   function reset() {
@@ -3139,6 +3200,7 @@ document.addEventListener('click', e => {
       if (c && c.dataset.total) c.textContent = c.dataset.total;
     });
     empty.style.display = 'none';
+    if (countEl) countEl.style.display = 'none';
   }
 
   window.bmOpenSearch = function () {
