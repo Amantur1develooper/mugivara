@@ -51,6 +51,7 @@ def _deduct_ingredients(order):
 
     from orders.models import OrderItem
     from techcards.models import TechCard, IngredientStock, StockMovement
+    from techcards.explode import expand
 
     deductions = {}  # ingredient_id -> Decimal qty
 
@@ -60,12 +61,11 @@ def _deduct_ingredients(order):
             tc = TechCard.objects.get(item=oi.item, branch=order.branch, is_active=True)
         except TechCard.DoesNotExist:
             continue
-        scale = Decimal(str(oi.qty)) / (tc.yield_qty or Decimal("1"))
-        for line in tc.ingredients.select_related("ingredient").all():
-            if not line.ingredient_id:
-                continue
-            net = (line.net_qty * scale).quantize(Decimal("0.001"))
-            deductions[line.ingredient_id] = deductions.get(line.ingredient_id, Decimal("0")) + net
+        # expand() раскрывает полуфабрикаты до настоящих ингредиентов.
+        # Раньше строки-полуфабрикаты просто пропускались (у них нет
+        # ingredient_id), и со склада по ним не уходило вообще ничего.
+        for ing_id, need in expand(tc, Decimal(str(oi.qty))).items():
+            deductions[ing_id] = deductions.get(ing_id, Decimal("0")) + need
 
     # ── Конструктор (Собери сам) ──────────────────────────────────────────────
     # Приоритет: 1) прямая привязка warehouse_ingredient + write_off_qty
@@ -106,14 +106,8 @@ def _deduct_ingredients(order):
                             )
                         except TechCard.DoesNotExist:
                             continue
-                        scale = (ing_qty * order_qty) / (tc.yield_qty or Decimal("1"))
-                        for line in tc.ingredients.select_related("ingredient").all():
-                            if not line.ingredient_id:
-                                continue
-                            net = (line.net_qty * scale).quantize(Decimal("0.001"))
-                            deductions[line.ingredient_id] = (
-                                deductions.get(line.ingredient_id, Decimal("0")) + net
-                            )
+                        for ing_id, need in expand(tc, ing_qty * order_qty).items():
+                            deductions[ing_id] = deductions.get(ing_id, Decimal("0")) + need
     except Exception:
         pass
 
