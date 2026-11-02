@@ -21,6 +21,42 @@
   .pd-inline-form { display:flex; gap:8px; flex-wrap:wrap; align-items:end; margin-top:10px; }
   .pd-inline-form .db-form-group { margin-bottom:0; }
   .pd-mini-input { width:110px; }
+
+  .pd-save-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .pd-save-note { font-size: 12px; color: var(--muted); line-height: 1.45; max-width: 420px; }
+
+  /* ── Фото ── */
+  .pd-drop {
+    position: relative; border: 2px dashed var(--border); border-radius: 16px;
+    min-height: 180px; display: flex; align-items: center; justify-content: center;
+    background: var(--bg); overflow: hidden; transition: border-color .18s, background .18s;
+    cursor: pointer;
+  }
+  .pd-drop:hover, .pd-drop.over { border-color: var(--accent, #ff4d1c); background: rgba(255,77,28,.04); }
+  .pd-drop-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .pd-drop-img { max-width: 100%; max-height: 260px; display: block; border-radius: 12px; }
+  .pd-drop-empty { text-align: center; padding: 26px 16px; pointer-events: none; }
+  .pd-drop-title { font-weight: 700; font-size: 14px; color: var(--text); margin-top: 8px; }
+  .pd-drop-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .pd-drop-remove {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    font-size: 13px; color: var(--text2); margin-top: 10px;
+  }
+  .pd-counter {
+    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 12px;
+    color: var(--muted); background: var(--bg); border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px;
+  }
+  .pd-add-tile {
+    width: 88px; height: 88px; border-radius: 12px; border: 2px dashed var(--border);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; cursor: pointer; position: relative; background: var(--bg);
+    transition: border-color .18s, background .18s;
+  }
+  .pd-add-tile:hover { border-color: var(--accent, #ff4d1c); background: rgba(255,77,28,.05); }
+  .pd-add-tile input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .pd-add-plus { font-size: 22px; color: var(--accent, #ff4d1c); line-height: 1; }
+  .pd-add-text { font-size: 11px; color: var(--muted); }
   .pd-group-card { background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:12px; }
 </style>
 {% endblock %}
@@ -38,7 +74,8 @@
 
   {# ── ОСНОВНЫЕ ПОЛЯ ── #}
   <div class="db-form-card">
-    <div class="db-form-section-title">Основное</div>
+    <div class="db-form-section-title">📝 Основное</div>
+    <div class="db-form-section-hint">Название, цена и описание — то, что клиент видит в карточке товара.</div>
     <form method="post" enctype="multipart/form-data">
       {% csrf_token %}
       <div class="db-form-group">
@@ -146,17 +183,26 @@
       </script>
       <div class="db-form-group">
         <label class="db-label">Главное фото</label>
+        <div class="pd-drop" id="pdMainDrop">
+          <img id="pdMainPreview" class="pd-drop-img"
+               src="{% if product.main_photo %}{{ product.main_photo.url }}{% endif %}"
+               style="{% if not product.main_photo %}display:none{% endif %}">
+          <div class="pd-drop-empty" id="pdMainEmpty"
+               style="{% if product.main_photo %}display:none{% endif %}">
+            <div style="font-size:34px;line-height:1">🖼️</div>
+            <div class="pd-drop-title">Перетащите фото сюда</div>
+            <div class="pd-drop-sub">или нажмите, чтобы выбрать · JPG, PNG, WebP · до 12 МБ</div>
+          </div>
+          <input type="file" name="main_photo" accept="image/jpeg,image/png,image/webp"
+                 id="pdMainInput" class="pd-drop-input">
+        </div>
         {% if product.main_photo %}
-          <img src="{{ product.main_photo.url }}" style="width:96px;height:96px;border-radius:12px;object-fit:cover;margin-bottom:8px;display:block">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;margin-bottom:8px">
-            <input type="checkbox" name="main_photo_clear"> Удалить это фото
+          <label class="pd-drop-remove">
+            <input type="checkbox" name="main_photo_clear"> Удалить фото при сохранении
           </label>
         {% endif %}
-        <input class="db-input" type="file" name="main_photo" accept="image/*">
-        <div style="font-size:12px;color:var(--muted);margin-top:4px">
-          Выберите файл, чтобы заменить фото.
-        </div>
       </div>
+
       <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:16px">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
           <input type="checkbox" name="is_available" {% if product.is_available %}checked{% endif %}> В наличии
@@ -171,38 +217,53 @@
           <input type="checkbox" name="is_promo" {% if product.is_promo %}checked{% endif %}> Акция
         </label>
       </div>
-      <button type="submit" class="db-btn db-btn-primary">💾 Сохранить</button>
+      <div class="pd-save-row">
+        <button type="submit" class="db-btn db-btn-primary">💾 Сохранить</button>
+        <span class="pd-save-note">Сохраняет только этот блок. Галерея, варианты
+          и параметры ниже сохраняются сами, сразу при изменении.</span>
+      </div>
     </form>
   </div>
 
   {# ── ГАЛЕРЕЯ ФОТО (до 5) ── #}
   <div class="db-form-card">
-    <div class="db-form-section-title">🖼️ Галерея фото ({{ photos.count }}/5)</div>
+    <div class="db-form-section-title">🖼️ Галерея фото <span class="pd-counter">{{ photos.count }} из 5</span></div>
+    <div class="db-form-section-hint">
+      Дополнительные фото в карточке товара — клиент листает их свайпом.
+      Каждое добавляется сразу, отдельно от кнопки «Сохранить» выше.
+    </div>
     <div class="pd-gallery">
       {% for photo in photos %}
       <div class="pd-photo">
-        <img src="{{ photo.photo.url }}">
-        <form method="post" action="{% url 'dashboard:printshop_photo_delete' photo.id %}" onsubmit="return confirm('Удалить фото?')">
+        <img src="{{ photo.photo.url }}" alt="">
+        <form method="post" action="{% url 'dashboard:printshop_photo_delete' photo.id %}"
+              onsubmit="return confirm('Удалить это фото?')">
           {% csrf_token %}
-          <button type="submit">✕</button>
+          <button type="submit" title="Удалить">✕</button>
         </form>
       </div>
       {% endfor %}
+      {% if photos_left %}
+      <form method="post" action="{% url 'dashboard:printshop_photo_upload' product.id %}"
+            enctype="multipart/form-data" class="pd-add-tile" id="pdGalleryForm">
+        {% csrf_token %}
+        <input type="file" name="photo" accept="image/jpeg,image/png,image/webp"
+               id="pdGalleryInput" onchange="this.form.submit()">
+        <div class="pd-add-plus">＋</div>
+        <div class="pd-add-text">Добавить</div>
+      </form>
+      {% endif %}
     </div>
-    {% if photos_left %}
-    <form method="post" action="{% url 'dashboard:printshop_photo_upload' product.id %}" enctype="multipart/form-data" class="pd-inline-form">
-      {% csrf_token %}
-      <input type="file" name="photo" accept="image/*" required>
-      <button type="submit" class="db-btn db-btn-ghost db-btn-sm">＋ Добавить фото</button>
-    </form>
-    {% else %}
-      <div style="font-size:12px;color:var(--muted)">Достигнут лимит — 5 фото на товар</div>
+    {% if not photos_left %}
+      <div style="font-size:12.5px;color:var(--muted);margin-top:10px">
+        Больше пяти фото на товар не поместится — удалите лишнее, чтобы добавить новое.
+      </div>
     {% endif %}
   </div>
 
   {# ── ВАРИАНТЫ (размер/тираж) ── #}
   <div class="db-form-card">
-    <div class="db-form-section-title">📐 Варианты (размер / тираж)</div>
+    <div class="db-form-section-title">📐 Варианты <span class="pd-counter">{{ variants.count }}</span></div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Взаимоисключающие варианты со своей ценой — например размеры S/M/L или тираж 100/500/1000 шт. Если вариантов нет, используется базовая цена.</div>
     {% if variants %}
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
@@ -329,4 +390,34 @@
   </div>
 
 </div>
+
+<script>
+/* Перетаскивание и мгновенный предпросмотр главного фото: раньше было
+   безликое «Выберите файл», и до сохранения не было видно, что загрузится. */
+(function () {
+  const drop = document.getElementById('pdMainDrop');
+  if (!drop) return;
+  const input = document.getElementById('pdMainInput');
+  const img   = document.getElementById('pdMainPreview');
+  const empty = document.getElementById('pdMainEmpty');
+
+  function preview(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const r = new FileReader();
+    r.onload = e => { img.src = e.target.result; img.style.display = ''; empty.style.display = 'none'; };
+    r.readAsDataURL(file);
+  }
+  input.addEventListener('change', () => preview(input.files[0]));
+  ['dragenter', 'dragover'].forEach(ev =>
+    drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev =>
+    drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => {
+    const f = e.dataTransfer.files[0];
+    if (!f) return;
+    input.files = e.dataTransfer.files;   // чтобы файл ушёл вместе с формой
+    preview(f);
+  });
+})();
+</script>
 {% endblock %}

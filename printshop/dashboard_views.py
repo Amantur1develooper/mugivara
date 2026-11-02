@@ -42,6 +42,38 @@ def _int(val, default=0):
         return default
 
 
+MAX_PHOTO_MB = 12
+
+
+def check_photo(f):
+    """Проверяет, что загрузили настоящую картинку. Возвращает текст ошибки
+    или пустую строку.
+
+    Без этой проверки в галерею попадали PDF и HEIC с айфона: Pillow их
+    не открывает, файл сохранялся как есть и на витрине показывался битым
+    квадратом, а тяжёлые снимки роняли обработку.
+    """
+    if f is None:
+        return "Выберите файл"
+    if f.size == 0:
+        return "Файл пустой"
+    if f.size > MAX_PHOTO_MB * 1024 * 1024:
+        return f"Файл больше {MAX_PHOTO_MB} МБ — уменьшите его и попробуйте снова"
+    try:
+        from PIL import Image
+        f.seek(0)
+        img = Image.open(f)
+        img.verify()          # проверяет целостность, не декодируя целиком
+        f.seek(0)
+    except Exception:
+        name = (getattr(f, "name", "") or "").lower()
+        if name.endswith((".heic", ".heif")):
+            return ("Формат HEIC с iPhone не поддерживается. В настройках камеры "
+                    "выберите «Наиболее совместимый» или пришлите файл JPG.")
+        return "Это не картинка. Подойдут JPG, PNG или WebP."
+    return ""
+
+
 def _user_centers(user):
     ids = PrintMembership.objects.filter(user=user).values_list("center_id", flat=True)
     return PrintCenter.objects.filter(id__in=ids)
@@ -337,8 +369,13 @@ def product_detail(request, product_id):
         product.is_popular = request.POST.get("is_popular") == "on"
         product.is_promo = request.POST.get("is_promo") == "on"
 
-        if request.FILES.get("main_photo"):
-            product.main_photo = request.FILES["main_photo"]
+        new_photo = request.FILES.get("main_photo")
+        if new_photo:
+            err = check_photo(new_photo)
+            if err:
+                messages.error(request, err)
+                return redirect("dashboard:printshop_product_detail", product_id=product.id)
+            product.main_photo = new_photo
         elif request.POST.get("main_photo_clear") == "on" and product.main_photo:
             product.main_photo.delete(save=False)
             product.main_photo = None
@@ -425,8 +462,9 @@ def photo_upload(request, product_id):
         return redirect("dashboard:printshop_product_detail", product_id=product.id)
 
     photo_file = request.FILES.get("photo")
-    if not photo_file:
-        messages.error(request, "Выберите файл")
+    err = check_photo(photo_file)
+    if err:
+        messages.error(request, err)
         return redirect("dashboard:printshop_product_detail", product_id=product.id)
 
     max_order = product.photos.aggregate(m=Max("sort_order"))["m"] or 0

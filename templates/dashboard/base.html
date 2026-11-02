@@ -184,6 +184,27 @@
       margin-bottom: 18px; display: flex; align-items: center; gap: 10px;
     }
 
+    /* Карточка формы. Класс использовался на страницах кабинета, но стилей
+       у него не было — все блоки сливались в одну простыню без границ. */
+    .db-form-card {
+      background: var(--card); border-radius: 18px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 8px rgba(0,0,0,.04);
+      padding: 22px 24px; margin-bottom: 18px;
+    }
+    .db-form-section-title {
+      font-family: 'Unbounded', sans-serif; font-weight: 800;
+      font-size: 14px; letter-spacing: -0.3px; color: var(--text);
+      margin-bottom: 4px; display: flex; align-items: center; gap: 8px;
+    }
+    /* подпись под заголовком блока: зачем он нужен */
+    .db-form-section-hint {
+      font-size: 12.5px; line-height: 1.5; color: var(--muted);
+      margin-bottom: 18px;
+    }
+    .db-form-section-title + .db-form-group,
+    .db-form-section-title + div { margin-top: 16px; }
+
     /* ══════════════════════════════════════════
        FORM ELEMENTS
     ══════════════════════════════════════════ */
