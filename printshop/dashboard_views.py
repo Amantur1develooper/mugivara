@@ -1,3 +1,4 @@
+import logging
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
@@ -16,6 +17,7 @@ from .models import (
 )
 
 LOGIN_URL = "dashboard:login"
+logger = logging.getLogger(__name__)
 
 
 # ── helpers ────────────────────────────────────────────────────────────────
@@ -379,7 +381,13 @@ def product_detail(request, product_id):
         elif request.POST.get("main_photo_clear") == "on" and product.main_photo:
             product.main_photo.delete(save=False)
             product.main_photo = None
-        product.save()
+        try:
+            product.save()
+        except OSError as e:
+            logger.exception("printshop product save failed for product %s", product.id)
+            messages.error(request, f"Не удалось сохранить фото на сервере: {e}. "
+                                    f"Сообщите администратору платформы.")
+            return redirect("dashboard:printshop_product_detail", product_id=product.id)
         messages.success(request, "Товар сохранён")
         return redirect("dashboard:printshop_product_detail", product_id=product.id)
 
@@ -468,7 +476,15 @@ def photo_upload(request, product_id):
         return redirect("dashboard:printshop_product_detail", product_id=product.id)
 
     max_order = product.photos.aggregate(m=Max("sort_order"))["m"] or 0
-    PrintProductPhoto.objects.create(product=product, photo=photo_file, sort_order=max_order + 10)
+    try:
+        PrintProductPhoto.objects.create(product=product, photo=photo_file, sort_order=max_order + 10)
+    except OSError as e:
+        # нет прав на media/, кончилось место на диске и т.п. — раньше это
+        # вылетало белой пятисоткой, и владелец не понимал, что случилось
+        logger.exception("printshop photo upload failed for product %s", product.id)
+        messages.error(request, f"Не удалось сохранить файл на сервере: {e}. "
+                                f"Сообщите администратору платформы.")
+        return redirect("dashboard:printshop_product_detail", product_id=product.id)
     messages.success(request, "Фото добавлено")
     return redirect("dashboard:printshop_product_detail", product_id=product.id)
 
