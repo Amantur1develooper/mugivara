@@ -571,6 +571,8 @@
     height:178px;
     background:#eef2f6;
     overflow:hidden;
+    /* чтобы кегль заглушки считался от ширины карточки */
+    container-type:inline-size;
   }
   .sc-card-media img{
     width:100%;
@@ -580,16 +582,40 @@
     transition:transform .35s ease;
   }
   .sc-card:hover .sc-card-media img{ transform:scale(1.06); }
+  /* Нет фото — показываем само название крупно: пустая иконка пакета
+     ничего не говорила о товаре, а у магазинов вроде «Грин лиф» снимков
+     нет почти нигде. Кегль подбирается по длине названия, чтобы длинное
+     не вылезало за карточку. */
   .sc-card-placeholder{
     width:100%;
     height:100%;
     display:flex;
     align-items:center;
     justify-content:center;
-    font-size:52px;
+    padding:14px 16px;
+    box-sizing:border-box;
+    text-align:center;
     background:linear-gradient(145deg,#fff8f2,#ffe8d6);
-    color:#f08b44;
+    color:#b4551a;
+    font-weight:800;
+    line-height:1.22;
+    letter-spacing:-.2px;
+    overflow:hidden;
   }
+  /* Кегль считаем от ширины КАРТОЧКИ (cqi), а не окна: на телефоне карточки
+     идут по две, и привязка к vw давала текст крупнее, чем влезает. */
+  .sc-card-placeholder > span{
+    display:-webkit-box;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+    /* подстраховка на случай очень длинного слова без пробелов */
+    overflow-wrap:anywhere;
+    hyphens:auto;
+  }
+  .sc-card-placeholder[data-len="s"]  > span{ font-size:clamp(14px,13cqi,24px);  -webkit-line-clamp:3; }
+  .sc-card-placeholder[data-len="m"]  > span{ font-size:clamp(12px,9.5cqi,19px); -webkit-line-clamp:4; }
+  .sc-card-placeholder[data-len="l"]  > span{ font-size:clamp(11px,7cqi,15px);   -webkit-line-clamp:5; }
+  .sc-card-placeholder[data-len="xl"] > span{ font-size:clamp(9px,5.6cqi,13px); line-height:1.3; -webkit-line-clamp:6; }
   .sc-media-grad{
     position:absolute;
     inset:0;
@@ -967,10 +993,24 @@
     width:100%; aspect-ratio:4/3;
     background:linear-gradient(145deg,#fff8f2,#ffe8d6);
     overflow:hidden;
+    container-type:inline-size;
   }
   .sc-modal-img-wrap img{
     width:100%; height:100%; object-fit:cover; display:block;
   }
+  .sc-modal-img-ph--text{
+    padding:20px 24px; box-sizing:border-box; text-align:center;
+    color:#b4551a; font-weight:800; line-height:1.25; letter-spacing:-.3px;
+  }
+  /* кегль от ширины окна картинки, как и на карточках */
+  .sc-modal-img-ph--text > span{
+    display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden;
+    overflow-wrap:anywhere; hyphens:auto;
+  }
+  .sc-modal-img-ph--text[data-len="s"]  > span{ font-size:clamp(20px,11cqi,34px); -webkit-line-clamp:3; }
+  .sc-modal-img-ph--text[data-len="m"]  > span{ font-size:clamp(17px,8cqi,26px);  -webkit-line-clamp:4; }
+  .sc-modal-img-ph--text[data-len="l"]  > span{ font-size:clamp(15px,6cqi,20px);  -webkit-line-clamp:5; }
+  .sc-modal-img-ph--text[data-len="xl"] > span{ font-size:clamp(13px,4.6cqi,17px); -webkit-line-clamp:6; }
   .sc-modal-img-ph{
     width:100%; height:100%;
     display:flex; align-items:center; justify-content:center;
@@ -1210,7 +1250,9 @@ const T = {
                     {% if s.product.photo %}
                       <img src="{{ s.product.photo.url }}" alt="{% t s.product 'name' %}" loading="lazy" decoding="async">
                     {% else %}
-                      <div class="sc-card-placeholder">🛍️</div>
+                      {% t s.product "name" as sp_name %}
+                      <div class="sc-card-placeholder"
+                           data-len="{% if sp_name|length < 22 %}s{% elif sp_name|length < 40 %}m{% elif sp_name|length < 70 %}l{% else %}xl{% endif %}"><span>{{ sp_name }}</span></div>
                     {% endif %}
                     <div class="sc-media-grad"></div>
                     {% if not s.is_orderable %}
@@ -1454,6 +1496,12 @@ const T = {
     }
   }, true);
 
+  /* та же шкала, что у карточек: длинное название не должно вылезать */
+  function lenStep(t) {
+    const n = (t || '').length;
+    return n < 22 ? 's' : n < 40 ? 'm' : n < 70 ? 'l' : 'xl';
+  }
+
   (function () {
     const btn = document.getElementById('scTopBtn');
     if (!btn) return;
@@ -1476,7 +1524,7 @@ const T = {
     const imgWrap = document.getElementById('scModalImg');
     imgWrap.innerHTML = d.photo
       ? `<img src="${d.photo}" alt="${escH(d.name)}">`
-      : `<div class="sc-modal-img-ph">🛍️</div>`;
+      : `<div class="sc-modal-img-ph sc-modal-img-ph--text" data-len="${lenStep(d.name)}"><span>${escH(d.name)}</span></div>`;
 
     // texts
     document.getElementById('scModalCat').textContent   = d.cat || '';
