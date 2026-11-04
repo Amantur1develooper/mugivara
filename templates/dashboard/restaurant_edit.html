@@ -142,37 +142,64 @@
 </form>
 
 {# ══════════════════════════════════════════════════════════ #}
-{# ── БЛОК ОБЛАЧНОЙ ПЕЧАТИ (отдельная форма) ── #}
+{# ── БЛОК ОБЛАЧНОЙ ПЕЧАТИ ── #}
 {# ══════════════════════════════════════════════════════════ #}
 <div class="db-card" style="margin-top:28px;border-top:2px solid var(--border);padding-top:24px">
   <div class="db-card-title">🖨 Облачная печать (Cloud Print)</div>
-  <p style="font-size:13px;color:var(--muted);margin-bottom:20px">
-    Установите агент на ноутбук в ресторане. Агент сам подключится и будет забирать задания на печать.
-    Не нужен белый IP и VPN.
+  <p style="font-size:13px;color:var(--muted);margin-bottom:4px">
+    Агент — это программа на ноутбуке рядом с принтером. Она сама подключается
+    к серверу и забирает задания. Белый IP и VPN не нужны.
   </p>
+  {% if print_multi_branch %}
+  <p style="font-size:13px;color:var(--muted);margin-bottom:20px">
+    В каждой точке, где стоит принтер, — свой агент со своим токеном.
+    Филиал может обслуживать только один агент.
+  </p>
+  {% endif %}
 
-  <form method="post" action="{% url 'dashboard:restaurant_print_save' restaurant.id %}">
+  {% for a in print_agents %}
+  <div style="border:1.5px solid var(--border);border-radius:16px;padding:20px;margin-bottom:18px">
+  <form method="post" action="{% url 'dashboard:restaurant_print_agent_save' restaurant.id a.cfg.id %}">
     {% csrf_token %}
 
-    {# Тоггл включения #}
+    <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:18px">
+      <div style="flex:1;min-width:200px">
+        <label class="db-label">Название кассы</label>
+        <input class="db-input" type="text" name="agent_name" value="{{ a.cfg.name }}"
+               placeholder="{% if print_multi_branch %}Например: Касса на Чуй{% else %}Касса{% endif %}">
+      </div>
+      {% if a.cfg.is_agent_online %}
+        <span style="padding:8px 14px;border-radius:10px;background:rgba(0,184,150,.1);border:1px solid rgba(0,184,150,.25);color:var(--teal);font-size:12px;font-weight:600;white-space:nowrap">
+          🟢 Онлайн ({{ a.cfg.last_heartbeat|timesince }} назад)
+        </span>
+      {% elif a.cfg.last_heartbeat %}
+        <span style="padding:8px 14px;border-radius:10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#dc2626;font-size:12px;font-weight:600;white-space:nowrap">
+          🔴 Оффлайн ({{ a.cfg.last_heartbeat|timesince }} назад)
+        </span>
+      {% else %}
+        <span style="padding:8px 14px;border-radius:10px;background:var(--bg);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:600;white-space:nowrap">
+          ⚪ Ещё не подключался
+        </span>
+      {% endif %}
+    </div>
+
     <div class="db-toggle-row" style="margin-bottom:20px">
       <div>
-        <div class="db-toggle-label">Включить облачную печать</div>
-        <div class="db-toggle-desc">Задания будут создаваться автоматически при каждом заказе в кассе</div>
+        <div class="db-toggle-label">Печать включена</div>
+        <div class="db-toggle-desc">Задания создаются автоматически при каждом заказе в кассе</div>
       </div>
       <label class="db-switch">
-        <input type="checkbox" name="printing_enabled" {% if print_cfg.enabled %}checked{% endif %}>
+        <input type="checkbox" name="printing_enabled" {% if a.cfg.enabled %}checked{% endif %}>
         <span class="db-switch-slider"></span>
       </label>
     </div>
 
-    {# Токен агента #}
     <div class="db-form-group" style="margin-bottom:20px">
       <label class="db-label">🔑 Токен для агента</label>
       <div style="display:flex;gap:8px;align-items:center">
-        <input class="db-input" type="text" value="{{ print_cfg.token }}" readonly
-               id="printToken" style="font-family:monospace;font-size:12px;flex:1">
-        <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('printToken').value)"
+        <input class="db-input" type="text" value="{{ a.cfg.token }}" readonly
+               id="printToken{{ a.cfg.id }}" style="font-family:monospace;font-size:12px;flex:1">
+        <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('printToken{{ a.cfg.id }}').value)"
                 class="db-btn db-btn-ghost db-btn-sm">📋 Копировать</button>
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:4px">
@@ -180,81 +207,58 @@
       </div>
     </div>
 
-    {# Статус агента #}
-    <div style="margin-bottom:20px">
-      {% if print_cfg.is_agent_online %}
-        <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:10px;background:rgba(0,184,150,.1);border:1px solid rgba(0,184,150,.25);color:var(--teal);font-size:12px;font-weight:600">
-          🟢 Агент онлайн ({{ print_cfg.last_heartbeat|timesince }} назад)
-        </span>
-      {% elif print_cfg.last_heartbeat %}
-        <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#dc2626;font-size:12px;font-weight:600">
-          🔴 Агент оффлайн ({{ print_cfg.last_heartbeat|timesince }} назад)
-        </span>
-      {% else %}
-        <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:10px;background:var(--bg);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:600">
-          ⚪ Агент ещё не подключался
-        </span>
-      {% endif %}
-    </div>
-
-    {# Филиалы, которые печатает этот агент #}
-    {% if print_branches|length > 1 %}
+    {% if print_multi_branch %}
     <div class="db-form-section-title" style="margin-bottom:8px">Какие филиалы печатает этот агент</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">
       Принтер стоит в одной точке. Оставьте галочку только там, где он реально
       есть, — иначе заказы соседнего филиала будут выезжать на этом принтере.
     </div>
-    {% if print_branch_warning %}
-    <div style="display:flex;gap:10px;padding:12px 14px;margin-bottom:12px;border-radius:12px;
-                background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3)">
+    {% if a.warn_all_branches %}
+    <div style="display:flex;gap:10px;padding:12px 14px;margin-bottom:12px;border-radius:12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3)">
       <div style="font-size:16px;line-height:1">⚠️</div>
       <div style="font-size:12.5px;line-height:1.5;color:var(--text)">
-        Сейчас агент печатает заказы <b>всех отмеченных филиалов</b>. Если принтер
-        стоит только в одной точке, чеки других точек выходят у неё же.
+        Этот агент печатает заказы <b>нескольких филиалов</b>. Если принтер стоит
+        только в одной точке, чеки других точек выходят у неё же.
         Снимите лишние галочки и сохраните.
       </div>
     </div>
     {% endif %}
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:22px">
-      {% for b in print_branches %}
-      <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;
-                    border:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:13px">
-        <input type="checkbox" name="print_branch_id" value="{{ b.id }}"
-               {% if b.is_served %}checked{% endif %}>
+      {% for b in a.branch_rows %}
+      <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;border:1px solid {% if b.clash %}rgba(239,68,68,.45){% else %}var(--border){% endif %};background:var(--bg);cursor:pointer;font-size:13px">
+        <input type="checkbox" name="print_branch_id" value="{{ b.id }}" {% if b.checked %}checked{% endif %}>
         <span>
-          <b>{{ b.name_ru }}</b>
+          <b>{{ b.name }}</b>
           {% if b.address %}<span style="color:var(--muted)"> · {{ b.address }}</span>{% endif %}
+          {% if b.clash %}<span style="color:#dc2626"> · занят другим агентом — чек напечатается дважды</span>{% endif %}
         </span>
       </label>
       {% endfor %}
     </div>
     {% endif %}
 
-    {# Группы принтеров #}
     <div class="db-form-section-title" style="margin-bottom:12px">Группы принтеров</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:14px">
-      Каждая группа = одна станция печати (кухня, бар и т.д.).
-      Назначайте группу категориям меню в настройках категорий.
+      Каждая группа = одна станция печати (кухня, бар и т.д.). Группы общие на ресторан —
+      их назначают категориям меню, — а имя принтера в Windows у каждой точки своё.
     </div>
 
-    <div id="printer-groups-list">
-      {% for group in printer_groups %}
+    <div class="printer-groups-list">
+      {% for g in a.groups %}
       <div class="pg-row" style="display:grid;grid-template-columns:120px 1fr 1fr auto;gap:10px;align-items:center;margin-bottom:10px">
         <input class="db-input" type="text" name="group_code"
-               value="{{ group.name }}" placeholder="kitchen" style="font-family:monospace;font-size:12px">
+               value="{{ g.name }}" placeholder="kitchen" style="font-family:monospace;font-size:12px">
         <input class="db-input" type="text" name="group_display"
-               value="{{ group.display_name }}" placeholder="Кухня">
+               value="{{ g.display_name }}" placeholder="Кухня">
         <input class="db-input" type="text" name="printer_windows_name"
-               value="{{ group.printers.first.windows_name|default:'' }}"
-               placeholder="Имя принтера в Windows">
-        <a href="{% url 'dashboard:restaurant_print_group_delete' restaurant.id group.id %}"
-           onclick="return confirm('Удалить группу?')"
+               value="{{ g.windows_name }}" placeholder="Имя принтера в Windows">
+        <a href="{% url 'dashboard:restaurant_print_group_delete' restaurant.id g.id %}"
+           onclick="return confirm('Удалить группу у всего ресторана?')"
            style="color:#dc2626;font-size:18px;text-decoration:none;flex-shrink:0">✕</a>
       </div>
       {% endfor %}
 
-      {# Пустая строка для новой группы #}
-      <div class="pg-row" id="new-group-row" style="display:grid;grid-template-columns:120px 1fr 1fr auto;gap:10px;align-items:center;margin-bottom:10px">
+      <div class="pg-row new-group-row" style="display:grid;grid-template-columns:120px 1fr 1fr auto;gap:10px;align-items:center;margin-bottom:10px">
         <input class="db-input" type="text" name="group_code" placeholder="kitchen" style="font-family:monospace;font-size:12px">
         <input class="db-input" type="text" name="group_display" placeholder="Кухня">
         <input class="db-input" type="text" name="printer_windows_name" placeholder="Имя принтера в Windows">
@@ -262,69 +266,75 @@
       </div>
     </div>
 
-    <button type="button" onclick="addGroupRow()" class="db-btn db-btn-ghost db-btn-sm" style="margin-bottom:24px">
+    <button type="button" onclick="addGroupRow(this)" class="db-btn db-btn-ghost db-btn-sm" style="margin-bottom:24px">
       + Добавить группу
     </button>
 
-    {# Принтер для итоговых чеков #}
     {% if printer_groups %}
     <div style="background:var(--bg);border:1.5px solid var(--accent);border-radius:12px;padding:16px;margin-bottom:20px">
       <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">🖨 Принтер для итоговых чеков</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:12px">
-        Все чеки при закрытии стола / заказа будут всегда уходить на этот принтер.
+        Чеки при закрытии стола / заказа будут уходить на этот принтер.
       </div>
       <select name="receipt_printer_group_id" class="db-input" style="max-width:320px">
         <option value="">— не задан (авто) —</option>
         {% for group in printer_groups %}
         <option value="{{ group.id }}"
-          {% if print_cfg.receipt_printer_group_id == group.id %}selected{% endif %}>
-          {{ group.display_name }}{% if group.printers.first %} ({{ group.printers.first.windows_name }}){% endif %}
+          {% if a.cfg.receipt_printer_group_id == group.id %}selected{% endif %}>
+          {{ group.display_name }}
         </option>
         {% endfor %}
       </select>
     </div>
     {% endif %}
 
-    <div>
-      <button type="submit" class="db-btn db-btn-primary">💾 Сохранить настройки печати</button>
+    <div style="padding:16px;background:var(--bg);border-radius:12px;border:1px solid var(--border);margin-bottom:18px">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">📥 Установка на компьютер в этой точке</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">
+        1. Сохраните настройки — токен и имена принтеров попадут в файл<br>
+        2. Скачайте оба файла и положите рядом в одну папку<br>
+        3. Установите: <code>pip install requests pywin32</code><br>
+        4. Запустите: <code>python agent.py</code>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a href="{% url 'dashboard:restaurant_print_agent_config_dl' restaurant.id a.cfg.id %}"
+           class="db-btn db-btn-primary db-btn-sm">⬇️ Скачать config.json</a>
+        <a href="{% url 'dashboard:restaurant_print_download_agent' restaurant.id %}"
+           class="db-btn db-btn-ghost db-btn-sm">⬇️ Скачать agent.py</a>
+      </div>
     </div>
+
+    <button type="submit" class="db-btn db-btn-primary">💾 Сохранить</button>
   </form>
 
-  {# Скачать агент #}
-  <div style="margin-top:20px;padding:16px;background:var(--bg);border-radius:12px;border:1px solid var(--border)">
-    <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">📥 Установка на компьютер в ресторане</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6">
-      1. Скачайте оба файла<br>
-      2. Положите рядом в одну папку<br>
-      3. Установите: <code>pip install requests pywin32</code><br>
-      4. Запустите: <code>python agent.py</code>
-    </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <a href="{% url 'dashboard:restaurant_print_download_config' restaurant.id %}"
-         class="db-btn db-btn-primary db-btn-sm">
-        ⬇️ Скачать config.json
-      </a>
-      <a href="{% url 'dashboard:restaurant_print_download_agent' restaurant.id %}"
-         class="db-btn db-btn-ghost db-btn-sm">
-        ⬇️ Скачать agent.py
-      </a>
-    </div>
-    <div style="margin-top:14px;font-family:monospace;font-size:11px;color:var(--muted);line-height:1.8">
-      GET  /api/print/jobs/?token=…<br>
-      POST /api/print/jobs/&lt;id&gt;/ack/?token=…<br>
-      POST /api/print/heartbeat/?token=…
-    </div>
+  {% if print_agents|length > 1 %}
+  <form method="post" action="{% url 'dashboard:restaurant_print_agent_delete' restaurant.id a.cfg.id %}"
+        onsubmit="return confirm('Удалить этот агент? Его токен перестанет работать.')"
+        style="margin-top:12px">
+    {% csrf_token %}
+    <button type="submit" class="db-btn db-btn-ghost db-btn-sm" style="color:#dc2626">🗑 Удалить этот агент</button>
+  </form>
+  {% endif %}
   </div>
+  {% endfor %}
+
+  {% if print_multi_branch %}
+  <form method="post" action="{% url 'dashboard:restaurant_print_agent_add' restaurant.id %}">
+    {% csrf_token %}
+    <button type="submit" class="db-btn db-btn-ghost">+ Добавить агент (ещё один принтер в другой точке)</button>
+  </form>
+  {% endif %}
 </div>
 
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function addGroupRow() {
-  const list = document.getElementById('printer-groups-list');
-  const tpl = document.getElementById('new-group-row').cloneNode(true);
-  tpl.id = '';
+function addGroupRow(btn) {
+  // строки принтеров теперь у каждого агента свои — ищем список в его форме
+  const form = btn.closest('form');
+  const list = form.querySelector('.printer-groups-list');
+  const tpl = list.querySelector('.new-group-row').cloneNode(true);
   tpl.querySelectorAll('input').forEach(i => i.value = '');
   list.appendChild(tpl);
 }

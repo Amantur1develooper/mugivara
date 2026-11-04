@@ -200,39 +200,105 @@ def restaurant_edit(request, restaurant_id):
         messages.success(request, "Данные ресторана сохранены")
         return redirect("dashboard:restaurant_edit", restaurant_id=restaurant.id)
 
-    from printing.models import RestaurantPrintConfig, PrinterGroup
-    print_cfg, _ = RestaurantPrintConfig.objects.get_or_create(restaurant=restaurant)
-    printer_groups = PrinterGroup.objects.filter(restaurant=restaurant).prefetch_related("printers")
-
-    # Какие филиалы печатает агент. Пустой набор = «все» (так было до того,
-    # как печать научилась различать точки).
+    from printing.models import PrinterGroup
+    printer_groups = list(
+        PrinterGroup.objects.filter(restaurant=restaurant).prefetch_related("printers")
+    )
     branches = list(restaurant.branches.order_by("id"))
-    served_ids = print_cfg.served_branch_ids()
-    for b in branches:
-        b.is_served = (not served_ids) or (b.id in served_ids)
 
     return render(request, "dashboard/restaurant_edit.html", {
         "restaurant": restaurant,
-        "print_cfg": print_cfg,
         "printer_groups": printer_groups,
+        "print_agents": _print_agents(restaurant, branches, printer_groups),
         "print_branches": branches,
-        # предупреждаем только там, где это реально может стрелять
-        "print_branch_warning": len(branches) > 1 and sum(
-            1 for b in branches if b.is_served) > 1,
+        "print_multi_branch": len(branches) > 1,
     })
+
+
+def _print_agents(restaurant, branches, printer_groups):
+    """Данные для карточек агентов печати.
+
+    Агент = одна точка с принтером. У каждого свой токен, свой список
+    обслуживаемых филиалов и свои имена принтеров в Windows: группы
+    («кухня», «бар») общие на ресторан, а устройства у точек разные.
+    """
+    from printing.models import RestaurantPrintConfig
+
+    configs = list(
+        RestaurantPrintConfig.objects
+        .filter(restaurant=restaurant)
+        .prefetch_related("branches")
+        .order_by("id")
+    )
+    if not configs:
+        # первый агент заводим сами — иначе на пустом ресторане не на что
+        # смотреть и некуда нажимать
+        cfg = RestaurantPrintConfig.objects.create(restaurant=restaurant)
+        if branches:
+            cfg.branches.set(branches)
+        configs = [cfg]
+
+    # филиал может обслуживать только один включённый агент, иначе чек
+    # напечатают оба; подсвечиваем такие пересечения
+    seen, clashing = {}, set()
+    for cfg in configs:
+        if not cfg.enabled:
+            continue
+        for bid in cfg.served_branch_ids():
+            if bid in seen:
+                clashing.add(bid)
+            seen[bid] = cfg.id
+
+    agents = []
+    for cfg in configs:
+        served = cfg.served_branch_ids()
+        rows = []
+        for b in branches:
+            rows.append({
+                "id": b.id, "name": b.name_ru, "address": b.address,
+                "checked": (not served) or (b.id in served),
+                "clash": b.id in clashing and (not served or b.id in served),
+            })
+        groups = []
+        for g in printer_groups:
+            # имя принтера именно этой точки; общий (без филиала) — запасной
+            active = [p for p in g.printers.all() if p.is_active]
+            mine = next((p for p in active if p.branch_id and p.branch_id in served), None)
+            shared = next((p for p in active if not p.branch_id), None)
+            groups.append({
+                "id": g.id, "name": g.name, "display_name": g.display_name,
+                "windows_name": (mine or shared).windows_name if (mine or shared) else "",
+            })
+        agents.append({
+            "cfg": cfg,
+            "branch_rows": rows,
+            "groups": groups,
+            "serves_all": not served,
+            "warn_all_branches": len(branches) > 1 and (not served or len(served) > 1),
+        })
+    return agents
 
 
 # ── PRINT CONFIG SAVE ─────────────────────────────────────────────────────────
 
 @require_POST
 @login_required(login_url="dashboard:login")
-def restaurant_print_save(request, restaurant_id):
+def restaurant_print_save(request, restaurant_id, config_id=None):
     from printing.models import RestaurantPrintConfig, PrinterGroup, Printer
     restaurant = get_object_or_404(Restaurant, id=restaurant_id)
     if not Membership.objects.filter(user=request.user, restaurant=restaurant).exists():
         return redirect("dashboard:home")
 
-    cfg, _ = RestaurantPrintConfig.objects.get_or_create(restaurant=restaurant)
+    if config_id:
+        cfg = get_object_or_404(RestaurantPrintConfig, id=config_id, restaurant=restaurant)
+    else:
+        # у ресторана может быть несколько агентов, поэтому не get_or_create:
+        # он бросил бы MultipleObjectsReturned. Старые ссылки без id ведут
+        # на первого агента.
+        cfg = (RestaurantPrintConfig.objects.filter(restaurant=restaurant)
+               .order_by("id").first()
+               or RestaurantPrintConfig.objects.create(restaurant=restaurant))
+    cfg.name = request.POST.get("agent_name", "").strip()[:100]
     cfg.enabled = request.POST.get("printing_enabled") == "on"
 
     # Принтер итоговых чеков
@@ -253,9 +319,35 @@ def restaurant_print_save(request, restaurant_id):
     # галочки, молча вернул бы себе прежнюю путаницу.
     branch_ids = [int(x) for x in request.POST.getlist("print_branch_id") if x.isdigit()]
     if branch_ids:
-        cfg.branches.set(restaurant.branches.filter(id__in=branch_ids))
+        picked = restaurant.branches.filter(id__in=branch_ids)
+        cfg.branches.set(picked)
+        # филиал обслуживает ровно один агент: иначе оба увидят одно задание
+        # и чек напечатается дважды
+        moved, emptied = [], []
+        for other in RestaurantPrintConfig.objects.filter(
+                restaurant=restaurant).exclude(id=cfg.id).prefetch_related("branches"):
+            overlap = other.served_branch_ids() & set(branch_ids)
+            if not overlap:
+                continue
+            other.branches.remove(*picked.filter(id__in=overlap))
+            moved.append(other.name or f"агент #{other.id}")
+            if not other.branches.exists() and other.enabled:
+                # пустой список филиалов трактуется как «все», поэтому агент
+                # без точек не оставляем включённым — иначе он молча начал бы
+                # забирать чужие чеки
+                other.enabled = False
+                other.save(update_fields=["enabled"])
+                emptied.append(other.name or f"агент #{other.id}")
+        if moved:
+            text = ("Филиалы отключены у: " + ", ".join(moved)
+                    + " — один филиал может печатать только один агент.")
+            if emptied:
+                text += (" Без филиалов остались и выключены: " + ", ".join(emptied) + ".")
+            messages.info(request, text)
 
-    # Сохраняем группы принтеров
+    # Сохраняем группы принтеров. Имя принтера в Windows своё у каждой точки,
+    # поэтому пишем его на филиал этого агента, а не на весь ресторан.
+    target_branch = cfg.branches.order_by("id").first()
     group_codes = request.POST.getlist("group_code")
     group_names = request.POST.getlist("group_display")
     printer_names = request.POST.getlist("printer_windows_name")
@@ -274,11 +366,50 @@ def restaurant_print_save(request, restaurant_id):
         group.save(update_fields=["display_name"])
         if win_name:
             Printer.objects.update_or_create(
-                restaurant=restaurant, group=group,
+                restaurant=restaurant, group=group, branch=target_branch,
                 defaults={"windows_name": win_name, "is_active": True},
             )
 
     messages.success(request, "Настройки печати сохранены")
+    return redirect("dashboard:restaurant_edit", restaurant_id=restaurant.id)
+
+
+# ── ДОБАВИТЬ / УДАЛИТЬ АГЕНТА ────────────────────────────────────────────────
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def restaurant_print_agent_add(request, restaurant_id):
+    """Заводит второй (третий…) агент — отдельный принтер в другой точке."""
+    from printing.models import RestaurantPrintConfig
+    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+    if not Membership.objects.filter(user=request.user, restaurant=restaurant).exists():
+        return redirect("dashboard:home")
+
+    taken = set()
+    for c in RestaurantPrintConfig.objects.filter(restaurant=restaurant):
+        taken |= c.served_branch_ids()
+    free = restaurant.branches.exclude(id__in=taken).order_by("id")
+
+    cfg = RestaurantPrintConfig.objects.create(
+        restaurant=restaurant,
+        name=free.first().name_ru if free.exists() else "",
+    )
+    # сразу предлагаем незанятую точку — обычно ради неё агент и заводят
+    if free.exists():
+        cfg.branches.set([free.first()])
+    messages.success(request, "Агент добавлен. Укажите филиал и имя принтера, затем сохраните.")
+    return redirect("dashboard:restaurant_edit", restaurant_id=restaurant.id)
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def restaurant_print_agent_delete(request, restaurant_id, config_id):
+    from printing.models import RestaurantPrintConfig
+    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+    if not Membership.objects.filter(user=request.user, restaurant=restaurant).exists():
+        return redirect("dashboard:home")
+    RestaurantPrintConfig.objects.filter(id=config_id, restaurant=restaurant).delete()
+    messages.success(request, "Агент удалён. Его токен больше не действует.")
     return redirect("dashboard:restaurant_edit", restaurant_id=restaurant.id)
 
 
@@ -298,7 +429,7 @@ def restaurant_print_group_delete(request, restaurant_id, group_id):
 # ── DOWNLOAD PRINT CONFIG & AGENT ─────────────────────────────────────────────
 
 @login_required(login_url="dashboard:login")
-def restaurant_print_download_config(request, restaurant_id):
+def restaurant_print_download_config(request, restaurant_id, config_id=None):
     """Скачать готовый config.json для агента."""
     import json as _json
     from printing.models import RestaurantPrintConfig, PrinterGroup, Printer
@@ -306,13 +437,27 @@ def restaurant_print_download_config(request, restaurant_id):
     if not Membership.objects.filter(user=request.user, restaurant=restaurant).exists():
         return redirect("dashboard:home")
 
-    cfg, _ = RestaurantPrintConfig.objects.get_or_create(restaurant=restaurant)
+    if config_id:
+        cfg = get_object_or_404(RestaurantPrintConfig, id=config_id, restaurant=restaurant)
+    else:
+        # у ресторана может быть несколько агентов, поэтому не get_or_create:
+        # он бросил бы MultipleObjectsReturned. Старые ссылки без id ведут
+        # на первого агента.
+        cfg = (RestaurantPrintConfig.objects.filter(restaurant=restaurant)
+               .order_by("id").first()
+               or RestaurantPrintConfig.objects.create(restaurant=restaurant))
     groups = PrinterGroup.objects.filter(restaurant=restaurant).prefetch_related("printers")
 
+    # имена принтеров именно этой точки: в config.json агента должно попасть
+    # то устройство, которое стоит рядом с ним
+    served = cfg.served_branch_ids()
     printers = {}
     for g in groups:
-        first = g.printers.filter(is_active=True).first()
-        printers[g.name] = first.windows_name if first else "Имя принтера в Windows"
+        active = list(g.printers.filter(is_active=True))
+        mine = next((p for p in active if p.branch_id and p.branch_id in served), None)
+        shared = next((p for p in active if not p.branch_id), None)
+        pick = mine or shared
+        printers[g.name] = pick.windows_name if pick else "Имя принтера в Windows"
 
     server_url = request.build_absolute_uri("/").rstrip("/")
 

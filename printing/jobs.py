@@ -138,15 +138,24 @@ def _config_for(branch):
     агент именно эту точку. Иначе заказ филиала без принтера попадал в общую
     очередь, и его чек выезжал там, где принтер есть.
     """
-    cfg = (
+    configs = list(
         RestaurantPrintConfig.objects
         .filter(restaurant=branch.restaurant, enabled=True)
         .prefetch_related("branches")
-        .first()
     )
-    if cfg is None or not cfg.serves(branch):
-        return None
-    return cfg
+    # Сначала агент, который назвал этот филиал явно; запись без филиалов
+    # («все точки», как было до разделения) — только если явной нет, иначе
+    # у ресторана с двумя агентами заказ ушёл бы не тому.
+    for cfg in configs:
+        if cfg.served_branch_ids() and cfg.serves(branch):
+            return cfg
+    # Запись без филиалов («все точки») — наследие времён, когда агент был
+    # один. Принимаем её, только если других, с явными филиалами, нет: иначе
+    # такой агент перехватывал бы заказы чужих точек.
+    if not any(c.served_branch_ids() for c in configs):
+        for cfg in configs:
+            return cfg
+    return None
 
 
 def _default_group(restaurant):

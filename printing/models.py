@@ -4,9 +4,19 @@ from core.models import Restaurant
 
 
 class RestaurantPrintConfig(models.Model):
-    """Настройки облачной печати для ресторана."""
-    restaurant = models.OneToOneField(
-        Restaurant, on_delete=models.CASCADE, related_name="print_config"
+    """Настройки одного агента печати.
+
+    Агент — это программа на ноутбуке в конкретной точке. Раньше запись была
+    одна на ресторан, поэтому второй принтер во второй точке подключить было
+    некуда. Теперь записей может быть несколько: у каждой свой токен, свой
+    набор филиалов и свои принтеры.
+    """
+    restaurant = models.ForeignKey(
+        Restaurant, on_delete=models.CASCADE, related_name="print_configs"
+    )
+    name = models.CharField(
+        "Название кассы", max_length=100, blank=True, default="",
+        help_text="Чтобы различать агенты: «Касса на Чуй», «Кухня на Датке»",
     )
     enabled = models.BooleanField("Печать включена", default=False)
     token = models.CharField(max_length=64, unique=True, editable=False)
@@ -58,7 +68,9 @@ class RestaurantPrintConfig(models.Model):
         return (timezone.now() - self.last_heartbeat).total_seconds() < 300
 
     def __str__(self):
-        return f"{self.restaurant.name_ru} — печать"
+        label = self.name or ", ".join(self.branches.values_list("name_ru", flat=True))
+        return f"{self.restaurant.name_ru} — печать ({label})" if label else \
+               f"{self.restaurant.name_ru} — печать"
 
     class Meta:
         verbose_name = "Настройки печати"
@@ -90,6 +102,15 @@ class Printer(models.Model):
     group = models.ForeignKey(
         PrinterGroup, on_delete=models.CASCADE, related_name="printers"
     )
+    # Устройство стоит в конкретной точке. Группа («кухня», «бар») общая на
+    # ресторан — её выбирают у категорий меню, и дублировать по филиалам было
+    # бы только путаницей, — а вот имя принтера в Windows у каждой точки своё.
+    branch = models.ForeignKey(
+        "core.Branch", null=True, blank=True,
+        on_delete=models.CASCADE, related_name="printers",
+        verbose_name="Филиал",
+        help_text="Где физически стоит это устройство",
+    )
     windows_name = models.CharField(
         "Имя принтера в Windows", max_length=200,
         help_text="Точное имя как в списке принтеров Windows"
@@ -101,7 +122,8 @@ class Printer(models.Model):
         verbose_name_plural = "Принтеры"
 
     def __str__(self):
-        return f"{self.group.display_name} → {self.windows_name}"
+        where = f" ({self.branch.name_ru})" if self.branch_id else ""
+        return f"{self.group.display_name}{where} → {self.windows_name}"
 
 
 class PrintJob(models.Model):

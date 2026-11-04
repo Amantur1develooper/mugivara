@@ -21,6 +21,12 @@ def _pending_jobs(cfg):
     served = cfg.served_branch_ids()
     if served:
         jobs = jobs.filter(Q(branch_id__in=served) | Q(branch__isnull=True))
+    elif RestaurantPrintConfig.objects.filter(
+            restaurant_id=cfg.restaurant_id, branches__isnull=False
+    ).exclude(id=cfg.id).exists():
+        # у ресторана есть агенты с явными филиалами, а у этого ни одного —
+        # значит печатать ему нечего, а не «всё подряд»
+        jobs = jobs.none()
     return jobs
 
 
@@ -126,11 +132,18 @@ def api_config(request):
         restaurant=cfg.restaurant
     ).prefetch_related("printers")
 
+    # Группы («кухня», «бар») общие на ресторан, а устройство у каждой точки
+    # своё: агенту отдаём имя принтера, стоящего в его филиале. Принтер без
+    # филиала — общий, заведён до разделения по точкам.
+    served = cfg.served_branch_ids()
     printers = {}
     for group in groups:
-        active = [p.windows_name for p in group.printers.all() if p.is_active]
-        if active:
-            printers[group.name] = active[0]
+        active = [p for p in group.printers.all() if p.is_active]
+        mine = [p for p in active if p.branch_id and p.branch_id in served]
+        shared = [p for p in active if not p.branch_id]
+        pick = mine or shared
+        if pick:
+            printers[group.name] = pick[0].windows_name
 
     branches = list(cfg.branches.values_list("name_ru", flat=True))
     return JsonResponse({
