@@ -138,12 +138,23 @@ def _mix(hex_bg, hex_fg, k):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--store", type=int, required=True)
+    # id магазина или часть названия: номера на сервере и локально разные,
+    # и легко отрисовать заставки не тому магазину
+    ap.add_argument("--store", required=True, help="id магазина или часть названия")
     ap.add_argument("--clear", action="store_true", help="снять ранее созданные заставки")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
-    qs = StoreProduct.objects.filter(store_id=args.store).select_related("category")
+    from shops.models import Store
+    if str(args.store).isdigit():
+        store = Store.objects.filter(id=int(args.store)).first()
+    else:
+        store = Store.objects.filter(name_ru__icontains=args.store).first()
+    if not store:
+        sys.exit(f"Магазин «{args.store}» не найден. Список: "
+                 + ", ".join(f"{s.id}={s.name_ru}" for s in Store.objects.all()))
+    print(f"Магазин: #{store.id} {store.name_ru}")
+    qs = StoreProduct.objects.filter(store=store).select_related("category")
 
     if args.clear:
         n = 0
