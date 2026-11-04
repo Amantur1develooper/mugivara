@@ -67,6 +67,43 @@
 <form method="post" enctype="multipart/form-data">
 {% csrf_token %}
 
+  {# ── КОНТАКТЫ ТОЧКИ ── #}
+  <div class="db-card">
+    <div class="db-card-title">📞 Контакты филиала</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px">
+      Заказы с этой точки уходят на её WhatsApp. Если поле пустое — возьмём телефон
+      филиала, а если и он пустой — номер ресторана, и тогда заказы всех точек
+      придут на одну трубку.
+    </div>
+
+    <div class="row2">
+      <div class="db-form-group">
+        <label class="db-label" for="phone">Телефон</label>
+        <input class="db-input" id="phone" name="phone" type="tel"
+               value="{{ branch.phone }}" placeholder="+996700123456">
+        <div class="db-hint">Кнопка «Позвонить» на странице меню</div>
+      </div>
+      <div class="db-form-group">
+        <label class="db-label" for="whatsapp">WhatsApp</label>
+        <input class="db-input" id="whatsapp" name="whatsapp" type="tel"
+               value="{{ branch.whatsapp }}" placeholder="+996700123456">
+        <div class="db-hint">
+          {% if branch.order_whatsapp %}
+            Сейчас заказы уходят на +{{ branch.order_whatsapp }}
+          {% else %}
+            Номер не задан — кнопка WhatsApp откроется без получателя
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="db-form-group" style="margin-bottom:0">
+      <label class="db-label" for="address">Адрес</label>
+      <input class="db-input" id="address" name="address" type="text"
+             value="{{ branch.address }}" placeholder="ул. Чуй, 120">
+    </div>
+  </div>
+
   {# ── ДОСТАВКА ── #}
   <div class="db-card">
     <div class="db-card-title">🚚 Доставка</div>

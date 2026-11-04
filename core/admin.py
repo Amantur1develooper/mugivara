@@ -128,7 +128,7 @@ class BranchAdmin(admin.ModelAdmin):
     fieldsets = (
         ("Основное", {"fields": (
             "restaurant", "name_ru", "name_ky", "name_en",
-            "address", "phone", "map_url", "external_url",
+            "address", "phone", "whatsapp", "map_url", "external_url",
             "is_active",
         )}),
         ("Доставка", {"fields": (

@@ -1076,13 +1076,9 @@ def checkout_success(request, branch_id: int, order_id: int):
 
     encoded = quote(msg)
 
-    wa_raw = (
-        branch.restaurant.whatsapp
-        or branch.phone
-        or branch.restaurant.phone
-        or ""
-    )
-    wa_number = "".join(ch for ch in wa_raw if ch.isdigit())
+    # Номер филиала, а не ресторана: иначе заказы со второй точки уезжали
+    # на трубку первой (см. Branch.order_whatsapp)
+    wa_number = branch.order_whatsapp
 
     whatsapp_web_url = f"https://wa.me/{wa_number}?text={encoded}" if wa_number else f"https://wa.me/?text={encoded}"
     whatsapp_deeplink = f"whatsapp://send?phone={wa_number}&text={encoded}" if wa_number else f"whatsapp://send?text={encoded}"

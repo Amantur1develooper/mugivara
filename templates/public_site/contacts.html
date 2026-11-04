@@ -290,7 +290,9 @@
             <a href="tel:{{ b.phone }}" class="ct-btn ct-btn-call">
               📞 {% trans "Позвонить" %}
             </a>
-            <a href="https://wa.me/{{ b.phone|cut:'+'|cut:' '|cut:'-' }}"
+            {% endif %}
+            {% if b.order_whatsapp %}
+            <a href="https://wa.me/{{ b.order_whatsapp }}"
                target="_blank" rel="noopener" class="ct-btn ct-btn-wa">
               💬 WhatsApp
             </a>

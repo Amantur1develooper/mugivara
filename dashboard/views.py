@@ -583,6 +583,11 @@ def branch_edit(request, branch_id):
 
         branch.external_url = request.POST.get("external_url", "").strip()
 
+        # Контакты точки: на этот номер уходит заказ именно этого филиала
+        branch.phone    = request.POST.get("phone", "").strip()[:50]
+        branch.whatsapp = request.POST.get("whatsapp", "").strip()[:60]
+        branch.address  = request.POST.get("address", branch.address).strip()[:300]
+
         # Тему оформления меняет только администратор: это платная доп. услуга,
         # и неверный код просто вернул бы филиал на стандартное меню.
         if request.user.is_superuser and "template_slug" in request.POST:

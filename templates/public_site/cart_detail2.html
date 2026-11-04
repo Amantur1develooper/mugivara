@@ -711,9 +711,9 @@
           <a href="{% url 'public_site:branch_menu' branch.id %}" class="ghost-link">← {% trans "Назад в меню" %}</a>
           {% if branch.phone %}
             <a href="tel:{{ branch.phone }}" class="ghost-link">📞 {% trans "Позвонить" %}</a>
-            {% with clean=branch.phone|cut:"+"|cut:" "|cut:"-" %}
-              <a href="https://wa.me/{{ clean }}?text={{ 'Здравствуйте! Я оформляю заказ.'|urlencode }}" target="_blank" rel="noopener" class="solid-link wa-link">💬 WhatsApp</a>
-            {% endwith %}
+            {% if branch.order_whatsapp %}
+              <a href="https://wa.me/{{ branch.order_whatsapp }}?text={{ 'Здравствуйте! Я оформляю заказ.'|urlencode }}" target="_blank" rel="noopener" class="solid-link wa-link">💬 WhatsApp</a>
+            {% endif %}
           {% endif %}
         </div>
       </div>

@@ -196,11 +196,11 @@ const T = {
     <div class="cart-header-btns">
       {% if branch.phone %}
         <a href="tel:{{ branch.phone }}" class="cart-btn-sm">📞</a>
-        {% with clean=branch.phone|cut:"+"|cut:" "|cut:"-" %}
-        <a href="https://wa.me/{{ clean }}" target="_blank" rel="noopener" class="cart-btn-sm cart-btn-wa">
+        {% if branch.order_whatsapp %}
+        <a href="https://wa.me/{{ branch.order_whatsapp }}" target="_blank" rel="noopener" class="cart-btn-sm cart-btn-wa">
           💬 WA
         </a>
-        {% endwith %}
+        {% endif %}
       {% endif %}
       <a href="{% url 'public_site:branch_menu' branch.id %}" class="cart-btn-sm">← {% trans "Меню" %}</a>
     </div>

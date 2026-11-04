@@ -98,7 +98,14 @@ class Branch(TimeStampedModel):
     name_en = models.CharField(max_length=200, blank=True, default="")
     map_url = models.URLField("Ссылка на карту", blank=True, default="")
     address = models.CharField(max_length=300, blank=True)
-    phone = models.CharField(max_length=50, blank=True)
+    phone = models.CharField("Телефон филиала", max_length=50, blank=True)
+    whatsapp = models.CharField(
+        "WhatsApp филиала", max_length=60, blank=True, default="",
+        help_text=(
+            "Номер, на который уходят заказы именно этой точки, напр. +996700123456. "
+            "Пусто — возьмём телефон филиала, а если и его нет — номер ресторана."
+        ),
+    )
     is_active = models.BooleanField(default=True)
     
     delivery_enabled = models.BooleanField(default=False)
@@ -190,6 +197,26 @@ class Branch(TimeStampedModel):
     def __str__(self):
         return f"{self.restaurant.name_ru} — {self.name_ru}"
     
+    @property
+    def order_whatsapp(self) -> str:
+        """Номер, на который уходит заказ этой точки.
+
+        Сначала собственный WhatsApp филиала, затем его телефон — и только
+        потом номера ресторана. Раньше номер ресторана стоял первым, и заказы
+        со всех филиалов приходили на одну трубку (как правило первой точки).
+        """
+        for raw in (self.whatsapp, self.phone,
+                    self.restaurant.whatsapp, self.restaurant.phone):
+            digits = "".join(ch for ch in (raw or "") if ch.isdigit())
+            if digits:
+                return digits
+        return ""
+
+    @property
+    def order_whatsapp_url(self) -> str:
+        n = self.order_whatsapp
+        return f"https://wa.me/{n}" if n else ""
+
     def is_open_now(self) -> bool:
         if not self.is_active:
             return False
