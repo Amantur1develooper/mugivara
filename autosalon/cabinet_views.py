@@ -12,7 +12,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .models import AutoDealership, Car, CarPhoto, DealershipMembership, Lead
+from .models import (
+    AutoDealership, Car, CarPhoto, DealershipMembership, Lead, price_kgs_expr,
+)
 
 LOGIN_URL = "acabinet:login"
 MAX_PHOTOS = 12
@@ -422,7 +424,15 @@ def reports(request):
 
     cars_all = Car.objects.filter(dealership=dealership)
     sold_period = cars_all.filter(status=Car.Status.SOLD, sold_at__gte=since)
-    revenue = sold_period.aggregate(s=Sum("price"))["s"] or Decimal("0")
+    # выручку считаем в сомах: Sum("price") складывал доллары с сомами
+    # и показывал сумму, которой не существует
+    revenue = (sold_period
+               .annotate(_kgs=price_kgs_expr(dealership.usd_rate))
+               .aggregate(s=Sum("_kgs"))["s"] or Decimal("0"))
+    # машины, проданные за доллары при выключенном курсе, в сумму не попали —
+    # честнее сказать об этом, чем молча занизить выручку
+    revenue_skipped = (sold_period.filter(currency=Car.Currency.USD).count()
+                       if not dealership.usd_rate else 0)
 
     leads_period = Lead.objects.filter(dealership=dealership, created_at__gte=since)
     leads_total = leads_period.count()
@@ -452,6 +462,8 @@ def reports(request):
         },
         "sold_period_count": sold_period.count(),
         "revenue": revenue,
+        "revenue_skipped": revenue_skipped,
+        "usd_rate": dealership.usd_rate,
         "leads_total": leads_total,
         "leads_won": leads_won,
         "leads_by_status": {s: leads_period.filter(status=s).count() for s, _lbl in Lead.Status.choices},
@@ -472,12 +484,16 @@ def reports_export_cars(request, dealership_id):
     response["Content-Disposition"] = f'attachment; filename="cars_{dealership.slug}.csv"'
     response.write("﻿")  # BOM для корректной кириллицы в Excel
     writer = csv.writer(response)
-    writer.writerow(["Марка", "Модель", "Год", "Состояние", "Пробег", "Цена", "Валюта", "Статус", "VIN", "Добавлена"])
+    writer.writerow(["Марка", "Модель", "Год", "Состояние", "Пробег", "Цена", "Валюта",
+                     "Цена в сомах", "Статус", "VIN", "Добавлена"])
     for c in _visible_cars(request.user, dealership).order_by("-created_at"):
         writer.writerow([
             c.brand, c.model_name, c.year, c.get_condition_display(),
-            c.mileage_km or "", c.price or "", c.currency, c.get_status_display(),
-            c.vin, c.created_at.strftime("%d.%m.%Y"),
+            c.mileage_km or "", c.price or "", c.currency,
+            # отдельной колонкой, чтобы в Excel можно было просуммировать
+            # прайс, не разбирая валюты вручную
+            c.price_kgs.quantize(Decimal("1")) if c.price_kgs is not None else "",
+            c.get_status_display(), c.vin, c.created_at.strftime("%d.%m.%Y"),
         ])
     return response
 
@@ -518,6 +534,15 @@ def dealership_settings(request, dealership_id):
         dealership.address    = request.POST.get("address", "").strip()
         dealership.work_hours = request.POST.get("work_hours", "").strip()
         dealership.description = request.POST.get("description", "").strip()
+
+        # курс пишем, только если он изменился — иначе каждое сохранение
+        # настроек обновляло бы дату и курс всегда выглядел бы свежим
+        new_rate = _decimal(request.POST.get("usd_rate"))
+        if new_rate is not None and new_rate >= 0:
+            new_rate = min(new_rate, Decimal("9999.99"))   # NUMERIC(8,2) в БД
+            if new_rate != dealership.usd_rate:
+                dealership.usd_rate = new_rate
+                dealership.usd_rate_updated_at = timezone.now()
 
         if "logo" in request.FILES:
             dealership.logo = request.FILES["logo"]

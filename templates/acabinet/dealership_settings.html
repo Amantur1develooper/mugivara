@@ -17,6 +17,16 @@
   .ac-media-box{ text-align:center; }
   .ac-media-preview{ width:120px; height:80px; border-radius:12px; background:var(--ac-bg); object-fit:cover; margin-bottom:6px; display:block; }
   .ac-link{ font-size:12px; color:var(--ac-accent); margin-top:14px; display:inline-block; }
+  /* курс вынесен в отдельный блок: это не «ещё одно поле анкеты»,
+     а настройка, которая меняет цены на всей витрине */
+  .ac-rate{ border:1.5px solid var(--ac-border); border-radius:14px; padding:16px; margin:18px 0 20px; background:var(--ac-card2); }
+  .ac-rate-head{ font-size:13px; font-weight:800; margin-bottom:6px; }
+  .ac-rate-hint{ font-size:12px; line-height:1.5; color:var(--ac-muted); margin:0 0 12px; }
+  .ac-rate-row{ display:flex; align-items:center; gap:10px; }
+  .ac-rate-input{ width:140px; font-weight:800; font-size:16px; }
+  .ac-rate-unit{ font-size:12.5px; color:var(--ac-muted); }
+  .ac-rate-example{ font-size:12.5px; margin-top:10px; }
+  .ac-rate-note{ font-size:11.5px; color:var(--ac-muted); margin-top:8px; }
 </style>
 {% endblock %}
 
@@ -52,8 +62,46 @@
   <div class="ac-field"><label class="ac-label">Режим работы</label><input class="ac-input" name="work_hours" value="{{ dealership.work_hours }}" placeholder="Пн–Вс 09:00–19:00"></div>
   <div class="ac-field"><label class="ac-label">Описание</label><textarea class="ac-input" name="description">{{ dealership.description }}</textarea></div>
 
+  <div class="ac-rate">
+    <div class="ac-rate-head">💱 Курс доллара</div>
+    <p class="ac-rate-hint">
+      Цену машины можно ставить в долларах — на витрине рядом сама появится цена в сомах,
+      пересчитанная по этому курсу. Курс виден покупателю, чтобы цифра не выглядела взятой с потолка.
+    </p>
+    <div class="ac-rate-row">
+      <input class="ac-input ac-rate-input" type="number" step="0.01" min="0" name="usd_rate"
+             value="{{ dealership.usd_rate|floatformat:'-2' }}">
+      <span class="ac-rate-unit">сом за&nbsp;$1</span>
+    </div>
+    <div class="ac-rate-example">
+      Например, $15&nbsp;000 — это <b id="rateExample">—</b>
+    </div>
+    <div class="ac-rate-note">
+      {% if dealership.usd_rate_updated_at %}Обновлён {{ dealership.usd_rate_updated_at|date:"d.m.Y" }}{% else %}Курс ещё не меняли{% endif %}
+      · поставьте 0, чтобы не показывать пересчёт
+    </div>
+  </div>
+
   <button type="submit" class="ac-btn ac-btn-primary">Сохранить</button>
   <br>
   <a class="ac-link" href="{% url 'autosalon:dealership_detail' dealership.slug %}" target="_blank">👁 Посмотреть витрину →</a>
 </form>
+
+<script>
+  /* Показываем результат пересчёта прямо при вводе: курс — число, в котором
+     легко ошибиться на порядок, а $15 000 → «1 335 000 сом» это сразу видно. */
+  (function () {
+    var input = document.querySelector('input[name="usd_rate"]');
+    var out = document.getElementById('rateExample');
+    if (!input || !out) return;
+    function render() {
+      var rate = parseFloat(input.value.replace(',', '.'));
+      if (!(rate > 0)) { out.textContent = 'пересчёт выключен'; return; }
+      var kgs = Math.round(15000 * rate / 100) * 100;
+      out.textContent = kgs.toLocaleString('ru-RU').replace(/ /g, ' ') + ' сом';
+    }
+    input.addEventListener('input', render);
+    render();
+  })();
+</script>
 {% endblock %}

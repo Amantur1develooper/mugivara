@@ -43,6 +43,12 @@
   .ac-photos-counter{ font-size:11.5px; color:var(--ac-muted); margin-bottom:12px; }
 
   .ac-submit-row{ display:flex; gap:10px; margin-top:22px; }
+  /* что покупатель увидит второй строкой под ценой — показываем сразу здесь,
+     чтобы не гадать, как сработает курс */
+  .ac-price-conv{ font-size:12.5px; color:var(--ac-muted); margin:-4px 0 4px;
+                  padding:9px 12px; border-radius:10px; background:var(--ac-card2);
+                  border:1px solid var(--ac-border); }
+  .ac-price-conv b{ color:var(--ac-text); }
 </style>
 {% endblock %}
 
@@ -120,10 +126,10 @@
 
   <div class="ac-form-section-title">💰 Цена и статус</div>
   <div class="ac-grid3">
-    <div class="ac-field"><label class="ac-label">Цена</label><input class="ac-input" type="number" name="price" value="{{ car.price|floatformat:'0'|default:'' }}"></div>
+    <div class="ac-field"><label class="ac-label">Цена</label><input class="ac-input" type="number" id="carPrice" name="price" value="{{ car.price|floatformat:'0'|default:'' }}"></div>
     <div class="ac-field">
       <label class="ac-label">Валюта</label>
-      <select class="ac-select" name="currency">
+      <select class="ac-select" id="carCurrency" name="currency">
         {% for val, label in Car.Currency.choices %}<option value="{{ val }}" {% if car.currency == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
       </select>
     </div>
@@ -134,6 +140,14 @@
       </select>
     </div>
   </div>
+  {% if dealership.usd_rate %}
+  <div class="ac-price-conv" id="priceConv" hidden></div>
+  {% else %}
+  <div class="ac-price-conv">
+    Пересчёт в другую валюту выключен — курс доллара не задан в
+    <a href="{% url 'acabinet:dealership_settings' dealership.id %}">настройках салона</a>.
+  </div>
+  {% endif %}
   {% if is_director and managers %}
   <div class="ac-field">
     <label class="ac-label">Ответственный менеджер</label>
@@ -178,6 +192,31 @@
 
 {% block extra_js %}
 <script>
+/* Пересчёт цены по курсу салона — ровно та строка, которая появится на витрине. */
+(function () {
+  const RATE = {{ dealership.usd_rate|default:0|stringformat:"s" }};
+  const box = document.getElementById('priceConv');
+  const price = document.getElementById('carPrice');
+  const cur = document.getElementById('carCurrency');
+  if (!box || !price || !cur || !(RATE > 0)) return;
+
+  const nf = n => Math.round(n).toLocaleString('ru-RU').replace(/ /g, ' ');
+
+  function render() {
+    const v = parseFloat((price.value || '').replace(',', '.'));
+    if (!(v > 0)) { box.hidden = true; return; }
+    box.hidden = false;
+    box.innerHTML = cur.value === 'USD'
+      ? 'На витрине покупатель увидит: <b>$' + nf(v) + '</b> и рядом <b>≈ '
+        + nf(Math.round(v * RATE / 100) * 100) + ' сом</b> по курсу ' + RATE + ' сом/$'
+      : 'На витрине покупатель увидит: <b>' + nf(v) + ' сом</b> и рядом <b>≈ $'
+        + nf(v / RATE) + '</b> по курсу ' + RATE + ' сом/$';
+  }
+  price.addEventListener('input', render);
+  cur.addEventListener('change', render);
+  render();
+})();
+
 const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
 const MAX_PHOTOS = {{ max_photos }};
 const CAR_ID = {% if car.pk %}{{ car.id }}{% else %}null{% endif %};

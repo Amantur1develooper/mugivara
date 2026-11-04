@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.views.decorators.http import require_POST
 
-from .models import AutoDealership, Car, Lead
+from .models import AutoDealership, Car, Lead, price_kgs_expr
 
 
 def dealership_list(request):
@@ -37,7 +37,11 @@ def dealership_detail(request, slug):
         cars = cars.filter(body_type=body_type)
     if price_max:
         try:
-            cars = cars.filter(price__lte=Decimal(price_max))
+            # фильтр всегда в сомах: иначе машина за $15 000 попадала в выборку
+            # «до 500 000», потому что сравнивалось голое число из БД
+            cars = (cars
+                    .annotate(_price_kgs=price_kgs_expr(dealership.usd_rate))
+                    .filter(_price_kgs__lte=Decimal(price_max)))
         except InvalidOperation:
             pass
 

@@ -47,7 +47,13 @@
   <div class="ac-report-card">
     <div class="ac-report-card-title">Выручка за период</div>
     <div class="ac-report-val">{{ revenue|floatformat:"0" }}</div>
-    <div class="ac-report-hint">сом (по проданным)</div>
+    <div class="ac-report-hint">
+      {% if revenue_skipped %}
+        сом · {{ revenue_skipped }} в долларах не учтено — не задан курс
+      {% else %}
+        сом (по проданным){% if usd_rate %} · доллары по курсу {{ usd_rate|floatformat:"-2" }}{% endif %}
+      {% endif %}
+    </div>
   </div>
   <div class="ac-report-card">
     <div class="ac-report-card-title">Новых лидов</div>

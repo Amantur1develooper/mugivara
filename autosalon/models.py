@@ -1,6 +1,6 @@
 import os
 import urllib.parse
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from io import BytesIO
 
 from django.conf import settings
@@ -10,6 +10,11 @@ from django.utils.translation import gettext_lazy as _
 from PIL import Image
 
 from core.models import TimeStampedModel
+
+# Стартовый курс для нового салона: витрина должна показывать пересчёт сразу,
+# а не ждать, пока директор зайдёт в настройки. Курс всегда виден рядом с ценой,
+# так что устаревшее значение не выдаёт себя за точное.
+DEFAULT_USD_RATE = Decimal("89.00")
 
 
 def _compress_photo(field, max_side=1440, quality=80):
@@ -54,6 +59,14 @@ class AutoDealership(TimeStampedModel):
     address        = models.CharField("Адрес", max_length=300, blank=True, default="")
     work_hours     = models.CharField("Режим работы", max_length=200, blank=True, default="",
                                        help_text="Например: Пн–Вс 09:00–19:00")
+    # Салоны держат цены в долларах, а покупатель считает в сомах. Курс свой
+    # у каждого салона: они закладывают его сами и меняют не каждый день,
+    # поэтому это настройка салона, а не котировка с биржи.
+    usd_rate       = models.DecimalField(
+        "Курс доллара, сом", max_digits=8, decimal_places=2, default=DEFAULT_USD_RATE,
+        help_text="По нему цены в долларах пересчитываются в сомы на витрине. 0 — не показывать пересчёт",
+    )
+    usd_rate_updated_at = models.DateTimeField("Курс обновлён", null=True, blank=True)
     is_active      = models.BooleanField("Активен", default=True)
     sort_order     = models.PositiveSmallIntegerField("Порядок", default=0)
 
@@ -199,7 +212,63 @@ class Car(TimeStampedModel):
     def price_display(self):
         if self.price is None:
             return ""
-        return f"{self._fmt(self.price)} {self.currency_symbol}"
+        # доллар пишется перед суммой, сом — после: «15 000 $» выглядело опечаткой
+        if self.currency == self.Currency.USD:
+            return f"${self._fmt(self.price)}"
+        return f"{self._fmt(self.price)} сом"
+
+    # ── пересчёт по курсу салона ────────────────────────────────────────────
+    # Цену ведут в одной валюте, а показываем обе: салон считает в долларах,
+    # покупатель — в сомах, и ни тому ни другому не приходится делить в уме.
+
+    @property
+    def usd_rate(self):
+        """Курс салона или None, если пересчёт отключён (курс 0)."""
+        rate = self.dealership.usd_rate if self.dealership_id else None
+        return rate if rate and rate > 0 else None
+
+    @property
+    def price_kgs(self):
+        """Цена в сомах — ею же меряем фильтр и выручку, чтобы не складывать разные валюты."""
+        if self.price is None:
+            return None
+        if self.currency != self.Currency.USD:
+            return self.price
+        rate = self.usd_rate
+        return (self.price * rate) if rate else None
+
+    @property
+    def price_usd(self):
+        if self.price is None:
+            return None
+        if self.currency == self.Currency.USD:
+            return self.price
+        rate = self.usd_rate
+        return (self.price / rate) if rate else None
+
+    @property
+    def price_alt_display(self):
+        """Цена во второй валюте, приблизительная: «≈ 1 335 000 сом».
+
+        Пустая строка, если пересчитывать нечем или не из чего — лучше
+        не показать ничего, чем показать цену, посчитанную неизвестно как.
+        """
+        if self.price is None or self.usd_rate is None:
+            return ""
+        if self.currency == self.Currency.USD:
+            kgs = self.price_kgs.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+            # до сотни сом: курс всё равно приблизительный, и «1 335 000»
+            # читается легче, чем «1 334 972»
+            kgs = (kgs / 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP) * 100
+            return f"≈ {self._fmt(kgs)} сом"
+        usd = self.price_usd.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        return f"≈ ${self._fmt(usd)}"
+
+    @property
+    def rate_note(self):
+        """«по курсу 89 сом/$» — подпись, без неё пересчёт выглядит взятым с потолка."""
+        rate = self.usd_rate
+        return f"по курсу {self._fmt(rate)} сом/$" if rate else ""
 
     @property
     def mileage_display(self):
@@ -221,6 +290,32 @@ class Car(TimeStampedModel):
         ]))
         text = f"Здравствуйте! Интересует автомобиль: {details}" if details else "Здравствуйте! Интересует автомобиль."
         return f"https://wa.me/{digits}?text={urllib.parse.quote(text)}"
+
+
+def price_kgs_expr(rate):
+    """Аннотация «цена в сомах» для фильтров и сумм по выборке машин.
+
+    В БД цены лежат как есть, каждая в своей валюте, поэтому `Sum("price")`
+    складывал доллары с сомами и давал бессмысленную выручку, а фильтр
+    «до 500 000» пропускал машину за $15 000. Приводим всё к сомам прямо
+    в запросе — курс один на салон, так что это просто умножение.
+    """
+    rate = Decimal(str(rate or 0))
+    money = models.DecimalField(max_digits=18, decimal_places=2)
+    if rate <= 0:
+        # курс не задан — долларовые цены сравнивать не с чем, прячем их из
+        # денежных подсчётов, иначе $15 000 превратились бы в 15 000 сом
+        return models.Case(
+            models.When(currency=Car.Currency.USD, then=models.Value(None, output_field=money)),
+            default=models.F("price"),
+            output_field=money,
+        )
+    return models.Case(
+        models.When(currency=Car.Currency.USD,
+                    then=models.F("price") * models.Value(rate, output_field=money)),
+        default=models.F("price"),
+        output_field=money,
+    )
 
 
 class CarPhoto(TimeStampedModel):

@@ -55,7 +55,14 @@
   /* ── Сайдбар: цена + заявка ── */
   .as-side{ position:sticky; top:20px; display:flex; flex-direction:column; gap:16px; }
   .as-price-card{ background:var(--as-card); border:1px solid var(--as-border); border-radius:22px; padding:24px; box-shadow:0 4px 20px rgba(16,24,40,.05); }
-  .as-price{ font-family:'Unbounded',sans-serif; font-weight:900; font-size:28px; letter-spacing:-.8px; margin-bottom:16px; }
+  .as-price{ font-family:'Unbounded',sans-serif; font-weight:900; font-size:28px; letter-spacing:-.8px; }
+  /* Цена во второй валюте — справочная: тот же автомобиль, другой счёт.
+     Поэтому мельче основной и с курсом рядом, чтобы цифра не выглядела
+     взятой с потолка. */
+  .as-price-alt{ display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 8px; margin-top:6px; }
+  .as-price-alt-sum{ font-size:15px; font-weight:800; color:var(--as-text); }
+  .as-price-alt-rate{ font-size:12px; color:var(--as-muted); }
+  .as-price-block{ margin-bottom:16px; }
   .as-wa-btn{
     display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:14px;
     border-radius:14px; background:#25D366; color:#fff; font-weight:800; font-size:14px; text-decoration:none;
@@ -87,6 +94,7 @@
   .as-sim-body{ padding:10px 12px; }
   .as-sim-title{ font-size:12.5px; font-weight:700; }
   .as-sim-price{ font-size:12.5px; font-weight:800; color:var(--as-accent); margin-top:3px; }
+  .as-sim-price-alt{ font-size:11.5px; font-weight:600; color:var(--as-muted); margin-top:1px; }
 
   /* Lightbox */
   .as-lightbox{ position:fixed; inset:0; background:rgba(4,6,10,.94); z-index:2000; display:none; align-items:center; justify-content:center; }
@@ -144,7 +152,15 @@
 
     <div class="as-side">
       <div class="as-price-card">
-        <div class="as-price">{{ car.price_display|default:"—" }}</div>
+        <div class="as-price-block">
+          <div class="as-price">{{ car.price_display|default:"—" }}</div>
+          {% if car.price_alt_display %}
+          <div class="as-price-alt">
+            <span class="as-price-alt-sum">{{ car.price_alt_display }}</span>
+            <span class="as-price-alt-rate">{{ car.rate_note }}</span>
+          </div>
+          {% endif %}
+        </div>
         {% if car.status != "sold" %}
           {% if car.whatsapp_url %}<a class="as-wa-btn" href="{{ car.whatsapp_url }}" target="_blank">📲 {% trans "Написать в WhatsApp" %}</a>{% endif %}
           {% if dealership.phone %}<a class="as-call-link" href="tel:{{ dealership.phone_digits }}">📞 {{ dealership.phone }}</a>{% endif %}
@@ -178,6 +194,7 @@
       <div class="as-sim-body">
         <div class="as-sim-title">{{ s.brand }} {{ s.model_name }}</div>
         <div class="as-sim-price">{{ s.price_display|default:"—" }}</div>
+        {% if s.price_alt_display %}<div class="as-sim-price-alt">{{ s.price_alt_display }}</div>{% endif %}
       </div>
     </a>
     {% endfor %}
