@@ -204,10 +204,21 @@ def restaurant_edit(request, restaurant_id):
     print_cfg, _ = RestaurantPrintConfig.objects.get_or_create(restaurant=restaurant)
     printer_groups = PrinterGroup.objects.filter(restaurant=restaurant).prefetch_related("printers")
 
+    # Какие филиалы печатает агент. Пустой набор = «все» (так было до того,
+    # как печать научилась различать точки).
+    branches = list(restaurant.branches.order_by("id"))
+    served_ids = print_cfg.served_branch_ids()
+    for b in branches:
+        b.is_served = (not served_ids) or (b.id in served_ids)
+
     return render(request, "dashboard/restaurant_edit.html", {
         "restaurant": restaurant,
         "print_cfg": print_cfg,
         "printer_groups": printer_groups,
+        "print_branches": branches,
+        # предупреждаем только там, где это реально может стрелять
+        "print_branch_warning": len(branches) > 1 and sum(
+            1 for b in branches if b.is_served) > 1,
     })
 
 
@@ -236,6 +247,13 @@ def restaurant_print_save(request, restaurant_id):
     else:
         cfg.receipt_printer_group = None
     cfg.save()
+
+    # Филиалы, которые обслуживает агент. Если не отмечен ни один — оставляем
+    # как было: пустой список означал бы «все», и владелец, случайно сняв все
+    # галочки, молча вернул бы себе прежнюю путаницу.
+    branch_ids = [int(x) for x in request.POST.getlist("print_branch_id") if x.isdigit()]
+    if branch_ids:
+        cfg.branches.set(restaurant.branches.filter(id__in=branch_ids))
 
     # Сохраняем группы принтеров
     group_codes = request.POST.getlist("group_code")

@@ -131,11 +131,22 @@ def _receipt_ticket(order, restaurant):
 
 # ── Вспомогательные функции ──────────────────────────────────────────────────
 
-def _print_enabled(restaurant):
-    """True если для ресторана включена облачная печать."""
-    return RestaurantPrintConfig.objects.filter(
-        restaurant=restaurant, enabled=True
-    ).exists()
+def _config_for(branch):
+    """Настройки печати, обслуживающие этот филиал, или None.
+
+    Проверяем не только «включена ли печать у ресторана», но и обслуживает ли
+    агент именно эту точку. Иначе заказ филиала без принтера попадал в общую
+    очередь, и его чек выезжал там, где принтер есть.
+    """
+    cfg = (
+        RestaurantPrintConfig.objects
+        .filter(restaurant=branch.restaurant, enabled=True)
+        .prefetch_related("branches")
+        .first()
+    )
+    if cfg is None or not cfg.serves(branch):
+        return None
+    return cfg
 
 
 def _default_group(restaurant):
@@ -179,8 +190,9 @@ def create_print_jobs(order, new_item_ids=None, new_cx_ids=None):
     print(f"PRINT DEBUG: create_print_jobs вызван для заказа #{order.id}")
     restaurant = order.branch.restaurant
 
-    if not _print_enabled(restaurant):
-        print(f"PRINT DEBUG: печать отключена для ресторана '{restaurant}' — выходим")
+    if _config_for(order.branch) is None:
+        print(f"PRINT DEBUG: печать не обслуживает филиал '{order.branch}' "
+              f"(ресторан '{restaurant}') — выходим")
         return
 
     item_group = _item_group_map(order.branch)
@@ -230,6 +242,7 @@ def create_print_jobs(order, new_item_ids=None, new_cx_ids=None):
     jobs = PrintJob.objects.bulk_create([
         PrintJob(
             restaurant=restaurant,
+            branch=order.branch,
             order_id=order.id,
             group=grp,
             content=_ticket(order, items),
@@ -244,6 +257,7 @@ def _create_job(restaurant, order, group, content):
     """Создаёт и сохраняет один PrintJob."""
     PrintJob.objects.create(
         restaurant=restaurant,
+        branch=order.branch,
         order_id=order.id,
         group=group,
         content=content,
@@ -255,7 +269,7 @@ def create_cancel_job(order, item_name: str, item_qty: int, item_id: int = None)
     """Печатает тикет отмены блюда."""
     restaurant = order.branch.restaurant
 
-    if not _print_enabled(restaurant):
+    if _config_for(order.branch) is None:
         return
 
     target = None
@@ -284,14 +298,10 @@ def create_receipt_job(order):
     print(f"PRINT DEBUG: create_receipt_job вызван для заказа #{order.id}")
     restaurant = order.branch.restaurant
 
-    try:
-        cfg = (
-            RestaurantPrintConfig.objects
-            .select_related("receipt_printer_group")
-            .get(restaurant=restaurant, enabled=True)
-        )
-    except RestaurantPrintConfig.DoesNotExist:
-        print(f"PRINT DEBUG: RestaurantPrintConfig не найден или выключен для '{restaurant}' — чек не напечатан")
+    cfg = _config_for(order.branch)
+    if cfg is None:
+        print(f"PRINT DEBUG: печать не обслуживает филиал '{order.branch}' "
+              f"(ресторан '{restaurant}') — чек не напечатан")
         return
 
     group = cfg.receipt_printer_group or _default_group(restaurant)

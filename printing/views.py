@@ -1,10 +1,27 @@
 import json
+from django.db.models import Q
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 from .models import PrinterGroup, PrintJob, RestaurantPrintConfig
+
+
+def _pending_jobs(cfg):
+    """Задания, которые должен печатать именно этот агент.
+
+    Агент стоит в конкретной точке, поэтому забирает только заказы
+    обслуживаемых филиалов. Задания без филиала — созданные до разделения
+    по точкам — отдаём по-прежнему, чтобы не потерять незакрытую очередь.
+    """
+    jobs = PrintJob.objects.filter(
+        restaurant=cfg.restaurant, status=PrintJob.Status.NEW
+    )
+    served = cfg.served_branch_ids()
+    if served:
+        jobs = jobs.filter(Q(branch_id__in=served) | Q(branch__isnull=True))
+    return jobs
 
 
 def _authenticate(request):
@@ -31,11 +48,7 @@ def api_jobs(request):
     if err:
         return err
 
-    jobs = (
-        PrintJob.objects
-        .filter(restaurant=cfg.restaurant, status=PrintJob.Status.NEW)
-        .select_related("group")[:20]
-    )
+    jobs = _pending_jobs(cfg).select_related("group")[:20]
     data = [
         {
             "id": j.id,
@@ -93,9 +106,7 @@ def api_heartbeat(request):
     cfg.last_heartbeat = timezone.now()
     cfg.save(update_fields=["last_heartbeat"])
 
-    pending = PrintJob.objects.filter(
-        restaurant=cfg.restaurant, status=PrintJob.Status.NEW
-    ).count()
+    pending = _pending_jobs(cfg).count()
 
     return JsonResponse({
         "ok": True,
@@ -121,8 +132,12 @@ def api_config(request):
         if active:
             printers[group.name] = active[0]
 
+    branches = list(cfg.branches.values_list("name_ru", flat=True))
     return JsonResponse({
         "restaurant_id": cfg.restaurant.id,
         "restaurant": cfg.restaurant.name_ru,
+        # чтобы при разборе «почему печатает не там» было видно из конфига,
+        # какие точки обслуживает этот агент
+        "branches": branches or ["(все филиалы)"],
         "printers": printers,
     })

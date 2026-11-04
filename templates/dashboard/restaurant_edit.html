@@ -197,6 +197,39 @@
       {% endif %}
     </div>
 
+    {# Филиалы, которые печатает этот агент #}
+    {% if print_branches|length > 1 %}
+    <div class="db-form-section-title" style="margin-bottom:8px">Какие филиалы печатает этот агент</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">
+      Принтер стоит в одной точке. Оставьте галочку только там, где он реально
+      есть, — иначе заказы соседнего филиала будут выезжать на этом принтере.
+    </div>
+    {% if print_branch_warning %}
+    <div style="display:flex;gap:10px;padding:12px 14px;margin-bottom:12px;border-radius:12px;
+                background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3)">
+      <div style="font-size:16px;line-height:1">⚠️</div>
+      <div style="font-size:12.5px;line-height:1.5;color:var(--text)">
+        Сейчас агент печатает заказы <b>всех отмеченных филиалов</b>. Если принтер
+        стоит только в одной точке, чеки других точек выходят у неё же.
+        Снимите лишние галочки и сохраните.
+      </div>
+    </div>
+    {% endif %}
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:22px">
+      {% for b in print_branches %}
+      <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;
+                    border:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:13px">
+        <input type="checkbox" name="print_branch_id" value="{{ b.id }}"
+               {% if b.is_served %}checked{% endif %}>
+        <span>
+          <b>{{ b.name_ru }}</b>
+          {% if b.address %}<span style="color:var(--muted)"> · {{ b.address }}</span>{% endif %}
+        </span>
+      </label>
+      {% endfor %}
+    </div>
+    {% endif %}
+
     {# Группы принтеров #}
     <div class="db-form-section-title" style="margin-bottom:12px">Группы принтеров</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:14px">

@@ -19,11 +19,37 @@ class RestaurantPrintConfig(models.Model):
         verbose_name="Принтер для итоговых чеков",
         help_text="Этот принтер будет получать чеки при закрытии стола/заказа",
     )
+    # Принтер стоит в конкретной точке, а настройки печати — одни на ресторан.
+    # Пока филиал был один, разницы не было; с двумя точками заказы второго
+    # филиала уезжали на единственный агент и печатались в первом. Здесь
+    # перечислены филиалы, чьи заказы этот агент печатает.
+    branches = models.ManyToManyField(
+        "core.Branch", blank=True,
+        related_name="print_configs",
+        verbose_name="Филиалы, заказы которых печатает агент",
+        help_text="Снимите галочку с филиала, где принтера нет, — его чеки "
+                  "не будут выходить на чужой точке",
+    )
 
     def save(self, *args, **kwargs):
         if not self.token:
             self.token = secrets.token_urlsafe(32)
         super().save(*args, **kwargs)
+
+    def serves(self, branch):
+        """Печатает ли этот агент заказы указанного филиала.
+
+        Пустой список трактуем как «все филиалы»: так ведут себя настройки,
+        заведённые до разделения по точкам, и молча выключать им печать нельзя.
+        """
+        if branch is None:
+            return True
+        ids = set(self.branches.values_list("id", flat=True))
+        return (not ids) or (branch.id in ids)
+
+    def served_branch_ids(self):
+        """id обслуживаемых филиалов; пустой набор — значит все."""
+        return set(self.branches.values_list("id", flat=True))
 
     def is_agent_online(self):
         if not self.last_heartbeat:
@@ -88,6 +114,13 @@ class PrintJob(models.Model):
 
     restaurant = models.ForeignKey(
         Restaurant, on_delete=models.CASCADE, related_name="print_jobs"
+    )
+    # Филиал, где пробили заказ. Без него очередь была общей на ресторан,
+    # и агент одной точки забирал чеки другой.
+    branch = models.ForeignKey(
+        "core.Branch", null=True, blank=True,
+        on_delete=models.CASCADE, related_name="print_jobs",
+        verbose_name="Филиал",
     )
     order_id = models.IntegerField("ID заказа", null=True, blank=True)
     group = models.ForeignKey(
