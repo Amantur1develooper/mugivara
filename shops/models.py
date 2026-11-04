@@ -56,6 +56,16 @@ class Store(models.Model):
     instagram_url  = models.URLField("Instagram (1)",   blank=True, default="")
     instagram_url_2 = models.URLField("Instagram (2)",  blank=True, default="")
     order_phone    = models.CharField("Телефон для индивидуальных заказов", max_length=32, blank=True, default="")
+    # Общий выключатель учёта остатков. Нужен магазинам, где товар всегда
+    # доступен — заколки, мелочёвка, позиции под заказ: иначе на каждую
+    # пришлось бы ставить галочку вручную. По умолчанию выключен, чтобы
+    # магазины с настоящим складом работали как раньше.
+    sell_out_of_stock_all = models.BooleanField(
+        "Все товары без учёта остатка", default=False,
+        help_text="Все товары магазина остаются доступны для заказа, даже когда остаток нулевой. "
+                  "Стоп-лист продолжает работать и имеет приоритет. "
+                  "Если выключено — то же самое можно включить отдельному товару.",
+    )
     is_active = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):
@@ -194,6 +204,16 @@ class StoreProduct(models.Model):
                    "работает и имеет приоритет.",
     )
 
+    @property
+    def unlimited(self):
+        """Продаётся ли товар без оглядки на остаток.
+
+        Либо включено у самого товара, либо общим выключателем магазина.
+        Везде, где раньше смотрели только на sell_out_of_stock, нужно
+        спрашивать это свойство — иначе общая настройка работать не будет.
+        """
+        return bool(self.sell_out_of_stock or self.store.sell_out_of_stock_all)
+
     def save(self, *args, **kwargs):
         result = _compress(self.photo)
         if result:
@@ -270,7 +290,7 @@ class StoreStock(models.Model):
         ИЛИ у товара включено «Продавать без остатка»)."""
         if self.is_stopped:
             return False
-        return self.qty > 0 or self.product.sell_out_of_stock
+        return self.qty > 0 or self.product.unlimited
 
     def __str__(self):
         return f"{self.branch}: {self.product} = {self.qty}"

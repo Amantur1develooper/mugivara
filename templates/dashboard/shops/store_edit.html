@@ -55,6 +55,29 @@
     </div>
   </div>
 
+  <div class="db-form-card">
+    <div class="db-form-section-title">♾️ Остатки</div>
+    <div class="db-form-section-hint">
+      Обычно товар пропадает из витрины, когда остаток дошёл до нуля.
+      Для мелочёвки вроде заколок это только мешает — считать её поштучно
+      никто не будет.
+    </div>
+    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
+      <input type="checkbox" name="sell_out_of_stock_all"
+             {% if store.sell_out_of_stock_all %}checked{% endif %}
+             style="width:16px;height:16px;accent-color:var(--accent);margin-top:2px">
+      <span>
+        <span class="db-label" style="margin-bottom:2px">Все товары без учёта остатка</span>
+        <span style="display:block;font-size:12.5px;color:var(--muted);line-height:1.5">
+          Любой товар магазина можно заказать всегда, даже при нулевом остатке.
+          Если выключено — то же самое включается отдельному товару
+          переключателем «Под заказ» в списке товаров.
+          Стоп-лист работает в обоих случаях и всегда перевешивает.
+        </span>
+      </span>
+    </label>
+  </div>
+
   <button type="submit" class="db-btn db-btn-primary">💾 Сохранить</button>
 </form>
 {% endblock %}

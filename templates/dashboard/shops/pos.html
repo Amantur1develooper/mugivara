@@ -502,7 +502,7 @@
     <div class="pos-items" id="posItems">
       {% for stock in stocks %}
       {% with p=stock.product %}
-      {% if stock.qty > 0 or p.sell_out_of_stock %}
+      {% if stock.qty > 0 or p.unlimited %}
       <div class="pos-item {% if not stock.is_orderable %}out{% endif %}"
            id="pos-stock-{{ stock.id }}"
            data-cat="{% if p.category_id %}{{ p.category_id }}{% else %}0{% endif %}"
@@ -528,7 +528,7 @@
           </div>
           {% if stock.is_stopped %}
             <span class="pos-item-stock out">Стоп</span>
-          {% elif stock.qty == 0 and p.sell_out_of_stock %}
+          {% elif stock.qty == 0 and p.unlimited %}
             <span class="pos-item-stock preorder">Под заказ</span>
           {% elif stock.qty == 0 %}
             <span class="pos-item-stock out">Нет</span>

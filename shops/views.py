@@ -288,7 +288,7 @@ def cart_add(request, branch_id, product_id):
     new_qty = current + qty
 
     # проверка остатков — пропускаем, если товар помечен «продавать без остатка»
-    if not stock.product.sell_out_of_stock and new_qty > stock.qty:
+    if not stock.product.unlimited and new_qty > stock.qty:
         payload = {"ok": False, "error": "not_enough"}
         if branch.show_stock_qty:
             payload["available"] = str(stock.qty)
@@ -324,7 +324,7 @@ def cart_update(request, branch_id, product_id):
     else:
         if stock.is_stopped:
             return JsonResponse({"ok": False, "error": "stopped"})
-        if not stock.product.sell_out_of_stock and qty > stock.qty:
+        if not stock.product.unlimited and qty > stock.qty:
             payload = {"ok": False, "error": "not_enough"}
             if branch.show_stock_qty:
                 payload["available"] = str(stock.qty)
@@ -592,7 +592,7 @@ def checkout(request, branch_id):
             if not st or st.is_stopped or not st.product.sell_direct:
                 messages.error(request, _("Нет в наличии: %(name)s") % {"name": r['product'].name_ru})
                 return redirect("shops:cart_detail", branch_id=branch.id)
-            if not st.product.sell_out_of_stock and int(st.qty) < int(r["qty"]):
+            if not st.product.unlimited and int(st.qty) < int(r["qty"]):
                 messages.error(request, _("Нет в наличии: %(name)s") % {"name": r['product'].name_ru})
                 return redirect("shops:cart_detail", branch_id=branch.id)
 
@@ -609,7 +609,7 @@ def checkout(request, branch_id):
                 if not st:
                     messages.error(request, _("Нет в наличии: %(name)s") % {"name": pid})
                     return redirect("shops:cart_detail", branch_id=branch.id)
-                if not st.product.sell_out_of_stock and st.qty < needed:
+                if not st.product.unlimited and st.qty < needed:
                     messages.error(request, _("Нет в наличии: %(name)s") % {"name": st.product.name_ru})
                     return redirect("shops:cart_detail", branch_id=branch.id)
 

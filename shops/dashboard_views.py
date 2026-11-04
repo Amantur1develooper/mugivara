@@ -114,6 +114,7 @@ def shop_store_edit(request, store_id):
         store.youtube_url = request.POST.get("youtube_url", "").strip()
         store.order_phone = request.POST.get("order_phone", "").strip()
         store.is_active = request.POST.get("is_active") == "on"
+        store.sell_out_of_stock_all = request.POST.get("sell_out_of_stock_all") == "on"
         if request.FILES.get("logo"):
             store.logo = request.FILES["logo"]
         store.save()
