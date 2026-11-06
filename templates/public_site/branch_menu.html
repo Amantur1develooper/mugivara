@@ -924,7 +924,7 @@ const T = {
              onkeydown="if(event.key==='Enter'||event.key===' ')openCxModal({{ cx.id }})">
           <div class="cx-card-img">
             {% if cx.photo %}
-              <img src="{{ cx.photo.url }}" alt="{{ cx.name }}" loading="lazy">
+              <img src="{{ cx.photo.url }}" alt="{% t cx 'name' %}" loading="lazy">
             {% else %}
               <div class="cx-card-img-placeholder">🧩</div>
             {% endif %}
@@ -932,13 +932,14 @@ const T = {
             <div class="cx-card-label">{% trans "Собери сам" %}</div>
           </div>
           <div class="cx-card-body">
-            <div class="cx-card-name">{{ cx.name }}</div>
-            {% if cx.description %}
-            <div class="cx-card-desc">{{ cx.description|truncatechars:60 }}</div>
+            <div class="cx-card-name">{% t cx "name" %}</div>
+            {% t cx "description" as cx_desc %}
+            {% if cx_desc %}
+            <div class="cx-card-desc">{{ cx_desc|truncatechars:60 }}</div>
             {% endif %}
             <div class="cx-card-steps">
               {% for g in cx.groups.all %}
-              <span class="cx-card-step">{{ g.name }}</span>
+              <span class="cx-card-step">{% t g "name" %}</span>
               {% if not forloop.last %}<span class="cx-card-step-sep">·</span>{% endif %}
               {% endfor %}
             </div>
@@ -1160,17 +1161,17 @@ const CX_DATA = {
   {% for cx in constructors %}
   {{ cx.id }}: {
     id: {{ cx.id }},
-    name: "{{ cx.name|escapejs }}",
+    name: "{% t cx 'name' as cx_js_name %}{{ cx_js_name|escapejs }}",
     groups: [
       {% for g in cx.groups.all %}
       {
         id: {{ g.id }},
-        name: "{{ g.name|escapejs }}",
+        name: "{% t g 'name' as g_js_name %}{{ g_js_name|escapejs }}",
         min: {{ g.min_select }},
         max: {{ g.max_select }},
         ingredients: [
           {% for ing in g.ingredients.all %}{% if ing.is_active %}
-          { id: {{ ing.id }}, name: "{{ ing.display_name|escapejs }}", desc: "{{ ing.display_description|escapejs }}", price: {{ ing.display_price }}, photo: "{{ ing.display_photo_url }}" },
+          { id: {{ ing.id }}, name: "{{ ing.display_name_i18n|escapejs }}", desc: "{{ ing.display_description_i18n|escapejs }}", price: {{ ing.display_price }}, photo: "{{ ing.display_photo_url }}" },
           {% endif %}{% endfor %}
         ]
       },

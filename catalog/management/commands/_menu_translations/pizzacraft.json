@@ -1,0 +1,743 @@
+{
+ "items": {
+  "Маргарита 1 кусок": {
+   "name_ky": "Маргарита 1 кесим",
+   "name_en": "Margherita 1 Slice",
+   "description_ky": "1 кесим.",
+   "description_en": "One slice."
+  },
+  "Пепперони 1 кусок": {
+   "name_ky": "Пепперони 1 кесим",
+   "name_en": "Pepperoni 1 Slice",
+   "description_ky": "1 кесим.",
+   "description_en": "One slice."
+  },
+  "С говядиной 1 кусок": {
+   "name_ky": "Уй эти менен 1 кесим",
+   "name_en": "Beef 1 Slice",
+   "description_ky": "1 кесим.",
+   "description_en": "One slice."
+  },
+  "Цезарь 1 кусок": {
+   "name_ky": "Цезарь 1 кесим",
+   "name_en": "Caesar 1 Slice",
+   "description_ky": "1 кесим.",
+   "description_en": "One slice."
+  },
+  "Пепперони small": {
+   "name_ky": "Пепперони (кичине)",
+   "name_en": "Pepperoni (Small)",
+   "description_ky": "30 см, Тойбосс колбасасы.",
+   "description_en": "30 cm, Toyboss sausage."
+  },
+  "Ассорти small": {
+   "name_ky": "Ассорти (кичине)",
+   "name_en": "Assorti (Small)",
+   "description_ky": "30 см.",
+   "description_en": "30 cm."
+  },
+  "Цезарь small": {
+   "name_ky": "Цезарь (кичине)",
+   "name_en": "Caesar (Small)",
+   "description_ky": "30 см.",
+   "description_en": "30 cm."
+  },
+  "Пицца с курицей small": {
+   "name_ky": "Тоок эти менен пицца (кичине)",
+   "name_en": "Chicken Pizza (Small)",
+   "description_ky": "30 см.",
+   "description_en": "30 cm."
+  },
+  "Пицца с шампиньонами small": {
+   "name_ky": "Шампиньон менен пицца (кичине)",
+   "name_en": "Mushroom Pizza (Small)",
+   "description_ky": "30 см, тоок эти, шампиньон козу карыны, маслина, болгар калемпири, сарымсак соусу.",
+   "description_en": "30 cm, chicken fillet, champignons, olives, bell pepper, garlic sauce."
+  },
+  "Маргарита small": {
+   "name_ky": "Маргарита (кичине)",
+   "name_en": "Margherita (Small)",
+   "description_ky": "30 см.",
+   "description_en": "30 cm."
+  },
+  "Пицца с говядиной small": {
+   "name_ky": "Уй эти менен пицца (кичине)",
+   "name_en": "Beef Pizza (Small)",
+   "description_ky": "30 см.",
+   "description_en": "30 cm."
+  },
+  "Чили с говядиной small": {
+   "name_ky": "Уй эти менен чили (кичине)",
+   "name_en": "Beef Chili (Small)",
+   "description_ky": "30 см.",
+   "description_en": "30 cm."
+  },
+  "Куриная Пепперони small": {
+   "name_ky": "Тоок Пепперони (кичине)",
+   "name_en": "Chicken Pepperoni (Small)",
+   "description_ky": "30 см, тоок эти, колбаса, жүгөрү, маслина, болгар калемпири, моцарелла.",
+   "description_en": "30 cm, chicken, sausage, corn, olives, bell pepper, mozzarella."
+  },
+  "Ассорти пополам small": {
+   "name_ky": "Жарым-жартылай ассорти (кичине)",
+   "name_en": "Half & Half Assorti (Small)",
+   "description_ky": "30 см, жарымы тоок эти, жарымы уй эти, болгар калемпири, помидор, үстүнөн сарымсак соусу.",
+   "description_en": "30 cm, half chicken, half beef, bell pepper, tomato, garlic sauce on top."
+  },
+  "Пепперони middle": {
+   "name_ky": "Пепперони (орто)",
+   "name_en": "Pepperoni (Medium)",
+   "description_ky": "35 см, Тойбосс колбасасы.",
+   "description_en": "35 cm, Toyboss sausage."
+  },
+  "Цезарь middle": {
+   "name_ky": "Цезарь (орто)",
+   "name_en": "Caesar (Medium)",
+   "description_ky": "35 см.",
+   "description_en": "35 cm."
+  },
+  "Пицца с курицей middle": {
+   "name_ky": "Тоок эти менен пицца (орто)",
+   "name_en": "Chicken Pizza (Medium)",
+   "description_ky": "35 см.",
+   "description_en": "35 cm."
+  },
+  "Ассорти пополам middle": {
+   "name_ky": "Жарым-жартылай ассорти (орто)",
+   "name_en": "Half & Half Assorti (Medium)",
+   "description_ky": "35 см, жарымы тоок эти, жарымы уй эти, болгар калемпири, помидор, үстүнөн сарымсак соусу.",
+   "description_en": "35 cm, half chicken, half beef, bell pepper, tomato, garlic sauce on top."
+  },
+  "Пицца с говядиной middle": {
+   "name_ky": "Уй эти менен пицца (орто)",
+   "name_en": "Beef Pizza (Medium)",
+   "description_ky": "35 см.",
+   "description_en": "35 cm."
+  },
+  "Чили с говядиной middle": {
+   "name_ky": "Уй эти менен чили (орто)",
+   "name_en": "Beef Chili (Medium)",
+   "description_ky": "35 см.",
+   "description_en": "35 cm."
+  },
+  "Ассорти middle": {
+   "name_ky": "Ассорти (орто)",
+   "name_en": "Assorti (Medium)",
+   "description_ky": "35 см.",
+   "description_en": "35 cm."
+  },
+  "Пицца с шампиньонами middle": {
+   "name_ky": "Шампиньон менен пицца (орто)",
+   "name_en": "Mushroom Pizza (Medium)",
+   "description_ky": "35 см, тоок эти, шампиньон козу карыны, маслина, болгар калемпири, сарымсак соусу.",
+   "description_en": "35 cm, chicken fillet, champignons, olives, bell pepper, garlic sauce."
+  },
+  "Маргарита middle": {
+   "name_ky": "Маргарита (орто)",
+   "name_en": "Margherita (Medium)",
+   "description_ky": "35 см.",
+   "description_en": "35 cm."
+  },
+  "Куриная Пепперони middle": {
+   "name_ky": "Тоок Пепперони (орто)",
+   "name_en": "Chicken Pepperoni (Medium)",
+   "description_ky": "35 см, тоок эти, колбаса, жүгөрү, маслина, болгар калемпири, моцарелла.",
+   "description_en": "35 cm, chicken, sausage, corn, olives, bell pepper, mozzarella."
+  },
+  "Пепперони Big": {
+   "name_ky": "Пепперони (чоң)",
+   "name_en": "Pepperoni (Large)",
+   "description_ky": "38 см.",
+   "description_en": "38 cm."
+  },
+  "Ассорти пополам Big": {
+   "name_ky": "Жарым-жартылай ассорти (чоң)",
+   "name_en": "Half & Half Assorti (Large)",
+   "description_ky": "38 см, жарымы тоок эти, жарымы уй эти, болгар калемпири, помидор, үстүнөн сарымсак соусу.",
+   "description_en": "38 cm, half chicken, half beef, bell pepper, tomato, garlic sauce on top."
+  },
+  "Чили с говядиной Big": {
+   "name_ky": "Уй эти менен чили (чоң)",
+   "name_en": "Beef Chili (Large)",
+   "description_ky": "38 см.",
+   "description_en": "38 cm."
+  },
+  "Цезарь Big": {
+   "name_ky": "Цезарь (чоң)",
+   "name_en": "Caesar (Large)",
+   "description_ky": "38 см.",
+   "description_en": "38 cm."
+  },
+  "Маргарита Big": {
+   "name_ky": "Маргарита (чоң)",
+   "name_en": "Margherita (Large)",
+   "description_ky": "38 см.",
+   "description_en": "38 cm."
+  },
+  "Пицца с курицей Big": {
+   "name_ky": "Тоок эти менен пицца (чоң)",
+   "name_en": "Chicken Pizza (Large)",
+   "description_ky": "38 см.",
+   "description_en": "38 cm."
+  },
+  "Пицца с говядиной Big": {
+   "name_ky": "Уй эти менен пицца (чоң)",
+   "name_en": "Beef Pizza (Large)",
+   "description_ky": "38 см.",
+   "description_en": "38 cm."
+  },
+  "Ассорти Big": {
+   "name_ky": "Ассорти (чоң)",
+   "name_en": "Assorti (Large)",
+   "description_ky": "38 см.",
+   "description_en": "38 cm."
+  },
+  "Куриная Пепперони Big": {
+   "name_ky": "Тоок Пепперони (чоң)",
+   "name_en": "Chicken Pepperoni (Large)",
+   "description_ky": "40 см, тоок эти, колбаса, жүгөрү, маслина, болгар калемпири, моцарелла.",
+   "description_en": "40 cm, chicken, sausage, corn, olives, bell pepper, mozzarella."
+  },
+  "Пицца с шампиньонами Big": {
+   "name_ky": "Шампиньон менен пицца (чоң)",
+   "name_en": "Mushroom Pizza (Large)",
+   "description_ky": "38 см, тоок эти, шампиньон козу карыны, маслина, болгар калемпири, сарымсак соусу.",
+   "description_en": "38 cm, chicken fillet, champignons, olives, bell pepper, garlic sauce."
+  },
+  "Шаурма с курицей": {
+   "name_ky": "Тоок эти менен шаурма",
+   "name_en": "Chicken Shawarma",
+   "description_ru": "Лаваш с курицей, овощами и соусом.",
+   "description_ky": "Тоок эти, жашылча жана соус кошулган лаваш.",
+   "description_en": "Lavash with chicken, vegetables and sauce."
+  },
+  "Шаурма с говядиной": {
+   "name_ky": "Уй эти менен шаурма",
+   "name_en": "Beef Shawarma",
+   "description_ru": "Лаваш с говядиной, овощами и соусом.",
+   "description_ky": "Уй эти, жашылча жана соус кошулган лаваш.",
+   "description_en": "Lavash with beef, vegetables and sauce."
+  },
+  "Фри": {
+   "name_ky": "Фри картошка",
+   "name_en": "French Fries",
+   "description_ky": "100 г.",
+   "description_en": "100 g."
+  },
+  "Картофель по-деревенски": {
+   "name_ky": "Айылча картошка",
+   "name_en": "Country-style Potatoes",
+   "description_ky": "100 г.",
+   "description_en": "100 g."
+  },
+  "Стрипсы с фри": {
+   "name_ky": "Стрипс фри менен",
+   "name_en": "Chicken Strips with Fries",
+   "description_ky": "4 даана стрипс, фри, фирмалык соус.",
+   "description_en": "4 chicken strips, fries, house sauce."
+  },
+  "Ассорти закуски": {
+   "name_ky": "Ассорти жеңил тамак",
+   "name_en": "Snack Platter",
+   "description_ky": "4 даана стрипс, 4 даана наггетс, фри, фирмалык соус.",
+   "description_en": "4 strips, 4 nuggets, fries, house sauce."
+  },
+  "Сосиски с фри": {
+   "name_ky": "Сосиска фри менен",
+   "name_en": "Sausages with Fries",
+   "description_ky": "Тойбосс сосискасы 2 даана, фри.",
+   "description_en": "2 Toyboss sausages, fries."
+  },
+  "Наггетсы 10шт": {
+   "name_ky": "Наггетс 10 даана",
+   "name_en": "Nuggets 10 pcs",
+   "description_ru": "10 куриных наггетсов.",
+   "description_ky": "10 даана тоок наггетси.",
+   "description_en": "10 chicken nuggets."
+  },
+  "Куриные стрипсы ≈6шт с фри": {
+   "name_ky": "Тоок стрипси ≈6 даана фри менен",
+   "name_en": "Chicken Strips ≈6 pcs with Fries",
+   "description_ru": "Около 6 куриных стрипсов и картофель фри.",
+   "description_ky": "Болжол менен 6 даана тоок стрипси жана фри картошка.",
+   "description_en": "About 6 chicken strips with French fries."
+  },
+  "Наггетсы с фри": {
+   "name_ky": "Наггетс фри менен",
+   "name_en": "Nuggets with Fries",
+   "description_ky": "4 даана наггетс, фри, фирмалык соус.",
+   "description_en": "4 nuggets, fries, house sauce."
+  },
+  "Комбо №1": {
+   "name_ky": "Комбо №1",
+   "name_en": "Combo No. 1",
+   "description_ky": "Орто Пепперони, 4 даана стрипс, фри, кола 1 л.",
+   "description_en": "Medium Pepperoni, 4 chicken strips, fries, 1 L cola."
+  },
+  "Комбо №4": {
+   "name_ky": "Комбо №4",
+   "name_en": "Combo No. 4",
+   "description_ky": "2 даана орто пицца, кола 2 л, фри, 4 даана наггетс, айылча картошка.",
+   "description_en": "2 medium pizzas, 2 L cola, fries, 4 nuggets, country-style potatoes."
+  },
+  "Комбо №5": {
+   "name_ky": "Комбо №5",
+   "name_en": "Combo No. 5",
+   "description_ky": "Жарымы Пепперони, жарымы Цезарь пицца, кола 1 л, фри, картошка тилимдери, 4 даана наггетс.",
+   "description_en": "Half Pepperoni + half Caesar pizza, 1 L cola, fries, potato wedges, 4 nuggets."
+  },
+  "Комбо №7": {
+   "name_ky": "Комбо №7",
+   "name_en": "Combo No. 7",
+   "description_ky": "2 даана шаурма, кичине Пепперони, кола 1 л, 1 фри.",
+   "description_en": "2 shawarmas, small Pepperoni, 1 L cola, 1 fries."
+  },
+  "Комбо №2": {
+   "name_ky": "Комбо №2",
+   "name_en": "Combo No. 2",
+   "description_ky": "Кичине уй эти менен пицца, 6 даана стрипс, кола 1 л.",
+   "description_en": "Small beef pizza, 6 chicken strips, 1 L cola."
+  },
+  "Комбо №3": {
+   "name_ky": "Комбо №3",
+   "name_en": "Combo No. 3",
+   "description_ky": "Орто Цезарь пицца, 2 банка кола, сосиска фри менен.",
+   "description_en": "Medium Caesar pizza, 2 cola cans, sausages with fries."
+  },
+  "Комбо №6": {
+   "name_ky": "Комбо №6",
+   "name_en": "Combo No. 6"
+  },
+  "Чесночный соус": {
+   "name_ky": "Сарымсак соусу",
+   "name_en": "Garlic Sauce",
+   "description_ru": "Соус на основе чеснока. Порция.",
+   "description_ky": "Сарымсак негизиндеги соус. Бир порция.",
+   "description_en": "Garlic-based sauce. One serving."
+  },
+  "Фирменный соус": {
+   "name_ky": "Фирмалык соус",
+   "name_en": "House Sauce",
+   "description_ru": "Фирменный соус заведения. Порция.",
+   "description_ky": "Заведениенин фирмалык соусу. Бир порция.",
+   "description_en": "The house sauce. One serving."
+  },
+  "Сырный соус": {
+   "name_ky": "Сыр соусу",
+   "name_en": "Cheese Sauce",
+   "description_ru": "Сырный соус. Порция.",
+   "description_ky": "Сыр соусу. Бир порция.",
+   "description_en": "Cheese sauce. One serving."
+  },
+  "Сметанный соус": {
+   "name_ky": "Каймак соусу",
+   "name_en": "Sour Cream Sauce",
+   "description_ru": "Соус на основе сметаны. Порция.",
+   "description_ky": "Каймак негизиндеги соус. Бир порция.",
+   "description_en": "Sour cream based sauce. One serving."
+  },
+  "Халапеньо": {
+   "name_ky": "Халапеньо",
+   "name_en": "Jalapeño",
+   "description_ru": "Острый перец халапеньо. Порция.",
+   "description_ky": "Ачуу халапеньо калемпири. Бир порция.",
+   "description_en": "Spicy jalapeño peppers. One serving."
+  },
+  "Кисло-сладкий соус": {
+   "name_ky": "Кычкыл-таттуу соус",
+   "name_en": "Sweet & Sour Sauce",
+   "description_ru": "Кисло-сладкий соус. Порция.",
+   "description_ky": "Кычкыл-таттуу соус. Бир порция.",
+   "description_en": "Sweet and sour sauce. One serving."
+  },
+  "Барбекю соус": {
+   "name_ky": "Барбекю соусу",
+   "name_en": "Barbecue Sauce",
+   "description_ru": "Соус барбекю. Порция.",
+   "description_ky": "Барбекю соусу. Бир порция.",
+   "description_en": "Barbecue sauce. One serving."
+  },
+  "Кетчуп": {
+   "name_ky": "Кетчуп",
+   "name_en": "Ketchup",
+   "description_ru": "Томатный кетчуп. Порция.",
+   "description_ky": "Помидор кетчубу. Бир порция.",
+   "description_en": "Tomato ketchup. One serving."
+  },
+  "Ретро кола 1л": {
+   "name_ky": "Ретро кола 1 л",
+   "name_en": "Retro Cola 1 L",
+   "description_ru": "Газированный напиток, 1 л.",
+   "description_ky": "Газдуу суусундук, 1 л.",
+   "description_en": "Carbonated soft drink, 1 L."
+  },
+  "Ретро танго 0.45": {
+   "name_ky": "Ретро танго 0,45 л",
+   "name_en": "Retro Tango 0.45 L",
+   "description_ru": "Газированный напиток, 0,45 л.",
+   "description_ky": "Газдуу суусундук, 0,45 л.",
+   "description_en": "Carbonated soft drink, 0.45 L."
+  },
+  "Летс го 0.5": {
+   "name_ky": "Летс го 0,5 л",
+   "name_en": "Let's Go 0.5 L",
+   "description_ru": "Напиток, 0,5 л.",
+   "description_ky": "Суусундук, 0,5 л.",
+   "description_en": "Soft drink, 0.5 L."
+  },
+  "Летс го 1.2л": {
+   "name_ky": "Летс го 1,2 л",
+   "name_en": "Let's Go 1.2 L",
+   "description_ru": "Напиток, 1,2 л.",
+   "description_ky": "Суусундук, 1,2 л.",
+   "description_en": "Soft drink, 1.2 L."
+  },
+  "Ретро кола 0.45": {
+   "name_ky": "Ретро кола 0,45 л",
+   "name_en": "Retro Cola 0.45 L",
+   "description_ru": "Газированный напиток, 0,45 л.",
+   "description_ky": "Газдуу суусундук, 0,45 л.",
+   "description_en": "Carbonated soft drink, 0.45 L."
+  },
+  "Ретро кола банка": {
+   "name_ky": "Ретро кола банка",
+   "name_en": "Retro Cola Can",
+   "description_ru": "Газированный напиток в банке.",
+   "description_ky": "Банкадагы газдуу суусундук.",
+   "description_en": "Carbonated soft drink in a can."
+  },
+  "Ретро твист банка": {
+   "name_ky": "Ретро твист банка",
+   "name_en": "Retro Twist Can",
+   "description_ru": "Газированный напиток в банке.",
+   "description_ky": "Банкадагы газдуу суусундук.",
+   "description_en": "Carbonated soft drink in a can."
+  },
+  "Легенда 0.5": {
+   "name_ky": "Легенда 0,5 л",
+   "name_en": "Legenda 0.5 L",
+   "description_ru": "Напиток, 0,5 л.",
+   "description_ky": "Суусундук, 0,5 л.",
+   "description_en": "Soft drink, 0.5 L."
+  },
+  "Lemo персик": {
+   "name_ky": "Lemo шабдалы",
+   "name_en": "Lemo Peach",
+   "description_ru": "Напиток Lemo со вкусом персика.",
+   "description_ky": "Шабдалы даамындагы Lemo суусундугу.",
+   "description_en": "Lemo peach-flavoured drink."
+  },
+  "Lemo клубника": {
+   "name_ky": "Lemo кулпунай",
+   "name_en": "Lemo Strawberry",
+   "description_ru": "Напиток Lemo со вкусом клубники.",
+   "description_ky": "Кулпунай даамындагы Lemo суусундугу.",
+   "description_en": "Lemo strawberry-flavoured drink."
+  },
+  "Ретро танго 1л": {
+   "name_ky": "Ретро танго 1 л",
+   "name_en": "Retro Tango 1 L",
+   "description_ru": "Газированный напиток, 1 л.",
+   "description_ky": "Газдуу суусундук, 1 л.",
+   "description_en": "Carbonated soft drink, 1 L."
+  },
+  "Шоко-пончик": {
+   "name_ky": "Шоко-пончик",
+   "name_en": "Chocolate Donut",
+   "description_ru": "Пончик в шоколадной глазури.",
+   "description_ky": "Шоколад глазурундагы пончик.",
+   "description_en": "Donut with chocolate glaze."
+  },
+  "Мини баклава": {
+   "name_ky": "Мини баклава",
+   "name_en": "Mini Baklava",
+   "description_ky": "1 даана, сүрөттө 5 даана.",
+   "description_en": "1 piece; the photo shows 5."
+  },
+  "Баклава": {
+   "name_ky": "Баклава",
+   "name_en": "Baklava",
+   "description_ky": "1 даана.",
+   "description_en": "1 piece."
+  },
+  "Макаронс малина-фисташка": {
+   "name_ky": "Макаронс бүлдүркөн-фисташка",
+   "name_en": "Macaron Raspberry-Pistachio",
+   "description_ky": "Сабинадан.",
+   "description_en": "By Sabina."
+  },
+  "Мини макаронс Дубайский": {
+   "name_ky": "Мини макаронс Дубай",
+   "name_en": "Mini Macaron Dubai",
+   "description_ky": "Сабинадан.",
+   "description_en": "By Sabina."
+  },
+  "Макаронс шоко-банан": {
+   "name_ky": "Макаронс шоко-банан",
+   "name_en": "Macaron Chocolate-Banana",
+   "description_ky": "Сабинадан.",
+   "description_en": "By Sabina."
+  },
+  "Макаронс Сникерс": {
+   "name_ky": "Макаронс Сникерс",
+   "name_en": "Macaron Snickers",
+   "description_ky": "Сабинадан.",
+   "description_en": "By Sabina."
+  },
+  "Мини макаронс криспи": {
+   "name_ky": "Мини макаронс криспи",
+   "name_en": "Mini Macaron Crispy",
+   "description_ky": "Сабинадан.",
+   "description_en": "By Sabina."
+  },
+  "Мини макаронс Сникерс": {
+   "name_ky": "Мини макаронс Сникерс",
+   "name_en": "Mini Macaron Snickers",
+   "description_ky": "Сабинадан.",
+   "description_en": "By Sabina."
+  },
+  "Мини макаронс Вишня": {
+   "name_ky": "Мини макаронс алча",
+   "name_en": "Mini Macaron Cherry",
+   "description_ky": "Сабинадан.",
+   "description_en": "By Sabina."
+  },
+  "Макаронс Чизкейк": {
+   "name_ky": "Макаронс чизкейк",
+   "name_en": "Macaron Cheesecake",
+   "description_ky": "Сабинадан.",
+   "description_en": "By Sabina."
+  },
+  "Макаронс Баунти": {
+   "name_ky": "Макаронс Баунти",
+   "name_en": "Macaron Bounty",
+   "description_ky": "Сабинадан.",
+   "description_en": "By Sabina."
+  },
+  "Шоко-Трайфл": {
+   "name_ky": "Шоко-трайфл",
+   "name_en": "Chocolate Trifle",
+   "description_ru": "Шоколадный трайфл в стакане.",
+   "description_ky": "Стакандагы шоколад трайфл.",
+   "description_en": "Chocolate trifle in a cup."
+  },
+  "Трайфл красный-бархат": {
+   "name_ky": "Кызыл барк трайфл",
+   "name_en": "Red Velvet Trifle",
+   "description_ru": "Трайфл «Красный бархат» в стакане.",
+   "description_ky": "Стакандагы «Кызыл барк» трайфл.",
+   "description_en": "Red velvet trifle in a cup."
+  },
+  "Белый шоко-пончик": {
+   "name_ky": "Ак шоко-пончик",
+   "name_en": "White Chocolate Donut",
+   "description_ru": "Пончик в белой шоколадной глазури.",
+   "description_ky": "Ак шоколад глазурундагы пончик.",
+   "description_en": "Donut with white chocolate glaze."
+  },
+  "Макаронс Лимон": {
+   "name_ky": "Макаронс лимон",
+   "name_en": "Macaron Lemon",
+   "description_ky": "Сабинадан.",
+   "description_en": "By Sabina."
+  },
+  "Мини малина-фисташка": {
+   "name_ky": "Мини бүлдүркөн-фисташка",
+   "name_en": "Mini Raspberry-Pistachio",
+   "description_ky": "Сабинадан.",
+   "description_en": "By Sabina."
+  },
+  "Макаронс криспи": {
+   "name_ky": "Макаронс криспи",
+   "name_en": "Macaron Crispy",
+   "description_ky": "Сабинадан.",
+   "description_en": "By Sabina."
+  },
+  "Макаронс Дубайский": {
+   "name_ky": "Макаронс Дубай",
+   "name_en": "Macaron Dubai",
+   "description_ky": "Сабинадан.",
+   "description_en": "By Sabina."
+  }
+ },
+ "categories": {
+  "Пиццы по кусочкам": {
+   "name_ky": "Кесим пиццалар",
+   "name_en": "Pizza by the Slice"
+  },
+  "Пиццы маленькие": {
+   "name_ky": "Кичине пиццалар",
+   "name_en": "Small Pizzas"
+  },
+  "Пиццы Средние": {
+   "name_ky": "Орто пиццалар",
+   "name_en": "Medium Pizzas"
+  },
+  "Пиццы Большие": {
+   "name_ky": "Чоң пиццалар",
+   "name_en": "Large Pizzas"
+  },
+  "Шаурма": {
+   "name_ky": "Шаурма",
+   "name_en": "Shawarma"
+  },
+  "Закуски": {
+   "name_ky": "Жеңил тамактар",
+   "name_en": "Snacks"
+  },
+  "Комбо": {
+   "name_ky": "Комбо",
+   "name_en": "Combo"
+  },
+  "Соусы": {
+   "name_ky": "Соустар",
+   "name_en": "Sauces"
+  },
+  "Напитки": {
+   "name_ky": "Суусундуктар",
+   "name_en": "Drinks"
+  },
+  "Десерты": {
+   "name_ky": "Десерттер",
+   "name_en": "Desserts"
+  }
+ },
+ "constructors": {
+  "Собери свою Пиццу": {
+   "name_ky": "Өз пиццаңды жаса",
+   "name_en": "Build Your Own Pizza",
+   "groups": {
+    "Тесто": {
+     "name_ky": "Камыр",
+     "name_en": "Dough"
+    },
+    "Пицца соус": {
+     "name_ky": "Пицца соусу",
+     "name_en": "Pizza Sauce"
+    },
+    "Мясо": {
+     "name_ky": "Эт",
+     "name_en": "Meat"
+    },
+    "Сыр": {
+     "name_ky": "Сыр",
+     "name_en": "Cheese"
+    },
+    "Овощи": {
+     "name_ky": "Жашылчалар",
+     "name_en": "Vegetables"
+    },
+    "Соус сверху": {
+     "name_ky": "Үстүнөн соус",
+     "name_en": "Sauce on Top"
+    }
+   },
+   "ingredients": {
+    "Маленькое тесто 30см": {
+     "name_ky": "Кичине камыр 30 см",
+     "name_en": "Small Dough 30 cm"
+    },
+    "Среднее тесто 35см": {
+     "name_ky": "Орто камыр 35 см",
+     "name_en": "Medium Dough 35 cm"
+    },
+    "Большое тесто 40см": {
+     "name_ky": "Чоң камыр 40 см",
+     "name_en": "Large Dough 40 cm"
+    },
+    "пицца соус томат (лучший)": {
+     "name_ky": "Помидор пицца соусу (эң жакшы)",
+     "name_en": "Tomato Pizza Sauce (best)"
+    },
+    "Чесночный": {
+     "name_ky": "Сарымсактуу",
+     "name_en": "Garlic"
+    },
+    "Барбекю": {
+     "name_ky": "Барбекю",
+     "name_en": "Barbecue"
+    },
+    "Фирменный соус": {
+     "name_ky": "Фирмалык соус",
+     "name_en": "House Sauce"
+    },
+    "Говядина": {
+     "name_ky": "Уй эти",
+     "name_en": "Beef"
+    },
+    "Курица": {
+     "name_ky": "Тоок эти",
+     "name_en": "Chicken"
+    },
+    "Колбаса": {
+     "name_ky": "Колбаса",
+     "name_en": "Sausage"
+    },
+    "Сосиски": {
+     "name_ky": "Сосиска",
+     "name_en": "Sausages"
+    },
+    "Моцарелла": {
+     "name_ky": "Моцарелла",
+     "name_en": "Mozzarella"
+    },
+    "Сулугуни": {
+     "name_ky": "Сулугуни",
+     "name_en": "Suluguni"
+    },
+    "Помидор": {
+     "name_ky": "Помидор",
+     "name_en": "Tomato"
+    },
+    "Басай": {
+     "name_ky": "Басай",
+     "name_en": "Basay"
+    },
+    "Перец болгарский красный": {
+     "name_ky": "Кызыл болгар калемпири",
+     "name_en": "Red Bell Pepper"
+    },
+    "Перец болгарский зеленый": {
+     "name_ky": "Жашыл болгар калемпири",
+     "name_en": "Green Bell Pepper"
+    },
+    "Кукуруза": {
+     "name_ky": "Жүгөрү",
+     "name_en": "Corn"
+    },
+    "Маслины": {
+     "name_ky": "Маслина",
+     "name_en": "Black Olives"
+    },
+    "Красный лук": {
+     "name_ky": "Кызыл пияз",
+     "name_en": "Red Onion"
+    },
+    "Халапеньо": {
+     "name_ky": "Халапеньо",
+     "name_en": "Jalapeño"
+    },
+    "Шампиньоны": {
+     "name_ky": "Шампиньондор",
+     "name_en": "Champignons"
+    },
+    "Чесночный соус": {
+     "name_ky": "Сарымсак соусу",
+     "name_en": "Garlic Sauce"
+    },
+    "Сырный соус": {
+     "name_ky": "Сыр соусу",
+     "name_en": "Cheese Sauce"
+    },
+    "Сладкий Чили соус": {
+     "name_ky": "Таттуу чили соусу",
+     "name_en": "Sweet Chili Sauce"
+    },
+    "Сметанный соус": {
+     "name_ky": "Каймак соусу",
+     "name_en": "Sour Cream Sauce"
+    }
+   }
+  }
+ }
+}

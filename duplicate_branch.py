@@ -6,6 +6,7 @@
   • настройки филиала (доставка, часы, Telegram, оформление);
   • привязки наборов меню, категории и их порядок;
   • блюда с ценами, скидками и бейджами, их раскладка по категориям;
+  • конструкторы «Собери сам» — шаги, позиции, цены и привязки к меню;
   • техкарты с ингредиентами и шагами приготовления;
   • список ингредиентов для склада — с НУЛЕВЫМ остатком.
 
@@ -33,6 +34,7 @@ from django.db import transaction                     # noqa: E402
 from core.models import Branch                        # noqa: E402
 from catalog.models import (                          # noqa: E402
     BranchCategory, BranchCategoryItem, BranchItem, BranchMenuSet,
+    ConstructorGroup, ConstructorIngredient, DishConstructor,
 )
 from techcards.models import (                        # noqa: E402
     IngredientStock, TechCard, TechCardIngredient, TechCardStep,
@@ -148,6 +150,32 @@ def main():
                 if l.branch_category_id in cat_map and l.branch_item_id in item_map
             ])
         print(f"  связи катег.:  {len(links)}")
+
+        # ── конструкторы «Собери сам» ──
+        # Конструктор принадлежит филиалу, а не ресторану, поэтому без копии
+        # новая точка осталась бы без раздела «Собери сам».
+        cxs = list(DishConstructor.objects.filter(branch=src).prefetch_related("groups__ingredients"))
+        n_grp = n_ing_cx = 0
+        for cx in cxs:
+            groups = list(cx.groups.all())
+            n_grp += len(groups)
+            for g in groups:
+                n_ing_cx += g.ingredients.count()
+            if args.dry_run:
+                continue
+            ncx = DishConstructor(branch=new, **_extra(cx, {"branch", "id"}))
+            ncx.save()
+            for g in groups:
+                ng = ConstructorGroup(constructor=ncx, **_extra(g, {"constructor", "id"}))
+                ng.save()
+                for ing in g.ingredients.all():
+                    extra = _extra(ing, {"group", "branch_item", "id"})
+                    # позиция может ссылаться на блюдо меню — подставляем копию
+                    # этого блюда в новом филиале, иначе цена и фото тянулись бы
+                    # из чужой точки
+                    extra["branch_item"] = item_map.get(ing.branch_item_id)
+                    ConstructorIngredient(group=ng, **extra).save()
+        print(f"  конструкторы:  {len(cxs)}  (шагов: {n_grp}, позиций: {n_ing_cx})")
 
         # ── техкарты ──
         cards = list(TechCard.objects.filter(branch=src).prefetch_related("ingredients", "steps"))

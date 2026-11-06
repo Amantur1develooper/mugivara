@@ -121,7 +121,9 @@ class BranchItemAdmin(admin.ModelAdmin):
 class ConstructorIngredientInline(admin.TabularInline):
     model               = ConstructorIngredient
     extra               = 1
-    fields              = ("branch_item", "name", "description", "price", "photo",
+    fields              = ("branch_item", "name", "name_ky", "name_en",
+                           "description", "description_ky", "description_en",
+                           "price", "photo",
                            "warehouse_ingredient", "write_off_qty", "is_active", "sort_order")
     autocomplete_fields = ("branch_item", "warehouse_ingredient")
 
@@ -129,7 +131,7 @@ class ConstructorIngredientInline(admin.TabularInline):
 class ConstructorGroupInline(admin.TabularInline):
     model  = ConstructorGroup
     extra  = 1
-    fields = ("name", "min_select", "max_select", "sort_order")
+    fields = ("name", "name_ky", "name_en", "min_select", "max_select", "sort_order")
     show_change_link = True
 
 
@@ -141,6 +143,13 @@ class DishConstructorAdmin(admin.ModelAdmin):
     list_per_page       = 30
     search_fields       = ("name", "branch__name_ru")
     ordering            = ("branch", "sort_order", "id")
+    fieldsets = (
+        ("Основное", {"fields": ("branch", "base_price", "photo", "is_active", "sort_order")}),
+        ("Название и описание", {"fields": (
+            ("name", "name_ky", "name_en"),
+            "description", "description_ky", "description_en",
+        )}),
+    )
     inlines             = (ConstructorGroupInline,)
 
 

@@ -1,9 +1,29 @@
 from django.db import models
+from django.utils.translation import get_language
 from core.models import Restaurant, Branch, TimeStampedModel
 import os
 from io import BytesIO
 from django.core.files.base import ContentFile
 from PIL import Image
+
+
+def pick_lang(obj, base_field):
+    """Значение поля на языке витрины: base_field_ky / _en, иначе base_field.
+
+    Повторяет логику шаблонного тега {% t %}, но нужна и в Python — состав
+    конструктора уезжает в шаблон уже готовыми строками.
+    """
+    lang = (get_language() or "ru")[:2]
+    if lang != "ru":
+        val = (getattr(obj, f"{base_field}_{lang}", "") or "").strip()
+        if val:
+            return val
+    for name in (f"{base_field}_ru", base_field):
+        val = (getattr(obj, name, "") or "").strip()
+        if val:
+            return val
+    return ""
+
 
 class MenuSet(TimeStampedModel):
     restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name="menu_sets")
@@ -232,7 +252,11 @@ class DishConstructor(TimeStampedModel):
     """Конструктор: «Собери свой бургер», «Собери свою пиццу» и т.п."""
     branch      = models.ForeignKey("core.Branch", on_delete=models.CASCADE, related_name="dish_constructors")
     name        = models.CharField("Название", max_length=200)
+    name_ky     = models.CharField("Название (кырг.)", max_length=200, blank=True, default="")
+    name_en     = models.CharField("Название (англ.)", max_length=200, blank=True, default="")
     description = models.TextField("Описание", blank=True, default="")
+    description_ky = models.TextField("Описание (кырг.)", blank=True, default="")
+    description_en = models.TextField("Описание (англ.)", blank=True, default="")
     photo       = models.ImageField("Фото", upload_to="constructors/", blank=True, null=True)
     base_price  = models.DecimalField("Базовая цена (сом)", max_digits=10, decimal_places=0, default=0,
                                       help_text="Цена без учёта доп. ингредиентов")
@@ -256,6 +280,8 @@ class ConstructorGroup(TimeStampedModel):
     """Шаг конструктора: «Булочка», «Котлета», «Соус»."""
     constructor = models.ForeignKey(DishConstructor, on_delete=models.CASCADE, related_name="groups")
     name        = models.CharField("Название шага", max_length=200)
+    name_ky     = models.CharField("Название шага (кырг.)", max_length=200, blank=True, default="")
+    name_en     = models.CharField("Название шага (англ.)", max_length=200, blank=True, default="")
     min_select  = models.PositiveSmallIntegerField("Минимум выбора", default=1)
     max_select  = models.PositiveSmallIntegerField("Максимум выбора", default=1,
                                                     help_text="0 = без лимита")
@@ -280,7 +306,11 @@ class ConstructorIngredient(TimeStampedModel):
     )
     # Ручные поля (используются когда branch_item не задан)
     name        = models.CharField("Название", max_length=200, blank=True, default="")
+    name_ky     = models.CharField("Название (кырг.)", max_length=200, blank=True, default="")
+    name_en     = models.CharField("Название (англ.)", max_length=200, blank=True, default="")
     description = models.CharField("Описание", max_length=400, blank=True, default="")
+    description_ky = models.CharField("Описание (кырг.)", max_length=400, blank=True, default="")
+    description_en = models.CharField("Описание (англ.)", max_length=400, blank=True, default="")
     price       = models.DecimalField("Цена (сом)", max_digits=10, decimal_places=0, default=0)
     photo       = models.ImageField("Фото", upload_to="constructors/ingredients/", blank=True, null=True)
     is_active   = models.BooleanField("Активен", default=True)
@@ -336,3 +366,19 @@ class ConstructorIngredient(TimeStampedModel):
     def display_photo_url(self):
         photo = self.branch_item.item.photo if self.branch_item_id else self.photo
         return photo.url if photo else ""
+
+    # ── витрина на трёх языках ───────────────────────────────────────────
+    # display_name/display_description остаются русскими: из них собирается
+    # состав заказа и кухонный чек, и повар не должен получать тикет на
+    # английском только потому, что гость переключил язык витрины.
+    @property
+    def display_name_i18n(self):
+        if self.branch_item_id:
+            return pick_lang(self.branch_item.item, "name") or self.display_name
+        return pick_lang(self, "name") or self.name
+
+    @property
+    def display_description_i18n(self):
+        if self.branch_item_id:
+            return pick_lang(self.branch_item.item, "description") or ""
+        return pick_lang(self, "description") or ""

@@ -1,0 +1,164 @@
+{
+ "items": {
+  "Чай чёрный": {
+   "description_ru": "Классический чёрный чай. Подаём горячим.",
+   "description_ky": "Классикалык кара чай. Ысык берилет.",
+   "description_en": "Classic black tea, served hot."
+  },
+  "Чай зелёный": {
+   "description_ru": "Зелёный чай. Подаём горячим.",
+   "description_ky": "Жашыл чай. Ысык берилет.",
+   "description_en": "Green tea, served hot."
+  },
+  "Чай микс": {
+   "description_ru": "Смесь чёрного и зелёного чая. Подаём горячим.",
+   "description_ky": "Кара жана жашыл чайдын аралашмасы. Ысык берилет.",
+   "description_en": "A blend of black and green tea, served hot."
+  },
+  "Чай с лимоном": {
+   "description_ru": "Чёрный чай со свежим лимоном. Подаём горячим.",
+   "description_ky": "Жаңы лимон кошулган кара чай. Ысык берилет.",
+   "description_en": "Black tea with fresh lemon, served hot."
+  },
+  "Чай с наватом": {
+   "description_ru": "Чай с наватом — кристаллическим сахаром. Подаём горячим.",
+   "description_ky": "Нават — кристалл кант менен чай. Ысык берилет.",
+   "description_en": "Tea served with nabat crystal sugar, hot."
+  },
+  "Чай жасмин": {
+   "description_ru": "Зелёный чай с жасмином. Подаём горячим.",
+   "description_ky": "Жасмин кошулган жашыл чай. Ысык берилет.",
+   "description_en": "Green tea with jasmine, served hot."
+  },
+  "Кофе три в одном": {
+   "description_ru": "Растворимый кофе с молоком и сахаром в одном пакетике.",
+   "description_ky": "Сүт жана кант кошулган эригич кофе.",
+   "description_en": "Instant coffee with milk and sugar in one sachet."
+  },
+  "Чёрный кофе": {
+   "description_ru": "Горячий чёрный кофе без молока.",
+   "description_ky": "Сүтсүз ысык кара кофе.",
+   "description_en": "Hot black coffee, no milk."
+  },
+  "Фьюзти чай 0,5 л": {
+   "description_ru": "Холодный чай Fuzetea в бутылке 0,5 л.",
+   "description_ky": "Муздак Fuzetea чайы, 0,5 л бөтөлкө.",
+   "description_en": "Chilled Fuzetea in a 0.5 L bottle."
+  },
+  "Фьюзти чай 1 л": {
+   "description_ru": "Холодный чай Fuzetea в бутылке 1 л.",
+   "description_ky": "Муздак Fuzetea чайы, 1 л бөтөлкө.",
+   "description_en": "Chilled Fuzetea in a 1 L bottle."
+  },
+  "Кока-кола 0,5 л": {
+   "description_ru": "Газированный напиток Coca-Cola в бутылке 0,5 л. Подаём охлаждённым.",
+   "description_ky": "Газдуу Coca-Cola суусундугу, 0,5 л бөтөлкө. Муздак берилет.",
+   "description_en": "Coca-Cola in a 0.5 L bottle, served chilled."
+  },
+  "Кока-кола 1 л": {
+   "description_ru": "Газированный напиток Coca-Cola в бутылке 1 л. Подаём охлаждённым.",
+   "description_ky": "Газдуу Coca-Cola суусундугу, 1 л бөтөлкө. Муздак берилет.",
+   "description_en": "Coca-Cola in a 1 L bottle, served chilled."
+  },
+  "Фанта 0,5 л": {
+   "description_ru": "Газированный напиток Fanta в бутылке 0,5 л. Подаём охлаждённым.",
+   "description_ky": "Газдуу Fanta суусундугу, 0,5 л бөтөлкө. Муздак берилет.",
+   "description_en": "Fanta in a 0.5 L bottle, served chilled."
+  },
+  "Фанта 1 л": {
+   "description_ru": "Газированный напиток Fanta в бутылке 1 л. Подаём охлаждённым.",
+   "description_ky": "Газдуу Fanta суусундугу, 1 л бөтөлкө. Муздак берилет.",
+   "description_en": "Fanta in a 1 L bottle, served chilled."
+  },
+  "Спрайт 0,5 л": {
+   "description_ru": "Газированный напиток Sprite в бутылке 0,5 л. Подаём охлаждённым.",
+   "description_ky": "Газдуу Sprite суусундугу, 0,5 л бөтөлкө. Муздак берилет.",
+   "description_en": "Sprite in a 0.5 L bottle, served chilled."
+  },
+  "Спрайт 1 л": {
+   "description_ru": "Газированный напиток Sprite в бутылке 1 л. Подаём охлаждённым.",
+   "description_ky": "Газдуу Sprite суусундугу, 1 л бөтөлкө. Муздак берилет.",
+   "description_en": "Sprite in a 1 L bottle, served chilled."
+  },
+  "Бонаква газированная 0,5 л": {
+   "description_ru": "Газированная вода Bonaqua в бутылке 0,5 л.",
+   "description_ky": "Газдуу Bonaqua суусу, 0,5 л бөтөлкө.",
+   "description_en": "Bonaqua sparkling water, 0.5 L bottle."
+  },
+  "Бонаква газированная 1 л": {
+   "description_ru": "Газированная вода Bonaqua в бутылке 1 л.",
+   "description_ky": "Газдуу Bonaqua суусу, 1 л бөтөлкө.",
+   "description_en": "Bonaqua sparkling water, 1 L bottle."
+  },
+  "Бонаква без газа 0,5 л": {
+   "description_ru": "Вода Bonaqua без газа в бутылке 0,5 л.",
+   "description_ky": "Газсыз Bonaqua суусу, 0,5 л бөтөлкө.",
+   "description_en": "Bonaqua still water, 0.5 L bottle."
+  },
+  "Бонаква без газа 1 л": {
+   "description_ru": "Вода Bonaqua без газа в бутылке 1 л.",
+   "description_ky": "Газсыз Bonaqua суусу, 1 л бөтөлкө.",
+   "description_en": "Bonaqua still water, 1 L bottle."
+  },
+  "Сок Dena 1 л": {
+   "description_ru": "Сок Dena в упаковке 1 л.",
+   "description_ky": "Dena ширеси, 1 л кутуда.",
+   "description_en": "Dena juice, 1 L pack."
+  },
+  "Детский сок 0,2 л": {
+   "description_ru": "Сок в маленькой упаковке 0,2 л — порция для ребёнка.",
+   "description_ky": "Кичинекей 0,2 л кутудагы ширеси — балага бир порция.",
+   "description_en": "Juice in a 0.2 L pack, a kid-sized serving."
+  },
+  "Клюквенный морс 0,5 л": {
+   "description_ru": "Морс из клюквы. Подаём охлаждённым. 0,5 л.",
+   "description_ky": "Мүрөк морсу. Муздак берилет. 0,5 л.",
+   "description_en": "Cranberry mors, served chilled. 0.5 L."
+  },
+  "Клюквенный морс 1 л": {
+   "description_ru": "Морс из клюквы. Подаём охлаждённым. 1 л.",
+   "description_ky": "Мүрөк морсу. Муздак берилет. 1 л.",
+   "description_en": "Cranberry mors, served chilled. 1 L."
+  },
+  "Морс чёрная смородина 0,5 л": {
+   "description_ru": "Морс из чёрной смородины. Подаём охлаждённым. 0,5 л.",
+   "description_ky": "Кара карагат морсу. Муздак берилет. 0,5 л.",
+   "description_en": "Blackcurrant mors, served chilled. 0.5 L."
+  },
+  "Морс чёрная смородина 1 л": {
+   "description_ru": "Морс из чёрной смородины. Подаём охлаждённым. 1 л.",
+   "description_ky": "Кара карагат морсу. Муздак берилет. 1 л.",
+   "description_en": "Blackcurrant mors, served chilled. 1 L."
+  },
+  "Облепиховый морс 0,5 л": {
+   "description_ru": "Морс из облепихи. Подаём охлаждённым. 0,5 л.",
+   "description_ky": "Чычырканак морсу. Муздак берилет. 0,5 л.",
+   "description_en": "Sea buckthorn mors, served chilled. 0.5 L."
+  },
+  "Облепиховый морс 1 л": {
+   "description_ru": "Морс из облепихи. Подаём охлаждённым. 1 л.",
+   "description_ky": "Чычырканак морсу. Муздак берилет. 1 л.",
+   "description_en": "Sea buckthorn mors, served chilled. 1 L."
+  },
+  "Медовик": {
+   "description_ru": "Классический медовый торт с нежным кремом. Порция.",
+   "description_ky": "Классикалык бал торт, жумшак крем менен. Бир порция.",
+   "description_en": "Classic honey cake with soft cream. One serving."
+  },
+  "Красный бархат": {
+   "description_ru": "Яркий бисквитный торт «Красный бархат» с нежным кремом. Порция.",
+   "description_ky": "«Кызыл барк» бисквит торту, жумшак крем менен. Бир порция.",
+   "description_en": "Red velvet sponge cake with soft cream. One serving."
+  },
+  "Прага": {
+   "description_ru": "Шоколадный торт «Прага» с какао-кремом. Порция.",
+   "description_ky": "«Прага» шоколад торту, какао крем менен. Бир порция.",
+   "description_en": "Prague chocolate cake with cocoa cream. One serving."
+  },
+  "Панчо": {
+   "description_ru": "Шоколадный бисквитный торт «Панчо» с кремом. Порция.",
+   "description_ky": "«Панчо» шоколад бисквит торту, крем менен. Бир порция.",
+   "description_en": "Pancho chocolate sponge cake with cream. One serving."
+  }
+ }
+}
