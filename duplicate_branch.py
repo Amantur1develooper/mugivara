@@ -48,16 +48,21 @@ SKIP_BRANCH_FIELDS = {
 }
 
 
-def copy_branch(src, name, address, phone, map_url, dry):
+def copy_branch(src, args, dry):
     """Создаёт новый Branch с настройками исходного."""
     clean = _extra(src, SKIP_BRANCH_FIELDS)
     clean["restaurant_id"] = src.restaurant_id
-    clean["name_ru"] = clean["name_ky"] = clean["name_en"] = name
-    clean["address"] = address
-    clean["phone"] = phone
-    clean["map_url"] = map_url
+    # названия на трёх языках: если не заданы отдельно — берём русское,
+    # чтобы на кыргызской и английской витрине не было пустого места
+    clean["name_ru"] = args.name
+    clean["name_ky"] = args.name_ky or args.name
+    clean["name_en"] = args.name_en or args.name
+    clean["address"] = args.address
+    clean["phone"] = args.phone
+    clean["whatsapp"] = args.whatsapp
+    clean["map_url"] = args.map_url
     if dry:
-        print("  [dry-run] создал бы филиал:", name)
+        print("  [dry-run] создал бы филиал:", args.name)
         return None
     new = Branch(**clean)
     new.save()
@@ -67,9 +72,13 @@ def copy_branch(src, name, address, phone, map_url, dry):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source", type=int, required=True, help="id филиала-образца")
-    ap.add_argument("--name", required=True)
+    ap.add_argument("--name", required=True, help="название по-русски")
+    ap.add_argument("--name-ky", dest="name_ky", default="", help="название по-кыргызски")
+    ap.add_argument("--name-en", dest="name_en", default="", help="название по-английски")
     ap.add_argument("--address", default="")
     ap.add_argument("--phone", default="")
+    ap.add_argument("--whatsapp", default="",
+                    help="номер, на который уходят заказы этой точки")
     ap.add_argument("--map", dest="map_url", default="")
     ap.add_argument("--with-stock", action="store_true",
                     help="перенести и сами остатки (по умолчанию нули)")
@@ -83,13 +92,15 @@ def main():
 
     print(f"Образец:  #{src.id} {src.name_ru}  (ресторан: {src.restaurant.name_ru})")
     print(f"Новый:    {args.name}")
+    print(f"  ky/en:  {args.name_ky or args.name} / {args.name_en or args.name}")
     print(f"  адрес:  {args.address or '—'}")
     print(f"  тел.:   {args.phone or '—'}")
+    print(f"  WA:     {args.whatsapp or '— (заказы уйдут на телефон точки)'}")
     print(f"  карта:  {args.map_url or '—'}")
     print()
 
     with transaction.atomic():
-        new = copy_branch(src, args.name, args.address, args.phone, args.map_url, args.dry_run)
+        new = copy_branch(src, args, args.dry_run)
 
         # ── наборы меню ──
         sets = list(BranchMenuSet.objects.filter(branch=src))
