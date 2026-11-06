@@ -45,6 +45,24 @@ def _has_branch_access(user, branch):
     return Membership.objects.filter(user=user, restaurant=branch.restaurant).exists()
 
 
+# Переименование видно гостям на витрине, поэтому его оставляем владельцу и
+# управляющему. Пустая роль — наследие записей, созданных до появления ролей:
+# у таких пользователей есть доступ ко всей остальной странице настроек, и
+# отнимать у них только переименование было бы произвольно.
+RENAME_FORBIDDEN_ROLES = {Membership.Role.CASHIER, Membership.Role.KITCHEN}
+
+
+def _can_rename_branch(user, branch):
+    if user.is_superuser:
+        return True
+    roles = set(
+        Membership.objects
+        .filter(user=user, restaurant=branch.restaurant)
+        .values_list("role", flat=True)
+    )
+    return bool(roles) and bool(roles - RENAME_FORBIDDEN_ROLES)
+
+
 # ── AUTH ─────────────────────────────────────────────────────────────────────
 
 def login_view(request):
@@ -583,6 +601,17 @@ def branch_edit(request, branch_id):
 
         branch.external_url = request.POST.get("external_url", "").strip()
 
+        if _can_rename_branch(request.user, branch):
+            # пустое русское название оставило бы точку безымянной и в кабинете,
+            # и в списке филиалов — такой ввод игнорируем
+            name_ru = request.POST.get("name_ru", "").strip()[:200]
+            if name_ru:
+                branch.name_ru = name_ru
+            elif "name_ru" in request.POST:
+                messages.error(request, "Название на русском не может быть пустым — оставил прежнее")
+            branch.name_ky = request.POST.get("name_ky", branch.name_ky).strip()[:200]
+            branch.name_en = request.POST.get("name_en", branch.name_en).strip()[:200]
+
         # Контакты точки: на этот номер уходит заказ именно этого филиала
         branch.phone    = request.POST.get("phone", "").strip()[:50]
         branch.whatsapp = request.POST.get("whatsapp", "").strip()[:60]
@@ -623,6 +652,7 @@ def branch_edit(request, branch_id):
     return render(request, "dashboard/branch_edit.html", {
         "branch": branch,
         "work_days_list": work_days_list,
+        "can_rename": _can_rename_branch(request.user, branch),
     })
 
 

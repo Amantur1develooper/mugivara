@@ -67,6 +67,41 @@
 <form method="post" enctype="multipart/form-data">
 {% csrf_token %}
 
+  {# ── НАЗВАНИЕ ── #}
+  <div class="db-card">
+    <div class="db-card-title">🏷️ Название филиала</div>
+    {% if can_rename %}
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px">
+        Так точка подписана на витрине, в списке филиалов и в чеке. Кыргызское и
+        английское названия можно не заполнять — тогда на этих языках покажем русское.
+      </div>
+
+      <div class="db-form-group">
+        <label class="db-label" for="name_ru">На русском</label>
+        <input class="db-input" id="name_ru" name="name_ru" type="text" required
+               value="{{ branch.name_ru }}" placeholder="Например: PizzaCraft — Чуй">
+      </div>
+
+      <div class="row2">
+        <div class="db-form-group">
+          <label class="db-label" for="name_ky">Кыргызча</label>
+          <input class="db-input" id="name_ky" name="name_ky" type="text"
+                 value="{{ branch.name_ky }}" placeholder="{{ branch.name_ru }}">
+        </div>
+        <div class="db-form-group">
+          <label class="db-label" for="name_en">In English</label>
+          <input class="db-input" id="name_en" name="name_en" type="text"
+                 value="{{ branch.name_en }}" placeholder="{{ branch.name_ru }}">
+        </div>
+      </div>
+    {% else %}
+      <div style="font-size:15px;font-weight:700">{{ branch.name_ru }}</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:6px">
+        Переименовать точку может владелец или управляющий — название видно гостям на витрине.
+      </div>
+    {% endif %}
+  </div>
+
   {# ── КОНТАКТЫ ТОЧКИ ── #}
   <div class="db-card">
     <div class="db-card-title">📞 Контакты филиала</div>
