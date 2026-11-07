@@ -463,6 +463,26 @@
   padding: 12px 16px; font-size: 12px; font-weight: 700;
   color: var(--muted); text-transform: uppercase; letter-spacing: .5px;
 }
+  /* ── сводка по складу ── */
+  .pm-sum{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(185px,1fr));
+    gap:10px; margin-bottom:16px;
+  }
+  .pm-sum-card{
+    background:var(--card); border:1.5px solid var(--border); border-radius:16px; padding:14px 16px;
+  }
+  .pm-sum-card.accent{ border-color:rgba(255,77,28,.3); background:rgba(255,77,28,.04); }
+  .pm-sum-l{
+    font-size:10.5px; font-weight:800; color:var(--muted);
+    text-transform:uppercase; letter-spacing:.4px;
+  }
+  .pm-sum-v{ font-size:23px; font-weight:900; letter-spacing:-.7px; margin-top:6px; }
+  .pm-sum-v span{ font-size:13px; font-weight:700; color:var(--muted); letter-spacing:0; }
+  .pm-sum-h{ font-size:11px; color:var(--muted); margin-top:4px; line-height:1.35; }
+  .pm-cat-sum{
+    font-size:11px; font-weight:800; color:var(--muted); white-space:nowrap;
+    background:var(--bg); border:1px solid var(--border); border-radius:999px; padding:2px 9px;
+  }
 </style>
 {% endblock %}
 
@@ -503,7 +523,35 @@ const PM_CATS = [
     <a href="{% url 'dashboard:shop_category_list' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📁 Категории</a>
     <a href="{% url 'dashboard:shop_stop_list' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">🛑 Стоп-лист</a>
     <a href="{% url 'dashboard:shop_orders' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📋 Заказы</a>
+    <a href="{% url 'dashboard:shop_stock_export' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">⬇️ Excel</a>
     <a href="{% url 'dashboard:shop_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
+  </div>
+</div>
+
+{# ── Сводка по складу филиала ── #}
+<div class="pm-sum">
+  <div class="pm-sum-card">
+    <div class="pm-sum-l">Позиций в каталоге</div>
+    <div class="pm-sum-v">{{ totals.count }}</div>
+    <div class="pm-sum-h">
+      {% if totals.zero %}{{ totals.zero }} с нулевым остатком{% else %}все с остатком{% endif %}
+      {% if totals.low %} · {{ totals.low }} заканчивается{% endif %}
+    </div>
+  </div>
+  <div class="pm-sum-card">
+    <div class="pm-sum-l">Всего единиц на складе</div>
+    <div class="pm-sum-v">{{ totals.units_fmt }}</div>
+    <div class="pm-sum-h">штуки, килограммы и литры вместе</div>
+  </div>
+  <div class="pm-sum-card accent">
+    <div class="pm-sum-l">Остаток по ценам продажи</div>
+    <div class="pm-sum-v">{{ totals.retail_fmt }} <span>сом</span></div>
+    <div class="pm-sum-h">столько выручите, если продадите всё</div>
+  </div>
+  <div class="pm-sum-card">
+    <div class="pm-sum-l">Вложено по себестоимости</div>
+    <div class="pm-sum-v">{{ totals.cost_fmt }} <span>сом</span></div>
+    <div class="pm-sum-h">прибыль в остатке: {{ totals.margin_fmt }} сом</div>
   </div>
 </div>
 
@@ -536,6 +584,11 @@ const PM_CATS = [
            onclick="event.stopPropagation()"
            onkeydown="if(event.key==='Enter')saveRenameCat({{ cat.id }});if(event.key==='Escape')cancelRenameCat({{ cat.id }})">
     <span class="pm-cat-count" id="cat-count-{{ cat.id }}">{{ section.stocks|length }}</span>
+    {% if section.totals.retail %}
+      <span class="pm-cat-sum" title="Остаток этой категории по ценам продажи">
+        {{ section.totals.retail_fmt }} сом
+      </span>
+    {% endif %}
     <button class="pm-cat-rename-btn" onclick="event.stopPropagation();startRenameCat({{ cat.id }})" title="Переименовать">✏️</button>
     <button class="pm-cat-del-btn" onclick="event.stopPropagation();deleteCat({{ cat.id }},'{{ cat.name_ru|escapejs }}')" title="Удалить категорию">🗑</button>
   </div>
@@ -556,7 +609,12 @@ const PM_CATS = [
 
 {% if uncat_stocks %}
 <div class="pm-cat" id="cat-section-0" data-cat-id="0">
-  <div class="pm-uncat-head">📂 Без категории</div>
+  <div class="pm-uncat-head">
+    📂 Без категории
+    {% if uncat_totals.retail %}
+      <span class="pm-cat-sum">{{ uncat_totals.retail_fmt }} сом</span>
+    {% endif %}
+  </div>
   <div id="cat-products-0">
     {% for stock in uncat_stocks %}
       {% include "dashboard/shops/_product_row_mobile.html" with stock=stock %}

@@ -3,7 +3,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
+from django.utils import timezone
+from urllib.parse import quote
 from django.db.models import Sum, Count, Q, Max
 from django.db import models as _models
 
@@ -193,6 +195,41 @@ def shop_branch_toggle(request, branch_id):
 
 # ── PRODUCTS ──────────────────────────────────────────────────────────────────
 
+def _stock_totals(stocks):
+    """Итоги по набору остатков: позиций, единиц, сумма в ценах и в себестоимости."""
+    retail = cost = units = Decimal("0")
+    zero = low = 0
+    for s in stocks:
+        qty = s.qty or Decimal("0")
+        units  += qty
+        retail += qty * (s.product.price or Decimal("0"))
+        cost   += qty * (s.product.cost_price or Decimal("0"))
+        if qty <= 0:
+            zero += 1
+        elif qty < 3:
+            low += 1
+    margin = retail - cost
+
+    def money(v):
+        """«1 283 115» — шестизначную сумму без разделителей не прочитать."""
+        return f"{int(v):,}".replace(",", "\u00a0")
+
+    return {
+        "count":  len(stocks),
+        "units":  units,
+        "retail": retail,
+        "cost":   cost,
+        # потенциальная прибыль, если остаток продадут по текущим ценам
+        "margin": margin,
+        "retail_fmt": money(retail),
+        "cost_fmt":   money(cost),
+        "margin_fmt": money(margin),
+        "units_fmt":  money(units) if units == units.to_integral_value() else f"{units.normalize():f}",
+        "zero":   zero,
+        "low":    low,
+    }
+
+
 @login_required(login_url=LOGIN_URL)
 def shop_product_list(request, branch_id):
     branch = get_object_or_404(StoreBranch, id=branch_id)
@@ -213,10 +250,16 @@ def shop_product_list(request, branch_id):
         cid = s.product.category_id or 0
         stock_map.setdefault(cid, []).append(s)
 
-    cat_sections = [
-        {"cat": cat, "stocks": stock_map.get(cat.id, [])}
-        for cat in categories
-    ]
+    # Сколько товара лежит и на какую сумму. Считаем две суммы: по цене
+    # продажи — столько магазин выручит, если продаст весь остаток; по
+    # себестоимости — столько в этом остатке заморожено денег. Владельцу
+    # нужны обе: первая отвечает «сколько это стоит», вторая «сколько я вложил».
+    totals = _stock_totals(stocks)
+
+    cat_sections = []
+    for cat in categories:
+        rows = stock_map.get(cat.id, [])
+        cat_sections.append({"cat": cat, "stocks": rows, "totals": _stock_totals(rows)})
     uncat_stocks = stock_map.get(0, [])
 
     return render(request, "dashboard/shops/product_list.html", {
@@ -226,7 +269,129 @@ def shop_product_list(request, branch_id):
         "categories":   categories,
         "cat_sections": cat_sections,
         "uncat_stocks": uncat_stocks,
+        "uncat_totals": _stock_totals(uncat_stocks),
+        "totals":       totals,
     })
+
+
+@login_required(login_url=LOGIN_URL)
+def shop_stock_export(request, branch_id):
+    """Остатки филиала в .xlsx: что лежит, сколько и на какую сумму.
+
+    Выгрузка, а не печать страницы: владельцу обычно нужно свести остаток
+    с бухгалтерией или отправить учредителю, а для этого числа должны быть
+    числами, по которым считает сам Excel.
+    """
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+    from openpyxl.utils import get_column_letter
+
+    branch = get_object_or_404(StoreBranch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:shop_home")
+
+    stocks = list(
+        StoreStock.objects
+        .filter(branch=branch)
+        .select_related("product", "product__category")
+        .order_by("product__category__sort_order", "product__category_id", "product__id")
+    )
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Остатки"
+
+    head_fill = PatternFill("solid", fgColor="2F3B47")
+    head_font = Font(bold=True, color="FFFFFF", size=11)
+    cat_fill  = PatternFill("solid", fgColor="EEF1F4")
+    total_fill = PatternFill("solid", fgColor="FFF4E5")
+    thin = Side(style="thin", color="D5D9DE")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    money = "#,##0.00"
+    number = "#,##0.###"
+
+    title = f"{branch.store.name_ru} — {branch.name_ru}"
+    ws.append([title])
+    ws["A1"].font = Font(bold=True, size=14)
+    ws.append([f"Остатки на {timezone.localtime():%d.%m.%Y %H:%M}"])
+    ws["A2"].font = Font(size=10, color="6B7280")
+    ws.append([])
+
+    columns = [
+        ("Категория", 24), ("Товар", 40), ("Штрих-код", 16), ("Ед.", 8),
+        ("Остаток", 12), ("Цена", 12), ("Себестоимость", 15),
+        ("Сумма по цене", 16), ("Сумма по себестоимости", 22), ("Прибыль в остатке", 18),
+    ]
+    header_row = 4
+    ws.append([c[0] for c in columns])
+    for i, (_name, width) in enumerate(columns, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = width
+        cell = ws.cell(row=header_row, column=i)
+        cell.fill, cell.font, cell.border = head_fill, head_font, border
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    ws.freeze_panes = f"A{header_row + 1}"
+
+    def write_rows(rows, cat_name):
+        if not rows:
+            return
+        r = ws.max_row + 1
+        ws.cell(row=r, column=1, value=cat_name).font = Font(bold=True)
+        for i in range(1, len(columns) + 1):
+            ws.cell(row=r, column=i).fill = cat_fill
+        for st in rows:
+            pr = st.product
+            qty   = float(st.qty or 0)
+            price = float(pr.price or 0)
+            cost  = float(pr.cost_price or 0)
+            ws.append([
+                cat_name, pr.name_ru, pr.barcode, pr.get_unit_display(),
+                qty, price, cost, qty * price, qty * cost, qty * (price - cost),
+            ])
+            row = ws.max_row
+            ws.cell(row=row, column=5).number_format = number
+            for col in (6, 7, 8, 9, 10):
+                ws.cell(row=row, column=col).number_format = money
+            for col in range(1, len(columns) + 1):
+                ws.cell(row=row, column=col).border = border
+
+    by_cat = {}
+    for st in stocks:
+        by_cat.setdefault(st.product.category, []).append(st)
+    for cat in branch.store.categories.filter(is_active=True).order_by("sort_order", "id"):
+        write_rows(by_cat.get(cat, []), cat.name_ru)
+    write_rows(by_cat.get(None, []), "Без категории")
+
+    t = _stock_totals(stocks)
+    ws.append([])
+    r = ws.max_row + 1
+    ws.cell(row=r, column=1, value="ИТОГО").font = Font(bold=True, size=12)
+    # «Позиций: 281», а не «281 позиций» — склонение числительного обошли,
+    # чтобы не тащить в выгрузку правила русской грамматики
+    ws.cell(row=r, column=2, value=f"Позиций: {t['count']}")
+    ws.cell(row=r, column=5, value=float(t["units"])).number_format = number
+    ws.cell(row=r, column=8,  value=float(t["retail"])).number_format = money
+    ws.cell(row=r, column=9,  value=float(t["cost"])).number_format = money
+    ws.cell(row=r, column=10, value=float(t["margin"])).number_format = money
+    for col in range(1, len(columns) + 1):
+        c = ws.cell(row=r, column=col)
+        c.fill, c.border = total_fill, border
+        c.font = Font(bold=True, size=11)
+
+    ws.append([])
+    ws.append(["Нулевой остаток, позиций", t["zero"]])
+    ws.append(["Остаток меньше 3, позиций", t["low"]])
+
+    safe = "".join(ch if ch.isalnum() or ch in " -_" else "_"
+                   for ch in f"{branch.store.name_ru}-{branch.name_ru}").strip()
+    filename = f"ostatki-{safe}-{timezone.localdate():%Y-%m-%d}.xlsx"
+
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    # filename* с UTF-8: без него браузер режет кириллицу в имени файла
+    response["Content-Disposition"] = (
+        f"attachment; filename=stock.xlsx; filename*=UTF-8''{quote(filename)}")
+    wb.save(response)
+    return response
 
 
 # ── СТОП-ЛИСТ ────────────────────────────────────────────────────────────────
