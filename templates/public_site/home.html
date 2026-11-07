@@ -562,7 +562,7 @@
     {% if store_cards %}
     <a href="#stores" class="cat-pill" data-section="stores">{% trans "🛍️ Магазины" %}</a>
     {% endif %}
-    {% if karaoke_cards or market_cards or hotel_cards or pharmacy_cards or barbershop_cards or printshop_cards or legal_cards or eco_cards or agency_cards or realty_cards or autosalon_cards %}
+    {% if karaoke_cards or market_cards or hotel_cards or pharmacy_cards or barbershop_cards or printshop_cards or legal_cards or eco_cards or agency_cards or realty_cards or autosalon_cards or metal_cards %}
     <a href="#services" class="cat-pill" data-section="services">{% trans "⚡ Услуги" %}</a>
     {% endif %}
 
@@ -674,7 +674,7 @@
 {% endif %}
 
 <!-- ═══════════════════ УСЛУГИ ═══════════════════ -->
-{% if legal_cards or eco_cards or agency_cards or market_cards or hotel_cards or pharmacy_cards or karaoke_cards or simracing_cards or realty_cards or autosalon_cards %}
+{% if legal_cards or eco_cards or agency_cards or market_cards or hotel_cards or pharmacy_cards or karaoke_cards or simracing_cards or realty_cards or autosalon_cards or metal_cards %}
 <section id="services" style="background:linear-gradient(160deg,rgba(37,99,235,.03) 0%,rgba(5,150,105,.04) 100%);">
   <div class="sec-wrap">
 
@@ -935,6 +935,31 @@
               {% else %}<div class="svc-card-img-ph">🚗</div>{% endif %}
             </div>
             <div class="svc-card-name">{{ d.name }}</div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if metal_cards %}
+      <div class="svc-block" id="svc-metal">
+        <div class="svc-block-head">
+          <div class="svc-block-icon" style="background:rgba(217,119,6,.08);border-color:rgba(217,119,6,.2);">🏭</div>
+          <div>
+            <div class="svc-block-title">{% trans "Металлургия" %}</div>
+            <div class="svc-block-sub">{% trans "Двери, щиты и металлоконструкции на заказ" %}</div>
+          </div>
+          <a href="{% url 'metalwork:company_list' %}" class="svc-block-all" style="color:#d97706;border-color:rgba(217,119,6,.3);">{% trans "Все →" %}</a>
+        </div>
+        <div class="svc-cards-grid">
+          {% for m in metal_cards %}
+          <a href="{% url 'metalwork:company_detail' m.slug %}" class="svc-card" id="metal-{{ m.slug }}">
+            <div class="svc-card-img">
+              {% if m.cover %}<img src="{{ m.cover.url }}" alt="{{ m.name }}" loading="lazy">
+              {% elif m.logo %}<img src="{{ m.logo.url }}" alt="{{ m.name }}" loading="lazy">
+              {% else %}<div class="svc-card-img-ph">🏭</div>{% endif %}
+            </div>
+            <div class="svc-card-name">{{ m.name }}</div>
           </a>
           {% endfor %}
         </div>

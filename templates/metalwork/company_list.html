@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% load i18n static i18n_attrs %}
+
+{% block title %}{% trans "Металлургия" %} — Webordo{% endblock %}
+{% block cta %}{% endblock %}
+
+{% block head_extra %}
+<style>
+  :root{
+    --mw-bg:#f4f5f7; --mw-card:#fff; --mw-text:#14181f; --mw-muted:#6b7280;
+    --mw-border:rgba(20,24,31,.09); --mw-steel:#2f3b47; --mw-steel2:#45566a;
+    --mw-accent:#d97706; --mw-accent-soft:rgba(217,119,6,.1);
+  }
+  body{ background:var(--mw-bg) !important; }
+  .mw-page{ max-width:1180px; margin:0 auto; padding:0 20px 80px; }
+
+  .mw-hero{
+    background:linear-gradient(135deg,var(--mw-steel),var(--mw-steel2));
+    color:#fff; padding:46px 20px 54px; margin-bottom:-34px;
+  }
+  .mw-hero-in{ max-width:1180px; margin:0 auto; }
+  .mw-hero h1{
+    font-family:'Unbounded',sans-serif; font-weight:800; letter-spacing:-.8px;
+    font-size:clamp(24px,4vw,38px); margin:0 0 8px;
+  }
+  .mw-hero p{ margin:0; font-size:14px; opacity:.82; max-width:620px; line-height:1.55; }
+
+  .mw-grid{
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+    gap:18px; padding-top:48px;
+  }
+  .mw-card{
+    background:var(--mw-card); border:1px solid var(--mw-border); border-radius:20px;
+    overflow:hidden; text-decoration:none; color:var(--mw-text);
+    box-shadow:0 2px 10px rgba(20,24,31,.04);
+    transition:transform .2s cubic-bezier(.22,.68,0,1), box-shadow .2s ease;
+  }
+  .mw-card:hover{ transform:translateY(-3px); box-shadow:0 16px 34px rgba(20,24,31,.1); }
+  .mw-card-media{ height:150px; background:#e7eaee; position:relative; overflow:hidden; }
+  .mw-card-media img{ width:100%; height:100%; object-fit:cover; }
+  .mw-card-ph{
+    width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+    font-size:40px; background:linear-gradient(135deg,#e9edf2,#dfe4ea);
+  }
+  .mw-card-body{ padding:15px 17px 18px; }
+  .mw-card-name{ font-weight:800; font-size:15.5px; letter-spacing:-.2px; }
+  .mw-card-sub{ font-size:12.5px; color:var(--mw-muted); margin-top:4px; }
+  .mw-card-foot{
+    margin-top:12px; display:flex; align-items:center; gap:8px;
+    font-size:12px; font-weight:700; color:var(--mw-accent);
+  }
+  .mw-chip{
+    background:var(--mw-accent-soft); color:var(--mw-accent);
+    padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:800;
+  }
+  .mw-empty{ text-align:center; padding:70px 20px; color:var(--mw-muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="mw-hero">
+  <div class="mw-hero-in">
+    <h1>{% trans "Металлургия" %}</h1>
+    <p>{% trans "Двери, щиты и металлоконструкции на заказ. Каталог с ценами и характеристиками — заявку можно оставить прямо со страницы изделия." %}</p>
+  </div>
+</section>
+
+<div class="mw-page">
+  <div class="mw-grid">
+    {% for c in companies %}
+    <a class="mw-card" href="{% url 'metalwork:company_detail' c.slug %}">
+      <div class="mw-card-media">
+        {% if c.cover %}<img src="{{ c.cover.url }}" alt="{% t c 'name' %}" loading="lazy">
+        {% elif c.logo %}<img src="{{ c.logo.url }}" alt="{% t c 'name' %}" loading="lazy">
+        {% else %}<div class="mw-card-ph">🏭</div>{% endif %}
+      </div>
+      <div class="mw-card-body">
+        <div class="mw-card-name">{% t c "name" %}</div>
+        <div class="mw-card-sub">
+          {% t c "tagline" as tl %}{% if tl %}{{ tl }}{% elif c.city %}📍 {{ c.city }}{% endif %}
+        </div>
+        <div class="mw-card-foot">
+          <span class="mw-chip">{{ c.n_products }} {% trans "изделий" %}</span>
+          {% if c.city %}<span style="color:var(--mw-muted);font-weight:600">📍 {{ c.city }}</span>{% endif %}
+        </div>
+      </div>
+    </a>
+    {% empty %}
+    <div class="mw-empty" style="grid-column:1/-1">
+      <div style="font-size:42px;margin-bottom:10px">🏭</div>
+      {% trans "Пока здесь пусто — производства добавятся совсем скоро." %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

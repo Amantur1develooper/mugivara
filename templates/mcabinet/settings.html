@@ -1,0 +1,151 @@
+{% extends "mcabinet/_base.html" %}
+{% block title %}Настройки{% endblock %}
+{% block nav_settings %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .mc-imgbox{ display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+  .mc-logo-prev{ width:80px; height:80px; border-radius:16px; background:var(--mc-card2);
+                 border:1px solid var(--mc-border); display:flex; align-items:center;
+                 justify-content:center; overflow:hidden; font-size:30px; flex-shrink:0; }
+  .mc-logo-prev img{ width:100%; height:100%; object-fit:cover; }
+  .mc-cover-prev{ width:190px; height:80px; border-radius:14px; background:var(--mc-card2);
+                  border:1px solid var(--mc-border); overflow:hidden; display:flex;
+                  align-items:center; justify-content:center; font-size:26px; flex-shrink:0; }
+  .mc-cover-prev img{ width:100%; height:100%; object-fit:cover; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mc-topbar">
+  <div>
+    <div class="mc-title">⚙️ Настройки</div>
+    <div class="mc-sub">Как производство выглядит и куда приходят обращения</div>
+  </div>
+  <a href="{% url 'metalwork:company_detail' company.slug %}" target="_blank" class="mc-btn">👁 Витрина</a>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+{% csrf_token %}
+
+<div class="mc-card">
+  <div class="mc-field">
+    <label class="mc-label" for="name">Название *</label>
+    <input class="mc-input" id="name" name="name" required value="{{ company.name }}">
+  </div>
+  <div class="mc-row2">
+    <div class="mc-field">
+      <label class="mc-label" for="name_ky">Название (кыргызча)</label>
+      <input class="mc-input" id="name_ky" name="name_ky" value="{{ company.name_ky }}" placeholder="{{ company.name }}">
+    </div>
+    <div class="mc-field">
+      <label class="mc-label" for="name_en">Название (English)</label>
+      <input class="mc-input" id="name_en" name="name_en" value="{{ company.name_en }}" placeholder="{{ company.name }}">
+    </div>
+  </div>
+
+  <div class="mc-field">
+    <label class="mc-label" for="tagline">Строка под названием</label>
+    <input class="mc-input" id="tagline" name="tagline" value="{{ company.tagline }}"
+           placeholder="Двери, щиты и металлоконструкции на заказ">
+  </div>
+  <div class="mc-row2">
+    <div class="mc-field">
+      <label class="mc-label" for="tagline_ky">Кыргызча</label>
+      <input class="mc-input" id="tagline_ky" name="tagline_ky" value="{{ company.tagline_ky }}">
+    </div>
+    <div class="mc-field">
+      <label class="mc-label" for="tagline_en">English</label>
+      <input class="mc-input" id="tagline_en" name="tagline_en" value="{{ company.tagline_en }}">
+    </div>
+  </div>
+</div>
+
+<div class="mc-section">О производстве</div>
+<div class="mc-card">
+  <div class="mc-field">
+    <label class="mc-label" for="description">По-русски</label>
+    <textarea class="mc-textarea" id="description" name="description">{{ company.description }}</textarea>
+  </div>
+  <div class="mc-row2">
+    <div class="mc-field">
+      <label class="mc-label" for="description_ky">Кыргызча</label>
+      <textarea class="mc-textarea" id="description_ky" name="description_ky">{{ company.description_ky }}</textarea>
+    </div>
+    <div class="mc-field">
+      <label class="mc-label" for="description_en">English</label>
+      <textarea class="mc-textarea" id="description_en" name="description_en">{{ company.description_en }}</textarea>
+    </div>
+  </div>
+</div>
+
+<div class="mc-section">Контакты</div>
+<div class="mc-card">
+  <div class="mc-row2">
+    <div class="mc-field">
+      <label class="mc-label" for="phone">Телефон</label>
+      <input class="mc-input" id="phone" name="phone" value="{{ company.phone }}" placeholder="+996 700 000 000">
+    </div>
+    <div class="mc-field">
+      <label class="mc-label" for="whatsapp">WhatsApp</label>
+      <input class="mc-input" id="whatsapp" name="whatsapp" value="{{ company.whatsapp }}" placeholder="+996 700 000 000">
+      <div class="mc-hint">
+        {% if company.contact_digits %}Кнопка «Написать» ведёт на +{{ company.contact_digits }}
+        {% else %}Номер не задан — кнопка «Написать» не появится{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="mc-row2">
+    <div class="mc-field">
+      <label class="mc-label" for="email">E-mail</label>
+      <input class="mc-input" id="email" name="email" type="email" value="{{ company.email }}">
+    </div>
+    <div class="mc-field">
+      <label class="mc-label" for="instagram">Instagram</label>
+      <input class="mc-input" id="instagram" name="instagram" value="{{ company.instagram }}" placeholder="startpro_kg">
+    </div>
+  </div>
+  <div class="mc-row2">
+    <div class="mc-field">
+      <label class="mc-label" for="city">Город</label>
+      <input class="mc-input" id="city" name="city" value="{{ company.city }}">
+    </div>
+    <div class="mc-field">
+      <label class="mc-label" for="address">Адрес</label>
+      <input class="mc-input" id="address" name="address" value="{{ company.address }}">
+    </div>
+  </div>
+  <div class="mc-row2">
+    <div class="mc-field">
+      <label class="mc-label" for="work_hours">Режим работы</label>
+      <input class="mc-input" id="work_hours" name="work_hours" value="{{ company.work_hours }}" placeholder="Пн–Сб 09:00–18:00">
+    </div>
+    <div class="mc-field">
+      <label class="mc-label" for="map_url">Ссылка на карту</label>
+      <input class="mc-input" id="map_url" name="map_url" value="{{ company.map_url }}" placeholder="https://2gis.kg/...">
+    </div>
+  </div>
+</div>
+
+<div class="mc-section">Логотип и обложка</div>
+<div class="mc-card">
+  <div class="mc-imgbox" style="margin-bottom:16px">
+    <div class="mc-logo-prev">{% if company.logo %}<img src="{{ company.logo.url }}" alt="">{% else %}🏭{% endif %}</div>
+    <div style="flex:1;min-width:200px">
+      <label class="mc-label" for="logo">Логотип</label>
+      <input class="mc-input" id="logo" name="logo" type="file" accept="image/*">
+    </div>
+  </div>
+  <div class="mc-imgbox">
+    <div class="mc-cover-prev">{% if company.cover %}<img src="{{ company.cover.url }}" alt="">{% else %}🖼{% endif %}</div>
+    <div style="flex:1;min-width:200px">
+      <label class="mc-label" for="cover">Обложка страницы</label>
+      <input class="mc-input" id="cover" name="cover" type="file" accept="image/*">
+      <div class="mc-hint">Широкое фото — им оформляется шапка каталога.</div>
+    </div>
+  </div>
+</div>
+
+<button type="submit" class="mc-btn mc-btn-primary" style="margin-top:18px;padding:13px 28px">Сохранить</button>
+</form>
+{% endblock %}

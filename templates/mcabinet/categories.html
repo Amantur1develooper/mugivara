@@ -1,0 +1,84 @@
+{% extends "mcabinet/_base.html" %}
+{% block title %}Разделы{% endblock %}
+{% block nav_cats %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .mc-crow{ display:grid; grid-template-columns:56px minmax(0,2fr) minmax(0,1.4fr) minmax(0,1.4fr) 80px 90px 90px;
+            gap:10px; align-items:center; padding:11px 0; border-bottom:1px solid var(--mc-border); }
+  .mc-crow:last-child{ border-bottom:none; }
+  .mc-chead{ font-size:11px; font-weight:800; color:var(--mc-muted); text-transform:uppercase; letter-spacing:.4px; }
+  @media(max-width:900px){ .mc-crow{ grid-template-columns:1fr 1fr; } .mc-chead{ display:none; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mc-topbar">
+  <div>
+    <div class="mc-title">🗂 Разделы каталога</div>
+    <div class="mc-sub">По ним каталог делится на витрине. Пустые разделы гостям не показываются.</div>
+  </div>
+</div>
+
+<div class="mc-card">
+  <form method="post">
+    {% csrf_token %}
+    <div class="mc-crow mc-chead">
+      <div>Знак</div><div>Название</div><div>Кыргызча</div><div>English</div>
+      <div>Порядок</div><div>Видно</div><div></div>
+    </div>
+    {% for c in rows %}
+    <div class="mc-crow">
+      <input class="mc-input" name="cat_{{ c.id }}_icon" value="{{ c.icon }}" maxlength="8" style="text-align:center">
+      <input class="mc-input" name="cat_{{ c.id }}_name" value="{{ c.name }}">
+      <input class="mc-input" name="cat_{{ c.id }}_name_ky" value="{{ c.name_ky }}" placeholder="{{ c.name }}">
+      <input class="mc-input" name="cat_{{ c.id }}_name_en" value="{{ c.name_en }}" placeholder="{{ c.name }}">
+      <input class="mc-input" name="cat_{{ c.id }}_sort" type="number" min="0" value="{{ c.sort_order }}">
+      <label style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700">
+        <input type="checkbox" name="cat_{{ c.id }}_active" {% if c.is_active %}checked{% endif %}>
+        {{ c.n }} шт
+      </label>
+      <button type="button" class="mc-btn mc-btn-sm mc-btn-danger"
+              onclick="if(confirm('Удалить раздел «{{ c.name|escapejs }}»? Изделия останутся в каталоге без раздела.'))document.getElementById('delcat{{ c.id }}').submit();">
+        Удалить
+      </button>
+    </div>
+    {% empty %}
+    <div style="padding:26px 0;text-align:center;color:var(--mc-muted)">Разделов пока нет</div>
+    {% endfor %}
+    {% if rows %}
+    <button type="submit" class="mc-btn mc-btn-primary" style="margin-top:16px">Сохранить разделы</button>
+    {% endif %}
+  </form>
+</div>
+
+{% for c in rows %}
+<form method="post" id="delcat{{ c.id }}" action="{% url 'mcabinet:category_delete' c.id %}" style="display:none">{% csrf_token %}</form>
+{% endfor %}
+
+<div class="mc-section">Добавить раздел</div>
+<div class="mc-card">
+  <form method="post" action="{% url 'mcabinet:category_add' %}">
+    {% csrf_token %}
+    <div class="mc-row3">
+      <div class="mc-field">
+        <label class="mc-label" for="nname">Название *</label>
+        <input class="mc-input" id="nname" name="name" required placeholder="Ворота и калитки">
+      </div>
+      <div class="mc-field">
+        <label class="mc-label" for="nky">Кыргызча</label>
+        <input class="mc-input" id="nky" name="name_ky">
+      </div>
+      <div class="mc-field">
+        <label class="mc-label" for="nen">English</label>
+        <input class="mc-input" id="nen" name="name_en">
+      </div>
+    </div>
+    <div class="mc-field" style="max-width:150px">
+      <label class="mc-label" for="nicon">Знак (эмодзи)</label>
+      <input class="mc-input" id="nicon" name="icon" maxlength="8" placeholder="🚪">
+    </div>
+    <button type="submit" class="mc-btn mc-btn-primary">Добавить</button>
+  </form>
+</div>
+{% endblock %}

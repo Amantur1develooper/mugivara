@@ -1,0 +1,113 @@
+{% extends "mcabinet/_base.html" %}
+{% block title %}Каталог{% endblock %}
+{% block nav_home %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .mc-stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-bottom:24px; }
+  .mc-stat{ background:var(--mc-card); border:1px solid var(--mc-border); border-radius:14px; padding:16px 18px; }
+  .mc-stat-l{ font-size:11px; font-weight:700; color:var(--mc-muted); text-transform:uppercase; letter-spacing:.4px; }
+  .mc-stat-v{ font-size:25px; font-weight:900; letter-spacing:-.6px; margin-top:6px; }
+
+  .mc-filters{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:18px; }
+  .mc-pill{ padding:7px 13px; border-radius:999px; font-size:12px; font-weight:700;
+            border:1.5px solid var(--mc-border); background:#fff; color:var(--mc-muted); }
+  .mc-pill.active{ background:var(--mc-text); border-color:var(--mc-text); color:#fff; }
+
+  .mc-list{ display:grid; gap:10px; }
+  .mc-item{
+    background:var(--mc-card); border:1px solid var(--mc-border); border-radius:14px;
+    padding:12px 14px; display:flex; align-items:center; gap:14px;
+  }
+  .mc-item.off{ opacity:.55; }
+  .mc-thumb{ width:62px; height:62px; border-radius:11px; background:var(--mc-card2); flex-shrink:0;
+             display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .mc-thumb img{ width:100%; height:100%; object-fit:contain; }
+  .mc-item-main{ flex:1; min-width:0; }
+  .mc-item-name{ font-weight:800; font-size:13.5px; }
+  .mc-item-meta{ font-size:11.5px; color:var(--mc-muted); margin-top:3px; }
+  .mc-item-price{ font-weight:900; font-size:14px; white-space:nowrap; }
+  .mc-item-acts{ display:flex; gap:6px; flex-shrink:0; }
+  .mc-tag{ display:inline-block; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:999px;
+           background:var(--mc-card2); color:var(--mc-muted); border:1px solid var(--mc-border); }
+  .mc-empty{ text-align:center; padding:60px 20px; color:var(--mc-muted); }
+  @media(max-width:700px){
+    .mc-item{ flex-wrap:wrap; }
+    .mc-item-acts{ width:100%; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mc-topbar">
+  <div>
+    <div class="mc-title">📦 Каталог</div>
+    <div class="mc-sub">{{ company.name }} — изделия, цены и фотографии</div>
+  </div>
+  <a href="{% url 'mcabinet:product_add' %}" class="mc-btn mc-btn-primary">+ Добавить изделие</a>
+</div>
+
+<div class="mc-stats">
+  <div class="mc-stat"><div class="mc-stat-l">Всего изделий</div><div class="mc-stat-v">{{ stats.total }}</div></div>
+  <div class="mc-stat"><div class="mc-stat-l">Показываются</div><div class="mc-stat-v" style="color:var(--mc-green)">{{ stats.active }}</div></div>
+  <div class="mc-stat"><div class="mc-stat-l">Без фото</div><div class="mc-stat-v" style="color:{% if stats.no_photo %}var(--mc-accent){% else %}inherit{% endif %}">{{ stats.no_photo }}</div></div>
+  <div class="mc-stat"><div class="mc-stat-l">Новых заявок</div><div class="mc-stat-v" style="color:var(--mc-red)">{{ stats.leads }}</div></div>
+</div>
+
+<form class="mc-filters" method="get">
+  <input class="mc-input" style="max-width:230px" type="text" name="q" value="{{ q }}" placeholder="Поиск по названию…">
+  <button class="mc-btn" type="submit">Найти</button>
+  <a class="mc-pill {% if not cat_id %}active{% endif %}" href="{% url 'mcabinet:home' %}">Все</a>
+  {% for c in categories %}
+    <a class="mc-pill {% if cat_id == c.id|stringformat:'s' %}active{% endif %}" href="?cat={{ c.id }}">
+      {% if c.icon %}{{ c.icon }} {% endif %}{{ c.name }} · {{ c.n }}
+    </a>
+  {% endfor %}
+</form>
+
+<div class="mc-list">
+  {% for p in products %}
+  <div class="mc-item {% if not p.is_active %}off{% endif %}">
+    <div class="mc-thumb">
+      {% if p.main_photo %}<img src="{{ p.main_photo.url }}" alt="">{% else %}🔩{% endif %}
+    </div>
+    <div class="mc-item-main">
+      <div class="mc-item-name">{{ p.name }}</div>
+      <div class="mc-item-meta">
+        {% if p.category %}{{ p.category.name }}{% else %}без раздела{% endif %}
+        {% if not p.name_ky or not p.name_en %} · <span class="mc-tag">нет перевода</span>{% endif %}
+        {% if not p.main_photo %} · <span class="mc-tag">нет фото</span>{% endif %}
+        {% if not p.is_active %} · <span class="mc-tag">скрыто</span>{% endif %}
+      </div>
+    </div>
+    <div class="mc-item-price">
+      {% if p.price %}{% if p.price_from %}<span style="font-size:11px;color:var(--mc-muted)">от</span> {% endif %}{{ p.price_display }}
+      {% else %}<span style="font-size:12px;color:var(--mc-accent)">по запросу</span>{% endif %}
+    </div>
+    <div class="mc-item-acts">
+      <a class="mc-btn mc-btn-sm" href="{% url 'mcabinet:product_edit' p.id %}">Изменить</a>
+      <form method="post" action="{% url 'mcabinet:product_toggle' p.id %}" onsubmit="event.preventDefault();togglePr(this,{{ p.id }});">
+        {% csrf_token %}
+        <button type="submit" class="mc-btn mc-btn-sm">{% if p.is_active %}Скрыть{% else %}Показать{% endif %}</button>
+      </form>
+    </div>
+  </div>
+  {% empty %}
+  <div class="mc-empty">
+    <div style="font-size:40px;margin-bottom:10px">📦</div>
+    {% if q or cat_id %}Ничего не нашлось — попробуйте сбросить фильтр.
+    {% else %}Каталог пуст. Нажмите «Добавить изделие».{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function togglePr(form, id){
+  fetch(form.action, {method:"POST", headers:{"X-CSRFToken":form.querySelector("[name=csrfmiddlewaretoken]").value}})
+    .then(function(r){ return r.json(); })
+    .then(function(){ location.reload(); });
+}
+</script>
+{% endblock %}

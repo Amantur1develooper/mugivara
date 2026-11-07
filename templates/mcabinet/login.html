@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Вход — кабинет производства</title>
+<style>
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,#2f3b47,#45566a); padding:20px;
+    font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif; color:#14181f;
+  }
+  .box{ width:100%; max-width:390px; background:#fff; border-radius:22px; padding:32px 28px;
+        box-shadow:0 28px 60px rgba(12,16,22,.3); }
+  h1{ font-size:19px; font-weight:900; letter-spacing:-.4px; margin:0 0 4px; }
+  p.sub{ font-size:12.5px; color:#6b7280; margin:0 0 22px; }
+  label{ display:block; font-size:11.5px; font-weight:700; color:#6b7280; margin-bottom:6px; }
+  input{
+    width:100%; padding:12px 14px; border-radius:12px; font-size:14px; font-family:inherit;
+    border:1.5px solid rgba(20,24,31,.1); background:#fbfbfd; outline:none; margin-bottom:14px;
+  }
+  input:focus{ border-color:#d97706; background:#fff; }
+  button{
+    width:100%; padding:13px; border:none; border-radius:12px; background:#d97706; color:#fff;
+    font-size:14px; font-weight:800; cursor:pointer; font-family:inherit;
+  }
+  button:hover{ background:#b45309; }
+  .err{ background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.2); color:#b42318;
+        padding:11px 14px; border-radius:11px; font-size:12.5px; font-weight:600; margin-bottom:16px; }
+</style>
+</head>
+<body>
+  <form class="box" method="post">
+    {% csrf_token %}
+    <div style="font-size:30px;margin-bottom:10px">🏭</div>
+    <h1>Кабинет производства</h1>
+    <p class="sub">Каталог изделий, заявки и настройки витрины</p>
+    {% if messages %}{% for m in messages %}<div class="err">{{ m }}</div>{% endfor %}{% endif %}
+    <label for="u">Логин</label>
+    <input id="u" name="username" autocomplete="username" required autofocus>
+    <label for="p">Пароль</label>
+    <input id="p" name="password" type="password" autocomplete="current-password" required>
+    <button type="submit">Войти</button>
+  </form>
+</body>
+</html>

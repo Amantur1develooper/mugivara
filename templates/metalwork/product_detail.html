@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% load i18n static i18n_attrs %}
+
+{% block title %}{{ product.title }} — {% t company "name" %}{% endblock %}
+{% block cta %}{% endblock %}
+
+{% block head_extra %}
+<style>
+  :root{
+    --mw-bg:#f4f5f7; --mw-card:#fff; --mw-text:#14181f; --mw-muted:#6b7280;
+    --mw-border:rgba(20,24,31,.09); --mw-steel:#2f3b47;
+    --mw-accent:#d97706; --mw-accent-soft:rgba(217,119,6,.1);
+  }
+  body{ background:var(--mw-bg) !important; }
+  .mw-page{ max-width:1120px; margin:0 auto; padding:22px 20px 90px; }
+
+  .mw-crumbs{ font-size:12.5px; color:var(--mw-muted); margin-bottom:16px; }
+  .mw-crumbs a{ color:var(--mw-muted); text-decoration:none; }
+  .mw-crumbs a:hover{ color:var(--mw-accent); }
+
+  .mw-top{ display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:26px; align-items:start; }
+
+  .mw-shot{
+    background:#fff; border:1px solid var(--mw-border); border-radius:22px; overflow:hidden; padding:16px;
+  }
+  .mw-shot-main{
+    aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:zoom-in;
+  }
+  .mw-shot-main img{ width:100%; height:100%; object-fit:contain; }
+  .mw-shot-ph{ font-size:62px; opacity:.25; }
+  .mw-thumbs{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+  .mw-thumb{
+    width:62px; height:62px; border-radius:12px; overflow:hidden; cursor:pointer;
+    border:2px solid transparent; background:#f2f4f6; padding:3px;
+  }
+  .mw-thumb img{ width:100%; height:100%; object-fit:contain; }
+  .mw-thumb.active{ border-color:var(--mw-accent); }
+
+  .mw-info-card{ background:#fff; border:1px solid var(--mw-border); border-radius:22px; padding:24px; }
+  .mw-cat-pill{
+    display:inline-block; background:var(--mw-accent-soft); color:var(--mw-accent);
+    font-size:11.5px; font-weight:800; padding:4px 11px; border-radius:999px; margin-bottom:10px;
+  }
+  .mw-name{ font-family:'Unbounded',sans-serif; font-weight:800; font-size:clamp(19px,2.7vw,27px); letter-spacing:-.6px; line-height:1.2; }
+  .mw-desc{ font-size:13.5px; color:var(--mw-muted); line-height:1.6; margin-top:10px; }
+
+  .mw-price-box{ margin-top:18px; padding-top:18px; border-top:1px solid var(--mw-border); }
+  .mw-price{ font-family:'Unbounded',sans-serif; font-weight:800; font-size:clamp(22px,3.4vw,30px); letter-spacing:-.8px; }
+  .mw-price small{ font-family:inherit; font-size:13px; font-weight:700; color:var(--mw-muted); letter-spacing:0; }
+  .mw-price-req{ font-size:19px; font-weight:800; color:var(--mw-accent); }
+  .mw-price-note{ font-size:12.5px; color:var(--mw-muted); margin-top:5px; }
+
+  .mw-custom{
+    margin-top:14px; background:#fbfbfd; border:1px dashed var(--mw-border); border-radius:14px;
+    padding:12px 14px; font-size:12.5px; color:var(--mw-muted); line-height:1.5;
+  }
+
+  .mw-cta{ display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; }
+  .mw-btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:13px 22px; border-radius:14px; font-weight:800; font-size:13.5px;
+    text-decoration:none; border:1.5px solid var(--mw-border); color:var(--mw-text); background:#fff;
+    cursor:pointer; font-family:inherit;
+  }
+  .mw-btn-wa{ background:#25D366; border-color:#25D366; color:#fff; flex:1; }
+  .mw-btn-lead{ background:var(--mw-steel); border-color:var(--mw-steel); color:#fff; flex:1; }
+
+  .mw-specs{ margin-top:26px; background:#fff; border:1px solid var(--mw-border); border-radius:22px; padding:22px 24px; }
+  .mw-specs h2{ font-size:15px; font-weight:800; margin:0 0 14px; letter-spacing:-.2px; }
+  .mw-spec-row{
+    display:flex; gap:14px; justify-content:space-between; align-items:baseline;
+    padding:9px 0; border-bottom:1px dashed var(--mw-border); font-size:13.5px;
+  }
+  .mw-spec-row:last-child{ border-bottom:none; }
+  .mw-spec-name{ color:var(--mw-muted); flex-shrink:0; }
+  .mw-spec-val{ font-weight:700; text-align:right; }
+  .mw-spec-free{ font-size:13.5px; color:var(--mw-muted); padding:9px 0; line-height:1.55; }
+
+  .mw-lead{ margin-top:26px; background:#fff; border:1px solid var(--mw-border); border-radius:22px; padding:22px 24px; }
+  .mw-lead h2{ font-size:15px; font-weight:800; margin:0 0 6px; }
+  .mw-lead p{ font-size:12.5px; color:var(--mw-muted); margin:0 0 16px; line-height:1.5; }
+  .mw-field{ margin-bottom:12px; }
+  .mw-field label{ display:block; font-size:12px; font-weight:700; color:var(--mw-muted); margin-bottom:6px; }
+  .mw-field input, .mw-field textarea{
+    width:100%; box-sizing:border-box; padding:12px 14px; border-radius:13px; font-size:13.5px;
+    border:1.5px solid var(--mw-border); background:#fbfbfd; font-family:inherit; outline:none; color:var(--mw-text);
+  }
+  .mw-field input:focus, .mw-field textarea:focus{ border-color:var(--mw-accent); background:#fff; }
+  .mw-field textarea{ min-height:84px; resize:vertical; }
+
+  .mw-msg{
+    margin-bottom:16px; padding:13px 16px; border-radius:14px; font-size:13.5px; font-weight:600;
+    background:#fff; border:1.5px solid var(--mw-accent);
+  }
+
+  .mw-similar{ margin-top:34px; }
+  .mw-similar h2{ font-size:15px; font-weight:800; margin:0 0 14px; }
+  .mw-sim-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:14px; }
+  .mw-sim{
+    background:#fff; border:1px solid var(--mw-border); border-radius:16px; overflow:hidden;
+    text-decoration:none; color:var(--mw-text);
+  }
+  .mw-sim-media{ aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; padding:9px; }
+  .mw-sim-media img{ width:100%; height:100%; object-fit:contain; }
+  .mw-sim-body{ padding:10px 12px 13px; }
+  .mw-sim-name{ font-size:12.5px; font-weight:700; line-height:1.3; }
+  .mw-sim-price{ font-size:12.5px; font-weight:800; margin-top:5px; }
+
+  .mw-lightbox{
+    position:fixed; inset:0; background:rgba(12,15,20,.92); display:none;
+    align-items:center; justify-content:center; z-index:9999; padding:26px;
+  }
+  .mw-lightbox.open{ display:flex; }
+  .mw-lightbox img{ max-width:100%; max-height:100%; object-fit:contain; }
+  .mw-lightbox-x{
+    position:absolute; top:18px; right:22px; color:#fff; font-size:30px; cursor:pointer;
+    background:none; border:none; line-height:1;
+  }
+
+  @media(max-width:860px){ .mw-top{ grid-template-columns:1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mw-page">
+  <div class="mw-crumbs">
+    <a href="{% url 'metalwork:company_list' %}">{% trans "Металлургия" %}</a> /
+    <a href="{% url 'metalwork:company_detail' company.slug %}">{% t company "name" %}</a>
+    {% if product.category %} / <a href="{% url 'metalwork:company_detail' company.slug %}?cat={{ product.category.id }}">{{ product.category.title }}</a>{% endif %}
+  </div>
+
+  {% if messages %}{% for m in messages %}<div class="mw-msg">{{ m }}</div>{% endfor %}{% endif %}
+
+  <div class="mw-top">
+    <div class="mw-shot">
+      <div class="mw-shot-main" id="mwShot">
+        {% if product.main_photo %}
+          <img id="mwShotImg" src="{{ product.main_photo.url }}" alt="{{ product.title }}">
+        {% else %}<div class="mw-shot-ph">🔩</div>{% endif %}
+      </div>
+      {% if product.photos.all %}
+      <div class="mw-thumbs">
+        {% if product.photo %}
+        <div class="mw-thumb active" data-src="{{ product.photo.url }}"><img src="{{ product.photo.url }}" alt=""></div>
+        {% endif %}
+        {% for ph in product.photos.all %}
+        <div class="mw-thumb{% if not product.photo and forloop.first %} active{% endif %}" data-src="{{ ph.photo.url }}">
+          <img src="{{ ph.photo.url }}" alt="" loading="lazy">
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="mw-info-card">
+      {% if product.category %}<span class="mw-cat-pill">{% if product.category.icon %}{{ product.category.icon }} {% endif %}{{ product.category.title }}</span>{% endif %}
+      <div class="mw-name">{{ product.title }}</div>
+      {% if product.text %}<div class="mw-desc">{{ product.text|linebreaksbr }}</div>{% endif %}
+
+      <div class="mw-price-box">
+        {% if product.price_display %}
+          <div class="mw-price">
+            {% if product.price_from %}<small>{% trans "от" %}</small> {% endif %}{{ product.price_display }}
+          </div>
+        {% else %}
+          <div class="mw-price-req">{% trans "Цена по запросу" %}</div>
+        {% endif %}
+        {% if product.note %}<div class="mw-price-note">{{ product.note }}</div>{% endif %}
+      </div>
+
+      {% if product.is_custom %}
+      <div class="mw-custom">
+        {% trans "Размер, внешний вид и итоговая стоимость согласовываются индивидуально — под проект заказчика." %}
+      </div>
+      {% endif %}
+
+      <div class="mw-cta">
+        {% if product.whatsapp_url %}
+          <a class="mw-btn mw-btn-wa" href="{{ product.whatsapp_url }}" target="_blank" rel="noopener">💬 {% trans "Написать в WhatsApp" %}</a>
+        {% endif %}
+        <button type="button" class="mw-btn mw-btn-lead"
+                onclick="document.getElementById('mwLead').scrollIntoView({behavior:'smooth',block:'center'});document.getElementById('mwPhone').focus({preventScroll:true});">
+          📝 {% trans "Оставить заявку" %}
+        </button>
+      </div>
+      {% if company.phone %}
+      <div style="margin-top:10px;font-size:12.5px;color:var(--mw-muted)">
+        {% trans "Или позвоните" %}: <a href="tel:{{ company.phone }}" style="color:var(--mw-text);font-weight:700">{{ company.phone }}</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if product.spec_rows %}
+  <div class="mw-specs">
+    <h2>{% trans "Характеристики" %}</h2>
+    {% for name, value in product.spec_rows %}
+      {% if name %}
+        <div class="mw-spec-row">
+          <span class="mw-spec-name">{{ name }}</span>
+          <span class="mw-spec-val">{{ value }}</span>
+        </div>
+      {% else %}
+        <div class="mw-spec-free">{{ value }}</div>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="mw-lead" id="mwLead">
+    <h2>{% trans "Оставить заявку" %}</h2>
+    <p>{% trans "Перезвоним, уточним размеры и посчитаем точную стоимость." %}</p>
+    <form method="post" action="{% url 'metalwork:product_lead_create' company.slug product.id %}">
+      {% csrf_token %}
+      <div class="mw-field">
+        <label for="mwName">{% trans "Как к вам обращаться" %}</label>
+        <input type="text" id="mwName" name="name" placeholder="{% trans 'Имя' %}">
+      </div>
+      <div class="mw-field">
+        <label for="mwPhone">{% trans "Телефон" %} *</label>
+        <input type="tel" id="mwPhone" name="phone" required placeholder="+996 700 000 000">
+      </div>
+      <div class="mw-field">
+        <label for="mwMsg">{% trans "Что нужно" %}</label>
+        <textarea id="mwMsg" name="message" placeholder="{% trans 'Размеры, количество, сроки' %}"></textarea>
+      </div>
+      <button type="submit" class="mw-btn mw-btn-lead" style="width:100%">{% trans "Отправить заявку" %}</button>
+    </form>
+  </div>
+
+  {% if similar %}
+  <div class="mw-similar">
+    <h2>{% trans "Похожие изделия" %}</h2>
+    <div class="mw-sim-grid">
+      {% for s in similar %}
+      <a class="mw-sim" href="{% url 'metalwork:product_detail' company.slug s.id %}">
+        <div class="mw-sim-media">
+          {% if s.main_photo %}<img src="{{ s.main_photo.url }}" alt="{{ s.title }}" loading="lazy">{% else %}🔩{% endif %}
+        </div>
+        <div class="mw-sim-body">
+          <div class="mw-sim-name">{{ s.title }}</div>
+          <div class="mw-sim-price">
+            {% if s.price_display %}{% if s.price_from %}{% trans "от" %} {% endif %}{{ s.price_display }}
+            {% else %}{% trans "по запросу" %}{% endif %}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="mw-lightbox" id="mwBox" onclick="closeBox(event)">
+  <button class="mw-lightbox-x" type="button" onclick="closeBox(event)" aria-label="{% trans 'Закрыть' %}">×</button>
+  <img id="mwBoxImg" src="" alt="">
+</div>
+
+<script>
+(function(){
+  var main = document.getElementById("mwShotImg");
+  document.querySelectorAll(".mw-thumb").forEach(function(t){
+    t.addEventListener("click", function(){
+      if (!main) return;
+      main.src = t.dataset.src;
+      document.querySelectorAll(".mw-thumb").forEach(function(x){ x.classList.remove("active"); });
+      t.classList.add("active");
+    });
+  });
+  var shot = document.getElementById("mwShot");
+  if (shot && main) shot.addEventListener("click", function(){
+    document.getElementById("mwBoxImg").src = main.src;
+    document.getElementById("mwBox").classList.add("open");
+  });
+})();
+function closeBox(e){ e.stopPropagation(); document.getElementById("mwBox").classList.remove("open"); }
+document.addEventListener("keydown", function(e){ if (e.key === "Escape") document.getElementById("mwBox").classList.remove("open"); });
+</script>
+{% endblock %}

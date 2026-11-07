@@ -1,0 +1,191 @@
+{% extends "mcabinet/_base.html" %}
+{% block title %}{% if product %}{{ product.name }}{% else %}Новое изделие{% endif %}{% endblock %}
+{% block nav_home %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .mc-cols{ display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:18px; align-items:start; }
+  .mc-photos{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .mc-ph{ width:84px; border-radius:11px; overflow:hidden; border:1px solid var(--mc-border); background:var(--mc-card2); }
+  .mc-ph img{ width:100%; height:72px; object-fit:contain; display:block; }
+  .mc-ph button{
+    width:100%; border:none; border-top:1px solid var(--mc-border); background:#fff;
+    color:var(--mc-red); font-size:10.5px; font-weight:800; padding:4px; cursor:pointer; font-family:inherit;
+  }
+  .mc-main-photo{ width:100%; aspect-ratio:1/1; border-radius:14px; background:var(--mc-card2);
+                  display:flex; align-items:center; justify-content:center; overflow:hidden;
+                  border:1px solid var(--mc-border); font-size:40px; }
+  .mc-main-photo img{ width:100%; height:100%; object-fit:contain; }
+  .mc-check{ display:flex; align-items:center; gap:9px; font-size:13px; font-weight:600; margin-bottom:12px; cursor:pointer; }
+  @media(max-width:860px){ .mc-cols{ grid-template-columns:1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mc-topbar">
+  <div>
+    <div class="mc-title">{% if product %}✏️ {{ product.name }}{% else %}➕ Новое изделие{% endif %}</div>
+    <div class="mc-sub">
+      {% if product %}<a href="{% url 'metalwork:product_detail' company.slug product.id %}" target="_blank" style="color:var(--mc-accent);font-weight:700">Посмотреть на витрине →</a>
+      {% else %}Заполните русские поля — кыргызское и английское можно добавить позже{% endif %}
+    </div>
+  </div>
+  <a href="{% url 'mcabinet:home' %}" class="mc-btn">← К каталогу</a>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+{% csrf_token %}
+<div class="mc-cols">
+  <div>
+    <div class="mc-card">
+      <div class="mc-field">
+        <label class="mc-label" for="name">Название (по-русски) *</label>
+        <input class="mc-input" id="name" name="name" required value="{{ product.name|default:'' }}"
+               placeholder="Например: Противопожарная дверь глухая">
+      </div>
+      <div class="mc-row2">
+        <div class="mc-field">
+          <label class="mc-label" for="name_ky">Название (кыргызча)</label>
+          <input class="mc-input" id="name_ky" name="name_ky" value="{{ product.name_ky|default:'' }}">
+        </div>
+        <div class="mc-field">
+          <label class="mc-label" for="name_en">Название (in English)</label>
+          <input class="mc-input" id="name_en" name="name_en" value="{{ product.name_en|default:'' }}">
+        </div>
+      </div>
+      <div class="mc-hint" style="margin-top:-6px">Пустые поля на витрине заменяются русским названием.</div>
+
+      <div class="mc-section">Описание</div>
+      <div class="mc-field">
+        <label class="mc-label" for="description">По-русски</label>
+        <textarea class="mc-textarea" id="description" name="description">{{ product.description|default:'' }}</textarea>
+      </div>
+      <div class="mc-row2">
+        <div class="mc-field">
+          <label class="mc-label" for="description_ky">Кыргызча</label>
+          <textarea class="mc-textarea" id="description_ky" name="description_ky">{{ product.description_ky|default:'' }}</textarea>
+        </div>
+        <div class="mc-field">
+          <label class="mc-label" for="description_en">In English</label>
+          <textarea class="mc-textarea" id="description_en" name="description_en">{{ product.description_en|default:'' }}</textarea>
+        </div>
+      </div>
+
+      <div class="mc-section">Характеристики</div>
+      <div class="mc-field">
+        <label class="mc-label" for="specs">По-русски</label>
+        <textarea class="mc-textarea" id="specs" name="specs" style="min-height:130px"
+          placeholder="Высота полотна: 2050 мм&#10;Ширина полотна: 950 мм&#10;Металл: 1,2 мм">{{ product.specs|default:'' }}</textarea>
+        <div class="mc-hint">По одной в строке, в виде «Название: значение» — витрина нарисует из них таблицу.
+          Строка без двоеточия попадёт отдельной фразой.</div>
+      </div>
+      <div class="mc-row2">
+        <div class="mc-field">
+          <label class="mc-label" for="specs_ky">Кыргызча</label>
+          <textarea class="mc-textarea" id="specs_ky" name="specs_ky" style="min-height:130px">{{ product.specs_ky|default:'' }}</textarea>
+        </div>
+        <div class="mc-field">
+          <label class="mc-label" for="specs_en">In English</label>
+          <textarea class="mc-textarea" id="specs_en" name="specs_en" style="min-height:130px">{{ product.specs_en|default:'' }}</textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="mc-card">
+      <div class="mc-field">
+        <label class="mc-label" for="category">Раздел каталога</label>
+        <select class="mc-select" id="category" name="category">
+          <option value="">— без раздела —</option>
+          {% for c in categories %}
+            <option value="{{ c.id }}" {% if product.category_id == c.id %}selected{% endif %}>
+              {% if c.icon %}{{ c.icon }} {% endif %}{{ c.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="mc-field">
+        <label class="mc-label" for="price">Цена, сом</label>
+        <input class="mc-input" id="price" name="price" inputmode="decimal"
+               value="{% if product.price %}{{ product.price|floatformat:'0' }}{% endif %}" placeholder="32000">
+        <div class="mc-hint">Оставьте пустым — на витрине будет «Цена по запросу».</div>
+      </div>
+      <label class="mc-check">
+        <input type="checkbox" name="price_from" {% if product.price_from or not product %}checked{% endif %}>
+        Показывать как «от»
+      </label>
+      <div class="mc-field">
+        <label class="mc-label" for="price_note">Приписка к цене</label>
+        <input class="mc-input" id="price_note" name="price_note" value="{{ product.price_note|default:'' }}" placeholder="без монтажа">
+      </div>
+      <div class="mc-row2">
+        <div class="mc-field">
+          <label class="mc-label" for="price_note_ky">Приписка (кыргызча)</label>
+          <input class="mc-input" id="price_note_ky" name="price_note_ky" value="{{ product.price_note_ky|default:'' }}">
+        </div>
+        <div class="mc-field">
+          <label class="mc-label" for="price_note_en">Приписка (English)</label>
+          <input class="mc-input" id="price_note_en" name="price_note_en" value="{{ product.price_note_en|default:'' }}">
+        </div>
+      </div>
+
+      <label class="mc-check">
+        <input type="checkbox" name="is_custom" {% if product.is_custom or not product %}checked{% endif %}>
+        Размер и вид согласовываются по проекту
+      </label>
+      <label class="mc-check">
+        <input type="checkbox" name="is_active" {% if product.is_active or not product %}checked{% endif %}>
+        Показывать в каталоге
+      </label>
+      <div class="mc-field">
+        <label class="mc-label" for="sort_order">Порядок</label>
+        <input class="mc-input" id="sort_order" name="sort_order" type="number" min="0"
+               value="{{ product.sort_order|default:0 }}">
+      </div>
+    </div>
+
+    <div class="mc-card" style="margin-top:14px">
+      <div class="mc-label">Главное фото</div>
+      <div class="mc-main-photo">
+        {% if product.photo %}<img src="{{ product.photo.url }}" alt="">{% else %}🔩{% endif %}
+      </div>
+      <div class="mc-field" style="margin-top:10px">
+        <input class="mc-input" type="file" name="photo" accept="image/*">
+      </div>
+      <div class="mc-label" style="margin-top:6px">Ещё фотографии</div>
+      <input class="mc-input" type="file" name="gallery" accept="image/*" multiple>
+      {% if product.photos.all %}
+      <div class="mc-photos">
+        {% for ph in product.photos.all %}
+        <div class="mc-ph">
+          <img src="{{ ph.photo.url }}" alt="">
+          <button type="button" form="delph{{ ph.id }}" onclick="if(confirm('Удалить фотографию?'))document.getElementById('delph{{ ph.id }}').submit();">Удалить</button>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <button type="submit" class="mc-btn mc-btn-primary" style="width:100%;margin-top:14px;justify-content:center;padding:13px">
+      Сохранить
+    </button>
+  </div>
+</div>
+</form>
+
+{% if product %}
+<form method="post" action="{% url 'mcabinet:product_delete' product.id %}" style="margin-top:18px"
+      onsubmit="return confirm('Удалить изделие «{{ product.name|escapejs }}»? Отменить это нельзя.');">
+  {% csrf_token %}
+  <button type="submit" class="mc-btn mc-btn-danger">Удалить изделие</button>
+</form>
+
+{% for ph in product.photos.all %}
+<form method="post" id="delph{{ ph.id }}" action="{% url 'mcabinet:photo_delete' ph.id %}" style="display:none">{% csrf_token %}</form>
+{% endfor %}
+{% endif %}
+{% endblock %}
+
+

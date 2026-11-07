@@ -201,6 +201,7 @@ def home(request):
     from simracing.models import SimRacingVenue
     from realestate.models import RealtyAgency
     from autosalon.models import AutoDealership
+    from metalwork.models import MetalCompany
 
     # ── РЕСТОРАНЫ ────────────────────────────────────────────────────────────
     top_restaurants = list(
@@ -301,6 +302,11 @@ def home(request):
         AutoDealership.objects.filter(is_active=True).order_by("sort_order", "name")[:12]
     )
 
+    # ── МЕТАЛЛУРГИЯ ──────────────────────────────────────────────────────────
+    metal_cards = list(
+        MetalCompany.objects.filter(is_active=True).order_by("sort_order", "name")[:12]
+    )
+
     # ── СТАТИСТИКА ────────────────────────────────────────────────────────────
     stats = {
         "restaurant_count": Restaurant.objects.filter(is_active=True).count(),
@@ -317,6 +323,7 @@ def home(request):
         "printshop_count":    PrintCenter.objects.filter(is_active=True).count(),
         "realty_count":       RealtyAgency.objects.filter(is_active=True).count(),
         "autosalon_count":    AutoDealership.objects.filter(is_active=True).count(),
+        "metal_count":        MetalCompany.objects.filter(is_active=True).count(),
         "branch_count": (
             Branch.objects.filter(is_active=True).count()
             + StoreBranch.objects.filter(is_active=True).count()
@@ -327,7 +334,7 @@ def home(request):
         + stats["market_count"] + stats["hotel_count"] + stats["legal_count"]
         + stats["eco_count"] + stats["agency_count"] + stats["karaoke_count"]
         + stats["simracing_count"] + stats["barbershop_count"] + stats["printshop_count"]
-        + stats["realty_count"] + stats["autosalon_count"]
+        + stats["realty_count"] + stats["autosalon_count"] + stats["metal_count"]
     )
 
     try:
@@ -394,6 +401,7 @@ def home(request):
         "printshop_cards":    printshop_cards,
         "realty_cards":       realty_cards,
         "autosalon_cards":    autosalon_cards,
+        "metal_cards":        metal_cards,
         "stats":            stats,
         "map_points_json":  _json.dumps(map_points, ensure_ascii=False),
     })

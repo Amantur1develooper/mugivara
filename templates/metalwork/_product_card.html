@@ -1,0 +1,19 @@
+{% load i18n %}
+<a class="mw-item" href="{% url 'metalwork:product_detail' company.slug p.id %}">
+  <div class="mw-item-media">
+    {% if p.main_photo %}<img src="{{ p.main_photo.url }}" alt="{{ p.title }}" loading="lazy">
+    {% else %}<div class="mw-item-ph">🔩</div>{% endif %}
+  </div>
+  <div class="mw-item-body">
+    <div class="mw-item-name">{{ p.title }}</div>
+    {% if p.text %}<div class="mw-item-spec">{{ p.text }}</div>{% endif %}
+    {% if p.price_display %}
+      <div class="mw-item-price">
+        {% if p.price_from %}<span class="mw-item-from">{% trans "от" %}</span> {% endif %}{{ p.price_display }}
+      </div>
+      {% if p.note %}<div class="mw-item-note">{{ p.note }}</div>{% endif %}
+    {% else %}
+      <div class="mw-item-req">{% trans "Цена по запросу" %}</div>
+    {% endif %}
+  </div>
+</a>

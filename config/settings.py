@@ -78,6 +78,7 @@ INSTALLED_APPS = [
    "printshop.apps.PrintshopConfig",
    "realestate",
    "autosalon",
+   "metalwork.apps.MetalworkConfig",
 ]
 # CELERY_TASK_ALWAYS_EAGER = True
 # CELERY_TASK_EAGER_PROPAGATES = True

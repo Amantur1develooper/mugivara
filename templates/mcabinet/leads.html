@@ -1,0 +1,75 @@
+{% extends "mcabinet/_base.html" %}
+{% block title %}Заявки{% endblock %}
+{% block nav_leads %}active{% endblock %}
+
+{% block head_extra %}
+<style>
+  .mc-tabs{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+  .mc-tab{ padding:8px 14px; border-radius:10px; font-size:12.5px; font-weight:700;
+           border:1.5px solid var(--mc-border); color:var(--mc-muted); background:#fff; }
+  .mc-tab.active{ border-color:var(--mc-accent); background:rgba(217,119,6,.08); color:var(--mc-accent); }
+  .mc-lead{ background:var(--mc-card); border:1px solid var(--mc-border); border-radius:14px;
+            padding:15px 17px; margin-bottom:10px; }
+  .mc-lead-head{ display:flex; gap:12px; align-items:baseline; flex-wrap:wrap; }
+  .mc-lead-name{ font-weight:800; font-size:14px; }
+  .mc-lead-time{ font-size:11.5px; color:var(--mc-muted); margin-left:auto; }
+  .mc-lead-body{ font-size:13px; color:var(--mc-muted); margin-top:7px; line-height:1.5; }
+  .mc-lead-foot{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:12px; }
+  .mc-st{ font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:999px; }
+  .mc-st-new{ background:rgba(239,68,68,.1); color:#b42318; }
+  .mc-st-contacted{ background:rgba(217,119,6,.12); color:#b45309; }
+  .mc-st-won{ background:rgba(16,185,129,.12); color:#03876a; }
+  .mc-st-lost{ background:var(--mc-card2); color:var(--mc-muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mc-topbar">
+  <div>
+    <div class="mc-title">📥 Заявки</div>
+    <div class="mc-sub">Всё, что оставили на витрине — с телефоном и изделием</div>
+  </div>
+</div>
+
+<div class="mc-tabs">
+  <a class="mc-tab {% if not status %}active{% endif %}" href="{% url 'mcabinet:leads' %}">Все</a>
+  {% for value, label in statuses %}
+    <a class="mc-tab {% if status == value %}active{% endif %}" href="?status={{ value }}">
+      {{ label }} · {% for k, v in counts.items %}{% if k == value %}{{ v }}{% endif %}{% endfor %}
+    </a>
+  {% endfor %}
+</div>
+
+{% for l in rows %}
+<div class="mc-lead">
+  <div class="mc-lead-head">
+    <span class="mc-lead-name">{{ l.name|default:"Без имени" }}</span>
+    <a href="tel:{{ l.phone }}" style="font-weight:700;color:var(--mc-accent)">{{ l.phone }}</a>
+    {% if l.phone_digits %}
+      <a href="https://wa.me/{{ l.phone_digits }}" target="_blank" rel="noopener" class="mc-btn mc-btn-sm">💬 WhatsApp</a>
+    {% endif %}
+    <span class="mc-st mc-st-{{ l.status }}">{{ l.get_status_display }}</span>
+    <span class="mc-lead-time">{{ l.created_at|date:"d.m.Y H:i" }}</span>
+  </div>
+  <div class="mc-lead-body">
+    {% if l.product %}<b>Изделие:</b> <a href="{% url 'metalwork:product_detail' company.slug l.product.id %}" target="_blank" style="color:var(--mc-accent)">{{ l.product.name }}</a><br>{% endif %}
+    {% if l.message %}{{ l.message|linebreaksbr }}{% else %}<i>без комментария</i>{% endif %}
+  </div>
+  <form method="post" action="{% url 'mcabinet:lead_update' l.id %}" class="mc-lead-foot">
+    {% csrf_token %}
+    <select class="mc-select" name="status" style="max-width:160px">
+      {% for value, label in statuses %}
+        <option value="{{ value }}" {% if l.status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <input class="mc-input" name="note" value="{{ l.note }}" placeholder="Заметка менеджера" style="flex:1;min-width:180px">
+    <button type="submit" class="mc-btn mc-btn-sm">Сохранить</button>
+  </form>
+</div>
+{% empty %}
+<div class="mc-card" style="text-align:center;padding:60px 20px;color:var(--mc-muted)">
+  <div style="font-size:40px;margin-bottom:10px">📭</div>
+  Заявок пока нет
+</div>
+{% endfor %}
+{% endblock %}
