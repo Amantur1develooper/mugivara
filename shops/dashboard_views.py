@@ -441,6 +441,56 @@ def shop_product_photo_rotate(request, stock_id):
     return JsonResponse({"ok": True, "photo_url": f"{product.photo.url}?v={int(time.time())}"})
 
 
+@login_required(login_url=LOGIN_URL)
+def shop_price_tags(request, branch_id):
+    """Ценники филиала одним PDF: печатают, режут и ставят к товару.
+
+    Печатаем всё, у чего есть цена. Товары с нулевой ценой пропускаем —
+    ценник без цены на полке хуже, чем его отсутствие; ?all=1 включает их
+    в выдачу, если нужно напечатать заготовки.
+    """
+    from io import BytesIO
+    from .pricetags import build_pdf
+
+    branch = get_object_or_404(StoreBranch.objects.select_related("store"), id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:shop_home")
+
+    stocks = (StoreStock.objects
+              .filter(branch=branch, product__is_active=True)
+              .select_related("product", "product__category")
+              .order_by("product__category__sort_order", "product__category_id",
+                        "product__name_ru"))
+
+    cat = (request.GET.get("cat") or "").strip()
+    if cat.isdigit():
+        stocks = stocks.filter(product__category_id=int(cat))
+    include_zero = request.GET.get("all") == "1"
+
+    rows = []
+    for st in stocks:
+        p = st.product
+        if not include_zero and not p.price:
+            continue
+        rows.append({
+            "name":  p.name_ru,
+            "price": p.price,
+            "unit":  f"за {p.get_unit_display()}",
+        })
+
+    buf = BytesIO()
+    build_pdf(buf, rows, title=f"Ценники — {branch.store.name_ru}, {branch.name_ru}")
+    buf.seek(0)
+
+    safe = "".join(ch if ch.isalnum() or ch in " -_" else "_"
+                   for ch in f"{branch.store.name_ru}-{branch.name_ru}").strip()
+    filename = f"cenniki-{safe}-{timezone.localdate():%Y-%m-%d}.pdf"
+    response = HttpResponse(buf.getvalue(), content_type="application/pdf")
+    response["Content-Disposition"] = (
+        f"attachment; filename=pricetags.pdf; filename*=UTF-8''{quote(filename)}")
+    return response
+
+
 # ── СТОП-ЛИСТ ────────────────────────────────────────────────────────────────
 
 @login_required(login_url=LOGIN_URL)
