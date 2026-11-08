@@ -83,6 +83,25 @@ INSTALLED_APPS = [
 # CELERY_TASK_ALWAYS_EAGER = True
 # CELERY_TASK_EAGER_PROPAGATES = True
 
+# Без этого блока Django при DEBUG=False не пишет ошибки запросов никуда:
+# по умолчанию django.request отправляет их только на mail_admins, а почта
+# не настроена. На сервере 500 происходила молча, и причину приходилось
+# угадывать. Теперь трейсбек уходит в stderr → в journalctl.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "plain": {"format": "%(asctime)s %(levelname)s %(name)s %(message)s"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "plain"},
+    },
+    "loggers": {
+        "django.request":  {"handlers": ["console"], "level": "ERROR", "propagate": False},
+        "django.security": {"handlers": ["console"], "level": "ERROR", "propagate": False},
+    },
+}
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
