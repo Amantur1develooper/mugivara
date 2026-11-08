@@ -510,6 +510,34 @@ def _calc_delivery(branch, subtotal: Decimal) -> Decimal:
     return branch.delivery_fee or Decimal("0")
 
 
+# Бейдж популярности: раньше на карточке стояло голое число заказов, и у
+# работающего год заведения получалось «🔥 1000» — цифра ни о чём не говорит
+# гостю и загромождает карточку. Показываем огоньки по пятибалльной шкале.
+HOT_MIN_ORDERS = 10      # ниже этого бейджа нет: три заказа — ещё не хит
+HOT_MAX_FLAMES = 5
+
+
+def _annotate_hot(menu):
+    """Проставляет блюдам число огоньков — от 1 до 5.
+
+    Шкалу считаем от самого заказываемого блюда ЭТОГО филиала, а не от
+    фиксированного порога: у шаурмячной и у ресторана разные обороты, и
+    общий делитель в одном месте давал бы всем по пять огоньков, а в
+    другом — ни одного.
+    """
+    import math
+
+    items = [row.branch_item.item for block in menu for row in block["items"]]
+    top = max((it.order_count or 0 for it in items), default=0)
+    for it in items:
+        n = it.order_count or 0
+        if n < HOT_MIN_ORDERS or top < HOT_MIN_ORDERS:
+            it.hot_flames, it.hot_label = 0, ""
+            continue
+        flames = max(1, min(HOT_MAX_FLAMES, math.ceil(HOT_MAX_FLAMES * n / top)))
+        it.hot_flames, it.hot_label = flames, "🔥" * flames
+
+
 def _build_branch_menu_context(request, branch):
     """Shared logic for branch menu views."""
     from django.db.models import Prefetch
@@ -532,6 +560,8 @@ def _build_branch_menu_context(request, branch):
     for bc in categories:
         if bc.prefetched_items:
             menu.append({"branch_category": bc, "items": bc.prefetched_items})
+
+    _annotate_hot(menu)
 
     # Конструкторы — только если есть активные с ингредиентами
     constructors_qs = (
