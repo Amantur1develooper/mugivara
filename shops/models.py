@@ -8,6 +8,8 @@ from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
 from io import BytesIO
 from django.core.files.base import ContentFile
+from decimal import Decimal
+from django.core.validators import MaxValueValidator, MinValueValidator
 from PIL import Image, ImageOps
 import os
 import secrets
@@ -72,7 +74,25 @@ class Store(models.Model):
                   "Стоп-лист продолжает работать и имеет приоритет. "
                   "Если выключено — то же самое можно включить отдельному товару.",
     )
+    # Рейтинг ставит администратор платформы вручную — это редакторская
+    # оценка, а не среднее по отзывам: отзывов на площадке нет, а считать
+    # рейтинг по заказам нечестно, магазины приходят в разное время.
+    # По нему же магазины выстраиваются в списке и на главной.
+    rating = models.DecimalField(
+        "Рейтинг", max_digits=3, decimal_places=1, default=0,
+        validators=[MinValueValidator(Decimal("0")), MaxValueValidator(Decimal("5"))],
+        help_text="От 0 до 5, можно с десятой долей: 4.8. "
+                  "0 — не показывать звёздочку, такие магазины идут в конце списка.",
+    )
     is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Магазин"
+        verbose_name_plural = "Магазины"
+        ordering = ["-rating", "name_ru"]
+        indexes = [
+            models.Index(fields=["is_active", "-rating"], name="store_active_rating_idx"),
+        ]
 
     def save(self, *args, **kwargs):
         if not self.slug:

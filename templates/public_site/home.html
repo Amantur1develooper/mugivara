@@ -193,6 +193,11 @@
     position:absolute; inset:0;
     background:linear-gradient(to top, rgba(0,0,0,.55) 0%, transparent 55%);
   }
+  .biz-rating {
+    position:absolute; top:8px; right:8px; padding:3px 9px; border-radius:999px;
+    background:rgba(12,16,22,.62); backdrop-filter:blur(8px);
+    color:#fff; font-size:11px; font-weight:800; letter-spacing:-.1px; z-index:2;
+  }
   .biz-name-over {
     position:absolute; bottom:0; left:0; right:0; padding:12px 14px;
     font-family:'Unbounded',sans-serif; font-size:12px; font-weight:700;
@@ -663,6 +668,9 @@
             <div class="biz-img-ph">🛍️</div>
           {% endif %}
           <div class="biz-overlay"></div>
+          {% if card.obj.rating and card.obj.rating > 0 %}
+            <div class="biz-rating">⭐ {{ card.obj.rating|floatformat:"-1" }}</div>
+          {% endif %}
           <div class="biz-name-over">{% t card.obj 'name' %}</div>
         </div>
       </a>

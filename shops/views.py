@@ -74,6 +74,8 @@ def _is_valid_kg_phone(phone: str) -> bool:
 def store_list(request):
     import json
     q = (request.GET.get("q") or "").strip()
+    # порядок задаётся рейтингом (Meta.ordering у Store): выше оценка — выше
+    # в списке, магазины без оценки идут следом по алфавиту
     stores = Store.objects.filter(is_active=True)
     if q:
         stores = stores.filter(name_ru__icontains=q)

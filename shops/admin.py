@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.contrib import admin
 from django.shortcuts import redirect, render
 from django.urls import path
@@ -19,11 +21,26 @@ class StoreMembershipAdmin(admin.ModelAdmin):
 
 @admin.register(Store)
 class StoreAdmin(admin.ModelAdmin):
-    list_display = ("name_ru", "slug", "is_active")
+    # rating и is_active правятся прямо в списке: расставить оценки
+    # десятку магазинов, открывая каждый по отдельности, — занятие на полчаса
+    list_display = ("name_ru", "rating", "stars", "slug", "is_active")
+    list_display_links = ("name_ru",)
+    list_editable = ("rating", "is_active")
+    list_filter = ("is_active",)
+    ordering = ("-rating", "name_ru")
     search_fields = ("name_ru", "name_ky", "name_en", "slug")
     prepopulated_fields = {"slug": ("name_ru",)}
     fields = ("place_category", "name_ru", "name_ky", "name_en", "slug", "logo", "about_ru",
-              "youtube_url", "instagram_url", "instagram_url_2", "order_phone", "is_active")
+              "youtube_url", "instagram_url", "instagram_url_2", "order_phone",
+              "rating", "is_active")
+
+    @admin.display(description="Как выглядит")
+    def stars(self, obj):
+        if not obj.rating:
+            return "—"
+        full = int(obj.rating)
+        half = (obj.rating - full) >= Decimal("0.5")
+        return "★" * full + ("⯨" if half else "") + f"  {obj.rating:.1f}"
 
 
 @admin.register(StoreBranch)

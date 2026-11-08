@@ -226,9 +226,9 @@ def home(request):
         Store.objects
         .filter(is_active=True, branches__is_active=True)
         .distinct()
-        .only("id", "name_ru", "slug", "logo")
+        .only("id", "name_ru", "slug", "logo", "rating")
         .prefetch_related("branches")
-        .order_by("name_ru")[:8]
+        .order_by("-rating", "name_ru")[:8]
     )
     store_cards = []
     for s in top_stores:
