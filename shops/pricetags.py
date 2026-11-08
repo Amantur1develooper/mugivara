@@ -99,28 +99,51 @@ def _fit(text, font, max_width, max_lines, hi, lo):
 
 
 def _draw_tag(c, x, y, name, price_text, unit_text, note):
-    """Один ценник. (x, y) — левый нижний угол."""
+    """Один ценник. (x, y) — левый нижний угол.
+
+    Всё по центру: ценник читают с полки, под углом и мельком, и
+    выключка по центру держит взгляд на одной оси — цена оказывается
+    ровно под названием, а не уезжает в угол.
+    """
     c.setStrokeColor(CUT)
     c.setLineWidth(0.4)
     c.rect(x, y, TAG_W, TAG_H)
 
     inner = TAG_W - 2 * PAD
+    mid = x + TAG_W / 2
 
-    # ── цена: занимает нижнюю треть, кегль под ширину ──
-    price_size, _ = _fit(price_text, BOLD, inner * 0.78, 1, 46, 16)
-    price_baseline = y + PAD + 1.5 * mm
+    # ── единица измерения: самая нижняя строка ──
+    unit_h = 0
+    if unit_text:
+        unit_h = 9
+        c.setFont(REGULAR, 8.5)
+        c.setFillColor(MUTED)
+        c.drawCentredString(mid, y + PAD, unit_text)
+
+    # ── цена с «сом»: подбираем кегль так, чтобы вся связка влезла ──
+    price_size = 46
+    while price_size > 16:
+        w = (pdfmetrics.stringWidth(price_text, BOLD, price_size)
+             + 2 * mm + pdfmetrics.stringWidth("сом", REGULAR, price_size * 0.3))
+        if w <= inner:
+            break
+        price_size -= 0.5
+
+    cur_size = max(8, price_size * 0.3)
+    price_w = pdfmetrics.stringWidth(price_text, BOLD, price_size)
+    cur_w = pdfmetrics.stringWidth("сом", REGULAR, cur_size)
+    group_w = price_w + 2 * mm + cur_w
+    price_baseline = y + PAD + unit_h + 1.5 * mm
+    left = mid - group_w / 2
+
     c.setFillColor(black)
     c.setFont(BOLD, price_size)
-    c.drawString(x + PAD, price_baseline, price_text)
-
-    price_w = pdfmetrics.stringWidth(price_text, BOLD, price_size)
-    c.setFont(REGULAR, 11)
+    c.drawString(left, price_baseline, price_text)
+    c.setFont(REGULAR, cur_size)
     c.setFillColor(MUTED)
-    c.drawString(x + PAD + price_w + 2 * mm, price_baseline + 1 * mm, "сом")
-    if unit_text:
-        c.drawRightString(x + TAG_W - PAD, price_baseline + 1 * mm, unit_text)
+    c.drawString(left + price_w + 2 * mm, price_baseline + 1 * mm, "сом")
 
-    # ── название: всё, что осталось сверху ──
+    # ── название: занимает всё, что осталось сверху ──
     top = y + TAG_H - PAD
     bottom = price_baseline + price_size * 0.85
     avail = top - bottom
@@ -131,14 +154,14 @@ def _draw_tag(c, x, y, name, price_text, unit_text, note):
         name_size, lines = _fit(name, BOLD, inner, 3, name_size - 0.5, 7)
         leading = name_size * 1.12
 
-    # блок названия центрируем по вертикали: иначе у товара с одним словом
-    # между названием и ценой зияет пустая половина ценника
+    # блок названия центрируем и по вертикали: у товара из одного слова
+    # иначе зияла пустая половина ценника
     block = len(lines) * leading
     ty = bottom + (avail - block) / 2 + block - name_size * 0.88
     c.setFillColor(black)
     c.setFont(BOLD, name_size)
     for line in lines:
-        c.drawString(x + PAD, ty, line)
+        c.drawCentredString(mid, ty, line)
         ty -= leading
 
     if note:
