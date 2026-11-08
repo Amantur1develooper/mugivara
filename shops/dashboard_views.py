@@ -394,6 +394,53 @@ def shop_stock_export(request, branch_id):
     return response
 
 
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def shop_product_photo_rotate(request, stock_id):
+    """Повернуть фото товара на 90°.
+
+    Нужна даже при исправленном EXIF: часть снимков приходит вообще без
+    тега ориентации (скриншоты, пересланное через мессенджер, фото из
+    старых каталогов), и развернуть их автоматически не по чему.
+
+    Файл перезаписываем на том же пути, а в ответе отдаём адрес с меткой
+    времени — иначе браузер покажет из кэша старую, неповёрнутую картинку.
+    """
+    import time
+    from io import BytesIO
+    from PIL import Image, ImageOps
+    from django.core.files.base import ContentFile
+
+    stock = get_object_or_404(StoreStock, id=stock_id)
+    if not _has_branch_access(request.user, stock.branch):
+        return JsonResponse({"ok": False}, status=403)
+
+    product = stock.product
+    if not product.photo:
+        return JsonResponse({"ok": False, "error": "У товара нет фото"})
+
+    # ROTATE_90 — против часовой («влево»), ROTATE_270 — по часовой («вправо»)
+    turn = (Image.Transpose.ROTATE_90 if request.POST.get("dir") == "left"
+            else Image.Transpose.ROTATE_270)
+    try:
+        with product.photo.open("rb") as fh:
+            img = Image.open(fh)
+            img = (ImageOps.exif_transpose(img) or img).convert("RGB")
+            img = img.transpose(turn)
+            buf = BytesIO()
+            img.save(buf, format="WEBP", quality=85, method=6)
+        buf.seek(0)
+        name = product.photo.name
+        storage = product.photo.storage
+        if storage.exists(name):
+            storage.delete(name)
+        storage.save(name, ContentFile(buf.read()))
+    except Exception:
+        return JsonResponse({"ok": False, "error": "Не удалось повернуть фото"})
+
+    return JsonResponse({"ok": True, "photo_url": f"{product.photo.url}?v={int(time.time())}"})
+
+
 # ── СТОП-ЛИСТ ────────────────────────────────────────────────────────────────
 
 @login_required(login_url=LOGIN_URL)

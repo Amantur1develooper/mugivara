@@ -292,6 +292,17 @@
 }
 .pm-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
+.pm-rotate { display: none; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+.pm-rotate.on { display: flex; }
+.pm-rotate-btn {
+  padding: 7px 13px; border-radius: 10px; border: 1.5px solid var(--border);
+  background: var(--card); color: var(--text); font-size: 12.5px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+}
+.pm-rotate-btn:hover { border-color: var(--accent); color: var(--accent); }
+.pm-rotate-btn:disabled { opacity: .5; cursor: default; }
+.pm-rotate-hint { font-size: 11px; color: var(--muted); }
+
 /* photo picker in sheet */
 .pm-photo-pick {
   width: 100%; height: 120px; border-radius: 14px;
@@ -503,6 +514,7 @@
   data-cat-delete="{% url 'dashboard:shop_category_delete' 0 %}"
   data-cat-reorder="{% url 'dashboard:shop_category_reorder' branch.id %}"
   data-barcode-lookup="{% url 'dashboard:shop_barcode_lookup' branch.id %}"
+  data-photo-rotate="{% url 'dashboard:shop_product_photo_rotate' 0 %}"
 ></div>
 
 {# categories JSON for sheet select #}
@@ -664,6 +676,11 @@ const PM_CATS = [
         <input type="file" accept="image/*" id="pmPhotoInput" onchange="sheetPreviewPhoto(this)">
         <span class="pm-photo-pick-icon" id="pmPhotoIcon">📷</span>
         <span class="pm-photo-pick-label" id="pmPhotoLabel">Нажмите чтобы выбрать</span>
+      </div>
+      <div class="pm-rotate" id="pmRotate">
+        <button type="button" class="pm-rotate-btn" onclick="rotatePhoto('left')">↺ Влево</button>
+        <button type="button" class="pm-rotate-btn" onclick="rotatePhoto('right')">↻ Вправо</button>
+        <span class="pm-rotate-hint" id="pmRotateHint">поворот сохраняется сразу</span>
       </div>
     </div>
 
@@ -945,6 +962,8 @@ function openAddSheet(catId) {
   document.getElementById('pmPhotoIcon').style.display = '';
   document.getElementById('pmPhotoLabel').style.display = '';
   document.getElementById('pmPhotoInput').value = '';
+  // у нового товара фото ещё нет — поворачивать нечего
+  document.getElementById('pmRotate').classList.remove('on');
   // reset optional
   document.getElementById('pmOptional').classList.remove('open');
 
@@ -987,10 +1006,48 @@ function openEditSheet(stockId, data) {
     document.getElementById('pmPhotoLabel').style.display = '';
   }
   document.getElementById('pmPhotoInput').value = '';
+  // поворот работает с уже сохранённым файлом, поэтому кнопки только там,
+  // где фото есть
+  document.getElementById('pmRotate').classList.toggle('on', !!data.photo_url);
+  document.getElementById('pmRotateHint').textContent = 'поворот сохраняется сразу';
 
   document.getElementById('pmSheetBg').classList.add('open');
   document.getElementById('pmSheet').classList.add('open');
   setTimeout(() => document.getElementById('pmNameRu').focus(), 300);
+}
+
+function rotatePhoto(dir) {
+  if (!_sheetStockId) return;
+  const box  = document.getElementById('pmRotate');
+  const hint = document.getElementById('pmRotateHint');
+  const btns = box.querySelectorAll('.pm-rotate-btn');
+  btns.forEach(b => b.disabled = true);
+  hint.textContent = 'поворачиваю…';
+
+  const fd = new FormData();
+  fd.append('dir', dir);
+  fetch(sUrl(URLS.photoRotate, _sheetStockId), {
+    method: 'POST',
+    headers: { 'X-CSRFToken': CSRF },
+    body: fd,
+  })
+    .then(r => r.json())
+    .then(d => {
+      btns.forEach(b => b.disabled = false);
+      if (!d.ok) { hint.textContent = d.error || 'не получилось'; return; }
+      hint.textContent = 'готово';
+      // превью в карточке
+      const img = document.querySelector('#pmPhotoPick img');
+      if (img) img.src = d.photo_url;
+      // и миниатюра в списке — иначе там останется старый кадр
+      const row = document.getElementById('stock-row-' + _sheetStockId);
+      const thumb = row && row.querySelector('.pm-thumb');
+      if (thumb) thumb.src = d.photo_url;
+    })
+    .catch(() => {
+      btns.forEach(b => b.disabled = false);
+      hint.textContent = 'нет связи с сервером';
+    });
 }
 
 function closeAddSheet() {

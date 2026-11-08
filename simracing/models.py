@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from io import BytesIO
 import os
 from django.core.files.base import ContentFile
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 def _compress(field, max_side=900, quality=82):
@@ -15,7 +15,13 @@ def _compress(field, max_side=900, quality=82):
         return False
     try:
         field.file.seek(0)
-        img = Image.open(field).convert("RGB")
+        img = Image.open(field)
+        # Телефон почти всегда снимает «в альбом», а как повернуть кадр
+        # пишет в EXIF-тег Orientation. Pillow этот тег не применяет, и при
+        # пересохранении в WebP он терялся — фото с айфона вставало боком.
+        # exif_transpose разворачивает пиксели так, как задумано съёмкой.
+        img = ImageOps.exif_transpose(img) or img
+        img = img.convert("RGB")
         img.thumbnail((max_side, max_side), Image.LANCZOS)
         buf = BytesIO()
         img.save(buf, format="WEBP", quality=quality, method=6)

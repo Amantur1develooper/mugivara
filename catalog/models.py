@@ -4,7 +4,7 @@ from core.models import Restaurant, Branch, TimeStampedModel
 import os
 from io import BytesIO
 from django.core.files.base import ContentFile
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 def pick_lang(obj, base_field):
@@ -63,6 +63,11 @@ def _compress_photo(field, max_side=900, quality=82):
     try:
         field.file.seek(0)
         img = Image.open(field)
+        # Телефон почти всегда снимает «в альбом», а как повернуть кадр
+        # пишет в EXIF-тег Orientation. Pillow этот тег не применяет, и при
+        # пересохранении в WebP он терялся — фото с айфона вставало боком.
+        # exif_transpose разворачивает пиксели так, как задумано съёмкой.
+        img = ImageOps.exif_transpose(img) or img
         # Уже готовый лёгкий WebP не трогаем: повторное кодирование не уменьшает
         # файл, а качество съедает (и нередко делает его даже тяжелее).
         if img.format == "WEBP" and max(img.size) <= max_side:

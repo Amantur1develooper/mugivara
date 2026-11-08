@@ -1,7 +1,7 @@
 from django.db import models
 from io import BytesIO
 from django.core.files.base import ContentFile
-from PIL import Image
+from PIL import Image, ImageOps
 import os
 
 
@@ -17,6 +17,11 @@ def _compress_photo(image_field, size=(1200, 800), quality=85):
     """Сжимает фото в WebP. Возвращает ContentFile или None."""
     try:
         img = Image.open(image_field)
+        # Телефон почти всегда снимает «в альбом», а как повернуть кадр
+        # пишет в EXIF-тег Orientation. Pillow этот тег не применяет, и при
+        # пересохранении в WebP он терялся — фото с айфона вставало боком.
+        # exif_transpose разворачивает пиксели так, как задумано съёмкой.
+        img = ImageOps.exif_transpose(img) or img
         img = img.convert("RGB")
         img.thumbnail(size, Image.LANCZOS)
         buf = BytesIO()

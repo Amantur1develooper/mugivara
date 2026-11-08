@@ -4,7 +4,7 @@ from django.utils import timezone
 import os
 from io import BytesIO
 from django.core.files.base import ContentFile
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 class TimeStampedModel(models.Model):
@@ -166,7 +166,10 @@ class Branch(TimeStampedModel):
             try:
                 original_size = self.promo_photo.file.seek(0, 2) or self.promo_photo.file.tell()
                 self.promo_photo.file.seek(0)
-                img = Image.open(self.promo_photo).convert("RGB")
+                img = Image.open(self.promo_photo)
+                # EXIF-тег Orientation Pillow сам не применяет: без этого
+                # снимок с телефона сохранялся повёрнутым набок
+                img = (ImageOps.exif_transpose(img) or img).convert("RGB")
                 orig_w, orig_h = img.size
                 img.thumbnail((1200, 600), Image.LANCZOS)
                 new_w, new_h = img.size

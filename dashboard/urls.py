@@ -119,6 +119,7 @@ urlpatterns = [
     path("shops/branch/<int:branch_id>/products/",          sv.shop_product_list,     name="shop_product_list"),
     path("shops/branch/<int:branch_id>/stop-list/",         sv.shop_stop_list,        name="shop_stop_list"),
     path("shops/branch/<int:branch_id>/stock/export/",      sv.shop_stock_export,     name="shop_stock_export"),
+    path("shops/stock/<int:stock_id>/photo/rotate/",        sv.shop_product_photo_rotate, name="shop_product_photo_rotate"),
     path("shops/stock/<int:stock_id>/stop-toggle/",         sv.shop_stop_toggle,      name="shop_stop_toggle"),
     path("shops/stock/<int:stock_id>/qty/",                 sv.shop_stock_update,     name="shop_stock_update"),
     path("shops/stock/<int:stock_id>/price/",               sv.shop_price_update,     name="shop_price_update"),
