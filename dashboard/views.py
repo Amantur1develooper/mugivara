@@ -592,6 +592,7 @@ def branch_edit(request, branch_id):
         branch.pay_cash_enabled    = request.POST.get("pay_cash_enabled") == "on"
         branch.pay_online_enabled  = request.POST.get("pay_online_enabled") == "on"
         branch.print_on_accept     = request.POST.get("print_on_accept") == "on"
+        branch.pos_open_receipt    = request.POST.get("pos_open_receipt") == "on"
 
         ot = request.POST.get("open_time", "").strip()
         ct = request.POST.get("close_time", "").strip()

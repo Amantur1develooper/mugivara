@@ -1110,6 +1110,12 @@ const TABLE_CLOSE_URL  = "{% url 'dashboard:pos_table_close' 0 %}".replace("/0/"
 const TABLE_ORDER_URL  = "{% url 'dashboard:pos_table_order_json' 0 %}".replace("/0/", "/{id}/");
 const PROMO_URL        = "{% url 'public_site:validate_promo' branch.id %}";
 const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+// Вкладка с чеком при оформлении. Выключается в настройках филиала: там,
+// где чеки печатает облачный принтер, она только мешает кассиру.
+// Открывать окно нужно ДО await — после асинхронного вызова Chrome
+// считает это всплывающим окном и блокирует.
+const OPEN_RECEIPT = {{ branch.pos_open_receipt|yesno:"true,false" }};
+const openReceiptWin = () => OPEN_RECEIPT ? window.open('', '_blank') : null;
 
 // ── Table state ────────────────────────────────────────────────────────────
 let selectedTableId   = null;
@@ -1331,7 +1337,7 @@ async function closeTableBill(payment) {
   if (!openTableOrderId) { alert("Нет открытого заказа на этом столе"); return; }
   if (!confirm("Закрыть счёт? Оплата: " + (payment === "cash" ? "наличные" : "карта"))) return;
 
-  const receiptWin = window.open('', '_blank');
+  const receiptWin = openReceiptWin();
   try {
     const r = await fetch(TABLE_CLOSE_URL.replace("{id}", openTableOrderId), {
       method: "POST",
@@ -1386,8 +1392,7 @@ async function submitOrder() {
   btn.disabled = true;
   btn.textContent = "Оформляем...";
 
-  // Open blank window before await — Chrome blocks window.open() after async calls
-  const receiptWin = window.open('', '_blank');
+  const receiptWin = openReceiptWin();
 
   const items = keys.map(id => ({ bi_id: parseInt(id), qty: cart[id].qty }));
   const comment = document.getElementById("posComment").value.trim();
@@ -1505,8 +1510,7 @@ const STATUS_NEXT = {
 const STATUS_LABEL = { new:"Новый", accepted:"Принят", cooking:"Готовится", ready:"Готов" };
 
 async function setOrderStatus(orderId, status) {
-  // Open receipt window BEFORE await to avoid Chrome popup blocker
-  const receiptWin = (status === "accepted") ? window.open('', '_blank') : null;
+  const receiptWin = (status === "accepted") ? openReceiptWin() : null;
 
   const fd = new FormData();
   fd.append("status", status);

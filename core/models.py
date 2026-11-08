@@ -138,6 +138,16 @@ class Branch(TimeStampedModel):
     pay_cash_enabled   = models.BooleanField("Наличные (касса)", default=True)
     pay_online_enabled = models.BooleanField("Онлайн / карта (касса)", default=True)
 
+    pos_open_receipt = models.BooleanField(
+        "Открывать окно чека в кассе",
+        default=True,
+        help_text=(
+            "При оформлении заказа и закрытии счёта касса открывает вкладку с чеком. "
+            "Если чеки печатает облачный принтер или печать не нужна вовсе — "
+            "выключите, вкладка перестанет открываться. Кнопка «Печать чека» "
+            "в очереди заказов работает всегда."
+        ),
+    )
     print_on_accept = models.BooleanField(
         "Печать только после подтверждения кассиром",
         default=False,

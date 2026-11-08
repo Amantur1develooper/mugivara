@@ -304,6 +304,25 @@
         <span class="db-switch-slider"></span>
       </label>
     </div>
+
+    <div style="height:12px"></div>
+
+    <div class="db-toggle-row">
+      <div>
+        <div class="db-toggle-label">Открывать окно чека в кассе</div>
+        <div class="db-toggle-desc">
+          <strong>Включено (по умолчанию)</strong> — при оформлении заказа, закрытии счёта
+          и нажатии «Принять» касса открывает вкладку с чеком.<br>
+          <strong>Выключено</strong> — вкладка не открывается. Выключайте, если чеки
+          печатает облачный принтер или печать не нужна: лишнее окно только мешает кассиру.
+          Кнопка <strong>«Печать чека»</strong> в очереди заказов работает в любом случае.
+        </div>
+      </div>
+      <label class="db-switch">
+        <input type="checkbox" name="pos_open_receipt" {% if branch.pos_open_receipt %}checked{% endif %}>
+        <span class="db-switch-slider"></span>
+      </label>
+    </div>
   </div>
 
   {# ── ВНЕШНИЙ САЙТ ── #}
