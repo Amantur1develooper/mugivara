@@ -578,10 +578,38 @@ def branch_edit(request, branch_id):
 
     if request.method == "POST":
         def dec(key, default="0"):
+            # запятая как разделитель: русская раскладка и локализованный вывод
+            # формы дают «1,5», и без замены Decimal на этом падал
+            raw = (request.POST.get(key) or default).strip().replace("\xa0", "").replace(" ", "").replace(",", ".")
             try:
-                return Decimal(request.POST.get(key) or default)
+                return Decimal(raw)
             except InvalidOperation:
                 return Decimal(default)
+
+        def coord(key, limit):
+            """Широта/долгота из текстового поля.
+
+            Поле свободное: туда попадают «40,5283», «40.5283, 72.7985»
+            и просто ссылка на карту. Раньше строка уходила в DecimalField
+            как есть и роняла сохранение всей страницы настроек с 500 —
+            причём форма сама подставляла значение с запятой, так что
+            достаточно было открыть настройки и нажать «Сохранить».
+            Возвращаем (значение, ошибка).
+            """
+            raw = (request.POST.get(key) or "").strip().replace("\xa0", "").replace(" ", "")
+            if not raw:
+                return None, None
+            raw = raw.replace(",", ".")
+            # «40.5283.72.7985» — вставили обе координаты в одно поле
+            if raw.count(".") > 1:
+                return None, "похоже, в одно поле вставлены обе координаты"
+            try:
+                value = Decimal(raw)
+            except InvalidOperation:
+                return None, "это не число"
+            if not (-limit <= value <= limit):
+                return None, f"значение должно быть от -{limit} до {limit}"
+            return value, None
 
         branch.delivery_enabled          = request.POST.get("delivery_enabled") == "on"
         branch.min_order_amount          = dec("min_order_amount")
@@ -624,10 +652,19 @@ def branch_edit(request, branch_id):
         if request.user.is_superuser and "template_slug" in request.POST:
             branch.template_slug = request.POST.get("template_slug", "").strip()
 
-        lat_raw = request.POST.get("lat", "").strip()
-        lon_raw = request.POST.get("lon", "").strip()
-        branch.lat = lat_raw if lat_raw else None
-        branch.lon = lon_raw if lon_raw else None
+        lat, lat_err = coord("lat", 90)
+        lon, lon_err = coord("lon", 180)
+        if lat_err or lon_err:
+            # координаты не сохраняем, но и всю форму из-за них не теряем:
+            # человек правил часы работы, а не карту
+            bad = ", ".join(filter(None, [
+                f"широта — {lat_err}" if lat_err else "",
+                f"долгота — {lon_err}" if lon_err else "",
+            ]))
+            messages.error(request, f"Координаты не сохранены ({bad}). Остальные настройки записаны.")
+        else:
+            branch.lat = lat
+            branch.lon = lon
 
         photo = request.FILES.get("promo_photo")
         if photo:

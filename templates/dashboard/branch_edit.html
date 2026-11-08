@@ -1,4 +1,5 @@
 {% extends "dashboard/base.html" %}
+{% load l10n %}
 
 {% block title %}Настройки — {{ branch.name_ru }}{% endblock %}
 
@@ -440,11 +441,11 @@
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="db-form-group">
         <label class="db-label" style="font-size:11px">Широта</label>
-        <input class="db-input" type="text" name="lat" id="inp-lat" value="{{ branch.lat|default:'' }}" placeholder="40.5283">
+        <input class="db-input" type="text" name="lat" id="inp-lat" value="{{ branch.lat|unlocalize|default:'' }}" placeholder="40.5283">
       </div>
       <div class="db-form-group">
         <label class="db-label" style="font-size:11px">Долгота</label>
-        <input class="db-input" type="text" name="lon" id="inp-lon" value="{{ branch.lon|default:'' }}" placeholder="72.7985">
+        <input class="db-input" type="text" name="lon" id="inp-lon" value="{{ branch.lon|unlocalize|default:'' }}" placeholder="72.7985">
       </div>
     </div>
   </div>
