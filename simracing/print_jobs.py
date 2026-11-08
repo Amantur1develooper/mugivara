@@ -28,11 +28,16 @@ def _session_receipt(session):
 
     type_label = dict(session.machine.Type.choices if hasattr(session.machine, 'Type')
                       else []).get(session.machine_type_snapshot, session.machine_type_snapshot)
-    # Use machine's get_type_display
+    # На чеке — название класса этой площадки, а не общее словарное:
+    # гость только что выбрал на сайте «Спортивный картинг», и в чеке
+    # должно стоять то же самое
     try:
-        type_label = session.machine.get_type_display()
+        type_label = session.venue.type_label(session.machine.type)
     except Exception:
-        pass
+        try:
+            type_label = session.machine.get_type_display()
+        except Exception:
+            pass
 
     lines = [
         SEP,

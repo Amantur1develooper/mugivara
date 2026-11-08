@@ -113,6 +113,13 @@ class SimRacingVenue(models.Model):
     def __str__(self):
         return self.name
 
+    def type_labels_map(self):
+        """{код типа: как эта площадка его называет}."""
+        return _venue_type_labels(self)
+
+    def type_label(self, type_code):
+        return self.type_labels_map().get(type_code, type_code)
+
     def save(self, *args, **kwargs):
         _compress(self.logo)
         _compress(self.cover)
@@ -149,6 +156,18 @@ class SimRacingMembership(models.Model):
         return 100
 
 
+def _venue_type_labels(venue):
+    """{код типа: подпись} для текущего языка, с откатом в общий словарь."""
+    from django.utils.translation import get_language
+    en = (get_language() or "ru")[:2] == "en"
+    out = {value: str(default) for value, default in Machine.Type.choices}
+    for row in venue.type_labels.all():
+        own = ((row.label_en if en else "") or row.label or "").strip()
+        if own:
+            out[row.type] = own
+    return out
+
+
 class Machine(models.Model):
     class Type(models.TextChoices):
         KART_STANDARD = "kart_standard", _("Стандартный картинг")
@@ -171,6 +190,11 @@ class Machine(models.Model):
     def __str__(self):
         return f"{self.name} ({self.get_type_display()})"
 
+    @property
+    def type_title(self):
+        """Название типа так, как его назвала площадка."""
+        return self.venue.type_label(self.type)
+
     def save(self, *args, **kwargs):
         _compress(self.photo)
         super().save(*args, **kwargs)
@@ -178,6 +202,29 @@ class Machine(models.Model):
     @property
     def active_session(self):
         return self.sessions.filter(status=Session.Status.ACTIVE).first()
+
+
+class MachineTypeLabel(models.Model):
+    """Как эта площадка называет тип машины у себя на витрине.
+
+    Типы общие на платформу («Стандартный картинг», «Евроспор картинг»,
+    «Автосимулятор»), но площадки разные: у одной стандартные карты
+    семейные, у другой это единственный и притом спортивный класс.
+    Переименовать тип глобально нельзя — подпись станет неверной у соседей,
+    поэтому название живёт у площадки, а общий список остаётся словарём.
+    """
+    venue    = models.ForeignKey(SimRacingVenue, on_delete=models.CASCADE, related_name="type_labels")
+    type     = models.CharField("Тип машины", max_length=20, choices=Machine.Type.choices)
+    label    = models.CharField("Название на витрине", max_length=120)
+    label_en = models.CharField("Название (EN)", max_length=120, blank=True, default="")
+
+    class Meta:
+        unique_together = [["venue", "type"]]
+        verbose_name = "Название типа машины"
+        verbose_name_plural = "Названия типов машин"
+
+    def __str__(self):
+        return f"{self.venue.name}: {self.get_type_display()} → {self.label}"
 
 
 class SessionType(models.Model):
@@ -197,6 +244,10 @@ class SessionType(models.Model):
 
     def __str__(self):
         return f"{self.get_machine_type_display()} — {self.duration_minutes} мин — {self.price} сом"
+
+    @property
+    def type_title(self):
+        return self.venue.type_label(self.machine_type)
 
 
 class Session(models.Model):
@@ -325,6 +376,10 @@ class SimRacingAppointment(models.Model):
 
     def __str__(self):
         return f"#{self.id} {self.get_machine_type_display()} {self.appt_date} {self.appt_time}"
+
+    @property
+    def type_title(self):
+        return self.venue.type_label(self.machine_type)
 
 
 # ── Печать чеков ──────────────────────────────────────────────────────────────

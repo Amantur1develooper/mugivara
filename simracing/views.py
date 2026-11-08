@@ -184,8 +184,11 @@ def venue(request, slug):
         machines.filter(is_active=True).values_list("type", flat=True)
     )
 
+    # подпись типа берём у площадки: общий словарь остаётся словарём,
+    # а на витрине пишется то, как этот класс называет сама площадка
+    titles = v.type_labels_map()
     machine_types_available = [
-        {"value": v_type, "label": str(label), "has_price": v_type in st_by_type}
+        {"value": v_type, "label": titles.get(v_type, str(label)), "has_price": v_type in st_by_type}
         for v_type, label in Machine.Type.choices
         if v_type in active_types
     ]

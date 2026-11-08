@@ -153,7 +153,7 @@
           {{ appt.appt_date|date:"d.m" }}<br>
           <span style="color:#f97316;font-weight:800;">{{ appt.appt_time|time:"H:i" }}</span>
         </td>
-        <td style="font-size:12px;">{{ appt.get_machine_type_display }}</td>
+        <td style="font-size:12px;">{{ appt.type_title }}</td>
         <td style="font-size:12px;">
           {% if appt.session_type %}{{ appt.session_type.duration_minutes }} мин{% else %}—{% endif %}
           {% if appt.quantity > 1 %}<br><span style="color:var(--muted);">×{{ appt.quantity }}</span>{% endif %}

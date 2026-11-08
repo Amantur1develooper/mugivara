@@ -1,9 +1,20 @@
 from django.contrib import admin
-from .models import SimRacingVenue, SimRacingMembership, Machine, SessionType, Session
+from .models import (
+    MachineTypeLabel, SimRacingVenue, SimRacingMembership, Machine, SessionType, Session,
+)
+
+
+class MachineTypeLabelInline(admin.TabularInline):
+    model = MachineTypeLabel
+    extra = 0
+    fields = ("type", "label", "label_en")
+    verbose_name = "Название типа машины на витрине"
+    verbose_name_plural = "Названия типов машин на витрине"
 
 
 @admin.register(SimRacingVenue)
 class SimRacingVenueAdmin(admin.ModelAdmin):
+    inlines = (MachineTypeLabelInline,)
     list_display = ("name", "slug", "is_active", "sort_order")
     prepopulated_fields = {"slug": ("name",)}
     fieldsets = (

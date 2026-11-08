@@ -9,7 +9,7 @@
   <a href="{% url 'dashboard:sr_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
 </div>
 
-{% regroup types by get_machine_type_display as type_groups %}
+{% regroup types by type_title as type_groups %}
 {% for group in type_groups %}
 <div style="background:var(--card);border:1.5px solid var(--border);border-radius:18px;overflow:hidden;margin-bottom:16px;">
   <div style="padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--border);font-size:14px;font-weight:800;color:var(--text);">

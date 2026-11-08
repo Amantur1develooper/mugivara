@@ -11,8 +11,8 @@ from django.views.decorators.http import require_POST
 
 log = logging.getLogger("simracing.print")
 
-from .models import (Machine, Session, SessionType, SimRacingMembership,
-                     SimRacingVenue, SimRacingAppointment,
+from .models import (Machine, MachineTypeLabel, Session, SessionType,
+                     SimRacingMembership, SimRacingVenue, SimRacingAppointment,
                      SimRacingPrintConfig, SimRacingPrintJob)
 
 LOGIN_URL = "dashboard:login"
@@ -150,12 +150,42 @@ def sr_venue_edit(request, venue_id):
         if request.FILES.get("cover"):
             v.cover = request.FILES["cover"]
         v.save()
+
+        # как площадка называет классы машин у себя на витрине
+        for code, default in Machine.Type.choices:
+            label    = (request.POST.get(f"tlabel_{code}") or "").strip()[:120]
+            label_en = (request.POST.get(f"tlabel_en_{code}") or "").strip()[:120]
+            if label and label != str(default):
+                MachineTypeLabel.objects.update_or_create(
+                    venue=v, type=code, defaults={"label": label, "label_en": label_en})
+            elif label_en:
+                # английское название без русского: русское остаётся общим
+                MachineTypeLabel.objects.update_or_create(
+                    venue=v, type=code, defaults={"label": str(default), "label_en": label_en})
+            else:
+                # вернули общее название — запись не нужна, иначе она будет
+                # молча перекрывать словарь, если тот однажды поменяется
+                MachineTypeLabel.objects.filter(venue=v, type=code).delete()
+
         return redirect("dashboard:sr_venue_edit", venue_id=v.id)
     try:
         print_cfg = v.print_config
     except SimRacingPrintConfig.DoesNotExist:
         print_cfg = None
-    return render(request, "dashboard/simracing/venue_edit.html", {"venue": v, "print_cfg": print_cfg})
+
+    own = {r.type: r for r in v.type_labels.all()}
+    used = set(v.machines.values_list("type", flat=True))
+    type_rows = [{
+        "code": code,
+        "default": str(default),
+        "label": own[code].label if code in own else "",
+        "label_en": own[code].label_en if code in own else "",
+        "used": code in used,
+    } for code, default in Machine.Type.choices]
+
+    return render(request, "dashboard/simracing/venue_edit.html", {
+        "venue": v, "print_cfg": print_cfg, "type_rows": type_rows,
+    })
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -176,7 +206,9 @@ def sr_machines(request, venue_id):
     return render(request, "dashboard/simracing/machines.html", {
         "venue": v,
         "machines_data": machines_data,
-        "machine_types": Machine.Type.choices,
+        # в списке выбора — названия этой площадки: иначе владелец переименует
+        # класс и тут же увидит в своей же форме старое общее название
+        "machine_types": list(v.type_labels_map().items()),
     })
 
 
@@ -234,7 +266,9 @@ def sr_session_types(request, venue_id):
     return render(request, "dashboard/simracing/session_types.html", {
         "venue": v,
         "types": types,
-        "machine_types": Machine.Type.choices,
+        # в списке выбора — названия этой площадки: иначе владелец переименует
+        # класс и тут же увидит в своей же форме старое общее название
+        "machine_types": list(v.type_labels_map().items()),
     })
 
 

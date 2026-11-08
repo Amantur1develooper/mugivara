@@ -139,6 +139,27 @@
       </div>
     </div>
 
+    <div>
+      <label class="db-label" style="margin-bottom:4px;">🏷 Как называются классы машин на витрине</label>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.45;">
+        Слева — общее название на платформе. Впишите своё, если у вас этот класс
+        называется иначе: например «Спортивный картинг» вместо «Стандартный».
+        Пустое поле — останется общее название. Меняется только у вашей площадки.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        {% for t in type_rows %}
+        <div style="display:grid;grid-template-columns:minmax(130px,1fr) minmax(0,1.3fr) minmax(0,1fr);gap:8px;align-items:center;">
+          <div style="font-size:12.5px;font-weight:700;color:{% if t.used %}var(--text){% else %}var(--muted){% endif %};">
+            {{ t.default }}
+            {% if not t.used %}<span style="font-weight:600;font-size:11px;"> · не используется</span>{% endif %}
+          </div>
+          <input name="tlabel_{{ t.code }}" class="db-input" value="{{ t.label }}" placeholder="{{ t.default }}">
+          <input name="tlabel_en_{{ t.code }}" class="db-input" value="{{ t.label_en }}" placeholder="English">
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
     <button type="submit" class="db-btn db-btn-primary" style="align-self:flex-start;">💾 Сохранить</button>
   </div>
 </form>

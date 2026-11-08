@@ -19,7 +19,7 @@
     {% endif %}
     <div style="flex:1;min-width:0;">
       <div style="font-size:14px;font-weight:700;color:var(--text){% if not machine.is_active %};opacity:.5;text-decoration:line-through{% endif %};">{{ machine.name }}</div>
-      <div style="font-size:11px;color:var(--muted);">{{ machine.get_type_display }}</div>
+      <div style="font-size:11px;color:var(--muted);">{{ machine.type_title }}</div>
       {% if active_session %}
         <div style="font-size:11px;color:#f97316;font-weight:600;">🏁 Активная сессия</div>
       {% endif %}
