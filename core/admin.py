@@ -7,7 +7,7 @@ from django import forms
 from django.contrib.admin.widgets import AutocompleteSelect
 from django.db import transaction
 from django.utils.html import format_html
-from .models import Restaurant, Branch, Membership, PromoCode, Banner, PlaceCategory, TeamMember
+from .models import Restaurant, Branch, Membership, PromoCode, Banner, PlaceCategory, Review, TeamMember
 from catalog.models import MenuSet, Item, BranchMenuSet, BranchItem
 from catalog.models import BranchItem as CatalogBranchItem
 from catalog.services import sync_branch_menu, ensure_links_for_branch_item
@@ -429,3 +429,18 @@ class UserAdmin(BaseUserAdmin):
             .distinct()
         )
         return ", ".join(names) if names else "—"
+
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display  = ("created_at", "author", "branch", "short", "is_published")
+    list_filter   = ("branch__restaurant", "is_published")
+    list_editable = ("is_published",)
+    list_select_related = ("branch", "branch__restaurant")
+    search_fields = ("nickname", "phone", "text")
+    date_hierarchy = "created_at"
+    readonly_fields = ("created_at", "order")
+
+    @admin.display(description="Отзыв")
+    def short(self, obj):
+        return obj.text[:70] + ("…" if len(obj.text) > 70 else "")

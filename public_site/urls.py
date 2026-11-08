@@ -9,6 +9,7 @@ from .views import (
     constructor_build_page,
     kp_index, kp_detail, kp_print,
     survey_page,
+    review_create,
 )
 from reservations import views as r
 from public_site.views_table import (
@@ -89,6 +90,8 @@ urlpatterns = [
     
     path("r/<slug:slug>/about/", restaurant_about, name="restaurant_about"),
 path("b/<int:branch_id>/checkout/success/<int:order_id>/", checkout_success, name="checkout_success"),
+path("b/<int:branch_id>/review/", review_create, name="review_create"),
+path("b/<int:branch_id>/review/<int:order_id>/", review_create, name="review_create_order"),
 
 
 ]

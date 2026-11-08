@@ -11,7 +11,8 @@ from decimal import Decimal, InvalidOperation
 from django.utils import timezone
 from django.db.models import Count, Max, Sum, Q
 from datetime import timedelta
-from core.models import Restaurant, Branch, Membership, PromoCode, PageView
+from django.urls import reverse
+from core.models import Restaurant, Branch, Membership, PromoCode, PageView, Review
 from catalog.models import (
     BranchItem, BranchCategory, BranchCategoryItem,
     Item, ItemCategory, Category, MenuSet, BranchMenuSet,
@@ -654,6 +655,56 @@ def branch_edit(request, branch_id):
         "work_days_list": work_days_list,
         "can_rename": _can_rename_branch(request.user, branch),
     })
+
+
+# ── ОТЗЫВЫ ───────────────────────────────────────────────────────────────────
+
+@login_required(login_url="dashboard:login")
+def branch_reviews(request, branch_id):
+    branch = get_object_or_404(Branch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:home")
+
+    rows = Review.objects.filter(branch=branch).order_by("-created_at")
+    shown = (request.GET.get("show") or "").strip()
+    if shown == "hidden":
+        rows = rows.filter(is_published=False)
+    elif shown == "noreply":
+        rows = rows.filter(reply="")
+
+    return render(request, "dashboard/branch_reviews.html", {
+        "branch": branch,
+        "rows": list(rows[:300]),
+        "shown": shown,
+        "total":   Review.objects.filter(branch=branch).count(),
+        "hidden":  Review.objects.filter(branch=branch, is_published=False).count(),
+        "noreply": Review.objects.filter(branch=branch, reply="").count(),
+    })
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def review_update(request, review_id):
+    """Ответ заведения и показ/скрытие. Текст самого отзыва не трогаем:
+    правка чужих слов — это уже не отзыв."""
+    review = get_object_or_404(Review, id=review_id)
+    if not _has_branch_access(request.user, review.branch):
+        return redirect("dashboard:home")
+    action = request.POST.get("action") or "save"
+    if action == "toggle":
+        review.is_published = not review.is_published
+        review.save(update_fields=["is_published"])
+        messages.success(request, "Отзыв скрыт с витрины" if not review.is_published
+                                  else "Отзыв снова виден на витрине")
+    elif action == "delete":
+        review.delete()
+        messages.success(request, "Отзыв удалён")
+    else:
+        review.reply = (request.POST.get("reply") or "").strip()[:4000]
+        review.save(update_fields=["reply"])
+        messages.success(request, "Ответ сохранён")
+    return redirect(request.META.get("HTTP_REFERER")
+                    or reverse("dashboard:branch_reviews", args=[review.branch_id]))
 
 
 # ── BRANCH MENU (prices + list) ───────────────────────────────────────────────

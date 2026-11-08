@@ -92,6 +92,55 @@
       </div>
     </div>
 
+    {# ── Отзыв ── #}
+    {% if messages %}
+      {% for m in messages %}
+        <div class="mt-5 rounded-2xl p-4 text-sm font-semibold
+                    {% if m.tags == 'error' %}bg-amber-50 ring-1 ring-amber-200 text-amber-900
+                    {% else %}bg-green-50 ring-1 ring-green-200 text-green-900{% endif %}">{{ m }}</div>
+      {% endfor %}
+    {% endif %}
+
+    {% if already_reviewed %}
+      <div class="mt-6 rounded-2xl bg-stone-50 ring-1 ring-stone-200 p-4 text-sm text-stone-600">
+        ⭐ {% trans "Спасибо, вы уже оставили отзыв к этому заказу." %}
+      </div>
+    {% else %}
+    <div class="mt-6 rounded-2xl ring-1 ring-stone-200 p-4 md:p-5">
+      <div class="font-extrabold text-stone-900">⭐ {% trans "Оставьте отзыв" %}</div>
+      <div class="text-sm text-stone-600 mt-1">
+        {% trans "Заведение прочитает его и сможет ответить. Телефон увидит только заведение — на сайте он не показывается." %}
+      </div>
+      <form method="post" action="{% url 'public_site:review_create_order' branch.id order.id %}" class="mt-4 grid gap-3">
+        {% csrf_token %}
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="block">
+            <span class="text-xs font-bold text-stone-500">{% trans "Имя или ник" %}</span>
+            <input name="nickname" maxlength="60" placeholder="{% trans 'Как вас показать' %}"
+                   value="{{ order.customer_name }}"
+                   class="mt-1 w-full px-4 py-3 rounded-2xl ring-1 ring-stone-300 focus:ring-stone-900 outline-none">
+          </label>
+          <label class="block">
+            <span class="text-xs font-bold text-stone-500">{% trans "Телефон" %} · {% trans "только для заведения" %}</span>
+            <input name="phone" maxlength="50" inputmode="tel" placeholder="+996 700 000 000"
+                   value="{{ order.customer_phone }}"
+                   class="mt-1 w-full px-4 py-3 rounded-2xl ring-1 ring-stone-300 focus:ring-stone-900 outline-none">
+          </label>
+        </div>
+        <label class="block">
+          <span class="text-xs font-bold text-stone-500">{% trans "Отзыв" %} *</span>
+          <textarea name="text" required rows="3" maxlength="4000"
+                    placeholder="{% trans 'Что понравилось, что стоит улучшить' %}"
+                    class="mt-1 w-full px-4 py-3 rounded-2xl ring-1 ring-stone-300 focus:ring-stone-900 outline-none"></textarea>
+        </label>
+        <button type="submit"
+                class="justify-self-start px-5 py-3 rounded-2xl bg-stone-900 text-white font-extrabold hover:bg-stone-800">
+          {% trans "Отправить отзыв" %}
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
     <div class="mt-6 rounded-2xl bg-stone-50 ring-1 ring-stone-200 p-4">
       <div class="flex justify-between text-sm text-stone-600">
         <span>{% trans "Подытог" %}</span><span>{{ subtotal }} {% trans "сом" %}</span>

@@ -237,6 +237,51 @@ class Branch(TimeStampedModel):
             return self.open_time <= t < self.close_time
         return t >= self.open_time or t < self.close_time
 
+class Review(TimeStampedModel):
+    """Отзыв гостя, оставленный после заказа.
+
+    Телефон виден только заведению — он нужен, чтобы перезвонить и разобраться,
+    а на витрине от него один вред: это чужой личный номер. Поэтому в шаблоне
+    витрины телефон не выводится нигде, а в кабинете показан отдельным полем.
+    """
+    branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="reviews",
+                               verbose_name="Филиал")
+    order  = models.ForeignKey("orders.Order", on_delete=models.SET_NULL, null=True, blank=True,
+                               related_name="reviews", verbose_name="Заказ")
+    nickname = models.CharField("Имя или ник", max_length=60, blank=True, default="")
+    phone    = models.CharField(
+        "Телефон", max_length=50, blank=True, default="",
+        help_text="Виден только заведению, на витрине не показывается",
+    )
+    text     = models.TextField("Отзыв")
+    is_published = models.BooleanField(
+        "Показывать на витрине", default=True,
+        help_text="Снимите галочку, чтобы спрятать отзыв, не удаляя его",
+    )
+    reply    = models.TextField("Ответ заведения", blank=True, default="")
+
+    class Meta:
+        verbose_name = "Отзыв"
+        verbose_name_plural = "Отзывы"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["branch", "is_published", "-created_at"],
+                         name="review_branch_pub_idx"),
+        ]
+
+    def __str__(self):
+        who = self.nickname or "Гость"
+        return f"{who} → {self.branch.name_ru}: {self.text[:40]}"
+
+    @property
+    def author(self):
+        return self.nickname.strip() or "Гость"
+
+    @property
+    def phone_digits(self):
+        return "".join(ch for ch in (self.phone or "") if ch.isdigit())
+
+
 class PromoCode(TimeStampedModel):
     class DiscountType(models.TextChoices):
         FREE_DELIVERY = "free_delivery", "Бесплатная доставка"

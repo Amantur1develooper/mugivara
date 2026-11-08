@@ -1,0 +1,110 @@
+{% load i18n %}
+{# Блок отзывов. Подключается и стандартным меню, и индивидуальными темами,
+   поэтому стили лежат здесь же: тема может не знать про класс bm-rv-*. #}
+<style>
+  /* отзывы гостей */
+  .bm-reviews{ max-width:1180px; margin:38px auto 80px; padding:0 16px; }
+  .bm-rv-head{ display:flex; align-items:center; gap:12px; margin-bottom:18px; }
+  .bm-rv-line{ flex:1; height:1px; background:var(--border); }
+  .bm-rv-title{ font-size:17px; font-weight:800; letter-spacing:-.3px; margin:0; }
+  .bm-rv-count{
+    font-size:12px; font-weight:800; color:var(--muted);
+    background:var(--card); border:1px solid var(--border); border-radius:999px; padding:2px 10px;
+  }
+  .bm-rv-msg{
+    background:rgba(0,184,150,.08); border:1px solid rgba(0,184,150,.25);
+    border-radius:14px; padding:12px 16px; font-size:13.5px; font-weight:600; margin-bottom:16px;
+  }
+  .bm-rv-list{
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr));
+    gap:12px; margin-bottom:22px;
+  }
+  .bm-rv-card{
+    background:var(--card); border:1px solid var(--border); border-radius:16px; padding:15px 17px;
+  }
+  .bm-rv-top{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+  .bm-rv-who{ font-weight:800; font-size:13.5px; }
+  .bm-rv-date{ font-size:11.5px; color:var(--muted); }
+  .bm-rv-text{ font-size:13.5px; line-height:1.55; margin-top:7px; word-break:break-word; }
+  .bm-rv-reply{
+    margin-top:11px; padding:10px 12px; border-radius:12px;
+    background:rgba(255,77,28,.06); border:1px solid rgba(255,77,28,.16);
+    font-size:12.5px; line-height:1.5;
+  }
+  .bm-rv-reply-who{ font-weight:800; font-size:11px; color:var(--accent); margin-bottom:3px; }
+  .bm-rv-empty{
+    text-align:center; padding:28px 16px; color:var(--muted); font-size:13.5px;
+    background:var(--card); border:1px dashed var(--border); border-radius:16px; margin-bottom:22px;
+  }
+  .bm-rv-form{
+    background:var(--card); border:1px solid var(--border); border-radius:18px; padding:18px 20px;
+    display:flex; flex-direction:column; gap:10px; max-width:640px;
+  }
+  .bm-rv-form-title{ font-weight:800; font-size:14.5px; }
+  .bm-rv-form-note{ font-size:12px; color:var(--muted); line-height:1.45; margin-top:-4px; }
+  .bm-rv-row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .bm-rv-input{
+    width:100%; box-sizing:border-box; padding:11px 14px; border-radius:12px; font-size:13.5px;
+    font-family:inherit; border:1.5px solid var(--border); background:var(--bg); color:var(--text);
+    outline:none;
+  }
+  .bm-rv-input:focus{ border-color:var(--accent); }
+  .bm-rv-area{ resize:vertical; min-height:78px; line-height:1.5; }
+  .bm-rv-send{
+    align-self:flex-start; padding:11px 22px; border:none; border-radius:12px;
+    background:var(--accent); color:#fff; font-weight:800; font-size:13.5px;
+    cursor:pointer; font-family:inherit;
+  }
+  @media(max-width:600px){ .bm-rv-row{ grid-template-columns:1fr; } }
+</style>
+
+{# ══ ОТЗЫВЫ ГОСТЕЙ ══ #}
+<section class="bm-reviews" id="bm-reviews">
+  <div class="bm-rv-head">
+    <div class="bm-rv-line"></div>
+    <h2 class="bm-rv-title">⭐ {% trans "Отзывы гостей" %}</h2>
+    {% if reviews_count %}<span class="bm-rv-count">{{ reviews_count }}</span>{% endif %}
+    <div class="bm-rv-line"></div>
+  </div>
+
+  {% if messages %}
+    {% for m in messages %}<div class="bm-rv-msg">{{ m }}</div>{% endfor %}
+  {% endif %}
+
+  {% if reviews %}
+  <div class="bm-rv-list">
+    {% for rv in reviews %}
+    <article class="bm-rv-card">
+      <div class="bm-rv-top">
+        <span class="bm-rv-who">{{ rv.author }}</span>
+        <span class="bm-rv-date">{{ rv.created_at|date:"d.m.Y" }}</span>
+      </div>
+      <div class="bm-rv-text">{{ rv.text|linebreaksbr }}</div>
+      {% if rv.reply %}
+      <div class="bm-rv-reply">
+        <div class="bm-rv-reply-who">{% trans "Ответ заведения" %}</div>
+        {{ rv.reply|linebreaksbr }}
+      </div>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="bm-rv-empty">{% trans "Отзывов пока нет — будьте первым." %}</div>
+  {% endif %}
+
+  <form class="bm-rv-form" method="post" action="{% url 'public_site:review_create' branch.id %}">
+    {% csrf_token %}
+    <div class="bm-rv-form-title">{% trans "Написать отзыв" %}</div>
+    <div class="bm-rv-form-note">
+      {% trans "Телефон увидит только заведение — он нужен для обратной связи и на сайте не показывается." %}
+    </div>
+    <div class="bm-rv-row">
+      <input class="bm-rv-input" name="nickname" maxlength="60" placeholder="{% trans 'Имя или ник' %}">
+      <input class="bm-rv-input" name="phone" maxlength="50" inputmode="tel" placeholder="{% trans 'Телефон (не публикуется)' %}">
+    </div>
+    <textarea class="bm-rv-input bm-rv-area" name="text" required rows="3" maxlength="4000"
+              placeholder="{% trans 'Что понравилось, что стоит улучшить' %}"></textarea>
+    <button class="bm-rv-send" type="submit">{% trans "Отправить" %}</button>
+  </form>
+</section>

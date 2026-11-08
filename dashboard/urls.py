@@ -35,6 +35,8 @@ urlpatterns = [
 
     path("branch/<int:branch_id>/edit/",     views.branch_edit,  name="branch_edit"),
     path("branch/<int:branch_id>/items/",    views.branch_items, name="branch_items"),
+    path("branch/<int:branch_id>/reviews/",  views.branch_reviews, name="branch_reviews"),
+    path("review/<int:review_id>/update/",   views.review_update,  name="review_update"),
     path("branch/<int:branch_id>/add-item/",    views.item_add,           name="item_add"),
     path("branch/<int:branch_id>/categories/", views.branch_categories,  name="branch_categories"),
     path("branch/<int:branch_id>/categories/add/",    views.category_add,    name="category_add"),

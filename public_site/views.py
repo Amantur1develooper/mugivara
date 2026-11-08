@@ -538,6 +538,33 @@ def _annotate_hot(menu):
         it.hot_flames, it.hot_label = flames, "🔥" * flames
 
 
+@require_POST
+def review_create(request, branch_id, order_id=None):
+    """Отзыв со страницы «заказ принят» или со страницы меню."""
+    from core.models import Review
+
+    branch = get_object_or_404(Branch.objects.select_related("restaurant"),
+                               id=branch_id, is_active=True)
+    text = (request.POST.get("text") or "").strip()
+    if not text:
+        messages.error(request, "Напишите пару слов — пустой отзыв отправить не получится")
+    else:
+        order = None
+        if order_id:
+            order = Order.objects.filter(id=order_id, branch=branch).first()
+        Review.objects.create(
+            branch=branch, order=order,
+            nickname=(request.POST.get("nickname") or "").strip()[:60],
+            phone=(request.POST.get("phone") or "").strip()[:50],
+            text=text[:4000],
+        )
+        messages.success(request, "Спасибо! Отзыв опубликован.")
+
+    if order_id:
+        return redirect("public_site:checkout_success", branch_id=branch.id, order_id=order_id)
+    return redirect("public_site:branch_menu", branch_id=branch.id)
+
+
 def _build_branch_menu_context(request, branch):
     """Shared logic for branch menu views."""
     from django.db.models import Prefetch
@@ -582,12 +609,19 @@ def _build_branch_menu_context(request, branch):
     cx_total = sum(Decimal(str(item["unit_price"])) * int(item["qty"]) for item in cx_cart)
     cx_qty = sum(int(item["qty"]) for item in cx_cart)
 
+    from core.models import Review
+    reviews = list(
+        Review.objects.filter(branch=branch, is_published=True).order_by("-created_at")[:20]
+    )
+
     return {
         "branch": branch,
         "menu": menu,
         "constructors": constructors,
         "cart_qty": qty_total + cx_qty,
         "cart_total": subtotal + cx_total,
+        "reviews": reviews,
+        "reviews_count": Review.objects.filter(branch=branch, is_published=True).count(),
     }
 
 
@@ -1136,6 +1170,7 @@ def checkout_success(request, branch_id: int, order_id: int):
         "items_preview": preview_lines,
         "items_count": items_count,
         "msg_text": msg,  # для копирования
+        "already_reviewed": order.reviews.exists(),
     })
 
 

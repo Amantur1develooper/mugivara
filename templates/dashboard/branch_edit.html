@@ -34,6 +34,9 @@
 <a href="{% url 'dashboard:branch_tables' branch.id %}">
   <span class="db-nav-icon">🪑</span> Столики
 </a>
+<a href="{% url 'dashboard:branch_reviews' branch.id %}">
+  <span class="db-nav-icon">⭐</span> Отзывы
+</a>
 {% endblock %}
 
 {% block head_extra %}
