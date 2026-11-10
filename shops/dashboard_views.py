@@ -242,7 +242,16 @@ def shop_product_list(request, branch_id):
         .select_related("product", "product__category")
         .order_by("product__category__sort_order", "product__id")
     )
-    categories = list(branch.store.categories.filter(is_active=True).order_by("sort_order", "id"))
+    # Скрытую категорию тоже показываем, если в ней есть товары этого филиала:
+    # раньше список шёл только по активным категориям, и выключенная категория
+    # уносила с собой все свои товары — в кабинете их было не найти и не
+    # вернуть, хотя в базе и в кассе они лежали на месте.
+    stock_cat_ids = {s.product.category_id for s in stocks if s.product.category_id}
+    categories = list(
+        branch.store.categories
+        .filter(Q(is_active=True) | Q(id__in=stock_cat_ids))
+        .order_by("sort_order", "id")
+    )
 
     # Группируем по категориям (включая пустые!)
     stock_map = {}

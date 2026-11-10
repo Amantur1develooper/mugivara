@@ -23,8 +23,14 @@ from . import constructor_utils
 from .pricing import PromoResolver
 import json
 import uuid
+from types import SimpleNamespace
 
 # from .cart import get_cart, save_cart, set_mode, get_mode, dec
+
+# Псевдо-id секции «Разное» на витрине: товары без категории. Нулём безопасно,
+# потому что настоящие id категорий всегда положительные.
+UNCATEGORIZED_ID = 0
+
 
 def _add_if_field(model, data: dict, field_name: str, value):
     """Добавляет поле в data только если оно реально есть в модели."""
@@ -145,6 +151,26 @@ def _branch_catalog(request, branch: StoreBranch):
     promo = PromoResolver(store)
     for s in stocks:
         s.promo_price, s.promo_percent = promo.price_for(s.product)
+
+    # Товар без категории тоже должен быть на витрине. Шаблон рисует только те
+    # товары, чья категория есть в списке categories, поэтому товар с
+    # category=NULL (не выбрали категорию при добавлении или категорию потом
+    # удалили — там SET_NULL) молча исчезал из магазина, хотя в кабинете и в
+    # кассе оставался на месте. Собираем такие товары в секцию «Разное» в конце.
+    # category_id меняем только в памяти (в БД ничего не пишем) — иначе шаблон
+    # не сопоставит товар с этой секцией. Делаем это после расчёта акций.
+    categories = list(categories)
+    uncategorized = [s for s in stocks if s.product.category_id is None]
+    if uncategorized:
+        for s in uncategorized:
+            s.product.category_id = UNCATEGORIZED_ID
+        categories.append(SimpleNamespace(
+            id=UNCATEGORIZED_ID,
+            name_ru="Разное",
+            name_ky="Башка товарлар",
+            name_en="Other",
+            branch_products_count=len(uncategorized),
+        ))
 
     # cart badge
     cart = get_cart(request, branch.id)
