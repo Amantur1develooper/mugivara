@@ -9,7 +9,7 @@
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Inter',sans-serif;background:#0d0d0d;color:#f0f0f0;min-height:100vh}
-    .page{max-width:620px;margin:0 auto;padding:32px 20px 60px}
+    .page{max-width:620px;margin:0 auto;padding:32px 20px 110px}
     .back{font-size:13px;color:#888;text-decoration:none;display:inline-flex;align-items:center;gap:6px;margin-bottom:24px}
     .back:hover{color:#ff6b35}
     h1{font-family:'Unbounded',sans-serif;font-size:22px;font-weight:900;margin-bottom:6px}
@@ -54,12 +54,32 @@
     .barber-name{font-weight:600;font-size:13px;padding:8px 10px 4px}
     .barber-exp{font-size:11px;color:#888;padding-bottom:8px}
     /* Date + slots */
-    .date-input{width:100%;padding:14px 16px;background:#1a1a1a;border:2px solid #333;border-radius:12px;color:#f0f0f0;font-size:16px;outline:none;font-family:inherit;margin-bottom:16px}
-    .date-input:focus{border-color:#ff6b35}
-    .slots-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
-    .slot{padding:10px 18px;background:#1a1a1a;border:2px solid #333;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;transition:all .15s}
+    /* Лента дней вместо системного поля даты: на телефоне выбрать день
+       одним касанием быстрее и читается лучше, чем нативный календарь.
+       Нативный input остаётся рядом — он открывается кнопкой «Другая дата». */
+    .date-strip{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 12px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    .date-strip::-webkit-scrollbar{display:none}
+    .date-chip{flex:0 0 auto;scroll-snap-align:center;width:64px;padding:10px 0 11px;background:#1a1a1a;border:2px solid #2b2b2b;border-radius:16px;color:#ccc;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:border-color .15s,background .15s,transform .12s}
+    .date-chip:hover{border-color:rgba(255,107,53,.45)}
+    .date-chip:active{transform:scale(.95)}
+    .dc-wd{font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:#777}
+    .dc-day{font-size:19px;font-weight:800;line-height:1.1;color:#f0f0f0}
+    .dc-mon{font-size:10px;color:#777}
+    .date-chip.wide{width:80px}
+    .date-chip.weekend .dc-wd{color:#ff8a5c}
+    .date-chip.selected{border-color:#ff6b35;background:linear-gradient(160deg,rgba(255,107,53,.2),rgba(255,68,68,.08))}
+    .date-chip.selected .dc-day{color:#ff6b35}
+    .date-chip.selected .dc-wd,.date-chip.selected .dc-mon{color:#ffb499}
+    .date-other{display:inline-flex;align-items:center;gap:7px;padding:10px 16px;background:none;border:2px dashed #333;border-radius:12px;color:#9a9a9a;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:border-color .15s,color .15s}
+    .date-other:hover{border-color:rgba(255,107,53,.5);color:#ddd}
+    .date-other.selected{border-style:solid;border-color:#ff6b35;color:#ff6b35}
+    .date-native{position:absolute;left:16px;bottom:0;width:1px;height:1px;opacity:0;border:0;padding:0}
+    .date-field{position:relative}
+    .slots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:9px;margin-top:8px}
+    .slot{padding:12px 6px;text-align:center;background:#1a1a1a;border:2px solid #333;border-radius:12px;cursor:pointer;font-size:14px;font-weight:700;transition:border-color .15s,background .15s,color .15s,transform .12s}
     .slot:hover{border-color:rgba(255,107,53,.5)}
-    .slot.selected{border-color:#ff6b35;background:rgba(255,107,53,.1);color:#ff6b35}
+    .slot:active{transform:scale(.95)}
+    .slot.selected{border-color:#ff6b35;background:rgba(255,107,53,.12);color:#ff6b35}
     .slot-none{color:#555;font-size:14px;padding:16px 0}
     /* Contact */
     .field{margin-bottom:16px}
@@ -74,6 +94,19 @@
     /* Buttons */
     .btn-next{width:100%;padding:16px;background:linear-gradient(135deg,#ff6b35,#ff4444);color:white;border:none;border-radius:14px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s;margin-top:20px}
     .btn-next:disabled{opacity:.4;cursor:not-allowed}
+    /* «Далее» прижата к низу экрана и выезжает только когда на этом шаге
+       уже что-то выбрано. Панели невыбранных шагов display:none, поэтому
+       на экране всегда ровно одна такая кнопка — наложения не будет. */
+    .btn-next.sticky{
+      position:fixed; left:50%; bottom:calc(14px + env(safe-area-inset-bottom,0px));
+      width:min(580px,calc(100% - 40px)); margin:0; z-index:50;
+      transform:translate(-50%,160%); opacity:0; pointer-events:none;
+      box-shadow:0 12px 30px rgba(255,77,28,.35),0 2px 12px rgba(0,0,0,.55);
+      transition:transform .28s cubic-bezier(.22,.68,0,1),opacity .22s ease;
+    }
+    .btn-next.sticky.show{transform:translate(-50%,0);opacity:1;pointer-events:auto}
+    .btn-next.sticky:disabled{opacity:0}
+    @media (prefers-reduced-motion:reduce){ .btn-next.sticky{transition:opacity .2s} }
     .btn-back{background:none;border:2px solid #333;color:#aaa;width:100%;padding:14px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:10px;transition:border-color .2s}
     .btn-back:hover{border-color:#555}
     .loading{text-align:center;padding:24px;color:#555;font-size:14px}
@@ -107,28 +140,32 @@
       </div>
     </div>
 
-    <button class="btn-next" id="btn1" disabled onclick="goStep(2)">{% trans "Далее →" %}</button>
+    <button class="btn-next sticky" id="btn1" disabled onclick="goStep(2)">{% trans "Далее →" %}</button>
   </div>
 
   <!-- Step 2: Barber -->
   <div class="panel" id="panel-2">
     <div class="loading" id="barbers-loading">{% trans "Загрузка мастеров…" %}</div>
     <div class="barbers-wrap" id="barbers-list" style="display:none"></div>
-    <button class="btn-next" id="btn2" disabled onclick="goStep(3)">{% trans "Далее →" %}</button>
+    <button class="btn-next sticky" id="btn2" disabled onclick="goStep(3)">{% trans "Далее →" %}</button>
     <button class="btn-back" onclick="goStep(1)">← {% trans "Назад" %}</button>
   </div>
 
   <!-- Step 3: Date + Time -->
   <div class="panel" id="panel-3">
-    <div class="field">
+    <div class="field date-field">
       <label>{% trans "Выберите дату" %}</label>
-      <input type="date" class="date-input" id="date-input">
+      <div class="date-strip" id="date-strip"></div>
+      <button type="button" class="date-other" id="date-other" onclick="openNativeDate()">
+        📅 <span id="date-other-label">{% trans "Другая дата" %}</span>
+      </button>
+      <input type="date" class="date-native" id="date-input" tabindex="-1" aria-label="{% trans 'Выберите дату' %}">
     </div>
     <div class="field">
       <label>{% trans "Доступное время" %}</label>
       <div id="slots-wrap"><div class="slot-none">{% trans "Выберите дату" %}</div></div>
     </div>
-    <button class="btn-next" id="btn3" disabled onclick="goStep(4)">{% trans "Далее →" %}</button>
+    <button class="btn-next sticky" id="btn3" disabled onclick="goStep(4)">{% trans "Далее →" %}</button>
     <button class="btn-back" onclick="goStep(2)">← {% trans "Назад" %}</button>
   </div>
 
@@ -172,6 +209,9 @@ const T = {
   barber: "{% trans 'Мастер' %}",
   dateTime: "{% trans 'Дата и время' %}",
   total: "{% trans 'Итого' %}",
+  today: "{% trans 'Сегодня' %}",
+  tomorrow: "{% trans 'Завтра' %}",
+  otherDate: "{% trans 'Другая дата' %}",
 };
 const LOCALE = "{{ LANGUAGE_CODE|default:'ru' }}" === "en" ? "en-US" : "ru-RU";
 </script>
@@ -184,6 +224,15 @@ const SLOTS_URL   = "{% url 'barbershop:slots_json' shop.slug %}";
 // State
 let selectedSvcIds = new Set();   // selected service IDs
 let sel = {barber: null, date: null, time: null};
+
+/* Кнопка «Далее» закреплена внизу: пока на шаге ничего не выбрано — её
+   просто нет на экране, выбрал — выезжает снизу. */
+function setNext(id, on) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.disabled = !on;
+  btn.classList.toggle('show', !!on);
+}
 
 /* ─── Build service list ─── */
 function buildServices() {
@@ -226,7 +275,7 @@ function updateBasket() {
   const btn = document.getElementById('btn1');
   if (!selected.length) {
     basket.style.display = 'none';
-    btn.disabled = true;
+    setNext('btn1', false);
     return;
   }
   const totalPrice    = selected.reduce((a, s) => a + s.price, 0);
@@ -239,13 +288,15 @@ function updateBasket() {
   document.getElementById('basket-total-val').textContent =
     `${totalPrice.toLocaleString()} ${CUR} · ${totalDuration} ${T.min}`;
   basket.style.display = 'block';
-  btn.disabled = false;
+  setNext('btn1', true);
 }
 
 /* ─── Step 2: Barbers ─── */
 async function loadBarbers() {
   const wrap = document.getElementById('barbers-list');
   const loading = document.getElementById('barbers-loading');
+  // список перерисовывается — пока мастер заново не выбран, «Далее» прячем
+  setNext('btn2', false);
   wrap.style.display = 'none';
   loading.style.display = 'block';
   wrap.innerHTML = '';
@@ -269,6 +320,11 @@ async function loadBarbers() {
   });
   wrap.innerHTML = html;
   wrap.style.display = 'grid';
+  // мастер уже был выбран (вернулись с шага «дата») — возвращаем подсветку
+  if (sel.barber && document.getElementById('barb-' + sel.barber.id)) {
+    document.getElementById('barb-' + sel.barber.id).classList.add('selected');
+    setNext('btn2', true);
+  }
 }
 
 function selectBarber(id, name) {
@@ -276,13 +332,13 @@ function selectBarber(id, name) {
   document.getElementById('barb-' + id)?.classList.add('selected');
   sel.barber = {id, name};
   sel.date = null; sel.time = null;
-  document.getElementById('btn2').disabled = false;
+  setNext('btn2', true);
 }
 
 /* ─── Step 3: Slots ─── */
 async function loadSlots(dateStr) {
   sel.time = null;
-  document.getElementById('btn3').disabled = true;
+  setNext('btn3', false);
   const wrap = document.getElementById('slots-wrap');
   wrap.innerHTML = '<div class="slot-none">' + T.loading + '</div>';
   const ids = [...selectedSvcIds].join(',');
@@ -304,7 +360,7 @@ function selectSlot(t) {
   document.querySelectorAll('.slot').forEach(el => el.classList.remove('selected'));
   document.getElementById('slot-' + t)?.classList.add('selected');
   sel.time = t;
-  document.getElementById('btn3').disabled = false;
+  setNext('btn3', true);
 }
 
 /* ─── Step 4: Summary ─── */
@@ -346,19 +402,81 @@ function goStep(n) {
   });
   document.getElementById('panel-' + n).classList.add('active');
   currentStep = n;
+  // кнопка шага показывается только если на нём уже есть выбор
+  if (n === 1) setNext('btn1', selectedSvcIds.size > 0);
+  if (n === 3) {
+    setNext('btn3', !!sel.time);
+    // сразу показываем окошки на сегодня — лишний тап не нужен
+    if (!sel.date) pickDate(isoDate(new Date()));
+  }
   if (n === 2) loadBarbers();
   if (n === 4) buildSummary();
+  window.scrollTo({top: 0, behavior: 'smooth'});
 }
 
-/* ─── Date picker ─── */
-const today = new Date().toISOString().split('T')[0];
-document.getElementById('date-input').min = today;
-document.getElementById('date-input').addEventListener('change', function () {
-  sel.date = this.value;
-  if (sel.date && sel.barber && selectedSvcIds.size) loadSlots(sel.date);
+/* ─── Выбор даты: лента ближайших дней + нативный календарь ─── */
+const DATE_DAYS = 14;              // сколько дней показываем в ленте
+const nativeDate = document.getElementById('date-input');
+
+// toISOString() переводит в UTC и в Бишкеке (+06) ночью отдаёт вчерашний
+// день — собираем строку сами, по местному времени.
+function isoDate(d) {
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+function buildDates() {
+  const strip = document.getElementById('date-strip');
+  const start = new Date(); start.setHours(0, 0, 0, 0);
+  let html = '';
+  for (let i = 0; i < DATE_DAYS; i++) {
+    const d = new Date(start); d.setDate(start.getDate() + i);
+    const iso = isoDate(d);
+    const wd = i === 0 ? T.today : (i === 1 ? T.tomorrow
+              : d.toLocaleDateString(LOCALE, {weekday: 'short'}).replace('.', ''));
+    const mon = d.toLocaleDateString(LOCALE, {month: 'short'}).replace('.', '');
+    const weekend = (d.getDay() === 0 || d.getDay() === 6) ? ' weekend' : '';
+    const wide = i < 2 ? ' wide' : '';   // «Сегодня» и «Завтра» длиннее трёхбуквенных дней
+    html += `<button type="button" class="date-chip${weekend}${wide}" id="dc-${iso}" onclick="pickDate('${iso}')">
+      <span class="dc-wd">${wd}</span><span class="dc-day">${d.getDate()}</span><span class="dc-mon">${mon}</span>
+    </button>`;
+  }
+  strip.innerHTML = html;
+  nativeDate.min = isoDate(start);
+}
+
+function pickDate(iso, fromNative) {
+  sel.date = iso;
+  document.querySelectorAll('.date-chip').forEach(el => el.classList.remove('selected'));
+  const chip = document.getElementById('dc-' + iso);
+  const other = document.getElementById('date-other');
+  const label = document.getElementById('date-other-label');
+  if (chip) {
+    chip.classList.add('selected');
+    chip.scrollIntoView({block: 'nearest', inline: 'center', behavior: fromNative ? 'auto' : 'smooth'});
+    other.classList.remove('selected');
+    label.textContent = T.otherDate;
+  } else {
+    // дата вне ленты — показываем её на кнопке календаря
+    other.classList.add('selected');
+    label.textContent = new Date(iso + 'T00:00:00')
+      .toLocaleDateString(LOCALE, {day: 'numeric', month: 'long'});
+  }
+  nativeDate.value = iso;
+  if (sel.barber && selectedSvcIds.size) loadSlots(iso);
+}
+
+function openNativeDate() {
+  try { nativeDate.showPicker(); } catch (e) { nativeDate.click(); }
+}
+
+nativeDate.addEventListener('change', function () {
+  if (this.value) pickDate(this.value, true);
 });
 
 buildServices();
+buildDates();
 
 /* ─── Phone mask +996 XXX XXX XXX ─── */
 (function () {
