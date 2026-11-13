@@ -3,10 +3,12 @@ from datetime import date, datetime, timedelta
 from urllib.parse import quote
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
+from django.urls import reverse
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 
+from django.utils import timezone
 from django.utils.translation import get_language
 
 from .models import (Barbershop, ServiceCategory, Service, Barber,
@@ -44,6 +46,11 @@ def _tg_notify(shop, text):
         pass
 
 
+# За сколько минут до начала ещё можно записаться. Клиенту нужно время
+# доехать, мастеру — увидеть заявку, поэтому ближайшие полчаса не предлагаем.
+MIN_LEAD_MINUTES = 30
+
+
 def _available_slots(barber, appt_date, duration_min):
     """Return list of 'HH:MM' strings for available slots."""
     weekday = appt_date.weekday()
@@ -67,8 +74,18 @@ def _available_slots(barber, appt_date, duration_min):
     end_dt  = datetime.combine(appt_date, schedule.end_time)
     dur     = timedelta(minutes=duration_min)
 
+    # Сегодня утреннее время предлагать нельзя: если уже обед, показываем
+    # только то, что ещё впереди. Время берём местное (Asia/Bishkek).
+    now_local = timezone.localtime()
+    earliest = None
+    if appt_date == now_local.date():
+        earliest = now_local.replace(tzinfo=None) + timedelta(minutes=MIN_LEAD_MINUTES)
+
     while current + dur <= end_dt:
         slot_end = current + dur
+        if earliest and current < earliest:
+            current += slot_step
+            continue
         # Check overlap
         overlap = False
         for (existing_time, existing_dur) in existing:
@@ -209,6 +226,11 @@ def book_confirm(request, slug):
 
     total_price    = sum(s.price for s in services)
     total_duration = sum(s.duration_min for s in services)
+
+    # Страница могла провисеть открытой: время уже прошло или его успели
+    # занять. Проверяем по тому же расчёту, что и выдаёт список окошек.
+    if time_str not in _available_slots(barber, appt_date, total_duration):
+        return redirect(f"{reverse('barbershop:book', args=[slug])}?busy=1")
     service_names  = " + ".join(s.name for s in services)
     primary_service = services[0]
 

@@ -110,6 +110,7 @@
     .btn-back{background:none;border:2px solid #333;color:#aaa;width:100%;padding:14px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:10px;transition:border-color .2s}
     .btn-back:hover{border-color:#555}
     .loading{text-align:center;padding:24px;color:#555;font-size:14px}
+    .notice{background:rgba(255,68,68,.1);border:1.5px solid rgba(255,68,68,.35);color:#ffb3b3;border-radius:12px;padding:12px 14px;font-size:13.5px;margin-bottom:20px}
   </style>
 </head>
 <body>
@@ -118,6 +119,10 @@
   <a href="{% url 'barbershop:venue' shop.slug %}" class="back">← {% t shop 'name' %}</a>
   <h1>{% trans "Онлайн-запись" %}</h1>
   <div class="sub">{% t shop "name" %}</div>
+
+  {% if request.GET.busy %}
+    <div class="notice">⚠️ {% trans "Это время уже заняли или оно успело пройти — выберите другое." %}</div>
+  {% endif %}
 
   <div class="steps">
     <div class="step active" id="step-ind-1"><div class="step-num">1</div><div class="step-label">{% trans "Услуги" %}</div></div>
