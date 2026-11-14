@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Запись{% if appt %} №{{ appt.id }}{% endif %}</title>
+<title>{{ title|default:"Карточка" }}</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   /* Цвета берём у Telegram: карточка должна выглядеть частью мессенджера,
@@ -66,36 +66,32 @@
   </div>
 {% else %}
   <div class="status" id="status">{{ status_label }}</div>
-  <h1>Запись №{{ appt.id }}</h1>
-  <div class="sub">{{ appt.barbershop.name }}</div>
+  <h1>{{ title }}</h1>
+  <div class="sub">{{ venue_name }}</div>
 
   <div class="card">
-    <div class="row"><span class="k">Когда</span><span class="v">{{ when }}</span></div>
-    <div class="row"><span class="k">Мастер</span><span class="v">{{ appt.barber_name|default:"—" }}</span></div>
-    <div class="row"><span class="k">Клиент</span><span class="v">{{ appt.customer_name }}</span></div>
-    {% if appt.customer_phone %}
-      <div class="row"><span class="k">Телефон</span><span class="v">{{ appt.customer_phone }}</span></div>
-    {% endif %}
-    {% if appt.comment %}
-      <div class="row"><span class="k">Комментарий</span><span class="v">{{ appt.comment }}</span></div>
-    {% endif %}
+    {% for label, value in rows %}
+      <div class="row"><span class="k">{{ label }}</span><span class="v">{{ value }}</span></div>
+    {% endfor %}
   </div>
 
   <div class="card">
+    {% if items %}
     <div class="row" style="display:block">
-      <div class="k" style="margin-bottom:6px">{% if services|length > 1 %}Услуги{% else %}Услуга{% endif %}</div>
-      <ul>{% for name, price in services %}
+      <div class="k" style="margin-bottom:6px">{{ items_title }}</div>
+      <ul>{% for name, price in items %}
         <li><span>{{ name }}</span>{% if price %}<b>{{ price|floatformat:0 }} сом</b>{% endif %}</li>
       {% endfor %}</ul>
     </div>
+    {% endif %}
     <div class="total">
-      <span>{{ appt.price_snapshot|floatformat:0 }} сом</span>
-      <span class="mins">{{ appt.duration_min }} мин</span>
+      <span>{{ total|floatformat:0 }} сом</span>
+      {% if total_note %}<span class="mins">{{ total_note }}</span>{% endif %}
     </div>
   </div>
 
-  {% if appt.customer_phone %}
-    <a class="call" href="tel:{{ appt.customer_phone }}">📞 Позвонить клиенту</a>
+  {% if phone %}
+    <a class="call" href="tel:{{ phone }}">📞 Позвонить клиенту</a>
   {% endif %}
 
   <div class="acts" id="acts"></div>
@@ -105,17 +101,10 @@
     const tg  = window.Telegram ? window.Telegram.WebApp : null;
     if (tg) { tg.ready(); tg.expand(); }
 
-    const ACTION_URL = "{% url 'barbershop_tg:card_action' token %}";
-    const BUTTONS = {
-      new:       [["confirm", "✅ Подтвердить", true], ["cancel", "❌ Отменить", false]],
-      confirmed: [["done", "🏁 Выполнена", true], ["no_show", "🚫 Не пришёл", false],
-                  ["cancel", "❌ Отменить", false, true]],
-      done:      [["reopen", "↩️ Вернуть в новые", false, true]],
-      cancelled: [["reopen", "↩️ Вернуть в новые", false, true]],
-      no_show:   [["reopen", "↩️ Вернуть в новые", false, true]],
-    };
+    const ACTION_URL = "{{ action_url }}";
+    const BUTTONS = {{ buttons_json|safe }};
 
-    let status = "{{ appt.status }}";
+    let status = "{{ status }}";
 
     function draw() {
       const box = document.getElementById("acts");

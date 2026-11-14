@@ -16,6 +16,8 @@ urlpatterns = [
     # Намеренно вне i18n_patterns — Telegram не ходит по редиректам языка.
     path("tg/barbershop/", include(("barbershop.tg_urls", "barbershop_tg"),
                                    namespace="barbershop_tg")),
+    path("tg/karting/", include(("simracing.tg_urls", "simracing_tg"),
+                                namespace="simracing_tg")),
 
     path("api/print/",    include("printing.urls")),
     path("api/sr-print/", include("simracing.print_urls")),

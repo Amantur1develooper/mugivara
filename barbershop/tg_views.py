@@ -6,6 +6,7 @@ import logging
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import render
+from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
@@ -78,8 +79,15 @@ def _handle_message(msg):
 
 
 def _handle_callback(cq):
+    """Кнопка под сообщением. Бот один на все направления, поэтому в
+    callback_data первым идёт префикс: bs — барбершоп, sr — картинг."""
     data = (cq.get("data") or "").split(":")
-    if len(data) != 3 or data[0] != "bs":
+    if len(data) != 3:
+        return
+    if data[0] == "sr":
+        from simracing.tg_views import handle_callback as karting
+        return karting(cq)
+    if data[0] != "bs":
         return
     _, action, raw_id = data
 
@@ -110,18 +118,46 @@ def _appointment(token):
     return Appointment.objects.filter(id=appt_id).select_related("barbershop", "barber").first()
 
 
+# какие кнопки показывать в мини-приложении при каждом статусе:
+# [действие, подпись, главная ли, во всю ширину]
+CARD_BUTTONS = {
+    "new":       [["confirm", "✅ Подтвердить", True], ["cancel", "❌ Отменить", False]],
+    "confirmed": [["done", "🏁 Выполнена", True], ["no_show", "🚫 Не пришёл", False],
+                  ["cancel", "❌ Отменить", False, True]],
+    "done":      [["reopen", "↩️ Вернуть в новые", False, True]],
+    "cancelled": [["reopen", "↩️ Вернуть в новые", False, True]],
+    "no_show":   [["reopen", "↩️ Вернуть в новые", False, True]],
+}
+
+
 def card(request, token):
     """Карточка записи внутри Telegram — без входа в кабинет."""
     appt = _appointment(token)
     if not appt:
-        return render(request, "barbershop/tg_card.html",
-                      {"expired": True}, status=404)
-    return render(request, "barbershop/tg_card.html", {
-        "appt": appt,
-        "token": token,
-        "when": tg._when(appt),
+        return render(request, "tg/card.html", {"expired": True}, status=404)
+
+    rows = [("Когда", tg._when(appt)),
+            ("Мастер", appt.barber_name or "—"),
+            ("Клиент", appt.customer_name)]
+    if appt.customer_phone:
+        rows.append(("Телефон", appt.customer_phone))
+    if appt.comment:
+        rows.append(("Комментарий", appt.comment))
+
+    items = tg.services_of(appt)
+    return render(request, "tg/card.html", {
+        "title": f"Запись №{appt.id}",
+        "venue_name": appt.barbershop.name,
+        "status": appt.status,
         "status_label": tg.STATUS_LABEL.get(appt.status, appt.status),
-        "services": tg.services_of(appt),
+        "rows": rows,
+        "items": items,
+        "items_title": "Услуги" if len(items) > 1 else "Услуга",
+        "total": appt.price_snapshot,
+        "total_note": f"{appt.duration_min} мин",
+        "phone": appt.customer_phone,
+        "action_url": reverse("barbershop_tg:card_action", args=[token]),
+        "buttons_json": json.dumps(CARD_BUTTONS, ensure_ascii=False),
     })
 
 

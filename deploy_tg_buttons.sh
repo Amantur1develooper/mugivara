@@ -1,5 +1,6 @@
 #!/bin/bash
-# Включает кнопки под записями барбершопа в Telegram и мини-приложение.
+# Включает кнопки под записями барбершопа и бронями картинга в Telegram,
+# плюс мини-приложение с карточкой записи.
 #
 # Запускать на сервере из /var/www/mugivara, после git pull:
 #     cd /var/www/mugivara && git pull && bash deploy_tg_buttons.sh
@@ -38,6 +39,7 @@ echo
 echo "── 2/4 Миграция ───────────────────────────────────────────"
 # добавляет записи поле tg_message_id: по нему бот правит своё же сообщение
 $PY manage.py migrate barbershop
+$PY manage.py migrate simracing
 
 echo
 echo "── 3/4 Перезапуск ─────────────────────────────────────────"
@@ -56,7 +58,7 @@ $PY manage.py tg_webhook --set
 echo
 echo "Готово. Как проверить:"
 echo "  1) в кабинете барбершопа должен быть заполнен TG Chat ID;"
-echo "  2) $PY manage.py tg_webhook --send <номер записи> — пришлёт карточку в чат;"
+echo "  2) $PY manage.py tg_doctor — покажет, у каких заведений чат привязан;"
 echo "  3) нажмите «Подтвердить» — статус поменяется прямо в сообщении."
 echo
 echo "Состояние вебхука в любой момент: $PY manage.py tg_webhook --info"

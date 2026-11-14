@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 
+from . import tg
 from .models import Machine, Session, SessionType, SimRacingVenue, SimRacingAppointment
 
 
@@ -380,24 +381,12 @@ def book_appt(request, slug):
         status=SimRacingAppointment.Status.NEW,
     )
 
+    # Карточка брони с кнопками: подтвердить и отменить можно прямо в чате.
+    tg.send_appointment(appt)
+
     weekday_ru = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"]
     date_fmt = appt_date.strftime("%d.%m.%Y") + f" ({weekday_ru[appt_date.weekday()]})"
     type_label = dict(Machine.Type.choices).get(machine_type, machine_type)
-    disc_line = (
-        f"Скидка: −{discount_percent}% (без скидки {int(base_price)} сом)\n"
-        if discount_percent else ""
-    )
-    _tg_notify(
-        v,
-        f"🏎 <b>Новая запись #{appt.id}</b>\n"
-        f"Тип: {type_label}\n"
-        f"Машин: {quantity} × {st.duration_minutes} мин (едут одновременно)\n"
-        f"{disc_line}"
-        f"Итого: {int(total_price)} сом\n"
-        f"Дата: {date_fmt} в {time_str}\n"
-        f"Клиент: {customer_name or 'Гость'}\n"
-        f"Телефон: {customer_phone or '—'}"
-    )
 
     # Redirect to WhatsApp with pre-filled text
     wa_number = "".join(ch for ch in (v.whatsapp or v.phone or "") if ch.isdigit())

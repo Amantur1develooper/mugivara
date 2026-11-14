@@ -11,6 +11,7 @@ from django.views.decorators.http import require_POST
 
 log = logging.getLogger("simracing.print")
 
+from . import tg
 from .models import (Machine, MachineTypeLabel, Session, SessionType,
                      SimRacingMembership, SimRacingVenue, SimRacingAppointment,
                      SimRacingPrintConfig, SimRacingPrintJob)
@@ -530,6 +531,9 @@ def sr_appt_confirm(request, appt_id):
         return JsonResponse({"ok": False}, status=403)
     appt.status = SimRacingAppointment.Status.CONFIRMED
     appt.save(update_fields=["status"])
+    # карточка этой брони уже висит в чате — правим её, а не шлём новую
+    stamp = timezone.localtime().strftime("%d.%m %H:%M")
+    tg.refresh_appointment(appt, footer=f"{tg.STATUS_LABEL['confirmed']} — кабинет, {stamp}")
     # Print confirmation slip
     try:
         from .print_jobs import create_appt_print_job
@@ -551,6 +555,8 @@ def sr_appt_cancel(request, appt_id):
         return JsonResponse({"ok": False}, status=403)
     appt.status = SimRacingAppointment.Status.CANCELED
     appt.save(update_fields=["status"])
+    stamp = timezone.localtime().strftime("%d.%m %H:%M")
+    tg.refresh_appointment(appt, footer=f"{tg.STATUS_LABEL['canceled']} — кабинет, {stamp}")
     return JsonResponse({"ok": True, "status": "canceled"})
 
 

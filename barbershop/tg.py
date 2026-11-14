@@ -9,20 +9,24 @@
 Кнопка «Карточка записи» открывает мини-приложение Telegram: ту же запись
 с кнопками и телефоном клиента, не выходя из мессенджера.
 """
-import logging
-
-import requests
 from django.conf import settings
-from django.core import signing
 from django.urls import reverse
 from django.utils import timezone
 
-log = logging.getLogger(__name__)
+from integrations import tgbot
 
-API = "https://api.telegram.org/bot{token}/{method}"
-TIMEOUT = 8
+# Старые имена оставлены: на них завязаны вызовы в видах и тестах.
+API = tgbot.API
+bot_token = tgbot.bot_token
+verify_init_data = tgbot.verify_init_data
+actor_name = tgbot.actor_name
+
 SALT = "barbershop.appointment"
-TOKEN_MAX_AGE = 60 * 60 * 24 * 120      # ссылка из чата живёт четыре месяца
+
+
+def _call(method, **payload):
+    return tgbot.call(method, **payload)
+
 
 STATUS_LABEL = {
     "new":       "🆕 Новая",
@@ -40,47 +44,14 @@ ACTIONS = {
     "no_show": ("no_show",   "Отмечено: клиент не пришёл"),
 }
 
-WEEKDAYS = ["понедельник", "вторник", "среда", "четверг",
-            "пятница", "суббота", "воскресенье"]
-MONTHS = ["января", "февраля", "марта", "апреля", "мая", "июня",
-          "июля", "августа", "сентября", "октября", "ноября", "декабря"]
-
-
-def bot_token():
-    return (getattr(settings, "TG_BOT_TOKEN", "") or
-            getattr(settings, "TELEGRAM_BOT_TOKEN", "") or "").strip()
-
-
-def _call(method, **payload):
-    """Зовёт метод Bot API. Молча переживает отказ: запись важнее уведомления."""
-    token = bot_token()
-    if not token:
-        return None
-    try:
-        r = requests.post(API.format(token=token, method=method),
-                          json=payload, timeout=TIMEOUT)
-        data = r.json()
-        if not data.get("ok"):
-            log.warning("telegram %s: %s", method, data.get("description"))
-            return None
-        return data.get("result")
-    except Exception as e:
-        log.warning("telegram %s упал: %s", method, e)
-        return None
-
-
 # ── ссылка на мини-приложение ────────────────────────────────────────────────
 
 def sign_appointment(appt):
-    return signing.dumps(appt.id, salt=SALT)
+    return tgbot.sign(appt.id, SALT)
 
 
 def unsign_appointment(token):
-    """id записи из подписанной ссылки или None, если ссылка чужая/протухла."""
-    try:
-        return signing.loads(token, salt=SALT, max_age=TOKEN_MAX_AGE)
-    except signing.BadSignature:
-        return None
+    return tgbot.unsign(token, SALT)
 
 
 def card_url(appt):
@@ -91,25 +62,8 @@ def card_url(appt):
 # ── текст и кнопки ───────────────────────────────────────────────────────────
 
 def _when(appt):
-    """«Сегодня, 14 ноября (пятница), 15:30 — 16:10»."""
-    today = timezone.localdate()
-    delta = (appt.appt_date - today).days
-    if delta == 0:
-        day = "Сегодня"
-    elif delta == 1:
-        day = "Завтра"
-    elif delta == -1:
-        day = "Вчера"
-    else:
-        day = f"{appt.appt_date.day} {MONTHS[appt.appt_date.month - 1]}"
-    weekday = WEEKDAYS[appt.appt_date.weekday()]
-    start = appt.appt_time.strftime("%H:%M")
-    end_min = appt.appt_time.hour * 60 + appt.appt_time.minute + (appt.duration_min or 30)
-    end = f"{end_min // 60 % 24:02d}:{end_min % 60:02d}"
-    date_part = f"{appt.appt_date.day} {MONTHS[appt.appt_date.month - 1]}"
-    if delta in (-1, 0, 1):
-        return f"{day}, {date_part} ({weekday}), {start} — {end}"
-    return f"{date_part} ({weekday}), {start} — {end}"
+    return tgbot.when(appt.appt_date, appt.appt_time, appt.duration_min,
+                      timezone.localdate())
 
 
 def services_of(appt):
@@ -166,23 +120,9 @@ def message_text(appt, footer=""):
     return "\n".join(lines)
 
 
-def _is_group(appt):
-    """Групповой чат или личный. У групп номер чата отрицательный."""
-    return str(appt.barbershop.tg_chat_id or "").startswith("-")
-
-
 def _open_button(appt):
-    """Кнопка карточки записи.
-
-    Мини-приложение Telegram разрешает открывать inline-кнопкой только в
-    личной переписке с ботом: в группе такая кнопка валит всё сообщение
-    с ошибкой BUTTON_TYPE_INVALID. Поэтому в группе — обычная ссылка.
-    Требование https общее для обоих видов.
-    """
-    url = card_url(appt)
-    if url.startswith("https://") and not _is_group(appt):
-        return {"text": "📋 Карточка записи", "web_app": {"url": url}}
-    return {"text": "📋 Карточка записи", "url": url}
+    return tgbot.open_button(card_url(appt), "📋 Карточка записи",
+                             tgbot.is_group(appt.barbershop.tg_chat_id))
 
 
 def keyboard(appt):
@@ -205,47 +145,19 @@ def keyboard(appt):
 def send_appointment(appt):
     """Шлёт карточку записи в чат барбершопа и запоминает номер сообщения."""
     shop = appt.barbershop
-    if not shop.tg_chat_id:
-        return None
-    payload = {
-        "chat_id": shop.tg_chat_id,
-        "text": message_text(appt),
-        "parse_mode": "HTML",
-        "disable_web_page_preview": True,
-        "reply_markup": keyboard(appt),
-    }
-    if shop.tg_thread_id:
-        payload["message_thread_id"] = int(shop.tg_thread_id)
-    res = _call("sendMessage", **payload)
-    if not res and shop.tg_thread_id:
-        payload.pop("message_thread_id")      # темы в чате могли выключить
-        res = _call("sendMessage", **payload)
-    if not res:
-        # Одна негодная кнопка отменяет всё сообщение. Лучше прислать карточку
-        # без ссылки, чем не прислать запись вовсе.
-        payload["reply_markup"] = {
-            "inline_keyboard": [r for r in keyboard(appt)["inline_keyboard"]
-                                if not any("web_app" in b or "url" in b for b in r)]
-        }
-        res = _call("sendMessage", **payload)
-    if res and res.get("message_id"):
-        appt.tg_message_id = res["message_id"]
+    message_id = tgbot.send_card(shop.tg_chat_id, shop.tg_thread_id,
+                                 message_text(appt), keyboard(appt))
+    if message_id:
+        appt.tg_message_id = message_id
         appt.save(update_fields=["tg_message_id"])
-    return res
+    return message_id
 
 
 def refresh_appointment(appt, footer=""):
     """Переписывает карточку в чате после смены статуса."""
     shop = appt.barbershop
-    if not (shop.tg_chat_id and appt.tg_message_id):
-        return None
-    return _call("editMessageText",
-                 chat_id=shop.tg_chat_id,
-                 message_id=appt.tg_message_id,
-                 text=message_text(appt, footer),
-                 parse_mode="HTML",
-                 disable_web_page_preview=True,
-                 reply_markup=keyboard(appt))
+    return tgbot.edit_card(shop.tg_chat_id, appt.tg_message_id,
+                           message_text(appt, footer), keyboard(appt))
 
 
 def apply_action(appt, action, actor=""):
@@ -266,53 +178,3 @@ def apply_action(appt, action, actor=""):
     appt.save(update_fields=["status", "notes", "updated_at"])
     refresh_appointment(appt, footer=mark)
     return toast
-
-
-# ── проверка мини-приложения ─────────────────────────────────────────────────
-
-def verify_init_data(init_data, max_age=60 * 60 * 24):
-    """Проверяет подпись initData мини-приложения Telegram.
-
-    Ссылка на карточку лежит в закрытом чате барбершопа, но если она утечёт,
-    по ней можно будет только смотреть: менять статус разрешаем лишь тому,
-    кто открыл карточку внутри Telegram — его данные подписаны ботом.
-    Возвращает словарь пользователя или None.
-    """
-    import hashlib
-    import hmac
-    import json as _json
-    import time
-    from urllib.parse import parse_qsl
-
-    token = bot_token()
-    if not (init_data and token):
-        return None
-    try:
-        pairs = dict(parse_qsl(init_data, strict_parsing=True))
-    except ValueError:
-        return None
-    got = pairs.pop("hash", "")
-    if not got:
-        return None
-
-    check = "\n".join(f"{k}={pairs[k]}" for k in sorted(pairs))
-    secret = hmac.new(b"WebAppData", token.encode(), hashlib.sha256).digest()
-    want = hmac.new(secret, check.encode(), hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(want, got):
-        return None
-    if max_age and abs(time.time() - int(pairs.get("auth_date", 0))) > max_age:
-        return None
-    try:
-        return _json.loads(pairs.get("user", "{}")) or {}
-    except ValueError:
-        return {}
-
-
-def actor_name(user):
-    """Как подписать того, кто нажал кнопку: @ник или имя."""
-    if not user:
-        return ""
-    if user.get("username"):
-        return "@" + user["username"]
-    name = " ".join(x for x in (user.get("first_name"), user.get("last_name")) if x)
-    return name or f"id{user.get('id', '')}"

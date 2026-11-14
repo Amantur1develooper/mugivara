@@ -1,8 +1,9 @@
 """Почему записи не приходят в Telegram — разбор по шагам.
 
-    python manage.py tg_doctor              # проверить все барбершопы
-    python manage.py tg_doctor --shop 3     # только один
-    python manage.py tg_doctor --shop 3 --send   # и отправить пробное сообщение
+    python manage.py tg_doctor                 # барбершопы и картинг
+    python manage.py tg_doctor --shop 3        # только барбершоп #3
+    python manage.py tg_doctor --venue 1       # только площадка картинга #1
+    python manage.py tg_doctor --shop 3 --send # и отправить пробное сообщение
 
 Проверяет по порядку: токен бота, вебхук, номер чата у заведения, может ли
 бот в этот чат писать. Останавливается на первом месте, где рвётся цепочка.
@@ -13,6 +14,7 @@ from django.core.management.base import BaseCommand
 
 from barbershop import tg
 from barbershop.models import Appointment, Barbershop
+from simracing.models import SimRacingAppointment, SimRacingVenue
 
 
 class Command(BaseCommand):
@@ -20,6 +22,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--shop", type=int, help="id барбершопа")
+        parser.add_argument("--venue", type=int, help="id площадки картинга")
         parser.add_argument("--send", action="store_true",
                             help="отправить в чат пробное сообщение")
 
@@ -50,38 +53,46 @@ class Command(BaseCommand):
                                    "\n  включить: manage.py tg_webhook --set"))
 
         self.stdout.write("\n── 3. Заведения ────────────────────────────────")
-        shops = Barbershop.objects.all().order_by("id")
-        if opts["shop"]:
-            shops = shops.filter(id=opts["shop"])
-        if not shops:
-            self.stdout.write(bad("  барбершопов нет"))
+        places = []
+        if not opts["venue"]:
+            qs = Barbershop.objects.all().order_by("id")
+            if opts["shop"]:
+                qs = qs.filter(id=opts["shop"])
+            places += [("Барбершоп", p) for p in qs]
+        if not opts["shop"]:
+            qs = SimRacingVenue.objects.all().order_by("id")
+            if opts["venue"]:
+                qs = qs.filter(id=opts["venue"])
+            places += [("Картинг", p) for p in qs]
+        if not places:
+            self.stdout.write(bad("  заведений нет"))
             return
 
-        for shop in shops:
-            self.stdout.write(f"\n  #{shop.id} {shop.name}")
-            if not shop.tg_chat_id:
+        for kind, place in places:
+            self.stdout.write(f"\n  {kind} #{place.id} {place.name}")
+            if not place.tg_chat_id:
                 self.stdout.write(bad(
                     "    TG Chat ID не заполнен — сюда ничего не отправляется.\n"
                     "    Добавьте бота в чат, напишите там /id и впишите номер\n"
                     "    в карточку заведения в кабинете."))
                 continue
 
-            chat = self._api("getChat", chat_id=shop.tg_chat_id)
+            chat = self._api("getChat", chat_id=place.tg_chat_id)
             if not chat.get("ok"):
-                self.stdout.write(bad(f"    чат {shop.tg_chat_id} недоступен: "
+                self.stdout.write(bad(f"    чат {place.tg_chat_id} недоступен: "
                                       f"{chat.get('description')}"))
                 self.stdout.write("    чаще всего бота просто нет в этом чате или номер неверный")
                 continue
             title = chat["result"].get("title") or chat["result"].get("username") or "личный чат"
-            self.stdout.write(ok(f"    чат {shop.tg_chat_id} — «{title}»"))
-            if shop.tg_thread_id:
-                self.stdout.write(f"    тема: {shop.tg_thread_id}")
+            self.stdout.write(ok(f"    чат {place.tg_chat_id} — «{title}»"))
+            if place.tg_thread_id:
+                self.stdout.write(f"    тема: {place.tg_thread_id}")
 
             if opts["send"]:
-                payload = {"chat_id": shop.tg_chat_id,
+                payload = {"chat_id": place.tg_chat_id,
                            "text": "🔧 Проверка связи: бот пишет в этот чат."}
-                if shop.tg_thread_id:
-                    payload["message_thread_id"] = int(shop.tg_thread_id)
+                if place.tg_thread_id:
+                    payload["message_thread_id"] = int(place.tg_thread_id)
                 res = self._api("sendMessage", **payload)
                 if res.get("ok"):
                     self.stdout.write(ok("    пробное сообщение отправлено"))
@@ -89,16 +100,25 @@ class Command(BaseCommand):
                     self.stdout.write(bad(f"    отправить не вышло: {res.get('description')}"))
 
         self.stdout.write("\n── 4. Последние записи ─────────────────────────")
-        qs = Appointment.objects.order_by("-id")
-        if opts["shop"]:
-            qs = qs.filter(barbershop_id=opts["shop"])
-        rows = list(qs[:5])
+        if not opts["venue"]:
+            qs = Appointment.objects.order_by("-id")
+            if opts["shop"]:
+                qs = qs.filter(barbershop_id=opts["shop"])
+            self._rows("Барбершоп", list(qs[:5]), ok, warn)
+        if not opts["shop"]:
+            qs = SimRacingAppointment.objects.order_by("-id")
+            if opts["venue"]:
+                qs = qs.filter(venue_id=opts["venue"])
+            self._rows("Картинг", list(qs[:5]), ok, warn)
+
+    def _rows(self, kind, rows, ok, warn):
+        self.stdout.write(f"\n  {kind}:")
         if not rows:
-            self.stdout.write("  записей ещё нет — забронируйте через сайт для проверки")
+            self.stdout.write("    записей нет — забронируйте через сайт для проверки")
         for a in rows:
             mark = ok("карточка в чате") if a.tg_message_id else warn("в чат не ушла")
-            self.stdout.write(f"  #{a.id} {a.appt_date} {a.appt_time:%H:%M} "
-                              f"{a.customer_name} · {a.status} — {mark}")
+            self.stdout.write(f"    #{a.id} {a.appt_date} {a.appt_time:%H:%M} "
+                              f"{a.customer_name or 'Гость'} · {a.status} — {mark}")
 
     def _api(self, method, **payload):
         try:

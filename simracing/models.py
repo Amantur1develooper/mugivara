@@ -374,6 +374,9 @@ class SimRacingAppointment(models.Model):
     status       = models.CharField("Статус", max_length=20, choices=Status.choices, default=Status.NEW)
     notes        = models.TextField("Заметки", blank=True, default="")
     created_at   = models.DateTimeField(auto_now_add=True)
+    # id сообщения о брони в Telegram — чтобы потом править его кнопки и статус,
+    # а не слать в чат новое сообщение на каждое изменение
+    tg_message_id = models.BigIntegerField("ID сообщения в Telegram", null=True, blank=True)
 
     class Meta:
         ordering = ["-appt_date", "-appt_time"]
