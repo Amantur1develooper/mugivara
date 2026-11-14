@@ -313,9 +313,18 @@
   .sec-alt { background:var(--bg); }
 
   /* ═══ SERVICES SECTION ═══ */
-  .services-grid { align-items:start; }
-  @media (max-width:640px) {
-    .services-grid { grid-template-columns:1fr !important; }
+  /* На широком экране разделы услуг идут в два столбца: их тринадцать, и
+     в одну колонку страница растягивалась на несколько экранов прокрутки. */
+  .services-grid {
+    align-items:start;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    max-width:1180px;
+  }
+  /* Нечётный последний раздел занимает всю ширину, чтобы рядом не зияла дыра. */
+  .services-grid > .svc-block:last-child:nth-child(odd) { grid-column:1 / -1; }
+  @media (max-width:900px) {
+    .services-grid { grid-template-columns:1fr; max-width:900px; }
+    .services-grid > .svc-block:last-child:nth-child(odd) { grid-column:auto; }
   }
 
   .svc-block {
@@ -695,7 +704,7 @@
       </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr;gap:16px;margin:4px auto 0;max-width:900px;" class="services-grid">
+    <div style="display:grid;gap:16px;margin:4px auto 0;" class="services-grid">
 
       <!-- Юридические -->
       {% if legal_cards %}
