@@ -25,6 +25,8 @@ class Command(BaseCommand):
         parser.add_argument("--info", action="store_true", help="показать настройки")
         parser.add_argument("--send", type=int, metavar="ID",
                             help="прислать карточку записи в чат салона")
+        parser.add_argument("--url", default="", metavar="URL",
+                            help="адрес сайта вместо SITE_URL, напр. https://webordo.kg")
 
     def handle(self, *args, **opts):
         if not tg.bot_token():
@@ -35,32 +37,52 @@ class Command(BaseCommand):
         if opts["delete"]:
             return self._delete()
         if opts["set"]:
-            return self._set()
+            return self._set(opts["url"])
         return self._info()
 
     # ── действия ────────────────────────────────────────────────────────────
 
-    def _url(self):
+    def _url(self, override=""):
         secret = (getattr(settings, "TG_WEBHOOK_SECRET", "") or "").strip()
         if not secret:
             raise CommandError(
                 "Не задан TG_WEBHOOK_SECRET. Добавьте в .env строку вида\n"
                 "    TG_WEBHOOK_SECRET=<32 случайных символа>\n"
                 "Сгенерировать: python -c \"import secrets; print(secrets.token_urlsafe(24))\"")
-        base = (getattr(settings, "SITE_URL", "") or "").rstrip("/")
+        base = (override or getattr(settings, "SITE_URL", "") or "").rstrip("/")
         if not base.startswith("https://"):
             raise CommandError(f"SITE_URL должен быть https, сейчас «{base or '—'}»")
         return base + reverse("barbershop_tg:webhook", args=[secret]), secret
 
-    def _set(self):
-        url, secret = self._url()
+    def _set(self, override=""):
+        url, secret = self._url(override)
+        self.stdout.write(f"Адрес: {url}")
+        self._reachable(url)
+
         res = tg._call("setWebhook", url=url, secret_token=secret,
                        allowed_updates=["callback_query"],
                        drop_pending_updates=True)
         if res is None:
-            raise CommandError("Telegram не принял адрес — смотрите лог выше")
-        self.stdout.write(self.style.SUCCESS(f"Вебхук включён:\n  {url}"))
+            raise CommandError(
+                "Telegram не принял адрес.\n"
+                "  «Failed to resolve host» — у Telegram не разрешилось имя домена.\n"
+                "    Чаще всего это разовый сбой: повторите команду через минуту.\n"
+                "    Если повторяется — проверьте, что домен виден снаружи:\n"
+                "      dig +short " + url.split("/")[2] + " @8.8.8.8\n"
+                "  «HTTPS url must use port» — Telegram принимает только 443, 80, 88 и 8443.\n"
+                "  Другой домен задаётся так: manage.py tg_webhook --set --url https://ваш-домен")
+        self.stdout.write(self.style.SUCCESS("Вебхук включён"))
         self._info()
+
+    def _reachable(self, url):
+        """Отвечает ли адрес снаружи. Telegram пойдёт туда же."""
+        import requests
+        try:
+            r = requests.post(url, json={}, timeout=10)
+            # 403 здесь — правильный ответ: секрет в заголовке мы не слали
+            self.stdout.write(f"  сайт отвечает: HTTP {r.status_code}")
+        except Exception as e:
+            self.stdout.write(self.style.WARNING(f"  сайт не ответил: {e}"))
 
     def _delete(self):
         if tg._call("deleteWebhook", drop_pending_updates=False) is None:

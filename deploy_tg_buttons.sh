@@ -16,6 +16,10 @@ PY=".venv/bin/python"
 
 echo "── 1/4 Настройки в .env ───────────────────────────────────"
 touch .env
+# Если файл не кончается переводом строки, дописанное прилипнет к последней
+# строке и испортит её — добавляем перевод строки заранее.
+[ -s .env ] && [ "$(tail -c1 .env | wc -l)" -eq 0 ] && echo >> .env
+
 if ! grep -q "^SITE_URL=" .env; then
   echo "SITE_URL=https://webordo.kg" >> .env
   echo "  добавлен SITE_URL"
