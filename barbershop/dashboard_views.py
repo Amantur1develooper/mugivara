@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Count, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.dateparse import parse_date
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -471,23 +472,51 @@ def bs_appointment_delete(request, appt_id):
 
 # ── REPORT ────────────────────────────────────────────────────────────────────
 
+def _date_arg(request, name):
+    """Дата из адреса. Ерунду вроде «2026-13-45» молча считаем незаданной:
+    отчёт должен открыться, а не упасть пятисоткой."""
+    try:
+        return parse_date(request.GET.get(name, "") or "")
+    except ValueError:
+        return None
+
+
 @login_required(login_url=LOGIN_URL)
 def bs_report(request, shop_id):
     shop = get_object_or_404(Barbershop, id=shop_id)
     if not _check(request.user, shop):
         return redirect("dashboard:bs_home")
 
+    today = timezone.localdate()
     period = request.GET.get("period", "month")
-    today = date.today()
-    if period == "today":
-        date_from = today
-        date_to   = today
+
+    # Произвольный период: две даты в адресе. Он главнее кнопок-пресетов,
+    # чтобы ссылку на конкретный отчёт можно было сохранить или переслать.
+    date_from = _date_arg(request, "from")
+    date_to   = _date_arg(request, "to")
+    if date_from or date_to:
+        period = "custom"
+        date_from = date_from or date_to
+        date_to   = date_to or date_from
+        if date_from > date_to:                 # даты перепутали местами
+            date_from, date_to = date_to, date_from
+    elif period == "today":
+        date_from = date_to = today
+    elif period == "yesterday":
+        date_from = date_to = today - timedelta(days=1)
     elif period == "week":
         date_from = today - timedelta(days=today.weekday())
         date_to   = today
-    else:  # month
+    elif period == "prev_month":
+        last_day = today.replace(day=1) - timedelta(days=1)
+        date_from = last_day.replace(day=1)
+        date_to   = last_day
+    else:                                        # month
+        period = "month"
         date_from = today.replace(day=1)
         date_to   = today
+
+    days = (date_to - date_from).days + 1
 
     qs = Appointment.objects.filter(
         barbershop=shop, appt_date__gte=date_from, appt_date__lte=date_to,
@@ -507,9 +536,20 @@ def bs_report(request, shop_id):
                      .annotate(cnt=Count("id"), rev=Sum("price_snapshot"))
                      .order_by("-cnt"))
 
-    # Daily shift: today's appointments grouped by barber
+    # Разбивка по дням — для периода длиннее суток
+    by_day = []
+    if days > 1:
+        rows = (qs.values("appt_date")
+                .annotate(cnt=Count("id"), rev=Sum("price_snapshot"))
+                .order_by("-appt_date"))
+        by_day = list(rows)
+
+    # Смена: по умолчанию сегодняшняя, но если сегодня вне выбранного периода —
+    # показываем последний день периода, иначе карточка была бы пустой.
+    shift_date = today if date_from <= today <= date_to else date_to
+
     shift_qs = (Appointment.objects
-                .filter(barbershop=shop, appt_date=today)
+                .filter(barbershop=shop, appt_date=shift_date)
                 .exclude(status="cancelled")
                 .select_related("barber")
                 .order_by("barber__sort_order", "appt_time"))
@@ -529,7 +569,8 @@ def bs_report(request, shop_id):
 
     return render(request, "dashboard/barbershop/report.html", {
         "shop": shop, "period": period,
-        "date_from": date_from, "date_to": date_to,
+        "date_from": date_from, "date_to": date_to, "days": days,
+        "by_day": by_day, "shift_date": shift_date,
         "total_revenue": total_revenue, "total_count": total_count,
         "paid_revenue": paid_revenue,
         "online_rev": online_rev, "offline_rev": offline_rev,
