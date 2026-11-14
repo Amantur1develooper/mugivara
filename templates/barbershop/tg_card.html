@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Запись{% if appt %} №{{ appt.id }}{% endif %}</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  /* Цвета берём у Telegram: карточка должна выглядеть частью мессенджера,
+     а не чужой страницей. Значения после запятой — если открыли в браузере. */
+  :root{
+    --bg:     var(--tg-theme-bg-color, #ffffff);
+    --card:   var(--tg-theme-secondary-bg-color, #f4f4f5);
+    --text:   var(--tg-theme-text-color, #16161a);
+    --hint:   var(--tg-theme-hint-color, #8a8a8e);
+    --accent: var(--tg-theme-button-color, #ff4d1c);
+    --on-accent: var(--tg-theme-button-text-color, #ffffff);
+    --line:   color-mix(in srgb, var(--hint) 25%, transparent);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font:16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding:16px 16px calc(24px + env(safe-area-inset-bottom,0px));
+    max-width:560px; margin-inline:auto;
+  }
+  .status{
+    display:inline-block; padding:5px 12px; border-radius:999px;
+    background:var(--card); font-size:14px; font-weight:600; margin-bottom:14px;
+  }
+  h1{font-size:21px; margin:0 0 4px; font-weight:700}
+  .sub{color:var(--hint); font-size:14px; margin-bottom:18px}
+  .card{background:var(--card); border-radius:16px; padding:14px 16px; margin-bottom:12px}
+  .row{display:flex; gap:12px; padding:9px 0; border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .row .k{color:var(--hint); min-width:92px; font-size:14px}
+  .row .v{font-weight:600; flex:1}
+  .total{display:flex; justify-content:space-between; align-items:baseline;
+         font-size:19px; font-weight:700; padding-top:4px}
+  .total .mins{font-size:14px; font-weight:500; color:var(--hint)}
+  ul{margin:0; padding-left:20px}
+  li{padding:3px 0}
+  a.call{display:block; text-align:center; text-decoration:none; font-weight:600;
+         background:var(--card); color:var(--text); border-radius:14px;
+         padding:14px; margin-bottom:12px}
+  .acts{display:grid; gap:10px; grid-template-columns:1fr 1fr}
+  .acts .wide{grid-column:1 / -1}
+  button{
+    font:inherit; font-weight:600; border:0; border-radius:14px; padding:14px 10px;
+    background:var(--card); color:var(--text); cursor:pointer;
+  }
+  button.main{background:var(--accent); color:var(--on-accent)}
+  button[disabled]{opacity:.5}
+  .msg{margin-top:14px; text-align:center; color:var(--hint); font-size:14px; min-height:20px}
+  .empty{text-align:center; padding:60px 20px; color:var(--hint)}
+</style>
+</head>
+<body>
+
+{% if expired %}
+  <div class="empty">
+    <div style="font-size:40px">🔗</div>
+    <p>Ссылка устарела или запись удалили.<br>Откройте запись в кабинете.</p>
+  </div>
+{% else %}
+  <div class="status" id="status">{{ status_label }}</div>
+  <h1>Запись №{{ appt.id }}</h1>
+  <div class="sub">{{ appt.barbershop.name }}</div>
+
+  <div class="card">
+    <div class="row"><span class="k">Когда</span><span class="v">{{ when }}</span></div>
+    <div class="row"><span class="k">Мастер</span><span class="v">{{ appt.barber_name|default:"—" }}</span></div>
+    <div class="row"><span class="k">Клиент</span><span class="v">{{ appt.customer_name }}</span></div>
+    {% if appt.customer_phone %}
+      <div class="row"><span class="k">Телефон</span><span class="v">{{ appt.customer_phone }}</span></div>
+    {% endif %}
+    {% if appt.comment %}
+      <div class="row"><span class="k">Комментарий</span><span class="v">{{ appt.comment }}</span></div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="row" style="display:block">
+      <div class="k" style="margin-bottom:6px">{% if services|length > 1 %}Услуги{% else %}Услуга{% endif %}</div>
+      <ul>{% for s in services %}<li>{{ s }}</li>{% endfor %}</ul>
+    </div>
+    <div class="total">
+      <span>{{ appt.price_snapshot|floatformat:0 }} сом</span>
+      <span class="mins">{{ appt.duration_min }} мин</span>
+    </div>
+  </div>
+
+  {% if appt.customer_phone %}
+    <a class="call" href="tel:{{ appt.customer_phone }}">📞 Позвонить клиенту</a>
+  {% endif %}
+
+  <div class="acts" id="acts"></div>
+  <div class="msg" id="msg"></div>
+
+  <script>
+    const tg  = window.Telegram ? window.Telegram.WebApp : null;
+    if (tg) { tg.ready(); tg.expand(); }
+
+    const ACTION_URL = "{% url 'barbershop_tg:card_action' token %}";
+    const BUTTONS = {
+      new:       [["confirm", "✅ Подтвердить", true], ["cancel", "❌ Отменить", false]],
+      confirmed: [["done", "🏁 Выполнена", true], ["no_show", "🚫 Не пришёл", false],
+                  ["cancel", "❌ Отменить", false, true]],
+      done:      [["reopen", "↩️ Вернуть в новые", false, true]],
+      cancelled: [["reopen", "↩️ Вернуть в новые", false, true]],
+      no_show:   [["reopen", "↩️ Вернуть в новые", false, true]],
+    };
+
+    let status = "{{ appt.status }}";
+
+    function draw() {
+      const box = document.getElementById("acts");
+      box.innerHTML = "";
+      (BUTTONS[status] || []).forEach(([action, label, main, wide]) => {
+        const b = document.createElement("button");
+        b.textContent = label;
+        if (main) b.className = "main";
+        if (wide) b.classList.add("wide");
+        b.onclick = () => send(action, b);
+        box.appendChild(b);
+      });
+    }
+
+    function send(action, btn) {
+      const box = document.getElementById("acts");
+      [...box.children].forEach(b => b.disabled = true);
+      const body = new URLSearchParams({
+        action: action,
+        init_data: tg ? tg.initData : "",
+      });
+      fetch(ACTION_URL, {method: "POST", body: body})
+        .then(r => r.json())
+        .then(d => {
+          if (!d.ok) throw new Error(d.error || "Не получилось");
+          status = d.status;
+          document.getElementById("status").textContent = d.status_label;
+          document.getElementById("msg").textContent = d.toast;
+          if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred("success");
+          draw();
+          // Статус уже обновлён в чате — в мессенджере карточку видно сразу.
+          setTimeout(() => { if (tg) tg.close(); }, 900);
+        })
+        .catch(e => {
+          document.getElementById("msg").textContent = e.message;
+          [...box.children].forEach(b => b.disabled = false);
+        });
+    }
+
+    draw();
+  </script>
+{% endif %}
+</body>
+</html>

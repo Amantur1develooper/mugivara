@@ -1,13 +1,14 @@
 from datetime import date, datetime, timedelta
 from decimal import Decimal
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Count, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from . import tg
 from .models import (Appointment, Barber, BarberSchedule, BarberService,
                      Barbershop, BarbershopMembership, Service, ServiceCategory,
                      WEEKDAY_CHOICES)
@@ -26,22 +27,6 @@ def _check(user, shop):
     if user.is_staff or user.is_superuser:
         return True
     return BarbershopMembership.objects.filter(user=user, barbershop=shop).exists()
-
-
-def _tg_send(shop, text):
-    try:
-        token = (getattr(settings, "TG_BOT_TOKEN", "") or
-                 getattr(settings, "TELEGRAM_BOT_TOKEN", "") or "").strip()
-        if not token or not shop.tg_chat_id:
-            return
-        import requests as req
-        payload = {"chat_id": shop.tg_chat_id, "text": text,
-                   "parse_mode": "HTML", "disable_web_page_preview": True}
-        if shop.tg_thread_id:
-            payload["message_thread_id"] = shop.tg_thread_id
-        req.post(f"https://api.telegram.org/bot{token}/sendMessage", json=payload, timeout=8)
-    except Exception:
-        pass
 
 
 # ── HOME ─────────────────────────────────────────────────────────────────────
@@ -431,17 +416,7 @@ def bs_appointment_add(request, shop_id):
         is_paid=is_paid, payment_method=pay_m, notes=notes,
     )
 
-    weekday_ru = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"]
-    date_fmt = appt_date.strftime("%d.%m.%Y") + f" ({weekday_ru[appt_date.weekday()]})"
-    svc_lines = "\n".join(f"  • {s.name} — {int(s.price)} сом" for s in services)
-    _tg_send(shop,
-        f"✂️ <b>Запись офлайн #{appt.id}</b>\n"
-        f"📋 Услуги:\n{svc_lines}\n"
-        f"💰 Итого: {int(total_price)} сом ({total_duration} мин)\n"
-        f"👤 Мастер: {barber.name}\n"
-        f"📅 {date_fmt} в {appt_time.strftime('%H:%M')}\n"
-        f"👤 {name}{' ' + phone if phone else ''}"
-    )
+    tg.send_appointment(appt)
     messages.success(request, f"Запись #{appt.id} создана")
     return redirect("dashboard:bs_appointments", shop_id=shop.id)
 
@@ -454,9 +429,14 @@ def bs_appointment_status(request, appt_id):
         return JsonResponse({"ok": False}, status=403)
     from .models import APPOINTMENT_STATUS
     new_status = request.POST.get("status", "")
-    if new_status in dict(APPOINTMENT_STATUS):
+    if new_status in dict(APPOINTMENT_STATUS) and new_status != appt.status:
         appt.status = new_status
         appt.save(update_fields=["status", "updated_at"])
+        # карточка этой записи уже висит в чате — правим её, а не шлём новую
+        stamp = timezone.localtime().strftime("%d.%m %H:%M")
+        tg.refresh_appointment(
+            appt, footer=f"{tg.STATUS_LABEL.get(new_status, new_status)} — "
+                         f"кабинет, {stamp}")
     return JsonResponse({"ok": True, "status": appt.status})
 
 

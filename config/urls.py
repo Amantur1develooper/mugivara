@@ -12,6 +12,11 @@ from hotels.views import room_request_page, room_request_submit
 
 urlpatterns = [
     path("i18n/", __import__("django.conf.urls.i18n").conf.urls.i18n.set_language, name="set_language"),
+    # Телеграм-бот барбершопа: кнопки под записью и мини-приложение.
+    # Намеренно вне i18n_patterns — Telegram не ходит по редиректам языка.
+    path("tg/barbershop/", include(("barbershop.tg_urls", "barbershop_tg"),
+                                   namespace="barbershop_tg")),
+
     path("api/print/",    include("printing.urls")),
     path("api/sr-print/", include("simracing.print_urls")),
     path("api/shop-print/", include("shops.print_urls")),

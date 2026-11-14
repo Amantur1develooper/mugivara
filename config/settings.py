@@ -293,6 +293,14 @@ SPECTACULAR_SETTINGS = {
 
 TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN", "")
 
+# Публичный адрес сайта: по нему собираются ссылки для Telegram — кнопка
+# мини-приложения требует абсолютный https-адрес, относительный не примет.
+SITE_URL = os.getenv("SITE_URL", "https://webordo.kg").rstrip("/")
+
+# Секрет вебхука Telegram: входит в адрес и проверяется в заголовке
+# X-Telegram-Bot-Api-Secret-Token, чтобы к обработчику не стучался кто попало.
+TG_WEBHOOK_SECRET = os.getenv("TG_WEBHOOK_SECRET", "")
+
 
 
 CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"

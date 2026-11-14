@@ -1,7 +1,6 @@
 import json
 from datetime import date, datetime, timedelta
 from urllib.parse import quote
-from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 from django.http import JsonResponse
@@ -11,6 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.utils.translation import get_language
 
+from . import tg
 from .models import (Barbershop, ServiceCategory, Service, Barber,
                      BarberSchedule, Appointment)
 
@@ -23,27 +23,6 @@ def _loc(obj, field):
         if val:
             return val
     return getattr(obj, field, "") or ""
-
-
-def _get_bot_token():
-    return (getattr(settings, "TG_BOT_TOKEN", "") or
-            getattr(settings, "TELEGRAM_BOT_TOKEN", "") or "").strip()
-
-
-def _tg_notify(shop, text):
-    token = _get_bot_token()
-    if not token or not shop.tg_chat_id:
-        return
-    try:
-        import requests as req
-        payload = {"chat_id": shop.tg_chat_id, "text": text,
-                   "parse_mode": "HTML", "disable_web_page_preview": True}
-        if shop.tg_thread_id:
-            payload["message_thread_id"] = shop.tg_thread_id
-        req.post(f"https://api.telegram.org/bot{token}/sendMessage",
-                 json=payload, timeout=8)
-    except Exception:
-        pass
 
 
 # За сколько минут до начала ещё можно записаться. Клиенту нужно время
@@ -250,21 +229,11 @@ def book_confirm(request, slug):
         source="online",
     )
 
+    # Карточка записи с кнопками: подтвердить и отменить можно прямо в чате.
+    tg.send_appointment(appt)
+
     weekday_ru = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"]
     date_fmt = appt_date.strftime("%d.%m.%Y") + f" ({weekday_ru[appt_date.weekday()]})"
-    svc_lines = "\n".join(
-        f"  • {s.name} — {int(s.price)} сом ({s.duration_min} мин)" for s in services
-    )
-    tg_text = (
-        f"✂️ <b>Новая запись #{appt.id}</b>\n"
-        f"📋 Услуги:\n{svc_lines}\n"
-        f"💰 Итого: {int(total_price)} сом ({total_duration} мин)\n"
-        f"👤 Мастер: {barber.name}\n"
-        f"📅 Дата: {date_fmt} в {time_str}\n"
-        f"👤 Клиент: {name}\n"
-        f"📞 Телефон: {phone or '—'}"
-    )
-    _tg_notify(shop, tg_text)
 
     wa_number = "".join(ch for ch in (shop.whatsapp or shop.phone or "") if ch.isdigit())
     if wa_number:

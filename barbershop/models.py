@@ -223,6 +223,9 @@ class Appointment(TimeStampedModel):
                                         blank=True, default="")
     comment         = models.TextField("Комментарий клиента", blank=True, default="")
     notes           = models.TextField("Заметки администратора", blank=True, default="")
+    # id сообщения о записи в Telegram — чтобы потом править его кнопки и статус,
+    # а не слать в чат новое сообщение на каждое изменение
+    tg_message_id   = models.BigIntegerField("ID сообщения в Telegram", null=True, blank=True)
 
     class Meta:
         verbose_name = "Запись"
