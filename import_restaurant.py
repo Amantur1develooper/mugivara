@@ -125,6 +125,15 @@ def main():
             rest.place_category = PlaceCategory.objects.filter(
                 name_ru__icontains="Рестораны").first()
         rest.save()
+
+        # логотип заведения: ставим, только если его ещё нет
+        logo = RESTAURANT.get("logo")
+        if logo and not rest.logo:
+            logo_path = os.path.join(args.photos, logo)
+            if os.path.exists(logo_path):
+                with open(logo_path, "rb") as fh:
+                    rest.logo.save(logo, ContentFile(fh.read()), save=True)
+
         print(f'{"создан" if created else "обновлён"} ресторан #{rest.id} {rest.name_ru}')
 
         menu_set, _ = MenuSet.objects.get_or_create(
@@ -202,6 +211,14 @@ def main():
             if args.theme:
                 branch.template_slug = args.theme
             branch.save()
+
+            # обложка филиала: ставим, только если её ещё нет
+            cover = b.get("cover")
+            if cover and not branch.cover_photo:
+                cover_path = os.path.join(args.photos, cover)
+                if os.path.exists(cover_path):
+                    with open(cover_path, "rb") as fh:
+                        branch.cover_photo.save(cover, ContentFile(fh.read()), save=True)
 
             BranchMenuSet.objects.get_or_create(branch=branch, menu_set=menu_set,
                                                 defaults={"is_active": True})
