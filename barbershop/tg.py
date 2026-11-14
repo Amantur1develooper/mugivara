@@ -166,10 +166,21 @@ def message_text(appt, footer=""):
     return "\n".join(lines)
 
 
+def _is_group(appt):
+    """Групповой чат или личный. У групп номер чата отрицательный."""
+    return str(appt.barbershop.tg_chat_id or "").startswith("-")
+
+
 def _open_button(appt):
-    """Кнопка мини-приложения. Telegram принимает только https, иначе — ссылкой."""
+    """Кнопка карточки записи.
+
+    Мини-приложение Telegram разрешает открывать inline-кнопкой только в
+    личной переписке с ботом: в группе такая кнопка валит всё сообщение
+    с ошибкой BUTTON_TYPE_INVALID. Поэтому в группе — обычная ссылка.
+    Требование https общее для обоих видов.
+    """
     url = card_url(appt)
-    if url.startswith("https://"):
+    if url.startswith("https://") and not _is_group(appt):
         return {"text": "📋 Карточка записи", "web_app": {"url": url}}
     return {"text": "📋 Карточка записи", "url": url}
 
@@ -208,6 +219,14 @@ def send_appointment(appt):
     res = _call("sendMessage", **payload)
     if not res and shop.tg_thread_id:
         payload.pop("message_thread_id")      # темы в чате могли выключить
+        res = _call("sendMessage", **payload)
+    if not res:
+        # Одна негодная кнопка отменяет всё сообщение. Лучше прислать карточку
+        # без ссылки, чем не прислать запись вовсе.
+        payload["reply_markup"] = {
+            "inline_keyboard": [r for r in keyboard(appt)["inline_keyboard"]
+                                if not any("web_app" in b or "url" in b for b in r)]
+        }
         res = _call("sendMessage", **payload)
     if res and res.get("message_id"):
         appt.tg_message_id = res["message_id"]

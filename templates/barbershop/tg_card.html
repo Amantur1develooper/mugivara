@@ -120,6 +120,13 @@
     function draw() {
       const box = document.getElementById("acts");
       box.innerHTML = "";
+      // Из группы карточка открывается ссылкой, а не мини-приложением:
+      // подписи Telegram тут нет, и менять статус отсюда нельзя.
+      if (!tg || !tg.initData) {
+        document.getElementById("msg").textContent =
+          "Статус меняется кнопками под сообщением в чате.";
+        return;
+      }
       (BUTTONS[status] || []).forEach(([action, label, main, wide]) => {
         const b = document.createElement("button");
         b.textContent = label;
