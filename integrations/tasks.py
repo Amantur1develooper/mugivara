@@ -480,10 +480,10 @@ def notify_call_waiter(self, place_id: int, note: str = ""):
 def notify_new_shop_order(self, order_id: int):
     """Шлёт заказ в чаты филиала карточкой с кнопками.
 
-    Сама отправка и сбор получателей живут в shops.tg — там же кнопки и
-    действия по ним. Здесь остаётся только повтор при полном провале:
-    Telegram мог быть временно недоступен или сработал rate-limit на всплеске
-    заказов, и терять уведомление молча нельзя.
+    Основную отправку делает сигнал сразу после создания заказа; сюда заказ
+    попадает только если туда что-то не доставилось. Дошлём недостающие чаты
+    и повторим при полном провале: Telegram мог быть временно недоступен или
+    сработал rate-limit на всплеске заказов.
     """
     from shops.models import StoreOrder
     from shops import tg as shop_tg
@@ -502,7 +502,7 @@ def notify_new_shop_order(self, order_id: int):
     if not chats:
         return "No recipients"
 
-    sent, errors = shop_tg.send_order(order)
+    sent, errors = shop_tg.send_order(order, only_missing=True)
     if errors and sent == 0:
         raise Exception(f"TG shop order: 0/{len(chats)} delivered for order {order_id}")
     return f"sent={sent} errors={errors}"

@@ -168,8 +168,12 @@ def recipients(branch):
     return chats
 
 
-def send_order(order):
-    """Шлёт карточку заказа во все чаты филиала. Возвращает (ушло, ошибок)."""
+def send_order(order, only_missing=False):
+    """Шлёт карточку заказа в чаты филиала. Возвращает (ушло, ошибок).
+
+    only_missing — для повторной попытки: чаты, куда карточка уже ушла,
+    пропускаем, иначе повтор задвоил бы заказ в группе.
+    """
     chats = recipients(order.branch)
     if not chats:
         return 0, 0
@@ -177,6 +181,8 @@ def send_order(order):
     text = message_text(order)
     sent, errors, ids = 0, 0, dict(order.tg_messages or {})
     for chat_id, thread_id in chats.items():
+        if only_missing and str(chat_id) in ids:
+            continue
         message_id = tgbot.send_card(chat_id, thread_id, text, keyboard(order, chat_id))
         if message_id:
             ids[str(chat_id)] = message_id

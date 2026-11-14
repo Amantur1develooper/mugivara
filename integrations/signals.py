@@ -57,10 +57,24 @@ def shop_order_created(sender, instance: StoreOrder, created: bool, **kwargs):
         return
 
     def _on_commit():
+        # Шлём карточку прямо здесь, а не только через очередь: если фоновый
+        # процесс Celery не запущен, задача молча зависает и заказ в группу
+        # не приходит вовсе. Барбершоп и картинг шлют так же — синхронно.
+        sent = errors = 0
         try:
-            notify_new_shop_order.delay(instance.id)
+            from shops import tg as shop_tg
+            sent, errors = shop_tg.send_order(instance)
         except Exception as e:
-            logger.error("notify_new_shop_order failed for order %s: %s", instance.id, e)
+            logger.exception("shop order card failed for order %s: %s", instance.id, e)
+            errors = 1
+
+        # Очередь оставляем на повтор: она дошлёт только те чаты, куда
+        # карточка ещё не ушла, поэтому задвоить заказ не может.
+        if errors:
+            try:
+                notify_new_shop_order.delay(instance.id)
+            except Exception as e:
+                logger.error("notify_new_shop_order failed for order %s: %s", instance.id, e)
 
     transaction.on_commit(_on_commit)
 
