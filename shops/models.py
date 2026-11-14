@@ -409,6 +409,11 @@ class StoreOrder(TimeStampedModel):
     stock_plan = models.JSONField("План списания со склада", default=dict, blank=True)
     stock_written_off = models.BooleanField("Списано со склада", default=False)
 
+    # Карточки заказа в Telegram: {chat_id: message_id}. Заказ уходит сразу в
+    # несколько чатов (группа, личка менеджера), и при смене статуса надо
+    # переписать каждую копию, а не слать новое сообщение в каждый чат.
+    tg_messages = models.JSONField("Сообщения в Telegram", default=dict, blank=True)
+
     def __str__(self):
         return f"#{self.id} {self.branch} {self.order_type} {self.total}"
 

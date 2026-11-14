@@ -17,6 +17,7 @@ from .models import (
     StoreConstructor, StoreConstructorGroup, StoreConstructorIngredient, StoreConstructorOrderItem,
     ShopPrintConfig, ShopPrintJob, StorePromotion,
 )
+from . import tg as shop_tg
 from .print_jobs import create_order_print_job
 from . import constructor_utils
 from .pricing import PromoResolver
@@ -1123,13 +1124,24 @@ def shop_order_status(request, order_id):
 
         # Склад двигается здесь, а не при оформлении: заказ на доставку
         # до подтверждения может отмениться, и держать товар списанным нельзя.
+        notes = []
         if new_status in (StoreOrder.Status.CONFIRMED, StoreOrder.Status.DONE):
             shortages = shop_stock.write_off(order)
             if shortages:
-                messages.warning(request, shop_stock.shortage_text(order, shortages))
+                text = shop_stock.shortage_text(order, shortages)
+                messages.warning(request, text)
+                notes.append(text)
         elif new_status == StoreOrder.Status.CANCELED:
             # отменили уже подтверждённый — возвращаем товар на полку
             shop_stock.restore(order)
+
+        # карточка этого заказа уже висит в чатах — правим её, а не шлём новую
+        from django.utils import timezone as _tz
+        stamp = _tz.localtime().strftime("%d.%m %H:%M")
+        mark = f"{shop_tg.STATUS_LABEL.get(new_status, new_status)} — кабинет, {stamp}"
+        if notes:
+            mark += "\n" + " · ".join(notes)
+        shop_tg.refresh_order(order, footer=mark)
     return redirect("dashboard:shop_orders", branch_id=order.branch_id)
 
 

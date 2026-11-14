@@ -18,6 +18,7 @@ urlpatterns = [
                                    namespace="barbershop_tg")),
     path("tg/karting/", include(("simracing.tg_urls", "simracing_tg"),
                                 namespace="simracing_tg")),
+    path("tg/shop/", include(("shops.tg_urls", "shops_tg"), namespace="shops_tg")),
 
     path("api/print/",    include("printing.urls")),
     path("api/sr-print/", include("simracing.print_urls")),

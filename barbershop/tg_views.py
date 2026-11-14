@@ -80,13 +80,17 @@ def _handle_message(msg):
 
 def _handle_callback(cq):
     """Кнопка под сообщением. Бот один на все направления, поэтому в
-    callback_data первым идёт префикс: bs — барбершоп, sr — картинг."""
+    callback_data первым идёт префикс: bs — барбершоп, sr — картинг,
+    sh — магазин."""
     data = (cq.get("data") or "").split(":")
     if len(data) != 3:
         return
     if data[0] == "sr":
         from simracing.tg_views import handle_callback as karting
         return karting(cq)
+    if data[0] == "sh":
+        from shops.tg_views import handle_callback as shop
+        return shop(cq)
     if data[0] != "bs":
         return
     _, action, raw_id = data

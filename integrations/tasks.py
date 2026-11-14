@@ -476,75 +476,19 @@ def notify_call_waiter(self, place_id: int, note: str = ""):
 
 # ── Магазины: уведомление о новом заказе (сайт + касса) ──────────────────────
 
-def _shop_order_header(order) -> str:
-    if order.mode == "delivery":
-        return "🛵 ДОСТАВКА — НОВЫЙ ЗАКАЗ"
-    return "🏬 НОВЫЙ ЗАКАЗ В МАГАЗИНЕ"
-
-
-def _shop_order_text(order) -> str:
-    lines = [
-        _shop_order_header(order),
-        f"🧾 Заказ №{order.id}",
-        f"🏪 Филиал: {getattr(order.branch, 'name_ru', str(order.branch))}",
-    ]
-
-    if hasattr(order, "get_status_display"):
-        lines.append(f"🆕 Статус: {order.get_status_display()}")
-
-    pm = order.get_payment_method_display() if hasattr(order, "get_payment_method_display") else ""
-    if pm:
-        lines.append(f"💳 Оплата: {pm}")
-
-    if getattr(order, "name", ""):
-        lines.append(f"👤 Имя: {order.name}")
-    if getattr(order, "phone", ""):
-        lines.append(f"📞 Телефон: {order.phone}")
-    if getattr(order, "address", ""):
-        label = "📍 Адрес" if order.mode == "delivery" else "📝 Комментарий"
-        lines.append(f"{label}: {order.address}")
-    if getattr(order, "comment", ""):
-        lines.append(f"📝 Комментарий: {order.comment}")
-
-    items = list(order.items.select_related("product").all())
-    cx_items = list(order.constructor_items.all())
-    if items or cx_items:
-        lines.append("")
-        lines.append("📋 Состав заказа:")
-        for it in items:
-            name = getattr(it.product, "name_ru", None) or str(it.product)
-            lines.append(f"  • {name} × {_qty(it.qty)}  —  {_money(it.line_total)}")
-        for coi in cx_items:
-            cx_name = coi.constructor_name_snapshot or "Собери сам"
-            entry = f"  • 🧩 {cx_name} × {_qty(coi.qty)}  —  {_money(coi.line_total)}"
-            for sel in (coi.ingredients_snapshot or []):
-                ings = _ing_names(sel.get("ings", []))
-                if sel.get("gname") and ings:
-                    entry += f"\n      {sel['gname']}: {ings}"
-            lines.append(entry)
-    else:
-        lines.append("")
-        lines.append("⚠️ Состав: нет позиций")
-
-    lines.append("")
-    if getattr(order, "delivery_fee", None) and Decimal(str(order.delivery_fee)) > 0:
-        lines.append(f"🛒 Товары: {_money(order.subtotal)}")
-        lines.append(f"🚚 Доставка: {_money(order.delivery_fee)}")
-    lines.append(f"💰 ИТОГО: {_money(order.total)}")
-
-    created = timezone.localtime(order.created_at).strftime("%d.%m.%Y %H:%M")
-    lines.append(f"⏰ {created}")
-
-    return "\n".join(lines)
-
-
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=60, max_retries=5)
 def notify_new_shop_order(self, order_id: int):
-    from shops.models import StoreOrder
-    from integrations.models import ShopTelegramRecipient
+    """Шлёт заказ в чаты филиала карточкой с кнопками.
 
-    token = _tg_token()
-    if not token:
+    Сама отправка и сбор получателей живут в shops.tg — там же кнопки и
+    действия по ним. Здесь остаётся только повтор при полном провале:
+    Telegram мог быть временно недоступен или сработал rate-limit на всплеске
+    заказов, и терять уведомление молча нельзя.
+    """
+    from shops.models import StoreOrder
+    from shops import tg as shop_tg
+
+    if not _tg_token():
         return "No TG token"
 
     order = (
@@ -553,59 +497,15 @@ def notify_new_shop_order(self, order_id: int):
         .prefetch_related("items__product", "constructor_items")
         .get(id=order_id)
     )
-    branch = order.branch
 
-    # Получатели собираются из ДВУХ источников и объединяются по chat_id, чтобы
-    # никого не потерять и не задвоить сообщение:
-    #  1) ShopTelegramRecipient — «официальный» способ настройки (через раздел
-    #     интеграций в админке);
-    #  2) tg_group_chat_id / tg_manager_chat_id прямо на филиале — их видно и
-    #     заполняют через карточку филиала в стандартной админке Django, это
-    #     тоже валидный способ настройки и должен работать.
-    chat_map = {}  # chat_id (str) -> thread_id
-    for r in ShopTelegramRecipient.objects.filter(branch=branch, is_active=True, notify_new_orders=True):
-        chat_map[str(r.chat_id)] = _thread_id_for(r)
-    if getattr(branch, "tg_group_chat_id", None):
-        chat_map.setdefault(str(branch.tg_group_chat_id), getattr(branch, "tg_thread_id", None))
-    if getattr(branch, "tg_manager_chat_id", None):
-        chat_map.setdefault(str(branch.tg_manager_chat_id), None)
-
-    if not chat_map:
+    chats = shop_tg.recipients(order.branch)
+    if not chats:
         return "No recipients"
 
-    # Строим текст ВНУТРИ try — если тут исключение (например, необычные
-    # данные заказа), это раньше молча роняло всю задачу и заказ просто
-    # не приходил в группу без единого следа. Теперь ошибка логируется
-    # и задача уходит на повтор (autoretry), а не пропадает навсегда.
-    try:
-        text = _shop_order_text(order)
-    except Exception:
-        logger.exception("notify_new_shop_order: failed to build text for order %s", order_id)
-        raise
-
-    sent = 0
-    errors = []
-    for chat_id, thread_id in chat_map.items():
-        try:
-            send_message(
-                bot_token=token,
-                chat_id=chat_id,
-                text=text,
-                parse_mode=None,
-                message_thread_id=thread_id,
-            )
-            sent += 1
-        except Exception as e:
-            logger.warning("notify_new_shop_order: send failed for order %s, chat %s: %s", order_id, chat_id, e)
-            errors.append(str(e))
-
+    sent, errors = shop_tg.send_order(order)
     if errors and sent == 0:
-        # Никому не доставилось (например, Telegram временно недоступен
-        # или сработал rate-limit при всплеске заказов в акцию) — пусть
-        # Celery повторит попытку, а не тихо потеряет уведомление.
-        raise Exception(f"TG shop order: 0/{len(chat_map)} delivered for order {order_id}: {errors}")
-
-    return f"sent={sent} errors={len(errors)}"
+        raise Exception(f"TG shop order: 0/{len(chats)} delivered for order {order_id}")
+    return f"sent={sent} errors={errors}"
 
 
 def _autosalon_lead_text(lead) -> str:
