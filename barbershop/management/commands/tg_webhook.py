@@ -57,7 +57,7 @@ class Command(BaseCommand):
     def _set(self, override=""):
         url, secret = self._url(override)
         self.stdout.write(f"Адрес: {url}")
-        self._reachable(url)
+        self._reachable(url, secret)
 
         res = tg._call("setWebhook", url=url, secret_token=secret,
                        allowed_updates=["callback_query"],
@@ -74,15 +74,27 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("Вебхук включён"))
         self._info()
 
-    def _reachable(self, url):
-        """Отвечает ли адрес снаружи. Telegram пойдёт туда же."""
+    def _reachable(self, url, secret):
+        """Стучимся по адресу так же, как это будет делать Telegram."""
         import requests
         try:
-            r = requests.post(url, json={}, timeout=10)
-            # 403 здесь — правильный ответ: секрет в заголовке мы не слали
-            self.stdout.write(f"  сайт отвечает: HTTP {r.status_code}")
+            r = requests.post(url, json={}, timeout=10,
+                              headers={"X-Telegram-Bot-Api-Secret-Token": secret})
+            if r.status_code == 200:
+                self.stdout.write("  адрес отвечает и секрет совпадает")
+            else:
+                self.stdout.write(self.style.WARNING(
+                    f"  адрес ответил HTTP {r.status_code} — ждали 200"))
         except Exception as e:
-            self.stdout.write(self.style.WARNING(f"  сайт не ответил: {e}"))
+            self.stdout.write(self.style.WARNING(f"  адрес не ответил: {e}"))
+
+        # Заголовок с секретом знает только Telegram: без него должен быть отказ.
+        try:
+            r = requests.post(url, json={}, timeout=10)
+            mark = "" if r.status_code == 403 else "  ← ждали 403!"
+            self.stdout.write(f"  без секретного заголовка: HTTP {r.status_code}{mark}")
+        except Exception:
+            pass
 
     def _delete(self):
         if tg._call("deleteWebhook", drop_pending_updates=False) is None:

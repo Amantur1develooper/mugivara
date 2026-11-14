@@ -19,10 +19,15 @@ def _secret_ok(request, secret):
     want = (getattr(settings, "TG_WEBHOOK_SECRET", "") or "").strip()
     if not want or secret != want:
         return False
-    # Telegram присылает тот же секрет заголовком — вторая проверка на случай,
-    # если адрес вебхука где-то засветился (логи прокси, история браузера).
+    # Telegram присылает тот же секрет заголовком. Проверяем и его: адрес
+    # вебхука может засветиться в логах прокси или в истории браузера, а
+    # заголовок знает только сам Telegram.
     sent = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
-    return sent is None or sent == want
+    if sent != want:
+        log.warning("вебхук: запрос без заголовка с секретом (%s)",
+                    "заголовка нет" if sent is None else "секрет не совпал")
+        return False
+    return True
 
 
 @csrf_exempt
