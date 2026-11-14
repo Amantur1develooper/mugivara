@@ -387,6 +387,10 @@ def book_appt(request, slug):
     weekday_ru = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"]
     date_fmt = appt_date.strftime("%d.%m.%Y") + f" ({weekday_ru[appt_date.weekday()]})"
     type_label = dict(Machine.Type.choices).get(machine_type, machine_type)
+    disc_line = (
+        f"Скидка: −{discount_percent}% (без скидки {int(base_price)} сом)\n"
+        if discount_percent else ""
+    )
 
     # Redirect to WhatsApp with pre-filled text
     wa_number = "".join(ch for ch in (v.whatsapp or v.phone or "") if ch.isdigit())
