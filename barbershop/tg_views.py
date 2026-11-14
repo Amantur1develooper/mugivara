@@ -46,8 +46,35 @@ def webhook(request, secret):
     cq = update.get("callback_query")
     if cq:
         _handle_callback(cq)
+    else:
+        _handle_message(update.get("message") or update.get("channel_post") or {})
     # Telegram повторяет доставку, пока не получит 200, поэтому отвечаем всегда.
     return HttpResponse("ok")
+
+
+def _handle_message(msg):
+    """Команда /id — бот называет номер чата, его вписывают в кабинет.
+
+    Иначе этот номер взять неоткуда: getUpdates при включённом вебхуке
+    не работает, а в интерфейсе Telegram номера чата не видно.
+    """
+    text = (msg.get("text") or "").strip().lower()
+    if not text.startswith(("/id", "/start")):
+        return
+    chat = msg.get("chat") or {}
+    thread = msg.get("message_thread_id")
+
+    lines = [f"🆔 <b>TG Chat ID:</b> <code>{chat.get('id')}</code>"]
+    if thread:
+        lines.append(f"🧵 <b>TG Thread ID:</b> <code>{thread}</code>")
+    lines += ["", "Впишите эти значения в карточку заведения в кабинете —",
+              "и записи начнут приходить сюда с кнопками."]
+
+    payload = {"chat_id": chat.get("id"), "text": "\n".join(lines),
+               "parse_mode": "HTML"}
+    if thread:
+        payload["message_thread_id"] = thread
+    tg._call("sendMessage", **payload)
 
 
 def _handle_callback(cq):

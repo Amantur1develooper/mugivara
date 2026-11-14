@@ -60,7 +60,7 @@ class Command(BaseCommand):
         self._reachable(url, secret)
 
         res = tg._call("setWebhook", url=url, secret_token=secret,
-                       allowed_updates=["callback_query"],
+                       allowed_updates=["callback_query", "message"],
                        drop_pending_updates=True)
         if res is None:
             raise CommandError(
