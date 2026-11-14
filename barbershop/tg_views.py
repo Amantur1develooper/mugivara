@@ -89,7 +89,7 @@ def card(request, token):
         "token": token,
         "when": tg._when(appt),
         "status_label": tg.STATUS_LABEL.get(appt.status, appt.status),
-        "services": [s.strip() for s in (appt.service_name or "").split("+") if s.strip()],
+        "services": tg.services_of(appt),
     })
 
 

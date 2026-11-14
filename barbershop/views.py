@@ -218,6 +218,10 @@ def book_confirm(request, slug):
         barber=barber,
         service=primary_service,
         service_name=service_names,
+        services_snapshot=[
+            {"name": s.name, "price": int(s.price), "duration": s.duration_min}
+            for s in services
+        ],
         barber_name=barber.name,
         price_snapshot=total_price,
         duration_min=total_duration,

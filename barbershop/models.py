@@ -209,6 +209,10 @@ class Appointment(TimeStampedModel):
     barber          = models.ForeignKey(Barber, on_delete=models.SET_NULL, null=True, related_name="appointments")
     service         = models.ForeignKey(Service, on_delete=models.SET_NULL, null=True, related_name="appointments")
     service_name    = models.CharField("Услуга (снимок)", max_length=200, blank=True, default="")
+    # Состав записи на момент брони: [{"name": …, "price": 500, "duration": 40}].
+    # Цены в прайсе меняются, а в карточке записи должна остаться та сумма,
+    # о которой договорились с клиентом.
+    services_snapshot = models.JSONField("Состав записи (снимок)", default=list, blank=True)
     barber_name     = models.CharField("Мастер (снимок)", max_length=200, blank=True, default="")
     price_snapshot  = models.DecimalField("Цена", max_digits=10, decimal_places=0, default=0)
     duration_min    = models.PositiveSmallIntegerField("Длительность (мин)", default=30)

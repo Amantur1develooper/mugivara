@@ -112,8 +112,37 @@ def _when(appt):
     return f"{date_part} ({weekday}), {start} — {end}"
 
 
+def services_of(appt):
+    """Состав записи: [(название, цена или None)].
+
+    Берём снимок, сделанный при брони. У записей, заведённых до того, как
+    снимок появился, его нет — тогда достаём цены из прайса по названиям.
+    """
+    snap = appt.services_snapshot or []
+    if snap:
+        return [(row.get("name", ""), row.get("price")) for row in snap if row.get("name")]
+
+    names = [s.strip() for s in (appt.service_name or "").split("+") if s.strip()]
+    if not names:
+        return []
+    from .models import Service
+    prices = dict(
+        Service.objects.filter(barbershop_id=appt.barbershop_id, name__in=names)
+        .values_list("name", "price")
+    )
+    return [(n, int(prices[n]) if n in prices else None) for n in names]
+
+
+def services_lines(appt, bullet="  • "):
+    out = []
+    for name, price in services_of(appt):
+        out.append(f"{bullet}{name} — {int(price)} сом" if price is not None
+                   else f"{bullet}{name}")
+    return out
+
+
 def message_text(appt, footer=""):
-    services = [s.strip() for s in (appt.service_name or "").split("+") if s.strip()]
+    services = services_lines(appt)
     lines = [
         f"✂️ <b>Запись №{appt.id}</b> · {STATUS_LABEL.get(appt.status, appt.status)}",
         "",
@@ -127,7 +156,7 @@ def message_text(appt, footer=""):
     if services:
         lines.append("")
         lines.append("📋 " + ("Услуги:" if len(services) > 1 else "Услуга:"))
-        lines += [f"  • {s}" for s in services]
+        lines += services
     lines.append("")
     lines.append(f"💰 {int(appt.price_snapshot)} сом · {appt.duration_min} мин")
     if appt.comment:

@@ -409,6 +409,10 @@ def bs_appointment_add(request, shop_id):
     appt = Appointment.objects.create(
         barbershop=shop, barber=barber, service=primary,
         service_name=service_name, barber_name=barber.name,
+        services_snapshot=[
+            {"name": s.name, "price": int(s.price), "duration": s.duration_min}
+            for s in services
+        ],
         price_snapshot=total_price, duration_min=total_duration,
         customer_name=name, customer_phone=phone,
         appt_date=appt_date, appt_time=appt_time,
