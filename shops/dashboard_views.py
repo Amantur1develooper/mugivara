@@ -18,6 +18,7 @@ from .models import (
     StoreConstructor, StoreConstructorGroup, StoreConstructorIngredient, StoreConstructorOrderItem,
     ShopPrintConfig, ShopPrintJob, StorePromotion,
 )
+from . import orders as order_ops
 from . import tg as shop_tg
 from .print_jobs import create_order_print_job
 from . import constructor_utils
@@ -1120,29 +1121,9 @@ def shop_order_status(request, order_id):
         return redirect("dashboard:shop_home")
     new_status = request.POST.get("status")
     if new_status in dict(StoreOrder.Status.choices):
-        order.status = new_status
-        order.save(update_fields=["status"])
-
-        # Склад двигается здесь, а не при оформлении: заказ на доставку
-        # до подтверждения может отмениться, и держать товар списанным нельзя.
-        notes = []
-        if new_status in (StoreOrder.Status.CONFIRMED, StoreOrder.Status.DONE):
-            shortages = shop_stock.write_off(order)
-            if shortages:
-                text = shop_stock.shortage_text(order, shortages)
-                messages.warning(request, text)
-                notes.append(text)
-        elif new_status == StoreOrder.Status.CANCELED:
-            # отменили уже подтверждённый — возвращаем товар на полку
-            shop_stock.restore(order)
-
-        # карточка этого заказа уже висит в чатах — правим её, а не шлём новую
-        from django.utils import timezone as _tz
-        stamp = _tz.localtime().strftime("%d.%m %H:%M")
-        mark = f"{shop_tg.STATUS_LABEL.get(new_status, new_status)} — кабинет, {stamp}"
-        if notes:
-            mark += "\n" + " · ".join(notes)
-        shop_tg.refresh_order(order, footer=mark)
+        for note in order_ops.apply_status(order, new_status, actor="кабинет"):
+            if "не хватило" in note.lower() or "нехват" in note.lower():
+                messages.warning(request, note)
     return redirect("dashboard:shop_orders", branch_id=order.branch_id)
 
 
@@ -1635,15 +1616,19 @@ def shop_pos_live_orders(request, branch_id):
 
 @require_POST
 @login_required(login_url=LOGIN_URL)
-def shop_pos_order_status(request, order_id):
-    order = get_object_or_404(StoreOrder, id=order_id)
+def shop_pos_order_status(request, branch_id, order_id):
+    order = get_object_or_404(StoreOrder, id=order_id, branch_id=branch_id)
     if not _has_branch_access(request.user, order.branch):
         return JsonResponse({"ok": False}, status=403)
     new_status = request.POST.get("status")
+    notes = []
     if new_status in dict(StoreOrder.Status.choices):
-        order.status = new_status
-        order.save(update_fields=["status"])
-    return JsonResponse({"ok": True, "status": order.status})
+        # То же самое, что кнопка в списке заказов и в Telegram: склад, чек,
+        # карточка в чате. Раньше касса меняла только статус, и заказ
+        # подтверждался «наполовину».
+        notes = order_ops.apply_status(order, new_status, actor="касса")
+    return JsonResponse({"ok": True, "status": order.status,
+                         "notes": [n for n in notes if n]})
 
 
 @login_required(login_url=LOGIN_URL)

@@ -635,7 +635,10 @@
 const BRANCH_ID   = {{ branch.id }};
 const ORDER_URL   = "{% url 'dashboard:shop_pos_order_create' branch.id %}";
 const LIVE_URL    = "{% url 'dashboard:shop_pos_live_orders' branch.id %}";
-const STATUS_URL  = "/dashboard/shops/branch/{{ branch.id }}/pos/status/{id}/";
+// Адрес собираем через {% templatetag openblock %} url {% templatetag closeblock %}:
+// кабинет живёт на /<язык>/cabinet/…, а зашитый вручную /dashboard/… просто
+// не существовал — кнопки «Принять» и «Завершить» молча ничего не делали.
+const STATUS_URL  = "{% url 'dashboard:shop_pos_order_status' branch.id 0 %}".replace(/\/0\/$/, "/{id}/");
 const RECEIPT_URL = "{% url 'dashboard:shop_pos_receipt' 0 %}".replace("/0/", "/{id}/");
 const CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
 const CX_DATA = {{ constructors_json|default:"{}"|safe }};

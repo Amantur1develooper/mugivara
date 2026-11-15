@@ -175,7 +175,9 @@
 
 <script>
 function openEdit(id, name, desc, price, note) {
-  document.getElementById("editForm").action = "/dashboard/eco/service/" + id + "/edit/";
+  // адрес через {% templatetag openblock %} url {% templatetag closeblock %} — кабинет не на /dashboard/
+  document.getElementById("editForm").action =
+    "{% url 'dashboard:eco_service_edit' 0 %}".replace(/\/0\//, "/" + id + "/");
   document.getElementById("editName").value  = name;
   document.getElementById("editDesc").value  = desc;
   document.getElementById("editPrice").value = price === "0" ? "" : price;

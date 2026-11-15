@@ -18,7 +18,6 @@ from django.utils import timezone
 
 from integrations import tgbot
 
-from . import stock as shop_stock
 
 log = logging.getLogger(__name__)
 
@@ -217,51 +216,13 @@ def refresh_order(order, footer=""):
 
 def apply_action(order, action, actor=""):
     """Меняет статус заказа по нажатой кнопке. Возвращает текст для всплывашки."""
+    from .orders import apply_status
+
     if action not in ACTIONS:
         return None
     new_status, toast = ACTIONS[action]
     if order.status == new_status:
         return f"Уже отмечено: {STATUS_LABEL[new_status]}"
 
-    order.status = new_status
-    order.save(update_fields=["status"])
-
-    notes = []
-    if new_status in ("confirmed", "done"):
-        # Склад двигается при подтверждении, а не при оформлении: до звонка
-        # менеджера заказ может отмениться, и держать товар списанным нельзя.
-        already = order.stock_written_off
-        shortages = shop_stock.write_off(order)
-        if not already:
-            notes.append("списано со склада")
-        if shortages:
-            notes.append(shop_stock.shortage_text(order, shortages))
-        notes.append(_print_receipt(order))
-    elif new_status == "canceled" and order.stock_written_off:
-        shop_stock.restore(order)
-        notes.append("товар возвращён на склад")
-
-    stamp = timezone.localtime().strftime("%d.%m %H:%M")
-    tail = " · ".join(n for n in notes if n)
-    mark = f"{STATUS_LABEL[new_status]} — {actor or 'Telegram'}, {stamp}"
-    if tail:
-        mark += f"\n{tail}"
-    refresh_order(order, footer=mark)
+    apply_status(order, new_status, actor=actor or "Telegram")
     return toast
-
-
-def _print_receipt(order):
-    """Чек на кассу филиала, если она подключена."""
-    from .models import ShopPrintConfig
-    from .print_jobs import create_order_print_job
-
-    cfg = ShopPrintConfig.objects.filter(branch=order.branch, enabled=True).first()
-    if not cfg:
-        return "печать не подключена"
-    try:
-        if create_order_print_job(order) is None:
-            return "печать не подключена"
-    except Exception:
-        log.exception("не удалось поставить чек заказа %s в печать", order.id)
-        return "чек в печать не ушёл — посмотрите кассу"
-    return "чек отправлен на печать" if cfg.is_agent_online() else "чек в очереди (касса офлайн)"
