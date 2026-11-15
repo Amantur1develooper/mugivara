@@ -62,8 +62,14 @@ def shop_order_created(sender, instance: StoreOrder, created: bool, **kwargs):
         # не приходит вовсе. Барбершоп и картинг шлют так же — синхронно.
         sent = errors = 0
         try:
+            from shops.models import StoreOrder as _Order
             from shops import tg as shop_tg
-            sent, errors = shop_tg.send_order(instance)
+            # Перечитываем заказ: позиции и итоги дописываются уже после
+            # создания строки заказа, и в объекте из памяти их ещё нет.
+            order = (_Order.objects.select_related("branch")
+                     .prefetch_related("items__product", "constructor_items")
+                     .get(id=instance.id))
+            sent, errors = shop_tg.send_order(order)
         except Exception as e:
             logger.exception("shop order card failed for order %s: %s", instance.id, e)
             errors = 1

@@ -8,6 +8,7 @@ from django.utils import timezone
 from urllib.parse import quote
 from django.db.models import Sum, Count, Q, Max
 from django.db import models as _models
+from django.db import transaction
 
 from . import stock as shop_stock
 from .models import (
@@ -1483,97 +1484,106 @@ def shop_pos_order_create(request, branch_id):
     if not items_data and not cx_items_data:
         return JsonResponse({"ok": False, "error": "Нет позиций"}, status=400)
 
-    order = StoreOrder.objects.create(
-        branch=branch,
-        order_type=StoreOrder.Type.PICKUP,
-        mode=StoreOrder.Mode.IN_STORE,
-        status=StoreOrder.Status.DONE,
-        payment_method=payment_method,
-        comment=comment,
-        phone="-",
-    )
+    # Продажа на кассе — одна операция: заказ, позиции, списание со склада
+    # и итоги. Без этого сигнал о новом заказе срабатывал сразу после
+    # создания пустой строки заказа, и в Telegram уходила карточка без
+    # товаров и с нулевой суммой.
+    with transaction.atomic():
+        order = StoreOrder.objects.create(
+            branch=branch,
+            order_type=StoreOrder.Type.PICKUP,
+            mode=StoreOrder.Mode.IN_STORE,
+            status=StoreOrder.Status.DONE,
+            payment_method=payment_method,
+            comment=comment,
+            phone="-",
+        )
 
-    promo = PromoResolver(branch.store)
-    subtotal = Decimal("0")
-    for it in items_data:
-        try:
-            stock = StoreStock.objects.select_related("product", "product__category").get(
-                id=int(it["stock_id"]), branch=branch, product__is_active=True
-            )
-            if stock.is_stopped or not stock.product.sell_direct:
-                continue
-            qty = max(Decimal("1"), Decimal(str(it.get("qty", 1))))
-            price = promo.price_for(stock.product)[0]
-            line = price * qty
-            StoreOrderItem.objects.create(
-                order=order, product=stock.product,
-                qty=qty, unit=stock.product.unit, price=price, line_total=line,
-            )
-            subtotal += line
-            # Decrement stock (don't go below 0)
-            stock.qty = max(Decimal("0"), stock.qty - qty)
-            stock.save(update_fields=["qty"])
-        except Exception:
-            continue
-
-    # ── «Собери сам»: считаем цену на сервере и списываем со склада филиала ──
-    if cx_items_data:
-        for cx_it in cx_items_data:
+        promo = PromoResolver(branch.store)
+        subtotal = Decimal("0")
+        for it in items_data:
             try:
-                cx = StoreConstructor.objects.get(id=int(cx_it["cx_id"]), store=branch.store, is_active=True)
-            except (StoreConstructor.DoesNotExist, KeyError, ValueError, TypeError):
+                # Отдельная точка сохранения на позицию: сбой одной строки не
+                # должен рушить всю продажу, а внутри общей транзакции без неё
+                # следующий запрос упал бы на «сломанной» транзакции.
+                with transaction.atomic():
+                    stock = StoreStock.objects.select_related("product", "product__category").get(
+                        id=int(it["stock_id"]), branch=branch, product__is_active=True
+                    )
+                    if stock.is_stopped or not stock.product.sell_direct:
+                        continue
+                    qty = max(Decimal("1"), Decimal(str(it.get("qty", 1))))
+                    price = promo.price_for(stock.product)[0]
+                    line = price * qty
+                    StoreOrderItem.objects.create(
+                        order=order, product=stock.product,
+                        qty=qty, unit=stock.product.unit, price=price, line_total=line,
+                    )
+                    subtotal += line
+                    # Decrement stock (don't go below 0)
+                    stock.qty = max(Decimal("0"), stock.qty - qty)
+                    stock.save(update_fields=["qty"])
+            except Exception:
                 continue
-            qty = max(Decimal("1"), Decimal(str(cx_it.get("qty", 1))))
-            selections = cx_it.get("selections") or {}
 
-            unit_price = cx.base_price
-            snapshot = []
-            wh_deductions = {}  # product_id -> qty to deduct
+        # ── «Собери сам»: считаем цену на сервере и списываем со склада филиала ──
+        if cx_items_data:
+            for cx_it in cx_items_data:
+                try:
+                    cx = StoreConstructor.objects.get(id=int(cx_it["cx_id"]), store=branch.store, is_active=True)
+                except (StoreConstructor.DoesNotExist, KeyError, ValueError, TypeError):
+                    continue
+                qty = max(Decimal("1"), Decimal(str(cx_it.get("qty", 1))))
+                selections = cx_it.get("selections") or {}
 
-            for g in cx.groups.all():
-                sel_map = selections.get(str(g.id)) or {}
-                ings_snap = []
-                for ing_id_str, ing_qty in sel_map.items():
-                    ing_qty = int(ing_qty or 0)
-                    if ing_qty <= 0:
-                        continue
-                    try:
-                        ci = StoreConstructorIngredient.objects.select_related("product").get(
-                            id=int(ing_id_str), group=g, is_active=True,
-                        )
-                    except (StoreConstructorIngredient.DoesNotExist, ValueError):
-                        continue
-                    unit_price += ci.display_price * ing_qty
-                    ings_snap.append({
-                        "id": ci.id, "name": ci.product.name_ru,
-                        "price": _fmt(ci.display_price), "qty": ing_qty,
-                        "product_id": ci.product_id, "write_off_qty": _fmt(ci.write_off_qty),
-                    })
-                    wh_deductions[ci.product_id] = wh_deductions.get(ci.product_id, Decimal("0")) \
-                        + (ci.write_off_qty * ing_qty)
-                if ings_snap:
-                    snapshot.append({"gid": g.id, "gname": g.name, "ings": ings_snap})
+                unit_price = cx.base_price
+                snapshot = []
+                wh_deductions = {}  # product_id -> qty to deduct
 
-            line_total = unit_price * qty
-            StoreConstructorOrderItem.objects.create(
-                order=order, constructor=cx, constructor_name_snapshot=cx.name,
-                qty=qty, unit_price=unit_price, line_total=line_total,
-                ingredients_snapshot=snapshot,
-            )
-            subtotal += line_total
+                for g in cx.groups.all():
+                    sel_map = selections.get(str(g.id)) or {}
+                    ings_snap = []
+                    for ing_id_str, ing_qty in sel_map.items():
+                        ing_qty = int(ing_qty or 0)
+                        if ing_qty <= 0:
+                            continue
+                        try:
+                            ci = StoreConstructorIngredient.objects.select_related("product").get(
+                                id=int(ing_id_str), group=g, is_active=True,
+                            )
+                        except (StoreConstructorIngredient.DoesNotExist, ValueError):
+                            continue
+                        unit_price += ci.display_price * ing_qty
+                        ings_snap.append({
+                            "id": ci.id, "name": ci.product.name_ru,
+                            "price": _fmt(ci.display_price), "qty": ing_qty,
+                            "product_id": ci.product_id, "write_off_qty": _fmt(ci.write_off_qty),
+                        })
+                        wh_deductions[ci.product_id] = wh_deductions.get(ci.product_id, Decimal("0")) \
+                            + (ci.write_off_qty * ing_qty)
+                    if ings_snap:
+                        snapshot.append({"gid": g.id, "gname": g.name, "ings": ings_snap})
 
-            # Списываем со склада филиала (не уходим в минус)
-            for product_id, ded_qty in wh_deductions.items():
-                total_qty = ded_qty * qty
-                bs, _created = StoreStock.objects.get_or_create(
-                    branch=branch, product_id=product_id, defaults={"qty": 0},
+                line_total = unit_price * qty
+                StoreConstructorOrderItem.objects.create(
+                    order=order, constructor=cx, constructor_name_snapshot=cx.name,
+                    qty=qty, unit_price=unit_price, line_total=line_total,
+                    ingredients_snapshot=snapshot,
                 )
-                bs.qty = max(Decimal("0"), bs.qty - total_qty)
-                bs.save(update_fields=["qty"])
+                subtotal += line_total
 
-    order.subtotal = subtotal
-    order.total    = subtotal
-    order.save(update_fields=["subtotal", "total"])
+                # Списываем со склада филиала (не уходим в минус)
+                for product_id, ded_qty in wh_deductions.items():
+                    total_qty = ded_qty * qty
+                    bs, _created = StoreStock.objects.get_or_create(
+                        branch=branch, product_id=product_id, defaults={"qty": 0},
+                    )
+                    bs.qty = max(Decimal("0"), bs.qty - total_qty)
+                    bs.save(update_fields=["qty"])
+
+        order.subtotal = subtotal
+        order.total    = subtotal
+        order.save(update_fields=["subtotal", "total"])
 
     # Печать чека на физический принтер (если для филиала включена)
     try:
