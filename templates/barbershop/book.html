@@ -177,7 +177,7 @@
   <!-- Step 4: Contact -->
   <div class="panel" id="panel-4">
     <div class="summary" id="summary"></div>
-    <form method="post" action="{% url 'barbershop:book_confirm' shop.slug %}">
+    <form method="post" action="{% url 'barbershop:book_confirm' shop.slug %}" id="book-form">
       {% csrf_token %}
       <input type="hidden" name="service_ids" id="f-services">
       <input type="hidden" name="barber_id"   id="f-barber">
@@ -196,7 +196,7 @@
           {% trans "Введите номер в формате +996 700 000 000" %}
         </div>
       </div>
-      <button type="submit" class="btn-next" onclick="return validatePhone(event)">{% trans "Подтвердить запись ✓" %}</button>
+      <button type="submit" class="btn-next" id="btn-submit" onclick="return validatePhone(event)">{% trans "Подтвердить запись ✓" %}</button>
       <button type="button" class="btn-back" onclick="goStep(3)">← {% trans "Назад" %}</button>
     </form>
   </div>

@@ -5,6 +5,7 @@
 и набор кнопок. Всё, что одинаково, живёт здесь, чтобы не расходилось.
 """
 import logging
+import threading
 
 import requests
 from django.conf import settings
@@ -38,6 +39,26 @@ def call(method, **payload):
     except Exception as e:
         log.warning("telegram %s упал: %s", method, e)
         return None
+
+
+def in_background(fn, *args, **kwargs):
+    """Выполняет отправку в отдельном потоке.
+
+    Telegram отвечает за доли секунды, но бывает и за несколько, а клиент всё
+    это время смотрит на крутилку после нажатия «Записаться». Уведомление не
+    должно держать ответ страницы.
+    """
+    def runner():
+        try:
+            fn(*args, **kwargs)
+        except Exception:
+            log.exception("фоновая отправка в Telegram упала")
+        finally:
+            # соединение с базой, открытое в этом потоке, закрываем за собой
+            from django.db import connections
+            connections.close_all()
+
+    threading.Thread(target=runner, daemon=True).start()
 
 
 # ── подписанные ссылки на карточку ───────────────────────────────────────────

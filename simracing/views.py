@@ -8,6 +8,8 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 
+from integrations import tgbot
+
 from . import tg
 from .models import Machine, Session, SessionType, SimRacingVenue, SimRacingAppointment
 
@@ -382,7 +384,8 @@ def book_appt(request, slug):
     )
 
     # Карточка брони с кнопками: подтвердить и отменить можно прямо в чате.
-    tg.send_appointment(appt)
+    # В фоне — чтобы клиент не ждал ответа Telegram.
+    tgbot.in_background(tg.send_appointment, appt)
 
     weekday_ru = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"]
     date_fmt = appt_date.strftime("%d.%m.%Y") + f" ({weekday_ru[appt_date.weekday()]})"

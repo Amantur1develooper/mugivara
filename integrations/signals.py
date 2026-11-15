@@ -56,10 +56,11 @@ def shop_order_created(sender, instance: StoreOrder, created: bool, **kwargs):
     if not created:
         return
 
-    def _on_commit():
-        # Шлём карточку прямо здесь, а не только через очередь: если фоновый
-        # процесс Celery не запущен, задача молча зависает и заказ в группу
-        # не приходит вовсе. Барбершоп и картинг шлют так же — синхронно.
+    def _send():
+        # Карточку шлём сами, а не только через очередь: если фоновый процесс
+        # Celery не запущен, задача молча зависает и заказ в группу не
+        # приходит вовсе. Делается это в отдельном потоке — касса и checkout
+        # не должны ждать ответа Telegram.
         sent = errors = 0
         try:
             from shops.models import StoreOrder as _Order
@@ -81,6 +82,10 @@ def shop_order_created(sender, instance: StoreOrder, created: bool, **kwargs):
                 notify_new_shop_order.delay(instance.id)
             except Exception as e:
                 logger.error("notify_new_shop_order failed for order %s: %s", instance.id, e)
+
+    def _on_commit():
+        from integrations import tgbot
+        tgbot.in_background(_send)
 
     transaction.on_commit(_on_commit)
 

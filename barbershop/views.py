@@ -10,6 +10,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.utils.translation import get_language
 
+from integrations import tgbot
+
 from . import tg
 from .models import (Barbershop, ServiceCategory, Service, Barber,
                      BarberSchedule, Appointment)
@@ -30,8 +32,14 @@ def _loc(obj, field):
 MIN_LEAD_MINUTES = 30
 
 
-def _available_slots(barber, appt_date, duration_min):
-    """Return list of 'HH:MM' strings for available slots."""
+def _available_slots(barber, appt_date, duration_min, lead_minutes=MIN_LEAD_MINUTES):
+    """Свободные окошки мастера в этот день: список «ЧЧ:ММ».
+
+    lead_minutes — на сколько вперёд отодвигаем ближайшее окошко. В списке для
+    клиента запас нужен, а при подтверждении брони его не применяем: человек
+    выбрал время, пока оно показывалось, и отказывать ему из-за того, что он
+    десять минут заполнял форму, нельзя.
+    """
     weekday = appt_date.weekday()
     try:
         schedule = barber.schedules.get(weekday=weekday, is_working=True)
@@ -58,7 +66,7 @@ def _available_slots(barber, appt_date, duration_min):
     now_local = timezone.localtime()
     earliest = None
     if appt_date == now_local.date():
-        earliest = now_local.replace(tzinfo=None) + timedelta(minutes=MIN_LEAD_MINUTES)
+        earliest = now_local.replace(tzinfo=None) + timedelta(minutes=lead_minutes)
 
     while current + dur <= end_dt:
         slot_end = current + dur
@@ -207,9 +215,23 @@ def book_confirm(request, slug):
     total_duration = sum(s.duration_min for s in services)
 
     # Страница могла провисеть открытой: время уже прошло или его успели
-    # занять. Проверяем по тому же расчёту, что и выдаёт список окошек.
-    if time_str not in _available_slots(barber, appt_date, total_duration):
+    # занять. Запас в полчаса здесь НЕ применяем — он нужен, чтобы не
+    # предлагать совсем впритык, но отказывать из-за него тому, кто это время
+    # уже выбрал, значит гонять человека по кругу.
+    if time_str not in _available_slots(barber, appt_date, total_duration, lead_minutes=0):
         return redirect(f"{reverse('barbershop:book', args=[slug])}?busy=1")
+
+    # Двойная отправка формы: человек нажал кнопку второй раз, вернулся
+    # «назад» из WhatsApp или обновил страницу. Та же запись — не повод
+    # заводить вторую и слать в чат второе сообщение.
+    twin = Appointment.objects.filter(
+        barbershop=shop, barber=barber, appt_date=appt_date, appt_time=appt_time,
+        customer_phone=phone, status__in=["new", "confirmed"],
+        created_at__gte=timezone.now() - timedelta(minutes=30),
+    ).first()
+    if twin:
+        return _after_booking(request, shop, twin, slug)
+
     service_names  = " + ".join(s.name for s in services)
     primary_service = services[0]
 
@@ -234,27 +256,35 @@ def book_confirm(request, slug):
     )
 
     # Карточка записи с кнопками: подтвердить и отменить можно прямо в чате.
-    tg.send_appointment(appt)
+    # Шлём в фоне — клиент не должен ждать ответа Telegram после «Записаться».
+    tgbot.in_background(tg.send_appointment, appt)
 
+    return _after_booking(request, shop, appt, slug)
+
+
+def _after_booking(request, shop, appt, slug):
+    """Куда отправить клиента после брони: в WhatsApp с готовым текстом или
+    на страницу «готово». Общий хвост для новой записи и для повторной
+    отправки той же формы."""
     weekday_ru = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"]
-    date_fmt = appt_date.strftime("%d.%m.%Y") + f" ({weekday_ru[appt_date.weekday()]})"
+    date_fmt = (appt.appt_date.strftime("%d.%m.%Y")
+                + f" ({weekday_ru[appt.appt_date.weekday()]})")
+    request.session[f"bs_appt_{slug}"] = appt.id
 
     wa_number = "".join(ch for ch in (shop.whatsapp or shop.phone or "") if ch.isdigit())
-    if wa_number:
-        wa_text = (
-            f"✂️ Новая запись\n\n"
-            f"Услуги: {service_names}\n"
-            f"Мастер: {barber.name}\n"
-            f"Дата: {date_fmt} в {time_str}\n"
-            f"Итого: {int(total_price)} сом ({total_duration} мин)\n\n"
-            f"Клиент: {name}\n"
-            f"Телефон: {phone or '—'}"
-        )
-        request.session[f"bs_appt_{slug}"] = appt.id
-        return redirect(f"https://wa.me/{wa_number}?text={quote(wa_text)}")
+    if not wa_number:
+        return redirect("barbershop:book_success", slug=slug)
 
-    request.session[f"bs_appt_{slug}"] = appt.id
-    return redirect("barbershop:book_success", slug=slug)
+    wa_text = (
+        f"✂️ Новая запись\n\n"
+        f"Услуги: {appt.service_name}\n"
+        f"Мастер: {appt.barber_name}\n"
+        f"Дата: {date_fmt} в {appt.appt_time.strftime('%H:%M')}\n"
+        f"Итого: {int(appt.price_snapshot)} сом ({appt.duration_min} мин)\n\n"
+        f"Клиент: {appt.customer_name}\n"
+        f"Телефон: {appt.customer_phone or '—'}"
+    )
+    return redirect(f"https://wa.me/{wa_number}?text={quote(wa_text)}")
 
 
 def book_success(request, slug):
