@@ -1,0 +1,93 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Отзывы — {{ restaurant.name_ru }}{% endblock %}
+{% block content %}
+{% include "dashboard/_review_styles.html" %}
+<style>
+  .rv-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .rv-filters .db-input{width:auto;padding:8px 11px;font-size:13px}
+</style>
+
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">⭐ Отзывы гостей</div>
+    <div class="db-breadcrumb">{{ restaurant.name_ru }} — все филиалы</div>
+  </div>
+</div>
+
+<div class="rv-privacy">
+  🔒 Телефон гостя виден только здесь, в кабинете — на витрине его нет. Он для того,
+  чтобы перезвонить и разобраться, если что-то пошло не так.
+</div>
+
+<form class="rv-filters" method="get">
+  <select class="db-input" name="branch" onchange="this.form.submit()">
+    <option value="">Все филиалы</option>
+    {% for b in branches %}
+      <option value="{{ b.id }}" {% if branch_f == b.id|stringformat:'s' %}selected{% endif %}>{{ b.name_ru }}</option>
+    {% endfor %}
+  </select>
+  <input class="db-input" name="q" value="{{ q }}" placeholder="Поиск по тексту, имени, телефону">
+  {% if shown %}<input type="hidden" name="show" value="{{ shown }}">{% endif %}
+  <button class="db-btn db-btn-sm" type="submit">Найти</button>
+  {% if q or branch_f %}
+    <a class="db-btn db-btn-sm db-btn-ghost" href="{% url 'dashboard:restaurant_reviews' restaurant.id %}">Сбросить</a>
+  {% endif %}
+</form>
+
+<div class="rv-tabs">
+  {% with base=branch_f|add:'' %}
+  <a class="rv-tab {% if not shown %}active{% endif %}"
+     href="?{% if branch_f %}branch={{ branch_f }}&{% endif %}{% if q %}q={{ q }}&{% endif %}">Все · {{ total }}</a>
+  <a class="rv-tab {% if shown == 'noreply' %}active{% endif %}"
+     href="?show=noreply{% if branch_f %}&branch={{ branch_f }}{% endif %}{% if q %}&q={{ q }}{% endif %}">Без ответа · {{ noreply }}</a>
+  <a class="rv-tab {% if shown == 'hidden' %}active{% endif %}"
+     href="?show=hidden{% if branch_f %}&branch={{ branch_f }}{% endif %}{% if q %}&q={{ q }}{% endif %}">Скрытые · {{ hidden }}</a>
+  {% endwith %}
+</div>
+
+{% if branches %}
+<details class="rv-add">
+  <summary>➕ Записать отзыв со слов гостя</summary>
+  <form method="post" id="rv-add-form" style="margin-top:12px">
+    {% csrf_token %}
+    <div class="rv-edit-row">
+      <select class="db-input" id="rv-add-branch" required onchange="rvAddAction(this.value)">
+        <option value="">Филиал…</option>
+        {% for b in branches %}<option value="{{ b.id }}">{{ b.name_ru }}</option>{% endfor %}
+      </select>
+      <input class="db-input" name="nickname" placeholder="Имя или ник">
+    </div>
+    <div class="rv-edit-row">
+      <input class="db-input" name="phone" placeholder="Телефон (виден только вам)">
+    </div>
+    <textarea class="rv-reply" name="text" required placeholder="Что сказал гость"></textarea>
+    <textarea class="rv-reply" name="reply" placeholder="Ответ заведения (необязательно)"></textarea>
+    <label style="display:flex;gap:8px;align-items:center;margin:8px 0">
+      <input type="checkbox" name="is_published" checked> Показывать на витрине
+    </label>
+    <button class="db-btn db-btn-sm db-btn-primary" type="submit">Добавить отзыв</button>
+  </form>
+</details>
+<script>
+  // адрес формы зависит от филиала — подставляем его при выборе
+  const RV_ADD = "{% url 'dashboard:review_add' 0 %}";
+  function rvAddAction(id){
+    document.getElementById('rv-add-form').action = id ? RV_ADD.replace('/0/', '/' + id + '/') : '';
+  }
+</script>
+{% endif %}
+
+{% for rv in rows %}
+  {% include "dashboard/_review_card.html" with show_branch=True %}
+{% empty %}
+<div style="text-align:center;padding:50px 24px;background:var(--card);border:1.5px dashed var(--border);border-radius:18px">
+  <div style="font-size:44px;margin-bottom:10px">💬</div>
+  <div style="font-weight:700;font-size:15px;margin-bottom:6px">
+    {% if shown or q or branch_f %}Ничего не нашлось{% else %}Отзывов пока нет{% endif %}
+  </div>
+  <div style="font-size:13px;color:var(--muted)">
+    Гость видит форму отзыва после заказа и внизу страницы меню.
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

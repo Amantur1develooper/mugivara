@@ -1,0 +1,50 @@
+{% comment %}
+  Карточка отзыва. Одна на две страницы — по филиалу и по всему ресторану,
+  чтобы кнопки и поведение не разъезжались.
+{% endcomment %}
+<div class="rv-card {% if not rv.is_published %}hidden-rv{% endif %}">
+  <div class="rv-top">
+    <span class="rv-who">{{ rv.author }}</span>
+    {% if show_branch %}<span class="rv-tag">{{ rv.branch.name_ru }}</span>{% endif %}
+    {% if rv.phone %}
+      <a class="rv-phone" href="tel:{{ rv.phone }}">📞 {{ rv.phone }}</a>
+      {% if rv.phone_digits %}
+        <a class="rv-tag" href="https://wa.me/{{ rv.phone_digits }}" target="_blank" rel="noopener">WhatsApp</a>
+      {% endif %}
+    {% else %}
+      <span class="rv-tag">телефон не оставлен</span>
+    {% endif %}
+    {% if rv.order_id %}<span class="rv-tag">заказ #{{ rv.order_id }}</span>{% endif %}
+    {% if not rv.is_published %}<span class="rv-tag">скрыт</span>{% endif %}
+    <span class="rv-date">{{ rv.created_at|date:"d.m.Y H:i" }}</span>
+  </div>
+
+  <div class="rv-text" id="rv-text-{{ rv.id }}">{{ rv.text|linebreaksbr }}</div>
+
+  <form class="rv-form" method="post" action="{% url 'dashboard:review_update' rv.id %}">
+    {% csrf_token %}
+    <textarea class="rv-reply" name="reply" placeholder="Ответ заведения — его увидят на витрине">{{ rv.reply }}</textarea>
+    <button class="db-btn db-btn-sm" type="submit" name="action" value="save">Сохранить ответ</button>
+    <button class="db-btn db-btn-sm" type="submit" name="action" value="toggle">
+      {% if rv.is_published %}Скрыть{% else %}Показать{% endif %}
+    </button>
+    <button class="db-btn db-btn-sm" type="button" onclick="toggleEdit({{ rv.id }})">Изменить</button>
+    <button class="db-btn db-btn-sm" type="submit" name="action" value="delete"
+            onclick="return confirm('Удалить отзыв? Отменить это нельзя.');">Удалить</button>
+  </form>
+
+  <form class="rv-edit" id="rv-edit-{{ rv.id }}" method="post" style="display:none"
+        action="{% url 'dashboard:review_update' rv.id %}">
+    {% csrf_token %}
+    <div class="rv-edit-note">
+      Правите слова гостя — так делают только при опечатке, мате или чужом номере.
+    </div>
+    <div class="rv-edit-row">
+      <input class="db-input" name="nickname" value="{{ rv.nickname }}" placeholder="Имя или ник">
+      <input class="db-input" name="phone" value="{{ rv.phone }}" placeholder="Телефон (виден только вам)">
+    </div>
+    <textarea class="rv-reply" name="text" required>{{ rv.text }}</textarea>
+    <button class="db-btn db-btn-sm db-btn-primary" type="submit" name="action" value="edit">Сохранить отзыв</button>
+    <button class="db-btn db-btn-sm" type="button" onclick="toggleEdit({{ rv.id }})">Отмена</button>
+  </form>
+</div>

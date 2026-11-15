@@ -174,9 +174,14 @@
     {# ── Шапка ресторана ── #}
     <div class="rest-header">
       <div class="rest-name">{{ item.restaurant.name_ru }}</div>
-      <a href="{% url 'dashboard:restaurant_edit' item.restaurant.id %}" class="db-btn db-btn-ghost db-btn-sm">
-        ✏️ Описание
-      </a>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="{% url 'dashboard:restaurant_reviews' item.restaurant.id %}" class="db-btn db-btn-ghost db-btn-sm">
+          ⭐ Отзывы
+        </a>
+        <a href="{% url 'dashboard:restaurant_edit' item.restaurant.id %}" class="db-btn db-btn-ghost db-btn-sm">
+          ✏️ Описание
+        </a>
+      </div>
     </div>
 
     {# ── Выручка ── #}
@@ -251,6 +256,7 @@
           </div>
           <div class="branch-actions-row">
             <a href="{% url 'dashboard:branch_report' branch.id %}" class="ba">📑 Отчёты по часам</a>
+            <a href="{% url 'dashboard:branch_reviews' branch.id %}" class="ba">⭐ Отзывы</a>
           </div>
         </div>
       </div>

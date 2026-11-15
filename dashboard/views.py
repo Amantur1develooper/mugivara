@@ -720,6 +720,67 @@ def branch_reviews(request, branch_id):
     })
 
 
+@login_required(login_url="dashboard:login")
+def restaurant_reviews(request, restaurant_id):
+    """Отзывы по всем филиалам ресторана — чтобы не ходить по каждому отдельно."""
+    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+    if not _has_restaurant_access(request.user, restaurant):
+        return redirect("dashboard:home")
+
+    branches = list(Branch.objects.filter(restaurant=restaurant).order_by("name_ru"))
+    base = Review.objects.filter(branch__restaurant=restaurant).select_related("branch")
+
+    rows = base
+    branch_f = (request.GET.get("branch") or "").strip()
+    if branch_f.isdigit():
+        rows = rows.filter(branch_id=int(branch_f))
+
+    shown = (request.GET.get("show") or "").strip()
+    if shown == "hidden":
+        rows = rows.filter(is_published=False)
+    elif shown == "noreply":
+        rows = rows.filter(reply="")
+
+    q = (request.GET.get("q") or "").strip()
+    if q:
+        rows = rows.filter(Q(text__icontains=q) | Q(nickname__icontains=q) | Q(phone__icontains=q))
+
+    return render(request, "dashboard/restaurant_reviews.html", {
+        "restaurant": restaurant,
+        "branches": branches,
+        "rows": list(rows.order_by("-created_at")[:300]),
+        "shown": shown, "branch_f": branch_f, "q": q,
+        "total":   base.count(),
+        "hidden":  base.filter(is_published=False).count(),
+        "noreply": base.filter(reply="").count(),
+    })
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def review_add(request, branch_id):
+    """Отзыв, записанный со слов гостя: по телефону, в зале, из мессенджера."""
+    branch = get_object_or_404(Branch, id=branch_id)
+    if not _has_branch_access(request.user, branch):
+        return redirect("dashboard:home")
+
+    text = (request.POST.get("text") or "").strip()
+    if not text:
+        messages.error(request, "Отзыв без текста не сохранить")
+    else:
+        Review.objects.create(
+            branch=branch,
+            nickname=(request.POST.get("nickname") or "").strip()[:60],
+            phone=(request.POST.get("phone") or "").strip()[:50],
+            text=text[:4000],
+            reply=(request.POST.get("reply") or "").strip()[:4000],
+            is_published=request.POST.get("is_published") == "on",
+        )
+        messages.success(request, "Отзыв добавлен")
+    return redirect(request.META.get("HTTP_REFERER")
+                    or reverse("dashboard:branch_reviews", args=[branch.id]))
+
+
 @require_POST
 @login_required(login_url="dashboard:login")
 def review_update(request, review_id):
@@ -737,6 +798,16 @@ def review_update(request, review_id):
     elif action == "delete":
         review.delete()
         messages.success(request, "Отзыв удалён")
+    elif action == "edit":
+        # Правка слов гостя — крайний случай: опечатка, мат, чужой номер.
+        # Поэтому отдельной кнопкой, а не вместе с ответом.
+        text = (request.POST.get("text") or "").strip()
+        if text:
+            review.text = text[:4000]
+        review.nickname = (request.POST.get("nickname") or "").strip()[:60]
+        review.phone = (request.POST.get("phone") or "").strip()[:50]
+        review.save(update_fields=["text", "nickname", "phone"])
+        messages.success(request, "Отзыв изменён")
     else:
         review.reply = (request.POST.get("reply") or "").strip()[:4000]
         review.save(update_fields=["reply"])
