@@ -1,0 +1,320 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ shop.name }} — Шахматка{% endblock %}
+{% block nav_barbershop %}active{% endblock %}
+{% block content %}
+<style>
+  :root{ --bd-row:{{ row_h }}px; --bd-time:54px; }
+  .bd-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .bd-nav{display:flex;align-items:center;gap:6px}
+  .bd-arrow{width:38px;height:38px;border-radius:11px;border:1.5px solid var(--border);
+            background:var(--card);font-size:17px;line-height:1;cursor:pointer;color:var(--text);
+            display:flex;align-items:center;justify-content:center;text-decoration:none}
+  .bd-arrow:hover{border-color:var(--accent)}
+  .bd-date{font-weight:800;font-size:17px;min-width:0}
+  .bd-date small{display:block;font-weight:500;font-size:12.5px;color:var(--muted);margin-top:1px}
+  .bd-sum{margin-left:auto;display:flex;gap:14px;font-size:13px;color:var(--muted);white-space:nowrap}
+  @media (max-width:560px){ .bd-sum{margin-left:0;width:100%;justify-content:space-between} }
+  .bd-sum b{color:var(--text)}
+
+  /* ── сетка ── */
+  .bd-wrap{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--card)}
+  .bd-scroll{display:flex;overflow-x:auto;overflow-y:visible;scrollbar-width:thin;
+             -webkit-overflow-scrolling:touch}
+  .bd-times{position:sticky;left:0;z-index:4;flex:none;width:var(--bd-time);
+            background:var(--card);border-right:1px solid var(--border)}
+  .bd-col{flex:0 0 min(60vw,190px);border-right:1px solid var(--border);min-width:0}
+  .bd-col:last-child{border-right:0}
+  @media (min-width:900px){ .bd-col{flex:1 1 0} }
+
+  .bd-th{position:sticky;top:0;z-index:5;height:58px;padding:8px 10px;background:var(--card);
+         border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px}
+  .bd-times .bd-th{z-index:6}
+  .bd-ava{width:34px;height:34px;border-radius:10px;flex:none;object-fit:cover;background:var(--bg);
+          display:flex;align-items:center;justify-content:center;font-size:15px;overflow:hidden}
+  .bd-ava img{width:100%;height:100%;object-fit:cover}
+  .bd-bn{font-weight:700;font-size:13.5px;line-height:1.2;overflow:hidden;
+         text-overflow:ellipsis;white-space:nowrap}
+  .bd-bm{font-size:11.5px;color:var(--muted);margin-top:2px;white-space:nowrap}
+
+  .bd-body{position:relative;height:{{ grid_height }}px}
+  .bd-cell{height:var(--bd-row);border-bottom:1px dashed var(--border);box-sizing:border-box}
+  .bd-cell.hour{border-bottom-style:solid}
+  .bd-col .bd-cell{cursor:pointer;transition:background .12s}
+  .bd-col .bd-cell:hover{background:rgba(255,77,28,.05)}
+  .bd-tlabel{height:var(--bd-row);font-size:11.5px;color:var(--muted);padding:2px 6px 0 0;
+             text-align:right;box-sizing:border-box;border-bottom:1px dashed transparent}
+  .bd-tlabel.hour{font-size:13px;font-weight:700;color:var(--text)}
+
+  /* ── записи ── */
+  .bd-appt{position:absolute;left:5px;right:5px;border-radius:11px;padding:7px 9px;
+           border:1px solid transparent;border-left-width:4px;overflow:hidden;cursor:pointer;
+           text-align:left;font:inherit;display:block;width:calc(100% - 10px)}
+  .bd-appt b{display:block;font-size:13px;font-weight:700;line-height:1.25;
+             overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bd-appt i{display:block;font-style:normal;font-size:11.5px;opacity:.75;margin-top:2px;
+             overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bd-appt.new {background:rgba(99,102,241,.12);border-color:rgba(99,102,241,.3);border-left-color:#6366F1}
+  .bd-appt.ok  {background:rgba(0,184,150,.12);border-color:rgba(0,184,150,.3);border-left-color:#00B896}
+  .bd-appt.done{background:rgba(120,120,128,.14);border-color:rgba(120,120,128,.28);border-left-color:#78787F}
+  .bd-appt.miss{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3);border-left-color:#EF4444}
+
+  .bd-off{position:absolute;left:0;right:0;top:0;background:repeating-linear-gradient(
+            135deg,rgba(120,120,128,.07) 0 8px,transparent 8px 16px);pointer-events:none}
+  .bd-now{position:absolute;left:0;right:0;height:2px;background:#EF4444;z-index:3;pointer-events:none}
+  .bd-now::before{content:'';position:absolute;left:0;top:-4px;width:10px;height:10px;
+                  border-radius:50%;background:#EF4444}
+
+  /* ── шторка ── */
+  .bd-sheet{position:fixed;inset:0;z-index:90;display:none}
+  .bd-sheet.on{display:block}
+  .bd-back{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+  .bd-card{position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+           width:min(520px,100%);max-height:88vh;overflow:auto;background:var(--card);
+           border-radius:20px 20px 0 0;padding:18px 18px calc(22px + env(safe-area-inset-bottom,0px))}
+  @media (min-width:720px){ .bd-card{bottom:50%;transform:translate(-50%,50%);border-radius:20px} }
+  .bd-grab{width:38px;height:4px;border-radius:2px;background:var(--border);margin:0 auto 14px}
+  .bd-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;
+          border-bottom:1px solid var(--border);font-size:14px}
+  .bd-row:last-of-type{border-bottom:0}
+  .bd-row span:first-child{color:var(--muted)}
+  .bd-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+  .bd-acts .db-btn{width:100%;justify-content:center}
+  .bd-wide{grid-column:1 / -1}
+  .bd-chips{display:flex;flex-wrap:wrap;gap:6px;max-height:190px;overflow:auto;margin:6px 0 12px}
+  .bd-chip{padding:8px 12px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);
+           font:inherit;font-size:13px;cursor:pointer;color:var(--text)}
+  .bd-chip.on{border-color:var(--accent);background:rgba(255,77,28,.08);font-weight:600}
+  .bd-empty{padding:40px 16px;text-align:center;color:var(--muted)}
+</style>
+
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">{{ shop.name }}</div>
+    <div class="db-breadcrumb"><a href="{% url 'dashboard:bs_home' %}">Барбершопы</a> / Шахматка</div>
+  </div>
+  <a href="{% url 'dashboard:bs_appointments' shop.id %}" class="db-btn db-btn-ghost db-btn-sm">📋 Списком</a>
+</div>
+
+<div class="bd-head">
+  <div class="bd-nav">
+    <a class="bd-arrow" href="?date={{ prev_day|date:'Y-m-d' }}" aria-label="Назад">‹</a>
+    <a class="bd-arrow" href="?date={{ next_day|date:'Y-m-d' }}" aria-label="Вперёд">›</a>
+  </div>
+  <div class="bd-date">
+    {{ day|date:"j E" }}{% if day == today %} · сегодня{% endif %}
+    <small>{{ day|date:"l" }}</small>
+  </div>
+  <input type="date" class="db-input" style="width:auto;padding:8px 10px"
+         value="{{ day|date:'Y-m-d' }}" onchange="location.search='?date='+this.value">
+  {% if day != today %}
+    <a class="db-btn db-btn-ghost db-btn-sm" href="{% url 'dashboard:bs_board' shop.id %}">Сегодня</a>
+  {% endif %}
+  <div class="bd-sum">
+    <span>Записей: <b>{{ total_count }}</b></span>
+    <span>Сумма: <b style="color:var(--accent)">{{ total_money }} сом</b></span>
+  </div>
+</div>
+
+{% if not columns %}
+  <div class="db-card bd-empty">
+    Нет активных мастеров — <a href="{% url 'dashboard:bs_barbers' shop.id %}">добавьте мастера</a>,
+    и день появится в шахматке.
+  </div>
+{% else %}
+<div class="bd-wrap">
+  <div class="bd-scroll" id="scroll">
+    <!-- время -->
+    <div class="bd-times">
+      <div class="bd-th" style="padding:0"></div>
+      <div class="bd-body">
+        {% for r in rows %}
+          <div class="bd-tlabel{% if r.hour %} hour{% endif %}">{% if r.hour %}{{ r.label }}{% else %}{{ r.label|slice:"3:" }}{% endif %}</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- мастера -->
+    {% for col in columns %}
+    <div class="bd-col">
+      <div class="bd-th">
+        <div class="bd-ava">
+          {% if col.barber.photo %}<img src="{{ col.barber.photo.url }}" alt="">{% else %}👤{% endif %}
+        </div>
+        <div style="min-width:0">
+          <div class="bd-bn">{{ col.barber.name }}</div>
+          <div class="bd-bm">
+            {% if col.schedule %}{{ col.schedule.start_time|time:"H:i" }}–{{ col.schedule.end_time|time:"H:i" }}{% else %}выходной{% endif %}
+            · {{ col.count }}
+          </div>
+        </div>
+      </div>
+      <div class="bd-body">
+        {% for r in rows %}
+          {% if not forloop.last %}
+          <div class="bd-cell{% if r.hour %} hour{% endif %}"
+               onclick="addAt({{ col.barber.id }},'{{ col.barber.name|escapejs }}','{{ r.value }}')"></div>
+          {% endif %}
+        {% endfor %}
+        {% if col.off_height %}<div class="bd-off" style="height:{{ col.off_height }}px"></div>{% endif %}
+        {% for it in col.items %}
+          <button class="bd-appt {{ it.tone }}" style="top:{{ it.top }}px;height:{{ it.height }}px"
+                  onclick='openAppt({{ it.appt.id }})'>
+            <b>{{ it.appt.customer_name }}</b>
+            <i>{{ it.appt.appt_time|time:"H:i" }}–{{ it.end }} · {{ it.appt.price_snapshot|floatformat:0 }} сом</i>
+            {% if not it.tight %}<i>{{ it.appt.service_name }}</i>{% endif %}
+          </button>
+        {% endfor %}
+        {% if now_offset %}<div class="bd-now" style="top:{{ now_offset }}px"></div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+<div style="font-size:12px;color:var(--muted);margin-top:10px">
+  Нажмите на запись — откроется карточка. На пустую клетку — запишете клиента на это время.
+</div>
+{% endif %}
+
+<!-- карточка записи -->
+<div class="bd-sheet" id="sheet-appt">
+  <div class="bd-back" onclick="closeSheets()"></div>
+  <div class="bd-card">
+    <div class="bd-grab"></div>
+    <div style="font-weight:800;font-size:19px" id="ap-name">—</div>
+    <div style="color:var(--muted);font-size:13.5px;margin-top:2px" id="ap-when">—</div>
+    <div style="margin-top:14px">
+      <div class="bd-row"><span>Мастер</span><b id="ap-barber">—</b></div>
+      <div class="bd-row"><span>Услуги</span><b id="ap-svc" style="text-align:right">—</b></div>
+      <div class="bd-row"><span>Сумма</span><b id="ap-price">—</b></div>
+      <div class="bd-row"><span>Статус</span><b id="ap-status">—</b></div>
+    </div>
+    <div class="bd-acts">
+      <a class="db-btn db-btn-primary" id="ap-call" href="#">📞 Позвонить</a>
+      <a class="db-btn db-btn-ghost" id="ap-wa" href="#" target="_blank" rel="noopener">💬 WhatsApp</a>
+      <button class="db-btn db-btn-ghost" onclick="setStatus('confirmed')">✅ Подтвердить</button>
+      <button class="db-btn db-btn-ghost" onclick="setStatus('done')">🏁 Выполнена</button>
+      <button class="db-btn db-btn-ghost" onclick="setStatus('no_show')">🚫 Не пришёл</button>
+      <button class="db-btn db-btn-ghost" onclick="setStatus('cancelled')">❌ Отменить</button>
+      <button class="db-btn db-btn-ghost bd-wide" onclick="closeSheets()">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<!-- быстрая запись -->
+<div class="bd-sheet" id="sheet-add">
+  <div class="bd-back" onclick="closeSheets()"></div>
+  <div class="bd-card">
+    <div class="bd-grab"></div>
+    <div style="font-weight:800;font-size:19px">Записать клиента</div>
+    <div style="color:var(--muted);font-size:13.5px;margin-top:2px" id="add-when">—</div>
+    <form method="post" action="{% url 'dashboard:bs_appointment_add' shop.id %}" id="add-form" style="margin-top:14px">
+      {% csrf_token %}
+      <input type="hidden" name="barber_id" id="add-barber">
+      <input type="hidden" name="appt_date" id="add-date" value="{{ day|date:'Y-m-d' }}">
+      <input type="hidden" name="appt_time" id="add-time">
+      <input type="hidden" name="service_ids" id="add-services">
+
+      <div style="font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Услуги</div>
+      <div class="bd-chips" id="add-chips"></div>
+
+      <input class="db-input" name="customer_name" placeholder="Имя клиента" required style="margin-bottom:8px">
+      <input class="db-input" name="customer_phone" type="tel" placeholder="+996 700 000 000" style="margin-bottom:8px">
+      <select class="db-input" name="status" style="margin-bottom:8px">
+        <option value="confirmed">Подтверждена</option>
+        <option value="new">Новая</option>
+      </select>
+      <select class="db-input" name="payment_method" style="margin-bottom:12px">
+        {% for code, label in payment_methods %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
+      </select>
+      <div class="bd-acts" style="margin-top:0">
+        <button class="db-btn db-btn-primary bd-wide" type="submit" id="add-go" disabled>Записать</button>
+        <button class="db-btn db-btn-ghost bd-wide" type="button" onclick="closeSheets()">Отмена</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const SERVICES = {{ services_json|safe }};
+  const APPTS = {
+    {% for col in columns %}{% for it in col.items %}
+    {{ it.appt.id }}: {
+      name: "{{ it.appt.customer_name|escapejs }}",
+      phone: "{{ it.appt.customer_phone|escapejs }}",
+      barber: "{{ it.appt.barber_name|escapejs }}",
+      svc: "{{ it.appt.service_name|escapejs }}",
+      price: "{{ it.appt.price_snapshot|floatformat:0 }}",
+      status: "{{ it.appt.get_status_display|escapejs }}",
+      when: "{{ day|date:'j E' }}, {{ it.appt.appt_time|time:'H:i' }}–{{ it.end }}"
+    },{% endfor %}{% endfor %}
+  };
+  const CSRF = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  let current = null;
+
+  function closeSheets(){ document.querySelectorAll('.bd-sheet').forEach(s => s.classList.remove('on')); }
+
+  function openAppt(id){
+    const a = APPTS[id]; if (!a) return;
+    current = id;
+    ap_name.textContent = a.name;
+    ap_when.textContent = a.when;
+    ap_barber.textContent = a.barber;
+    ap_svc.textContent = a.svc;
+    ap_price.textContent = a.price + ' сом';
+    ap_status.textContent = a.status;
+    const digits = (a.phone || '').replace(/\D/g, '');
+    ap_call.href = a.phone ? 'tel:' + a.phone : '#';
+    ap_wa.href = digits ? 'https://wa.me/' + digits : '#';
+    [ap_call, ap_wa].forEach(b => b.style.display = digits ? '' : 'none');
+    document.getElementById('sheet-appt').classList.add('on');
+  }
+
+  function setStatus(status){
+    if (!current) return;
+    fetch('{% url "dashboard:bs_appointment_status" 0 %}'.replace('/0/', '/' + current + '/'), {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': CSRF},
+      body: 'status=' + status,
+    }).then(r => r.json()).then(() => location.reload())
+      .catch(() => alert('Не получилось изменить статус'));
+  }
+
+  // ── быстрая запись на свободное время ──
+  const picked = new Set();
+  function addAt(barberId, barberName, time){
+    picked.clear();
+    add_barber.value = barberId;
+    add_time.value = time;
+    document.getElementById('add-when').textContent = barberName + ' · {{ day|date:"j E" }}, ' + time;
+    const box = document.getElementById('add-chips');
+    box.innerHTML = '';
+    SERVICES.forEach(s => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'bd-chip';
+      b.textContent = s.name + ' · ' + s.price;
+      b.onclick = () => {
+        picked.has(s.id) ? picked.delete(s.id) : picked.add(s.id);
+        b.classList.toggle('on', picked.has(s.id));
+        add_services.value = [...picked].join(',');
+        add_go.disabled = !picked.size;
+      };
+      box.appendChild(b);
+    });
+    add_services.value = '';
+    add_go.disabled = true;
+    document.getElementById('sheet-add').classList.add('on');
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheets(); });
+
+  // Сразу показываем текущее время, а не начало смены. Прокручиваем так,
+  // чтобы шапка с датой осталась на виду, — иначе страница «прыгает».
+  (function () {
+    const now = document.querySelector('.bd-now');
+    if (!now) return;
+    const y = now.getBoundingClientRect().top + window.scrollY;
+    const target = y - window.innerHeight / 3;
+    if (target > 0) window.scrollTo({top: target});
+  })();
+</script>
+{% endblock %}

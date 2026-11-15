@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import date, datetime, timedelta
 from decimal import Decimal
@@ -15,7 +16,7 @@ from integrations import tgbot
 
 from . import tg
 from .print_jobs import create_appt_print_job
-from .models import (PAYMENT_METHOD, Appointment, Barber, BarberSchedule,
+from .models import (APPOINTMENT_STATUS, PAYMENT_METHOD, Appointment, Barber, BarberSchedule,
                      BarberService, Barbershop, BarbershopMembership,
                      BarbershopPrintConfig, Service, ServiceCategory,
                      WEEKDAY_CHOICES)
@@ -707,3 +708,115 @@ def bs_print_save(request, shop_id):
     cfg.save()
     messages.success(request, "Настройки печати сохранены")
     return redirect("dashboard:bs_pos", shop_id=shop.id)
+
+
+# ── ШАХМАТКА (день по мастерам) ──────────────────────────────────────────────
+
+BOARD_STEP = 30     # шаг сетки в минутах
+BOARD_ROW = 54      # высота получаса в пикселях
+
+STATUS_TONE = {
+    "new":       "new",
+    "confirmed": "ok",
+    "done":      "done",
+    "no_show":   "miss",
+    "cancelled": "off",
+}
+
+
+@login_required(login_url=LOGIN_URL)
+def bs_board(request, shop_id):
+    """День по мастерам: кто к кому и на какое время записан."""
+    shop = get_object_or_404(Barbershop, id=shop_id)
+    if not _check(request.user, shop):
+        return redirect("dashboard:bs_home")
+
+    today = timezone.localdate()
+    day = _date_arg(request, "date") or today
+    barbers = list(shop.barbers.filter(is_active=True).order_by("sort_order", "id"))
+
+    # Границы сетки — по сменам мастеров на этот день недели. Если смен нет,
+    # показываем обычный рабочий день, иначе таблица была бы пустой.
+    schedules = {s.barber_id: s for s in BarberSchedule.objects.filter(
+        barber__in=barbers, weekday=day.weekday(), is_working=True)}
+    starts = [s.start_time for s in schedules.values()]
+    ends = [s.end_time for s in schedules.values()]
+    grid_from = min(starts) if starts else datetime.strptime("09:00", "%H:%M").time()
+    grid_to = max(ends) if ends else datetime.strptime("21:00", "%H:%M").time()
+
+    base = datetime.combine(day, grid_from)
+    total_min = max(BOARD_STEP, int((datetime.combine(day, grid_to) - base).total_seconds() // 60))
+
+    rows = []
+    for i in range(total_min // BOARD_STEP + 1):
+        t = base + timedelta(minutes=i * BOARD_STEP)
+        rows.append({"label": t.strftime("%H:%M"), "hour": t.minute == 0,
+                     "value": t.strftime("%H:%M")})
+
+    appts = (Appointment.objects
+             .filter(barbershop=shop, appt_date=day)
+             .exclude(status="cancelled")
+             .select_related("barber")
+             .order_by("appt_time"))
+
+    columns = []
+    for b in barbers:
+        sch = schedules.get(b.id)
+        items = []
+        for a in appts:
+            if a.barber_id != b.id:
+                continue
+            start = datetime.combine(day, a.appt_time)
+            offset = (start - base).total_seconds() / 60
+            dur = max(BOARD_STEP // 2, a.duration_min or BOARD_STEP)
+            height = max(26, round(dur / BOARD_STEP * BOARD_ROW) - 4)
+            items.append({
+                "appt": a,
+                "top": round(offset / BOARD_STEP * BOARD_ROW),
+                "height": height,
+                # в короткую плашку третья строка не влезает и обрезается
+                # на полбуквы — тогда услугу не показываем вовсе
+                "tight": height < 64,
+                "tone": STATUS_TONE.get(a.status, "new"),
+                "end": (start + timedelta(minutes=dur)).strftime("%H:%M"),
+            })
+        # нерабочие куски смены — чтобы не предлагать записать туда, где мастера нет
+        off_top = off_height = 0
+        if sch:
+            lead = (datetime.combine(day, sch.start_time) - base).total_seconds() / 60
+            off_height = round(lead / BOARD_STEP * BOARD_ROW)
+        columns.append({
+            "barber": b, "items": items, "schedule": sch,
+            "off_top": off_top, "off_height": off_height,
+            "busy": sum(i["appt"].duration_min or 0 for i in items),
+            "money": sum(int(i["appt"].price_snapshot) for i in items),
+            "count": len(items),
+        })
+
+    now_offset = None
+    if day == today:
+        now = timezone.localtime()
+        mins = (datetime.combine(day, now.time()) - base).total_seconds() / 60
+        if 0 <= mins <= total_min:
+            now_offset = round(mins / BOARD_STEP * BOARD_ROW)
+
+    services = [
+        {"id": s.id, "name": s.name, "price": int(s.price), "dur": s.duration_min,
+         "cat": s.category.name if s.category else ""}
+        for s in Service.objects.filter(barbershop=shop, is_active=True)
+                                .select_related("category")
+                                .order_by("category__sort_order", "sort_order", "id")
+    ]
+
+    return render(request, "dashboard/barbershop/board.html", {
+        "shop": shop, "day": day, "today": today,
+        "prev_day": day - timedelta(days=1), "next_day": day + timedelta(days=1),
+        "rows": rows, "columns": columns, "row_h": BOARD_ROW,
+        "grid_height": total_min // BOARD_STEP * BOARD_ROW,
+        "now_offset": now_offset,
+        "services_json": json.dumps(services, ensure_ascii=False),
+        "statuses": APPOINTMENT_STATUS,
+        "payment_methods": PAYMENT_METHOD,
+        "total_count": sum(c["count"] for c in columns),
+        "total_money": sum(c["money"] for c in columns),
+    })

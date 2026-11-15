@@ -96,6 +96,7 @@
 <!-- Top bar -->
 <div class="appt-topbar">
   <div class="appt-title">✂️ {{ shop.name }}</div>
+  <a href="{% url 'dashboard:bs_board' shop.id %}" class="chip">🗓 Шахматка</a>
   <select id="barber-filter" class="db-input" style="font-size:13px;padding:7px 10px;max-width:160px" onchange="applyBarberFilter(this.value)">
     <option value="">Все мастера</option>
     {% for b in barbers %}
