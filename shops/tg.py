@@ -72,11 +72,11 @@ def _qty(value):
 
 
 def items_of(order):
-    """Состав заказа: [(название, количество, сумма, [строки состава])]."""
+    """Состав заказа: [(название, количество, цена за штуку, сумма, [состав])]."""
     rows = []
     for it in order.items.select_related("product").all():
         name = getattr(it.product, "name_ru", None) or str(it.product)
-        rows.append((name, _qty(it.qty), it.line_total, []))
+        rows.append((name, _qty(it.qty), it.price, it.line_total, []))
     for coi in order.constructor_items.all():
         extra = []
         for sel in (coi.ingredients_snapshot or []):
@@ -84,8 +84,19 @@ def items_of(order):
             if sel.get("gname") and names:
                 extra.append(f"{sel['gname']}: {names}")
         rows.append((f"🧩 {coi.constructor_name_snapshot or 'Собери сам'}",
-                     _qty(coi.qty), coi.line_total, extra))
+                     _qty(coi.qty), coi.unit_price, coi.line_total, extra))
     return rows
+
+
+def item_line(name, qty, price, total):
+    """«Мишка в свитере — 3 × 2500 = 7500 сом».
+
+    Раньше строка выглядела как «× 3 — 7500 сом», и было не понять, 7500 это
+    за штуку или за всё. Показываем цену за единицу, когда штук больше одной.
+    """
+    if qty in ("1", "1.0"):
+        return f"{name} — {_money(total)}"
+    return f"{name} — {qty} × {int(Decimal(str(price or 0)))} = {_money(total)}"
 
 
 def message_text(order, footer=""):
@@ -110,8 +121,8 @@ def message_text(order, footer=""):
     rows = items_of(order)
     if rows:
         lines += ["", "📋 Состав:"]
-        for name, qty, total, extra in rows:
-            lines.append(f"  • {name} × {qty} — {_money(total)}")
+        for name, qty, price, total, extra in rows:
+            lines.append("  • " + item_line(name, qty, price, total))
             lines += [f"      {e}" for e in extra]
 
     lines.append("")

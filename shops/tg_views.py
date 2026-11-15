@@ -82,8 +82,8 @@ def card(request, token):
     rows.append(("Оплата", order.get_payment_method_display()))
 
     items = []
-    for name, qty, total, extra in tg.items_of(order):
-        label = f"{name} × {qty}"
+    for name, qty, price, total, extra in tg.items_of(order):
+        label = name if qty in ("1", "1.0") else f"{name} · {qty} × {int(price)} сом"
         if extra:
             label += f" ({'; '.join(extra)})"
         items.append((label, total))
