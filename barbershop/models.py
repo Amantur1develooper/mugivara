@@ -1,5 +1,8 @@
+import secrets
+
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from core.models import TimeStampedModel
 import os
 from io import BytesIO
@@ -249,3 +252,73 @@ class Appointment(TimeStampedModel):
         if self.service and not self.duration_min:
             self.duration_min = self.service.duration_min
         super().save(*args, **kwargs)
+
+
+# ── КАССА: печать чеков на физический принтер ────────────────────────────────
+
+class BarbershopPrintConfig(models.Model):
+    """Настройки печати чеков барбершопа — один принтер на заведение.
+
+    Печатает тот же агент, что стоит у магазинов и картинга: он ходит за
+    заданиями по токену, поэтому отдельной программы ставить не надо.
+    """
+    barbershop = models.OneToOneField(Barbershop, on_delete=models.CASCADE,
+                                      related_name="print_config")
+    enabled = models.BooleanField("Печать включена", default=False)
+    token = models.CharField(max_length=64, unique=True, editable=False)
+    windows_printer = models.CharField(
+        "Имя принтера в Windows", max_length=200, blank=True, default="",
+        help_text="Точное имя как в списке принтеров Windows",
+    )
+    last_heartbeat = models.DateTimeField("Последний heartbeat", null=True, blank=True)
+    print_mode = models.CharField(
+        "Режим печати", max_length=10,
+        choices=[("image", "Картинка (рекомендуется)"), ("text", "Текст (ESC/POS)")],
+        default="image",
+    )
+    codepage = models.CharField("Кодовая страница", max_length=20, default="cp866")
+
+    class Meta:
+        verbose_name = "Настройки печати (барбершоп)"
+        verbose_name_plural = "Настройки печати (барбершопы)"
+
+    def save(self, *args, **kwargs):
+        if not self.token:
+            self.token = secrets.token_urlsafe(32)
+        super().save(*args, **kwargs)
+
+    def is_agent_online(self):
+        if not self.last_heartbeat:
+            return False
+        return (timezone.now() - self.last_heartbeat).total_seconds() < 300
+
+    def __str__(self):
+        return f"{self.barbershop} — печать"
+
+
+class BarbershopPrintJob(models.Model):
+    """Задание на печать чека: агент забирает и печатает."""
+    class Status(models.TextChoices):
+        NEW        = "new",        "Новый"
+        PROCESSING = "processing", "Печатается"
+        PRINTED    = "printed",    "Напечатан"
+        ERROR      = "error",      "Ошибка"
+
+    barbershop = models.ForeignKey(Barbershop, on_delete=models.CASCADE,
+                                   related_name="print_jobs")
+    appointment = models.ForeignKey(Appointment, on_delete=models.SET_NULL, null=True,
+                                    blank=True, related_name="print_jobs")
+    content = models.TextField("Содержимое (plain text)")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW)
+    retries = models.PositiveSmallIntegerField(default=0)
+    error_message = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    printed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        verbose_name = "Задание печати (барбершоп)"
+        verbose_name_plural = "Задания печати (барбершопы)"
+
+    def __str__(self):
+        return f"BsJob #{self.id} [{self.status}]"

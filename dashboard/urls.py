@@ -261,6 +261,9 @@ urlpatterns = [
     path("barbershop/appointment/<int:appt_id>/payment/",        bsv.bs_appointment_payment,   name="bs_appointment_payment"),
     path("barbershop/appointment/<int:appt_id>/delete/",         bsv.bs_appointment_delete,    name="bs_appointment_delete"),
     path("barbershop/<int:shop_id>/report/",                     bsv.bs_report,                name="bs_report"),
+    path("barbershop/<int:shop_id>/pos/",                        bsv.bs_pos,                   name="bs_pos"),
+    path("barbershop/<int:shop_id>/pos/sale/",                   bsv.bs_pos_sale,              name="bs_pos_sale"),
+    path("barbershop/<int:shop_id>/print/save/",                 bsv.bs_print_save,            name="bs_print_save"),
 
     # ── ТЕХКАРТЫ И СКЛАД ─────────────────────────────────────────────────────
     path("branch/<int:branch_id>/techcards/",                   tcv.tc_list,                  name="tc_list"),

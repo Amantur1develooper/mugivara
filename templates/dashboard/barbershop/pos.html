@@ -1,0 +1,285 @@
+{% extends "dashboard/base.html" %}
+{% block title %}{{ shop.name }} — Касса{% endblock %}
+{% block nav_barbershop %}active{% endblock %}
+{% block content %}
+<style>
+  .pos-wrap{display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start}
+  @media (max-width:980px){ .pos-wrap{grid-template-columns:1fr} }
+
+  .pos-barbers{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .pos-chip{padding:9px 16px;border-radius:999px;border:1.5px solid var(--border);
+            background:var(--card);font-weight:600;font-size:14px;cursor:pointer;
+            transition:border-color .15s,background .15s,color .15s}
+  .pos-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+  .pos-cat{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+           color:var(--muted);margin:16px 0 8px}
+  .pos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px}
+  .pos-srv{position:relative;text-align:left;padding:12px 13px;border-radius:14px;
+           border:1.5px solid var(--border);background:var(--card);cursor:pointer;
+           font:inherit;color:var(--text);transition:border-color .15s,transform .1s}
+  .pos-srv:active{transform:scale(.97)}
+  .pos-srv.on{border-color:var(--accent);background:rgba(255,77,28,.06)}
+  .pos-srv-name{font-weight:600;font-size:14px;line-height:1.25;margin-bottom:6px}
+  .pos-srv-meta{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .pos-srv-price{font-weight:800;color:var(--accent)}
+  .pos-srv-min{font-size:12px;color:var(--muted)}
+  .pos-srv-badge{position:absolute;top:-7px;right:-7px;width:22px;height:22px;border-radius:50%;
+                 background:var(--accent);color:#fff;font-size:12px;font-weight:800;
+                 display:none;align-items:center;justify-content:center}
+  .pos-srv.on .pos-srv-badge{display:flex}
+
+  .pos-side{position:sticky;top:14px;display:flex;flex-direction:column;gap:12px}
+  .pos-cart-list{max-height:230px;overflow:auto;margin:-4px 0 10px}
+  .pos-line{display:flex;justify-content:space-between;gap:10px;padding:7px 0;
+            border-bottom:1px solid var(--border);font-size:14px}
+  .pos-line:last-child{border-bottom:0}
+  .pos-line button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1}
+  .pos-empty{color:var(--muted);font-size:14px;text-align:center;padding:18px 0}
+  .pos-total{display:flex;justify-content:space-between;align-items:baseline;
+             font-size:24px;font-weight:900;margin:4px 0 12px}
+  .pos-total small{font-size:13px;font-weight:500;color:var(--muted)}
+  .pos-pay{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+  .pos-pay .pos-chip{padding:7px 13px;font-size:13px}
+  .pos-sell{width:100%;padding:16px;border:0;border-radius:14px;background:var(--accent);
+            color:#fff;font:inherit;font-size:16px;font-weight:800;cursor:pointer}
+  .pos-sell:disabled{opacity:.45;cursor:default}
+  .pos-note{font-size:12px;color:var(--muted);margin-top:8px;text-align:center;min-height:16px}
+
+  .pos-sale{display:flex;justify-content:space-between;gap:8px;padding:8px 0;
+            border-bottom:1px solid var(--border);font-size:13px}
+  .pos-sale:last-child{border-bottom:0}
+  .pos-sale b{color:var(--accent);white-space:nowrap}
+  .pos-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+</style>
+
+{% csrf_token %}
+<div class="db-topbar">
+  <div>
+    <div class="db-page-title">{{ shop.name }}</div>
+    <div class="db-breadcrumb"><a href="{% url 'dashboard:bs_home' %}">Барбершопы</a> / Касса</div>
+  </div>
+  <a href="{% url 'dashboard:bs_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
+</div>
+
+{% if not barbers %}
+  <div class="db-card" style="text-align:center;padding:40px">
+    <div style="font-size:34px">✂️</div>
+    <p>Сначала добавьте мастера — без него продажу не записать.</p>
+    <a href="{% url 'dashboard:bs_barbers' shop.id %}" class="db-btn db-btn-primary db-btn-sm">Добавить мастера</a>
+  </div>
+{% else %}
+<div class="pos-wrap">
+
+  <!-- Услуги -->
+  <div class="db-card">
+    <div class="db-card-title" style="margin-bottom:10px">👤 Мастер</div>
+    <div class="pos-barbers" id="barbers">
+      {% for b in barbers %}
+        <button type="button" class="pos-chip{% if forloop.first %} on{% endif %}"
+                data-barber="{{ b.id }}">{{ b.name }}</button>
+      {% endfor %}
+    </div>
+
+    {% for cat in categories %}
+      {% if cat.services.all %}
+        <div class="pos-cat">{{ cat.name }}</div>
+        <div class="pos-grid">
+          {% for s in cat.services.all %}
+            {% if s.is_active %}
+            <button type="button" class="pos-srv" data-id="{{ s.id }}"
+                    data-name="{{ s.name }}" data-price="{{ s.price|floatformat:0 }}">
+              <span class="pos-srv-badge">✓</span>
+              <div class="pos-srv-name">{{ s.name }}</div>
+              <div class="pos-srv-meta">
+                <span class="pos-srv-price">{{ s.price|floatformat:0 }} сом</span>
+                <span class="pos-srv-min">{{ s.duration_min }} мин</span>
+              </div>
+            </button>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% empty %}
+      <p style="color:var(--muted)">Услуг пока нет —
+        <a href="{% url 'dashboard:bs_services' shop.id %}">добавьте прайс</a>.</p>
+    {% endfor %}
+  </div>
+
+  <!-- Чек -->
+  <div class="pos-side">
+    <div class="db-card">
+      <div class="db-card-title" style="margin-bottom:10px">🧾 Чек</div>
+      <div class="pos-cart-list" id="cart"><div class="pos-empty">Выберите услуги</div></div>
+      <div class="pos-total"><span>Итого</span><span id="total">0 сом</span></div>
+
+      <input class="db-input" id="cname" placeholder="Имя клиента (необязательно)"
+             style="margin-bottom:8px">
+      <input class="db-input" id="cphone" placeholder="Телефон (необязательно)"
+             inputmode="tel" style="margin-bottom:12px">
+
+      <div class="pos-pay" id="pay">
+        {% for code, label in payment_methods %}
+          <button type="button" class="pos-chip{% if forloop.first %} on{% endif %}"
+                  data-pay="{{ code }}">{{ label }}</button>
+        {% endfor %}
+      </div>
+
+      <button class="pos-sell" id="sell" disabled>Пробить чек</button>
+      <div class="pos-note" id="note">
+        {% if print_cfg and print_cfg.enabled %}
+          <span class="pos-dot" style="background:{% if print_online %}#16a34a{% else %}#f59e0b{% endif %}"></span>
+          {% if print_online %}принтер на связи{% else %}принтер не отвечает — чек встанет в очередь{% endif %}
+        {% else %}
+          печать не настроена — продажа запишется без чека
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="db-card">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+        <div class="db-card-title" style="margin:0">Продажи за сегодня</div>
+        <div style="font-size:13px;color:var(--muted)">
+          <span id="cnt">{{ sales_count }}</span> ·
+          <b style="color:var(--accent)"><span id="sum">{{ sales_total }}</span> сом</b>
+        </div>
+      </div>
+      <div id="sales">
+        {% for a in sales %}
+          <div class="pos-sale">
+            <span>{{ a.appt_time|time:"H:i" }} · {{ a.service_name|truncatechars:28 }}</span>
+            <b>{{ a.price_snapshot|floatformat:0 }} сом</b>
+          </div>
+        {% empty %}
+          <div class="pos-empty" id="no-sales">Сегодня продаж ещё не было</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <details class="db-card">
+      <summary style="cursor:pointer;font-weight:700">🖨 Настройки печати</summary>
+      <form method="post" action="{% url 'dashboard:bs_print_save' shop.id %}" style="margin-top:12px">
+        {% csrf_token %}
+        <label style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+          <input type="checkbox" name="enabled" {% if print_cfg.enabled %}checked{% endif %}>
+          Печатать чеки
+        </label>
+        <input class="db-input" name="windows_printer" placeholder="Имя принтера в Windows"
+               value="{{ print_cfg.windows_printer|default:'' }}" style="margin-bottom:10px">
+        <select class="db-input" name="print_mode" style="margin-bottom:10px">
+          <option value="image" {% if print_cfg.print_mode == 'image' %}selected{% endif %}>Картинка (рекомендуется)</option>
+          <option value="text"  {% if print_cfg.print_mode == 'text' %}selected{% endif %}>Текст (ESC/POS)</option>
+        </select>
+        <button class="db-btn db-btn-primary db-btn-sm" type="submit">Сохранить</button>
+      </form>
+      {% if print_cfg and print_cfg.token %}
+        <div style="margin-top:12px;font-size:12px;color:var(--muted)">
+          Токен для агента печати:
+          <code style="word-break:break-all">{{ print_cfg.token }}</code>
+        </div>
+      {% endif %}
+    </details>
+  </div>
+</div>
+
+<script>
+(function () {
+  const sel = new Set();
+  let barber = document.querySelector('#barbers .pos-chip.on')?.dataset.barber || null;
+  let pay = document.querySelector('#pay .pos-chip.on')?.dataset.pay || 'cash';
+
+  function pick(box, attr, set) {
+    box.addEventListener('click', e => {
+      const b = e.target.closest('.pos-chip');
+      if (!b) return;
+      box.querySelectorAll('.pos-chip').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      set(b.dataset[attr]);
+    });
+  }
+  pick(document.getElementById('barbers'), 'barber', v => barber = v);
+  pick(document.getElementById('pay'), 'pay', v => pay = v);
+
+  const cartBox = document.getElementById('cart');
+  const sellBtn = document.getElementById('sell');
+
+  function draw() {
+    const items = [...sel].map(id => document.querySelector(`.pos-srv[data-id="${id}"]`));
+    cartBox.innerHTML = items.length ? '' : '<div class="pos-empty">Выберите услуги</div>';
+    let total = 0;
+    items.forEach(el => {
+      total += parseInt(el.dataset.price, 10) || 0;
+      const row = document.createElement('div');
+      row.className = 'pos-line';
+      row.innerHTML = `<span>${el.dataset.name}</span>
+                       <span><b>${el.dataset.price} сом</b>
+                       <button title="Убрать" data-del="${el.dataset.id}">✕</button></span>`;
+      cartBox.appendChild(row);
+    });
+    document.getElementById('total').textContent = total + ' сом';
+    sellBtn.disabled = !items.length;
+  }
+
+  document.querySelectorAll('.pos-srv').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.id;
+      sel.has(id) ? sel.delete(id) : sel.add(id);
+      el.classList.toggle('on', sel.has(id));
+      draw();
+    });
+  });
+  cartBox.addEventListener('click', e => {
+    const id = e.target.dataset?.del;
+    if (!id) return;
+    sel.delete(id);
+    document.querySelector(`.pos-srv[data-id="${id}"]`)?.classList.remove('on');
+    draw();
+  });
+
+  const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+  sellBtn.addEventListener('click', () => {
+    if (!sel.size || sellBtn.disabled) return;
+    sellBtn.disabled = true;
+    const was = sellBtn.textContent;
+    sellBtn.textContent = 'Пробиваем…';
+
+    fetch('{% url "dashboard:bs_pos_sale" shop.id %}', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf},
+      body: JSON.stringify({
+        barber_id: barber, service_ids: [...sel], payment: pay,
+        name: document.getElementById('cname').value,
+        phone: document.getElementById('cphone').value,
+      }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (!d.ok) throw new Error(d.error || 'Не получилось');
+        const line = document.createElement('div');
+        line.className = 'pos-sale';
+        line.innerHTML = `<span>${d.time} · ${[...sel].map(i =>
+          document.querySelector(`.pos-srv[data-id="${i}"]`).dataset.name).join(' + ')}</span>
+          <b>${d.total} сом</b>`;
+        const list = document.getElementById('sales');
+        document.getElementById('no-sales')?.remove();
+        list.prepend(line);
+        document.getElementById('cnt').textContent = +document.getElementById('cnt').textContent + 1;
+        document.getElementById('sum').textContent = +document.getElementById('sum').textContent + d.total;
+        document.getElementById('note').textContent =
+          d.printed ? `Чек #${d.appt_id} отправлен на принтер` : `Продажа #${d.appt_id} записана`;
+
+        sel.clear();
+        document.querySelectorAll('.pos-srv.on').forEach(x => x.classList.remove('on'));
+        document.getElementById('cname').value = '';
+        document.getElementById('cphone').value = '';
+        draw();
+      })
+      .catch(e => { document.getElementById('note').textContent = e.message; })
+      .finally(() => { sellBtn.textContent = was; sellBtn.disabled = !sel.size; });
+  });
+
+  draw();
+})();
+</script>
+{% endif %}
+{% endblock %}

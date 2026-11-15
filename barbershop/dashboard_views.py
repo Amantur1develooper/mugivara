@@ -1,7 +1,9 @@
+import logging
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
 from django.db.models import Sum, Count, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -9,12 +11,18 @@ from django.utils.dateparse import parse_date
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from integrations import tgbot
+
 from . import tg
-from .models import (Appointment, Barber, BarberSchedule, BarberService,
-                     Barbershop, BarbershopMembership, Service, ServiceCategory,
+from .print_jobs import create_appt_print_job
+from .models import (PAYMENT_METHOD, Appointment, Barber, BarberSchedule,
+                     BarberService, Barbershop, BarbershopMembership,
+                     BarbershopPrintConfig, Service, ServiceCategory,
                      WEEKDAY_CHOICES)
 
 LOGIN_URL = "dashboard:login"
+
+log = logging.getLogger(__name__)
 
 
 def _user_shops(user):
@@ -579,3 +587,123 @@ def bs_report(request, shop_id):
         "shift_total": shift_total, "shift_paid": shift_paid, "shift_count": shift_count,
         "today": today,
     })
+
+
+# ── КАССА ────────────────────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+def bs_pos(request, shop_id):
+    """Касса барбершопа: пробить услуги прямо у кресла и выдать чек."""
+    shop = get_object_or_404(Barbershop, id=shop_id)
+    if not _check(request.user, shop):
+        return redirect("dashboard:bs_home")
+
+    categories = (ServiceCategory.objects
+                  .filter(barbershop=shop, is_active=True)
+                  .prefetch_related("services")
+                  .order_by("sort_order", "id"))
+    barbers = (Barber.objects.filter(barbershop=shop, is_active=True)
+               .order_by("sort_order", "id"))
+
+    today = timezone.localdate()
+    sales = (Appointment.objects
+             .filter(barbershop=shop, source="offline", appt_date=today)
+             .exclude(status="cancelled")
+             .order_by("-id")[:20])
+    sales_total = sum(int(a.price_snapshot) for a in sales)
+
+    cfg = BarbershopPrintConfig.objects.filter(barbershop=shop).first()
+    return render(request, "dashboard/barbershop/pos.html", {
+        "shop": shop,
+        "categories": categories,
+        "barbers": barbers,
+        "sales": sales,
+        "sales_total": sales_total,
+        "sales_count": len(sales),
+        "payment_methods": PAYMENT_METHOD,
+        "print_cfg": cfg,
+        "print_online": bool(cfg and cfg.is_agent_online()),
+    })
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def bs_pos_sale(request, shop_id):
+    """Продажа на кассе: запись со статусом «выполнена» и чек на принтер."""
+    import json as _json
+
+    shop = get_object_or_404(Barbershop, id=shop_id)
+    if not _check(request.user, shop):
+        return JsonResponse({"ok": False, "error": "Нет доступа"}, status=403)
+
+    try:
+        data = _json.loads(request.body or b"{}")
+    except ValueError:
+        return JsonResponse({"ok": False, "error": "Битый запрос"}, status=400)
+
+    svc_ids = [int(x) for x in (data.get("service_ids") or []) if str(x).isdigit()]
+    services = list(Service.objects.filter(id__in=svc_ids, barbershop=shop, is_active=True))
+    if not services:
+        return JsonResponse({"ok": False, "error": "Выберите услуги"}, status=400)
+
+    barber = Barber.objects.filter(id=data.get("barber_id"), barbershop=shop).first()
+    if not barber:
+        return JsonResponse({"ok": False, "error": "Выберите мастера"}, status=400)
+
+    payment = data.get("payment") or "cash"
+    if payment not in dict(PAYMENT_METHOD):
+        payment = "cash"
+
+    now = timezone.localtime()
+    # Касса — одна операция: запись, чек и уведомление. Иначе при сбое
+    # посередине останется запись без чека или чек без записи.
+    with transaction.atomic():
+        appt = Appointment.objects.create(
+            barbershop=shop, barber=barber, service=services[0],
+            service_name=" + ".join(s.name for s in services),
+            services_snapshot=[
+                {"name": s.name, "price": int(s.price), "duration": s.duration_min}
+                for s in services
+            ],
+            barber_name=barber.name,
+            price_snapshot=sum(s.price for s in services),
+            duration_min=sum(s.duration_min for s in services),
+            customer_name=(data.get("name") or "").strip() or "Клиент",
+            customer_phone=(data.get("phone") or "").strip(),
+            appt_date=now.date(), appt_time=now.time().replace(second=0, microsecond=0),
+            status="done", source="offline",
+            is_paid=True, payment_method=payment,
+        )
+
+    printed = False
+    try:
+        printed = create_appt_print_job(appt) is not None
+    except Exception:
+        log.exception("чек записи %s не ушёл в печать", appt.id)
+
+    # Карточка в чат — в фоне, касса не должна ждать Telegram.
+    tgbot.in_background(tg.send_appointment, appt)
+
+    return JsonResponse({
+        "ok": True, "appt_id": appt.id,
+        "total": int(appt.price_snapshot),
+        "printed": printed,
+        "time": appt.appt_time.strftime("%H:%M"),
+    })
+
+
+@require_POST
+@login_required(login_url=LOGIN_URL)
+def bs_print_save(request, shop_id):
+    """Настройки принтера барбершопа."""
+    shop = get_object_or_404(Barbershop, id=shop_id)
+    if not _check(request.user, shop):
+        return redirect("dashboard:bs_home")
+
+    cfg, _created = BarbershopPrintConfig.objects.get_or_create(barbershop=shop)
+    cfg.enabled = request.POST.get("enabled") == "on"
+    cfg.windows_printer = (request.POST.get("windows_printer") or "").strip()
+    cfg.print_mode = request.POST.get("print_mode") or "image"
+    cfg.save()
+    messages.success(request, "Настройки печати сохранены")
+    return redirect("dashboard:bs_pos", shop_id=shop.id)

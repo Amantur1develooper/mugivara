@@ -23,6 +23,7 @@ urlpatterns = [
     path("api/print/",    include("printing.urls")),
     path("api/sr-print/", include("simracing.print_urls")),
     path("api/shop-print/", include("shops.print_urls")),
+    path("api/bs-print/",   include("barbershop.print_urls")),
 
     # Swagger / OpenAPI
     path("api/schema/",  SpectacularAPIView.as_view(),                        name="schema"),

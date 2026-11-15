@@ -127,6 +127,10 @@ def _open_button(appt):
 
 def keyboard(appt):
     rows = []
+    # Продажу на кассе подтверждать не надо: клиента уже подстригли и
+    # рассчитали. Такая запись приходит в чат просто как уведомление.
+    if appt.source == "offline" and appt.status == "done":
+        return {"inline_keyboard": [[_open_button(appt)]]}
     if appt.status == "new":
         rows.append([{"text": "✅ Подтвердить", "callback_data": f"bs:confirm:{appt.id}"},
                      {"text": "❌ Отменить",    "callback_data": f"bs:cancel:{appt.id}"}])
