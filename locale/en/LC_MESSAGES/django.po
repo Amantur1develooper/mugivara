@@ -5462,3 +5462,67 @@ msgstr "Search"
 msgid "Найти блюдо — название или состав"
 msgstr "Find a dish — name or ingredients"
 
+
+#: templates/barbershop/venue.html
+msgid "Свободно сегодня"
+msgstr "Free today"
+
+#: templates/barbershop/venue.html
+msgid "На сегодня окошек нет — выберите другой день"
+msgstr "No slots left today — pick another day"
+
+#: templates/barbershop/venue.html
+msgid "Выбрать день"
+msgstr "Pick a day"
+
+#: templates/barbershop/venue.html
+msgid "Прайс"
+msgstr "Price list"
+
+#: templates/barbershop/venue.html
+msgid "Команда"
+msgstr "Team"
+
+#: templates/barbershop/venue.html
+msgid "Как найти"
+msgstr "Find us"
+
+#: templates/barbershop/venue.html
+msgid "Где мы"
+msgstr "Where we are"
+
+#: templates/barbershop/venue.html
+msgid "Связаться"
+msgstr "Get in touch"
+
+#: templates/barbershop/venue.html
+msgid "Построить маршрут"
+msgstr "Get directions"
+
+#: templates/barbershop/venue.html
+msgid "Выберите время — остальное мы сделаем"
+msgstr "Pick a time — we'll take care of the rest"
+
+#: templates/barbershop/venue.html
+msgid "Онлайн-запись за минуту: мастер, услуга и свободное окошко."
+msgstr "Book online in a minute: barber, service and a free slot."
+
+#: templates/barbershop/venue.html
+msgid "Адрес уточняйте по телефону"
+msgstr "Ask for the address by phone"
+
+#: templates/barbershop/venue.html
+msgid "Прайс скоро появится."
+msgstr "The price list is coming soon."
+
+#: templates/barbershop/venue.html
+msgid "Адрес и контакты"
+msgstr "Address and contacts"
+
+#: templates/barbershop/venue.html
+msgid "Мастера"
+msgstr "Barbers"
+
+#: templates/barbershop/venue.html
+msgid "Записаться"
+msgstr "Book"

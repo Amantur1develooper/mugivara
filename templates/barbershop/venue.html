@@ -3,142 +3,370 @@
 <html lang="{{ LANGUAGE_CODE|default:'ru' }}">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{% t shop "name" %}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>{% t shop "name" %}{% t shop "tagline" as tg %}{% if tg %} — {{ tg }}{% endif %}</title>
+  <meta name="theme-color" content="#0A0A0B">
+  {% t shop "description" as shopdesc %}
+  {% if shopdesc %}<meta name="description" content="{{ shopdesc|striptags|truncatewords:28 }}">{% endif %}
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    :root{
+      --ink:#0A0A0B; --panel:#141416; --panel-2:#1B1B1E;
+      --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.14);
+      --text:#F2F2F4; --muted:#8B8B90; --brand:#FF4D1C; --brand-2:#FF8A3D;
+      --wa:#25D366; --ok:#4ADE80;
+      --rad:18px; --gut:20px;
+    }
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Inter',sans-serif;background:#0d0d0d;color:#f0f0f0;min-height:100vh}
-    .hero{position:relative;height:300px;display:flex;align-items:flex-end;overflow:hidden}
-    .hero-bg{position:absolute;inset:0;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:96px}
-    .hero-bg img{width:100%;height:100%;object-fit:cover;filter:brightness(.5)}
-    .hero-text{position:relative;padding:28px 24px;max-width:900px;margin:0 auto;width:100%}
-    .hero-name{font-family:'Unbounded',sans-serif;font-size:clamp(22px,4vw,38px);font-weight:900;text-shadow:0 2px 12px rgba(0,0,0,.6)}
-    .hero-sub{font-size:14px;color:#ccc;margin-top:6px}
-    .wrap{max-width:900px;margin:0 auto;padding:32px 20px 60px}
-    .info-bar{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:32px}
-    .info-item{font-size:14px;color:#aaa}
-    .book-btn{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;background:linear-gradient(135deg,#ff6b35,#ff4444);color:white;border-radius:14px;font-size:15px;font-weight:700;text-decoration:none;transition:box-shadow .2s,transform .2s;box-shadow:0 4px 16px rgba(255,77,28,.3);margin-bottom:40px}
-    .book-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(255,77,28,.45)}
-    .section-title{font-family:'Unbounded',sans-serif;font-size:18px;font-weight:700;margin-bottom:20px;letter-spacing:-0.3px}
-    .services-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:40px}
-    .svc-card{background:#1a1a1a;border-radius:14px;padding:18px;border:1px solid rgba(255,255,255,.06)}
-    .svc-name{font-weight:600;font-size:15px;margin-bottom:6px}
-    .svc-meta{display:flex;justify-content:space-between;font-size:13px;color:#888;margin-top:8px}
-    .svc-price{font-weight:700;font-size:15px;color:#ff6b35}
-    .barbers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px}
-    .barber-card{background:#1a1a1a;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.06);text-align:center;padding-bottom:16px}
-    .barber-photo{height:140px;display:flex;align-items:center;justify-content:center;background:#222;font-size:52px;overflow:hidden}
-    .barber-photo img{width:100%;height:100%;object-fit:cover}
-    .barber-name{font-weight:700;font-size:15px;margin:12px 12px 4px}
-    .barber-exp{font-size:12px;color:#888}
-    .cat-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#666;margin-bottom:10px;margin-top:6px}
-    .action-btns{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px}
-    .action-btn{display:inline-flex;align-items:center;gap:7px;padding:11px 20px;border-radius:12px;font-size:14px;font-weight:600;text-decoration:none;transition:opacity .2s}
-    .action-btn:hover{opacity:.85}
-    .btn-wa{background:#25D366;color:#fff}
-    .btn-map{background:#1a1a1a;color:#f0f0f0;border:1px solid rgba(255,255,255,.12)}
-    .slots-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 18px;background:#1a1a1a;border:1px solid rgba(255,255,255,.08);border-radius:14px;margin-bottom:28px}
-    .slots-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0;box-shadow:0 0 6px rgba(74,222,128,.6)}
-    .slots-label{font-size:13px;color:#aaa}
-    .slots-range{font-size:15px;font-weight:700;color:#f0f0f0}
-    .slots-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-    .slot-chip{padding:4px 10px;border-radius:8px;background:#222;border:1px solid rgba(255,255,255,.1);font-size:12px;font-weight:600;color:#ccc}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+      background:var(--ink); color:var(--text); -webkit-font-smoothing:antialiased;
+      padding-bottom:calc(84px + env(safe-area-inset-bottom,0px));
+    }
+    @media (min-width:721px){ body{padding-bottom:0} }
+    a{color:inherit;text-decoration:none}
+    .wrap{max-width:1040px;margin:0 auto;padding:0 var(--gut)}
+
+    /* ── шапка, появляется при прокрутке ── */
+    .bar{
+      position:fixed;inset:0 0 auto;z-index:60;display:flex;align-items:center;gap:12px;
+      padding:10px var(--gut);background:rgba(10,10,11,.82);
+      -webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px);
+      border-bottom:1px solid transparent;
+      transform:translateY(-100%);transition:transform .32s cubic-bezier(.22,.68,0,1),border-color .32s;
+    }
+    .bar.on{transform:none;border-bottom-color:var(--line)}
+    .bar-name{font-family:'Unbounded',sans-serif;font-weight:700;font-size:15px;letter-spacing:-.02em;
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .bar-nav{display:none;gap:18px;margin-left:16px;font-size:14px;color:var(--muted)}
+    .bar-nav a:hover{color:var(--text)}
+    @media (min-width:860px){ .bar-nav{display:flex} }
+
+    /* ── обложка ── */
+    .hero{position:relative;min-height:clamp(420px,70vh,600px);display:flex;align-items:flex-end;overflow:hidden}
+    .hero.bare{min-height:clamp(320px,46vh,420px)}
+    .hero.bare .hero-bg{
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 0%, rgba(255,77,28,.22), transparent 60%),
+        radial-gradient(ellipse 70% 60% at 95% 20%, rgba(255,138,61,.12), transparent 62%),
+        linear-gradient(180deg,#17171A,#0A0A0B);
+    }
+    .hero-bg{position:absolute;inset:0;background:#131315}
+    .hero-bg img{width:100%;height:100%;object-fit:cover}
+    .hero-bg::after{
+      content:'';position:absolute;inset:0;
+      background:linear-gradient(180deg,rgba(10,10,11,.55) 0%,rgba(10,10,11,.25) 38%,rgba(10,10,11,.92) 88%,var(--ink) 100%);
+    }
+    .hero-ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+             font-family:'Unbounded',sans-serif;font-weight:900;font-size:clamp(120px,34vw,260px);
+             color:rgba(255,255,255,.045);letter-spacing:-.06em;line-height:1}
+    .hero-in{position:relative;width:100%;padding:0 0 clamp(26px,5vw,44px)}
+    .logo{width:66px;height:66px;border-radius:20px;object-fit:cover;background:var(--panel);
+          border:1px solid var(--line-2);margin-bottom:16px;display:block}
+    .hero h1{font-family:'Unbounded',sans-serif;font-weight:900;letter-spacing:-.035em;
+             font-size:clamp(32px,8vw,64px);line-height:1.02;text-wrap:balance}
+    .hero p{margin-top:12px;font-size:clamp(15px,2.4vw,19px);color:#D6D6DA;max-width:46ch;line-height:1.5}
+    .hero-cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+         padding:14px 24px;border-radius:14px;font-size:15px;font-weight:700;
+         border:1px solid transparent;cursor:pointer;transition:transform .14s,box-shadow .2s,background .2s,border-color .2s}
+    .btn:active{transform:scale(.98)}
+    .btn-main{background:var(--brand);color:#fff;box-shadow:0 10px 30px rgba(255,77,28,.3)}
+    .btn-main:hover{background:var(--brand-2);box-shadow:0 14px 36px rgba(255,77,28,.42)}
+    .btn-ghost{background:rgba(255,255,255,.06);border-color:var(--line-2);color:var(--text)}
+    .btn-ghost:hover{background:rgba(255,255,255,.1)}
+    .btn-wa{background:var(--wa);color:#07301A}
+    .btn-sm{padding:9px 16px;font-size:14px;border-radius:11px}
+
+    /* ── полоса со свободными окошками ── */
+    .strip{margin-top:-22px;position:relative;z-index:2}
+    .strip-in{background:var(--panel);border:1px solid var(--line);border-radius:var(--rad);
+              padding:16px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(74,222,128,.14);flex:none}
+    .dot.off{background:var(--muted);box-shadow:0 0 0 4px rgba(139,139,144,.14)}
+    .strip-lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600}
+    .strip-val{font-family:'Unbounded',sans-serif;font-size:17px;font-weight:700;margin-top:2px}
+    .chips{display:flex;gap:6px;overflow-x:auto;margin-left:auto;scrollbar-width:none;padding-bottom:2px}
+    .chips::-webkit-scrollbar{display:none}
+    .chip{flex:none;padding:7px 12px;border-radius:10px;background:var(--panel-2);
+          border:1px solid var(--line);font-size:13px;font-weight:600;color:#CFCFD4}
+
+    /* ── секции ── */
+    section{padding:clamp(44px,7vw,78px) 0}
+    .eyebrow{font-size:12px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--brand)}
+    .h2{font-family:'Unbounded',sans-serif;font-weight:700;letter-spacing:-.03em;
+        font-size:clamp(24px,4.4vw,38px);margin-top:10px}
+    .sec-head{margin-bottom:clamp(22px,3vw,34px)}
+
+    /* ── прайс ── */
+    .cat{margin-bottom:30px}
+    .cat-name{font-size:13px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;
+              color:var(--muted);padding-bottom:10px;border-bottom:1px solid var(--line)}
+    .srv{display:flex;align-items:baseline;gap:14px;padding:15px 0;border-bottom:1px solid var(--line)}
+    .srv:last-child{border-bottom:0}
+    .srv-l{flex:1;min-width:0}
+    .srv-n{font-weight:600;font-size:16px;line-height:1.3}
+    .srv-d{font-size:13.5px;color:var(--muted);margin-top:4px;line-height:1.45}
+    .srv-r{text-align:right;flex:none}
+    .srv-p{font-family:'Unbounded',sans-serif;font-weight:700;font-size:17px;white-space:nowrap}
+    .srv-m{font-size:12.5px;color:var(--muted);margin-top:3px}
+
+    /* ── мастера ── */
+    .barbers{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;
+             margin:0 calc(var(--gut) * -1);padding:4px var(--gut) 8px;scrollbar-width:none}
+    .barbers::-webkit-scrollbar{display:none}
+    .barber{flex:0 0 168px;scroll-snap-align:start;background:var(--panel);
+            border:1px solid var(--line);border-radius:var(--rad);overflow:hidden}
+    .barber-ph{aspect-ratio:3/4;background:var(--panel-2);display:flex;align-items:center;
+               justify-content:center;font-size:44px;opacity:.9}
+    .barber-ph img{width:100%;height:100%;object-fit:cover}
+    .barber-b{padding:12px 13px 14px}
+    .barber-n{font-weight:700;font-size:15px}
+    .barber-e{font-size:12.5px;color:var(--muted);margin-top:3px}
+    @media (min-width:721px){
+      .barbers{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));margin:0;padding:0;overflow:visible}
+      .barber{flex:none}
+    }
+
+    /* ── контакты ── */
+    .cards{display:grid;gap:12px;grid-template-columns:1fr}
+    @media (min-width:721px){ .cards{grid-template-columns:1fr 1fr} }
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--rad);padding:20px}
+    .card h3{font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted)}
+    .card .big{font-size:17px;font-weight:600;margin-top:10px;line-height:1.45}
+    .card .row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line);font-size:15px}
+    .card .row:last-child{border-bottom:0}
+    .card .row span:first-child{width:26px;text-align:center;opacity:.8}
+
+    /* ── финальный призыв ── */
+    .cta{background:linear-gradient(135deg,#FF4D1C,#FF8A3D);border-radius:26px;
+         padding:clamp(34px,6vw,58px) var(--gut);text-align:center;color:#fff}
+    .cta h2{font-family:'Unbounded',sans-serif;font-weight:900;letter-spacing:-.03em;
+            font-size:clamp(23px,4.6vw,38px);line-height:1.1;text-wrap:balance}
+    .cta p{margin-top:12px;font-size:16px;color:rgba(255,255,255,.88)}
+    .cta .btn{margin-top:22px;background:#fff;color:#141416;box-shadow:0 12px 30px rgba(0,0,0,.26)}
+
+    footer{padding:30px 0 40px;text-align:center;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+
+    /* ── «Записаться» внизу экрана на телефоне ── */
+    .dock{
+      position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));
+      transform:translateX(-50%);width:min(560px,calc(100% - 32px));z-index:55;
+      display:flex;gap:8px;
+    }
+    .dock .btn{flex:1;box-shadow:0 14px 34px rgba(0,0,0,.5),0 8px 24px rgba(255,77,28,.34)}
+    .dock .btn-wa{flex:0 0 54px;padding:14px 0}
+    @media (min-width:721px){ .dock{display:none} }
+    /* Фирменные орнаменты платформы на тёмном лендинге приглушаем:
+       они должны читаться фоном, а не спорить с прайсом. */
+    .kg-ethno-bg{opacity:.4}
+
+    @media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} html{scroll-behavior:auto} }
   </style>
 </head>
 <body>
 {% include "_webordo_ethno.html" %}
-<div class="hero">
+
+<div class="bar" id="bar">
+  <div class="bar-name">{% t shop "name" %}</div>
+  <nav class="bar-nav">
+    <a href="#services">{% trans "Услуги" %}</a>
+    {% if barbers %}<a href="#barbers">{% trans "Мастера" %}</a>{% endif %}
+    <a href="#contacts">{% trans "Контакты" %}</a>
+  </nav>
+  <a href="{% url 'barbershop:book' shop.slug %}" class="btn btn-main btn-sm" style="margin-left:auto">
+    {% trans "Записаться" %}
+  </a>
+</div>
+
+<!-- ОБЛОЖКА -->
+<header class="hero{% if not shop.cover %} bare{% endif %}">
   <div class="hero-bg">
-    {% if shop.cover %}<img src="{{ shop.cover.url }}" alt="">{% else %}✂️{% endif %}
+    {% if shop.cover %}
+      <img src="{{ shop.cover.url }}" alt="">
+    {% else %}
+      {# без обложки: буква названия вместо пустоты #}
+      <div class="hero-ph">{% t shop "name" as shopname %}{{ shopname|slice:":1" }}</div>
+    {% endif %}
   </div>
-  <div class="hero-text">
-    <div class="hero-name">{% t shop "name" %}</div>
-    {% t shop "tagline" as shoptag %}{% if shoptag %}<div class="hero-sub">{{ shoptag }}</div>{% endif %}
+  <div class="hero-in wrap">
+    {% if shop.logo %}<img class="logo" src="{{ shop.logo.url }}" alt="{% t shop 'name' %}">{% endif %}
+    <h1>{% t shop "name" %}</h1>
+    {% t shop "tagline" as shoptag %}
+    {% if shoptag %}<p>{{ shoptag }}</p>{% elif shopdesc %}<p>{{ shopdesc|truncatewords:22 }}</p>{% endif %}
+    <div class="hero-cta">
+      <a href="{% url 'barbershop:book' shop.slug %}" class="btn btn-main">✂️ {% trans "Записаться онлайн" %}</a>
+      <a href="#services" class="btn btn-ghost">{% trans "Услуги и цены" %}</a>
+    </div>
+  </div>
+</header>
+
+<!-- СВОБОДНЫЕ ОКОШКИ -->
+<div class="strip wrap">
+  <div class="strip-in">
+    {% if free_first %}
+      <div class="dot"></div>
+      <div>
+        <div class="strip-lbl">{% trans "Свободно сегодня" %}</div>
+        <div class="strip-val">{{ free_first }} – {{ free_last }}</div>
+      </div>
+      <div class="chips">
+        {% for slot in free_slots %}<span class="chip">{{ slot }}</span>{% endfor %}
+      </div>
+    {% else %}
+      <div class="dot off"></div>
+      <div>
+        <div class="strip-lbl">{% trans "Запись" %}</div>
+        <div class="strip-val" style="font-size:15px;font-weight:600;color:var(--muted)">
+          {% trans "На сегодня окошек нет — выберите другой день" %}
+        </div>
+      </div>
+      <a href="{% url 'barbershop:book' shop.slug %}" class="btn btn-ghost btn-sm" style="margin-left:auto">
+        {% trans "Выбрать день" %}
+      </a>
+    {% endif %}
   </div>
 </div>
 
-<div class="wrap">
-  <div class="info-bar">
-    {% if shop.address %}<div class="info-item">📍 {{ shop.address }}</div>{% endif %}
-    {% if shop.working_hours %}<div class="info-item">🕐 {{ shop.working_hours }}</div>{% endif %}
-    {% if shop.phone %}<div class="info-item">📞 {{ shop.phone }}</div>{% endif %}
+<!-- УСЛУГИ -->
+<section id="services" class="wrap" style="padding-top:clamp(34px,5vw,56px)">
+  <div class="sec-head">
+    <div class="eyebrow">{% trans "Прайс" %}</div>
+    <h2 class="h2">{% trans "Услуги и цены" %}</h2>
   </div>
-
-  <!-- Кнопки действий -->
-  <div class="action-btns">
-    {% with wa=shop.whatsapp|default:shop.phone %}
-    {% if wa %}
-    <a href="https://wa.me/{{ wa|cut:'+' }}" target="_blank" rel="noopener" class="action-btn btn-wa">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-      WhatsApp
-    </a>
-    {% endif %}
-    {% endwith %}
-    {% if shop.map_url %}
-    <a href="{{ shop.map_url }}" target="_blank" rel="noopener" class="action-btn btn-map">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
-      {% trans "Маршрут" %}
-    </a>
-    {% endif %}
-    <a href="{% url 'barbershop:book' shop.slug %}" class="action-btn" style="background:linear-gradient(135deg,#ff6b35,#ff4444);color:#fff;box-shadow:0 4px 16px rgba(255,77,28,.3)">
-      ✂️ {% trans "Записаться онлайн" %}
-    </a>
-  </div>
-
-  <!-- Свободные окошки сегодня -->
-  {% if free_first %}
-  <div class="slots-bar">
-    <div class="slots-dot"></div>
-    <div>
-      <div class="slots-label">{% trans "Свободные окошки сегодня" %}</div>
-      <div class="slots-range">{{ free_first }} – {{ free_last }}</div>
-    </div>
-    <div class="slots-chips" style="margin-top:0;margin-left:auto">
-      {% for slot in free_slots %}
-      <span class="slot-chip">{{ slot }}</span>
+  {% for cat in categories %}
+    {% if cat.services.all %}
+    <div class="cat">
+      <div class="cat-name">{% t cat "name" %}</div>
+      {% for svc in cat.services.all %}
+        {% if svc.is_active %}
+        <div class="srv">
+          <div class="srv-l">
+            <div class="srv-n">{% t svc "name" %}</div>
+            {% t svc "description" as svcd %}
+            {% if svcd %}<div class="srv-d">{{ svcd }}</div>{% endif %}
+          </div>
+          <div class="srv-r">
+            <div class="srv-p">{{ svc.price|som }}</div>
+            <div class="srv-m">{% blocktrans with m=svc.duration_min %}{{ m }} мин{% endblocktrans %}</div>
+          </div>
+        </div>
+        {% endif %}
       {% endfor %}
     </div>
-  </div>
-  {% else %}
-  <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;background:#1a1a1a;border:1px solid rgba(255,255,255,.08);border-radius:14px;margin-bottom:28px">
-    <span style="font-size:18px">😴</span>
-    <span style="font-size:14px;color:#888">{% trans "На сегодня свободных окошек нет" %}</span>
-  </div>
-  {% endif %}
-
-  {% for cat in categories %}
-  <div class="cat-label">{% t cat "name" %}</div>
-  <div class="services-grid">
-    {% for svc in cat.services.all %}
-    {% if svc.is_active %}
-    <div class="svc-card">
-      <div class="svc-name">{% t svc "name" %}</div>
-      {% t svc "description" as svcd %}{% if svcd %}<div style="font-size:13px;color:#888;margin-top:4px">{{ svcd }}</div>{% endif %}
-      <div class="svc-meta">
-        <span>⏱ {% blocktrans with m=svc.duration_min %}{{ m }} мин{% endblocktrans %}</span>
-        <span class="svc-price">{{ svc.price|som }}</span>
-      </div>
-    </div>
     {% endif %}
-    {% endfor %}
-  </div>
+  {% empty %}
+    <p style="color:var(--muted)">{% trans "Прайс скоро появится." %}</p>
   {% endfor %}
+</section>
 
-  {% if barbers %}
-  <div class="section-title" style="margin-top:16px">{% trans "Наши мастера" %}</div>
-  <div class="barbers-grid">
+<!-- МАСТЕРА -->
+{% if barbers %}
+<section id="barbers" class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">{% trans "Команда" %}</div>
+    <h2 class="h2">{% trans "Наши мастера" %}</h2>
+  </div>
+  <div class="barbers">
     {% for b in barbers %}
-    <div class="barber-card">
-      <div class="barber-photo">
-        {% if b.photo %}<img src="{{ b.photo.url }}" alt="{{ b.name }}">{% else %}👤{% endif %}
+    <div class="barber">
+      <div class="barber-ph">
+        {% if b.photo %}<img src="{{ b.photo.url }}" alt="{{ b.name }}" loading="lazy">{% else %}👤{% endif %}
       </div>
-      <div class="barber-name">{{ b.name }}</div>
-      {% if b.experience %}<div class="barber-exp">{{ b.experience }}</div>{% endif %}
+      <div class="barber-b">
+        <div class="barber-n">{{ b.name }}</div>
+        {% if b.experience %}<div class="barber-e">{{ b.experience }}</div>{% endif %}
+      </div>
     </div>
     {% endfor %}
   </div>
+</section>
+{% endif %}
+
+<!-- КОНТАКТЫ -->
+<section id="contacts" class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">{% trans "Как найти" %}</div>
+    <h2 class="h2">{% trans "Адрес и контакты" %}</h2>
+  </div>
+  <div class="cards">
+    <div class="card">
+      <h3>{% trans "Где мы" %}</h3>
+      <div class="big">{{ shop.address|default:_("Адрес уточняйте по телефону") }}</div>
+      {% if shop.working_hours %}
+        <div style="color:var(--muted);margin-top:8px">🕐 {{ shop.working_hours }}</div>
+      {% endif %}
+      {% if shop.map_url %}
+        <a href="{{ shop.map_url }}" target="_blank" rel="noopener"
+           class="btn btn-ghost btn-sm" style="margin-top:16px">📍 {% trans "Построить маршрут" %}</a>
+      {% endif %}
+    </div>
+    <div class="card">
+      <h3>{% trans "Связаться" %}</h3>
+      <div style="margin-top:8px">
+        {% with wa=shop.whatsapp|default:shop.phone %}
+        {% if wa %}
+          <a class="row" href="https://wa.me/{{ wa|cut:'+' }}" target="_blank" rel="noopener">
+            <span>💬</span><span>WhatsApp</span>
+            <span style="margin-left:auto;color:var(--muted)">{{ shop.phone|default:wa }}</span>
+          </a>
+        {% endif %}
+        {% endwith %}
+        {% if shop.phone %}
+          <a class="row" href="tel:{{ shop.phone }}"><span>📞</span><span>{{ shop.phone }}</span></a>
+        {% endif %}
+        {% if shop.instagram %}
+          <a class="row" target="_blank" rel="noopener"
+             href="{% if '/' in shop.instagram %}{{ shop.instagram }}{% else %}https://instagram.com/{{ shop.instagram|cut:'@' }}{% endif %}">
+            <span>📷</span><span>Instagram</span>
+            <span style="margin-left:auto;color:var(--muted)">@{{ shop.instagram|cut:'@' }}</span>
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if shopdesc %}
+    <div class="card" style="margin-top:12px">
+      <h3>{% trans "О нас" %}</h3>
+      <div style="margin-top:10px;color:#D2D2D7;line-height:1.6;white-space:pre-line">{{ shopdesc }}</div>
+    </div>
   {% endif %}
+</section>
+
+<!-- ПРИЗЫВ -->
+<section class="wrap" style="padding-top:0">
+  <div class="cta">
+    <h2>{% trans "Выберите время — остальное мы сделаем" %}</h2>
+    <p>{% trans "Онлайн-запись за минуту: мастер, услуга и свободное окошко." %}</p>
+    <a href="{% url 'barbershop:book' shop.slug %}" class="btn">✂️ {% trans "Записаться онлайн" %}</a>
+  </div>
+</section>
+
+<footer>© {% now "Y" %} {% t shop "name" %}{% if shop.address %} · {{ shop.address }}{% endif %}</footer>
+
+<!-- «Записаться» всегда под рукой на телефоне -->
+<div class="dock">
+  <a href="{% url 'barbershop:book' shop.slug %}" class="btn btn-main">✂️ {% trans "Записаться онлайн" %}</a>
+  {% with wa=shop.whatsapp|default:shop.phone %}
+  {% if wa %}<a href="https://wa.me/{{ wa|cut:'+' }}" target="_blank" rel="noopener"
+                class="btn btn-wa" aria-label="WhatsApp">💬</a>{% endif %}
+  {% endwith %}
 </div>
+
+<script>
+  // Шапка выезжает, когда обложка уехала за верх экрана.
+  (function () {
+    const bar = document.getElementById('bar');
+    const hero = document.querySelector('.hero');
+    if (!bar || !hero || !('IntersectionObserver' in window)) { bar.classList.add('on'); return; }
+    new IntersectionObserver(
+      ([e]) => bar.classList.toggle('on', !e.isIntersecting),
+      { rootMargin: '-72px 0px 0px 0px' }
+    ).observe(hero);
+  })();
+</script>
 </body>
 </html>

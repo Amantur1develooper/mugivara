@@ -53,6 +53,8 @@ class Barbershop(TimeStampedModel):
     whatsapp      = models.CharField("WhatsApp (с кодом страны)", max_length=30, blank=True, default="",
                                      help_text="996700123456 — без + и пробелов")
     working_hours = models.CharField("Часы работы", max_length=200, blank=True, default="")
+    instagram     = models.CharField("Instagram", max_length=120, blank=True, default="",
+                                     help_text="Ник без @ или ссылка")
     map_url       = models.URLField("Ссылка на карту", blank=True, default="")
     tg_chat_id    = models.CharField("TG Chat ID", max_length=50, blank=True, default="")
     tg_thread_id  = models.PositiveIntegerField("TG Thread ID", null=True, blank=True)

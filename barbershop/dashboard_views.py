@@ -68,7 +68,7 @@ def bs_venue_edit(request, shop_id):
         return redirect("dashboard:bs_home")
     if request.method == "POST":
         for f in ["name", "tagline", "description", "address", "phone",
-                  "whatsapp", "working_hours", "map_url", "tg_chat_id"]:
+                  "whatsapp", "working_hours", "instagram", "map_url", "tg_chat_id"]:
             setattr(shop, f, request.POST.get(f, "").strip())
         tgt = request.POST.get("tg_thread_id", "").strip()
         shop.tg_thread_id = int(tgt) if tgt.isdigit() else None

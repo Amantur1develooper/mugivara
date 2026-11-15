@@ -912,3 +912,83 @@ msgstr "Издөө"
 msgid "Найти блюдо — название или состав"
 msgstr "Тамак табуу — аталышы же курамы"
 
+
+#: templates/barbershop/venue.html
+msgid "Свободно сегодня"
+msgstr "Бүгүн бош"
+
+#: templates/barbershop/venue.html
+msgid "Запись"
+msgstr "Жазылуу"
+
+#: templates/barbershop/venue.html
+msgid "На сегодня окошек нет — выберите другой день"
+msgstr "Бүгүнгө бош убакыт жок — башка күндү тандаңыз"
+
+#: templates/barbershop/venue.html
+msgid "Выбрать день"
+msgstr "Күн тандоо"
+
+#: templates/barbershop/venue.html
+msgid "Прайс"
+msgstr "Баалар"
+
+#: templates/barbershop/venue.html
+msgid "Команда"
+msgstr "Командабыз"
+
+#: templates/barbershop/venue.html
+msgid "Как найти"
+msgstr "Кантип табуу"
+
+#: templates/barbershop/venue.html
+msgid "Где мы"
+msgstr "Биз кайдабыз"
+
+#: templates/barbershop/venue.html
+msgid "Связаться"
+msgstr "Байланышуу"
+
+#: templates/barbershop/venue.html
+msgid "Построить маршрут"
+msgstr "Жолду көрсөтүү"
+
+#: templates/barbershop/venue.html
+msgid "Выберите время — остальное мы сделаем"
+msgstr "Убакытты тандаңыз — калганын биз жасайбыз"
+
+#: templates/barbershop/venue.html
+msgid "Онлайн-запись за минуту: мастер, услуга и свободное окошко."
+msgstr "Бир мүнөттө онлайн жазылуу: устат, кызмат жана бош убакыт."
+
+#: templates/barbershop/venue.html
+msgid "Адрес уточняйте по телефону"
+msgstr "Дарегин телефон аркылуу тактаңыз"
+
+#: templates/barbershop/venue.html
+msgid "Прайс скоро появится."
+msgstr "Баалар жакында пайда болот."
+
+#: templates/barbershop/venue.html
+msgid "Адрес и контакты"
+msgstr "Дарек жана байланыш"
+
+#: templates/barbershop/venue.html
+msgid "Мастера"
+msgstr "Устаттар"
+
+#: templates/barbershop/venue.html
+msgid "Записаться"
+msgstr "Жазылуу"
+
+#: templates/barbershop/venue.html
+msgid "Услуги и цены"
+msgstr "Кызматтар жана баалар"
+
+#: templates/barbershop/venue.html
+msgid "Записаться онлайн"
+msgstr "Онлайн жазылуу"
+
+#: templates/barbershop/venue.html
+msgid "Наши мастера"
+msgstr "Биздин устаттар"
