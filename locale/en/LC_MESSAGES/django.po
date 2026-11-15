@@ -5526,3 +5526,11 @@ msgstr "Barbers"
 #: templates/barbershop/venue.html
 msgid "Записаться"
 msgstr "Book"
+
+#: templates/barbershop/venue.html
+msgid "Записаться к мастеру"
+msgstr "Book with this barber"
+
+#: templates/barbershop/venue.html
+msgid "+ ещё %(n)s"
+msgstr "+ %(n)s more"

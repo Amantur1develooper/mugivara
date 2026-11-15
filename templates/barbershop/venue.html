@@ -113,22 +113,36 @@
     .srv-p{font-family:'Unbounded',sans-serif;font-weight:700;font-size:17px;white-space:nowrap}
     .srv-m{font-size:12.5px;color:var(--muted);margin-top:3px}
 
-    /* ── мастера ── */
-    .barbers{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;
-             margin:0 calc(var(--gut) * -1);padding:4px var(--gut) 8px;scrollbar-width:none}
-    .barbers::-webkit-scrollbar{display:none}
-    .barber{flex:0 0 168px;scroll-snap-align:start;background:var(--panel);
-            border:1px solid var(--line);border-radius:var(--rad);overflow:hidden}
-    .barber-ph{aspect-ratio:3/4;background:var(--panel-2);display:flex;align-items:center;
-               justify-content:center;font-size:44px;opacity:.9}
-    .barber-ph img{width:100%;height:100%;object-fit:cover}
-    .barber-b{padding:12px 13px 14px}
-    .barber-n{font-weight:700;font-size:15px}
-    .barber-e{font-size:12.5px;color:var(--muted);margin-top:3px}
-    @media (min-width:721px){
-      .barbers{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));margin:0;padding:0;overflow:visible}
-      .barber{flex:none}
+    /* ── мастера: карточка раскрывается по нажатию ── */
+    .barbers{display:grid;gap:12px;grid-template-columns:1fr;align-items:start}
+    @media (min-width:640px){ .barbers{grid-template-columns:1fr 1fr} }
+    @media (min-width:980px){ .barbers{grid-template-columns:repeat(3,1fr)} }
+    .barber{background:var(--panel);border:1px solid var(--line);border-radius:var(--rad);
+            overflow:hidden;transition:border-color .2s}
+    .barber[open]{border-color:var(--line-2)}
+    .barber > summary{
+      display:flex;align-items:center;gap:13px;padding:13px 15px;cursor:pointer;
+      list-style:none;-webkit-tap-highlight-color:transparent;
     }
+    .barber > summary::-webkit-details-marker{display:none}
+    .barber.flat > summary{cursor:default}
+    .barber-ph{width:56px;height:56px;border-radius:14px;flex:none;background:var(--panel-2);
+               display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden}
+    .barber-ph img{width:100%;height:100%;object-fit:cover}
+    .barber-t{flex:1;min-width:0}
+    .barber-n{font-weight:700;font-size:16px;line-height:1.25}
+    .barber-e{font-size:13px;color:var(--muted);margin-top:3px;
+              white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .barber-ar{flex:none;width:28px;height:28px;border-radius:50%;background:var(--panel-2);
+               border:1px solid var(--line);color:#C9C9CE;font-size:11px;
+               display:flex;align-items:center;justify-content:center;transition:transform .25s}
+    .barber[open] .barber-ar{transform:rotate(180deg)}
+    .barber-body{padding:0 15px 15px;border-top:1px solid var(--line);margin-top:-1px}
+    .barber-bio{font-size:14.5px;line-height:1.55;color:#D2D2D7;padding-top:13px;white-space:pre-line}
+    .barber-svc{display:flex;flex-wrap:wrap;gap:6px;margin-top:13px}
+    .barber-svc span{padding:6px 11px;border-radius:9px;background:var(--panel-2);
+                     border:1px solid var(--line);font-size:12.5px;color:#CFCFD4}
+    .barber-book{display:inline-flex;margin-top:14px}
 
     /* ── контакты ── */
     .cards{display:grid;gap:12px;grid-template-columns:1fr}
@@ -271,15 +285,49 @@
   </div>
   <div class="barbers">
     {% for b in barbers %}
-    <div class="barber">
-      <div class="barber-ph">
-        {% if b.photo %}<img src="{{ b.photo.url }}" alt="{{ b.name }}" loading="lazy">{% else %}👤{% endif %}
-      </div>
-      <div class="barber-b">
-        <div class="barber-n">{{ b.name }}</div>
-        {% if b.experience %}<div class="barber-e">{{ b.experience }}</div>{% endif %}
-      </div>
-    </div>
+      {# раскрывать нечего — показываем простой карточкой, без стрелки #}
+      <details class="barber{% if not b.bio and not b.barber_services.all %} flat{% endif %}">
+        <summary>
+          <div class="barber-ph">
+            {% if b.photo %}<img src="{{ b.photo.url }}" alt="{{ b.name }}" loading="lazy">{% else %}👤{% endif %}
+          </div>
+          <div class="barber-t">
+            <div class="barber-n">{{ b.name }}</div>
+            {% if b.experience %}
+              <div class="barber-e">{{ b.experience }}</div>
+            {% elif b.bio %}
+              <div class="barber-e">{{ b.bio|striptags|truncatechars:42 }}</div>
+            {% endif %}
+          </div>
+          {% if b.bio or b.barber_services.all %}<div class="barber-ar">▾</div>{% endif %}
+        </summary>
+        {% if b.bio or b.barber_services.all %}
+        <div class="barber-body">
+          {% if b.bio %}<div class="barber-bio">{{ b.bio }}</div>{% endif %}
+          {% if b.barber_services.all %}
+            {% comment %}
+              Список услуг у мастера бывает во весь прайс — показываем начало,
+              иначе «кратко» превращается в простыню.
+            {% endcomment %}
+            {% with svcs=b.barber_services.all %}
+            <div class="barber-svc">
+              {% for bs in svcs|slice:":8" %}
+                <span>{% t bs.service "name" %}</span>
+              {% endfor %}
+              {% if svcs|length > 8 %}
+                <span style="color:var(--muted)">
+                  {% blocktrans with n=svcs|length|add:"-8" %}+ ещё {{ n }}{% endblocktrans %}
+                </span>
+              {% endif %}
+            </div>
+            {% endwith %}
+          {% endif %}
+          <a href="{% url 'barbershop:book' shop.slug %}" class="btn btn-ghost btn-sm barber-book">
+            {% trans "Записаться к мастеру" %}
+          </a>
+        </div>
+        {% endif %}
+      </details>
     {% endfor %}
   </div>
 </section>

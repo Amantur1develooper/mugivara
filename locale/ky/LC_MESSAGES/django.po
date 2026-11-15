@@ -992,3 +992,11 @@ msgstr "Онлайн жазылуу"
 #: templates/barbershop/venue.html
 msgid "Наши мастера"
 msgstr "Биздин устаттар"
+
+#: templates/barbershop/venue.html
+msgid "Записаться к мастеру"
+msgstr "Бул устатка жазылуу"
+
+#: templates/barbershop/venue.html
+msgid "+ ещё %(n)s"
+msgstr "+ дагы %(n)s"
