@@ -58,12 +58,14 @@
       content:'';position:absolute;inset:0;
       background:linear-gradient(180deg,rgba(10,10,11,.55) 0%,rgba(10,10,11,.25) 38%,rgba(10,10,11,.92) 88%,var(--ink) 100%);
     }
-    .hero-ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-             font-family:'Unbounded',sans-serif;font-weight:900;font-size:clamp(120px,34vw,260px);
-             color:rgba(255,255,255,.045);letter-spacing:-.06em;line-height:1}
-    .hero-in{position:relative;width:100%;padding:0 0 clamp(26px,5vw,44px)}
-    .logo{width:66px;height:66px;border-radius:20px;object-fit:cover;background:var(--panel);
-          border:1px solid var(--line-2);margin-bottom:16px;display:block}
+    /* Раньше тут висела огромная буква названия — лишний шум за текстом. */
+    /* padding целиком затирал боковые поля от .wrap — название и логотип
+       прилипали к краю экрана. Трогаем только низ. */
+    .hero-in{position:relative;width:100%;padding-bottom:clamp(26px,5vw,44px)}
+    .logo{width:104px;height:104px;border-radius:26px;object-fit:cover;background:var(--panel);
+          border:1px solid var(--line-2);margin-bottom:18px;display:block;
+          box-shadow:0 14px 34px rgba(0,0,0,.45)}
+    @media (min-width:721px){ .logo{width:124px;height:124px;border-radius:30px} }
     .hero h1{font-family:'Unbounded',sans-serif;font-weight:900;letter-spacing:-.035em;
              font-size:clamp(32px,8vw,64px);line-height:1.02;text-wrap:balance}
     .hero p{margin-top:12px;font-size:clamp(15px,2.4vw,19px);color:#D6D6DA;max-width:46ch;line-height:1.5}
@@ -95,7 +97,11 @@
 
     /* ── секции ── */
     section{padding:clamp(44px,7vw,78px) 0}
-    .eyebrow{font-size:12px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:var(--brand)}
+    /* Надзаголовки были брендовым оранжевым — вместе с кнопками, ценами и
+       баннером его на экране набиралось слишком много. Структуру держит сам
+       заголовок, надзаголовку хватает приглушённого. */
+    .eyebrow{font-size:12px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;
+             color:var(--muted)}
     .h2{font-family:'Unbounded',sans-serif;font-weight:700;letter-spacing:-.03em;
         font-size:clamp(24px,4.4vw,38px);margin-top:10px}
     .sec-head{margin-bottom:clamp(22px,3vw,34px)}
@@ -176,9 +182,9 @@
     .dock .btn{flex:1;box-shadow:0 14px 34px rgba(0,0,0,.5),0 8px 24px rgba(255,77,28,.34)}
     .dock .btn-wa{flex:0 0 54px;padding:14px 0}
     @media (min-width:721px){ .dock{display:none} }
-    /* Фирменные орнаменты платформы на тёмном лендинге приглушаем:
-       они должны читаться фоном, а не спорить с прайсом. */
-    .kg-ethno-bg{opacity:.4}
+    /* Фирменные орнаменты платформы на тёмном лендинге почти гасим: они
+       проступали сквозь прайс кругами и мешали читать цены. */
+    .kg-ethno-bg{opacity:.1}
 
     @media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} html{scroll-behavior:auto} }
   </style>
@@ -201,11 +207,7 @@
 <!-- ОБЛОЖКА -->
 <header class="hero{% if not shop.cover %} bare{% endif %}">
   <div class="hero-bg">
-    {% if shop.cover %}
-      <img src="{{ shop.cover.url }}" alt="">
-    {% else %}
-      {# без обложки: буква названия вместо пустоты #}
-      <div class="hero-ph">{% t shop "name" as shopname %}{{ shopname|slice:":1" }}</div>
+    {% if shop.cover %}<img src="{{ shop.cover.url }}" alt="">
     {% endif %}
   </div>
   <div class="hero-in wrap">
