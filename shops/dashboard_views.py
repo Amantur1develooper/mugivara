@@ -462,7 +462,7 @@ def shop_price_tags(request, branch_id):
     в выдачу, если нужно напечатать заготовки.
     """
     from io import BytesIO
-    from .pricetags import build_pdf
+    from .pricetags import DEFAULT_LAYOUT, LAYOUTS, build_pdf
 
     branch = get_object_or_404(StoreBranch.objects.select_related("store"), id=branch_id)
     if not _has_branch_access(request.user, branch):
@@ -491,7 +491,11 @@ def shop_price_tags(request, branch_id):
         })
 
     buf = BytesIO()
-    build_pdf(buf, rows, title=f"Ценники — {branch.store.name_ru}, {branch.name_ru}")
+    # размер ценника: ?size=big — прежние 90×50 под старые держатели
+    size = (request.GET.get("size") or "").strip()
+    size = size if size in LAYOUTS else DEFAULT_LAYOUT
+    build_pdf(buf, rows, title=f"Ценники — {branch.store.name_ru}, {branch.name_ru}",
+              layout=size)
     buf.seek(0)
 
     safe = "".join(ch if ch.isalnum() or ch in " -_" else "_"

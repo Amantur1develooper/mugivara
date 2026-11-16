@@ -537,12 +537,25 @@ const PM_CATS = [
     <div class="db-page-title">📦 Товары и склад филиала</div>
     <div class="db-breadcrumb">{{ store.name_ru }} — {{ branch.name_ru }} · остатки (склад) именно этого филиала — не путать со складом сети</div>
   </div>
+  <style>
+    /* Два размера ценника держим рядом: обычный — три в ряд, второй —
+       прежние 90×50 для тех, кто уже купил держатели под них. */
+    .tags-pick{display:inline-flex;gap:0}
+    .tags-pick .db-btn:first-child{border-top-right-radius:0;border-bottom-right-radius:0}
+    .tags-pick .tags-big{border-top-left-radius:0;border-bottom-left-radius:0;
+                         margin-left:-1px;font-size:11px;padding-left:9px;padding-right:9px;
+                         color:var(--muted)}
+  </style>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <a href="{% url 'dashboard:shop_category_list' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📁 Категории</a>
     <a href="{% url 'dashboard:shop_stop_list' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">🛑 Стоп-лист</a>
     <a href="{% url 'dashboard:shop_orders' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">📋 Заказы</a>
     <a href="{% url 'dashboard:shop_stock_export' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">⬇️ Excel</a>
-    <a href="{% url 'dashboard:shop_price_tags' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">🏷 Ценники PDF</a>
+    <span class="tags-pick">
+      <a href="{% url 'dashboard:shop_price_tags' branch.id %}" class="db-btn db-btn-ghost db-btn-sm">🏷 Ценники PDF</a>
+      <a href="{% url 'dashboard:shop_price_tags' branch.id %}?size=big"
+         class="db-btn db-btn-ghost db-btn-sm tags-big" title="Прежний крупный ценник под старые держатели">90×50</a>
+    </span>
     <a href="{% url 'dashboard:shop_home' %}" class="db-btn db-btn-ghost db-btn-sm">← Назад</a>
   </div>
 </div>
