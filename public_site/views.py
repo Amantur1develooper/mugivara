@@ -1,5 +1,6 @@
 from django.db.models import Q, F
 from core.models import Restaurant, Branch
+from catalog import serving
 from catalog.models import BranchCategory, BranchCategoryItem, BranchItem
 from django.utils.translation import get_language
 from integrations.tasks import notify_new_order
@@ -43,6 +44,16 @@ from decimal import Decimal
 def add_to_cart(request, branch_item_id):
     bi = get_object_or_404(BranchItem, id=branch_item_id, is_available=True,
                            delivery_available=True)
+
+    # Часы подачи: завтраки после одиннадцати в корзину не кладём, даже если
+    # страницу открыли утром и она провисела до обеда.
+    servable, window = serving.item_window(bi)
+    if not servable:
+        text = serving.closed_message(window)
+        if request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"ok": False, "error": text}, status=400)
+        messages.error(request, text)
+        return redirect(request.META.get("HTTP_REFERER", "/"))
 
     qty = int(request.POST.get("qty") or 1)
     qty = max(1, min(qty, 99))
@@ -583,10 +594,24 @@ def _build_branch_menu_context(request, branch):
         .prefetch_related(rows_prefetch)
         .order_by("sort_order", "id")
     )
+    # Часы подачи: блюдо вне своего окна показываем, но заказать не даём —
+    # гость должен видеть, что завтраки есть, просто уже не время.
+    now_t = serving.now_time()
     menu = []
     for bc in categories:
-        if bc.prefetched_items:
-            menu.append({"branch_category": bc, "items": bc.prefetched_items})
+        if not bc.prefetched_items:
+            continue
+        cat_open = bc.is_servable_at(now_t)
+        for row in bc.prefetched_items:
+            bi = row.branch_item
+            if bi.has_serving_window:
+                row.closed = not bi.is_servable_at(now_t)
+                row.window_text = bi.serving_window_text
+            else:
+                row.closed = not cat_open
+                row.window_text = bc.serving_window_text
+        menu.append({"branch_category": bc, "items": bc.prefetched_items,
+                     "window_text": bc.serving_window_text, "closed": not cat_open})
 
     _annotate_hot(menu)
 
@@ -864,6 +889,16 @@ def checkout(request, branch_id: int):
 
     if qty_total == 0 and cx_qty == 0:
         messages.error(request, _("Корзина пуста."))
+        return redirect("public_site:cart_detail", branch_id=branch.id)
+
+    # Корзину могли собрать утром, а оформить в обед — проверяем часы подачи
+    # ещё раз и убираем то, что уже не подают.
+    late = [r for r in rows if not serving.item_window(r["branch_item"])[0]]
+    if late:
+        for r in late:
+            set_qty(request, branch.id, r["branch_item"].id, 0)
+            messages.error(request, _("«%(dish)s» уже не подают — убрали из корзины.")
+                           % {"dish": r["branch_item"].item.name_ru})
         return redirect("public_site:cart_detail", branch_id=branch.id)
 
     name = (request.POST.get("name") or "").strip()

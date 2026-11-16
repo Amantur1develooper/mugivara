@@ -31,6 +31,7 @@ urlpatterns = [
     path("restaurant/<int:restaurant_id>/print/<int:config_id>/download/config/", views.restaurant_print_download_config, name="restaurant_print_agent_config_dl"),
     path("restaurant/<int:restaurant_id>/print/download/agent/",   views.restaurant_print_download_agent,    name="restaurant_print_download_agent"),
     path("branch-category/<int:bc_id>/printer-group/",            views.category_printer_group,  name="category_printer_group"),
+    path("branch-category/<int:bc_id>/hours/",                    views.category_hours,          name="category_hours"),
     path("branch-category-item/<int:bci_id>/printer-group/",      views.item_printer_group,      name="item_printer_group"),
 
     path("branch/<int:branch_id>/edit/",     views.branch_edit,  name="branch_edit"),

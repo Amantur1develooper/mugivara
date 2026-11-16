@@ -293,6 +293,21 @@
   <span style="font-size:16px">⠿</span> Перетащите или используйте стрелки ◀ ▶ для изменения порядка
 </p>
 
+<style>
+  /* Строка раздела и так плотная, поэтому часы держим в одну линию:
+     узкие поля, подпись короткая, пояснение следом. */
+  .cat-hours{display:flex;align-items:center;gap:5px;margin-top:6px;flex-wrap:nowrap}
+  .cat-hours-lbl{font-size:11px;color:var(--muted);font-weight:700;flex:none}
+  .cat-hours input{font:inherit;font-size:11.5px;padding:2px 4px;border-radius:7px;width:74px;
+                   border:1.5px solid var(--border);background:var(--bg);color:var(--text);flex:none}
+  .cat-hours-dash{color:var(--muted);font-size:12px;flex:none}
+  .cat-hours-note{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;
+                  text-overflow:ellipsis}
+</style>
+<div style="font-size:12.5px;color:var(--muted);margin:-6px 0 12px">
+  Часы подачи: оставьте пустым — раздел доступен весь день. Например,
+  «Завтраки» с пустым началом и 11:00 в конце можно заказать только до одиннадцати.
+</div>
 <ul class="cat-list" id="catList">
 {% for bc in categories %}
 <li class="cat-row {% if not bc.is_active %}inactive{% endif %}"
@@ -306,6 +321,18 @@
   <div style="flex:1;min-width:0">
     <div class="cat-name">{{ bc.category.name_ru }}</div>
     <div class="cat-ms">{{ bc.category.menu_set.name }}</div>
+    {# Часы подачи: «завтраки до 11:00». Пусто — весь день. #}
+    <div class="cat-hours">
+      <span class="cat-hours-lbl">🕐</span>
+      <input type="time" data-bc="{{ bc.id }}" data-kind="from"
+             value="{{ bc.available_from|time:'H:i' }}" onchange="setHours(this)">
+      <span class="cat-hours-dash">—</span>
+      <input type="time" data-bc="{{ bc.id }}" data-kind="to"
+             value="{{ bc.available_to|time:'H:i' }}" onchange="setHours(this)">
+      <span class="cat-hours-note" id="hours-note-{{ bc.id }}">
+        {% if bc.has_serving_window %}{{ bc.serving_window_text }}{% else %}весь день{% endif %}
+      </span>
+    </div>
   </div>
   {% if printer_groups %}
   <select class="pg-select" data-bc="{{ bc.id }}"
@@ -721,6 +748,27 @@ function removeCat(btn) {
     showToast(`«${name}» убрана`);
   })
   .catch(() => showToast('Ошибка сети', 'err'));
+}
+
+// ── часы подачи раздела ────────────────────────────────────────────────────
+const HOURS_URL = "{% url 'dashboard:category_hours' 99999 %}";
+function setHours(input){
+  const bc = input.dataset.bc;
+  const row = input.closest('.cat-hours');
+  const body = new URLSearchParams({
+    available_from: row.querySelector('[data-kind=from]').value,
+    available_to:   row.querySelector('[data-kind=to]').value,
+  });
+  fetch(HOURS_URL.replace('99999', bc), {
+    method: 'POST', body: body,
+    headers: {'X-CSRFToken': CSRF, 'Content-Type': 'application/x-www-form-urlencoded'},
+  })
+    .then(r => r.json())
+    .then(d => {
+      document.getElementById('hours-note-' + bc).textContent = d.text || 'весь день';
+      if (window.showToast) showToast('Часы подачи сохранены');
+    })
+    .catch(() => alert('Не получилось сохранить часы'));
 }
 </script>
 {% endblock %}

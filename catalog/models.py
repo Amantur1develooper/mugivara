@@ -151,7 +151,55 @@ class BranchMenuSet(TimeStampedModel):
         # было: return (self.branch + '-' + self.menu_set)  (объекты)
         return f"{self.branch.name_ru} — {self.menu_set.name}"
     
-class BranchCategory(TimeStampedModel):
+class ServingWindowMixin(models.Model):
+    """Часы подачи: «завтраки до 11:00», «бизнес-ланч с 12 до 15».
+
+    Пусто — подаём весь день. Если конец меньше начала, окно переходит через
+    полночь: ночное меню с 22:00 до 04:00 — обычное дело.
+    """
+    available_from = models.TimeField(
+        "Подаём с", null=True, blank=True,
+        help_text="Оставьте пустым, если доступно весь день",
+    )
+    available_to = models.TimeField(
+        "Подаём до", null=True, blank=True,
+        help_text="Например, завтраки — до 11:00",
+    )
+
+    class Meta:
+        abstract = True
+
+    @property
+    def has_serving_window(self):
+        return bool(self.available_from or self.available_to)
+
+    def is_servable_at(self, moment):
+        """Подаём ли в это время суток."""
+        start, end = self.available_from, self.available_to
+        if not (start or end):
+            return True
+        if start and end:
+            if start <= end:
+                return start <= moment <= end
+            return moment >= start or moment <= end     # окно через полночь
+        if start:
+            return moment >= start
+        return moment <= end
+
+    @property
+    def serving_window_text(self):
+        """«до 11:00», «с 12:00», «с 12:00 до 15:00»."""
+        start, end = self.available_from, self.available_to
+        if start and end:
+            return f"с {start:%H:%M} до {end:%H:%M}"
+        if start:
+            return f"с {start:%H:%M}"
+        if end:
+            return f"до {end:%H:%M}"
+        return ""
+
+
+class BranchCategory(ServingWindowMixin, TimeStampedModel):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="branch_categories")
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="branch_categories")
     sort_order = models.PositiveIntegerField(default=0)
@@ -173,7 +221,7 @@ class BranchCategory(TimeStampedModel):
     def __str__(self):
         return (self.branch.name_ru + '-' + self.category.name_ru )
 
-class BranchItem(TimeStampedModel):
+class BranchItem(ServingWindowMixin, TimeStampedModel):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name="branch_items")
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="branch_items")
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)

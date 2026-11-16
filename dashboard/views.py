@@ -1045,9 +1045,14 @@ def item_edit(request, branch_item_id):
         if photo:
             item.photo = photo
 
+        # Часы подачи блюда: пусто — подаём весь день
+        bi.available_from = _time_or_none(request.POST.get("available_from"))
+        bi.available_to = _time_or_none(request.POST.get("available_to"))
+
         item.save()
         bi.save(update_fields=["price", "old_price", "promo_label", "label",
-                               "is_available", "delivery_available", "updated_at"])
+                               "is_available", "delivery_available",
+                               "available_from", "available_to", "updated_at"])
 
         # Update category assignment
         new_cat_id = request.POST.get("branch_category_id", "").strip()
@@ -1615,6 +1620,29 @@ def branch_categories(request, branch_id):
         "available_cats": available_cats,
         "printer_groups": printer_groups,
     })
+
+
+def _time_or_none(raw):
+    """«08:00» → time(8, 0); пусто или мусор → None (подаём весь день)."""
+    from django.utils.dateparse import parse_time
+    try:
+        return parse_time((raw or "").strip()) or None
+    except ValueError:
+        return None
+
+
+@require_POST
+@login_required(login_url="dashboard:login")
+def category_hours(request, bc_id):
+    """Часы подачи раздела: «завтраки до 11:00»."""
+    bc = get_object_or_404(BranchCategory, id=bc_id)
+    if not _has_branch_access(request.user, bc.branch):
+        return JsonResponse({"ok": False}, status=403)
+
+    bc.available_from = _time_or_none(request.POST.get("available_from"))
+    bc.available_to = _time_or_none(request.POST.get("available_to"))
+    bc.save(update_fields=["available_from", "available_to", "updated_at"])
+    return JsonResponse({"ok": True, "text": bc.serving_window_text})
 
 
 @require_POST

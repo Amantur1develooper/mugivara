@@ -129,6 +129,26 @@
         </div>
 
         <div class="db-form-group">
+          <label class="db-label">🕐 Часы подачи</label>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <input class="db-input" name="available_from" type="time" style="width:auto"
+                   value="{{ bi.available_from|time:'H:i' }}">
+            <span style="color:var(--muted)">—</span>
+            <input class="db-input" name="available_to" type="time" style="width:auto"
+                   value="{{ bi.available_to|time:'H:i' }}">
+            <span style="font-size:12.5px;color:var(--muted)">
+              {% if bi.has_serving_window %}сейчас: {{ bi.serving_window_text }}{% else %}сейчас: весь день{% endif %}
+            </span>
+          </div>
+          <div class="db-hint">
+            Оставьте пустым — блюдо доступно весь день. Заполните, если его заказывают
+            только в определённые часы: завтрак до 11:00, бизнес-ланч с 12:00 до 15:00.
+            Вне этих часов блюдо видно в меню, но заказать его нельзя.
+            Часы самого блюда важнее часов раздела.
+          </div>
+        </div>
+
+        <div class="db-form-group">
           <label class="db-label" for="label">Метка на карточке</label>
           <input class="db-input" id="label" name="label" type="text" maxlength="20"
                  placeholder="Хит, Новинка, Острое…" value="{{ bi.label }}">

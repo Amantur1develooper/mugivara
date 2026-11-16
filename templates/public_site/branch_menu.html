@@ -318,6 +318,21 @@
     gap: 18px;
   }
 
+  /* Блюдо вне часов подачи: видно, что оно есть, но заказать нельзя. */
+  .dish-closed { opacity:.52; }
+  .dish-closed .dish-photo img { filter:grayscale(.75); }
+  .dish-window {
+    display:inline-flex; align-items:center; gap:5px; margin-top:6px;
+    padding:4px 9px; border-radius:999px; font-size:11.5px; font-weight:700;
+    background:var(--bg); border:1px solid var(--border); color:var(--muted);
+  }
+  .dish-add-btn[disabled] { opacity:.4; cursor:not-allowed; box-shadow:none; }
+  .cat-window {
+    font-size:12px; font-weight:700; color:var(--muted);
+    background:var(--card); border:1px solid var(--border);
+    border-radius:999px; padding:3px 10px; margin-left:8px; white-space:nowrap;
+  }
+
   .dish-card {
     background: var(--card);
     border: 1.5px solid var(--border);
@@ -958,7 +973,7 @@ const T = {
         {# заголовок категории #}
         <div class="bm-cat-header">
           <div class="bm-cat-line"></div>
-          <h2 class="bm-cat-title">{% t c.branch_category.category "name" %}</h2>
+          <h2 class="bm-cat-title">{% t c.branch_category.category "name" %}{% if c.window_text %}<span class="cat-window">🕐 {{ c.window_text }}</span>{% endif %}</h2>
           <span class="bm-cat-count">{{ c.items|length }}</span>
           <div class="bm-cat-line"></div>
         </div>
@@ -969,7 +984,7 @@ const T = {
             {% with bi=row.branch_item dish=row.branch_item.item %}
             {% t dish "name" as dish_name %}
             {% t dish "description" as dish_desc %}
-            <article class="dish-card{% if bi.is_on_promo %} on-promo{% endif %}" data-bi-id="{{ bi.id }}"
+            <article class="dish-card{% if bi.is_on_promo %} on-promo{% endif %}{% if row.closed %} dish-closed{% endif %}" data-bi-id="{{ bi.id }}"
               data-dish-name="{{ dish_name }}"
               data-dish-desc="{{ dish_desc }}"
               data-dish-price="{{ bi.price|floatformat:'0' }}"
@@ -1003,6 +1018,9 @@ const T = {
               {# BODY #}
               <div class="dish-body">
                 <div class="dish-name dish-clickable">{{ dish_name }}</div>
+                {% if row.closed and row.window_text %}
+                  <div class="dish-window">🕐 {% blocktrans with w=row.window_text %}Подаём {{ w }}{% endblocktrans %}</div>
+                {% endif %}
 
                 {% if dish_desc %}
                   <div class="dish-desc dish-clickable">{{ dish_desc }}</div>
@@ -1031,12 +1049,17 @@ const T = {
                   </div>
 
                   {# форма добавления + кнопка #}
+                  {% if row.closed %}
+                    <button type="button" class="dish-add-btn" disabled
+                            title="{% blocktrans with w=row.window_text %}Подаём {{ w }}{% endblocktrans %}">+</button>
+                  {% else %}
                   <form action="{% url 'public_site:add_to_cart' bi.id %}" method="post" data-add-to-cart>
                     {% csrf_token %}
                     <button type="submit" class="dish-add-btn" aria-label="{% trans 'Добавить в корзину' %}">
                       +
                     </button>
                   </form>
+                  {% endif %}
                 </div>
               </div>
 
