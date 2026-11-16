@@ -44,28 +44,24 @@
     @media (min-width:860px){ .bar-nav{display:flex} }
 
     /* ── обложка ── */
-    .hero{position:relative;min-height:clamp(420px,70vh,600px);display:flex;align-items:flex-end;overflow:hidden}
-    .hero.bare{min-height:clamp(320px,46vh,420px)}
-    .hero.bare .hero-bg{
+    /* Фото-обложку убрали: заведения грузили случайные кадры, и страница от
+       этого только пестрила. Верх держат логотип, название и две кнопки. */
+    .hero{position:relative;min-height:clamp(340px,48vh,460px);display:flex;
+          align-items:flex-end;overflow:hidden}
+    .hero-bg{
+      position:absolute;inset:0;
       background:
-        radial-gradient(ellipse 80% 60% at 20% 0%, rgba(255,77,28,.22), transparent 60%),
-        radial-gradient(ellipse 70% 60% at 95% 20%, rgba(255,138,61,.12), transparent 62%),
-        linear-gradient(180deg,#17171A,#0A0A0B);
+        radial-gradient(ellipse 80% 60% at 18% 0%, rgba(255,77,28,.18), transparent 62%),
+        radial-gradient(ellipse 70% 60% at 96% 18%, rgba(255,138,61,.10), transparent 64%),
+        linear-gradient(180deg,#171719,#0A0A0B);
     }
-    .hero-bg{position:absolute;inset:0;background:#131315}
-    .hero-bg img{width:100%;height:100%;object-fit:cover}
-    .hero-bg::after{
-      content:'';position:absolute;inset:0;
-      background:linear-gradient(180deg,rgba(10,10,11,.55) 0%,rgba(10,10,11,.25) 38%,rgba(10,10,11,.92) 88%,var(--ink) 100%);
-    }
-    /* Раньше тут висела огромная буква названия — лишний шум за текстом. */
     /* padding целиком затирал боковые поля от .wrap — название и логотип
        прилипали к краю экрана. Трогаем только низ. */
     .hero-in{position:relative;width:100%;padding-bottom:clamp(26px,5vw,44px)}
-    .logo{width:104px;height:104px;border-radius:26px;object-fit:cover;background:var(--panel);
-          border:1px solid var(--line-2);margin-bottom:18px;display:block;
-          box-shadow:0 14px 34px rgba(0,0,0,.45)}
-    @media (min-width:721px){ .logo{width:124px;height:124px;border-radius:30px} }
+    .logo{width:148px;height:148px;border-radius:34px;object-fit:cover;background:var(--panel);
+          border:1px solid var(--line-2);margin-bottom:20px;display:block;
+          box-shadow:0 18px 44px rgba(0,0,0,.5)}
+    @media (min-width:721px){ .logo{width:180px;height:180px;border-radius:40px} }
     .hero h1{font-family:'Unbounded',sans-serif;font-weight:900;letter-spacing:-.035em;
              font-size:clamp(32px,8vw,64px);line-height:1.02;text-wrap:balance}
     .hero p{margin-top:12px;font-size:clamp(15px,2.4vw,19px);color:#D6D6DA;max-width:46ch;line-height:1.5}
@@ -127,19 +123,21 @@
             overflow:hidden;transition:border-color .2s}
     .barber[open]{border-color:var(--line-2)}
     .barber > summary{
-      display:flex;align-items:center;gap:15px;padding:14px 15px;cursor:pointer;
+      display:flex;align-items:center;gap:16px;padding:14px;cursor:pointer;
       list-style:none;-webkit-tap-highlight-color:transparent;
     }
     .barber > summary::-webkit-details-marker{display:none}
     .barber.flat > summary{cursor:default}
     /* Лицо мастера — то, на что смотрят в первую очередь, мелкая аватарка
        этого не даёт. Держим крупной и на телефоне, и на компьютере. */
-    .barber-ph{width:96px;height:96px;border-radius:18px;flex:none;background:var(--panel-2);
-               display:flex;align-items:center;justify-content:center;font-size:40px;overflow:hidden}
-    @media (min-width:640px){ .barber-ph{width:104px;height:104px} }
-    .barber-ph img{width:100%;height:100%;object-fit:cover}
+    .barber-ph{width:128px;height:128px;border-radius:20px;flex:none;background:var(--panel-2);
+               display:flex;align-items:center;justify-content:center;font-size:52px;overflow:hidden}
+    @media (min-width:640px){ .barber-ph{width:148px;height:148px;border-radius:22px} }
+    /* Портрет режется по квадрату, и при центровке по середине голова
+       норовит уехать за верхний край — смещаем кадр вверх. */
+    .barber-ph img{width:100%;height:100%;object-fit:cover;object-position:50% 28%}
     .barber-t{flex:1;min-width:0}
-    .barber-n{font-weight:700;font-size:17px;line-height:1.25}
+    .barber-n{font-weight:700;font-size:18px;line-height:1.25}
     .barber-e{font-size:13.5px;color:var(--muted);margin-top:5px;
               white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .barber-ar{flex:none;width:28px;height:28px;border-radius:50%;background:var(--panel-2);
@@ -205,11 +203,8 @@
 </div>
 
 <!-- ОБЛОЖКА -->
-<header class="hero{% if not shop.cover %} bare{% endif %}">
-  <div class="hero-bg">
-    {% if shop.cover %}<img src="{{ shop.cover.url }}" alt="">
-    {% endif %}
-  </div>
+<header class="hero">
+  <div class="hero-bg"></div>
   <div class="hero-in wrap">
     {% if shop.logo %}<img class="logo" src="{{ shop.logo.url }}" alt="{% t shop 'name' %}">{% endif %}
     <h1>{% t shop "name" %}</h1>
