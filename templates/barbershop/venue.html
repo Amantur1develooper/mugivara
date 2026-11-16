@@ -115,41 +115,40 @@
     .srv-p{font-family:'Unbounded',sans-serif;font-weight:700;font-size:17px;white-space:nowrap}
     .srv-m{font-size:12.5px;color:var(--muted);margin-top:3px}
 
-    /* ── мастера: карточка раскрывается по нажатию ── */
-    .barbers{display:grid;gap:12px;grid-template-columns:1fr;align-items:start}
-    @media (min-width:640px){ .barbers{grid-template-columns:1fr 1fr} }
-    @media (min-width:980px){ .barbers{grid-template-columns:repeat(3,1fr)} }
+    /* ── мастера: фото во всю карточку, раскрывается по нажатию ── */
+    /* Две колонки с телефона: лицо мастера — главное в этом разделе, и в
+       строчку с мелкой аватаркой оно не читалось. */
+    .barbers{display:grid;gap:12px;grid-template-columns:1fr 1fr;align-items:start}
+    @media (min-width:900px){ .barbers{grid-template-columns:repeat(3,1fr)} }
+    @media (min-width:1280px){ .barbers{grid-template-columns:repeat(4,1fr)} }
     .barber{background:var(--panel);border:1px solid var(--line);border-radius:var(--rad);
             overflow:hidden;transition:border-color .2s}
     .barber[open]{border-color:var(--line-2)}
-    .barber > summary{
-      display:flex;align-items:center;gap:16px;padding:14px;cursor:pointer;
-      list-style:none;-webkit-tap-highlight-color:transparent;
-    }
+    .barber > summary{display:block;padding:0;cursor:pointer;position:relative;
+                      list-style:none;-webkit-tap-highlight-color:transparent}
     .barber > summary::-webkit-details-marker{display:none}
     .barber.flat > summary{cursor:default}
-    /* Лицо мастера — то, на что смотрят в первую очередь, мелкая аватарка
-       этого не даёт. Держим крупной и на телефоне, и на компьютере. */
-    .barber-ph{width:128px;height:128px;border-radius:20px;flex:none;background:var(--panel-2);
-               display:flex;align-items:center;justify-content:center;font-size:52px;overflow:hidden}
-    @media (min-width:640px){ .barber-ph{width:148px;height:148px;border-radius:22px} }
-    /* Портрет режется по квадрату, и при центровке по середине голова
-       норовит уехать за верхний край — смещаем кадр вверх. */
-    .barber-ph img{width:100%;height:100%;object-fit:cover;object-position:50% 28%}
-    .barber-t{flex:1;min-width:0}
-    .barber-n{font-weight:700;font-size:18px;line-height:1.25}
-    .barber-e{font-size:13.5px;color:var(--muted);margin-top:5px;
-              white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .barber-ar{flex:none;width:28px;height:28px;border-radius:50%;background:var(--panel-2);
-               border:1px solid var(--line);color:#C9C9CE;font-size:11px;
+    .barber-ph{width:100%;aspect-ratio:3/4;background:var(--panel-2);display:flex;
+               align-items:center;justify-content:center;font-size:54px;overflow:hidden}
+    /* Портрет режется по кадру, и при центровке по середине голова норовит
+       уехать за верхний край — смещаем кадр вверх. */
+    .barber-ph img{width:100%;height:100%;object-fit:cover;object-position:50% 25%}
+    .barber-t{padding:12px 13px 14px;display:flex;align-items:flex-start;gap:8px}
+    .barber-txt{min-width:0;flex:1}
+    .barber-n{font-weight:700;font-size:16px;line-height:1.25;
+              overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .barber-e{font-size:13px;color:var(--muted);margin-top:4px;
+              overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .barber-ar{flex:none;width:26px;height:26px;border-radius:50%;background:var(--panel-2);
+               border:1px solid var(--line);color:#C9C9CE;font-size:10px;
                display:flex;align-items:center;justify-content:center;transition:transform .25s}
     .barber[open] .barber-ar{transform:rotate(180deg)}
-    .barber-body{padding:0 15px 15px;border-top:1px solid var(--line);margin-top:-1px}
-    .barber-bio{font-size:14.5px;line-height:1.55;color:#D2D2D7;padding-top:13px;white-space:pre-line}
-    .barber-svc{display:flex;flex-wrap:wrap;gap:6px;margin-top:13px}
-    .barber-svc span{padding:6px 11px;border-radius:9px;background:var(--panel-2);
-                     border:1px solid var(--line);font-size:12.5px;color:#CFCFD4}
-    .barber-book{display:inline-flex;margin-top:14px}
+    .barber-body{padding:0 13px 14px;border-top:1px solid var(--line)}
+    .barber-bio{font-size:14px;line-height:1.55;color:#D2D2D7;padding-top:12px;white-space:pre-line}
+    .barber-svc{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+    .barber-svc span{padding:5px 10px;border-radius:9px;background:var(--panel-2);
+                     border:1px solid var(--line);font-size:12px;color:#CFCFD4}
+    .barber-book{display:inline-flex;margin-top:13px}
 
     /* ── контакты ── */
     .cards{display:grid;gap:12px;grid-template-columns:1fr}
@@ -292,14 +291,16 @@
             {% if b.photo %}<img src="{{ b.photo.url }}" alt="{{ b.name }}" loading="lazy">{% else %}👤{% endif %}
           </div>
           <div class="barber-t">
-            <div class="barber-n">{{ b.name }}</div>
-            {% if b.experience %}
-              <div class="barber-e">{{ b.experience }}</div>
-            {% elif b.bio %}
-              <div class="barber-e">{{ b.bio|striptags|truncatechars:42 }}</div>
-            {% endif %}
+            <div class="barber-txt">
+              <div class="barber-n">{{ b.name }}</div>
+              {% if b.experience %}
+                <div class="barber-e">{{ b.experience }}</div>
+              {% elif b.bio %}
+                <div class="barber-e">{{ b.bio|striptags|truncatechars:34 }}</div>
+              {% endif %}
+            </div>
+            {% if b.bio or b.barber_services.all %}<div class="barber-ar">▾</div>{% endif %}
           </div>
-          {% if b.bio or b.barber_services.all %}<div class="barber-ar">▾</div>{% endif %}
         </summary>
         {% if b.bio or b.barber_services.all %}
         <div class="barber-body">
