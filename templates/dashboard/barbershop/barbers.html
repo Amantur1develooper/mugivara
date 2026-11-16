@@ -2,6 +2,49 @@
 {% block title %}{{ shop.name }} — Мастера{% endblock %}
 {% block nav_barbershop %}active{% endblock %}
 {% block content %}
+<style>
+  .svc-head{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+  .svc-count{font-size:12px;color:var(--muted)}
+  .svc-all{margin-left:auto;border:1.5px solid var(--border);background:var(--card);
+           color:var(--text);font:inherit;font-size:12px;font-weight:600;
+           padding:5px 12px;border-radius:9px;cursor:pointer;transition:border-color .15s}
+  .svc-all:hover{border-color:var(--accent)}
+</style>
+<script>
+  // У барбершопа услуг бывает два десятка, и новому мастеру обычно ставят
+  // все сразу — отмечать их по одной мучительно.
+  function _svcParts(el){
+    const head = el.closest('.svc-head') || el.closest('.svc-box').previousElementSibling;
+    const box  = (el.closest('.svc-head') ? el.closest('.svc-head').nextElementSibling
+                                          : el.closest('.svc-box'));
+    return {
+      head: head,
+      boxes: [...box.querySelectorAll('input[type=checkbox][name=services]')],
+      btn: head ? head.querySelector('.svc-all') : null,
+      count: head ? head.querySelector('.svc-count') : null,
+    };
+  }
+
+  function _svcRefresh(p){
+    const on = p.boxes.filter(b => b.checked).length;
+    if (p.count) p.count.textContent = on ? `выбрано ${on} из ${p.boxes.length}`
+                                          : `${p.boxes.length} услуг`;
+    if (p.btn) p.btn.textContent = (on === p.boxes.length && on) ? 'Снять все' : 'Выбрать все';
+  }
+
+  function toggleAllServices(btn){
+    const p = _svcParts(btn);
+    const turnOn = p.boxes.some(b => !b.checked);
+    p.boxes.forEach(b => { b.checked = turnOn; });
+    _svcRefresh(p);
+  }
+
+  function syncServiceCount(input){ _svcRefresh(_svcParts(input)); }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('.svc-all').forEach(b => _svcRefresh(_svcParts(b)));
+  });
+</script>
 <div class="db-topbar">
   <div>
     <div class="db-page-title">{{ shop.name }}</div>
@@ -34,11 +77,17 @@
       <input class="db-input" type="file" name="photo" accept="image/*">
     </div>
     <div class="db-form-group">
-      <label class="db-label">Услуги мастера</label>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;padding:12px;background:var(--bg);border-radius:10px">
+      <div class="svc-head">
+        <label class="db-label" style="margin:0">Услуги мастера</label>
+        {% if all_services %}
+          <span class="svc-count"></span>
+          <button type="button" class="svc-all" onclick="toggleAllServices(this)">Выбрать все</button>
+        {% endif %}
+      </div>
+      <div class="svc-box" style="display:flex;flex-wrap:wrap;gap:10px;padding:12px;background:var(--bg);border-radius:10px">
         {% for svc in all_services %}
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
-          <input type="checkbox" name="services" value="{{ svc.id }}"> {{ svc.name }}
+          <input type="checkbox" name="services" value="{{ svc.id }}" onchange="syncServiceCount(this)"> {{ svc.name }}
         </label>
         {% endfor %}
         {% if not all_services %}<span style="font-size:13px;color:var(--muted)">Сначала добавьте услуги</span>{% endif %}
@@ -92,11 +141,17 @@
       <div style="margin-bottom:12px"><label class="db-label">О мастере</label><textarea class="db-textarea" name="bio" style="min-height:50px">{{ barber.bio }}</textarea></div>
       <div style="margin-bottom:12px"><label class="db-label">Новое фото</label><input class="db-input" type="file" name="photo" accept="image/*"></div>
       <div style="margin-bottom:16px">
-        <label class="db-label">Услуги</label>
-        <div style="display:flex;flex-wrap:wrap;gap:10px;padding:10px;background:var(--card);border-radius:10px">
+        <div class="svc-head">
+          <label class="db-label" style="margin:0">Услуги</label>
+          {% if all_services %}
+            <span class="svc-count"></span>
+            <button type="button" class="svc-all" onclick="toggleAllServices(this)">Выбрать все</button>
+          {% endif %}
+        </div>
+        <div class="svc-box" style="display:flex;flex-wrap:wrap;gap:10px;padding:10px;background:var(--card);border-radius:10px">
           {% for svc in all_services %}
           <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
-            <input type="checkbox" name="services" value="{{ svc.id }}" {% if svc in barber.services.all %}checked{% endif %}> {{ svc.name }}
+            <input type="checkbox" name="services" value="{{ svc.id }}" {% if svc in barber.services.all %}checked{% endif %} onchange="syncServiceCount(this)"> {{ svc.name }}
           </label>
           {% endfor %}
         </div>
