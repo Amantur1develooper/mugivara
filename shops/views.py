@@ -9,6 +9,7 @@ from django.db import transaction
 from .cart import dec, get_cart, get_mode, get_shop_cart, clear_shop_cart, save_cart, set_mode  # ✅ добавь это
 from django.db.models import Prefetch
 from . import stock as shop_stock
+from core.phones import wa_digits
 from .models import Store, StoreBranch, StoreCategory, StoreProduct, StoreStock
 from urllib.parse import quote
 import re
@@ -505,7 +506,8 @@ def cx_cart_remove(request, branch_id, item_id):
 
 
 def _wa_digits(phone: str) -> str:
-    return re.sub(r"\D", "", phone or "")
+    """Цифры для wa.me — с кодом страны, даже если номер записан по-местному."""
+    return wa_digits(phone)
 
 def _build_shop_order_text(order, items, is_delivery: bool) -> str:
     # items: список (name, qty, price, line_total)
@@ -533,7 +535,8 @@ from django.http import HttpResponseNotAllowed
 from django.contrib import messages
 
 def _wa_digits(phone: str) -> str:
-    return re.sub(r"\D", "", phone or "")
+    """Цифры для wa.me — с кодом страны, даже если номер записан по-местному."""
+    return wa_digits(phone)
 
 def _build_shop_order_text(order, items, is_delivery: bool) -> str:
     lines = []
@@ -762,12 +765,13 @@ def order_success(request, branch_id, order_id):
     text = request.session.get("shop_last_order_text", "")
 
     # wa number
-    phone_digits = "".join(ch for ch in (branch.phone or "") if ch.isdigit())
-    wa_phone = phone_digits
+    # Номер мог попасть в базу по-местному ещё до проверки — приводим
+    # к международному виду, иначе ссылка wa.me ведёт в никуда.
+    wa_phone = wa_digits(branch.phone)
     wa_url = ""
     if wa_phone:
         wa_url = "https://wa.me/{}?text={}".format(wa_phone, urllib.parse.quote(text))
-    phone_digits2 = "".join(ch for ch in (branch.phone2 or "") if ch.isdigit())
+    phone_digits2 = wa_digits(branch.phone2)
     wa_url2 = "https://wa.me/{}?text={}".format(phone_digits2, urllib.parse.quote(text)) if phone_digits2 else ""
 
     # 1–2 строки состава
@@ -788,7 +792,8 @@ def order_success(request, branch_id, order_id):
 
 
 def _wa_digits(phone: str) -> str:
-    return re.sub(r"\D", "", phone or "")
+    """Цифры для wa.me — с кодом страны, даже если номер записан по-местному."""
+    return wa_digits(phone)
 
 def checkout_success(request, branch_id, order_id):
     order = (StoreOrder.objects

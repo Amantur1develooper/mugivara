@@ -11,6 +11,7 @@ from django.db import models as _models
 from django.db import transaction
 
 from . import stock as shop_stock
+from core.phones import normalize as normalize_phone
 from .models import (
     Store, StoreBranch, StoreCategory, StoreProduct,
     StoreStock, StoreOrder, StoreOrderItem, StoreMembership,
@@ -140,8 +141,14 @@ def shop_branch_edit(request, branch_id):
     if request.method == "POST":
         branch.name_ru          = request.POST.get("name_ru", branch.name_ru).strip()
         branch.address          = request.POST.get("address", "").strip()
-        branch.phone            = request.POST.get("phone", "").strip()
-        branch.phone2           = request.POST.get("phone2", "").strip()
+        # Телефоны приводим к международному виду: на них держатся ссылки
+        # WhatsApp, а местный набор «0700…» они не понимают.
+        for field in ("phone", "phone2"):
+            value, err = normalize_phone(request.POST.get(field, ""))
+            if err:
+                messages.error(request, f"{'Телефон' if field == 'phone' else 'WhatsApp 2'}: {err}")
+            else:
+                setattr(branch, field, value)
         branch.map_url          = request.POST.get("map_url", "").strip()
         branch.city             = request.POST.get("city", branch.city).strip()
         lat_raw = request.POST.get("lat", "").strip()

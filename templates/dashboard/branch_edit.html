@@ -61,6 +61,40 @@
 {% endblock %}
 
 {% block content %}
+<script>
+  // Ссылка WhatsApp — это wa.me/<цифры с кодом страны>. Местный набор
+  // «0700…» она не понимает, поэтому приводим номер к +996… прямо в поле:
+  // владелец сразу видит, каким он сохранится.
+  (function () {
+    const COUNTRY = '996';
+    function normalize(raw) {
+      const plus = raw.trim().startsWith('+');
+      let n = raw.replace(/\D/g, '');
+      if (!n) return '';
+      if (!plus) {
+        if (n.startsWith('00')) n = n.slice(2);
+        else if (n.startsWith('0') && n.length === 10) n = COUNTRY + n.slice(1);
+        else if (n.length === 9) n = COUNTRY + n;
+      }
+      return '+' + n;
+    }
+    document.addEventListener('blur', function (e) {
+      const el = e.target;
+      if (!el.classList || !el.classList.contains('phone-field')) return;
+      const fixed = normalize(el.value);
+      if (fixed && fixed !== el.value.trim()) el.value = fixed;
+      const note = document.querySelector('.phone-note[data-for="' + el.name + '"]');
+      if (note) {
+        const digits = fixed.replace('+', '');
+        note.textContent = digits.length >= 10 && digits.length <= 15
+          ? 'Ссылка будет wa.me/' + digits
+          : (digits ? 'Номер неполный — нужен код страны, например +996700123456' : '');
+        note.style.color = digits && (digits.length < 10 || digits.length > 15)
+          ? '#ef4444' : 'var(--muted)';
+      }
+    }, true);
+  })();
+</script>
 <div class="db-topbar">
   <div>
     <div class="db-page-title">⚙️ {{ branch.name_ru }}</div>
@@ -118,13 +152,15 @@
     <div class="row2">
       <div class="db-form-group">
         <label class="db-label" for="phone">Телефон</label>
-        <input class="db-input" id="phone" name="phone" type="tel"
+        <input class="db-input phone-field" id="phone" name="phone" type="tel"
+               inputmode="tel" autocomplete="tel"
                value="{{ branch.phone }}" placeholder="+996700123456">
-        <div class="db-hint">Кнопка «Позвонить» на странице меню</div>
+        <div class="db-hint">Кнопка «Позвонить» на странице меню. С кодом страны: +996…</div>
       </div>
       <div class="db-form-group">
         <label class="db-label" for="whatsapp">WhatsApp</label>
-        <input class="db-input" id="whatsapp" name="whatsapp" type="tel"
+        <input class="db-input phone-field" id="whatsapp" name="whatsapp" type="tel"
+               inputmode="tel" autocomplete="tel"
                value="{{ branch.whatsapp }}" placeholder="+996700123456">
         <div class="db-hint">
           {% if branch.order_whatsapp %}
@@ -132,6 +168,7 @@
           {% else %}
             Номер не задан — кнопка WhatsApp откроется без получателя
           {% endif %}
+          <div class="phone-note" data-for="whatsapp"></div>
         </div>
       </div>
     </div>

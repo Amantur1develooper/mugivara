@@ -218,9 +218,14 @@ class Branch(TimeStampedModel):
         потом номера ресторана. Раньше номер ресторана стоял первым, и заказы
         со всех филиалов приходили на одну трубку (как правило первой точки).
         """
+        from .phones import wa_digits
+
         for raw in (self.whatsapp, self.phone,
                     self.restaurant.whatsapp, self.restaurant.phone):
-            digits = "".join(ch for ch in (raw or "") if ch.isdigit())
+            # Номер мог попасть в базу по-местному («0700…») ещё до того, как
+            # появилась проверка: приводим к международному виду на лету,
+            # иначе ссылка wa.me ведёт в никуда.
+            digits = wa_digits(raw)
             if digits:
                 return digits
         return ""

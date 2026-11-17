@@ -13,6 +13,7 @@ from django.db.models import Count, Max, Sum, Q
 from datetime import timedelta
 from django.urls import reverse
 from core.models import Restaurant, Branch, Membership, PromoCode, PageView, Review
+from core.phones import normalize as normalize_phone
 from catalog.models import (
     BranchItem, BranchCategory, BranchCategoryItem,
     Item, ItemCategory, Category, MenuSet, BranchMenuSet,
@@ -204,8 +205,12 @@ def restaurant_edit(request, restaurant_id):
             restaurant.name_ru = name
         restaurant.about_ru     = request.POST.get("about_ru", "").strip()
         restaurant.external_url = request.POST.get("external_url", "").strip()
-        restaurant.phone        = request.POST.get("phone", "").strip()
-        restaurant.whatsapp     = request.POST.get("whatsapp", "").strip()
+        for field in ("phone", "whatsapp"):
+            value, err = normalize_phone(request.POST.get(field, ""))
+            if err:
+                messages.error(request, f"{'Телефон' if field == 'phone' else 'WhatsApp'}: {err}")
+            else:
+                setattr(restaurant, field, value)
         restaurant.instagram    = request.POST.get("instagram", "").strip()
         restaurant.telegram     = request.POST.get("telegram", "").strip()
         restaurant.map_url      = request.POST.get("map_url", "").strip()
@@ -642,9 +647,15 @@ def branch_edit(request, branch_id):
             branch.name_ky = request.POST.get("name_ky", branch.name_ky).strip()[:200]
             branch.name_en = request.POST.get("name_en", branch.name_en).strip()[:200]
 
-        # Контакты точки: на этот номер уходит заказ именно этого филиала
-        branch.phone    = request.POST.get("phone", "").strip()[:50]
-        branch.whatsapp = request.POST.get("whatsapp", "").strip()[:60]
+        # Контакты точки: на этот номер уходит заказ именно этого филиала.
+        # Номер приводим к международному виду — на нём держится ссылка
+        # WhatsApp, а «0700…» она не понимает.
+        for field, limit in (("phone", 50), ("whatsapp", 60)):
+            value, err = normalize_phone(request.POST.get(field, ""))
+            if err:
+                messages.error(request, f"{'Телефон' if field == 'phone' else 'WhatsApp'}: {err}")
+            else:
+                setattr(branch, field, value[:limit])
         branch.address  = request.POST.get("address", branch.address).strip()[:300]
 
         # Тему оформления меняет только администратор: это платная доп. услуга,
