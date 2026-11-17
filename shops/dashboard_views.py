@@ -39,6 +39,10 @@ def _fmt(value):
         return value
 
 def _user_stores(user):
+    # Как и у ресторанов: суперадмин видит в кабинете все магазины,
+    # иначе магазин без владельца недоступен никому.
+    if user.is_superuser:
+        return Store.objects.all()
     ids = StoreMembership.objects.filter(user=user).values_list("store_id", flat=True)
     return Store.objects.filter(id__in=ids)
 

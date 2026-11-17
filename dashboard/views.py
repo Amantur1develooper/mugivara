@@ -39,6 +39,11 @@ def _decimal_or_none(raw):
 
 
 def _user_restaurants(user):
+    # Суперадмину кабинет показывает все заведения: иначе ресторан без
+    # владельца (например, заведённый импортом) не видно вообще никому,
+    # и настроить его некому. У картинга и барбершопов так было изначально.
+    if user.is_superuser:
+        return Restaurant.objects.all()
     ids = Membership.objects.filter(user=user).values_list("restaurant_id", flat=True)
     return Restaurant.objects.filter(id__in=ids)
 
