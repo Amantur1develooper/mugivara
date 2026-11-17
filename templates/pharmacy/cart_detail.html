@@ -4,6 +4,59 @@
 {% block title %}{% trans "Корзина" %} — {% t branch "name" %}{% endblock %}
 
 {% block content %}
+<style>
+  /* Лекарство тоже узнают по коробке, а не по названию: слева миниатюра,
+     нет фото — подложка с таблеткой. На узких телефонах строка идёт в две
+     линии, чтобы поле количества и сумма не налезали друг на друга. */
+  .ph-row {
+    background: #fff; border: 1px solid #e7e5e4; border-radius: 16px; padding: 12px;
+    display: grid; gap: 8px 12px; align-items: center;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      "photo main del"
+      "photo qty  total";
+  }
+  .ph-thumb {
+    grid-area: photo; width: clamp(48px, 15vw, 58px); height: clamp(48px, 15vw, 58px);
+    border-radius: 14px; overflow: hidden; display: flex; align-items: center;
+    justify-content: center; background: #fafaf9; border: 1px solid #e7e5e4; font-size: 24px;
+  }
+  .ph-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ph-thumb.empty { background: linear-gradient(135deg, rgba(16,185,129,.16), rgba(5,150,105,.08)), #fafaf9; }
+  .ph-main { grid-area: main; min-width: 0; }
+  .ph-name {
+    font-weight: 600; line-height: 1.3; overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+  .ph-price { font-size: 13px; color: #78716c; margin-top: 2px; }
+  .ph-del { grid-area: del; justify-self: end; }
+  .ph-del-btn {
+    width: 32px; height: 32px; border-radius: 9px; border: 1px solid #e7e5e4;
+    background: #fff; color: #78716c; cursor: pointer; font-size: 14px;
+  }
+  .ph-del-btn:hover { border-color: #ef4444; color: #ef4444; }
+  .ph-qty { grid-area: qty; display: flex; align-items: center; gap: 6px; }
+  .ph-qty-input {
+    width: clamp(52px, 16vw, 68px); border: 1px solid #d6d3d1; border-radius: 10px;
+    padding: 6px 8px; text-align: center; font: inherit;
+  }
+  .ph-qty-btn {
+    border: 0; border-radius: 10px; background: #1c1917; color: #fff;
+    padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap;
+  }
+  .ph-total {
+    grid-area: total; text-align: right; font-weight: 700; white-space: nowrap;
+    font-size: clamp(12px, 3.6vw, 15px);
+  }
+  @media (min-width: 640px) {
+    .ph-row {
+      padding: 14px 16px;
+      grid-template-columns: auto 1fr auto auto auto;
+      grid-template-areas: "photo main qty total del";
+    }
+    .ph-del { justify-self: auto; }
+  }
+</style>
 <div class="max-w-4xl mx-auto px-4 py-6">
   <div class="flex items-start justify-between gap-4">
     <div>
@@ -32,29 +85,31 @@
     <div class="mt-6 space-y-3">
       {% for r in rows %}
         {% with bd=r.bd drug=r.drug %}
-        <div class="rounded-2xl bg-white ring-1 ring-stone-200 p-4 flex items-center gap-4">
-          <div class="flex-1">
-            <div class="font-semibold">{% t drug "name" %}</div>
-            <div class="text-sm text-stone-500">{{ bd.price }} {% trans "сом" %}</div>
+        <div class="ph-row">
+          <div class="ph-thumb{% if not drug.photo %} empty{% endif %}">
+            {% if drug.photo %}
+              <img src="{{ drug.photo.url }}" alt="{% t drug 'name' %}" loading="lazy"
+                   onerror="this.closest('.ph-thumb').classList.add('empty');this.replaceWith(document.createTextNode('💊'))">
+            {% else %}💊{% endif %}
           </div>
 
-          <form action="{% url 'pharmacy:cart_update' branch.id bd.id %}" method="post" class="flex items-center gap-2">
-            {% csrf_token %}
-            <input type="number" name="qty" min="0" value="{{ r.qty }}"
-                   class="w-20 border border-stone-300 rounded-xl px-2 py-1 text-center">
-            <button class="px-3 py-2 rounded-xl bg-stone-900 text-white">{% trans "Обновить" %}</button>
-          </form>
-
-          <form action="{% url 'pharmacy:cart_remove' branch.id bd.id %}" method="post">
-            {% csrf_token %}
-            <button class="px-3 py-2 rounded-xl ring-1 ring-stone-200 hover:bg-stone-50">
-              {% trans "Удалить" %}
-            </button>
-          </form>
-
-          <div class="w-28 text-right font-bold">
-            {{ r.line_total }} {% trans "сом" %}
+          <div class="ph-main">
+            <div class="ph-name">{% t drug "name" %}</div>
+            <div class="ph-price">{{ bd.price }} {% trans "сом" %} / {% trans "шт." %}</div>
           </div>
+
+          <form action="{% url 'pharmacy:cart_remove' branch.id bd.id %}" method="post" class="ph-del">
+            {% csrf_token %}
+            <button class="ph-del-btn" title="{% trans 'Удалить' %}">✕</button>
+          </form>
+
+          <form action="{% url 'pharmacy:cart_update' branch.id bd.id %}" method="post" class="ph-qty">
+            {% csrf_token %}
+            <input type="number" name="qty" min="0" value="{{ r.qty }}" class="ph-qty-input">
+            <button class="ph-qty-btn">{% trans "Обновить" %}</button>
+          </form>
+
+          <div class="ph-total">{{ r.line_total }} {% trans "сом" %}</div>
         </div>
         {% endwith %}
       {% endfor %}
