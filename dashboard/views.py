@@ -585,6 +585,59 @@ def category_printer_group(request, bc_id):
 
 # ── BRANCH SETTINGS ──────────────────────────────────────────────────────────
 
+# ── Чат филиала для уведомлений ─────────────────────────────────────────────
+
+def _branch_tg(branch):
+    """Основной получатель филиала и описание остальных.
+
+    Записей может быть несколько (группа, личка управляющего). В настройках
+    показываем первую группу — её и правят в 99% случаев, — а про остальные
+    пишем строкой, чтобы владелец не удивлялся дублям в других чатах.
+    """
+    from integrations.models import TelegramRecipient
+    recs = list(TelegramRecipient.objects.filter(branch=branch).order_by("id"))
+    if not recs:
+        return None, ""
+    main = next((r for r in recs if str(r.chat_id).startswith("-")), recs[0])
+    others = [r for r in recs if r.id != main.id]
+    extra = ", ".join(f"«{r.title or r.chat_id}»" for r in others)
+    return main, extra
+
+
+def _save_branch_tg(branch, chat_id, thread_id):
+    """Сохраняет номер чата из настроек филиала."""
+    from integrations.models import TelegramRecipient
+    chat_id = (chat_id or "").strip()
+    thread = (thread_id or "").strip()
+    main, _ = _branch_tg(branch)
+
+    if not chat_id:
+        # Поле очистили — выключаем получателя, но не удаляем:
+        # вернуть номер обратно проще, чем вспоминать его заново.
+        if main:
+            main.is_active = False
+            main.save(update_fields=["is_active"])
+        return
+
+    thread_val = None
+    if thread.isdigit():
+        thread_val = int(thread)
+
+    if main:
+        main.chat_id = chat_id
+        main.message_thread_id = thread_val
+        main.is_active = True
+        main.notify_new_orders = True
+        main.save(update_fields=["chat_id", "message_thread_id",
+                                 "is_active", "notify_new_orders"])
+        return
+
+    TelegramRecipient.objects.create(
+        branch=branch, chat_id=chat_id, message_thread_id=thread_val,
+        kind="group" if chat_id.startswith("-") else "private",
+        title=branch.name_ru, is_active=True, notify_new_orders=True)
+
+
 @login_required(login_url="dashboard:login")
 def branch_edit(request, branch_id):
     branch = get_object_or_404(Branch, id=branch_id)
@@ -697,6 +750,12 @@ def branch_edit(request, branch_id):
 
         branch.save()
 
+        # Чат для уведомлений. У кафе получатели живут отдельной таблицей,
+        # но владельцу это знать незачем: в настройках одно поле, которое
+        # правит основную запись или создаёт её.
+        _save_branch_tg(branch, request.POST.get("tg_chat_id"),
+                        request.POST.get("tg_thread_id"))
+
         c = getattr(branch, "photo_compression", None)
         if c:
             messages.success(
@@ -709,9 +768,13 @@ def branch_edit(request, branch_id):
         return redirect("dashboard:branch_edit", branch_id=branch.id)
 
     work_days_list = branch.work_days.split(",") if branch.work_days else ["0","1","2","3","4","5","6"]
+    tg_main, tg_extra = _branch_tg(branch)
     return render(request, "dashboard/branch_edit.html", {
         "branch": branch,
         "work_days_list": work_days_list,
+        "tg_chat_id": tg_main.chat_id if tg_main else "",
+        "tg_thread_id": tg_main.message_thread_id if tg_main else "",
+        "tg_extra": tg_extra,
         "can_rename": _can_rename_branch(request.user, branch),
     })
 

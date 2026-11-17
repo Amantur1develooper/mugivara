@@ -71,16 +71,7 @@
       </div>
 
       <div class="db-card" style="margin-top:0">
-        <div class="db-card-title">📲 Telegram уведомления</div>
-        <div class="db-form-group">
-          <label class="db-label">Chat ID группы</label>
-          <input name="tg_chat_id" class="db-input" value="{{ org.tg_chat_id }}" placeholder="-1001234567890">
-          <div class="db-hint">ID Telegram-группы куда будут приходить заявки от клиентов</div>
-        </div>
-        <div class="db-form-group" style="margin:0">
-          <label class="db-label">Thread ID (топик, необязательно)</label>
-          <input name="tg_thread_id" class="db-input" value="{{ org.tg_thread_id|default:'' }}" placeholder="123">
-        </div>
+      {% include "dashboard/_tg_fields.html" with chat_value=org.tg_chat_id thread_value=org.tg_thread_id what="Каждая новая заявка" %}
       </div>
     </div>
 

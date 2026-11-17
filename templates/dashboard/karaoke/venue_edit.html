@@ -47,9 +47,7 @@
         </div>
       </div>
       <div class="db-card">
-        <div class="db-card-title" style="margin-bottom:18px">Telegram уведомления</div>
-        <div class="db-form-group"><label class="db-label">TG Chat ID</label><input class="db-input" name="tg_chat_id" value="{{ venue.tg_chat_id }}" placeholder="-1001234567890"></div>
-        <div class="db-form-group"><label class="db-label">TG Thread ID (топик)</label><input class="db-input" name="tg_thread_id" type="number" value="{{ venue.tg_thread_id|default:'' }}"></div>
+      {% include "dashboard/_tg_fields.html" with chat_value=venue.tg_chat_id thread_value=venue.tg_thread_id what="Каждая новая бронь" %}
       </div>
     </div>
   </div>

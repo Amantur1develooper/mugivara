@@ -1,0 +1,103 @@
+{% load i18n %}
+{% comment %}
+  Общий блок настроек Telegram для всех направлений.
+
+  Поля называются по-разному (tg_chat_id, tg_group_chat_id), поэтому имя
+  передаётся параметром. Кнопка «Проверить» шлёт пробное сообщение на тот
+  номер, который сейчас в поле, — владелец сразу видит, верно ли вписал,
+  и не ждёт первого заказа, чтобы это выяснить.
+
+  {% include "dashboard/_tg_fields.html" with chat_value=branch.tg_group_chat_id chat_name="tg_group_chat_id" thread_value=branch.tg_thread_id what="Каждый новый заказ" %}
+{% endcomment %}
+<div class="tg-box">
+  <div class="db-form-section-title">💬 {% trans "Уведомления в Telegram" %}</div>
+  <div class="tg-hint">
+    {% if what %}{{ what }}{% else %}{% trans "Новые заказы и записи" %}{% endif %}
+    {% trans "будет приходить в указанный чат." %}<br>
+    <b>{% trans "Как узнать номер чата:" %}</b>
+    {% trans "добавьте нашего бота в группу и напишите там" %} <code>/id</code> —
+    {% trans "бот ответит номером. У групп он отрицательный и начинается с" %}
+    <code>-100</code>.
+  </div>
+
+  <div class="tg-grid">
+    <div class="db-form-group">
+      <label class="db-label">{% trans "Chat ID" %}</label>
+      <input class="db-input tg-chat" type="text"
+             name="{% if chat_name %}{{ chat_name }}{% else %}tg_chat_id{% endif %}"
+             value="{{ chat_value|default:'' }}" placeholder="-1001234567890"
+             inputmode="text" autocomplete="off">
+    </div>
+    <div class="db-form-group">
+      <label class="db-label">
+        {% trans "Topic ID" %}
+        <span style="font-weight:400;color:var(--muted)">— {% trans "если группа с темами" %}</span>
+      </label>
+      <input class="db-input tg-thread" type="number"
+             name="{% if thread_name %}{{ thread_name }}{% else %}tg_thread_id{% endif %}"
+             value="{{ thread_value|default:'' }}" placeholder="{% trans "необязательно" %}">
+    </div>
+  </div>
+
+  <div class="tg-check">
+    <button type="button" class="db-btn tg-test">📨 {% trans "Отправить пробное сообщение" %}</button>
+    <span class="tg-result"></span>
+  </div>
+  <div class="tg-hint" style="margin:8px 0 0">
+    {% trans "Проверка идёт на номер из поля выше — сохранять для неё не нужно." %}
+  </div>
+</div>
+
+{% if not tg_fields_assets %}
+<style>
+  .tg-box { margin-top: 18px; }
+  .tg-hint { font-size: 12px; color: var(--muted); margin-bottom: 14px; line-height: 1.55; }
+  .tg-grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  .tg-check { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .tg-result { font-size: 13px; line-height: 1.4; }
+  .tg-result.ok { color: #16a34a; }
+  .tg-result.bad { color: #dc2626; }
+  .tg-test[disabled] { opacity: .6; cursor: default; }
+</style>
+<script>
+  // Обработчик ставим один раз: если блок включат на странице дважды,
+  // второй слушатель отправил бы пробное сообщение по два раза.
+  if (!window.__tgTestBound) {
+  window.__tgTestBound = true;
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.tg-test');
+    if (!btn) return;
+    const box = btn.closest('.tg-box');
+    const out = box.querySelector('.tg-result');
+    const chat = (box.querySelector('.tg-chat').value || '').trim();
+    const thread = (box.querySelector('.tg-thread').value || '').trim();
+    const token = document.querySelector('[name=csrfmiddlewaretoken]');
+
+    out.className = 'tg-result';
+    if (!chat) { out.classList.add('bad'); out.textContent = 'Сначала впишите Chat ID'; return; }
+
+    btn.disabled = true;
+    out.textContent = 'Отправляю…';
+    try {
+      const body = new FormData();
+      body.append('chat_id', chat);
+      body.append('thread_id', thread);
+      if (token) body.append('csrfmiddlewaretoken', token.value);
+      const r = await fetch('{% url "dashboard:tg_test" %}', {
+        method: 'POST', body, headers: {'X-Requested-With': 'XMLHttpRequest'},
+      });
+      const data = await r.json();
+      out.classList.add(data.ok ? 'ok' : 'bad');
+      out.textContent = data.ok
+        ? 'Отправлено в «' + (data.title || chat) + '» — проверьте чат'
+        : (data.error || 'Не вышло отправить');
+    } catch (err) {
+      out.classList.add('bad');
+      out.textContent = 'Не получилось связаться с сервером';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+  }
+</script>
+{% endif %}

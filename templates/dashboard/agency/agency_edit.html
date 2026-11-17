@@ -93,16 +93,7 @@
       </div>
 
       <div class="db-card">
-        <div class="db-card-title" style="margin-bottom:20px">Telegram уведомления</div>
-        <div class="db-form-group">
-          <label class="db-label">TG Chat ID</label>
-          <input class="db-input" name="tg_chat_id" value="{{ agency.tg_chat_id }}" placeholder="-1001234567890">
-          <div style="font-size:11px;color:var(--muted);margin-top:4px">ID чата/группы для получения заявок</div>
-        </div>
-        <div class="db-form-group">
-          <label class="db-label">TG Thread ID (топик)</label>
-          <input class="db-input" name="tg_thread_id" type="number" value="{{ agency.tg_thread_id|default:'' }}" placeholder="Если используются топики">
-        </div>
+      {% include "dashboard/_tg_fields.html" with chat_value=agency.tg_chat_id thread_value=agency.tg_thread_id what="Каждая новая заявка" %}
       </div>
     </div>
   </div>

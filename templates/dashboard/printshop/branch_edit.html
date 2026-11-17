@@ -113,15 +113,7 @@
   </div>
 
   <div class="db-form-card">
-    <div class="db-form-section-title">💬 Telegram-уведомления о заказах</div>
-    <div class="db-form-group">
-      <label class="db-label">Telegram Chat ID группы</label>
-      <input class="db-input" type="text" name="tg_chat_id" value="{{ branch.tg_chat_id }}" placeholder="-1001234567890">
-    </div>
-    <div class="db-form-group">
-      <label class="db-label">Thread ID (если группа с темами)</label>
-      <input class="db-input" type="number" name="tg_thread_id" value="{{ branch.tg_thread_id|default:'' }}">
-    </div>
+      {% include "dashboard/_tg_fields.html" with chat_value=branch.tg_chat_id thread_value=branch.tg_thread_id what="Каждый новый заказ" %}
   </div>
 
   <div class="db-form-card">

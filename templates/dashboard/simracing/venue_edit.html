@@ -115,16 +115,7 @@
       <input name="map_url" class="db-input" value="{{ venue.map_url }}">
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div>
-        <label class="db-label">Telegram Chat ID</label>
-        <input name="tg_chat_id" class="db-input" value="{{ venue.tg_chat_id }}" placeholder="-1001234567890">
-      </div>
-      <div>
-        <label class="db-label">Telegram Thread ID (для топика)</label>
-        <input name="tg_thread_id" class="db-input" value="{{ venue.tg_thread_id|default:'' }}" placeholder="необязательно">
-      </div>
-    </div>
+    {% include "dashboard/_tg_fields.html" with chat_value=venue.tg_chat_id thread_value=venue.tg_thread_id what="Каждая новая бронь заезда" %}
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div>

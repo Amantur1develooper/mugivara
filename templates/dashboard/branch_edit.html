@@ -487,6 +487,16 @@
     </div>
   </div>
 
+  <div class="db-form-card" style="margin-top:20px">
+    {% include "dashboard/_tg_fields.html" with chat_value=tg_chat_id thread_value=tg_thread_id what="Каждый новый заказ, вызов официанта и доп. заказ со столика" %}
+    {% if tg_extra %}
+      <div class="tg-hint" style="margin-top:10px">
+        Кроме этого чата заказы уходят ещё в {{ tg_extra }} —
+        это настроено отдельно, напишите в поддержку, если нужно убрать.
+      </div>
+    {% endif %}
+  </div>
+
   <div style="display:flex;gap:12px;flex-wrap:wrap">
     <button type="submit" class="db-btn db-btn-primary">💾 Сохранить настройки</button>
     <a href="{% url 'dashboard:home' %}" class="db-btn db-btn-ghost">← Назад</a>

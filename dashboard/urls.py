@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import views_tg
 from . import reports
 from hotels import dashboard_views as hv
 from shops import dashboard_views as sv
@@ -15,6 +16,9 @@ from printshop import dashboard_views as pv
 app_name = "dashboard"
 
 urlpatterns = [
+    # Пробное сообщение из настроек любого направления
+    path("tg/test/", views_tg.tg_test, name="tg_test"),
+
     path("login/",   views.login_view,   name="login"),
     path("logout/",  views.logout_view,  name="logout"),
     path("",         views.home,         name="home"),

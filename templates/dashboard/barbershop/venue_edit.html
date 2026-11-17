@@ -67,17 +67,7 @@
       </div>
     </div>
     <div style="padding-top:16px;border-top:1px solid var(--border);margin-top:8px">
-      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:12px">🤖 Telegram уведомления</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-        <div class="db-form-group">
-          <label class="db-label">Chat ID</label>
-          <input class="db-input" name="tg_chat_id" value="{{ shop.tg_chat_id }}" placeholder="-1001234567890">
-        </div>
-        <div class="db-form-group">
-          <label class="db-label">Thread ID (необязательно)</label>
-          <input class="db-input" name="tg_thread_id" value="{{ shop.tg_thread_id|default:'' }}">
-        </div>
-      </div>
+      {% include "dashboard/_tg_fields.html" with chat_value=shop.tg_chat_id thread_value=shop.tg_thread_id what="Каждая новая запись" %}
     </div>
     <div class="db-toggle-row">
       <div>
