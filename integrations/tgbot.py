@@ -6,6 +6,7 @@
 """
 import logging
 import threading
+import time
 
 import requests
 from django.conf import settings
@@ -23,22 +24,41 @@ def bot_token():
             getattr(settings, "TELEGRAM_BOT_TOKEN", "") or "").strip()
 
 
-def call(method, **payload):
-    """Зовёт метод Bot API. Молча переживает отказ: запись важнее уведомления."""
+# Последняя ошибка от Telegram — чтобы команда могла показать её человеку,
+# а не гадать по логу. Обычные отправки её просто игнорируют.
+last_error = ""
+
+
+def call(method, _timeout=TIMEOUT, _tries=1, **payload):
+    """Зовёт метод Bot API. Молча переживает отказ: запись важнее уведомления.
+
+    _timeout и _tries нужны настроечным командам: api.telegram.org из
+    Кыргызстана отвечает через раз, и setWebhook не укладывается в те
+    восемь секунд, которых хватает обычному сообщению.
+    """
+    global last_error
     token = bot_token()
     if not token:
+        last_error = "токен бота не задан (TELEGRAM_BOT_TOKEN в .env)"
         return None
-    try:
-        r = requests.post(API.format(token=token, method=method),
-                          json=payload, timeout=TIMEOUT)
-        data = r.json()
-        if not data.get("ok"):
-            log.warning("telegram %s: %s", method, data.get("description"))
-            return None
-        return data.get("result")
-    except Exception as e:
-        log.warning("telegram %s упал: %s", method, e)
-        return None
+
+    for attempt in range(1, max(1, _tries) + 1):
+        try:
+            r = requests.post(API.format(token=token, method=method),
+                              json=payload, timeout=_timeout)
+            data = r.json()
+            if data.get("ok"):
+                last_error = ""
+                return data.get("result")
+            last_error = data.get("description") or f"HTTP {r.status_code}"
+            log.warning("telegram %s: %s", method, last_error)
+            return None            # Telegram ответил и отказал — повтор не поможет
+        except Exception as e:
+            last_error = str(e)
+            log.warning("telegram %s упал (попытка %s): %s", method, attempt, e)
+            if attempt < _tries:
+                time.sleep(2 * attempt)
+    return None
 
 
 def in_background(fn, *args, **kwargs):

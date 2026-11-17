@@ -14,6 +14,7 @@ from django.urls import reverse
 
 from barbershop import tg
 from barbershop.models import Appointment
+from integrations import tgbot
 
 
 class Command(BaseCommand):
@@ -59,17 +60,27 @@ class Command(BaseCommand):
         self.stdout.write(f"Адрес: {url}")
         self._reachable(url, secret)
 
-        res = tg._call("setWebhook", url=url, secret_token=secret,
-                       allowed_updates=["callback_query", "message"],
-                       drop_pending_updates=True)
+        # api.telegram.org из Кыргызстана отвечает через раз, поэтому ждём
+        # дольше обычного и пробуем трижды.
+        res = tgbot.call("setWebhook", _timeout=30, _tries=3,
+                         url=url, secret_token=secret,
+                         allowed_updates=["callback_query", "message"],
+                         drop_pending_updates=True)
         if res is None:
+            err = tgbot.last_error or "ответ не получен"
+            hint = ""
+            if "timed out" in err.lower() or "connection" in err.lower():
+                hint = ("  Сам Telegram не ответил за 30 секунд — связь с api.telegram.org.\n"
+                        "    Проверьте с сервера: curl -s -m 20 -o /dev/null -w '%{http_code}\\n' "
+                        "https://api.telegram.org\n"
+                        "    Если и там тишина — дело в сети сервера, повторите позже.\n")
+            elif "resolve" in err.lower():
+                hint = ("  У Telegram не разрешилось имя домена. Проверьте, что он виден снаружи:\n"
+                        "      dig +short " + url.split("/")[2] + " @8.8.8.8\n")
+            elif "port" in err.lower():
+                hint = "  Telegram принимает только порты 443, 80, 88 и 8443.\n"
             raise CommandError(
-                "Telegram не принял адрес.\n"
-                "  «Failed to resolve host» — у Telegram не разрешилось имя домена.\n"
-                "    Чаще всего это разовый сбой: повторите команду через минуту.\n"
-                "    Если повторяется — проверьте, что домен виден снаружи:\n"
-                "      dig +short " + url.split("/")[2] + " @8.8.8.8\n"
-                "  «HTTPS url must use port» — Telegram принимает только 443, 80, 88 и 8443.\n"
+                f"Telegram не принял адрес: {err}\n" + hint +
                 "  Другой домен задаётся так: manage.py tg_webhook --set --url https://ваш-домен")
         self.stdout.write(self.style.SUCCESS("Вебхук включён"))
         self._info()
@@ -97,13 +108,14 @@ class Command(BaseCommand):
             pass
 
     def _delete(self):
-        if tg._call("deleteWebhook", drop_pending_updates=False) is None:
+        if tgbot.call("deleteWebhook", _timeout=30, _tries=3,
+                      drop_pending_updates=False) is None:
             raise CommandError("Не удалось выключить вебхук")
         self.stdout.write(self.style.SUCCESS("Вебхук выключен — кнопки больше не работают"))
 
     def _info(self):
-        info = tg._call("getWebhookInfo") or {}
-        me = tg._call("getMe") or {}
+        info = tgbot.call("getWebhookInfo", _timeout=30, _tries=3) or {}
+        me = tgbot.call("getMe", _timeout=30, _tries=3) or {}
         if me:
             self.stdout.write(f"Бот: @{me.get('username', '?')} ({me.get('first_name', '')})")
         self.stdout.write(f"Адрес вебхука: {info.get('url') or '— не настроен'}")
