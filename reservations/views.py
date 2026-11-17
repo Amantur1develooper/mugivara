@@ -1,3 +1,4 @@
+from integrations.dispatch import send_now
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 from django.contrib import messages
@@ -147,7 +148,7 @@ def booking_set_status(request, booking_id: int, status: str):
 #             guests_count=guests,
 #             comment=comment,
 #         )
-#         notify_new_booking.delay(booking.id)  # ✅ телега
+#         send_now(notify_new_booking, booking.id)  # ✅ телега
 #         messages.success(request, _("Бронь создана. Место занято до снятия кассиром/админом."))
 #     except ValueError as e:
 #         if str(e) == "PLACE_BUSY":

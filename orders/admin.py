@@ -1,3 +1,4 @@
+from integrations.dispatch import send_now
 from django.contrib import admin
 
 from .models import Order, OrderItem, ConstructorOrderItem
@@ -28,7 +29,7 @@ def _set_status_with_notify(queryset, new_status: str):
             continue
         order.status = new_status
         order.save(update_fields=["status"])
-        notify_order_status.delay(order.id, old, new_status)
+        send_now(notify_order_status, order.id, old, new_status)
 
 
 @admin.action(description="✅ Статус: Принят")

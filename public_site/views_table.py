@@ -1,5 +1,6 @@
 
 # public_site/views_table.py
+from integrations.dispatch import send_now
 import json
 from collections import Counter
 from django.shortcuts import render, get_object_or_404, redirect
@@ -570,7 +571,7 @@ def table_call_waiter(request, token):
     # можно добавить короткий текст
     note = (request.POST.get("note") or "").strip()[:200]
 
-    notify_call_waiter.delay(place.id, note)
+    send_now(notify_call_waiter, place.id, note)
     return JsonResponse({"ok": True})
 from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_POST
@@ -732,7 +733,7 @@ def table_create_order(request, token):
                 new_items_tg.append({"name": row["bi"].item.name_ru, "qty": row["qty"]})
             for cx_item in cx_cart:
                 new_items_tg.append({"name": cx_item.get("cx_name", "Конструктор"), "qty": int(cx_item.get("qty", 1))})
-            notify_extra_order.delay(order.id, new_items_tg)
+            send_now(notify_extra_order, order.id, new_items_tg)
         except Exception as e:
             print("TG notify_extra_order ERROR:", e)
 

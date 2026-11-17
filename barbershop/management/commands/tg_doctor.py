@@ -26,6 +26,7 @@ class Command(BaseCommand):
         parser.add_argument("--shop", type=int, help="id барбершопа")
         parser.add_argument("--venue", type=int, help="id площадки картинга")
         parser.add_argument("--branch", type=int, help="id филиала магазина")
+        parser.add_argument("--cafe", type=int, help="id филиала кафе/ресторана")
         parser.add_argument("--send", action="store_true",
                             help="отправить в чат пробное сообщение")
 
@@ -58,7 +59,8 @@ class Command(BaseCommand):
         self.stdout.write("\n── 3. Заведения ────────────────────────────────")
         # У заведений разных направлений поля называются по-разному,
         # поэтому сводим их к одному виду: (вид, название, чат, тема).
-        only = opts["shop"] or opts["venue"] or opts["branch"]
+        only = (opts["shop"] or opts["venue"] or opts["branch"]
+                or opts["cafe"])
         places = []
         if not only or opts["shop"]:
             qs = Barbershop.objects.all().order_by("id")
@@ -76,6 +78,31 @@ class Command(BaseCommand):
                 qs = qs.filter(id=opts["branch"])
             places += [("Магазин", b.id, b.name_ru, b.tg_group_chat_id or b.tg_manager_chat_id,
                         b.tg_thread_id) for b in qs]
+        if not only or opts["cafe"]:
+            # У кафе получатели живут отдельной таблицей: филиал может
+            # слать в несколько чатов, и выключенный флажок — частая
+            # причина тишины, поэтому его видно отдельно.
+            from catalog.models import Branch as CafeBranch
+            from integrations.models import TelegramRecipient
+            qs = CafeBranch.objects.all().order_by("id")
+            if opts["cafe"]:
+                qs = qs.filter(id=opts["cafe"])
+            for b in qs:
+                recs = list(TelegramRecipient.objects.filter(branch=b))
+                if not recs and not opts["cafe"]:
+                    continue          # кафе без настроек не захламляют вывод
+                if not recs:
+                    places.append(("Кафе", b.id, b.name_ru, "", None))
+                    continue
+                for r in recs:
+                    note = ""
+                    if not r.is_active:
+                        note = " · ВЫКЛЮЧЕН"
+                    elif not r.notify_new_orders:
+                        note = " · заказы не уведомляются"
+                    places.append(("Кафе", b.id, f"{b.name_ru}{note}",
+                                   r.chat_id, r.message_thread_id))
+
         if not places:
             self.stdout.write(bad("  заведений нет"))
             return
@@ -84,7 +111,7 @@ class Command(BaseCommand):
             self.stdout.write(f"\n  {kind} #{pid} {name}")
             if not chat_id:
                 self.stdout.write(bad(
-                    "    TG Chat ID не заполнен — сюда ничего не отправляется.\n"
+                    "    чат не настроен — сюда ничего не отправляется.\n"
                     "    Добавьте бота в чат, напишите там /id и впишите номер\n"
                     "    в карточку заведения в кабинете."))
                 continue

@@ -1,3 +1,4 @@
+from integrations.dispatch import send_now
 import secrets as _secrets
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -2294,7 +2295,7 @@ def pos_order_create(request, branch_id):
                 for pit in prepared_items
             ]
             if new_items_tg:
-                notify_extra_order.delay(order.id, new_items_tg)
+                send_now(notify_extra_order, order.id, new_items_tg)
         except Exception as e:
             print("TG notify_extra_order ERROR:", e)
 

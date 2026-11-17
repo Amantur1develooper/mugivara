@@ -9,6 +9,7 @@ from django.dispatch import receiver
 from orders.models import Order
 from shops.models import StoreOrder
 from autosalon.models import Lead as AutosalonLead
+from integrations.dispatch import send_now
 from integrations.tasks import notify_new_order, notify_new_shop_order, notify_new_autosalon_lead
 
 logger = logging.getLogger(__name__)
@@ -21,10 +22,7 @@ def order_created(sender, instance: Order, created: bool, **kwargs):
 
     def _on_commit():
         # 1. TG-уведомление
-        try:
-            notify_new_order.delay(instance.id)
-        except Exception as e:
-            logger.error("notify_new_order failed for order %s: %s", instance.id, e)
+        send_now(notify_new_order, instance.id)
 
         # 2. Обновляем order_count и rating для каждого блюда в заказе
         try:
@@ -96,9 +94,6 @@ def autosalon_lead_created(sender, instance: AutosalonLead, created: bool, **kwa
         return
 
     def _on_commit():
-        try:
-            notify_new_autosalon_lead.delay(instance.id)
-        except Exception as e:
-            logger.error("notify_new_autosalon_lead failed for lead %s: %s", instance.id, e)
+        send_now(notify_new_autosalon_lead, instance.id)
 
     transaction.on_commit(_on_commit)

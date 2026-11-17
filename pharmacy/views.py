@@ -1,4 +1,5 @@
 # pharmacy/views.py
+from integrations.dispatch import send_now
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils.translation import get_language
 from .models import Pharmacy, PharmacyBranch, DrugCategory, DrugInCategory, BranchDrug, Drug
@@ -241,7 +242,7 @@ def checkout(request, branch_id: int):
 
     whatsapp_url = build_whatsapp_url(branch.phone, text)
     # ✅ TG уведомление всегда
-    notify_new_pharmacy_order.delay(order.id)
+    send_now(notify_new_pharmacy_order, order.id)
 
 # ✅ WhatsApp только если поставили галочку
     # send_whatsapp = request.POST.get("send_whatsapp") == "1"
