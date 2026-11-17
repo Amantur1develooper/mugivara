@@ -2043,18 +2043,50 @@ function _showErr(msg) {
 
 /* позиции */
 .cm-items { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+/* Люди узнают блюдо по картинке, а не по названию. На узких телефонах
+   строка раскладывается в две линии: фото держит левую колонку, счётчик и
+   сумма уходят вниз — так ничего не налезает друг на друга. */
 .cm-row {
   background: var(--bg, #f9f9f9); border: 1.5px solid var(--border, #eee);
-  border-radius: 14px; padding: 12px 14px;
-  display: flex; align-items: center; gap: 10px;
+  border-radius: 14px; padding: 12px;
+  display: grid; gap: 8px 10px; align-items: center;
+  grid-template-columns: auto 1fr auto;
+  grid-template-areas:
+    "photo main  main"
+    "photo qty   total";
 }
-.cm-row-name { font-size: 14px; font-weight: 600; color: var(--text, #111); }
+.cm-row > .ct-thumb { grid-area: photo; }
+.cm-row-main { grid-area: main; min-width: 0; }
+.cm-row .cm-qty { grid-area: qty; }
+.cm-row-total { grid-area: total; text-align: right; }
+@media (min-width: 620px) {
+  .cm-row {
+    padding: 12px 14px;
+    grid-template-columns: auto 1fr auto auto;
+    grid-template-areas: "photo main qty total";
+  }
+}
+.ct-thumb {
+  width: clamp(46px, 14vw, 56px); height: clamp(46px, 14vw, 56px);
+  border-radius: 13px; flex: none; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--card, #fff); border: 1px solid var(--border, #eee);
+}
+.ct-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ct-thumb.empty {
+  background: linear-gradient(135deg, rgba(255,138,61,.20), rgba(255,77,28,.10)), var(--card, #fff);
+  font-size: 22px; line-height: 1;
+}
+.cm-row-name {
+  font-size: 14px; font-weight: 600; color: var(--text, #111);
+  overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
 .cm-row-price { font-size: 11px; color: var(--muted, #888); margin-top: 2px; }
 .cm-row-total { font-size: 13px; font-weight: 700; color: var(--text, #111); white-space: nowrap; }
 
-.cm-qty { display: flex; align-items: center; gap: 6px; }
+.cm-qty { display: flex; align-items: center; gap: clamp(3px, 1.4vw, 6px); }
 .cm-qty-btn {
-  width: 32px; height: 32px; border-radius: 8px;
+  width: clamp(28px, 8vw, 32px); height: clamp(28px, 8vw, 32px); border-radius: 8px;
   border: 1.5px solid var(--border, #ddd); background: var(--card, #fff);
   font-size: 17px; font-weight: 700; color: var(--text, #111);
   cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -2062,7 +2094,7 @@ function _showErr(msg) {
 }
 .cm-qty-btn:hover { border-color: var(--accent, #ff4d1c); color: var(--accent, #ff4d1c); }
 .cm-qty-num {
-  width: 36px; text-align: center; font-size: 14px; font-weight: 700;
+  width: clamp(26px, 8vw, 36px); text-align: center; font-size: 14px; font-weight: 700;
   color: var(--text, #111); font-family: inherit;
 }
 
@@ -2611,7 +2643,8 @@ document.addEventListener('click', e => {
         div.dataset.biId = item.bi_id;
         div.dataset.updateUrl = item.update_url;
         div.innerHTML = `
-          <div style="flex:1;min-width:0">
+          ${cartThumb(item.photo)}
+          <div class="cm-row-main">
             <div class="cm-row-name">${item.name}</div>
             <div class="cm-row-price">${item.price} ${CUR} ${T.perPcs}</div>
           </div>
@@ -2654,6 +2687,19 @@ document.addEventListener('click', e => {
     updateFreeDeliveryBanner(d);
   }
 
+  // Фото блюда в строке корзины; нет фото или файл потерялся — тёплая
+  // подложка с иконкой еды, чтобы строка не выглядела сломанной.
+  const CART_ICONS = ['🍜', '🥗', '🍲', '🍛', '🥘', '🍝'];
+  let cartIconN = 0;
+  function cartThumb(photo) {
+    if (photo) {
+      return `<div class="ct-thumb"><img src="${photo}" alt="" loading="lazy"
+        onerror="this.closest('.ct-thumb').classList.add('empty');
+                 this.replaceWith(document.createTextNode('🍽'))"></div>`;
+    }
+    return `<div class="ct-thumb empty">${CART_ICONS[cartIconN++ % CART_ICONS.length]}</div>`;
+  }
+
   function buildCxRow(item) {
     const sels = item.selections || [];
     const selHtml = sels.length
@@ -2661,7 +2707,8 @@ document.addEventListener('click', e => {
           <span style="font-weight:600">${s.gname}:</span> ${s.ings.join(', ')}</div>`).join('')
       : (item.detail ? `<div style="font-size:11px;color:var(--text2)">${item.detail}</div>` : '');
     return `
-      <div style="flex:1;min-width:0">
+      ${cartThumb(item.photo)}
+      <div class="cm-row-main">
         <div class="cm-row-name">🧩 ${item.name}</div>
         ${selHtml}
         <div class="cm-row-price" style="margin-top:3px">${item.price} ${CUR} ${T.perPcs}</div>
@@ -2689,7 +2736,8 @@ document.addEventListener('click', e => {
 
     const itemsHtml = (d.items || []).map(item => `
       <div class="cm-row" data-bi-id="${item.bi_id}" data-update-url="${item.update_url}">
-        <div style="flex:1;min-width:0">
+        ${cartThumb(item.photo)}
+        <div class="cm-row-main">
           <div class="cm-row-name">${item.name}</div>
           <div class="cm-row-price">${item.price} ${CUR} ${T.perPcs}</div>
         </div>

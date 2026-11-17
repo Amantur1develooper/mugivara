@@ -1,7 +1,8 @@
 from django.db.models import Q, F
 from core.models import Restaurant, Branch
 from catalog import serving
-from catalog.models import BranchCategory, BranchCategoryItem, BranchItem
+from catalog.models import (BranchCategory, BranchCategoryItem, BranchItem,
+                            DishConstructor)
 from django.utils.translation import get_language
 from integrations.tasks import notify_new_order
 from decimal import Decimal
@@ -708,6 +709,8 @@ def cart_json(request, branch_id: int):
         items.append({
             "bi_id":       bi.id,
             "name":        bi.item.name_ru,
+            # Блюдо узнают по картинке, а не по названию — отдаём её в корзину
+            "photo":       bi.item.photo.url if bi.item.photo else "",
             "price":       str(bi.price),
             "qty":         r["qty"],
             "line_total":  str(r["line_total"]),
@@ -716,6 +719,11 @@ def cart_json(request, branch_id: int):
 
     # Позиции из конструктора
     cx_cart = _get_branch_cx_cart(request, branch_id)
+    cx_photos = {
+        c.id: (c.photo.url if c.photo else "")
+        for c in DishConstructor.objects.filter(
+            id__in=[i.get("cx_id") for i in cx_cart if i.get("cx_id")])
+    }
     cx_items = []
     cx_total = Decimal("0")
     cx_qty = 0
@@ -737,6 +745,7 @@ def cart_json(request, branch_id: int):
                 {"gname": s["gname"], "ings": [i["name"] for i in s.get("ings", [])]}
                 for s in item.get("selections", [])
             ],
+            "photo":      cx_photos.get(item.get("cx_id"), ""),
             "price":      str(unit),
             "qty":        qty,
             "line_total": str(line),
