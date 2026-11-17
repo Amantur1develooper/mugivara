@@ -44,6 +44,10 @@ def _user_restaurants(user):
 
 
 def _has_branch_access(user, branch):
+    # Суперадмин открывает любой филиал: иначе заведение, заведённое импортом
+    # без владельца, становится недоступным вообще никому.
+    if user.is_superuser:
+        return True
     return Membership.objects.filter(user=user, restaurant=branch.restaurant).exists()
 
 

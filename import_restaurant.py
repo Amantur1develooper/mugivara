@@ -30,7 +30,9 @@ from PIL import Image                                    # noqa: E402
 from django.core.files.base import ContentFile           # noqa: E402
 from django.db import transaction                        # noqa: E402
 
-from core.models import Restaurant, Branch, PlaceCategory   # noqa: E402
+from django.contrib.auth import get_user_model               # noqa: E402
+
+from core.models import Restaurant, Branch, Membership, PlaceCategory   # noqa: E402
 from catalog.models import (                             # noqa: E402
     MenuSet, Category, Item, ItemCategory,
     BranchMenuSet, BranchCategory, BranchItem, BranchCategoryItem,
@@ -65,6 +67,7 @@ def main():
                     help="папка с обложками категорий (по умолчанию — та же, что у блюд)")
     ap.add_argument("--branches", default="", help='названия филиалов через «|»')
     ap.add_argument("--theme", default="", help="код индивидуального дизайна (template_slug)")
+    ap.add_argument("--owner", default="", help="username — выдать доступ в кабинет")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -135,6 +138,22 @@ def main():
                     rest.logo.save(logo, ContentFile(fh.read()), save=True)
 
         print(f'{"создан" if created else "обновлён"} ресторан #{rest.id} {rest.name_ru}')
+
+        # Без доступа заведение не видно в кабинете: его нельзя ни настроить,
+        # ни открыть владельцу. Раньше импорт про это молчал.
+        if args.owner:
+            user = get_user_model().objects.filter(username=args.owner).first()
+            if not user:
+                print(f'  ⚠️ пользователь «{args.owner}» не найден — доступ не выдан')
+            else:
+                Membership.objects.get_or_create(
+                    user=user, restaurant=rest, branch=None,
+                    defaults={"role": Membership.Role.OWNER},
+                )
+                print(f'  доступ в кабинет выдан: {user.username}')
+        elif not Membership.objects.filter(restaurant=rest).exists():
+            print('  ⚠️ у ресторана нет ни одного пользователя с доступом — '
+                  'кабинет будет пустым. Запустите ещё раз с --owner <логин>')
 
         menu_set, _ = MenuSet.objects.get_or_create(
             restaurant=rest, name="Меню", defaults={"is_active": True})
