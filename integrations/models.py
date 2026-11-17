@@ -21,7 +21,10 @@ class TelegramRecipient(TimeStampedModel):
     notify_status_changes = models.BooleanField(default=True)
 
     class Meta:
-        unique_together = ("branch", "chat_id")
+        # Один и тот же чат можно подключить дважды — в разные темы форума:
+        # «Заказы» и «Доставка» живут в одной группе, но это разные темы.
+        # Поэтому в ключ входит и номер темы.
+        unique_together = ("branch", "chat_id", "message_thread_id")
         ordering = ("-is_active", "kind", "id")
 
     def __str__(self):
@@ -48,7 +51,10 @@ class ShopTelegramRecipient(TimeStampedModel):
     notify_new_orders = models.BooleanField("Уведомлять о новых заказах", default=True)
 
     class Meta:
-        unique_together = ("branch", "chat_id")
+        # Один и тот же чат можно подключить дважды — в разные темы форума:
+        # «Заказы» и «Доставка» живут в одной группе, но это разные темы.
+        # Поэтому в ключ входит и номер темы.
+        unique_together = ("branch", "chat_id", "message_thread_id")
         ordering = ("-is_active", "kind", "id")
         verbose_name = "Telegram-получатель (магазин)"
         verbose_name_plural = "Telegram-получатели (магазины)"
@@ -77,7 +83,10 @@ class AutosalonTelegramRecipient(TimeStampedModel):
     notify_new_leads = models.BooleanField("Уведомлять о новых заявках", default=True)
 
     class Meta:
-        unique_together = ("dealership", "chat_id")
+        # Один и тот же чат можно подключить дважды — в разные темы форума:
+        # «Заказы» и «Доставка» живут в одной группе, но это разные темы.
+        # Поэтому в ключ входит и номер темы.
+        unique_together = ("dealership", "chat_id", "message_thread_id")
         ordering = ("-is_active", "kind", "id")
         verbose_name = "Telegram-получатель (автосалон)"
         verbose_name_plural = "Telegram-получатели (автосалоны)"
