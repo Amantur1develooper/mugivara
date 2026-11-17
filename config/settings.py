@@ -291,7 +291,10 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
 }
 
-TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN", "")
+# Токен бота живёт только в .env и нигде больше: раньше он стоял прямо в этом
+# файле, а файл лежит в репозитории на GitHub — то есть токен был опубликован.
+# Два имени поддерживаются ради старого кода, значение у них одно.
+TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN", "") or TELEGRAM_BOT_TOKEN
 
 # Публичный адрес сайта: по нему собираются ссылки для Telegram — кнопка
 # мини-приложения требует абсолютный https-адрес, относительный не примет.
@@ -306,8 +309,8 @@ TG_WEBHOOK_SECRET = os.getenv("TG_WEBHOOK_SECRET", "")
 CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
 CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
 
-TELEGRAM_BOT_TOKEN = "8295438366:AAGtTtBkNYol92E10B4xxhSBEnz8HZWGykc"
-TELEGRAM_ADMIN_CHAT_ID = "PASTE_CHAT_ID_HERE"  # можно группу
+# Чат администратора платформы для служебных сообщений — тоже из .env.
+TELEGRAM_ADMIN_CHAT_ID = os.getenv("TELEGRAM_ADMIN_CHAT_ID", "")
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  JAZZMIN — красивый админ
