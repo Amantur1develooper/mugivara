@@ -42,15 +42,57 @@
 
   /* ── ITEMS ── */
   .tc-items { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+  /* Узкие телефоны (320–360 px) не вмещают фото, название, счётчик и сумму
+     в одну строку — раскладываем в две, фото держит левую колонку. */
   .tc-row {
     background: var(--card); border: 1.5px solid var(--border); border-radius: 16px;
-    padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; display: grid; gap: 8px 12px; align-items: center;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      "photo main  main"
+      "photo ctrl  total";
   }
-  .tc-row-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .tc-row > .ct-thumb { grid-area: photo; }
+  .tc-row-main { grid-area: main; min-width: 0; }
+  .tc-row .tc-row-controls { grid-area: ctrl; margin-left: 0; gap: clamp(3px, 1.4vw, 6px); }
+  .tc-line-total { grid-area: total; text-align: right; }
+  @media (min-width: 620px) {
+    .tc-row {
+      padding: 14px 16px;
+      grid-template-columns: auto 1fr auto auto;
+      grid-template-areas: "photo main ctrl total";
+    }
+  }
+  .tc-row-name {
+    font-size: 14px; font-weight: 600; color: var(--text); overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+  /* ── Мини-фото блюда в корзине ──────────────────────────────────────────
+     Опрос показал: люди не читают названия, они узнают блюдо по картинке.
+     Если фото нет — тёплая подложка с иконкой еды, чтобы строка не
+     выглядела сломанной. */
+  .ct-thumb {
+    width: clamp(48px, 15vw, 58px); height: clamp(48px, 15vw, 58px);
+    border-radius: 14px; flex: none; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg); border: 1px solid var(--border);
+  }
+  .ct-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ct-thumb.empty {
+    background: linear-gradient(135deg, rgba(255,138,61,.20), rgba(255,77,28,.10)), var(--bg);
+    font-size: 24px; line-height: 1;
+  }
+  @media (min-width: 620px) { .ct-thumb { width: 64px; height: 64px; } }
+
   .tc-row-price { font-size: 12px; color: var(--muted); margin-top: 2px; }
   .tc-row-controls { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0; }
+
+  /* Размеры тянутся от ширины экрана, а не ступеньками по медиазапросам:
+     на узких самсунгах (320 px) фото, счётчик и сумма всё равно встают в
+     одну строку и не налезают друг на друга, а на обычном телефоне
+     остаются прежними. */
   .tc-qty-btn {
-    width: 34px; height: 34px; border-radius: 9px;
+    width: clamp(28px, 8.5vw, 34px); height: clamp(28px, 8.5vw, 34px); border-radius: 9px;
     border: 1.5px solid var(--border); background: var(--bg); cursor: pointer;
     font-size: 16px; font-weight: 700; color: var(--text);
     display: flex; align-items: center; justify-content: center;
@@ -59,7 +101,7 @@
   .tc-qty-btn:hover { border-color: var(--accent); color: var(--accent); }
   .tc-qty-btn.del:hover { border-color: #EF4444; color: #EF4444; background: rgba(239,68,68,.05); }
   .tc-qty-num { min-width: 28px; text-align: center; font-family: 'Unbounded', sans-serif; font-size: 13px; font-weight: 800; color: var(--text); }
-  .tc-line-total { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; }
+  .tc-line-total { font-size: clamp(11px, 3.4vw, 13px); font-weight: 700; color: var(--text); white-space: nowrap; }
 
   /* ── TOTALS ── */
   .tc-totals {
@@ -179,7 +221,13 @@ const T = {
     <div class="tc-items">
       {% for r in rows %}
       <div class="tc-row" data-row="{{ r.branch_item.id }}">
-        <div style="flex:1;min-width:0;">
+        <div class="ct-thumb{% if not r.branch_item.item.photo %} empty{% endif %}">
+          {% if r.branch_item.item.photo %}
+            <img src="{{ r.branch_item.item.photo.url }}" alt="{% t r.branch_item.item 'name' %}"
+                 loading="lazy" width="64" height="64" onerror="this.closest('.ct-thumb').classList.add('empty');this.replaceWith(document.createTextNode('🍽'))">
+          {% else %}{% cycle '🍜' '🥗' '🍲' '🍛' '🥘' '🍝' %}{% endif %}
+        </div>
+        <div class="tc-row-main">
           <div class="tc-row-name">{% t r.branch_item.item 'name' %}</div>
           <div class="tc-row-price">{{ r.branch_item.price|som }} / {% trans "шт." %}</div>
         </div>
@@ -201,7 +249,8 @@ const T = {
     <div class="tc-items">
       {% for item in cx_rows %}
       <div class="tc-row" data-cx-row="{{ item.idx }}">
-        <div style="flex:1;min-width:0;">
+        <div class="ct-thumb empty">🧩</div>
+        <div class="tc-row-main">
           <div class="tc-row-name">{{ item.cx_name }}</div>
           <div class="tc-row-price" style="font-size:11px;color:var(--muted);margin-top:3px;">
             {% for sel in item.selections %}{{ sel.gname }}: {% for ing in sel.ings %}{{ ing.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if not forloop.last %} · {% endif %}{% endfor %}
