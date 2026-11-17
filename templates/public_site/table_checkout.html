@@ -17,6 +17,25 @@
         <div class="font-extrabold">{{ r.line_total|som }}</div>
       </div>
     {% endfor %}
+
+    {# «Собери сам»: собранное блюдо гость тоже должен видеть перед оплатой #}
+    {% for cx in cx_rows %}
+      <div class="rounded-3xl bg-white ring-1 ring-stone-200 p-4 flex justify-between">
+        <div>
+          <div class="font-semibold">🧩 {{ cx.cx_name }}</div>
+          {% for sel in cx.selections %}
+            {% if sel.gname and sel.ings %}
+              <div class="text-xs text-stone-500">
+                {{ sel.gname }}:
+                {% for ing in sel.ings %}{{ ing.name }}{% if ing.qty > 1 %} ×{{ ing.qty }}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}
+              </div>
+            {% endif %}
+          {% endfor %}
+          <div class="text-sm text-stone-500">{{ cx.unit_price|som }} · x{{ cx.qty }}</div>
+        </div>
+        <div class="font-extrabold">{{ cx.line_total|default:cx.unit_price|som }}</div>
+      </div>
+    {% endfor %}
   </div>
 
   <div class="mt-6 rounded-3xl bg-white ring-1 ring-stone-200 p-5 shadow flex items-center justify-between">

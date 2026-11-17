@@ -302,6 +302,13 @@ def table_checkout(request, token):
 
     cart = _get_cart(request, token)
     rows, cart_qty, cart_total = _cart_calc(branch, cart)
+    # «Собери сам» живёт в отдельной корзине. Раньше эта страница её не знала:
+    # гость, собравший только бургер, видел «корзина пуста», а если в заказе
+    # были и обычные блюда — собранное молча пропадало.
+    cx_rows = _get_cx_cart(request, token)
+    cx_qty, cx_total = _cx_cart_totals(cx_rows)
+    cart_qty += cx_qty
+    cart_total += cx_total
     if cart_qty == 0:
         return redirect("table_menu", token=token)
 
@@ -316,7 +323,8 @@ def table_checkout(request, token):
             messages.error(request, "Укажите ваше имя.")
             return render(request, "public_site/table_checkout.html", {
                 "token": token, "place": place, "branch": branch,
-                "rows": rows, "cart_qty": cart_qty, "cart_total": cart_total,
+                "rows": rows, "cx_rows": cx_rows,
+                "cart_qty": cart_qty, "cart_total": cart_total,
             })
 
         from core.promo import resolve_promo, bump_promo_use
@@ -354,8 +362,23 @@ def table_checkout(request, token):
                 line_total=line_total,
             )
 
-        # ✅ очищаем корзину
+        for cx_item in cx_rows:
+            qty = int(cx_item.get("qty", 1))
+            unit_price = Decimal(str(cx_item["unit_price"]))
+            cx = DishConstructor.objects.filter(id=cx_item["cx_id"], branch=branch).first()
+            ConstructorOrderItem.objects.create(
+                order=order,
+                constructor=cx,
+                constructor_name_snapshot=cx_item["cx_name"],
+                qty=qty,
+                unit_price=unit_price,
+                line_total=unit_price * qty,
+                ingredients_snapshot=cx_item.get("selections", []),
+            )
+
+        # ✅ очищаем обе корзины — обычную и «Собери сам»
         _save_cart(request, token, {})
+        _save_cx_cart(request, token, [])
 
         # Автоинкремент Restaurant.rating убран: был БЕЗ ограничения, а поле
         # DecimalField(max_digits=3, decimal_places=1) хранит максимум 99.9 —
@@ -391,6 +414,7 @@ def table_checkout(request, token):
         "place": place,
         "branch": branch,
         "rows": rows,
+        "cx_rows": cx_rows,
         "cart_qty": cart_qty,
         "cart_total": cart_total,
     })
