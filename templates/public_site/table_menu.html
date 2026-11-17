@@ -703,18 +703,22 @@ const T = {
   <div class="tm-cats-wrap">
     <div class="tm-cats-row">
       <div class="tm-cats-inner" id="catsBar">
+        {% comment %}
+          «Собери сам» ставим первым: это то, ради чего гость чаще всего
+          берёт телефон за столом, и прятать его в конец списка незачем.
+        {% endcomment %}
+        {% if constructors %}
+        <button class="tm-cat-pill active" data-cat="constructors" type="button">🧩 {% trans "Собери сам" %}</button>
+        {% endif %}
         {% for c in menu %}
           {% if c.items %}
-          <button class="tm-cat-pill{% if forloop.first %} active{% endif %}"
+          <button class="tm-cat-pill{% if forloop.first and not constructors %} active{% endif %}"
                   data-cat="{{ c.branch_category.id }}"
                   type="button">
             {% t c.branch_category.category "name" %}
           </button>
           {% endif %}
         {% endfor %}
-        {% if constructors %}
-        <button class="tm-cat-pill" data-cat="constructors" type="button">🧩 {% trans "Собери сам" %}</button>
-        {% endif %}
       </div>
       <button class="tm-cats-more-btn" id="catsMoreBtn" onclick="toggleCatsDropdown()" type="button" aria-label="{% trans 'Все категории' %}">
         <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
@@ -767,6 +771,34 @@ const T = {
 
 <!-- ── CONTENT ── -->
 <div class="tm-content" id="menuContent">
+  {% if constructors %}
+  <div class="tm-cat-section" id="cat-constructors">
+    <div class="tm-cat-header">
+      <div class="tm-cat-title">🧩 {% trans "Собери сам" %}</div>
+      <div class="tm-cat-line"></div>
+      <div class="tm-cat-count">{{ constructors|length }}</div>
+    </div>
+    <div class="tm-grid">
+      {% for cx in constructors %}
+      <div class="tm-cx-card" onclick="openCxModal({{ cx.id }})">
+        <div class="tm-cx-photo">
+          {% if cx.photo %}
+            <img src="{{ cx.photo.url }}" alt="{{ cx.name }}" loading="lazy">
+          {% else %}
+            <div class="tm-cx-photo-empty">🧩</div>
+          {% endif %}
+          <div class="tm-cx-badge">{% trans "Собери сам" %}</div>
+        </div>
+        <div class="tm-cx-body">
+          <div class="tm-cx-name">{{ cx.name }}</div>
+          {% if cx.description %}<div class="tm-cx-desc">{{ cx.description }}</div>{% endif %}
+          <button class="tm-cx-btn" type="button">🧩 {% trans "Собрать" %}</button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
   {% for c in menu %}
     {% if c.items %}
     <div class="tm-cat-section" id="cat-{{ c.branch_category.id }}">
@@ -831,34 +863,6 @@ const T = {
   {% endfor %}
 
   {# ── CONSTRUCTOR SECTION — показываем только если есть активные конструкторы ── #}
-  {% if constructors %}
-  <div class="tm-cat-section" id="cat-constructors">
-    <div class="tm-cat-header">
-      <div class="tm-cat-title">🧩 {% trans "Собери сам" %}</div>
-      <div class="tm-cat-line"></div>
-      <div class="tm-cat-count">{{ constructors|length }}</div>
-    </div>
-    <div class="tm-grid">
-      {% for cx in constructors %}
-      <div class="tm-cx-card" onclick="openCxModal({{ cx.id }})">
-        <div class="tm-cx-photo">
-          {% if cx.photo %}
-            <img src="{{ cx.photo.url }}" alt="{{ cx.name }}" loading="lazy">
-          {% else %}
-            <div class="tm-cx-photo-empty">🧩</div>
-          {% endif %}
-          <div class="tm-cx-badge">{% trans "Собери сам" %}</div>
-        </div>
-        <div class="tm-cx-body">
-          <div class="tm-cx-name">{{ cx.name }}</div>
-          {% if cx.description %}<div class="tm-cx-desc">{{ cx.description }}</div>{% endif %}
-          <button class="tm-cx-btn" type="button">🧩 {% trans "Собрать" %}</button>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-  {% endif %}
 </div>
 
 <!-- ── DISH MODAL ── -->
