@@ -119,6 +119,9 @@ def _receipt_ticket(order, restaurant):
         lines.append(f"  Промокод {order.promo_code}: -{order.promo_discount:.0f} сом")
     if getattr(order, "delivery_fee", 0) and order.delivery_fee > 0:
         lines.append(f"  Доставка: {order.delivery_fee:.0f} сом")
+    elif (getattr(order, "type", "") == "delivery"
+          and getattr(getattr(order, "branch", None), "delivery_fee_negotiable", False)):
+        lines.append("  Доставка: договорная")
     lines += [
         f"{_BOLD}  ИТОГО: {order.total_amount:.0f} сом{_RESET}",
         f"  Оплата: {pm}",

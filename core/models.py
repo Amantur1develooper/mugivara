@@ -111,6 +111,13 @@ class Branch(TimeStampedModel):
     delivery_enabled = models.BooleanField(default=False)
     min_order_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    # Пока у заведения нет своих курьеров, развозят сами и цену называют
+    # по адресу: фиксированную сумму в такие заказы ставить нельзя.
+    delivery_fee_negotiable = models.BooleanField(
+        "Стоимость доставки договорная", default=False,
+        help_text="Цена доставки не считается заранее — её называют клиенту "
+                  "по адресу. В заказе и на сайте вместо суммы пишется «договорная»."
+    )
     pos_delivery_fee_enabled = models.BooleanField(
         "Добавлять стоимость доставки в кассе", default=True,
         help_text="Автоматически добавлять delivery_fee к заказу при оформлении доставки через кассу"

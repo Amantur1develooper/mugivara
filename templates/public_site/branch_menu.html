@@ -748,6 +748,8 @@ const T = {
   minDeliverySum: "{% trans 'Минимальная сумма доставки:' %}",
   subtotal: "{% trans 'Подытог' %}",
   delivery: "{% trans 'Доставка' %}",
+  deliveryDeal: "{% trans 'договорная' %}",
+  deliveryDealNote: "{% trans 'Стоимость доставки скажут при подтверждении — она зависит от адреса и в итог не входит.' %}",
   pickup: "{% trans 'Самовывоз' %}",
   howReceive: "{% trans 'Как получите заказ' %}",
   total: "{% trans 'Итого' %}",
@@ -828,7 +830,9 @@ const T = {
 
             {% if branch.delivery_enabled %}
               <span class="bm-hero-pill delivery">
-                🚚 {% trans "Доставка" %} · {{ branch.delivery_fee|som }}
+                🚚 {% trans "Доставка" %} ·
+                {% if branch.delivery_fee_negotiable %}{% trans "цена договорная" %}
+                {% else %}{{ branch.delivery_fee|som }}{% endif %}
               </span>
             {% else %}
               <span class="bm-hero-pill">🥡 {% trans "Самовывоз" %}</span>
@@ -2769,12 +2773,20 @@ document.addEventListener('click', e => {
       }
     }
 
-    const deliveryLabel = d.free_delivery_reached
-      ? `<span class="cm-free-val">${T.freeEmoji}</span>`
-      : `<span id="cmDeliveryFee">${d.delivery_fee} ${CUR}</span>`;
+    // Договорная доставка: суммы нет, её назовут по адресу — вместо числа
+    // пишем слово и поясняем, что в итог она не входит.
+    const deliveryLabel = d.delivery_negotiable
+      ? `<span id="cmDeliveryFee"><b>${T.deliveryDeal}</b></span>`
+      : (d.free_delivery_reached
+          ? `<span class="cm-free-val">${T.freeEmoji}</span>`
+          : `<span id="cmDeliveryFee">${d.delivery_fee} ${CUR}</span>`);
+
+    const deliveryNote = (d.delivery_enabled && d.delivery_negotiable)
+      ? `<div class="cm-total-row" style="font-size:11.5px;opacity:.7;line-height:1.4">
+           <span>${T.deliveryDealNote}</span></div>` : '';
 
     const deliveryRow = d.delivery_enabled
-      ? `<div class="cm-total-row" id="cmDeliveryRow"><span>${T.delivery}</span>${deliveryLabel}</div>` : '';
+      ? `<div class="cm-total-row" id="cmDeliveryRow"><span>${T.delivery}</span>${deliveryLabel}</div>${deliveryNote}` : '';
 
     const minNote = d.delivery_enabled && parseFloat(d.min_order_amount) > 0
       ? `<div class="cm-min-note">${T.minDeliverySum} ${d.min_order_amount} ${CUR}</div>` : '';
@@ -3096,7 +3108,9 @@ document.addEventListener('click', e => {
 
     const deliveryEl = document.getElementById('cmDeliveryFee');
     if (deliveryEl) {
-      if (d.free_delivery_reached) {
+      if (d.delivery_negotiable) {
+        deliveryEl.innerHTML = `<b>${T.deliveryDeal}</b>`;
+      } else if (d.free_delivery_reached) {
         deliveryEl.outerHTML = `<span class="cm-free-val">${T.freeEmoji}</span>`;
       } else {
         deliveryEl.textContent = d.delivery_fee + ' ' + CUR;

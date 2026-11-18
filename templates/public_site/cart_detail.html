@@ -301,8 +301,17 @@ const T = {
       {% if branch.delivery_enabled %}
       <div class="cart-totals-row" id="delivery-row">
         <span>{% trans "Доставка" %}</span>
-        <span><span data-delivery-fee>{{ delivery_fee }}</span> {% cur %}</span>
+        {% if branch.delivery_fee_negotiable %}
+          <span style="font-weight:700">{% trans "договорная" %}</span>
+        {% else %}
+          <span><span data-delivery-fee>{{ delivery_fee }}</span> {% cur %}</span>
+        {% endif %}
       </div>
+      {% if branch.delivery_fee_negotiable %}
+      <div class="cart-totals-row" style="font-size:12px;opacity:.75;line-height:1.45">
+        <span>{% trans "Стоимость доставки скажут при подтверждении заказа — она зависит от адреса и в итог ниже не входит." %}</span>
+      </div>
+      {% endif %}
       {% endif %}
       <div class="cart-totals-row total">
         <span>{% trans "Итого" %}</span>
@@ -333,7 +342,9 @@ const T = {
         <div class="cart-radio-group" id="order-type-group">
           <label class="cart-radio-option">
             <input type="radio" name="order_type" value="delivery" checked>
-            <span>🛵 {% trans "Доставка" %}</span>
+            <span>🛵 {% trans "Доставка" %}{% if branch.delivery_fee_negotiable %}
+              <small style="display:block;font-weight:400;opacity:.7">{% trans "цена договорная" %}</small>
+            {% endif %}</span>
           </label>
           <label class="cart-radio-option">
             <input type="radio" name="order_type" value="pickup">
@@ -409,7 +420,9 @@ async function postQty(url, qty) {
 
 function updateTotals(data) {
   if (data.subtotal     !== undefined) setAll('[data-subtotal]',     data.subtotal);
-  if (data.delivery_fee !== undefined) setAll('[data-delivery-fee]', data.delivery_fee);
+  if (data.delivery_fee !== undefined && !data.delivery_negotiable) {
+    setAll('[data-delivery-fee]', data.delivery_fee);
+  }
   if (data.total        !== undefined) setAll('[data-total]',        data.total);
   if (data.qty_total    !== undefined) {
     document.querySelectorAll('[data-cart-qty]').forEach(el => el.textContent = data.qty_total);

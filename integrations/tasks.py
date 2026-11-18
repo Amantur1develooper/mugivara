@@ -164,6 +164,10 @@ def _order_text(order: Order, title_override: str = None) -> str:
             items_total = Decimal(str(order.total_amount)) - Decimal(str(delivery_fee))
             lines.append(f"🛒 Блюда: {_money(items_total)}")
             lines.append(f"🚚 Доставка: {_money(delivery_fee)}")
+        elif (getattr(order, "type", "") == "delivery"
+              and getattr(order.branch, "delivery_fee_negotiable", False)):
+            # Суммы нет намеренно: её называют клиенту по адресу.
+            lines.append("🚚 Доставка: договорная — согласуйте сумму с клиентом")
         if promo_savings > 0:
             lines.append(f"🏷️ Скидка по акции: −{_money(promo_savings)}")
         _pc = getattr(order, "promo_code", "") or ""

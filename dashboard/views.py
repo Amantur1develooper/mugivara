@@ -682,6 +682,7 @@ def branch_edit(request, branch_id):
         branch.delivery_enabled          = request.POST.get("delivery_enabled") == "on"
         branch.min_order_amount          = dec("min_order_amount")
         branch.delivery_fee              = dec("delivery_fee")
+        branch.delivery_fee_negotiable   = request.POST.get("delivery_fee_negotiable") == "on"
         branch.pos_delivery_fee_enabled  = request.POST.get("pos_delivery_fee_enabled") == "on"
         branch.free_delivery_from        = dec("free_delivery_from")
         branch.is_open_24h         = request.POST.get("is_open_24h") == "on"

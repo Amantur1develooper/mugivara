@@ -516,6 +516,10 @@ def _calc_delivery(branch, subtotal: Decimal) -> Decimal:
     """Реальная стоимость доставки с учётом акции бесплатной доставки."""
     if not branch.delivery_enabled:
         return Decimal("0")
+    # Договорная доставка: сумму назовут клиенту по адресу, поэтому в
+    # итог она не попадает — иначе человек заплатил бы дважды.
+    if getattr(branch, "delivery_fee_negotiable", False):
+        return Decimal("0")
     free_from = branch.free_delivery_from or Decimal("0")
     if free_from > 0 and subtotal >= free_from:
         return Decimal("0")
@@ -763,6 +767,7 @@ def cart_json(request, branch_id: int):
         "subtotal":         str(total_subtotal),
         "delivery_fee":     str(delivery_fee),
         "delivery_enabled": branch.delivery_enabled,
+        "delivery_negotiable": branch.delivery_fee_negotiable,
         "total":            str(total),
         "qty_total":        qty_total + cx_qty,
         "min_order_amount": str(branch.min_order_amount),
@@ -835,6 +840,7 @@ def cart_update(request, branch_id: int, branch_item_id: int):
             "line_total":   str(line_total),
             "subtotal":     str(subtotal),
             "delivery_fee": str(delivery_fee),
+            "delivery_negotiable": branch.delivery_fee_negotiable,
             "total":        str(total),
             "qty_total":    qty_total,
             "free_from":    str(free_from),
@@ -865,6 +871,7 @@ def cart_remove(request, branch_id: int, branch_item_id: int):
             "line_total": "0",
             "subtotal": str(subtotal),
             "delivery_fee": str(delivery_fee),
+            "delivery_negotiable": branch.delivery_fee_negotiable,
             "total": str(total),
             "qty_total": qty_total,
         })
@@ -960,7 +967,9 @@ def checkout(request, branch_id: int):
         )
         return redirect("public_site:cart_detail", branch_id=branch.id)
 
-    if order_type == Order.Type.DELIVERY:
+    negotiable = (order_type == Order.Type.DELIVERY
+                  and branch.delivery_fee_negotiable)
+    if order_type == Order.Type.DELIVERY and not negotiable:
         free_from = branch.free_delivery_from or Decimal("0")
         if free_from > 0 and full_subtotal >= free_from:
             delivery_fee = Decimal("0")
@@ -1099,7 +1108,8 @@ def checkout(request, branch_id: int):
     if promo_msg_line:
         msg += f"\n{promo_msg_line}"
     if order_type == Order.Type.DELIVERY:
-        msg += f"\nДоставка: {delivery_fee} сом"
+        msg += ("\nДоставка: договорная (сумму согласовать с клиентом)"
+                if negotiable else f"\nДоставка: {delivery_fee} сом")
     msg += f"\nИтого: {total} сом"
 
     # Всегда идём на страницу успеха — она сама открывает WhatsApp (через JS)

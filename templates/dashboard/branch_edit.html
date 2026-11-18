@@ -207,10 +207,43 @@
       <div class="db-form-group">
         <label class="db-label" for="delivery_fee">Стоимость доставки (сом)</label>
         <input class="db-input" id="delivery_fee" name="delivery_fee" type="number" min="0"
-               value="{{ branch.delivery_fee|floatformat:'0' }}">
+               value="{{ branch.delivery_fee|floatformat:'0' }}"
+               {% if branch.delivery_fee_negotiable %}disabled{% endif %}>
         <div class="db-hint">0 = бесплатная доставка всегда</div>
       </div>
     </div>
+
+    <div class="db-toggle-row">
+      <div>
+        <div class="db-toggle-label">🤝 Стоимость доставки договорная</div>
+        <div class="db-toggle-desc">
+          Пока развозите сами и цена зависит от адреса. На сайте вместо суммы
+          будет написано «договорная», в итог заказа она не попадёт, а в заявке
+          придёт пометка согласовать сумму с клиентом.
+        </div>
+      </div>
+      <label class="db-switch">
+        <input type="checkbox" name="delivery_fee_negotiable" id="dfn"
+               {% if branch.delivery_fee_negotiable %}checked{% endif %}>
+        <span class="db-switch-slider"></span>
+      </label>
+    </div>
+    <script>
+      // Пока доставка договорная, фиксированная цена ни на что не влияет —
+      // не даём её править, чтобы не казалось, что она работает.
+      (function () {
+        const chk = document.getElementById('dfn');
+        const fee = document.getElementById('delivery_fee');
+        const free = document.getElementById('free_delivery_from');
+        if (!chk || !fee) return;
+        const sync = () => {
+          fee.disabled = chk.checked;
+          if (free) free.disabled = chk.checked;
+        };
+        chk.addEventListener('change', sync);
+        sync();
+      })();
+    </script>
 
     <div style="height:16px"></div>
 
