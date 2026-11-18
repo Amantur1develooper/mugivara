@@ -1094,13 +1094,46 @@ const T = {
 
 
     <style>
+    /* Ровно две колонки на любой ширине: блюда ниже на телефоне тоже идут
+       по две в ряд, и одна растянутая карточка конструктора выбивалась из
+       сетки и съедала экран. */
     .cx-cards {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(2, 1fr);
       gap: 14px;
       margin-bottom: 4px;
     }
-    @media (max-width: 600px) { .cx-cards { grid-template-columns: 1fr; } }
+    @media (max-width: 600px) {
+      .cx-cards { gap: 10px; }
+      /* В узкой карточке широкая картинка 16/7 превращается в полоску —
+         делаем её почти квадратной, а подписи плотнее. */
+      .cx-cards .cx-card-img { aspect-ratio: 4 / 3; }
+      .cx-cards .cx-card-body { padding: 10px 11px 12px; gap: 4px; }
+      .cx-cards .cx-card-name {
+        font-size: 13px; line-height: 1.2;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .cx-cards .cx-card-desc {
+        font-size: 11px; line-height: 1.4;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      /* Состав из нескольких шагов в такой ширине переносится в столбик
+         и ломает карточку — на телефоне он лишний, его видно в модале. */
+      .cx-cards .cx-card-steps { display: none; }
+      .cx-cards .cx-card-label { font-size: 9.5px; padding: 2px 7px; top: 7px; left: 8px; }
+      .cx-cards .cx-card-cta {
+        width: 100%; justify-content: center;
+        font-size: 12px; padding: 9px 10px; border-radius: 10px; margin-top: 4px;
+      }
+    }
+    @media (max-width: 360px) {
+      .cx-cards { gap: 8px; }
+      .cx-cards .cx-card-body { padding: 9px 9px 10px; }
+      .cx-cards .cx-card-name { font-size: 12px; }
+      .cx-cards .cx-card-cta { font-size: 11.5px; padding: 8px 8px; }
+    }
 
     .cx-card {
       display: flex; flex-direction: column;
