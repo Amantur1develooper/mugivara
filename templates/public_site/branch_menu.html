@@ -1417,12 +1417,14 @@ const CX_CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
   box-shadow:0 0 0 3px rgba(255,77,28,.1);
   background:rgba(255,77,28,.03);
 }
-.cxm-ing-photo { width:100%;aspect-ratio:1/1;object-fit:cover;display:block; }
+.cxm-ing-thumb { position:relative;width:100%;aspect-ratio:1/1;flex:none; }
+.cxm-ing-photo { width:100%;height:100%;object-fit:cover;display:block; }
 .cxm-ing-ph {
-  width:100%;aspect-ratio:1/1;
+  width:100%;height:100%;
   background:linear-gradient(135deg,#f0eff5,#e8e7ef);
   display:flex;align-items:center;justify-content:center;font-size:36px;
 }
+.cxm-ing-tick { display:none; }
 /* qty badge on photo */
 .cxm-ing-badge {
   position:absolute;top:7px;right:7px;
@@ -1441,6 +1443,51 @@ const CX_CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
   font-size:12px;color:var(--accent);margin-bottom:8px;
 }
 .cxm-ing-price.free { color:#10b981; }
+
+/* ── Телефон: карточка-строка ───────────────────────────────────────────────
+   Квадратное фото на всю ширину карточки давало высоту под 270 px на строку,
+   и набор из восьми добавок приходилось пролистывать на три экрана. На
+   телефоне карточка становится строкой: маленькое фото, название с ценой,
+   кнопки количества справа. Высота строки — около 70 px. */
+@media (max-width: 719px) {
+  .cxm-ing-grid { grid-template-columns:1fr !important;gap:7px; }
+  .cxm-ing {
+    display:grid;grid-template-columns:auto 1fr auto;
+    align-items:center;gap:10px;padding:7px 9px;border-radius:12px;
+  }
+  .cxm-ing-thumb { width:clamp(44px,12.5vw,54px);border-radius:9px;overflow:hidden; }
+  .cxm-ing-ph { font-size:20px; }
+  .cxm-ing-badge {
+    top:-5px;right:-5px;width:19px;height:19px;font-size:10.5px;border-width:1.5px;
+  }
+  .cxm-ing-body { padding:0;min-width:0; }
+  .cxm-ing-name {
+    font-size:13px;line-height:1.25;margin:0;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+  /* Описание в строке занимает место ради одного-двух слов — оставляем
+     одну строку, остальное видно в карточке блюда. */
+  .cxm-ing-desc {
+    font-size:10.5px;margin:1px 0 0;line-height:1.35;
+    display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;
+  }
+  .cxm-ing-price { font-size:12px;margin:2px 0 0; }
+  .cxm-ing-act { flex:none; }
+  .cxm-qty { height:28px; }
+  .cxm-qty-btn { width:28px;height:28px;font-size:15px; }
+  .cxm-qty-val { font-size:12.5px;min-width:20px; }
+  /* В группах с единственным выбором кнопок количества нет — вместо них
+     кружок, который закрашивается у выбранного. */
+  .cxm-ing-tick {
+    display:block;width:21px;height:21px;border-radius:50%;
+    border:2px solid var(--border);box-sizing:border-box;
+  }
+  .cxm-ing.selected .cxm-ing-tick {
+    border-color:var(--accent);background:var(--accent);
+    box-shadow:inset 0 0 0 3px #fff;
+  }
+  .cxm-ing.selected .cxm-ing-badge { display:none; }
+}
 
 /* Qty control inside card */
 .cxm-qty {
@@ -1636,14 +1683,21 @@ function _buildSteps() {
       card.dataset.iid = ing.id;
       card.dataset.name = ing.name;
 
+      // Фото лежит в обёртке, а не в корне карточки: на телефоне карточка
+      // становится строкой, и обёртка позволяет держать фото маленьким,
+      // не трогая разметку для компьютера.
       card.innerHTML = `
-        ${ing.photo ? `<img class="cxm-ing-photo" src="${ing.photo}" alt="${_esc(ing.name)}" loading="lazy">` : `<div class="cxm-ing-ph">🍽</div>`}
-        <div class="cxm-ing-badge" id="cxBadge${ing.id}">1</div>
+        <div class="cxm-ing-thumb">
+          ${ing.photo ? `<img class="cxm-ing-photo" src="${ing.photo}" alt="${_esc(ing.name)}" loading="lazy">` : `<div class="cxm-ing-ph">🍽</div>`}
+          <div class="cxm-ing-badge" id="cxBadge${ing.id}">1</div>
+        </div>
         <div class="cxm-ing-body">
           <div class="cxm-ing-name">${_esc(ing.name)}</div>
           ${ing.desc ? `<div class="cxm-ing-desc">${_esc(ing.desc)}</div>` : ''}
           <div class="cxm-ing-price${ing.price == 0 ? ' free' : ''}">${ing.price == 0 ? T.free : '+' + ing.price + ' ' + CUR}</div>
-          ${isRadio ? '' : `
+        </div>
+        <div class="cxm-ing-act">
+          ${isRadio ? `<span class="cxm-ing-tick" aria-hidden="true"></span>` : `
           <div class="cxm-qty" id="cxQtyCtrl${ing.id}">
             <button class="cxm-qty-btn" type="button" onclick="event.stopPropagation();_cxQty(${g.id},${ing.id},-1)">−</button>
             <div class="cxm-qty-val" id="cxQtyVal${ing.id}">0</div>
