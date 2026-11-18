@@ -87,12 +87,18 @@ class Command(BaseCommand):
             qs = CafeBranch.objects.all().order_by("id")
             if opts["cafe"]:
                 qs = qs.filter(id=opts["cafe"])
+            silent = []       # филиалы заведений, где чат есть не у всех
             for b in qs:
                 recs = list(TelegramRecipient.objects.filter(branch=b))
-                if not recs and not opts["cafe"]:
-                    continue          # кафе без настроек не захламляют вывод
                 if not recs:
-                    places.append(("Кафе", b.id, b.name_ru, "", None))
+                    # Филиал без чата — молчит. Если у соседних филиалов того
+                    # же заведения чат есть, это почти всегда забытая запись,
+                    # а не осознанное решение: называем такие отдельно.
+                    if opts["cafe"]:
+                        places.append(("Кафе", b.id, b.name_ru, "", None))
+                    elif TelegramRecipient.objects.filter(
+                            branch__restaurant=b.restaurant).exists():
+                        silent.append(b)
                     continue
                 for r in recs:
                     note = ""
@@ -102,6 +108,7 @@ class Command(BaseCommand):
                         note = " · заказы не уведомляются"
                     places.append(("Кафе", b.id, f"{b.name_ru}{note}",
                                    r.chat_id, r.message_thread_id))
+            self._silent_cafes = silent
 
         if not places:
             self.stdout.write(bad("  заведений нет"))
@@ -137,6 +144,13 @@ class Command(BaseCommand):
                     self.stdout.write(ok("    пробное сообщение отправлено"))
                 else:
                     self.stdout.write(bad(f"    отправить не вышло: {res.get('description')}"))
+
+        for b in getattr(self, "_silent_cafes", []):
+            self.stdout.write(bad(
+                f"\n  Кафе #{b.id} {b.name_ru} — чата нет, заказы никуда не уходят.\n"
+                f"    У других филиалов «{b.restaurant.name_ru}» чат настроен, у этого — нет.\n"
+                f"    Один и тот же чат можно указать нескольким филиалам: запись\n"
+                f"    нужна своя у каждого, одну на двоих переносить нельзя."))
 
         self.stdout.write("\n── 4. Последние записи ─────────────────────────")
         if not only or opts["shop"]:

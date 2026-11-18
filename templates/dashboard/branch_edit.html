@@ -522,6 +522,14 @@
 
   <div class="db-form-card" style="margin-top:20px">
     {% include "dashboard/_tg_fields.html" with chat_value=tg_chat_id thread_value=tg_thread_id what="Каждый новый заказ, вызов официанта и доп. заказ со столика" %}
+    {% if tg_same %}
+      <div class="tg-hint" style="margin-top:10px">
+        Этот же чат получает заказы филиала {{ tg_same }} — так можно,
+        сообщения придут за оба. Главное, чтобы у каждого филиала была
+        своя запись: одну на двоих переносить нельзя, иначе работает
+        только тот, кого сохранили последним.
+      </div>
+    {% endif %}
     {% if tg_extra %}
       <div class="tg-hint" style="margin-top:10px">
         Кроме этого чата заказы уходят ещё в {{ tg_extra }} —

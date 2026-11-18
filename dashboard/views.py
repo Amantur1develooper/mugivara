@@ -604,6 +604,22 @@ def _branch_tg(branch):
     return main, extra
 
 
+def _tg_chat_neighbours(branch, chat_id):
+    """Другие филиалы того же заведения с этим же чатом.
+
+    Один чат на несколько филиалов — нормально, сообщения приходят за оба.
+    Ненормально другое: одну запись переносят с филиала на филиал, и тогда
+    работает только последний сохранённый. Поэтому показываем соседей.
+    """
+    from integrations.models import TelegramRecipient
+    if not chat_id:
+        return []
+    return [r.branch for r in (TelegramRecipient.objects
+            .filter(branch__restaurant=branch.restaurant, chat_id=chat_id)
+            .exclude(branch=branch)
+            .select_related("branch"))]
+
+
 def _save_branch_tg(branch, chat_id, thread_id):
     """Сохраняет номер чата из настроек филиала."""
     from integrations.models import TelegramRecipient
@@ -770,12 +786,14 @@ def branch_edit(request, branch_id):
 
     work_days_list = branch.work_days.split(",") if branch.work_days else ["0","1","2","3","4","5","6"]
     tg_main, tg_extra = _branch_tg(branch)
+    tg_same = _tg_chat_neighbours(branch, tg_main.chat_id if tg_main else "")
     return render(request, "dashboard/branch_edit.html", {
         "branch": branch,
         "work_days_list": work_days_list,
         "tg_chat_id": tg_main.chat_id if tg_main else "",
         "tg_thread_id": tg_main.message_thread_id if tg_main else "",
         "tg_extra": tg_extra,
+        "tg_same": ", ".join(b.name_ru for b in tg_same),
         "can_rename": _can_rename_branch(request.user, branch),
     })
 
