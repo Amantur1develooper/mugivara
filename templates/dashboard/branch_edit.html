@@ -102,11 +102,115 @@
   </div>
 </div>
 
+<style>
+  /* Страница была одной колонкой из двенадцати одинаковых карточек на шесть
+     экранов. Теперь сверху переходы по разделам, карточки на широком экране
+     идут в две колонки, а кнопка сохранения всегда под рукой. */
+  .be-jump {
+    display: flex; gap: 7px; overflow-x: auto; padding: 10px 0 12px;
+    position: sticky; top: 0; z-index: 20;
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    margin-bottom: 18px; scrollbar-width: none;
+  }
+  .be-jump::-webkit-scrollbar { display: none; }
+  .be-jump a {
+    flex: none; font-size: 12.5px; font-weight: 600; text-decoration: none;
+    color: var(--text2); background: var(--card);
+    border: 1.5px solid var(--border); border-radius: 100px;
+    padding: 7px 13px; white-space: nowrap;
+  }
+  .be-jump a:hover { border-color: var(--accent); color: var(--accent); }
+
+  .be-grid { display: grid; gap: 16px; align-items: start; }
+  @media (min-width: 1100px) {
+    .be-grid { grid-template-columns: 1fr 1fr; }
+    .be-grid > .wide { grid-column: 1 / -1; }
+  }
+  .be-grid > .db-card, .be-grid > .db-form-card { margin-top: 0 !important; }
+  /* Якорь не должен уезжать под липкую панель переходов */
+  .be-grid > [id] { scroll-margin-top: 70px; }
+
+  .be-save {
+    position: sticky; bottom: 0; z-index: 20;
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    padding: 12px 0; margin-top: 18px;
+    background: linear-gradient(to top, var(--bg) 70%, transparent);
+  }
+
+  /* ── Свёрнутые разделы ──
+     Одиннадцать развёрнутых карточек на телефоне — шесть с лишним экранов,
+     и чтобы понять, что здесь вообще настраивается, надо пролистать всё.
+     Свёрнутые разделы дают список из одиннадцати строк: видно сразу всё,
+     открываешь нужное. Поля внутри закрытого раздела отправляются как
+     обычно, так что сохранение работает независимо от того, что открыто. */
+  .db-card > .db-card-title {
+    cursor: pointer; user-select: none;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .db-card > .db-card-title::after {
+    content: '⌃'; font-size: 15px; color: var(--muted);
+    transform: rotate(180deg); transition: transform .18s; flex: none;
+  }
+  .db-card.collapsed > .db-card-title::after { transform: rotate(0deg); }
+  .db-card.collapsed > .db-card-title { margin-bottom: 0; }
+  .db-card.collapsed > *:not(.db-card-title) { display: none !important; }
+  .db-card.collapsed { padding-bottom: 14px; }
+  .be-fold {
+    display: none; font-size: 12px; font-weight: 600; color: var(--accent);
+    background: none; border: 0; cursor: pointer; padding: 7px 4px; font-family: inherit;
+  }
+  @media (max-width: 1099px) { .be-fold { display: inline-block; } }
+
+  /* ── Фотографии строкой ── */
+  .ph-row {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center;
+    gap: 12px; padding: 10px; border: 1.5px solid var(--border);
+    border-radius: 14px; cursor: pointer; position: relative;
+    margin-bottom: 10px; transition: border-color .15s;
+  }
+  .ph-row:hover { border-color: var(--accent); }
+  .ph-input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .ph-thumb {
+    width: 92px; height: 66px; border-radius: 10px; overflow: hidden;
+    background: var(--bg); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; flex: none;
+  }
+  .ph-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .ph-empty { font-size: 24px; opacity: .5; }
+  .ph-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .ph-name { font-size: 13.5px; font-weight: 700; color: var(--text); }
+  .ph-desc { font-size: 11.5px; color: var(--muted); line-height: 1.4; }
+  .ph-btn {
+    flex: none; font-size: 12px; font-weight: 700; color: var(--accent);
+    border: 1.5px solid var(--accent); border-radius: 9px; padding: 7px 12px;
+  }
+  .ph-note { font-size: 11.5px; color: var(--muted); margin-top: 2px; line-height: 1.45; }
+  @media (max-width: 420px) {
+    .ph-row { gap: 10px; padding: 9px; }
+    .ph-thumb { width: 72px; height: 54px; }
+    .ph-btn { padding: 6px 9px; font-size: 11.5px; }
+  }
+</style>
+
+<nav class="be-jump">
+  <button type="button" class="be-fold" id="beFold">Развернуть всё</button>
+  <a href="#sec-name">🏷️ Название</a>
+  <a href="#sec-contacts">📞 Контакты</a>
+  <a href="#sec-delivery">🚚 Доставка</a>
+  <a href="#sec-hours">⏰ Часы</a>
+  <a href="#sec-pay">💳 Оплата</a>
+  <a href="#sec-print">🖨 Чеки</a>
+  <a href="#sec-photos">📷 Фото</a>
+  <a href="#sec-map">📍 Карта</a>
+  <a href="#sec-tg">💬 Telegram</a>
+</nav>
+
 <form method="post" enctype="multipart/form-data">
 {% csrf_token %}
+<div class="be-grid">
 
   {# ── НАЗВАНИЕ ── #}
-  <div class="db-card">
+  <div class="db-card" id="sec-name">
     <div class="db-card-title">🏷️ Название филиала</div>
     {% if can_rename %}
       <div style="font-size:13px;color:var(--muted);margin-bottom:16px">
@@ -141,7 +245,7 @@
   </div>
 
   {# ── КОНТАКТЫ ТОЧКИ ── #}
-  <div class="db-card">
+  <div class="db-card" id="sec-contacts">
     <div class="db-card-title">📞 Контакты филиала</div>
     <div style="font-size:13px;color:var(--muted);margin-bottom:16px">
       Заказы с этой точки уходят на её WhatsApp. Если поле пустое — возьмём телефон
@@ -181,7 +285,7 @@
   </div>
 
   {# ── ДОСТАВКА ── #}
-  <div class="db-card">
+  <div class="db-card" id="sec-delivery">
     <div class="db-card-title">🚚 Доставка</div>
 
     <div class="db-toggle-row">
@@ -277,7 +381,7 @@
   </div>
 
   {# ── ЧАСЫ РАБОТЫ ── #}
-  <div class="db-card">
+  <div class="db-card" id="sec-hours">
     <div class="db-card-title">⏰ Часы работы</div>
 
     <div class="db-toggle-row">
@@ -323,7 +427,7 @@
   </div>
 
   {# ── СПОСОБЫ ОПЛАТЫ В КАССЕ ── #}
-  <div class="db-card">
+  <div class="db-card" id="sec-pay">
     <div class="db-card-title">💳 Способы оплаты (Касса / POS)</div>
     <div style="font-size:13px;color:var(--muted);margin-bottom:16px">
       Выберите какие способы оплаты доступны кассиру. Если включён только один — переключатель в кассе не будет показан.
@@ -355,7 +459,7 @@
   </div>
 
   {# ── ПЕЧАТЬ ── #}
-  <div class="db-card">
+  <div class="db-card" id="sec-print">
     <div class="db-card-title">🖨 Печать чеков</div>
     <div style="font-size:13px;color:var(--muted);margin-bottom:16px">
       Управляет тем, когда кухонный чек уходит на принтер при QR-заказах со стола.
@@ -397,7 +501,7 @@
   </div>
 
   {# ── ВНЕШНИЙ САЙТ ── #}
-  <div class="db-card">
+  <div class="db-card" id="sec-site">
     <div class="db-card-title">🌐 Внешний сайт / приложение</div>
     <div class="db-form-group">
       <label class="db-label" for="external_url">Ссылка на ваш сайт</label>
@@ -413,7 +517,7 @@
 
   {% if request.user.is_superuser %}
   {# ── ИНДИВИДУАЛЬНЫЙ ДИЗАЙН (доп. услуга, включает только администратор) ── #}
-  <div class="db-card">
+  <div class="db-card" id="sec-design">
     <div class="db-card-title">🎨 Индивидуальный дизайн меню</div>
     <div class="db-form-group">
       <label class="db-label" for="template_slug">Код темы оформления</label>
@@ -429,82 +533,57 @@
   </div>
   {% endif %}
 
-  {# ── ГЛАВНОЕ ФОТО ФИЛИАЛА ── #}
-  <div class="db-card">
-    <div class="db-card-title">📷 Главное фото филиала</div>
+  {# ── ФОТОГРАФИИ ── #}
+  {# Два блока по 340 px занимали больше, чем все настройки вместе. Теперь
+     строка на фото: миниатюра, подпись и кнопка замены. #}
+  <div class="db-card" id="sec-photos">
+    <div class="db-card-title">📷 Фотографии</div>
 
-    {% if branch.cover_photo %}
-    <div style="margin-bottom:16px;position:relative;border-radius:16px;overflow:hidden;max-height:180px">
-      <img src="{{ branch.cover_photo.url }}" alt="Главное фото"
-           style="width:100%;height:180px;object-fit:cover;display:block">
-      <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,0,0,.45),transparent);
-                  display:flex;align-items:flex-end;padding:16px">
-        <span style="color:white;font-size:13px;font-weight:600">Текущее главное фото</span>
-      </div>
-    </div>
-    {% endif %}
-
-    <div class="photo-drop" id="coverDrop" style="border:2px dashed var(--border);border-radius:16px;
-         padding:28px;text-align:center;cursor:pointer;position:relative;overflow:hidden;
-         transition:border-color .2s,background .2s">
+    <label class="ph-row">
       <input type="file" name="cover_photo" accept="image/*" id="coverFile"
-             style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%"
-             onchange="previewCover(this)">
-      <div style="font-size:32px;margin-bottom:8px">📷</div>
-      <div id="coverDropText" style="font-size:14px;color:var(--muted)">
-        {% if branch.cover_photo %}Загрузить новое главное фото{% else %}Нажмите или перетащите фото{% endif %}
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">
-        Авто-сжатие → WebP · Рекомендуемый размер 1200×600 px
-      </div>
-    </div>
-    <img id="coverPreview" alt="Превью" style="display:none;width:100%;max-height:180px;
-         object-fit:cover;border-radius:12px;margin-top:12px">
-    <div style="margin-top:10px;font-size:12px;color:var(--muted)">
-      Главное фото отображается в шапке страницы филиала.
-    </div>
-  </div>
+             class="ph-input" onchange="previewPhoto(this,'cover')">
+      <span class="ph-thumb">
+        {% if branch.cover_photo %}
+          <img id="coverPreview" src="{{ branch.cover_photo.url }}" alt="Главное фото">
+        {% else %}
+          <img id="coverPreview" alt="" style="display:none">
+          <span class="ph-empty" id="coverEmpty">📷</span>
+        {% endif %}
+      </span>
+      <span class="ph-text">
+        <span class="ph-name">Главное фото филиала</span>
+        <span class="ph-desc" id="coverDropText">
+          {% if branch.cover_photo %}Загружено · в шапке страницы филиала{% else %}Не загружено · показывается в шапке страницы филиала{% endif %}
+        </span>
+      </span>
+      <span class="ph-btn">{% if branch.cover_photo %}Заменить{% else %}Выбрать{% endif %}</span>
+    </label>
 
-  {# ── ФОТО АКЦИИ ── #}
-  <div class="db-card">
-    <div class="db-card-title">🖼 Фото для акции (фон карусели)</div>
-
-    {% if branch.promo_photo %}
-    <div style="margin-bottom:16px;position:relative;border-radius:16px;overflow:hidden;max-height:180px">
-      <img src="{{ branch.promo_photo.url }}" alt="Фото акции"
-           style="width:100%;height:180px;object-fit:cover;display:block">
-      <div style="position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,0,0,.45),transparent);
-                  display:flex;align-items:flex-end;padding:16px">
-        <span style="color:white;font-size:13px;font-weight:600">Текущее фото акции</span>
-      </div>
-    </div>
-    {% endif %}
-
-    <div class="photo-drop" id="promoDrop" style="border:2px dashed var(--border);border-radius:16px;
-         padding:28px;text-align:center;cursor:pointer;position:relative;overflow:hidden;
-         transition:border-color .2s,background .2s">
+    <label class="ph-row">
       <input type="file" name="promo_photo" accept="image/*" id="promoFile"
-             style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%"
-             onchange="previewPromo(this)">
-      <div style="font-size:32px;margin-bottom:8px">📸</div>
-      <div id="promoDropText" style="font-size:14px;color:var(--muted)">
-        {% if branch.promo_photo %}Загрузить новое фото{% else %}Нажмите или перетащите фото{% endif %}
-      </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">
-        Авто-сжатие → WebP · Рекомендуемый размер 1200×600 px
-      </div>
-    </div>
-    <img id="promoPreview" alt="Превью" style="display:none;width:100%;max-height:180px;
-         object-fit:cover;border-radius:12px;margin-top:12px">
+             class="ph-input" onchange="previewPhoto(this,'promo')">
+      <span class="ph-thumb">
+        {% if branch.promo_photo %}
+          <img id="promoPreview" src="{{ branch.promo_photo.url }}" alt="Фото акции">
+        {% else %}
+          <img id="promoPreview" alt="" style="display:none">
+          <span class="ph-empty" id="promoEmpty">🖼</span>
+        {% endif %}
+      </span>
+      <span class="ph-text">
+        <span class="ph-name">Фото для акции</span>
+        <span class="ph-desc" id="promoDropText">
+          {% if branch.promo_photo %}Загружено · фон карточки в карусели{% else %}Не загружено · вместо него цветной градиент{% endif %}
+        </span>
+      </span>
+      <span class="ph-btn">{% if branch.promo_photo %}Заменить{% else %}Выбрать{% endif %}</span>
+    </label>
 
-    <div style="margin-top:10px;font-size:12px;color:var(--muted)">
-      Это фото будет показано как фон карточки вашего ресторана в карусели на странице ресторанов.
-      Если не загружено — используется цветной градиент.
-    </div>
+    <div class="ph-note">Сжимаются автоматически в WebP. Лучше всего — широкие, 1200×600 px.</div>
   </div>
 
   <!-- MAP PICKER -->
-  <div class="db-form-card" style="margin-top:20px">
+  <div class="db-form-card wide" id="sec-map" style="margin-top:20px">
     <div class="db-form-section-title">📍 Расположение на карте</div>
     <p style="font-size:12px;color:var(--muted,#888);margin:0 0 10px">Кликните на карте чтобы поставить метку, или введите координаты вручную.</p>
     <div id="branch-map-picker" style="height:320px;border-radius:14px;overflow:hidden;border:1.5px solid var(--border,#e5e7eb);margin-bottom:12px"></div>
@@ -520,7 +599,7 @@
     </div>
   </div>
 
-  <div class="db-form-card" style="margin-top:20px">
+  <div class="db-form-card wide" id="sec-tg" style="margin-top:20px">
     {% include "dashboard/_tg_fields.html" with chat_value=tg_chat_id thread_value=tg_thread_id what="Каждый новый заказ, вызов официанта и доп. заказ со столика" %}
     {% if tg_same %}
       <div class="tg-hint" style="margin-top:10px">
@@ -538,10 +617,12 @@
     {% endif %}
   </div>
 
-  <div style="display:flex;gap:12px;flex-wrap:wrap">
+</div>{# .be-grid #}
+
+  <div class="be-save">
     <button type="submit" class="db-btn db-btn-primary">💾 Сохранить настройки</button>
-    <a href="{% url 'dashboard:home' %}" class="db-btn db-btn-ghost">← Назад</a>
     <a href="{% url 'dashboard:branch_items' branch.id %}" class="db-btn db-btn-ghost">🍽 Меню и цены →</a>
+    <a href="{% url 'dashboard:home' %}" class="db-btn db-btn-ghost">← Назад</a>
   </div>
 
 </form>
@@ -590,35 +671,52 @@
 })();
 </script>
 <script>
-function previewCover(input) {
+// На узком экране разделы свёрнуты: сначала виден весь список настроек.
+(function () {
+  const cards = [...document.querySelectorAll('.db-card > .db-card-title')]
+    .map(t => t.parentElement);
+  const narrow = () => window.matchMedia('(max-width: 1099px)').matches;
+
+  if (narrow()) cards.forEach((c, i) => { if (i > 0) c.classList.add('collapsed'); });
+
+  cards.forEach(card => {
+    card.querySelector('.db-card-title').addEventListener('click', () => {
+      card.classList.toggle('collapsed');
+    });
+  });
+
+  // Переход по разделу открывает его, иначе клик по чипу вёл в пустоту
+  const openByHash = () => {
+    const el = document.querySelector(location.hash || '#нет');
+    if (el && el.classList.contains('collapsed')) el.classList.remove('collapsed');
+  };
+  window.addEventListener('hashchange', openByHash);
+  openByHash();
+
+  const btn = document.getElementById('beFold');
+  if (btn) btn.addEventListener('click', () => {
+    const anyClosed = cards.some(c => c.classList.contains('collapsed'));
+    cards.forEach(c => c.classList.toggle('collapsed', !anyClosed));
+    btn.textContent = anyClosed ? 'Свернуть всё' : 'Развернуть всё';
+  });
+})();
+
+// Превью для компактных строк: подменяем миниатюру и подпись.
+function previewPhoto(input, kind) {
   if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
   const reader = new FileReader();
   reader.onload = e => {
-    const img = document.getElementById('coverPreview');
-    img.src = e.target.result;
-    img.style.display = 'block';
-    document.getElementById('coverDropText').textContent = input.files[0].name;
-    document.getElementById('coverDrop').style.borderColor = 'var(--accent)';
+    const img = document.getElementById(kind + 'Preview');
+    const empty = document.getElementById(kind + 'Empty');
+    if (img) { img.src = e.target.result; img.style.display = 'block'; }
+    if (empty) empty.style.display = 'none';
+    const text = document.getElementById(kind + 'DropText');
+    if (text) text.textContent = 'Выбрано: ' + file.name + ' — не забудьте сохранить';
+    const row = input.closest('.ph-row');
+    if (row) row.style.borderColor = 'var(--accent)';
   };
-  reader.readAsDataURL(input.files[0]);
-}
-function previewPromo(input) {
-  if (!input.files || !input.files[0]) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    const img = document.getElementById('promoPreview');
-    img.src = e.target.result;
-    img.style.display = 'block';
-    document.getElementById('promoDropText').textContent = input.files[0].name;
-    document.getElementById('promoDrop').style.borderColor = 'var(--accent)';
-  };
-  reader.readAsDataURL(input.files[0]);
-}
-const drop = document.getElementById('promoDrop');
-if (drop) {
-  drop.addEventListener('dragover',  e => { e.preventDefault(); drop.style.background = 'rgba(255,77,28,.04)'; });
-  drop.addEventListener('dragleave', () => drop.style.background = '');
-  drop.addEventListener('drop',      e => { e.preventDefault(); drop.style.background = ''; });
+  reader.readAsDataURL(file);
 }
 </script>
 {% endblock %}
