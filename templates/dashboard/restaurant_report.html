@@ -1,0 +1,169 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Сводный отчёт — {{ rest.name_ru }}{% endblock %}
+
+{% block head_extra %}
+<style>
+  /* Стили повторяют отчёт филиала: это тот же отчёт, только строка —
+     не час, а филиал. Владельцу не нужно привыкать к новой странице. */
+  .rr-title{font-family:'Unbounded',sans-serif;font-weight:900;font-size:23px;letter-spacing:-1px;color:var(--text);margin-bottom:4px;}
+  .rr-sub{font-size:13.5px;color:var(--muted);margin-bottom:22px;}
+  .rr-sub a{color:var(--accent);text-decoration:none;font-weight:600;}
+  .rr-card{background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:20px;margin-bottom:20px;}
+  .rr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;align-items:end;}
+  .rr-field label{display:block;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+  .rr-input{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);font:inherit;font-size:14px;}
+  .rr-input:focus{outline:none;border-color:var(--accent);}
+  .rr-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+  .rr-btn{appearance:none;border:none;cursor:pointer;font:700 13.5px 'Inter',sans-serif;padding:12px 20px;border-radius:11px;
+          background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;text-decoration:none;display:inline-flex;align-items:center;gap:7px;}
+  .rr-btn-x{background:#1D6F42;}
+
+  .rr-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:14px;margin-bottom:20px;}
+  .rr-kpi{background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:16px 18px;}
+  .rr-kpi-label{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);}
+  .rr-kpi-val{font-size:25px;font-weight:800;color:var(--text);margin-top:5px;}
+  .rr-kpi-val small{font-size:13px;color:var(--muted);font-weight:600;}
+  .rr-h3{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:14px;}
+
+  .rr-scroll{overflow-x:auto;}
+  table.rr{width:100%;border-collapse:collapse;min-width:900px;}
+  table.rr th{background:var(--bg);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);
+              text-align:left;padding:12px 14px;white-space:nowrap;}
+  table.rr td{padding:12px 14px;font-size:13.5px;color:var(--text2);border-top:1px solid var(--border);white-space:nowrap;}
+  table.rr td.num{text-align:right;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;}
+  table.rr th.num{text-align:right;}
+  table.rr tr.total td{border-top:2px solid var(--border);font-weight:800;color:var(--text);background:var(--bg);}
+  table.rr a{color:var(--accent);text-decoration:none;font-weight:700;}
+  .rr-share{display:inline-block;min-width:38px;}
+  .rr-bar{height:5px;border-radius:4px;background:linear-gradient(90deg,var(--accent2),var(--accent));margin-top:4px;min-width:2px;}
+  .rr-empty{padding:44px 20px;text-align:center;color:var(--muted);}
+
+  @media (max-width:640px){
+    .rr-title{font-size:19px;}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rr-title">📊 {{ rest.name_ru }} — все филиалы</div>
+<p class="rr-sub">
+  Сводка по заказам каждой точки за один период ·
+  <a href="{% url 'dashboard:home' %}">← в кабинет</a>
+</p>
+
+<form class="rr-card" method="get">
+  <div class="rr-grid">
+    <div class="rr-field">
+      <label for="date_from">Дата с</label>
+      <input class="rr-input" type="date" id="date_from" name="date_from" value="{{ date_from }}">
+    </div>
+    <div class="rr-field">
+      <label for="time_from">Время с</label>
+      <input class="rr-input" type="time" id="time_from" name="time_from" value="{{ time_from }}">
+    </div>
+    <div class="rr-field">
+      <label for="date_to">Дата по</label>
+      <input class="rr-input" type="date" id="date_to" name="date_to" value="{{ date_to }}">
+    </div>
+    <div class="rr-field">
+      <label for="time_to">Время по</label>
+      <input class="rr-input" type="time" id="time_to" name="time_to" value="{{ time_to }}">
+    </div>
+  </div>
+  <div class="rr-actions">
+    <button type="submit" class="rr-btn">Показать</button>
+    <a href="{% url 'dashboard:restaurant_report_export' rest.id %}{% if export_qs %}?{{ export_qs }}{% endif %}"
+       class="rr-btn rr-btn-x">⬇ Скачать Excel</a>
+  </div>
+</form>
+
+<div class="rr-kpis">
+  <div class="rr-kpi"><div class="rr-kpi-label">Заказов</div><div class="rr-kpi-val">{{ totals.count }}</div></div>
+  <div class="rr-kpi"><div class="rr-kpi-label">Выручка</div><div class="rr-kpi-val">{{ totals.revenue|floatformat:0 }} <small>сом</small></div></div>
+  <div class="rr-kpi"><div class="rr-kpi-label">Средний чек</div><div class="rr-kpi-val">{{ totals.avg|floatformat:0 }} <small>сом</small></div></div>
+  <div class="rr-kpi"><div class="rr-kpi-label">Доставка</div><div class="rr-kpi-val">{{ totals.delivery }}</div></div>
+  <div class="rr-kpi"><div class="rr-kpi-label">Самовывоз</div><div class="rr-kpi-val">{{ totals.pickup }}</div></div>
+  <div class="rr-kpi"><div class="rr-kpi-label">В заведении</div><div class="rr-kpi-val">{{ totals.dine_in }}</div></div>
+  <div class="rr-kpi"><div class="rr-kpi-label">Собери сам</div><div class="rr-kpi-val">{{ totals.cx_orders }}<small> зак.</small></div></div>
+  <div class="rr-kpi"><div class="rr-kpi-label">Отменённых</div><div class="rr-kpi-val">{{ totals.cancelled }}</div></div>
+</div>
+
+<div class="rr-card">
+  <div class="rr-h3">По филиалам</div>
+  {% if rows %}
+  <div class="rr-scroll">
+    <table class="rr">
+      <tr>
+        <th>Филиал</th>
+        <th class="num">Заказов</th>
+        <th class="num">Выручка</th>
+        <th class="num">Доля</th>
+        <th class="num">Ср. чек</th>
+        <th class="num">Доставка</th>
+        <th class="num">Самовывоз</th>
+        <th class="num">В заведении</th>
+        <th class="num">Со столика</th>
+        <th class="num">Собери сам</th>
+        <th class="num">Отменено</th>
+      </tr>
+      {% for r in rows %}
+      <tr>
+        <td><a href="{% url 'dashboard:branch_report' r.branch.id %}{% if export_qs %}?{{ export_qs }}{% endif %}">{{ r.branch.name_ru }}</a></td>
+        <td class="num">{{ r.count }}</td>
+        <td class="num">{{ r.revenue|floatformat:0 }}</td>
+        <td class="num">
+          <span class="rr-share">{{ r.share }}%</span>
+          <div class="rr-bar" style="width:{{ r.share }}%"></div>
+        </td>
+        <td class="num">{{ r.avg|floatformat:0 }}</td>
+        <td class="num">{{ r.delivery }} <small style="color:var(--muted)">/ {{ r.delivery_sum|floatformat:0 }}</small></td>
+        <td class="num">{{ r.pickup }} <small style="color:var(--muted)">/ {{ r.pickup_sum|floatformat:0 }}</small></td>
+        <td class="num">{{ r.dine_in }} <small style="color:var(--muted)">/ {{ r.dine_in_sum|floatformat:0 }}</small></td>
+        <td class="num">{{ r.table_orders }}</td>
+        <td class="num">{{ r.cx_orders }} <small style="color:var(--muted)">/ {{ r.cx_revenue|floatformat:0 }}</small></td>
+        <td class="num">{{ r.cancelled }}</td>
+      </tr>
+      {% endfor %}
+      <tr class="total">
+        <td>ИТОГО</td>
+        <td class="num">{{ totals.count }}</td>
+        <td class="num">{{ totals.revenue|floatformat:0 }}</td>
+        <td class="num">100%</td>
+        <td class="num">{{ totals.avg|floatformat:0 }}</td>
+        <td class="num">{{ totals.delivery }} / {{ totals.delivery_sum|floatformat:0 }}</td>
+        <td class="num">{{ totals.pickup }} / {{ totals.pickup_sum|floatformat:0 }}</td>
+        <td class="num">{{ totals.dine_in }} / {{ totals.dine_in_sum|floatformat:0 }}</td>
+        <td class="num">{{ totals.table_orders }}</td>
+        <td class="num">{{ totals.cx_orders }} / {{ totals.cx_revenue|floatformat:0 }}</td>
+        <td class="num">{{ totals.cancelled }}</td>
+      </tr>
+    </table>
+  </div>
+  <div style="font-size:12px;color:var(--muted);margin-top:12px;line-height:1.5">
+    В колонках «Доставка», «Самовывоз», «В заведении» и «Собери сам» —
+    количество заказов и сумма через дробь. «Со столика» — заказы, сделанные
+    через QR-код на столе. Название филиала открывает его подробный отчёт
+    за тот же период.
+  </div>
+  {% else %}
+  <div class="rr-empty">У заведения пока нет филиалов.</div>
+  {% endif %}
+</div>
+
+<div class="rr-card">
+  <div class="rr-h3">🧩 Собери сам — что собирают по всей сети</div>
+  {% if cx_top %}
+  <div class="rr-scroll">
+    <table class="rr" style="min-width:420px">
+      <tr><th>Конструктор</th><th class="num">Порций</th><th class="num">Сумма</th></tr>
+      {% for name, v in cx_top %}
+      <tr><td>{{ name }}</td><td class="num">{{ v.qty }}</td>
+          <td class="num">{{ v.amount|floatformat:0 }} сом</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% else %}
+  <div class="rr-empty">За выбранный период конструктор не заказывали.</div>
+  {% endif %}
+</div>
+{% endblock %}

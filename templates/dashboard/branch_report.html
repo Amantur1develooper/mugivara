@@ -58,6 +58,7 @@
 <div class="br-title">📑 {{ branch.name_ru }}</div>
 <p class="br-sub">
   {{ branch.restaurant.name_ru }} · отчёт по заказам с детализацией по часам ·
+  <a href="{% url 'dashboard:restaurant_report' branch.restaurant.id %}">сводный по всем филиалам →</a> ·
   <a href="{% url 'dashboard:home' %}">← в кабинет</a>
 </p>
 
@@ -116,6 +117,31 @@
   </div>
   {% else %}
   <div class="br-empty">За выбранный период заказов нет.</div>
+  {% endif %}
+</div>
+
+<div class="br-card">
+  <div class="br-h3">🧩 Собери сам и столики</div>
+  <div class="br-chips">
+    <span class="br-chip">Заказов с конструктором: <b>{{ cx_orders }}</b></span>
+    <span class="br-chip">Собрано порций: <b>{{ cx_qty }}</b></span>
+    <span class="br-chip">Выручка конструктора: <b>{{ cx_revenue|floatformat:0 }}</b> сом
+      {% if cx_share %}· {{ cx_share }}% от всей{% endif %}</span>
+    <span class="br-chip">📱 Заказов со столика по QR: <b>{{ table_orders }}</b></span>
+  </div>
+  {% if cx_top %}
+    <div class="br-h3" style="margin:20px 0 12px">Что собирают чаще всего</div>
+    <div class="br-scroll">
+      <table class="br" style="min-width:420px">
+        <tr><th>Конструктор</th><th style="text-align:right">Порций</th><th style="text-align:right">Сумма</th></tr>
+        {% for name, v in cx_top %}
+        <tr><td>{{ name }}</td><td class="num">{{ v.qty }}</td>
+            <td class="num">{{ v.amount|floatformat:0 }} сом</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  {% else %}
+    <div class="br-empty" style="padding:22px">За период конструктор не заказывали.</div>
   {% endif %}
 </div>
 

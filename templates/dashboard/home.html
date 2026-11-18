@@ -206,6 +206,17 @@
     })();
     </script>
 
+    {% if item.branches|length > 1 %}
+    {# Сводный отчёт имеет смысл, когда филиалов больше одного:
+       у единственной точки он повторял бы её собственный отчёт. #}
+    <div style="margin:0 0 14px">
+      <a href="{% url 'dashboard:restaurant_report' item.restaurant.id %}"
+         class="ba" style="display:inline-flex;align-items:center;gap:7px">
+        📊 Сводный отчёт по всем филиалам
+      </a>
+    </div>
+    {% endif %}
+
     {# ── Филиалы ── #}
     {% if item.branches %}
     <div class="branch-grid">

@@ -372,6 +372,14 @@ def _branch_or_403(request, branch_id):
     return branch, None
 
 
+def _share(part, whole):
+    """Доля в процентах: 12 → «12», 0.2 → «0.2», а не «0»."""
+    if not whole:
+        return 0
+    pct = float(part) / float(whole) * 100
+    return round(pct) if pct >= 10 else round(pct, 1)
+
+
 def _branch_data(branch, dt_from, dt_to):
     """Заказы филиала за интервал + разбивка по часам, типам и оплате."""
     from orders.models import Order
@@ -379,6 +387,7 @@ def _branch_data(branch, dt_from, dt_to):
     qs = (Order.objects
           .filter(branch=branch, created_at__gte=dt_from, created_at__lt=dt_to)
           .select_related("table_place")
+          .prefetch_related("constructor_items")
           .order_by("created_at"))
 
     type_labels = dict(Order.Type.choices)
@@ -390,6 +399,12 @@ def _branch_data(branch, dt_from, dt_to):
     by_pay = {}
     revenue = 0
     cancelled = 0
+    # «Собери сам»: отдельный срез — владельцы хотят видеть, сколько
+    # приносит конструктор, а в общей выручке он растворяется.
+    cx_orders = cx_qty = 0
+    cx_revenue = 0
+    cx_top = {}
+    table_orders = 0          # заказы, сделанные со столика по QR
 
     for o in qs:
         created = timezone.localtime(o.created_at)
@@ -430,6 +445,20 @@ def _branch_data(branch, dt_from, dt_to):
             bp["count"] += 1
             bp["amount"] += amount
 
+            if o.table_place_id:
+                table_orders += 1
+
+            cx_items = list(o.constructor_items.all())
+            if cx_items:
+                cx_orders += 1
+            for ci in cx_items:
+                cx_qty += ci.qty
+                cx_revenue += ci.line_total or 0
+                name = ci.constructor_name_snapshot or "Конструктор"
+                top = cx_top.setdefault(name, {"qty": 0, "amount": 0})
+                top["qty"] += ci.qty
+                top["amount"] += ci.line_total or 0
+
     hours = [{"hour": h, **by_hour[h]} for h in sorted(by_hour)]
     peak = max((h["amount"] for h in hours), default=0)
     for h in hours:
@@ -445,6 +474,14 @@ def _branch_data(branch, dt_from, dt_to):
         "cancelled": cancelled,
         "revenue": revenue,
         "avg": round(revenue / paid_count) if paid_count else 0,
+        "table_orders": table_orders,
+        "cx_orders": cx_orders,
+        "cx_qty": cx_qty,
+        "cx_revenue": cx_revenue,
+        # Конструктор часто даёт доли процента — целое округление
+        # показывало «0%» там, где деньги есть.
+        "cx_share": _share(cx_revenue, revenue),
+        "cx_top": sorted(cx_top.items(), key=lambda kv: -kv[1]["amount"])[:10],
     }
 
 
@@ -472,6 +509,12 @@ def branch_report(request, branch_id):
         "cancelled": data["cancelled"],
         "revenue": data["revenue"],
         "avg": data["avg"],
+        "table_orders": data["table_orders"],
+        "cx_orders": data["cx_orders"],
+        "cx_qty": data["cx_qty"],
+        "cx_revenue": data["cx_revenue"],
+        "cx_share": data["cx_share"],
+        "cx_top": data["cx_top"],
         "export_qs": request.GET.urlencode(),
     })
 
@@ -572,6 +615,233 @@ def branch_report_export(request, branch_id):
     wb.save(buf)
     buf.seek(0)
     fname = (f'otchet_{branch.id}_{rng["date_from"]:%Y%m%d}_{rng["date_to"]:%Y%m%d}.xlsx')
+    resp = HttpResponse(
+        buf.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    resp["Content-Disposition"] = f'attachment; filename="{fname}"'
+    return resp
+
+
+# ── Сводный отчёт по всему заведению ────────────────────────────────────────
+#
+# Отчёт по филиалу отвечает на вопрос «как шли дела в этой точке». Владельцу
+# сети нужен другой: какая точка тянет, где проседает доставка, где не
+# работает конструктор. Поэтому здесь одна строка на филиал и общий итог.
+
+def _restaurant_or_403(request, restaurant_id):
+    from django.shortcuts import get_object_or_404, redirect as _redirect
+    from core.models import Membership, Restaurant
+    rest = get_object_or_404(Restaurant, id=restaurant_id)
+    user = request.user
+    allowed = (user.is_staff or user.is_superuser
+               or Membership.objects.filter(user=user, restaurant=rest).exists())
+    if not allowed:
+        return None, _redirect("dashboard:home")
+    return rest, None
+
+
+def _restaurant_data(rest, dt_from, dt_to):
+    """Сводка по всем филиалам заведения за период."""
+    from core.models import Branch
+    from orders.models import Order
+
+    labels = dict(Order.Type.choices)
+    branches = list(Branch.objects.filter(restaurant=rest).order_by("name_ru"))
+
+    rows = []
+    for b in branches:
+        d = _branch_data(b, dt_from, dt_to)
+        by_type = dict(d["by_type"])
+        rows.append({
+            "branch": b,
+            "count": d["count"],
+            "cancelled": d["cancelled"],
+            "revenue": d["revenue"],
+            "avg": d["avg"],
+            "delivery": by_type.get(labels["delivery"], {}).get("count", 0),
+            "delivery_sum": by_type.get(labels["delivery"], {}).get("amount", 0),
+            "pickup": by_type.get(labels["pickup"], {}).get("count", 0),
+            "pickup_sum": by_type.get(labels["pickup"], {}).get("amount", 0),
+            "dine_in": by_type.get(labels["dine_in"], {}).get("count", 0),
+            "dine_in_sum": by_type.get(labels["dine_in"], {}).get("amount", 0),
+            "table_orders": d["table_orders"],
+            "cx_orders": d["cx_orders"],
+            "cx_qty": d["cx_qty"],
+            "cx_revenue": d["cx_revenue"],
+            "cx_share": d["cx_share"],
+            "cx_top": d["cx_top"],
+        })
+
+    def total(key):
+        return sum(r[key] for r in rows)
+
+    paid = total("count") - total("cancelled")
+    revenue = total("revenue")
+    totals = {
+        "count": total("count"), "cancelled": total("cancelled"),
+        "revenue": revenue, "avg": round(revenue / paid) if paid else 0,
+        "delivery": total("delivery"), "delivery_sum": total("delivery_sum"),
+        "pickup": total("pickup"), "pickup_sum": total("pickup_sum"),
+        "dine_in": total("dine_in"), "dine_in_sum": total("dine_in_sum"),
+        "table_orders": total("table_orders"),
+        "cx_orders": total("cx_orders"), "cx_qty": total("cx_qty"),
+        "cx_revenue": total("cx_revenue"),
+        "cx_share": _share(total("cx_revenue"), revenue),
+    }
+
+    # Доля филиала в выручке — чтобы сразу видеть, кто сколько приносит
+    for r in rows:
+        r["share"] = round(r["revenue"] / revenue * 100) if revenue else 0
+
+    # Топ конструкторов по всей сети
+    merged = {}
+    for r in rows:
+        for name, v in r["cx_top"]:
+            m = merged.setdefault(name, {"qty": 0, "amount": 0})
+            m["qty"] += v["qty"]
+            m["amount"] += v["amount"]
+    cx_top = sorted(merged.items(), key=lambda kv: -kv[1]["amount"])[:10]
+
+    return {"rows": rows, "totals": totals, "cx_top": cx_top}
+
+
+@login_required(login_url=LOGIN_URL)
+def restaurant_report(request, restaurant_id):
+    rest, deny = _restaurant_or_403(request, restaurant_id)
+    if deny:
+        return deny
+    rng = parse_range(request)
+    data = _restaurant_data(rest, rng["dt_from"], rng["dt_to"])
+    return render(request, "dashboard/restaurant_report.html", {
+        "rest": rest,
+        "date_from": rng["date_from"].strftime("%Y-%m-%d"),
+        "date_to": rng["date_to"].strftime("%Y-%m-%d"),
+        "time_from": rng["time_from"].strftime("%H:%M"),
+        "time_to": rng["time_to"].strftime("%H:%M"),
+        "rows": data["rows"],
+        "totals": data["totals"],
+        "cx_top": data["cx_top"],
+        "export_qs": request.GET.urlencode(),
+    })
+
+
+@login_required(login_url=LOGIN_URL)
+def restaurant_report_export(request, restaurant_id):
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+    from openpyxl.utils import get_column_letter
+
+    rest, deny = _restaurant_or_403(request, restaurant_id)
+    if deny:
+        return deny
+    rng = parse_range(request)
+    d = _restaurant_data(rest, rng["dt_from"], rng["dt_to"])
+
+    accent = PatternFill("solid", fgColor="FF4D1C")
+    head_font = Font(bold=True, color="FFFFFF", size=11)
+    thin = Side(style="thin", color="DDDDDD")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    bold = Font(bold=True)
+    money = "#,##0"
+
+    def head(ws, names, row=1):
+        for col, name in enumerate(names, start=1):
+            c = ws.cell(row=row, column=col, value=name)
+            c.fill, c.font, c.border = accent, head_font, border
+            c.alignment = Alignment(horizontal="center", vertical="center",
+                                    wrap_text=True)
+
+    period = (f'{rng["date_from"]:%d.%m.%Y} {rng["time_from"]:%H:%M}'
+              f' — {rng["date_to"]:%d.%m.%Y} {rng["time_to"]:%H:%M}')
+    t = d["totals"]
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "По филиалам"
+    ws["A1"] = f"{rest.name_ru} — все филиалы"
+    ws["A1"].font = Font(bold=True, size=14)
+    ws["A2"] = f"Период: {period}"
+    ws["A3"] = (f"Заказов: {t['count']}   Выручка: {int(t['revenue'])} сом   "
+                f"Средний чек: {int(t['avg'])} сом   Отменённых: {t['cancelled']}")
+    ws["A4"] = f"Сформирован: {timezone.localtime(timezone.now()):%d.%m.%Y %H:%M}"
+
+    cols = ["Филиал", "Заказов", "Выручка, сом", "Доля, %", "Средний чек, сом",
+            "Доставка, шт", "Доставка, сом", "Самовывоз, шт", "Самовывоз, сом",
+            "В заведении, шт", "В заведении, сом", "Со столика (QR), шт",
+            "Собери сам, заказов", "Собери сам, порций", "Собери сам, сом",
+            "Собери сам, % выручки", "Отменённых"]
+    head(ws, cols, row=6)
+    for i, r in enumerate(d["rows"], start=7):
+        values = [r["branch"].name_ru, r["count"], int(r["revenue"]), r["share"],
+                  int(r["avg"]), r["delivery"], int(r["delivery_sum"]),
+                  r["pickup"], int(r["pickup_sum"]), r["dine_in"],
+                  int(r["dine_in_sum"]), r["table_orders"], r["cx_orders"],
+                  r["cx_qty"], int(r["cx_revenue"]), r["cx_share"], r["cancelled"]]
+        for col, val in enumerate(values, start=1):
+            c = ws.cell(row=i, column=col, value=val)
+            c.border = border
+            if col in (3, 5, 7, 9, 11, 15):
+                c.number_format = money
+
+    last = 7 + len(d["rows"])
+    totals_row = ["ИТОГО", t["count"], int(t["revenue"]), 100, int(t["avg"]),
+                  t["delivery"], int(t["delivery_sum"]), t["pickup"],
+                  int(t["pickup_sum"]), t["dine_in"], int(t["dine_in_sum"]),
+                  t["table_orders"], t["cx_orders"], t["cx_qty"],
+                  int(t["cx_revenue"]), t["cx_share"], t["cancelled"]]
+    for col, val in enumerate(totals_row, start=1):
+        c = ws.cell(row=last, column=col, value=val)
+        c.font, c.border = bold, border
+        if col in (3, 5, 7, 9, 11, 15):
+            c.number_format = money
+
+    widths = [26, 10, 14, 9, 16, 13, 15, 14, 16, 16, 18, 17, 18, 18, 17, 19, 13]
+    for col, w in enumerate(widths, start=1):
+        ws.column_dimensions[get_column_letter(col)].width = w
+    ws.freeze_panes = ws.cell(row=7, column=2)
+
+    # Лист 2 — конструктор по всей сети
+    ws2 = wb.create_sheet("Собери сам")
+    ws2["A1"] = "Что чаще всего собирают"
+    ws2["A1"].font = Font(bold=True, size=12)
+    head(ws2, ["Конструктор", "Порций", "Сумма, сом"], row=3)
+    for i, (name, v) in enumerate(d["cx_top"], start=4):
+        ws2.cell(row=i, column=1, value=name).border = border
+        ws2.cell(row=i, column=2, value=v["qty"]).border = border
+        c = ws2.cell(row=i, column=3, value=int(v["amount"]))
+        c.border, c.number_format = border, money
+    if not d["cx_top"]:
+        ws2.cell(row=4, column=1, value="За период конструктор не заказывали")
+    for col, w in enumerate([34, 12, 16], start=1):
+        ws2.column_dimensions[get_column_letter(col)].width = w
+
+    # Лист 3 — заказы всех филиалов подряд
+    ws3 = wb.create_sheet("Заказы")
+    head(ws3, ["Филиал", "Дата", "Время", "№", "Тип", "Клиент", "Телефон",
+               "Адрес / стол", "Сумма, сом", "Оплата", "Статус"])
+    i = 2
+    for r in d["rows"]:
+        bd = _branch_data(r["branch"], rng["dt_from"], rng["dt_to"])
+        for o in bd["rows"]:
+            values = [r["branch"].name_ru, o["date"], o["time"], o["id"], o["type"],
+                      o["customer"], o["phone"], o["address"], int(o["amount"]),
+                      o["pay"], o["status"]]
+            for col, val in enumerate(values, start=1):
+                c = ws3.cell(row=i, column=col, value=val)
+                c.border = border
+                if col == 9:
+                    c.number_format = money
+            i += 1
+    for col, w in enumerate([24, 12, 8, 8, 14, 20, 17, 28, 13, 13, 14], start=1):
+        ws3.column_dimensions[get_column_letter(col)].width = w
+    ws3.freeze_panes = ws3.cell(row=2, column=1)
+
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    fname = (f'otchet_set_{rest.id}_{rng["date_from"]:%Y%m%d}'
+             f'_{rng["date_to"]:%Y%m%d}.xlsx')
     resp = HttpResponse(
         buf.getvalue(),
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

@@ -87,6 +87,8 @@ urlpatterns = [
     path("survey/",    views.survey_results,   name="survey_results"),
     path("reports/",        reports.reports,        name="reports"),
     path("reports/export/", reports.reports_export, name="reports_export"),
+    path("restaurant/<int:restaurant_id>/report/",        reports.restaurant_report,        name="restaurant_report"),
+    path("restaurant/<int:restaurant_id>/report/export/", reports.restaurant_report_export, name="restaurant_report_export"),
     path("branch/<int:branch_id>/report/",        reports.branch_report,        name="branch_report"),
     path("branch/<int:branch_id>/report/export/", reports.branch_report_export, name="branch_report_export"),
 
