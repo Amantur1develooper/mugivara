@@ -41,7 +41,17 @@
 
   <div class="tg-check">
     <button type="button" class="db-btn tg-test">📨 {% trans "Отправить пробное сообщение" %}</button>
+    <button type="button" class="db-btn tg-invite">🔗 {% trans "Ссылка-приглашение" %}</button>
+    <a class="tg-open" target="_blank" rel="noopener" hidden>💬 {% trans "Открыть чат" %} ↗</a>
     <span class="tg-result"></span>
+  </div>
+  <div class="tg-invite-box" hidden>
+    <div class="tg-invite-label">{% trans "Ссылка, по которой можно вступить в группу:" %}</div>
+    <div class="tg-invite-row">
+      <input class="tg-invite-url" type="text" readonly onclick="this.select()">
+      <button type="button" class="tg-copy">{% trans "Копировать" %}</button>
+    </div>
+    <div class="tg-invite-note"></div>
   </div>
   <div class="tg-hint" style="margin:8px 0 0">
     {% trans "Проверка идёт на номер из поля выше — сохранять для неё не нужно." %}
@@ -58,12 +68,125 @@
   .tg-result.ok { color: #16a34a; }
   .tg-result.bad { color: #dc2626; }
   .tg-test[disabled] { opacity: .6; cursor: default; }
+  .tg-open {
+    font-size: 13px; font-weight: 700; text-decoration: none;
+    color: #2b7bb9; border: 1.5px solid rgba(43,123,185,.35);
+    border-radius: 10px; padding: 9px 13px; white-space: nowrap;
+  }
+  .tg-open:hover { background: rgba(43,123,185,.07); border-color: #2b7bb9; }
+  .tg-invite-box {
+    margin-top: 12px; padding: 12px; border-radius: 12px;
+    background: #f8fafc; border: 1px solid #e2e8f0;
+  }
+  .tg-invite-label { font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 7px; }
+  .tg-invite-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tg-invite-url {
+    flex: 1 1 220px; min-width: 0; font: inherit; font-size: 12.5px;
+    padding: 9px 10px; border: 1px solid #cbd5e1; border-radius: 9px; background: #fff;
+  }
+  .tg-copy {
+    flex: none; border: 0; border-radius: 9px; background: #1c1917; color: #fff;
+    padding: 9px 14px; font: inherit; font-size: 12.5px; cursor: pointer;
+  }
+  .tg-invite-note { font-size: 11.5px; color: #64748b; margin-top: 7px; line-height: 1.45; }
 </style>
 <script>
+  // Ссылка на сам чат собирается из номера без обращения к Telegram:
+  // у групп номер вида -1001234567890, а адрес — t.me/c/1234567890.
+  // Открывается у того, кто в этой группе есть, то есть у владельца.
+  function tgChatLink(chat, thread) {
+    const m = String(chat || '').trim().match(/^-100(\d+)$/);
+    if (!m) return '';
+    return 'https://t.me/c/' + m[1] + (thread ? '/' + thread : '');
+  }
+
+  function tgSyncLinks(root) {
+    (root || document).querySelectorAll('.tg-box').forEach(box => {
+      const a = box.querySelector('.tg-open');
+      if (!a) return;
+      const chat = box.querySelector('.tg-chat').value;
+      const thread = box.querySelector('.tg-thread').value;
+      // Прямую ссылку, если её прислал Telegram, не перетираем
+      const url = a.dataset.exact || tgChatLink(chat, thread);
+      if (url) { a.href = url; a.hidden = false; } else { a.hidden = true; }
+    });
+  }
+
   // Обработчик ставим один раз: если блок включат на странице дважды,
   // второй слушатель отправил бы пробное сообщение по два раза.
   if (!window.__tgTestBound) {
   window.__tgTestBound = true;
+  document.addEventListener('input', e => {
+    if (e.target.classList && (e.target.classList.contains('tg-chat')
+        || e.target.classList.contains('tg-thread'))) {
+      const box = e.target.closest('.tg-box');
+      const a = box && box.querySelector('.tg-open');
+      if (a) delete a.dataset.exact;   // номер поменяли — прежний адрес не годится
+      tgSyncLinks(box);
+    }
+  });
+  document.addEventListener('DOMContentLoaded', () => tgSyncLinks());
+  tgSyncLinks();
+  // Копирование ссылки-приглашения
+  document.addEventListener('click', e => {
+    const cp = e.target.closest('.tg-copy');
+    if (!cp) return;
+    const box = cp.closest('.tg-invite-box');
+    const field = box.querySelector('.tg-invite-url');
+    field.select();
+    navigator.clipboard?.writeText(field.value).then(
+      () => { cp.textContent = 'Скопировано'; setTimeout(() => cp.textContent = 'Копировать', 1600); },
+      () => { cp.textContent = 'Выделено — Ctrl+C'; }
+    );
+  });
+
+  // Ссылка-приглашение: её просим у Telegram отдельной кнопкой
+  document.addEventListener('click', async e => {
+    const ib = e.target.closest('.tg-invite');
+    if (!ib) return;
+    const box = ib.closest('.tg-box');
+    const out = box.querySelector('.tg-result');
+    const chat = (box.querySelector('.tg-chat').value || '').trim();
+    const token = document.querySelector('[name=csrfmiddlewaretoken]');
+    out.className = 'tg-result';
+    if (!chat) { out.classList.add('bad'); out.textContent = 'Сначала впишите Chat ID'; return; }
+    ib.disabled = true;
+    out.textContent = 'Спрашиваю у Telegram…';
+    try {
+      const body = new FormData();
+      body.append('chat_id', chat);
+      if (token) body.append('csrfmiddlewaretoken', token.value);
+      const r = await fetch('{% url "dashboard:tg_invite" %}', {
+        method: 'POST', body, headers: {'X-Requested-With': 'XMLHttpRequest'},
+      });
+      const d = await r.json();
+      const ibox = box.querySelector('.tg-invite-box');
+      if (d.ok) {
+        out.textContent = '';
+        ibox.hidden = false;
+        ibox.querySelector('.tg-invite-url').value = d.link;
+        const notes = {
+          public: 'Группа открытая — по этому адресу в неё можно войти.',
+          existing: 'Это основная ссылка группы.',
+          new: 'Создана новая ссылка. Прежние продолжают работать.',
+        };
+        ibox.querySelector('.tg-invite-note').textContent =
+          (notes[d.kind] || '') + ' Ссылкой можно поделиться с сотрудником.';
+        const a = box.querySelector('.tg-open');
+        if (a) { a.dataset.exact = d.link; tgSyncLinks(box); }
+      } else {
+        ibox.hidden = true;
+        out.classList.add('bad');
+        out.textContent = d.error || 'Не вышло получить ссылку';
+      }
+    } catch (err) {
+      out.classList.add('bad');
+      out.textContent = 'Не получилось связаться с сервером';
+    } finally {
+      ib.disabled = false;
+    }
+  });
+
   document.addEventListener('click', async (e) => {
     const btn = e.target.closest('.tg-test');
     if (!btn) return;
@@ -91,6 +214,11 @@
       out.textContent = data.ok
         ? 'Отправлено в «' + (data.title || chat) + '» — проверьте чат'
         : (data.error || 'Не вышло отправить');
+      const link = box.querySelector('.tg-open');
+      if (data.ok && link && (data.link || data.invite)) {
+        link.dataset.exact = data.link || data.invite;
+      }
+      tgSyncLinks(box);
     } catch (err) {
       out.classList.add('bad');
       out.textContent = 'Не получилось связаться с сервером';

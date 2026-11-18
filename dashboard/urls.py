@@ -18,6 +18,7 @@ app_name = "dashboard"
 urlpatterns = [
     # Пробное сообщение из настроек любого направления
     path("tg/test/", views_tg.tg_test, name="tg_test"),
+    path("tg/invite/", views_tg.tg_invite, name="tg_invite"),
 
     path("login/",   views.login_view,   name="login"),
     path("logout/",  views.logout_view,  name="logout"),
