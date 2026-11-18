@@ -81,7 +81,7 @@ def _handle_message(msg):
 def _handle_callback(cq):
     """Кнопка под сообщением. Бот один на все направления, поэтому в
     callback_data первым идёт префикс: bs — барбершоп, sr — картинг,
-    sh — магазин."""
+    sh — магазин, rs — кафе и рестораны."""
     data = (cq.get("data") or "").split(":")
     if len(data) != 3:
         return
@@ -91,6 +91,9 @@ def _handle_callback(cq):
     if data[0] == "sh":
         from shops.tg_views import handle_callback as shop
         return shop(cq)
+    if data[0] == "rs":
+        from orders.tg_views import handle_callback as restaurant
+        return restaurant(cq)
     if data[0] != "bs":
         return
     _, action, raw_id = data

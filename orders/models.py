@@ -26,6 +26,11 @@ class Order(TimeStampedModel):
 
     type = models.CharField(max_length=20, choices=Type.choices, default=Type.PICKUP)
 
+    # Куда ушла карточка заказа в Telegram: {chat_id: message_id}. Нужно,
+    # чтобы потом переписать то же сообщение, а не присылать новое на
+    # каждое нажатие кнопки.
+    tg_messages = models.JSONField("Сообщения в Telegram", default=dict, blank=True)
+
     # ✅ на какой стол
     table_place = models.ForeignKey(
         Place, on_delete=models.SET_NULL, null=True, blank=True,

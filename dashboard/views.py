@@ -2506,53 +2506,14 @@ def pos_order_status(request, order_id):
     if not (request.user.is_staff or request.user.is_superuser or _has_branch_access(request.user, order.branch)):
         return JsonResponse({"ok": False}, status=403)
 
-    prev_status = order.status
-    new_status  = request.POST.get("status")
-    new_payment = request.POST.get("payment_status")
+    # Статус, печать и возврат остатков — в orders/flow.py: тем же путём
+    # идут кнопки в Telegram, иначе касса и чат однажды разойдутся.
+    from orders.flow import apply_status
 
-    fields = []
-    if new_status and new_status in Order.Status.values:
-        # Restore stock when cancelling a closed POS order
-        if new_status == Order.Status.CANCELLED and order.status == Order.Status.CLOSED:
-            for oi in order.items.select_related("item").all():
-                try:
-                    bi = BranchItem.objects.get(branch=order.branch, item=oi.item)
-                    if bi.stock is not None:
-                        bi.stock += oi.qty
-                        bi.is_available = True
-                        bi.save(update_fields=["stock", "is_available"])
-                except BranchItem.DoesNotExist:
-                    pass
-        order.status = new_status
-        fields.append("status")
-    if new_payment and new_payment in Order.PaymentStatus.values:
-        order.payment_status = new_payment
-        fields.append("payment_status")
-    if fields:
-        fields.append("updated_at")
-        order.save(update_fields=fields)
-
-    # При принятии входящего заказа (new → accepted) — отправить на кухонный принтер.
-    # Заказ со стола по QR при выключённом print_on_accept уже напечатан при создании —
-    # не дублируем. Доставка/самовывоз при создании не печатаются — печатаем здесь.
-    if prev_status == Order.Status.NEW and new_status == Order.Status.ACCEPTED:
-        already_printed = bool(order.table_place_id) and not order.branch.print_on_accept
-        if not already_printed:
-            try:
-                from printing.jobs import create_print_jobs
-                create_print_jobs(order)
-            except Exception as e:
-                import traceback
-                print("PRINT create_print_jobs ERROR (accept):", e)
-                traceback.print_exc()
-
-    # При закрытии онлайн-заказа → печать итогового чека на кассовый принтер
-    if new_status == Order.Status.CLOSED and prev_status != Order.Status.CLOSED:
-        try:
-            from printing.jobs import create_receipt_job
-            create_receipt_job(order)
-        except Exception as e:
-            print("PRINT create_receipt_job ERROR (close):", e)
+    notes = apply_status(order,
+                         request.POST.get("status"),
+                         actor=request.user.get_full_name() or request.user.username,
+                         payment_status=request.POST.get("payment_status"))
 
     return JsonResponse({
         "ok": True,

@@ -262,43 +262,22 @@ def notify_new_order(self, order_id: int):
     if not recipients:
         return "No recipients"
 
-    # Строим текст ВНУТРИ try — если тут исключение (необычные данные заказа),
-    # это раньше молча роняло всю задачу и заказ просто не приходил в группу
-    # без единого следа. Теперь ошибка логируется и задача уходит на повтор
-    # (autoretry), а не пропадает навсегда.
+    # Отправляем карточку с кнопками: статус заказа меняют прямо в группе,
+    # а id сообщений запоминаются, чтобы потом переписать то же сообщение.
+    from orders import tg as order_tg
+
     try:
-        # Use short format for table (dine-in) orders
-        if getattr(order, "table_place_id", None):
-            text = _table_order_text(order)
-        else:
-            text = _order_text(order)
+        sent, errors = order_tg.send_order(order)
     except Exception:
-        logger.exception("notify_new_order: failed to build text for order %s", order_id)
+        logger.exception("notify_new_order: карточка заказа %s не собралась", order_id)
         raise
 
-    sent = 0
-    errors = []
-    for r in recipients:
-        try:
-            send_message(
-                bot_token=token,
-                chat_id=str(r.chat_id),
-                text=text,
-                parse_mode=None,  # ✅ теги не нужны
-                message_thread_id=_thread_id_for(r),
-            )
-            sent += 1
-        except Exception as e:
-            logger.warning("notify_new_order: send failed for order %s, chat %s: %s", order_id, r.chat_id, e)
-            errors.append(str(e))
-
     if errors and sent == 0:
-        # Никому не доставилось (например, Telegram временно недоступен или
-        # сработал rate-limit) — пусть Celery повторит попытку, а не тихо
-        # потеряет уведомление о заказе.
-        raise Exception(f"TG order: 0/{len(recipients)} delivered for order {order_id}: {errors}")
+        # Никому не доставилось (Telegram недоступен или rate-limit) — пусть
+        # попытку повторят, а не потеряют уведомление о заказе.
+        raise Exception(f"TG order: 0/{len(recipients)} delivered for order {order_id}")
 
-    return f"sent={sent} errors={len(errors)}"
+    return f"sent={sent} errors={errors}"
 
 
 @shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_backoff_max=60, max_retries=5)
