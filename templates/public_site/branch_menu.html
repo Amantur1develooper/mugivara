@@ -1950,6 +1950,8 @@ function _showErr(msg) {
 
 
 
+{% include "public_site/_fly_to_cart.html" %}
+
 <button type="button" id="cartFab" onclick="openCartModal()"
    class="cart-fab {% if not cart_qty or cart_qty == 0 %}hide{% endif %}">
   <div class="cart-fab-icon">🧺</div>
@@ -2496,6 +2498,8 @@ document.addEventListener('submit', async (e) => {
 
     if (data.ok) {
       updateCartUI(data.qty, data.total);
+      // Фото блюда летит в корзину: видно, что именно добавилось
+      if (window.flyToCart) flyToCart(btn || form, '.cart-fab');
       if (btn) {
         btn.classList.remove('loading');
         btn.textContent = '✓';

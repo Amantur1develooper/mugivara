@@ -1,0 +1,148 @@
+{% comment %}
+  Полёт блюда в корзину — общий кусок для меню филиала и меню столика.
+
+  Раньше добавление отмечалось только галочкой на кнопке и всплывашкой:
+  человек не видел, что именно уехало в корзину, и нажимал второй раз.
+  Теперь фото блюда летит по дуге в кнопку корзины, корзина подпрыгивает,
+  счётчик вспыхивает — видно, что заказ принят, и куда смотреть дальше.
+
+  Подключается так:  {% include "public_site/_fly_to_cart.html" %}
+  Зовётся так:       flyToCart(кнопкаИлиКарточка, '.cart-fab')
+{% endcomment %}
+<style>
+  .fly2cart {
+    position: fixed; z-index: 9999; pointer-events: none;
+    border-radius: 14px; overflow: hidden;
+    background-size: cover; background-position: center;
+    background-color: #1a1a2e;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; will-change: transform, opacity;
+  }
+  .fly2cart-ripple {
+    position: fixed; z-index: 9998; pointer-events: none;
+    border-radius: 50%; border: 2px solid rgba(255,77,28,.55);
+    will-change: transform, opacity;
+  }
+  /* Корзина принимает блюдо: короткий толчок, без прыжков по экрану */
+  .cart-catch { animation: cart-catch .42s cubic-bezier(.3,1.6,.4,1); }
+  @keyframes cart-catch {
+    0%   { transform: translateX(-50%) scale(1); }
+    38%  { transform: translateX(-50%) scale(1.09); }
+    70%  { transform: translateX(-50%) scale(.98); }
+    100% { transform: translateX(-50%) scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cart-catch { animation: none; }
+  }
+</style>
+<script>
+(function () {
+  const reduced = () =>
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function sourceRect(el) {
+    // Летит фото блюда, а если его нет — сама кнопка: так понятно, что уехало
+    const card = el.closest('[data-dish-id], article, .tm-card, .dish-card');
+    const img = card && (card.querySelector('.dish-photo img, .tm-card-img img, img'));
+    const from = (img && img.getBoundingClientRect().width > 8) ? img : el;
+    return { rect: from.getBoundingClientRect(), img: from.tagName === 'IMG' ? from : null };
+  }
+
+  function targetPoint(selector) {
+    const fab = document.querySelector(selector);
+    if (fab) {
+      const r = fab.getBoundingClientRect();
+      // Скрытая корзина лежит под экраном — целимся туда, где она появится
+      if (r.width > 0 && r.top < window.innerHeight) {
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2, fab };
+      }
+      return { x: window.innerWidth / 2, y: window.innerHeight - 70, fab };
+    }
+    return { x: window.innerWidth / 2, y: window.innerHeight - 70, fab: null };
+  }
+
+  function ripple(x, y) {
+    const r = document.createElement('div');
+    r.className = 'fly2cart-ripple';
+    const size = 26;
+    r.style.cssText += `left:${x - size / 2}px;top:${y - size / 2}px;width:${size}px;height:${size}px`;
+    document.body.appendChild(r);
+    const a = r.animate(
+      [{ transform: 'scale(.4)', opacity: .9 }, { transform: 'scale(3.2)', opacity: 0 }],
+      { duration: 520, easing: 'cubic-bezier(.2,.7,.3,1)' }
+    );
+    a.onfinish = a.oncancel = () => r.remove();
+    setTimeout(() => r.remove(), 800);
+  }
+
+  window.flyToCart = function (el, fabSelector) {
+    if (!el) return;
+    const dest = targetPoint(fabSelector || '.cart-fab');
+
+    const bump = () => {
+      if (!dest.fab) return;
+      dest.fab.classList.remove('cart-catch');
+      void dest.fab.offsetWidth;          // перезапуск анимации
+      dest.fab.classList.add('cart-catch');
+      setTimeout(() => dest.fab.classList.remove('cart-catch'), 480);
+      const badge = dest.fab.querySelector('.cart-fab-badge, .tm-fab-badge');
+      if (badge) {
+        badge.classList.remove('cart-fab-badge-pop');
+        void badge.offsetWidth;
+        badge.classList.add('cart-fab-badge-pop');
+        setTimeout(() => badge.classList.remove('cart-fab-badge-pop'), 400);
+      }
+    };
+
+    // Тем, кто просил систему не анимировать, оставляем только толчок корзины
+    if (reduced() || !el.animate) { bump(); return; }
+
+    const { rect, img } = sourceRect(el);
+    const flyer = document.createElement('div');
+    flyer.className = 'fly2cart';
+    const w = Math.min(rect.width, 120);
+    const h = Math.min(rect.height, 90) || w;
+    flyer.style.left = (rect.left + (rect.width - w) / 2) + 'px';
+    flyer.style.top = rect.top + 'px';
+    flyer.style.width = w + 'px';
+    flyer.style.height = h + 'px';
+    if (img && img.currentSrc) {
+      flyer.style.backgroundImage = `url("${img.currentSrc}")`;
+    } else {
+      flyer.textContent = '🍽';
+    }
+    document.body.appendChild(flyer);
+
+    const start = { x: rect.left + rect.width / 2, y: rect.top + h / 2 };
+    const dx = dest.x - start.x;
+    const dy = dest.y - start.y;
+    // Дуга: на полпути поднимаем выше прямой — иначе полёт читается как
+    // простое перетаскивание, а не как «блюдо отправилось в корзину»
+    const lift = Math.min(160, Math.max(60, Math.abs(dy) * 0.35));
+
+    ripple(start.x, start.y);
+
+    // Завершение страхуем таймером: если вкладку свернули или браузер не
+    // позвал onfinish, фото иначе осталось бы висеть поверх страницы.
+    let finished = false;
+    const done = () => {
+      if (finished) return;
+      finished = true;
+      flyer.remove();
+      bump();
+    };
+
+    const anim = flyer.animate([
+      { transform: 'translate(0,0) scale(1) rotate(0deg)', opacity: 1, borderRadius: '14px' },
+      { transform: `translate(${dx * 0.5}px,${dy * 0.5 - lift}px) scale(.62) rotate(-7deg)`,
+        opacity: .95, borderRadius: '30%', offset: .55 },
+      { transform: `translate(${dx}px,${dy}px) scale(.12) rotate(4deg)`,
+        opacity: .25, borderRadius: '50%' },
+    ], { duration: 680, easing: 'cubic-bezier(.45,.05,.55,.95)' });
+    anim.onfinish = done;
+    anim.oncancel = done;
+    setTimeout(done, 900);
+  };
+})();
+</script>

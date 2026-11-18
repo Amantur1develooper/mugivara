@@ -1088,6 +1088,8 @@ document.getElementById("cxModalBg").addEventListener("click", e => {
 {% endif %}
 
 <!-- ── FLOATING CART FAB ── -->
+{% include "public_site/_fly_to_cart.html" %}
+
 <a href="{% url 'public_site:table_cart' token %}" class="tm-fab hide" id="cartFab">
   <div class="tm-fab-icon">🍽️</div>
   <div class="tm-fab-info">
@@ -1172,6 +1174,7 @@ document.addEventListener("click", async e => {
     if (!data.ok) return;
     updateFab(data.qty, data.total.toFixed ? Math.round(data.total) : data.total);
     updateCard(biId, 1);
+    if (window.flyToCart) flyToCart(btn, '#cartFab');
     toast(T.addedOrder);
   } catch(err) {
     toast(T.errRetry, "#EF4444");
