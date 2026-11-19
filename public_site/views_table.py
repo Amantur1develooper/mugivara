@@ -931,12 +931,18 @@ def table_waiter_close(request, order_id):
     else:
         all_open = [order]
 
+    # Статус меняем через общий путь: он же переписывает карточку заказа в
+    # группе. Раньше счёт закрывали на сайте, а в Telegram заказ так и
+    # оставался открытым, и в группе не понимали, что со столом.
+    from orders.flow import apply_status
+
     combined_total = Decimal("0")
     for o in all_open:
         o.payment_method = payment
-        o.status = Order.Status.CLOSED
-        o.payment_status = Order.PaymentStatus.PAID
-        o.save(update_fields=["status", "payment_status", "payment_method"])
+        o.save(update_fields=["payment_method"])
+        # Чек печатаем один на весь стол ниже, поэтому здесь печать выключена.
+        apply_status(o, Order.Status.CLOSED, actor="Официант",
+                     payment_status=Order.PaymentStatus.PAID, print_docs=False)
         combined_total += o.total_amount
 
     # Print receipt for the primary order (which now reflects the full total)

@@ -70,11 +70,16 @@ def _restore_stock(order):
             bi.save(update_fields=["stock", "is_available"])
 
 
-def apply_status(order, new_status, actor="", notify=True, payment_status=None):
+def apply_status(order, new_status, actor="", notify=True, payment_status=None,
+                 print_docs=True):
     """Меняет статус заказа и делает всё, что к нему прилагается.
 
     Возвращает список заметок о том, что произошло: их показывают на кассе
     и дописывают в карточку заказа в Telegram.
+
+    print_docs=False — когда печать берёт на себя тот, кто зовёт: при
+    закрытии стола чек один на все заказы стола, и печатать его на каждый
+    заказ отдельно значит выдать стопку лишних чеков.
     """
     from orders.models import Order
     from orders import tg as order_tg
@@ -108,11 +113,11 @@ def apply_status(order, new_status, actor="", notify=True, payment_status=None):
     # Принимаем входящий заказ — печатаем на кухню. Заказ со стола по QR при
     # выключенном print_on_accept уже напечатан при создании, второй раз не
     # надо; доставка и самовывоз при создании не печатаются — печатаем тут.
-    if prev == Order.Status.NEW and order.status == Order.Status.ACCEPTED:
+    if print_docs and prev == Order.Status.NEW and order.status == Order.Status.ACCEPTED:
         already = bool(order.table_place_id) and not order.branch.print_on_accept
         notes.append("уже напечатано при создании" if already else _print_kitchen(order))
 
-    if order.status == Order.Status.CLOSED and prev != Order.Status.CLOSED:
+    if print_docs and order.status == Order.Status.CLOSED and prev != Order.Status.CLOSED:
         notes.append(_print_receipt(order))
 
     if notify:

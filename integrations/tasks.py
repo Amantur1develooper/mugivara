@@ -60,19 +60,37 @@ def _thread_id_for(r: TelegramRecipient):
     return getattr(r, "message_thread_id", None) or None
 
 
+# Значок и слово по статусу: раньше в заголовке всегда стояло «НОВЫЙ
+# ЗАКАЗ», а в строке статуса — 🆕, поэтому закрытый на кассе заказ в
+# группе так и висел новым.
+STATUS_MARK = {
+    "new": "🆕", "accepted": "✅", "cooking": "🍳",
+    "ready": "🏁", "closed": "💰", "cancelled": "❌",
+}
+STATUS_WORD = {
+    "new": "НОВЫЙ ЗАКАЗ", "accepted": "ЗАКАЗ ПРИНЯТ", "cooking": "ГОТОВИТСЯ",
+    "ready": "ГОТОВ", "closed": "ЗАКАЗ ЗАКРЫТ", "cancelled": "ЗАКАЗ ОТМЕНЁН",
+}
+
+
 def _order_header(order: Order) -> str:
+    word = STATUS_WORD.get(order.status, "ЗАКАЗ")
+    mark = STATUS_MARK.get(order.status, "🔔")
+
     # если есть стол — это заказ в зале
     if getattr(order, "table_place_id", None):
-        return "🪑 НОВЫЙ ЗАКАЗ В ЗАВЕДЕНИИ"
+        return (f"🪑 {word} В ЗАВЕДЕНИИ" if order.status == "new"
+                else f"🪑 В ЗАВЕДЕНИИ — {mark} {word}")
 
     if order.type == Order.Type.DELIVERY:
-        return "🛵 ДОСТАВКА — НОВЫЙ ЗАКАЗ"
+        return f"🛵 ДОСТАВКА — {mark} {word}"
     if order.type == Order.Type.PICKUP:
-        return "🥡 САМОВЫВОЗ — НОВЫЙ ЗАКАЗ"
+        return f"🥡 САМОВЫВОЗ — {mark} {word}"
     if order.type == Order.Type.DINE_IN:
-        return "🪑 НОВЫЙ ЗАКАЗ В ЗАВЕДЕНИИ"
+        return (f"🪑 {word} В ЗАВЕДЕНИИ" if order.status == "new"
+                else f"🪑 В ЗАВЕДЕНИИ — {mark} {word}")
 
-    return "🔔 НОВЫЙ ЗАКАЗ"
+    return f"{mark} {word}"
 
 
 def _order_text(order: Order, title_override: str = None) -> str:
@@ -85,7 +103,8 @@ def _order_text(order: Order, title_override: str = None) -> str:
     if hasattr(order, "get_type_display"):
         lines.append(f"📌 Тип: {order.get_type_display()}")
     if hasattr(order, "get_status_display"):
-        lines.append(f"🆕 Статус: {order.get_status_display()}")
+        mark = STATUS_MARK.get(order.status, "🔔")
+        lines.append(f"{mark} Статус: {order.get_status_display()}")
 
     # стол
     if getattr(order, "table_place_id", None) and getattr(order, "table_place", None):
@@ -194,6 +213,11 @@ def _table_order_text(order: Order) -> str:
     if floor_name:
         table_line += f"  |  Зал {floor_name}"
     lines.append(table_line)
+    # Статус дописываем, как только заказ перестал быть новым: в группе
+    # должно быть видно, закрыли стол или он ещё висит.
+    if order.status != "new":
+        mark = STATUS_MARK.get(order.status, "🔔")
+        lines.append(f"{mark} {order.get_status_display()}")
     lines.append(f"🏪 {getattr(order.branch, 'name_ru', str(order.branch))}")
 
     items = list(order.items.select_related("item").all())

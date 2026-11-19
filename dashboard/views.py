@@ -2335,6 +2335,8 @@ def pos_order_create(request, branch_id):
                 order.save(update_fields=["total_amount", "delivery_fee", "promo_code", "promo_discount"])
                 open_table = True
             else:
+                # Продажу на кассе сразу закрываем. Карточка уходит в группу
+                # уже после коммита, поэтому там видно «Закрыт», а не «Новый».
                 order.status = Order.Status.CLOSED
                 order.payment_status = Order.PaymentStatus.PAID
                 order.save(update_fields=["total_amount", "delivery_fee", "status", "payment_status",
@@ -2428,12 +2430,16 @@ def pos_table_close(request, order_id):
         else:
             all_open = [order]
 
+        # Через общий путь: он переписывает карточку заказа в Telegram.
+        from orders.flow import apply_status
+
         combined_total = Decimal("0")
         for o in all_open:
             o.payment_method = payment_method
-            o.status = Order.Status.CLOSED
-            o.payment_status = Order.PaymentStatus.PAID
-            o.save(update_fields=["status", "payment_status", "payment_method"])
+            o.save(update_fields=["payment_method"])
+            # Чек на весь стол печатается ниже — здесь печать выключена.
+            apply_status(o, Order.Status.CLOSED, actor="Касса",
+                         payment_status=Order.PaymentStatus.PAID, print_docs=False)
             combined_total += o.total_amount
 
         order.total_amount = combined_total
@@ -2899,8 +2905,11 @@ def pos_order_cancel(request, order_id):
             except BranchItem.DoesNotExist:
                 pass
 
-    order.status = Order.Status.CANCELLED
-    order.save(update_fields=["status", "updated_at"])
+    # Общий путь: заодно перепишет карточку в Telegram, иначе отменённый
+    # заказ в группе так и висел бы новым.
+    from orders.flow import apply_status
+    apply_status(order, Order.Status.CANCELLED,
+                 actor=request.user.get_full_name() or request.user.username)
 
     return JsonResponse({"ok": True})
 
