@@ -228,6 +228,13 @@
     height:84px; background:var(--card2,#f0f2f8); position:relative; overflow:hidden;
   }
   .svc-card-img img { width:100%; height:100%; object-fit:cover; display:block; }
+  /* Логотип — не фотография: его нельзя обрезать по краям, он должен
+     помещаться целиком и стоять на спокойном фоне. */
+  .svc-card-img.is-logo { background:#fff; }
+  .svc-card-img.is-logo img { object-fit:contain; padding:8px; box-sizing:border-box; }
+  @media (prefers-color-scheme: dark) {
+    .svc-card-img.is-logo { background:#f6f7fb; }
+  }
   .svc-card-img-ph {
     width:100%; height:100%; display:flex; align-items:center; justify-content:center;
     font-size:26px;
@@ -872,9 +879,14 @@
         <div class="svc-cards-grid">
           {% for shop in barbershop_cards %}
           <a href="{% url 'barbershop:venue' shop.slug %}" class="svc-card">
-            <div class="svc-card-img">
-              {% if shop.cover %}<img src="{{ shop.cover.url }}" alt="{{ shop.name }}" loading="lazy">
-              {% elif shop.logo %}<img src="{{ shop.logo.url }}" alt="{{ shop.name }}" loading="lazy">
+            {% comment %}
+              Сначала логотип, потом уже фон: барбершоп узнают по знаку, а
+              не по фотографии зала, и в карточке 84 px логотип читается,
+              тогда как от фона остаётся непонятный кусок стены.
+            {% endcomment %}
+            <div class="svc-card-img{% if shop.logo %} is-logo{% endif %}">
+              {% if shop.logo %}<img src="{{ shop.logo.url }}" alt="{{ shop.name }}" loading="lazy">
+              {% elif shop.cover %}<img src="{{ shop.cover.url }}" alt="{{ shop.name }}" loading="lazy">
               {% else %}<div class="svc-card-img-ph">✂️</div>{% endif %}
             </div>
             <div class="svc-card-name">{{ shop.name }}</div>
