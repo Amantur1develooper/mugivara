@@ -570,7 +570,12 @@ def tc_report(request, branch_id):
             }
         dish_stats[item.id]["qty"]        += oi.qty
         dish_stats[item.id]["revenue"]    += oi.line_total
-        dish_stats[item.id]["cost_total"] += dish_stats[item.id]["cost_per"] * oi.qty
+        # Размер умножает и себестоимость: на сорокасантиметровую пиццу
+        # продуктов уходит больше, и без множителя фудкост по ней выходил
+        # бы заниженным, а наценка — нарисованной.
+        factor = Decimal(str(getattr(oi, "size_factor", 1) or 1))
+        dish_stats[item.id]["cost_total"] += (
+            dish_stats[item.id]["cost_per"] * oi.qty * factor)
 
     dish_list = sorted(dish_stats.values(), key=lambda x: x["revenue"], reverse=True)
 

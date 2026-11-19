@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 from django.utils.translation import get_language
 from core.models import Restaurant, Branch, TimeStampedModel
@@ -318,6 +320,13 @@ class BranchItemSize(TimeStampedModel):
     name_ky = models.CharField("Размер (кырг.)", max_length=60, blank=True, default="")
     name_en = models.CharField("Размер (англ.)", max_length=60, blank=True, default="")
     price = models.DecimalField("Цена (сом)", max_digits=10, decimal_places=2, default=0)
+    # Во сколько раз этот размер расходует больше продуктов, чем техкарта.
+    # Техкарта у блюда одна, а теста на сорокасантиметровую пиццу уходит
+    # больше: без множителя склад списывал бы одинаково на любой размер.
+    tc_factor = models.DecimalField(
+        "Расход по техкарте, ×", max_digits=6, decimal_places=3,
+        default=Decimal("1"),
+        help_text="1 — как в техкарте. Для 40 см при техкарте на 30 см — около 1.6")
     is_default = models.BooleanField("По умолчанию", default=False)
     is_active = models.BooleanField("Активен", default=True)
     sort_order = models.PositiveSmallIntegerField("Порядок", default=0)

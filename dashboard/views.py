@@ -1096,6 +1096,7 @@ def _save_item_sizes(request, bi):
     ids = request.POST.getlist("size_id")
     names = request.POST.getlist("size_name")
     prices = request.POST.getlist("size_price")
+    factors = request.POST.getlist("size_factor")
     if not names:
         return
 
@@ -1109,6 +1110,15 @@ def _save_item_sizes(request, bi):
             value = Decimal((price or "0").replace(",", "."))
         except InvalidOperation:
             value = Decimal("0")
+        # Множитель расхода по техкарте: пусто или мусор — считаем за 1,
+        # то есть «как в техкарте», это безопасное значение.
+        raw_factor = factors[idx] if idx < len(factors) else "1"
+        try:
+            factor = Decimal((raw_factor or "1").replace(",", "."))
+        except InvalidOperation:
+            factor = Decimal("1")
+        if factor <= 0:
+            factor = Decimal("1")
         is_default = (default_raw == str(idx))
 
         size = None
@@ -1116,14 +1126,15 @@ def _save_item_sizes(request, bi):
             size = BranchItemSize.objects.filter(id=int(raw_id), branch_item=bi).first()
         if size:
             size.name, size.price = name, value
+            size.tc_factor = factor
             size.is_default = is_default
             size.sort_order = idx
             size.is_active = True
-            size.save(update_fields=["name", "price", "is_default",
+            size.save(update_fields=["name", "price", "tc_factor", "is_default",
                                      "sort_order", "is_active", "updated_at"])
         else:
             size = BranchItemSize.objects.create(
-                branch_item=bi, name=name, price=value,
+                branch_item=bi, name=name, price=value, tc_factor=factor,
                 is_default=is_default, sort_order=idx)
         keep.append(size.id)
 

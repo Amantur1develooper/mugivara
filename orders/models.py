@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 # orders/models.py
 from reservations.models import Place
@@ -75,6 +77,10 @@ class OrderItem(TimeStampedModel):
     # Название размера сохраняем строкой: цену размера потом поменяют, а в
     # заказе должно остаться то, что человек выбрал — «30 см», «0,5 л».
     size_name = models.CharField("Размер", max_length=60, blank=True, default="")
+    # Множитель расхода на момент заказа: техкарту и размеры потом поправят,
+    # а списание со склада должно остаться тем, что было в этом заказе.
+    size_factor = models.DecimalField("Расход, ×", max_digits=6, decimal_places=3,
+                                      default=Decimal("1"))
     qty = models.PositiveIntegerField(default=1)
     price_snapshot = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     old_price_snapshot = models.DecimalField(

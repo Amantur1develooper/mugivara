@@ -365,6 +365,7 @@ def table_checkout(request, token):
                 order=order,
                 item=bi.item,
                 size_name=(size.name if size else ""),
+                size_factor=(size.tc_factor if size else 1),
                 qty=qty,
                 price_snapshot=r.get("unit_price", bi.price),
                 old_price_snapshot=bi.old_price if bi.is_on_promo and not size else None,
@@ -647,6 +648,7 @@ def table_create_order(request, token):
                     order=order,
                     item=row["bi"].item,
                     size_name=(row["size"].name if row.get("size") else ""),
+                    size_factor=(row["size"].tc_factor if row.get("size") else 1),
                     qty=row["qty"],
                     price_snapshot=(row["size"].price if row.get("size")
                                     else row["bi"].price),
@@ -701,6 +703,7 @@ def table_create_order(request, token):
                     order=order,
                     item=row["bi"].item,
                     size_name=(row["size"].name if row.get("size") else ""),
+                    size_factor=(row["size"].tc_factor if row.get("size") else 1),
                     qty=row["qty"],
                     price_snapshot=(row["size"].price if row.get("size")
                                     else row["bi"].price),

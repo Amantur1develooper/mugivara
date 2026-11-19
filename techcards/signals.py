@@ -64,7 +64,13 @@ def _deduct_ingredients(order):
         # expand() раскрывает полуфабрикаты до настоящих ингредиентов.
         # Раньше строки-полуфабрикаты просто пропускались (у них нет
         # ingredient_id), и со склада по ним не уходило вообще ничего.
-        for ing_id, need in expand(tc, Decimal(str(oi.qty))).items():
+        #
+        # Размер умножает расход: техкарта одна, а теста на сорок
+        # сантиметров уходит больше, чем на тридцать. Множитель сохранён
+        # в позиции заказа, поэтому позднейшая правка размеров списание
+        # прошлых заказов не меняет.
+        factor = Decimal(str(getattr(oi, "size_factor", 1) or 1))
+        for ing_id, need in expand(tc, Decimal(str(oi.qty)) * factor).items():
             deductions[ing_id] = deductions.get(ing_id, Decimal("0")) + need
 
     # ── Конструктор (Собери сам) ──────────────────────────────────────────────

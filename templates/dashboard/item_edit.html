@@ -116,7 +116,11 @@
           <div class="db-hint" style="margin:0 0 10px">
             Например «30 см» и «40 см» или «0,5 л» и «1 л». Цена указывается
             полная, а не надбавка. Если размеров нет — оставьте пусто, блюдо
-            будет продаваться по цене выше.
+            будет продаваться по цене выше.<br>
+            <b>×расход</b> — во сколько раз больше продуктов уходит по
+            техкарте: у размера, на который она составлена, оставьте 1,
+            для 40 см при техкарте на 30 см ставьте около 1.6. По этому
+            числу списывается склад.
           </div>
 
           <div id="szRows">
@@ -129,6 +133,11 @@
                 <input class="db-input" name="size_price" type="number" min="0"
                        value="{{ z.price|floatformat:'0' }}" placeholder="0">
                 <span class="sz-cur">сом</span>
+              </div>
+              <div class="sz-fac" title="Во сколько раз больше продуктов уходит по техкарте">
+                <input class="db-input" name="size_factor" type="number" step="0.01" min="0"
+                       value="{{ z.tc_factor|floatformat:'-2' }}" placeholder="1">
+                <span class="sz-cur">×расход</span>
               </div>
               <label class="sz-def" title="Этот размер предлагается первым">
                 <input type="radio" name="size_default" value="{{ forloop.counter0 }}"
@@ -146,9 +155,11 @@
         <style>
           .sz-box { border-top: 1px solid var(--border); padding-top: 16px; }
           .sz-row {
-            display: grid; grid-template-columns: 1fr 130px auto auto;
+            display: grid; grid-template-columns: 1fr 120px 104px auto auto;
             gap: 8px; align-items: center; margin-bottom: 8px;
           }
+          .sz-fac { position: relative; }
+          .sz-fac input { width: 100%; padding-right: 54px; box-sizing: border-box; }
           /* Поле цены должно занимать свою колонку целиком: у number-input
              своя узкая ширина по умолчанию, и на телефоне в неё не влезало
              даже «450». */
@@ -175,16 +186,22 @@
           /* На узком экране строка в два яруса: иначе поля по 60 px и
              в них не видно ни названия, ни цены. */
           @media (max-width: 560px) {
+            /* Три яруса: название, потом цена с расходом, потом отметка и
+               удаление. В один ряд пять полей на телефоне не влезают. */
             .sz-row {
-              grid-template-columns: 1fr auto auto;
-              grid-template-areas: "name name name" "price def del";
+              grid-template-columns: 1fr 1fr auto;
+              grid-template-areas:
+                "name  name  name"
+                "price fac   del"
+                "def   def   def";
               gap: 7px 8px; padding-bottom: 10px; margin-bottom: 10px;
               border-bottom: 1px dashed var(--border);
             }
             .sz-row .sz-name { grid-area: name; }
             .sz-price { grid-area: price; }
+            .sz-fac { grid-area: fac; }
             .sz-def { grid-area: def; }
-            .sz-del { grid-area: del; }
+            .sz-del { grid-area: del; align-self: center; }
           }
         </style>
 
@@ -213,6 +230,16 @@
                 <div class="sz-price">
                   <input class="db-input" name="size_price" type="number" min="0" placeholder="0">
                   <span class="sz-cur">сом</span>
+                </div>
+                <div class="sz-fac" title="Во сколько раз больше продуктов уходит по техкарте">
+                  <input class="db-input" name="size_factor" type="number" step="0.01" min="0"
+                         value="1" placeholder="1">
+                  <span class="sz-cur">×расход</span>
+                </div>
+                <div class="sz-fac" title="Во сколько раз больше продуктов уходит по техкарте">
+                  <input class="db-input" name="size_factor" type="number" step="0.01" min="0"
+                         value="1" placeholder="1">
+                  <span class="sz-cur">×расход</span>
                 </div>
                 <label class="sz-def" title="Этот размер предлагается первым">
                   <input type="radio" name="size_default" value="">

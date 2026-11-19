@@ -1081,6 +1081,7 @@ def checkout(request, branch_id: int):
                 order=order,
                 item=bi.item,
                 size_name=(size.name if size else ""),
+                size_factor=(size.tc_factor if size else 1),
                 qty=qty,
                 price_snapshot=unit,
                 old_price_snapshot=bi.old_price if bi.is_on_promo and not size else None,
