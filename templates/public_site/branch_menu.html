@@ -486,6 +486,35 @@
     border-radius: 6px; padding: 1px 6px; line-height: 1.5;
   }
   .dish-price-sub { font-size: 10px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+  .dish-price-pre { font-size: 11px; font-weight: 600; color: var(--muted); }
+
+  /* ── Размеры в карточке блюда ──
+     Чипсы в ряд с переносом: на узком экране они переходят на вторую
+     строку, а не сжимаются в нечитаемые огрызки. */
+  .dm-sizes { margin: 14px 0 2px; }
+  .dm-sizes-label {
+    font-size: 11px; font-weight: 700; letter-spacing: .4px;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+  }
+  .dm-size-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .dm-size-chip {
+    flex: 0 1 auto; min-width: 88px;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+    padding: 9px 13px; border-radius: 13px; cursor: pointer;
+    border: 2px solid var(--border); background: var(--bg);
+    font: inherit; text-align: left; transition: border-color .15s, background .15s;
+  }
+  .dm-size-chip b { font-size: 13.5px; font-weight: 800; color: var(--text); }
+  .dm-size-chip span { font-size: 11.5px; color: var(--muted); }
+  .dm-size-chip.on {
+    border-color: var(--accent); background: rgba(255,77,28,.06);
+  }
+  .dm-size-chip.on b, .dm-size-chip.on span { color: var(--accent); }
+  @media (max-width: 400px) {
+    /* На узких самсунгах — ровно две в ряд, чтобы не было одинокой третьей */
+    .dm-size-chips { display: grid; grid-template-columns: 1fr 1fr; }
+    .dm-size-chip { min-width: 0; padding: 9px 10px; }
+  }
 
   /* ── КНОПКА «ДОБАВИТЬ» ── */
   .dish-add-btn {
@@ -991,7 +1020,8 @@ const T = {
             <article class="dish-card{% if bi.is_on_promo %} on-promo{% endif %}{% if row.closed %} dish-closed{% endif %}" data-bi-id="{{ bi.id }}"
               data-dish-name="{{ dish_name }}"
               data-dish-desc="{{ dish_desc }}"
-              data-dish-price="{{ bi.price|floatformat:'0' }}"
+              data-dish-price="{{ bi.price_from|floatformat:'0' }}"
+              {% if bi.has_sizes %}data-dish-sizes="[{% for z in bi.size_list %}{&quot;id&quot;:{{ z.id }},&quot;name&quot;:&quot;{% t z 'name' %}&quot;,&quot;price&quot;:&quot;{{ z.price|floatformat:'0' }}&quot;,&quot;def&quot;:{% if z.is_default %}1{% else %}0{% endif %}}{% if not forloop.last %},{% endif %}{% endfor %}]"{% endif %}
               data-dish-old-price="{% if bi.is_on_promo %}{{ bi.old_price|floatformat:'0' }}{% endif %}"
               data-dish-photo="{% if dish.photo %}{{ dish.photo.url }}{% endif %}"
               data-dish-hot="{{ dish.hot_label }}"
@@ -1048,7 +1078,10 @@ const T = {
                       {% if bi.discount_pct %}<span class="dish-discount-chip">−{{ bi.discount_pct }}%</span>{% endif %}
                     </div>
                     {% else %}
-                    <div class="dish-price">{{ bi.price|floatformat:"0" }} <span style="font-size:11px;font-weight:500;color:var(--muted);">{% cur %}</span></div>
+                    <div class="dish-price">
+                      {% if bi.has_sizes %}<span class="dish-price-pre">{% trans "от" %}</span> {% endif %}{{ bi.price_from|floatformat:"0" }}
+                      <span style="font-size:11px;font-weight:500;color:var(--muted);">{% cur %}</span>
+                    </div>
                     {% endif %}
                   </div>
 
@@ -1057,12 +1090,18 @@ const T = {
                     <button type="button" class="dish-add-btn" disabled
                             title="{% blocktrans with w=row.window_text %}Подаём {{ w }}{% endblocktrans %}">+</button>
                   {% else %}
+                  {% if bi.has_sizes %}
+                    {# Размер надо выбрать, поэтому «+» открывает карточку блюда #}
+                    <button type="button" class="dish-add-btn dish-clickable"
+                            aria-label="{% trans 'Выбрать размер' %}">+</button>
+                  {% else %}
                   <form action="{% url 'public_site:add_to_cart' bi.id %}" method="post" data-add-to-cart>
                     {% csrf_token %}
                     <button type="submit" class="dish-add-btn" aria-label="{% trans 'Добавить в корзину' %}">
                       +
                     </button>
                   </form>
+                  {% endif %}
                   {% endif %}
                 </div>
               </div>
@@ -2051,10 +2090,15 @@ function _showErr(msg) {
       <div id="dmName" class="dm-name"></div>
       <div id="dmDesc" class="dm-desc"></div>
       <div id="dmMacros" class="dish-macros" style="display:none"></div>
+      <div id="dmSizes" class="dm-sizes" style="display:none">
+        <div class="dm-sizes-label">{% trans "Размер" %}</div>
+        <div id="dmSizeChips" class="dm-size-chips"></div>
+      </div>
       <div class="dm-footer">
         <div id="dmPrice" class="dm-price"></div>
         <form id="dmForm" method="post" data-add-to-cart>
           {% csrf_token %}
+          <input type="hidden" name="size_id" id="dmSizeId" value="">
           <button type="submit" class="dish-add-btn dm-add-btn" aria-label="{% trans 'В корзину' %}">
             {% trans "В корзину" %}
           </button>
@@ -2170,6 +2214,7 @@ function _showErr(msg) {
   background: linear-gradient(135deg, rgba(255,138,61,.20), rgba(255,77,28,.10)), var(--card, #fff);
   font-size: 22px; line-height: 1;
 }
+.cm-row-size { font-weight: 700; color: var(--accent); }
 .cm-row-name {
   font-size: 14px; font-weight: 600; color: var(--text, #111);
   overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
@@ -2725,8 +2770,10 @@ document.addEventListener('click', e => {
 
     const seen = new Set();
     (d.items || []).forEach(item => {
-      seen.add('bi_' + item.bi_id);
-      let row = itemsEl.querySelector(`[data-bi-id="${item.bi_id}"]`);
+      seen.add('bi_' + (item.key || item.bi_id));
+      // Ищем по ключу «блюдо:размер» — у одного блюда может быть
+      // несколько строк с разными размерами.
+      let row = itemsEl.querySelector(`[data-key="${item.key || item.bi_id}"]`);
       if (row) {
         const qEl = row.querySelector('.cm-qty-num');
         const tEl = row.querySelector('.cm-row-total');
@@ -2736,11 +2783,13 @@ document.addEventListener('click', e => {
         const div = document.createElement('div');
         div.className = 'cm-row';
         div.dataset.biId = item.bi_id;
+        div.dataset.sizeId = item.size_id || '';
+        div.dataset.key = item.key || String(item.bi_id);
         div.dataset.updateUrl = item.update_url;
         div.innerHTML = `
           ${cartThumb(item.photo)}
           <div class="cm-row-main">
-            <div class="cm-row-name">${item.name}</div>
+            <div class="cm-row-name">${item.name}${item.size ? ` · <span class="cm-row-size">${item.size}</span>` : ''}</div>
             <div class="cm-row-price">${item.price} ${CUR} ${T.perPcs}</div>
           </div>
           <div class="cm-qty">
@@ -2771,7 +2820,9 @@ document.addEventListener('click', e => {
     });
 
     itemsEl.querySelectorAll('.cm-row').forEach(row => {
-      const key = row.dataset.biId ? 'bi_' + row.dataset.biId : 'cx_' + row.dataset.cxIdx;
+      const key = row.dataset.biId
+        ? 'bi_' + (row.dataset.key || row.dataset.biId)
+        : 'cx_' + row.dataset.cxIdx;
       if (!seen.has(key)) row.remove();
     });
 
@@ -3122,7 +3173,10 @@ document.addEventListener('click', e => {
 
     row.querySelectorAll('.cm-qty-btn').forEach(b => b.disabled = true);
     try {
-      const fd = new FormData(); fd.append('qty', qty);
+      const fd = new FormData();
+      fd.append('qty', qty);
+      // Размер обязателен: без него правилась бы не та строка корзины
+      if (row.dataset.sizeId) fd.append('size_id', row.dataset.sizeId);
       const r = await fetch(row.dataset.updateUrl, {
         method: 'POST', body: fd,
         headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': CSRF }
@@ -3278,6 +3332,39 @@ document.addEventListener('click', e => {
       dmMacros.style.display = 'flex';
     } else {
       dmMacros.style.display = 'none';
+    }
+
+    // Размеры: чипсы с ценой, выбранный подсвечен, цена в подвале идёт
+    // за выбором. Без размеров блок просто не показываем.
+    const sizesBox = document.getElementById('dmSizes');
+    const chipsBox = document.getElementById('dmSizeChips');
+    const sizeField = document.getElementById('dmSizeId');
+    let sizes = [];
+    try { sizes = JSON.parse(card.dataset.dishSizes || '[]'); } catch (e) { sizes = []; }
+
+    if (sizes.length) {
+      const pick = (z, el) => {
+        sizeField.value = z.id;
+        [...chipsBox.children].forEach(c => c.classList.remove('on'));
+        el.classList.add('on');
+        dmPrice.innerHTML = `<span>${z.price} ${CUR}</span>`;
+      };
+      chipsBox.innerHTML = '';
+      sizes.forEach(z => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'dm-size-chip';
+        chip.innerHTML = `<b>${z.name}</b><span>${z.price} ${CUR}</span>`;
+        chip.addEventListener('click', () => pick(z, chip));
+        chipsBox.appendChild(chip);
+      });
+      const start = sizes.find(z => z.def) || sizes[0];
+      pick(start, chipsBox.children[sizes.indexOf(start)]);
+      sizesBox.style.display = 'block';
+    } else {
+      sizesBox.style.display = 'none';
+      chipsBox.innerHTML = '';
+      sizeField.value = '';
     }
 
     // подставляем URL формы из карточки

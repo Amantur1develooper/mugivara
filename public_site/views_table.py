@@ -54,30 +54,16 @@ def _save_cart(request, token: str, cart: dict):
 
 
 def _cart_calc(branch, cart: dict):
-    """cart: {"branch_item_id": qty}"""
-    ids = [int(k) for k in cart.keys()] if cart else []
-    items = (BranchItem.objects
-             .filter(branch=branch, id__in=ids)
-             .select_related("item"))
+    """cart: {"branch_item_id" или "id:размер": qty}
 
-    rows = []
-    total_qty = 0
-    total_sum = Decimal("0")
+    Разбор ключей и цену за размер считает общий модуль корзины: столик и
+    онлайн-заказ должны считать одинаково, иначе одно и то же блюдо в зале
+    и на доставке стоило бы по-разному.
+    """
+    from public_site.cart import table_cart_totals
 
-    bi_map = {bi.id: bi for bi in items}
-
-    for k, qty in cart.items():
-        bi_id = int(k)
-        qty = int(qty)
-        bi = bi_map.get(bi_id)
-        if not bi or qty <= 0:
-            continue
-        line = (bi.price or 0) * qty
-        rows.append({"branch_item": bi, "qty": qty, "line_total": line})
-        total_qty += qty
-        total_sum += Decimal(str(line))
-
-    return rows, total_qty, total_sum
+    rows, subtotal, qty_total = table_cart_totals(branch, cart or {})
+    return rows, qty_total, subtotal
 
 
 # ── КОНСТРУКТОР КОРЗИНА (table QR flow) ──────────────────────────────────────
@@ -136,6 +122,22 @@ def _build_branch_menu(branch):
 
 
 
+
+
+def _size_for(bi, raw):
+    """id размера из запроса, проверенный по блюду. None — размеров нет."""
+    sizes = bi.size_list()
+    if not sizes:
+        return None
+    try:
+        chosen = int(raw)
+    except (TypeError, ValueError):
+        chosen = None
+    if chosen and any(z.id == chosen for z in sizes):
+        return chosen
+    default = bi.default_size()
+    return default.id if default else None
+
 @require_POST
 def table_add_to_cart(request, token, branch_item_id: int):
     place, branch = _get_active_place_and_branch(token)
@@ -146,8 +148,12 @@ def table_add_to_cart(request, token, branch_item_id: int):
     if qty < 1:
         qty = 1
 
+    # Размер: не прислали — берём по умолчанию, иначе цена уехала бы
+    from public_site.cart import make_key
+    size_id = _size_for(bi, request.POST.get("size_id"))
+
     cart = _get_cart(request, token)
-    k = str(bi.id)
+    k = make_key(bi.id, size_id)
     cart[k] = int(cart.get(k, 0)) + qty
     _save_cart(request, token, cart)
 
@@ -354,12 +360,14 @@ def table_checkout(request, token):
             bi = r["branch_item"]
             qty = r["qty"]
             line_total = r["line_total"]
+            size = r.get("size")
             OrderItem.objects.create(
                 order=order,
                 item=bi.item,
+                size_name=(size.name if size else ""),
                 qty=qty,
-                price_snapshot=bi.price,
-                old_price_snapshot=bi.old_price if bi.is_on_promo else None,
+                price_snapshot=r.get("unit_price", bi.price),
+                old_price_snapshot=bi.old_price if bi.is_on_promo and not size else None,
                 line_total=line_total,
             )
 
@@ -519,8 +527,12 @@ def table_cart_update(request, token):
 
     bi = get_object_or_404(BranchItem, id=bi_id, branch=branch)
 
+    from public_site.cart import make_key
+    raw_size = request.POST.get("size_id")
+    size_id = int(raw_size) if (raw_size or "").isdigit() else None
+
     cart = _get_cart(request, token)  # твоя функция/сессионная корзина
-    k = str(bi_id)
+    k = make_key(bi_id, size_id)
     cur = int(cart.get(k, 0))
 
     if action == "inc":
@@ -542,9 +554,14 @@ def table_cart_update(request, token):
     rows, reg_qty, reg_total = _cart_calc(branch, cart)
     cx_qty, cx_total = _cx_cart_totals(_get_cx_cart(request, token))
 
+    # Сумма именно той строки, которую правили: у блюда с размерами строк
+    # несколько, и без сверки размера вернулась бы чужая сумма.
     line_total = "0"
     for r in rows:
-        if r["branch_item"].id == bi_id:
+        if r["branch_item"].id != bi_id:
+            continue
+        row_size = r.get("size").id if r.get("size") else None
+        if row_size == size_id or size_id is None:
             line_total = str(r["line_total"])
             break
 
@@ -596,15 +613,13 @@ def table_create_order(request, token):
     if not cart and not cx_cart:
         return redirect("table_cart", token=token)
 
-    # Pre-calculate total so the signal gets the correct value on create
-    total = Decimal("0")
-    cart_rows = []
-    for bi_id, qty in cart.items():
-        bi = get_object_or_404(BranchItem, id=int(bi_id), branch=branch)
-        qty = int(qty)
-        line_total = bi.price * qty
-        cart_rows.append({"bi": bi, "qty": qty, "line_total": line_total})
-        total += line_total
+    # Считаем заранее, чтобы сигнал при создании получил верную сумму.
+    # Разбор ключей корзины и цену за размер отдаём общему модулю: ключ
+    # вида «12:5» означает блюдо с выбранным размером.
+    rows_calc, _qty_calc, total = _cart_calc(branch, cart)
+    cart_rows = [{"bi": r["branch_item"], "qty": r["qty"],
+                  "line_total": r["line_total"], "size": r.get("size")}
+                 for r in rows_calc]
 
     for cx_item in cx_cart:
         qty = int(cx_item.get("qty", 1))
@@ -631,9 +646,13 @@ def table_create_order(request, token):
                 oi = OrderItem.objects.create(
                     order=order,
                     item=row["bi"].item,
+                    size_name=(row["size"].name if row.get("size") else ""),
                     qty=row["qty"],
-                    price_snapshot=row["bi"].price,
-                    old_price_snapshot=row["bi"].old_price if row["bi"].is_on_promo else None,
+                    price_snapshot=(row["size"].price if row.get("size")
+                                    else row["bi"].price),
+                    old_price_snapshot=(row["bi"].old_price
+                                        if row["bi"].is_on_promo and not row.get("size")
+                                        else None),
                     line_total=row["line_total"],
                 )
                 new_oi_ids.append(oi.id)
@@ -681,9 +700,13 @@ def table_create_order(request, token):
                 OrderItem.objects.create(
                     order=order,
                     item=row["bi"].item,
+                    size_name=(row["size"].name if row.get("size") else ""),
                     qty=row["qty"],
-                    price_snapshot=row["bi"].price,
-                    old_price_snapshot=row["bi"].old_price if row["bi"].is_on_promo else None,
+                    price_snapshot=(row["size"].price if row.get("size")
+                                    else row["bi"].price),
+                    old_price_snapshot=(row["bi"].old_price
+                                        if row["bi"].is_on_promo and not row.get("size")
+                                        else None),
                     line_total=row["line_total"],
                 )
 

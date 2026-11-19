@@ -85,6 +85,7 @@
   @media (min-width: 620px) { .ct-thumb { width: 64px; height: 64px; } }
 
   .tc-row-price { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .tc-row-size { font-weight: 700; color: var(--accent); }
   .tc-row-controls { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-shrink: 0; }
 
   /* Размеры тянутся от ширины экрана, а не ступеньками по медиазапросам:
@@ -220,7 +221,7 @@ const T = {
     {% if rows %}
     <div class="tc-items">
       {% for r in rows %}
-      <div class="tc-row" data-row="{{ r.branch_item.id }}">
+      <div class="tc-row" data-row="{{ r.key }}" data-size="{{ r.size.id|default:'' }}">
         <div class="ct-thumb{% if not r.branch_item.item.photo %} empty{% endif %}">
           {% if r.branch_item.item.photo %}
             <img src="{{ r.branch_item.item.photo.url }}" alt="{% t r.branch_item.item 'name' %}"
@@ -228,8 +229,9 @@ const T = {
           {% else %}{% cycle '🍜' '🥗' '🍲' '🍛' '🥘' '🍝' %}{% endif %}
         </div>
         <div class="tc-row-main">
-          <div class="tc-row-name">{% t r.branch_item.item 'name' %}</div>
-          <div class="tc-row-price">{{ r.branch_item.price|som }} / {% trans "шт." %}</div>
+          <div class="tc-row-name">{% t r.branch_item.item 'name' %}{% if r.size %}
+            <span class="tc-row-size">· {% t r.size 'name' %}</span>{% endif %}</div>
+          <div class="tc-row-price">{{ r.unit_price|som }} / {% trans "шт." %}</div>
         </div>
         <div class="tc-row-controls">
           <button class="tc-qty-btn del" data-act="remove" data-id="{{ r.branch_item.id }}" type="button">✕</button>
@@ -362,16 +364,21 @@ document.addEventListener("click", async e => {
   const biId   = btn.dataset.id;
   btn.disabled = true;
 
+  // Строку ищем по её ряду: у одного блюда может быть несколько строк с
+  // разными размерами, и «−» должен уменьшить именно нажатую.
+  const row = btn.closest(".tc-row");
+  const sizeId = row ? (row.dataset.size || "") : "";
+
   try {
     const fd = new FormData();
     fd.append("branch_item_id", biId);
     fd.append("action", action);
+    if (sizeId) fd.append("size_id", sizeId);
     const data = await post(UPDATE_URL, fd);
     if (!data.ok) return;
 
     document.getElementById("cartTotal").textContent = Math.round(parseFloat(data.total)) + " " + CUR;
 
-    const row = document.querySelector(`[data-row="${biId}"]`);
     if (!row) return;
 
     if (data.item_qty <= 0) {

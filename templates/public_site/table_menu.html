@@ -227,6 +227,30 @@
   @media (prefers-reduced-motion: reduce) {
     .tm-promo-badge::after { animation: none; display: none; }
   }
+  .tm-price-pre { font-size: 11px; font-weight: 600; opacity: .7; }
+  .tmdm-sizes { margin: 14px 0 2px; }
+  .tmdm-sizes-label {
+    font-size: 11px; font-weight: 700; letter-spacing: .4px;
+    text-transform: uppercase; color: rgba(255,255,255,.45); margin-bottom: 8px;
+  }
+  .tmdm-size-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tmdm-size-chip {
+    flex: 0 1 auto; min-width: 88px;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+    padding: 9px 13px; border-radius: 13px; cursor: pointer; font: inherit;
+    border: 2px solid rgba(255,255,255,.14); background: rgba(255,255,255,.05);
+    text-align: left; transition: border-color .15s, background .15s;
+  }
+  .tmdm-size-chip b { font-size: 13.5px; font-weight: 800; color: #fff; }
+  .tmdm-size-chip span { font-size: 11.5px; color: rgba(255,255,255,.55); }
+  .tmdm-size-chip.on { border-color: var(--accent); background: rgba(255,77,28,.16); }
+  .tmdm-size-chip.on span { color: #fff; }
+  @media (max-width: 400px) {
+    /* На узких самсунгах — ровно две в ряд */
+    .tmdm-size-chips { display: grid; grid-template-columns: 1fr 1fr; }
+    .tmdm-size-chip { min-width: 0; padding: 9px 10px; }
+  }
+
   .tm-dish-price-badge {
     position: absolute; bottom: 8px; right: 8px;
     padding: 4px 10px; border-radius: 100px;
@@ -816,7 +840,8 @@ const T = {
         <div class="tm-dish{% if bi.is_on_promo %} on-promo{% endif %}" data-bi="{{ bi.id }}"
              data-dish-name="{{ dish_name }}"
              data-dish-desc="{{ desc }}"
-             data-dish-price="{{ bi.price|floatformat:0 }}"
+             data-dish-price="{{ bi.price_from|floatformat:0 }}"
+             {% if bi.has_sizes %}data-dish-sizes="[{% for z in bi.size_list %}{&quot;id&quot;:{{ z.id }},&quot;name&quot;:&quot;{% t z 'name' %}&quot;,&quot;price&quot;:&quot;{{ z.price|floatformat:'0' }}&quot;,&quot;def&quot;:{% if z.is_default %}1{% else %}0{% endif %}}{% if not forloop.last %},{% endif %}{% endfor %}]"{% endif %}
              data-dish-old-price="{% if bi.is_on_promo %}{{ bi.old_price|floatformat:0 }}{% endif %}"
              data-dish-photo="{% if dish.photo %}{{ dish.photo.url }}{% endif %}"
              data-dish-hot="{% if dish.order_count >= 10 %}{{ dish.order_count }}{% endif %}">
@@ -828,7 +853,7 @@ const T = {
             {% endif %}
             {% if dish.order_count >= 10 %}<div class="tm-hot-badge">🔥 {{ dish.order_count }}</div>{% endif %}
             {% if bi.is_on_promo %}<div class="tm-promo-badge">🏷️ {{ bi.promo_badge_text }}</div>{% endif %}
-            <div class="tm-dish-price-badge{% if bi.is_on_promo %} on-promo{% endif %}">{{ bi.price|som }}</div>
+            <div class="tm-dish-price-badge{% if bi.is_on_promo %} on-promo{% endif %}">{% if bi.has_sizes %}{% trans "от" %} {% endif %}{{ bi.price_from|som }}</div>
           </div>
           <div class="tm-dish-body">
             <div class="tm-dish-name tm-dish-clickable">{{ dish_name }}</div>
@@ -842,7 +867,7 @@ const T = {
                   {% if bi.discount_pct %}<span class="tm-discount-chip">−{{ bi.discount_pct }}%</span>{% endif %}
                 </div>
                 {% else %}
-                <div class="tm-dish-price">{{ bi.price|som }}</div>
+                <div class="tm-dish-price">{% if bi.has_sizes %}<span class="tm-price-pre">{% trans "от" %}</span> {% endif %}{{ bi.price_from|som }}</div>
                 {% endif %}
               </div>
               <div class="tm-qty-row" id="qty-row-{{ bi.id }}">
@@ -850,8 +875,14 @@ const T = {
                 <span class="tm-qty-num" id="qty-num-{{ bi.id }}">0</span>
                 <button class="tm-qty-btn" data-action="inc" data-bi="{{ bi.id }}" type="button">+</button>
               </div>
+              {% if bi.has_sizes %}
+                {# Размер надо выбрать — открываем карточку блюда #}
+                <button class="tm-add-btn tm-dish-clickable" id="add-{{ bi.id }}"
+                        type="button" title="{% trans 'Выбрать размер' %}">+</button>
+              {% else %}
               <button class="tm-add-btn" id="add-{{ bi.id }}"
                       data-add="{{ bi.id }}" type="button" title="{% trans 'Добавить' %}">+</button>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -877,6 +908,10 @@ const T = {
     <div class="tmdm-body">
       <div id="tmdmName" class="tmdm-name"></div>
       <div id="tmdmDesc" class="tmdm-desc"></div>
+      <div id="tmdmSizes" class="tmdm-sizes" style="display:none">
+        <div class="tmdm-sizes-label">{% trans "Размер" %}</div>
+        <div id="tmdmSizeChips" class="tmdm-size-chips"></div>
+      </div>
       <div class="tmdm-footer">
         <div id="tmdmPrice" class="tmdm-price"></div>
         <button id="tmdmAddBtn" class="tm-add-btn tmdm-add-btn" data-add="" type="button">
@@ -1170,12 +1205,15 @@ document.addEventListener("click", async e => {
   try {
     const fd = new FormData();
     fd.append("qty", "1");
+    // Размер выбирают в карточке блюда; у кнопки на плитке его нет
+    if (btn.dataset.size) fd.append("size_id", btn.dataset.size);
     const data = await post(ADD_URL.replace("{id}", biId), fd);
     if (!data.ok) return;
     updateFab(data.qty, data.total.toFixed ? Math.round(data.total) : data.total);
     updateCard(biId, 1);
     if (window.flyToCart) flyToCart(btn, '#cartFab');
     toast(T.addedOrder);
+    if (btn.id === "tmdmAddBtn" && window.closeTmDishModal) closeTmDishModal();
   } catch(err) {
     toast(T.errRetry, "#EF4444");
   } finally {
@@ -1379,6 +1417,37 @@ document.querySelectorAll(".wb-logo").forEach(function (a) {
     dmPrice.innerHTML = (oldPrice ? `<span class="tmdm-price-old">${oldPrice} ${CUR}</span>` : "")
       + `<span>${card.dataset.dishPrice || "0"} ${CUR}</span>`;
     dmAddBtn.dataset.add = card.dataset.bi;
+
+    // Размеры: чипсы с ценой; выбранный уходит вместе с добавлением
+    const sizesBox = document.getElementById("tmdmSizes");
+    const chipsBox = document.getElementById("tmdmSizeChips");
+    let sizes = [];
+    try { sizes = JSON.parse(card.dataset.dishSizes || "[]"); } catch (e) { sizes = []; }
+
+    if (sizes.length) {
+      const pick = (z, el) => {
+        dmAddBtn.dataset.size = z.id;
+        [...chipsBox.children].forEach(c => c.classList.remove("on"));
+        el.classList.add("on");
+        dmPrice.innerHTML = `<span>${z.price} ${CUR}</span>`;
+      };
+      chipsBox.innerHTML = "";
+      sizes.forEach(z => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "tmdm-size-chip";
+        chip.innerHTML = `<b>${z.name}</b><span>${z.price} ${CUR}</span>`;
+        chip.addEventListener("click", () => pick(z, chip));
+        chipsBox.appendChild(chip);
+      });
+      const start = sizes.find(z => z.def) || sizes[0];
+      pick(start, chipsBox.children[sizes.indexOf(start)]);
+      sizesBox.style.display = "block";
+    } else {
+      sizesBox.style.display = "none";
+      chipsBox.innerHTML = "";
+      delete dmAddBtn.dataset.size;
+    }
 
     backdrop.classList.add("open");
     document.body.style.overflow = "hidden";

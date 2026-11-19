@@ -72,6 +72,9 @@ class Order(TimeStampedModel):
 class OrderItem(TimeStampedModel):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
     item = models.ForeignKey(Item, on_delete=models.PROTECT)
+    # Название размера сохраняем строкой: цену размера потом поменяют, а в
+    # заказе должно остаться то, что человек выбрал — «30 см», «0,5 л».
+    size_name = models.CharField("Размер", max_length=60, blank=True, default="")
     qty = models.PositiveIntegerField(default=1)
     price_snapshot = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     old_price_snapshot = models.DecimalField(

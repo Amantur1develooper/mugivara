@@ -41,6 +41,22 @@ from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 from decimal import Decimal
 
+
+
+def _size_for(bi, raw):
+    """id размера из запроса, проверенный по блюду. None — размеров нет."""
+    sizes = bi.size_list()
+    if not sizes:
+        return None
+    try:
+        chosen = int(raw)
+    except (TypeError, ValueError):
+        chosen = None
+    if chosen and any(z.id == chosen for z in sizes):
+        return chosen
+    default = bi.default_size()
+    return default.id if default else None
+
 @require_POST
 def add_to_cart(request, branch_item_id):
     bi = get_object_or_404(BranchItem, id=branch_item_id, is_available=True,
@@ -59,8 +75,12 @@ def add_to_cart(request, branch_item_id):
     qty = int(request.POST.get("qty") or 1)
     qty = max(1, min(qty, 99))
 
+    # Размер: если у блюда они есть, а выбор не прислали (старая страница в
+    # открытой вкладке), берём размер по умолчанию — иначе цена уехала бы.
+    size_id = _size_for(bi, request.POST.get("size_id"))
+
     # ✅ единая логика корзины
-    cart_add(request, bi.branch_id, bi.id, qty)
+    cart_add(request, bi.branch_id, bi.id, qty, size_id=size_id)
 
     cart = get_cart(request, bi.branch_id)
     rows, subtotal, qty_total = cart_details(bi.branch, cart)
@@ -710,12 +730,18 @@ def cart_json(request, branch_id: int):
     items = []
     for r in rows:
         bi = r["branch_item"]
+        size = r.get("size")
         items.append({
             "bi_id":       bi.id,
+            "key":         r.get("key") or str(bi.id),
             "name":        bi.item.name_ru,
+            # Размер отдаём отдельно: в корзине 30 см и 40 см — разные строки,
+            # и без подписи их не различить
+            "size":        (size.name if size else ""),
+            "size_id":     (size.id if size else None),
             # Блюдо узнают по картинке, а не по названию — отдаём её в корзину
             "photo":       bi.item.photo.url if bi.item.photo else "",
-            "price":       str(bi.price),
+            "price":       str(r.get("unit_price", bi.price)),
             "qty":         r["qty"],
             "line_total":  str(r["line_total"]),
             "update_url":  reverse("public_site:cart_update", args=[branch_id, bi.id]),
@@ -813,8 +839,10 @@ def cart_update(request, branch_id: int, branch_item_id: int):
     qty = int(request.POST.get("qty") or 0)
     qty = max(0, min(qty, 99))
 
-    # применяем
-    set_qty(request, branch.id, branch_item_id, qty)
+    # В корзине 30 см и 40 см — разные строки, поэтому правим ту, что указали
+    raw_size = request.POST.get("size_id")
+    size_id = int(raw_size) if (raw_size or "").isdigit() else None
+    set_qty(request, branch.id, branch_item_id, qty, size_id=size_id)
 
     # считаем заново
     cart = get_cart(request, branch.id)
@@ -828,7 +856,10 @@ def cart_update(request, branch_id: int, branch_item_id: int):
     row_qty = 0
     line_total = Decimal("0")
     for r in rows:
-        if r["branch_item"].id == branch_item_id:
+        if r["branch_item"].id != branch_item_id:
+            continue
+        same = (r.get("size").id if r.get("size") else None) == size_id
+        if same or size_id is None:
             row_qty = int(r["qty"])
             line_total = r["line_total"]
             break
@@ -855,7 +886,9 @@ def cart_remove(request, branch_id: int, branch_item_id: int):
     branch = get_object_or_404(Branch, id=branch_id, is_active=True)
     bi = get_object_or_404(BranchItem, id=branch_item_id, branch=branch)
 
-    set_qty(request, branch.id, bi.id, 0)
+    raw_size = request.POST.get("size_id")
+    size_id = int(raw_size) if (raw_size or "").isdigit() else None
+    set_qty(request, branch.id, bi.id, 0, size_id=size_id)
 
     cart = get_cart(request, branch.id)
     rows, subtotal, qty_total = cart_details(branch, cart)
@@ -1041,16 +1074,21 @@ def checkout(request, branch_id: int):
         for i, r in enumerate(rows, start=1):
             bi = r["branch_item"]
             qty = r["qty"]
-            line_total = bi.price * qty
+            size = r.get("size")
+            unit = r.get("unit_price", bi.price)
+            line_total = unit * qty
             OrderItem.objects.create(
                 order=order,
                 item=bi.item,
+                size_name=(size.name if size else ""),
                 qty=qty,
-                price_snapshot=bi.price,
-                old_price_snapshot=bi.old_price if bi.is_on_promo else None,
+                price_snapshot=unit,
+                old_price_snapshot=bi.old_price if bi.is_on_promo and not size else None,
                 line_total=line_total,
             )
             item_name = getattr(bi.item, "name_ru", None) or str(bi.item)
+            if size:
+                item_name = f"{item_name} ({size.name})"
             lines.append(f"{i}) {item_name} × {qty} = {line_total} сом")
 
         # сохраняем позиции конструктора

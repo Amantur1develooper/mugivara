@@ -14,6 +14,12 @@
 
 {% block head_extra %}
 <style>
+  .ie-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 860px) {
+    .ie-cols { grid-template-columns: 1fr; gap: 14px; }
+  }
+</style>
+<style>
   .current-photo{
     width:100%;max-height:220px;object-fit:cover;
     border-radius:14px;margin-bottom:12px;display:block;
@@ -68,7 +74,9 @@
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+    {# Две колонки только на широком экране: на телефоне в них оставалось
+       по 130 px, и поля превращались в нечитаемые огрызки. #}
+    <div class="ie-cols">
 
       <div>
         <div class="db-form-group">
@@ -96,7 +104,141 @@
           <label class="db-label" for="price">Цена (сом)</label>
           <input class="db-input" id="price" name="price" type="number"
                  min="0" value="{{ bi.price|floatformat:'0' }}">
+          <div class="db-hint" id="priceHint" hidden>
+            Пока у блюда есть размеры, эта цена не используется —
+            считается цена выбранного размера.
+          </div>
         </div>
+
+        {# ── РАЗМЕРЫ ── #}
+        <div class="db-form-group sz-box">
+          <label class="db-label">📏 Размеры и цены</label>
+          <div class="db-hint" style="margin:0 0 10px">
+            Например «30 см» и «40 см» или «0,5 л» и «1 л». Цена указывается
+            полная, а не надбавка. Если размеров нет — оставьте пусто, блюдо
+            будет продаваться по цене выше.
+          </div>
+
+          <div id="szRows">
+            {% for z in sizes %}
+            <div class="sz-row">
+              <input type="hidden" name="size_id" value="{{ z.id }}">
+              <input class="db-input sz-name" name="size_name" type="text"
+                     value="{{ z.name }}" placeholder="30 см" maxlength="60">
+              <div class="sz-price">
+                <input class="db-input" name="size_price" type="number" min="0"
+                       value="{{ z.price|floatformat:'0' }}" placeholder="0">
+                <span class="sz-cur">сом</span>
+              </div>
+              <label class="sz-def" title="Этот размер предлагается первым">
+                <input type="radio" name="size_default" value="{{ forloop.counter0 }}"
+                       {% if z.is_default %}checked{% endif %}>
+                <span>по умолч.</span>
+              </label>
+              <button type="button" class="sz-del" title="Убрать размер">✕</button>
+            </div>
+            {% endfor %}
+          </div>
+
+          <button type="button" class="sz-add" id="szAdd">+ Добавить размер</button>
+        </div>
+
+        <style>
+          .sz-box { border-top: 1px solid var(--border); padding-top: 16px; }
+          .sz-row {
+            display: grid; grid-template-columns: 1fr 130px auto auto;
+            gap: 8px; align-items: center; margin-bottom: 8px;
+          }
+          /* Поле цены должно занимать свою колонку целиком: у number-input
+             своя узкая ширина по умолчанию, и на телефоне в неё не влезало
+             даже «450». */
+          .sz-price { position: relative; width: 100%; }
+          .sz-price input { width: 100%; padding-right: 38px; box-sizing: border-box; }
+          .sz-cur {
+            position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+            font-size: 11px; color: var(--muted); pointer-events: none;
+          }
+          .sz-def {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 11px; color: var(--muted); white-space: nowrap; cursor: pointer;
+          }
+          .sz-del {
+            width: 32px; height: 32px; border-radius: 9px; cursor: pointer;
+            border: 1.5px solid var(--border); background: var(--bg); color: var(--muted);
+          }
+          .sz-del:hover { border-color: #ef4444; color: #ef4444; }
+          .sz-add {
+            margin-top: 4px; font: inherit; font-size: 12.5px; font-weight: 700;
+            color: var(--accent); background: none; border: 1.5px dashed var(--accent);
+            border-radius: 10px; padding: 9px 14px; cursor: pointer;
+          }
+          /* На узком экране строка в два яруса: иначе поля по 60 px и
+             в них не видно ни названия, ни цены. */
+          @media (max-width: 560px) {
+            .sz-row {
+              grid-template-columns: 1fr auto auto;
+              grid-template-areas: "name name name" "price def del";
+              gap: 7px 8px; padding-bottom: 10px; margin-bottom: 10px;
+              border-bottom: 1px dashed var(--border);
+            }
+            .sz-row .sz-name { grid-area: name; }
+            .sz-price { grid-area: price; }
+            .sz-def { grid-area: def; }
+            .sz-del { grid-area: del; }
+          }
+        </style>
+
+        <script>
+          (function () {
+            const rows = document.getElementById('szRows');
+            const hint = document.getElementById('priceHint');
+
+            function renumber() {
+              [...rows.children].forEach((row, i) => {
+                const radio = row.querySelector('input[name="size_default"]');
+                if (radio) radio.value = i;
+              });
+              // Пока есть размеры, обычная цена ни на что не влияет —
+              // говорим об этом прямо, чтобы её не искали в меню.
+              if (hint) hint.hidden = rows.children.length === 0;
+            }
+
+            document.getElementById('szAdd').addEventListener('click', () => {
+              const row = document.createElement('div');
+              row.className = 'sz-row';
+              row.innerHTML = `
+                <input type="hidden" name="size_id" value="">
+                <input class="db-input sz-name" name="size_name" type="text"
+                       placeholder="30 см" maxlength="60">
+                <div class="sz-price">
+                  <input class="db-input" name="size_price" type="number" min="0" placeholder="0">
+                  <span class="sz-cur">сом</span>
+                </div>
+                <label class="sz-def" title="Этот размер предлагается первым">
+                  <input type="radio" name="size_default" value="">
+                  <span>по умолч.</span>
+                </label>
+                <button type="button" class="sz-del" title="Убрать размер">✕</button>`;
+              rows.appendChild(row);
+              renumber();
+              row.querySelector('.sz-name').focus();
+              if (!rows.querySelector('input[name="size_default"]:checked')) {
+                row.querySelector('input[name="size_default"]').checked = true;
+              }
+            });
+
+            rows.addEventListener('click', e => {
+              if (!e.target.closest('.sz-del')) return;
+              e.target.closest('.sz-row').remove();
+              renumber();
+              if (rows.children.length && !rows.querySelector('input[name="size_default"]:checked')) {
+                rows.querySelector('input[name="size_default"]').checked = true;
+              }
+            });
+
+            renumber();
+          })();
+        </script>
 
         <div class="db-form-group promo-box">
           <label class="db-label">🔥 Акция / скидка</label>

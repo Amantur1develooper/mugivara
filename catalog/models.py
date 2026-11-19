@@ -277,8 +277,60 @@ class BranchItem(ServingWindowMixin, TimeStampedModel):
         if self.is_on_promo:
             return self.promo_badge_text
         return self.label.strip()
+
+    # ── Размеры ──────────────────────────────────────────────────────────────
+
+    def size_list(self):
+        """Активные размеры по порядку. Пусто — у блюда один размер."""
+        return [z for z in self.sizes.all() if z.is_active]
+
+    @property
+    def has_sizes(self):
+        return bool(self.size_list())
+
+    def default_size(self):
+        """Размер, выбранный заранее: помеченный, иначе самый дешёвый."""
+        sizes = self.size_list()
+        if not sizes:
+            return None
+        for z in sizes:
+            if z.is_default:
+                return z
+        return min(sizes, key=lambda z: z.price)
+
+    @property
+    def price_from(self):
+        """Цена, которую показываем на карточке: за размер по умолчанию."""
+        z = self.default_size()
+        return z.price if z else self.price
     
     
+class BranchItemSize(TimeStampedModel):
+    """Размер блюда со своей ценой: «30 см», «0,5 л», «большая порция».
+
+    Цена указывается полная, а не надбавка: так её проще держать в голове
+    и видно в списке, сколько стоит каждый вариант. У блюда без размеров
+    всё работает как раньше — цена берётся из самого блюда филиала.
+    """
+    branch_item = models.ForeignKey(BranchItem, on_delete=models.CASCADE,
+                                    related_name="sizes")
+    name = models.CharField("Размер", max_length=60)
+    name_ky = models.CharField("Размер (кырг.)", max_length=60, blank=True, default="")
+    name_en = models.CharField("Размер (англ.)", max_length=60, blank=True, default="")
+    price = models.DecimalField("Цена (сом)", max_digits=10, decimal_places=2, default=0)
+    is_default = models.BooleanField("По умолчанию", default=False)
+    is_active = models.BooleanField("Активен", default=True)
+    sort_order = models.PositiveSmallIntegerField("Порядок", default=0)
+
+    class Meta:
+        ordering = ("sort_order", "id")
+        verbose_name = "Размер блюда"
+        verbose_name_plural = "Размеры блюд"
+
+    def __str__(self):
+        return f"{self.branch_item} — {self.name}"
+
+
 class BranchCategoryItem(TimeStampedModel):
     """Порядок блюд внутри конкретной категории филиала."""
     branch_category = models.ForeignKey(BranchCategory, on_delete=models.CASCADE, related_name="items_in_category")

@@ -34,6 +34,12 @@ _RESET = "\x03"
 
 # ── Построение текста тикета ─────────────────────────────────────────────────
 
+def _with_size(oi):
+    """Название позиции с размером: «Пицца (30 см)»."""
+    size = getattr(oi, "size_name", "") or ""
+    return f"{oi.item.name_ru} ({size})" if size else oi.item.name_ru
+
+
 def _ticket(order, items):
     """
     Кухонный тикет.
@@ -107,7 +113,10 @@ def _receipt_ticket(order, restaurant):
     lines.append(SEP)
 
     for oi in order.items.select_related("item").all():
-        lines.append(f"  {oi.item.name_ru}")
+        # Размер — часть названия: на кухне и в чеке 30 см и 40 см
+        # должны отличаться, иначе соберут не то.
+        _size = f" ({oi.size_name})" if getattr(oi, "size_name", "") else ""
+        lines.append(f"  {oi.item.name_ru}{_size}")
         lines.append(f"    {oi.qty} x {oi.price_snapshot:.0f} = {oi.line_total:.0f} сом")
 
     for coi in order.constructor_items.all():
@@ -225,9 +234,9 @@ def create_print_jobs(order, new_item_ids=None, new_cx_ids=None):
     for oi in oi_qs:
         grp = item_group.get(oi.item_id)
         if grp:
-            by_group[grp].append((oi.item.name_ru, oi.qty))
+            by_group[grp].append((_with_size(oi), oi.qty))
         else:
-            no_group.append((oi.item.name_ru, oi.qty))
+            no_group.append((_with_size(oi), oi.qty))
 
     for coi in cx_qs:
         ing_lines = []

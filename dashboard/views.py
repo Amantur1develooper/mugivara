@@ -1080,6 +1080,64 @@ def item_add(request, branch_id):
 
 # ── EDIT ITEM ─────────────────────────────────────────────────────────────────
 
+
+
+# ── Размеры блюда ───────────────────────────────────────────────────────────
+
+def _save_item_sizes(request, bi):
+    """Сохраняет таблицу размеров блюда из формы настроек.
+
+    Строки приходят тремя списками одинаковой длины: id (пусто — новая),
+    название и цена. Строка с пустым названием считается удалённой — так
+    «убрать размер» не требует отдельной кнопки подтверждения.
+    """
+    from catalog.models import BranchItemSize
+
+    ids = request.POST.getlist("size_id")
+    names = request.POST.getlist("size_name")
+    prices = request.POST.getlist("size_price")
+    if not names:
+        return
+
+    default_raw = (request.POST.get("size_default") or "").strip()
+    keep = []
+    for idx, (raw_id, name, price) in enumerate(zip(ids, names, prices)):
+        name = (name or "").strip()[:60]
+        if not name:
+            continue
+        try:
+            value = Decimal((price or "0").replace(",", "."))
+        except InvalidOperation:
+            value = Decimal("0")
+        is_default = (default_raw == str(idx))
+
+        size = None
+        if raw_id.isdigit():
+            size = BranchItemSize.objects.filter(id=int(raw_id), branch_item=bi).first()
+        if size:
+            size.name, size.price = name, value
+            size.is_default = is_default
+            size.sort_order = idx
+            size.is_active = True
+            size.save(update_fields=["name", "price", "is_default",
+                                     "sort_order", "is_active", "updated_at"])
+        else:
+            size = BranchItemSize.objects.create(
+                branch_item=bi, name=name, price=value,
+                is_default=is_default, sort_order=idx)
+        keep.append(size.id)
+
+    # Размеры, которых в форме не осталось, удаляем: заказы хранят название
+    # размера строкой, поэтому история от этого не портится.
+    bi.sizes.exclude(id__in=keep).delete()
+
+    # Ни один не помечен — пусть по умолчанию будет первый, иначе на сайте
+    # выбор был бы случайным.
+    if keep and not bi.sizes.filter(is_default=True).exists():
+        first = bi.sizes.order_by("sort_order", "id").first()
+        first.is_default = True
+        first.save(update_fields=["is_default"])
+
 @login_required(login_url="dashboard:login")
 def item_edit(request, branch_item_id):
     bi = get_object_or_404(BranchItem, id=branch_item_id)
@@ -1171,6 +1229,8 @@ def item_edit(request, branch_item_id):
             # "Без категории" — remove all category assignments
             bi.categories_in_branch.all().delete()
 
+        _save_item_sizes(request, bi)
+
         messages.success(request, "Блюдо обновлено")
         return redirect("dashboard:branch_items", branch_id=bi.branch_id)
 
@@ -1179,6 +1239,7 @@ def item_edit(request, branch_item_id):
         "item": item,
         "branch_categories": branch_categories,
         "current_cat_id": current_cat_id,
+        "sizes": list(bi.sizes.all()),
     })
 
 

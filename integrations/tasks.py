@@ -150,6 +150,10 @@ def _order_text(order: Order, title_override: str = None) -> str:
         lines.append("📋 Состав заказа:")
         for it in items:
             name = getattr(it.item, "name_ru", None) or str(it.item)
+            # Размер дописываем к названию: иначе в группе не поймут,
+            # какую именно пиццу готовить
+            if getattr(it, "size_name", ""):
+                name = f"{name} ({it.size_name})"
             qty = getattr(it, "qty", 1)
             lt = getattr(it, "line_total", None)
             if lt is not None:
@@ -226,6 +230,10 @@ def _table_order_text(order: Order) -> str:
         lines.append("")
         for it in items:
             name = getattr(it.item, "name_ru", None) or str(it.item)
+            # Размер дописываем к названию: иначе в группе не поймут,
+            # какую именно пиццу готовить
+            if getattr(it, "size_name", ""):
+                name = f"{name} ({it.size_name})"
             lt = getattr(it, "line_total", None)
             if lt is not None:
                 line = f"• {name}  ×{it.qty}  —  {_money(lt)}"
