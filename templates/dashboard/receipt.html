@@ -22,6 +22,9 @@
   .receipt { width: 76mm; }
 
   /* ── Helpers ── */
+  /* Чек читают слева: названия, состав и подписи выровнены по левому краю,
+     по центру остаются только суммы и шапка с названием заведения —
+     вразнобой стоящий текст на узкой ленте читать тяжело. */
   .center { text-align: center; }
   .bold   { font-weight: bold; }
   .sep    { border-top: 1px dashed #000; margin: 6px 0; }
@@ -38,7 +41,7 @@
 
   /* ── Header ── */
   .r-header {
-    text-align: center;
+    text-align: left;
     padding-bottom: 6px;
     margin-bottom: 6px;
     border-bottom: 1px dashed #000;
@@ -54,7 +57,10 @@
   /* ── Items ── */
   .r-item { margin-bottom: 5px; }
   .r-item-name { font-size: 12px; font-weight: bold; word-break: break-word; }
-  .r-item-ing  { font-size: 10px; color: #444; padding-left: 4px; line-height: 1.4; }
+  .r-item-ing  {
+    font-size: 10px; color: #444; line-height: 1.4;
+    padding-left: 10px; text-align: left;
+  }
   .r-item-line {
     display: flex;
     justify-content: space-between;
@@ -84,7 +90,7 @@
 
   /* ── Footer ── */
   .r-footer {
-    text-align: center;
+    text-align: left;
     border-top: 1px dashed #000;
     padding-top: 8px;
     margin-top: 4px;
@@ -203,7 +209,7 @@
   </div>
 
   <button class="r-print-btn" onclick="window.print()">🖨 Распечатать</button>
-  <div style="margin-top:10px;font-size:10px;color:#888;text-align:center">
+  <div style="margin-top:10px;font-size:10px;color:#888">
     Если принтер показывает ошибку — используйте Chrome или Edge
   </div>
 

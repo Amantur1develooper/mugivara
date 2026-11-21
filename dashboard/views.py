@@ -2263,15 +2263,98 @@ def pos(request, branch_id):
     except Exception:
         places_qs = []
 
+    from catalog.models import DishConstructor
+    # Конструкторы для кассы: кассир должен уметь пробить «Собери сам», а не
+    # искать похожее блюдо. Берём только собранные — с активными
+    # ингредиентами, иначе плитку не из чего составить.
+    cx_cards = [
+        cx for cx in (DishConstructor.objects
+                      .filter(branch=branch, is_active=True)
+                      .prefetch_related("groups__ingredients")
+                      .order_by("sort_order", "id"))
+        if any(any(i.is_active for i in g.ingredients.all()) for g in cx.groups.all())
+    ]
+
     return render(request, "dashboard/pos.html", {
         "branch": branch,
         "categories": categories,
+        "cx_cards": cx_cards,
         "live_orders": live_orders,
         "places": places_qs,
         "pos_delivery_fee": int(branch.delivery_fee) if branch.pos_delivery_fee_enabled else 0,
         "pos_delivery_fee_enabled": branch.pos_delivery_fee_enabled,
     })
 
+
+
+
+# ── «Собери сам» на кассе ───────────────────────────────────────────────────
+
+def _pos_prepare_cx(branch, cx_data):
+    """Проверяет присланные наборы и считает их цену по базе.
+
+    Касса — обычная страница в браузере, поэтому ни цену, ни состав из
+    запроса принимать на веру нельзя: собираем всё заново по id, а чужие
+    ингредиенты и ингредиенты из другого филиала отбрасываем.
+    """
+    from catalog.models import ConstructorIngredient, DishConstructor
+
+    prepared = []
+    for raw in cx_data or []:
+        try:
+            cx = (DishConstructor.objects
+                  .prefetch_related("groups__ingredients")
+                  .get(id=int(raw.get("cx_id")), branch=branch, is_active=True))
+        except (DishConstructor.DoesNotExist, TypeError, ValueError):
+            continue
+
+        qty = max(1, min(int(raw.get("qty") or 1), 99))
+        allowed = {i.id: i for g in cx.groups.all() for i in g.ingredients.all()
+                   if i.is_active}
+
+        unit = Decimal(str(cx.base_price or 0))
+        snapshot = []
+        for sel in (raw.get("selections") or []):
+            ings = []
+            for entry in (sel.get("ings") or []):
+                ing = allowed.get(int(entry.get("id") or 0))
+                if not ing:
+                    continue
+                portion = max(1, min(int(entry.get("qty") or 1), 20))
+                price = Decimal(str(ing.display_price or 0))
+                unit += price * portion
+                ings.append({"id": ing.id, "name": ing.display_name_i18n,
+                             "qty": portion, "extra_price": str(price)})
+            if ings:
+                snapshot.append({"gname": (sel.get("gname") or "")[:200],
+                                 "ings": ings})
+
+        if not snapshot:
+            continue
+        prepared.append({
+            "cx": cx, "qty": qty, "unit": unit, "line": unit * qty,
+            "snapshot": snapshot,
+        })
+    return prepared
+
+
+def _pos_save_cx(order, prepared_cx):
+    """Пишет наборы в заказ. Возвращает id созданных позиций для печати."""
+    from orders.models import ConstructorOrderItem
+
+    ids = []
+    for pcx in prepared_cx:
+        coi = ConstructorOrderItem.objects.create(
+            order=order,
+            constructor=pcx["cx"],
+            constructor_name_snapshot=pcx["cx"].name,
+            qty=pcx["qty"],
+            unit_price=pcx["unit"],
+            line_total=pcx["line"],
+            ingredients_snapshot=pcx["snapshot"],
+        )
+        ids.append(coi.id)
+    return ids
 
 @require_POST
 @login_required(login_url="dashboard:login")
@@ -2287,6 +2370,7 @@ def pos_order_create(request, branch_id):
         return JsonResponse({"ok": False, "error": "bad json"}, status=400)
 
     items_data      = data.get("items", [])
+    cx_data         = data.get("cx", [])
     order_type      = data.get("type", Order.Type.DINE_IN)
     payment_method  = data.get("payment", Order.PaymentMethod.CASH)
     customer_name   = (data.get("name") or "").strip()
@@ -2294,7 +2378,7 @@ def pos_order_create(request, branch_id):
     table_place_id  = data.get("table_place_id") or None
     promo_code_str  = (data.get("promo_code") or "").strip()
 
-    if not items_data:
+    if not items_data and not cx_data:
         return JsonResponse({"ok": False, "error": "Нет позиций"}, status=400)
 
     # Стол: если выбран — привязываем к заказу
@@ -2330,6 +2414,21 @@ def pos_order_create(request, branch_id):
         except (BranchItem.DoesNotExist, ValueError, KeyError):
             continue
 
+    # ── «Собери сам» с кассы ──
+    # Цену считаем на сервере по самим ингредиентам, а не берём из запроса:
+    # касса открыта в браузере, и присланной сумме верить нельзя.
+    prepared_cx = _pos_prepare_cx(branch, cx_data)
+    for pcx in prepared_cx:
+        total += pcx["line"]
+
+    # После проверки могло не остаться ничего: блюда уже удалили из меню,
+    # а набор пришёл без выбранных ингредиентов. Пустой заказ на ноль сом
+    # заводить нельзя — он потом висит в очереди и портит отчёты.
+    if not prepared_items and not prepared_cx:
+        return JsonResponse(
+            {"ok": False, "error": "Позиции не распознаны — обновите страницу кассы"},
+            status=400)
+
     with transaction.atomic():
         # If a table is selected, try to add to existing open order
         existing_order = None
@@ -2359,6 +2458,7 @@ def pos_order_create(request, branch_id):
                     if bi.stock == 0:
                         bi.is_available = False
                     bi.save(update_fields=["stock", "is_available"])
+            new_cx_ids = _pos_save_cx(order, prepared_cx)
             order.total_amount = order.total_amount + total
             order.save(update_fields=["total_amount"])
             open_table = True
@@ -2394,6 +2494,8 @@ def pos_order_create(request, branch_id):
                     if bi.stock == 0:
                         bi.is_available = False
                     bi.save(update_fields=["stock", "is_available"])
+
+            _pos_save_cx(order, prepared_cx)
 
             if promo:
                 bump_promo_use(promo)

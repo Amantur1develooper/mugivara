@@ -1,5 +1,6 @@
 {% extends "dashboard/base.html" %}
 {% load i18n %}
+{% load l10n %}
 
 {% block title %}Касса — {{ branch.name_ru }}{% endblock %}
 
@@ -860,6 +861,25 @@
     </div>
 
     <div class="pos-items" id="posItems">
+      {% for cx in cx_cards %}
+      <div class="pos-item pos-item-cx" data-cat="all"
+           onclick="openCxPicker({{ cx.id }})" title="{{ cx.name }}">
+        <div class="pos-item-photo">
+          {% if cx.photo %}<img src="{{ cx.photo.url }}" alt="{{ cx.name }}" loading="lazy">
+          {% else %}🧩{% endif %}
+          <div class="pos-item-promo-badge">🧩 Собери сам</div>
+        </div>
+        <div class="pos-item-name">{{ cx.name }}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
+          <div class="pos-item-price-row">
+            <div class="pos-item-price">
+              {% if cx.base_price %}от {{ cx.base_price|floatformat:0 }} сом{% else %}собрать{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
       {% for bc in categories %}
       {% for bci in bc.items_in_category.all %}
       {% with bi=bci.branch_item item=bci.branch_item.item %}
@@ -1134,7 +1154,10 @@ function switchCat(catId, btn) {
   document.querySelectorAll(".pos-cat-tab").forEach(t => t.classList.remove("active"));
   btn.classList.add("active");
   document.querySelectorAll(".pos-item").forEach(el => {
-    el.style.display = (String(el.dataset.cat) === String(catId)) ? "" : "none";
+    // Наборы «Собери сам» не принадлежат категории — показываем всегда,
+    // иначе кассир не нашёл бы их, переключив вкладку.
+    const always = el.dataset.cat === "all";
+    el.style.display = (always || String(el.dataset.cat) === String(catId)) ? "" : "none";
   });
 }
 // Show first cat on load
@@ -1147,7 +1170,36 @@ function switchCat(catId, btn) {
 const POS_DELIVERY_FEE = {{ pos_delivery_fee|default:0|stringformat:"d" }};
 
 // ── Cart state ─────────────────────────────────────────────────────────────
-const cart = {};  // { bi_id: { name, price, qty } }
+const cart = {};  // { bi_id | 'cx_N': { name, price, qty, cx?, cxId?, selections? } }
+let cxSeq = 0;
+
+// Состав наборов для кассы. localize off обязателен: в русской локали
+// цена печаталась бы с запятой и ломала объект JS.
+{% localize off %}
+const POS_CX = {
+  {% for cx in cx_cards %}
+  {{ cx.id }}: {
+    id: {{ cx.id }},
+    name: "{{ cx.name|escapejs }}",
+    base: {{ cx.base_price|default_if_none:0 }},
+    groups: [
+      {% for g in cx.groups.all %}
+      {
+        id: {{ g.id }}, name: "{{ g.name|escapejs }}",
+        min: {{ g.min_select }}, max: {{ g.max_select }},
+        ings: [
+          {% for i in g.ingredients.all %}{% if i.is_active %}
+          { id: {{ i.id }}, name: "{{ i.display_name_i18n|escapejs }}",
+            price: {{ i.display_price|default_if_none:0 }} },
+          {% endif %}{% endfor %}
+        ]
+      },
+      {% endfor %}
+    ]
+  },
+  {% endfor %}
+};
+{% endlocalize %}
 let selectedType = "dine_in";
 {% if branch.pay_cash_enabled %}
 let selectedPay = "cash";
@@ -1166,9 +1218,9 @@ function addToCart(biId, name, price) {
   renderCart();
 }
 
-function setQty(biId, qty) {
-  if (qty <= 0) { delete cart[biId]; }
-  else { cart[biId].qty = qty; }
+function setQty(key, qty) {
+  if (qty <= 0) { delete cart[key]; }
+  else { cart[key].qty = qty; }
   renderCart();
 }
 
@@ -1203,14 +1255,15 @@ function renderCart() {
     total += line;
     html += `
       <div class="pos-cart-row">
-        <div class="pos-cart-name">${it.name}</div>
+        <div class="pos-cart-name">${it.cx ? "🧩 " : ""}${it.name}${
+          it.detail ? `<div class="pos-cart-detail">${it.detail}</div>` : ""}</div>
         <div class="pos-cart-qty-wrap">
-          <button class="pos-qty-btn" onclick="setQty(${id}, ${it.qty - 1})">−</button>
+          <button class="pos-qty-btn" onclick="setQty('${id}', ${it.qty - 1})">−</button>
           <div class="pos-cart-qty-val">${it.qty}</div>
-          <button class="pos-qty-btn" onclick="setQty(${id}, ${it.qty + 1})">+</button>
+          <button class="pos-qty-btn" onclick="setQty('${id}', ${it.qty + 1})">+</button>
         </div>
         <div class="pos-cart-line">${line.toLocaleString()} сом</div>
-        <button class="pos-cart-del" onclick="setQty(${id}, 0)" title="Удалить">✕</button>
+        <button class="pos-cart-del" onclick="setQty('${id}', 0)" title="Удалить">✕</button>
       </div>`;
   });
 
@@ -1225,6 +1278,110 @@ function renderCart() {
     cartBadge.textContent = totalQty || "";
     cartBadge.classList.toggle("show", totalQty > 0);
   }
+}
+
+// ── «Собери сам» на кассе ─────────────────────────────────────────────────
+let cxCur = null;      // { cx, picked: {gid: {ingId: qty}} }
+
+function openCxPicker(cxId) {
+  const cx = POS_CX[cxId];
+  if (!cx) return;
+  cxCur = { cx, picked: {} };
+  cx.groups.forEach(g => { cxCur.picked[g.id] = {}; });
+  document.getElementById("cxPickName").textContent = cx.name;
+  renderCxPicker();
+  document.getElementById("cxPickWrap").classList.add("open");
+}
+
+function closeCxPicker() {
+  document.getElementById("cxPickWrap").classList.remove("open");
+  cxCur = null;
+}
+
+function cxUnitPrice() {
+  let sum = Number(cxCur.cx.base || 0);
+  cxCur.cx.groups.forEach(g => {
+    const chosen = cxCur.picked[g.id] || {};
+    g.ings.forEach(i => { sum += Number(i.price || 0) * (chosen[i.id] || 0); });
+  });
+  return sum;
+}
+
+function cxReady() {
+  // Набор нельзя пробить, пока не выбрано обязательное: иначе на кухню
+  // уйдёт бургер без котлеты.
+  return cxCur.cx.groups.every(g => {
+    const n = Object.values(cxCur.picked[g.id] || {}).reduce((a, b) => a + b, 0);
+    return n >= g.min;
+  });
+}
+
+function cxPick(gid, ingId) {
+  const g = cxCur.cx.groups.find(x => x.id === gid);
+  const chosen = cxCur.picked[gid];
+  const taken = Object.values(chosen).reduce((a, b) => a + b, 0);
+
+  if (g.max === 1) {
+    // Один из списка — выбор переключается, а не накапливается
+    Object.keys(chosen).forEach(k => delete chosen[k]);
+    chosen[ingId] = 1;
+  } else if (chosen[ingId]) {
+    delete chosen[ingId];
+  } else if (taken < g.max) {
+    chosen[ingId] = 1;
+  }
+  renderCxPicker();
+}
+
+function renderCxPicker() {
+  const box = document.getElementById("cxPickBody");
+  let html = "";
+  cxCur.cx.groups.forEach(g => {
+    const chosen = cxCur.picked[g.id] || {};
+    const taken = Object.values(chosen).reduce((a, b) => a + b, 0);
+    const need = g.min > 0 ? `нужно ${g.min}` : "не обязательно";
+    html += `<div class="cx-pick-g">
+      <div class="cx-pick-gh">
+        <span>${g.name}</span>
+        <span class="cx-pick-note${taken >= g.min ? " ok" : ""}">${taken}/${g.max} · ${need}</span>
+      </div>
+      <div class="cx-pick-ings">` +
+      g.ings.map(i => `
+        <button type="button" class="cx-pick-ing${chosen[i.id] ? " on" : ""}"
+                onclick="cxPick(${g.id}, ${i.id})">
+          <span>${i.name}</span>
+          <b>${i.price > 0 ? "+" + i.price : "0"}</b>
+        </button>`).join("") +
+      `</div></div>`;
+  });
+  box.innerHTML = html;
+  const ready = cxReady();
+  const btn = document.getElementById("cxPickAdd");
+  btn.disabled = !ready;
+  btn.textContent = ready
+    ? `Добавить · ${cxUnitPrice().toLocaleString()} сом`
+    : "Выберите обязательные шаги";
+}
+
+function cxAddToCart() {
+  if (!cxCur || !cxReady()) return;
+  const selections = [];
+  const parts = [];
+  cxCur.cx.groups.forEach(g => {
+    const chosen = cxCur.picked[g.id] || {};
+    const ings = g.ings.filter(i => chosen[i.id]).map(i => ({ id: i.id, qty: chosen[i.id] }));
+    if (!ings.length) return;
+    selections.push({ gname: g.name, ings });
+    parts.push(g.ings.filter(i => chosen[i.id]).map(i => i.name).join(", "));
+  });
+  const key = "cx_" + (++cxSeq);
+  cart[key] = {
+    cx: true, cxId: cxCur.cx.id, name: cxCur.cx.name,
+    detail: parts.join(" · "), price: cxUnitPrice(), qty: 1,
+    selections,
+  };
+  closeCxPicker();
+  renderCart();
 }
 
 function setType(btn) {
@@ -1394,10 +1551,16 @@ async function submitOrder() {
 
   const receiptWin = openReceiptWin();
 
-  const items = keys.map(id => ({ bi_id: parseInt(id), qty: cart[id].qty }));
+  // Обычные блюда и наборы уходят раздельно: у наборов нет bi_id, зато
+  // есть состав, который нужно сохранить в заказе и напечатать в чеке.
+  const items = keys.filter(k => !cart[k].cx)
+    .map(id => ({ bi_id: parseInt(id), qty: cart[id].qty }));
+  const cx = keys.filter(k => cart[k].cx).map(k => ({
+    cx_id: cart[k].cxId, qty: cart[k].qty, selections: cart[k].selections,
+  }));
   const comment = document.getElementById("posComment").value.trim();
   const promoCode = document.getElementById("posPromo").value.trim().toUpperCase();
-  const body = { items, type: selectedType, payment: selectedPay, comment };
+  const body = { items, cx, type: selectedType, payment: selectedPay, comment };
   if (promoCode) body.promo_code = promoCode;
   if (selectedTableId) body.table_place_id = selectedTableId;
 
@@ -1628,4 +1791,77 @@ function switchMobTab(tab) {
 function openDrawer()  { document.getElementById('mobDrawer').classList.add('open'); }
 function closeDrawer() { document.getElementById('mobDrawer').classList.remove('open'); }
 </script>
+
+<div class="cx-pick-wrap" id="cxPickWrap" onclick="if(event.target===this)closeCxPicker()">
+  <div class="cx-pick-sheet" role="dialog" aria-label="Собери сам">
+    <div class="cx-pick-head">
+      <div class="cx-pick-title">🧩 <span id="cxPickName"></span></div>
+      <button type="button" class="cx-pick-close" onclick="closeCxPicker()">✕</button>
+    </div>
+    <div class="cx-pick-body" id="cxPickBody"></div>
+    <div class="cx-pick-foot">
+      <button type="button" class="cx-pick-add" id="cxPickAdd" onclick="cxAddToCart()"></button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .pos-item-cx .pos-item-photo { font-size: 30px; }
+  .pos-cart-detail {
+    font-size: 10.5px; color: var(--muted); line-height: 1.35; margin-top: 2px;
+  }
+
+  .cx-pick-wrap {
+    position: fixed; inset: 0; z-index: 9000; display: none;
+    background: rgba(0,0,0,.55); align-items: flex-end; justify-content: center;
+  }
+  .cx-pick-wrap.open { display: flex; }
+  .cx-pick-sheet {
+    width: 100%; max-width: 560px; background: var(--card);
+    border-radius: 20px 20px 0 0; display: flex; flex-direction: column;
+    max-height: 88dvh;
+  }
+  @media (min-width: 700px) {
+    .cx-pick-wrap { align-items: center; }
+    .cx-pick-sheet { border-radius: 20px; max-height: 84vh; }
+  }
+  .cx-pick-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 16px 18px 12px; border-bottom: 1px solid var(--border);
+  }
+  .cx-pick-title { font-size: 16px; font-weight: 800; color: var(--text); }
+  .cx-pick-close {
+    width: 32px; height: 32px; border-radius: 9px; cursor: pointer;
+    border: 1.5px solid var(--border); background: var(--bg); color: var(--muted);
+  }
+  .cx-pick-body { padding: 14px 18px; overflow-y: auto; flex: 1 1 auto; min-height: 0; }
+  .cx-pick-g { margin-bottom: 16px; }
+  .cx-pick-gh {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+    font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 8px;
+  }
+  .cx-pick-note { font-size: 11px; font-weight: 600; color: var(--muted); }
+  .cx-pick-note.ok { color: #059669; }
+  .cx-pick-ings { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 7px; }
+  .cx-pick-ing {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 10px 12px; border-radius: 11px; cursor: pointer; font: inherit;
+    border: 2px solid var(--border); background: var(--bg); color: var(--text);
+    font-size: 12.5px; text-align: left;
+  }
+  .cx-pick-ing b { font-size: 11.5px; color: var(--muted); }
+  .cx-pick-ing.on { border-color: var(--accent); background: rgba(255,77,28,.06); }
+  .cx-pick-ing.on b { color: var(--accent); }
+  .cx-pick-foot { padding: 12px 18px 16px; border-top: 1px solid var(--border); }
+  .cx-pick-add {
+    width: 100%; padding: 14px; border: 0; border-radius: 12px; cursor: pointer;
+    background: linear-gradient(135deg, var(--accent), var(--accent2, var(--accent)));
+    color: #fff; font: inherit; font-size: 14px; font-weight: 800;
+  }
+  .cx-pick-add:disabled { opacity: .5; cursor: default; }
+  @media (max-width: 420px) {
+    .cx-pick-ings { grid-template-columns: 1fr 1fr; }
+    .cx-pick-ing { padding: 9px 10px; font-size: 11.5px; }
+  }
+</style>
 {% endblock %}
