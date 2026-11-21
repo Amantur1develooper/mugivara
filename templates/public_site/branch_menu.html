@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static i18n i18n_attrs l10n %}
+{% load l10n %}
 
 {% block title %}{% t branch "name" %} — {% trans "Меню" %} · Webordo
 {% endblock %}
@@ -1256,6 +1257,15 @@ const T = {
 
 {# Данные конструкторов для JS #}
 <script>
+{% comment %}
+  localize off обязателен: в русской локали Django печатает цену
+  с запятой — «100,00». Внутри объекта JS это становится
+  «price: 100,00», то есть синтаксическая ошибка, и весь скрипт
+  страницы перестаёт работать: конструктор не открывается, корзина
+  не считается. На кыргызском и английском разделитель — точка,
+  поэтому ломалось только в русской версии.
+{% endcomment %}
+{% localize off %}
 const CX_DATA = {
   {% for cx in constructors %}
   {{ cx.id }}: {
@@ -1270,7 +1280,7 @@ const CX_DATA = {
         max: {{ g.max_select }},
         ingredients: [
           {% for ing in g.ingredients.all %}{% if ing.is_active %}
-          { id: {{ ing.id }}, name: "{{ ing.display_name_i18n|escapejs }}", desc: "{{ ing.display_description_i18n|escapejs }}", price: {{ ing.display_price }}, photo: "{{ ing.display_photo_url }}" },
+          { id: {{ ing.id }}, name: "{{ ing.display_name_i18n|escapejs }}", desc: "{{ ing.display_description_i18n|escapejs }}", price: {{ ing.display_price|default_if_none:0 }}, photo: "{{ ing.display_photo_url }}" },
           {% endif %}{% endfor %}
         ]
       },
@@ -1279,6 +1289,7 @@ const CX_DATA = {
   },
   {% endfor %}
 };
+{% endlocalize %}
 const CX_ADD_URL = "{% url 'public_site:constructor_add_to_cart' branch.id %}";
 const CX_CSRF = () => document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
 </script>
