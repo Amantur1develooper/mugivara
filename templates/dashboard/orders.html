@@ -248,7 +248,7 @@
       <td data-label="Состав">
         <div class="ord-items-list">
           {% for item in order.items.all %}
-          <div>{{ item.item.name_ru }} <b>× {{ item.qty }}</b> — {{ item.line_total|floatformat:0 }} сом</div>
+          <div>{{ item.item.name_ru }}{% if item.size_name %} <span style="color:var(--accent);font-weight:700">· {{ item.size_name }}</span>{% endif %} <b>× {{ item.qty }}</b> — {{ item.line_total|floatformat:0 }} сом</div>
           {% empty %}
           <span style="color:var(--muted)">—</span>
           {% endfor %}

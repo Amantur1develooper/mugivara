@@ -2660,7 +2660,7 @@ def pos_table_order_json(request, place_id):
 
     items = [
         {
-            "name": oi.item.name_ru,
+            "name": (f"{oi.item.name_ru} ({oi.size_name})" if oi.size_name else oi.item.name_ru),
             "qty": oi.qty,
             "price": str(oi.price_snapshot),
             "line_total": str(oi.line_total),
@@ -2721,7 +2721,7 @@ def pos_live_orders(request, branch_id):
     result = []
     for o in orders:
         items = [
-            {"name": oi.item.name_ru, "qty": oi.qty, "line": str(oi.line_total)}
+            {"name": (f"{oi.item.name_ru} ({oi.size_name})" if oi.size_name else oi.item.name_ru), "qty": oi.qty, "line": str(oi.line_total)}
             for oi in o.items.all()
         ]
         for ci in o.constructor_items.all():

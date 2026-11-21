@@ -1184,6 +1184,10 @@ def checkout_success(request, branch_id: int, order_id: int):
 
     for i, oi in enumerate(items, start=1):
         name = getattr(oi.item, "name_ru", None) or str(oi.item)
+        # Размер — часть названия: без него на странице «заказ принят» и в
+        # сообщении в WhatsApp не видно, какую именно пиццу заказали.
+        if getattr(oi, "size_name", ""):
+            name = f"{name} ({oi.size_name})"
         line = f"{i}) {name} × {oi.qty} = {oi.line_total} сом"
         lines.append(line)
 

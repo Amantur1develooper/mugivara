@@ -154,7 +154,7 @@
   <div style="padding-bottom:6px;margin-bottom:6px;border-bottom:1px dashed #000">
     {% for oi in order.items.all %}
     <div class="r-item">
-      <div class="r-item-name">{{ oi.item.name_ru }}</div>
+      <div class="r-item-name">{{ oi.item.name_ru }}{% if oi.size_name %} ({{ oi.size_name }}){% endif %}</div>
       <div class="r-item-line">
         <span>{{ oi.price_snapshot|floatformat:0 }} x {{ oi.qty }}</span>
         <span>{{ oi.line_total|floatformat:0 }} сом</span>

@@ -490,7 +490,7 @@ def table_menu(request, token: str):
         for o in open_orders_qs:
             for oi in o.items.select_related("item").all():
                 open_order_items.append({
-                    "name": oi.item.name_ru,
+                    "name": (f"{oi.item.name_ru} ({oi.size_name})" if oi.size_name else oi.item.name_ru),
                     "qty": oi.qty,
                     "line_total": oi.line_total,
                 })
@@ -856,7 +856,7 @@ def table_order_json(request, order_id):
             items.append({
                 "oi_id": oi.id,
                 "type": "item",
-                "name": oi.item.name_ru,
+                "name": (f"{oi.item.name_ru} ({oi.size_name})" if oi.size_name else oi.item.name_ru),
                 "qty": oi.qty,
                 "price": float(oi.price_snapshot),
                 "line_total": float(oi.line_total),
@@ -1026,7 +1026,8 @@ def table_waiter_cancel_item(request, order_id):
             obj.delete()
         else:
             obj = get_object_or_404(OrderItem.objects.select_related("item"), id=oi_id, order__table_place=order.table_place)
-            item_name = obj.item.name_ru
+            item_name = (f"{obj.item.name_ru} ({obj.size_name})"
+                         if getattr(obj, "size_name", "") else obj.item.name_ru)
             item_qty = obj.qty
             item_line = obj.line_total
             item_id = obj.item_id
