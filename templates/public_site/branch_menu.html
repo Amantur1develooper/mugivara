@@ -1098,9 +1098,6 @@ const T = {
                 {% endif %}
 
                 {% if bi.has_sizes %}
-                {# Размеры видны сразу в списке: прежде о них узнавали
-                   только открыв карточку, и «от 450 сом» ни о чём не
-                   говорило. Нажатие сразу выбирает размер. #}
                 <div class="dish-sizes">
                   {% for z in bi.size_list %}
                   <button type="button" class="dish-size" data-size-id="{{ z.id }}"
