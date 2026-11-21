@@ -489,6 +489,33 @@
   .dish-price-sub { font-size: 10px; font-weight: 500; color: var(--muted); margin-top: 2px; }
   .dish-price-pre { font-size: 11px; font-weight: 600; color: var(--muted); }
 
+  /* ── Размеры на плитке блюда ──
+     Переносятся по строкам и не растягивают карточку: на узком экране
+     плитка и так 160 px, поэтому подписи мелкие и плотные. */
+  .dish-sizes {
+    display: flex; flex-wrap: wrap; gap: 5px;
+    margin: 8px 0 0; padding: 0;
+  }
+  .dish-size {
+    display: inline-flex; align-items: baseline; gap: 4px;
+    padding: 4px 8px; border-radius: 100px; cursor: pointer;
+    border: 1.5px solid var(--border); background: var(--bg);
+    font: inherit; line-height: 1.2;
+  }
+  .dish-size:hover, .dish-size.on { border-color: var(--accent); }
+  .dish-size-n { font-size: 11px; font-weight: 700; color: var(--text); }
+  .dish-size-p { font-size: 10.5px; font-weight: 600; color: var(--muted); }
+  .dish-size.on .dish-size-n, .dish-size.on .dish-size-p { color: var(--accent); }
+  @media (max-width: 520px) {
+    .dish-sizes { gap: 4px; margin-top: 6px; }
+    .dish-size { padding: 3px 7px; }
+    .dish-size-n { font-size: 10.5px; }
+    /* В плитке шириной 160 px чипс с ценой занимает всю строку, и три
+       размера раздувают карточку на три яруса. Оставляем только название:
+       цену видно на плитке («от 450») и в карточке блюда. */
+    .dish-size-p { display: none; }
+  }
+
   /* ── Размеры в карточке блюда ──
      Чипсы в ряд с переносом: на узком экране они переходят на вторую
      строку, а не сжимаются в нечитаемые огрызки. */
@@ -1067,6 +1094,21 @@ const T = {
                   {% if dish.protein %}<span class="dish-macro-pill"><span class="dish-macro-label">{% trans "Б" context "белки" %}</span> {{ dish.protein }}</span>{% endif %}
                   {% if dish.fat %}<span class="dish-macro-pill"><span class="dish-macro-label">{% trans "Ж" context "жиры" %}</span> {{ dish.fat }}</span>{% endif %}
                   {% if dish.carbs %}<span class="dish-macro-pill"><span class="dish-macro-label">{% trans "У" context "углеводы" %}</span> {{ dish.carbs }}</span>{% endif %}
+                </div>
+                {% endif %}
+
+                {% if bi.has_sizes %}
+                {# Размеры видны сразу в списке: прежде о них узнавали
+                   только открыв карточку, и «от 450 сом» ни о чём не
+                   говорило. Нажатие сразу выбирает размер. #}
+                <div class="dish-sizes">
+                  {% for z in bi.size_list %}
+                  <button type="button" class="dish-size" data-size-id="{{ z.id }}"
+                          data-size-price="{{ z.price|floatformat:'0' }}">
+                    <span class="dish-size-n">{% t z 'name' %}</span>
+                    <span class="dish-size-p">{{ z.price|floatformat:"0" }}</span>
+                  </button>
+                  {% endfor %}
                 </div>
                 {% endif %}
 
@@ -3304,7 +3346,7 @@ document.addEventListener('click', e => {
   const dmForm   = document.getElementById('dmForm');
   const topBtn   = document.getElementById('bm-top-btn');
 
-  function openDishModal(card) {
+  function openDishModal(card, preferSizeId) {
     const photoUrl = card.dataset.dishPhoto;
     const hot      = card.dataset.dishHot;
 
@@ -3369,7 +3411,11 @@ document.addEventListener('click', e => {
         chip.addEventListener('click', () => pick(z, chip));
         chipsBox.appendChild(chip);
       });
-      const start = sizes.find(z => z.def) || sizes[0];
+      // Если размер назвали заранее (нажали чипс на плитке) — он и
+      // выбран; иначе предлагаемый по умолчанию.
+      const start = (preferSizeId
+          && sizes.find(z => String(z.id) === String(preferSizeId)))
+        || sizes.find(z => z.def) || sizes[0];
       pick(start, chipsBox.children[sizes.indexOf(start)]);
       sizesBox.style.display = 'block';
     } else {
@@ -3408,6 +3454,14 @@ document.addEventListener('click', e => {
   document.querySelectorAll('.dish-card').forEach(card => {
     card.querySelectorAll('.dish-clickable').forEach(el => {
       el.addEventListener('click', () => openDishModal(card));
+    });
+    // Нажали размер на плитке — открываем карточку сразу с ним, чтобы
+    // не выбирать его второй раз.
+    card.querySelectorAll('.dish-size').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        openDishModal(card, btn.dataset.sizeId);
+      });
     });
   });
 })();

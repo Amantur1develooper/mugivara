@@ -228,6 +228,23 @@
     .tm-promo-badge::after { animation: none; display: none; }
   }
   .tm-price-pre { font-size: 11px; font-weight: 600; opacity: .7; }
+  .tm-sizes { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 0; }
+  .tm-size {
+    display: inline-flex; align-items: baseline; gap: 4px;
+    padding: 4px 8px; border-radius: 100px; cursor: pointer; font: inherit;
+    border: 1.5px solid rgba(255,255,255,.16); background: rgba(255,255,255,.05);
+    line-height: 1.2;
+  }
+  .tm-size:hover { border-color: var(--accent); }
+  .tm-size-n { font-size: 11px; font-weight: 700; color: #fff; }
+  .tm-size-p { font-size: 10.5px; font-weight: 600; color: rgba(255,255,255,.55); }
+  @media (max-width: 520px) {
+    .tm-sizes { gap: 4px; margin-top: 6px; }
+    .tm-size { padding: 3px 7px; }
+    .tm-size-n { font-size: 10.5px; }
+    /* Только название: с ценой чипс занимает всю строку узкой плитки */
+    .tm-size-p { display: none; }
+  }
   .tmdm-sizes { margin: 14px 0 2px; }
   .tmdm-sizes-label {
     font-size: 11px; font-weight: 700; letter-spacing: .4px;
@@ -858,6 +875,18 @@ const T = {
           <div class="tm-dish-body">
             <div class="tm-dish-name tm-dish-clickable">{{ dish_name }}</div>
             {% if desc %}<div class="tm-dish-desc tm-dish-clickable">{{ desc }}</div>{% endif %}
+            {% if bi.has_sizes %}
+            {# Размеры видны сразу в списке, а не только в карточке блюда #}
+            <div class="tm-sizes">
+              {% for z in bi.size_list %}
+              <button type="button" class="tm-size" data-size-id="{{ z.id }}">
+                <span class="tm-size-n">{% t z 'name' %}</span>
+                <span class="tm-size-p">{{ z.price|floatformat:"0" }}</span>
+              </button>
+              {% endfor %}
+            </div>
+            {% endif %}
+
             <div class="tm-dish-footer">
               <div>
                 {% if bi.is_on_promo %}
@@ -1391,7 +1420,7 @@ document.querySelectorAll(".wb-logo").forEach(function (a) {
   const dmAddBtn  = document.getElementById("tmdmAddBtn");
   if (!backdrop) return;
 
-  function openTmDishModal(card) {
+  function openTmDishModal(card, preferSizeId) {
     const photoUrl = card.dataset.dishPhoto;
     const hot      = card.dataset.dishHot;
 
@@ -1440,7 +1469,10 @@ document.querySelectorAll(".wb-logo").forEach(function (a) {
         chip.addEventListener("click", () => pick(z, chip));
         chipsBox.appendChild(chip);
       });
-      const start = sizes.find(z => z.def) || sizes[0];
+      // Размер, названный заранее на плитке, выбран сразу
+      const start = (preferSizeId
+          && sizes.find(z => String(z.id) === String(preferSizeId)))
+        || sizes.find(z => z.def) || sizes[0];
       pick(start, chipsBox.children[sizes.indexOf(start)]);
       sizesBox.style.display = "block";
     } else {
@@ -1470,6 +1502,13 @@ document.querySelectorAll(".wb-logo").forEach(function (a) {
   document.querySelectorAll(".tm-dish").forEach(card => {
     card.querySelectorAll(".tm-dish-clickable").forEach(el => {
       el.addEventListener("click", () => openTmDishModal(card));
+    });
+    // Нажали размер на плитке — карточка открывается сразу с ним
+    card.querySelectorAll(".tm-size").forEach(btn => {
+      btn.addEventListener("click", e => {
+        e.stopPropagation();
+        openTmDishModal(card, btn.dataset.sizeId);
+      });
     });
   });
 })();
