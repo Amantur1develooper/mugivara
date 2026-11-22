@@ -193,7 +193,17 @@
             {% if t.user %}· вход: {{ t.user.username }}{% else %}· <span class="fc-chip warn">нет входа</span>{% endif %}
           </div>
         </div>
-        <div class="fc-row-right">{{ t.price_per_session|floatformat:0 }} сом</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="fc-row-right">{{ t.price_per_session|floatformat:0 }} сом</div>
+          <form method="post" style="margin:0">
+            {% csrf_token %}
+            <input type="hidden" name="what" value="trainer_toggle">
+            <input type="hidden" name="trainer_id" value="{{ t.id }}">
+            <button class="fc-btn small ghost" type="submit">
+              {% if t.is_active %}Скрыть{% else %}Показать{% endif %}
+            </button>
+          </form>
+        </div>
       </div>
     {% empty %}<div class="fc-empty">Тренеров нет</div>{% endfor %}
   </div>
@@ -255,8 +265,16 @@
           {% else %}
             <button class="fc-btn small ghost" name="action" value="on">Включить</button>
           {% endif %}
-          <button class="fc-btn small ghost" name="action" value="remove">Убрать из клуба</button>
+          <button class="fc-btn small ghost" name="action" value="remove"
+                  onclick="return confirm('Убрать {{ s.user.username }} из клуба?\n\nДоступ исчезнет, а все платежи, посещения и абонементы останутся.')">
+            Удалить сотрудника
+          </button>
         </form>
+        <div class="fc-sub" style="margin-top:8px;line-height:1.5">
+          При удалении исчезает только доступ: вход закрывается, а всё, что
+          человек продал и отметил, остаётся в истории клуба. Карточка тренера
+          скрывается с сайта, записи к нему сохраняются.
+        </div>
 
         <form method="post" action="{% url 'fitness_dash:staff_password' club.id s.id %}"
               style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">

@@ -730,6 +730,14 @@ def setup(request, club, staff):
                 validity_days=int(request.POST.get("p_days") or 30),
                 price=_money(request.POST.get("p_price"), "0"))
             messages.success(request, "Абонемент добавлен")
+        elif what == "trainer_toggle":
+            tr = Trainer.objects.filter(id=request.POST.get("trainer_id"), club=club).first()
+            if tr:
+                tr.is_active = not tr.is_active
+                tr.save(update_fields=["is_active", "updated_at"])
+                messages.success(request, f"«{tr.name}»: "
+                                          + ("показан на сайте" if tr.is_active
+                                             else "скрыт с сайта"))
         elif what == "trainer":
             Trainer.objects.create(
                 club=club, name=(request.POST.get("t_name") or "").strip()[:150],
@@ -930,18 +938,28 @@ def staff_add(request, club, staff):
             first_name=(request.POST.get("full_name") or "").strip()[:150])
         created = True
 
+    # Человека могли увольнять: тогда аккаунт закрыли, и доступ к клубу сам
+    # по себе вход не вернёт. Принимаем обратно — открываем и вход.
+    reopened = False
+    if not user.is_active:
+        user.is_active = True
+        user.save(update_fields=["is_active"])
+        reopened = True
+
     if ClubStaff.objects.filter(user=user, club=club).exists():
         link = ClubStaff.objects.get(user=user, club=club)
         link.role = role
         link.is_active = True
         link.save(update_fields=["role", "is_active", "updated_at"])
-        messages.success(request, f"{login}: доступ обновлён — {link.get_role_display()}")
+        messages.success(request, f"{login}: доступ обновлён — {link.get_role_display()}"
+                                  + (" · вход снова открыт" if reopened else ""))
     else:
         ClubStaff.objects.create(user=user, club=club, role=role)
         messages.success(
             request,
             f"{login} добавлен как «{dict(ClubStaff.Role.choices)[role]}»"
-            + (" · логин создан" if created else ""))
+            + (" · логин создан" if created else "")
+            + (" · вход снова открыт" if reopened else ""))
 
     # Тренеру нужна его карточка, иначе он войдёт и не увидит своих записей
     if role == TRAINER:
@@ -956,6 +974,38 @@ def staff_add(request, club, staff):
             messages.info(request, f"Создана карточка тренера «{name}»")
     return redirect("fitness_dash:setup", club_id=club.id)
 
+
+def _remove_staff(club, link):
+    """Убирает сотрудника из клуба, сохраняя всё, что он сделал.
+
+    Сам аккаунт не удаляем: к нему привязаны проданные абонементы,
+    принятые платежи и отмеченные посещения — удаление обнулило бы
+    авторство во всей истории. Вместо этого забираем доступ, а если
+    человеку больше некуда входить, закрываем и вход на сайт.
+    """
+    user = link.user
+    role = link.get_role_display()
+    link.delete()
+
+    # Карточка тренера остаётся с записями и историей, но с сайта уходит и
+    # от аккаунта отвязывается: иначе уволенный тренер по-прежнему виден
+    # клиентам и может войти в чужое расписание.
+    hidden = Trainer.objects.filter(club=club, user=user).update(
+        user=None, is_active=False)
+
+    tail = ""
+    others = ClubStaff.objects.filter(user=user, is_active=True).exists()
+    if not others and not (user.is_superuser or user.is_staff):
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+        tail = " · вход на сайт закрыт"
+    elif others:
+        tail = " · остался доступ в другие клубы"
+
+    note = f"{user.username} ({role}) убран из клуба{tail}"
+    if hidden:
+        note += " · карточка тренера скрыта с сайта, записи сохранены"
+    return note + ". Платежи, посещения и абонементы остались на месте."
 
 @login_required(login_url=LOGIN_URL)
 @require(ADMIN)
@@ -985,9 +1035,7 @@ def staff_edit(request, club, staff, staff_id):
         link.save(update_fields=["is_active", "updated_at"])
         messages.success(request, f"{link.user.username}: доступ включён")
     elif action == "remove":
-        name = link.user.username
-        link.delete()
-        messages.success(request, f"{name}: доступ к клубу убран")
+        messages.success(request, _remove_staff(club, link))
     elif role in dict(ClubStaff.Role.choices):
         link.role = role
         link.save(update_fields=["role", "updated_at"])
