@@ -9,6 +9,12 @@
     <input class="fc-input" name="q" value="{{ q }}" placeholder="Имя, телефон, карта">
     <button class="fc-btn" type="submit">Найти</button>
   </div>
+  {% if is_trainer %}
+    <div class="fc-sub" style="margin-top:8px">
+      По умолчанию здесь ваши клиенты. Поиск по имени или телефону находит
+      любого клиента клуба.
+    </div>
+  {% endif %}
   <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
     <a href="?" class="fc-chip{% if not only %} ok{% endif %}">Все</a>
     <a href="?filter=debt" class="fc-chip{% if only == 'debt' %} bad{% endif %}">С долгом</a>

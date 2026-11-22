@@ -21,7 +21,8 @@
       {% with ms=m.active_membership %}
       <div class="fc-row">
         <div class="fc-row-main">
-          <div class="fc-row-name">{{ m.full_name }}</div>
+          <a class="fc-row-name" style="text-decoration:none"
+             href="{% url 'fitness_dash:member_detail' club.id m.id %}">{{ m.full_name }} →</a>
           <div class="fc-row-sub">
             {% if ms %}
               {{ ms.plan.name }} ·
@@ -62,7 +63,11 @@
   <div class="fc-card-t">Последние проходы</div>
   <div class="fc-list">
     {% for v in recent %}
+      {% if v.member_id %}
+      <a class="fc-row" href="{% url 'fitness_dash:member_detail' club.id v.member_id %}">
+      {% else %}
       <div class="fc-row">
+      {% endif %}
         <div class="fc-row-main">
           <div class="fc-row-name">
             {% if v.success %}✅{% else %}⛔️{% endif %}
@@ -79,7 +84,7 @@
             осталось {{ v.membership.remaining_visits }}
           {% endif %}
         </div>
-      </div>
+      {% if v.member_id %}</a>{% else %}</div>{% endif %}
     {% empty %}
       <div class="fc-empty">Сегодня ещё никто не приходил</div>
     {% endfor %}

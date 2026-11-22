@@ -216,10 +216,12 @@ def _members_queryset(request, club, staff):
         rows = rows.filter(Q(full_name__icontains=q) | Q(phone__icontains=q)
                            | Q(card_id__icontains=q))
 
-    # Тренер видит только своих: тех, у кого он указан в абонементе или
-    # к кому ходит на записи. Остальных ему знать незачем.
+    # Тренеру по умолчанию показываем его клиентов: в списке всего зала он
+    # своих не найдёт. Но когда он ищет по имени или телефону, отдаём любого
+    # клиента клуба — на ресепшене тренера тоже спрашивают, а закрытая
+    # карточка просто мешает работать.
     trainer = my_trainer(request.user, club)
-    if staff.role == TRAINER and trainer:
+    if staff.role == TRAINER and trainer and not q:
         rows = rows.filter(Q(memberships__trainer=trainer) |
                            Q(bookings__trainer=trainer)).distinct()
 
