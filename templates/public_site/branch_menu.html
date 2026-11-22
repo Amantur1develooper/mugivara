@@ -1802,8 +1802,11 @@ function _buildSteps() {
       } else {
         card.addEventListener('click', e => {
           if (e.target.closest('.cxm-qty')) return;
-          const cur = (_cxSel[g.id] || {})[ing.id] || 0;
-          _cxQty(g.id, ing.id, cur > 0 ? -1 : 1);
+          // Где можно взять несколько, нажатие добавляет ещё одну порцию.
+          // Раньше второй тап снимал выбор, и человек, тыкавший дважды
+          // «ещё шаурму», получал одну — а в заказ уходило ×1.
+          // Убрать порцию — кнопкой «−» в счётчике.
+          _cxQty(g.id, ing.id, 1);
         });
       }
       grid.appendChild(card);

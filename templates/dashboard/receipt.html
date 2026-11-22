@@ -57,9 +57,13 @@
   /* ── Items ── */
   .r-item { margin-bottom: 5px; }
   .r-item-name { font-size: 12px; font-weight: bold; word-break: break-word; }
+  /* Состав набора — одним абзацем, а не строкой на каждый шаг: на
+     ленте 76 мм каждый шаг занимал свою строку, и чек на один набор
+     выходил в пол-метра. Названия шагов на кухне не нужны — важен
+     список того, что положить, и сколько. */
   .r-item-ing  {
-    font-size: 10px; color: #444; line-height: 1.4;
-    padding-left: 10px; text-align: left;
+    font-size: 9.5px; color: #333; line-height: 1.35;
+    padding-left: 8px; text-align: left;
   }
   .r-item-line {
     display: flex;
@@ -166,11 +170,9 @@
     <div class="r-item">
       <div class="r-item-name">{{ coi.constructor_name_snapshot|default:"Собери сам" }}</div>
       {% if coi.ingredients_snapshot %}
-        {% for sel in coi.ingredients_snapshot %}
-          {% if sel.ings %}
-          <div class="r-item-ing">{{ sel.gname }}: {% for i in sel.ings %}{{ i.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
-          {% endif %}
-        {% endfor %}
+        <div class="r-item-ing">
+          {% for sel in coi.ingredients_snapshot %}{% if sel.ings %}{% for i in sel.ings %}{{ i.name }}{% if i.qty and i.qty > 1 %} ×{{ i.qty }}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}{% if not forloop.last %}, {% endif %}{% endif %}{% endfor %}
+        </div>
       {% endif %}
       <div class="r-item-line">
         <span>{{ coi.unit_price|floatformat:0 }} x {{ coi.qty }}</span>

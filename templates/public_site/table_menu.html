@@ -573,6 +573,20 @@
   .cx-ing-card { border: 2px solid var(--border); border-radius: 14px; overflow: hidden; cursor: pointer; transition: all .18s; user-select: none; position: relative; background: var(--bg); }
   .cx-ing-card:hover { border-color: var(--accent); }
   .cx-ing-card.selected { border-color: var(--accent); background: rgba(255,77,28,.05); }
+  .cx-ing-count {
+    position: absolute; top: 6px; left: 6px; z-index: 3;
+    min-width: 22px; height: 22px; padding: 0 5px; border-radius: 100px;
+    background: var(--accent); color: #fff; font-size: 11px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cx-ing-count:empty { display: none; }
+  .cx-ing-minus {
+    position: absolute; bottom: 6px; right: 6px; z-index: 3; display: none;
+    width: 26px; height: 26px; border-radius: 50%; cursor: pointer; font: inherit;
+    border: 1.5px solid rgba(255,255,255,.3); background: rgba(0,0,0,.55);
+    color: #fff; font-size: 15px; font-weight: 700; line-height: 1;
+  }
+  .cx-ing-card.selected .cx-ing-minus { display: block; }
   .cx-ing-card-check { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 7px; border: 2px solid var(--border); background: var(--card); display: flex; align-items: center; justify-content: center; font-size: 12px; color: transparent; transition: all .15s; }
   .cx-ing-card.selected .cx-ing-card-check { background: var(--accent); border-color: var(--accent); color: #fff; }
   .cx-ing-card-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; }
@@ -1070,6 +1084,9 @@ function renderCxGroups(cx) {
       card.dataset.ingId = ing.id;
       card.innerHTML = `
         <div class="cx-ing-card-check">✓</div>
+        <div class="cx-ing-count" data-count-for="${g.id}-${ing.id}"></div>
+        <button type="button" class="cx-ing-minus" title="Убрать одну"
+                onclick="event.stopPropagation();pickIngredient(this.closest('.cx-ing-card'), ${g.id}, ${ing.id}, -1)">−</button>
         ${ing.photo
           ? `<img class="cx-ing-card-img" src="${ing.photo}" alt="${ing.name}" loading="lazy">`
           : `<div class="cx-ing-card-img-placeholder">🍽</div>`}
@@ -1079,31 +1096,49 @@ function renderCxGroups(cx) {
           <div class="cx-ing-card-price">${ing.price} ${CUR}</div>
         </div>
       `;
-      card.addEventListener("click", () => toggleIngredient(card, g, ing.id));
+      card.addEventListener("click", () => pickIngredient(card, g.id, ing.id, 1));
       grid.appendChild(card);
     }
   }
 }
 
-function toggleIngredient(card, group, ingId) {
-  const gid = group.id;
+// Порции считаются, а не просто выбираются: одну и ту же шаурму можно взять
+// дважды. Нажатие по карточке добавляет порцию, «−» убирает. Раньше второй
+// тап снимал выбор, и в заказ уходила одна порция вместо двух.
+function pickIngredient(card, gid, ingId, delta) {
+  const group = (CX_DATA[currentCxId].groups || []).find(g => g.id === gid);
+  if (!group) return;
   const selected = selectedMap[gid] || [];
-  const alreadySelected = selected.includes(ingId);
+  const count = selected.filter(id => id === ingId).length;
 
-  if (alreadySelected) {
-    selectedMap[gid] = selected.filter(id => id !== ingId);
-    card.classList.remove("selected");
+  if (delta < 0) {
+    if (!count) return;
+    const idx = selected.lastIndexOf(ingId);
+    selected.splice(idx, 1);
+    selectedMap[gid] = selected;
   } else if (group.max_select === 1) {
-    selectedMap[gid] = [ingId];
-    document.querySelectorAll(`.cx-ing-card[data-gid="${gid}"]`).forEach(c => c.classList.remove("selected"));
-    card.classList.add("selected");
+    selectedMap[gid] = count ? [] : [ingId];
+    document.querySelectorAll(`.cx-ing-card[data-gid="${gid}"]`).forEach(c => {
+      c.classList.remove("selected");
+      const b = c.querySelector(".cx-ing-count");
+      if (b) b.textContent = "";
+    });
   } else if (group.max_select === 0 || selected.length < group.max_select) {
     selectedMap[gid] = [...selected, ingId];
-    card.classList.add("selected");
   } else {
     toast(`${T.maxN} ${group.max_select} ${T.inGroup} «${group.name}»`, "#F59E0B");
     return;
   }
+
+  // перерисовываем отметки и счётчики этой группы
+  (selectedMap[gid] || []).length;
+  document.querySelectorAll(`.cx-ing-card[data-gid="${gid}"]`).forEach(c => {
+    const iid = parseInt(c.dataset.ingId);
+    const n = (selectedMap[gid] || []).filter(id => id === iid).length;
+    c.classList.toggle("selected", n > 0);
+    const badge = c.querySelector(".cx-ing-count");
+    if (badge) badge.textContent = n > 1 ? "×" + n : "";
+  });
 
   updateCxTotal(CX_DATA[currentCxId]);
 }

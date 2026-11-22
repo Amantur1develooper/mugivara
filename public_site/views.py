@@ -532,6 +532,24 @@ def restaurant_detail(request, slug):
 
 
 
+def cx_ings_text(ings):
+    """Состав шага набора строкой: «Шаурма ×2, Фри».
+
+    Количество приходит двумя способами: полем qty и повторами одного
+    ингредиента в списке (так пишет корзина столика). Считаем и то, и то —
+    иначе две порции выглядели как одна.
+    """
+    from collections import Counter
+
+    counts = Counter()
+    for i in ings or []:
+        name = (i or {}).get("name")
+        if name:
+            counts[name] += max(1, int(i.get("qty", 1) or 1))
+    return ", ".join(f"{name} ×{n}" if n > 1 else name
+                     for name, n in counts.items())
+
+
 def _calc_delivery(branch, subtotal: Decimal) -> Decimal:
     """Реальная стоимость доставки с учётом акции бесплатной доставки."""
     if not branch.delivery_enabled:
@@ -1109,16 +1127,10 @@ def checkout(request, branch_id: int):
                     ingredients_snapshot=cx_item.get("selections", []),
                 )
             n = len(lines) + 1
-            def _fmt_ings(ings):
-                from collections import Counter
-                c = Counter()
-                for i in ings:
-                    if i.get("name"):
-                        c[i["name"]] += int(i.get("qty", 1))
-                return ", ".join(f"{n} ×{q}" if q > 1 else n for n, q in c.items())
             detail_parts = [
-                f"  • {s['gname']}: {_fmt_ings(s.get('ings', []))}"
+                f"  • {s['gname']}: {cx_ings_text(s.get('ings', []))}"
                 for s in cx_item.get("selections", [])
+                if cx_ings_text(s.get("ings", []))
             ]
             entry = f"{n}) 🧩 {cx_item['cx_name']} × {qty} = {line_total} сом"
             if detail_parts:
@@ -1201,9 +1213,12 @@ def checkout_success(request, branch_id: int, order_id: int):
     for coi in cx_items:
         n = len(lines) + 1
         cx_name = coi.constructor_name_snapshot
+        # Количество обязательно: раньше две порции шли как одна, и на
+        # кухне собирали меньше, чем заказали.
         detail_parts = [
-            f"  • {s['gname']}: {', '.join(i['name'] for i in s.get('ings', []))}"
+            f"  • {s['gname']}: {cx_ings_text(s.get('ings', []))}"
             for s in (coi.ingredients_snapshot or [])
+            if cx_ings_text(s.get("ings", []))
         ]
         entry = f"{n}) 🧩 {cx_name} × {coi.qty} = {coi.line_total} сом"
         if detail_parts:
@@ -1212,7 +1227,11 @@ def checkout_success(request, branch_id: int, order_id: int):
         subtotal += coi.line_total
         items_count += 1
         if len(preview_lines) < 2:
-            preview_lines.append(f"🧩 {cx_name} × {coi.qty}")
+            inside = ", ".join(cx_ings_text(s.get("ings", []))
+                               for s in (coi.ingredients_snapshot or [])
+                               if cx_ings_text(s.get("ings", [])))
+            preview_lines.append(f"🧩 {cx_name} × {coi.qty}"
+                                 + (f" ({inside})" if inside else ""))
 
     is_delivery = (order.type == Order.Type.DELIVERY)
     delivery_fee = branch.delivery_fee if (is_delivery and branch.delivery_enabled) else Decimal("0")
