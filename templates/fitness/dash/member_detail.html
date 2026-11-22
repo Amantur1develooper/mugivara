@@ -4,6 +4,39 @@
 {% block fc_sub %}{{ member.phone }}{% if member.card_id %} · карта {{ member.card_id }}{% endif %}{% endblock %}
 
 {% block fc_content %}
+<div class="fc-card" style="display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center">
+  <span class="fc-ava fc-ava-big{% if not member.photo %} empty{% endif %}">
+    {% if member.photo %}<img src="{{ member.photo.url }}" alt="{{ member.full_name }}">
+    {% else %}👤{% endif %}
+  </span>
+  <div style="min-width:0">
+    <div style="font-size:17px;font-weight:800;line-height:1.25">{{ member.full_name }}</div>
+    <div class="fc-row-sub" style="margin-top:4px">
+      {% if member.phone %}<a href="tel:{{ member.phone }}" style="color:inherit">{{ member.phone }}</a>{% endif %}
+      {% if member.card_id %} · карта {{ member.card_id }}{% endif %}
+      {% if member.birth_date %}<br>родился {{ member.birth_date|date:"d.m.Y" }}{% endif %}
+    </div>
+    {% if member.notes %}
+      <div class="fc-row-sub" style="margin-top:6px">💬 {{ member.notes }}</div>
+    {% endif %}
+    {% if can_money %}
+    <form method="post" action="{% url 'fitness_dash:member_save' club.id member.id %}"
+          enctype="multipart/form-data" style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      {% csrf_token %}
+      <input type="hidden" name="full_name" value="{{ member.full_name }}">
+      <input type="hidden" name="phone" value="{{ member.phone }}">
+      <input type="hidden" name="card_id" value="{{ member.card_id }}">
+      <input type="hidden" name="notes" value="{{ member.notes }}">
+      <input type="hidden" name="birth_date" value="{{ member.birth_date|date:'Y-m-d' }}">
+      <input class="fc-input" type="file" name="photo" accept="image/*" capture="user"
+             style="flex:1;min-width:150px;font-size:12.5px;padding:7px 9px"
+             onchange="this.form.submit()">
+      <span class="fc-sub">{% if member.photo %}заменить фото{% else %}добавить фото{% endif %}</span>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
 <div class="fc-card">
   <div class="fc-card-t">Сейчас</div>
   {% if active %}
@@ -215,6 +248,9 @@
     </div>
     <div style="margin-top:10px"><label class="fc-label">Примечание</label>
       <input class="fc-input" name="notes" value="{{ member.notes }}"></div>
+    <div style="margin-top:10px"><label class="fc-label">Фото</label>
+      <input class="fc-input" type="file" name="photo" accept="image/*" capture="user">
+      <div class="fc-sub" style="margin-top:5px">Пусто — останется прежнее.</div></div>
     <button class="fc-btn" type="submit" style="margin-top:12px">Сохранить</button>
   </form>
 </details>

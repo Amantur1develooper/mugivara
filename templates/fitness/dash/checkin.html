@@ -19,7 +19,10 @@
   <div class="fc-list">
     {% for m in found %}
       {% with ms=m.active_membership %}
-      <div class="fc-row">
+      <div class="fc-row" style="grid-template-columns:auto 1fr auto">
+        <span class="fc-ava{% if not m.photo %} empty{% endif %}">
+          {% if m.photo %}<img src="{{ m.photo.url }}" alt="" loading="lazy">{% else %}👤{% endif %}
+        </span>
         <div class="fc-row-main">
           <a class="fc-row-name" style="text-decoration:none"
              href="{% url 'fitness_dash:member_detail' club.id m.id %}">{{ m.full_name }} →</a>

@@ -36,7 +36,11 @@
   <div class="fc-list">
     {% for m in members %}
       {% with ms=m.active_membership %}
-      <a href="{% url 'fitness_dash:member_detail' club.id m.id %}" class="fc-row">
+      <a href="{% url 'fitness_dash:member_detail' club.id m.id %}" class="fc-row"
+         style="grid-template-columns:auto 1fr auto">
+        <span class="fc-ava{% if not m.photo %} empty{% endif %}">
+          {% if m.photo %}<img src="{{ m.photo.url }}" alt="" loading="lazy">{% else %}👤{% endif %}
+        </span>
         <div class="fc-row-main">
           <div class="fc-row-name">{{ m.full_name }}</div>
           <div class="fc-row-sub">
@@ -85,6 +89,14 @@
     <div style="margin-top:10px">
       <label class="fc-label">Примечание</label>
       <input class="fc-input" name="notes" placeholder="травма колена, спрашивал про бокс">
+    </div>
+    <div style="margin-top:10px">
+      <label class="fc-label">Фото клиента</label>
+      <input class="fc-input" type="file" name="photo" accept="image/*" capture="user">
+      <div class="fc-sub" style="margin-top:5px">
+        На телефоне можно снять сразу на камеру — на входе человека узнают
+        по лицу, а не по номеру карты.
+      </div>
     </div>
     <button class="fc-btn" type="submit" style="margin-top:12px">Создать</button>
   </form>

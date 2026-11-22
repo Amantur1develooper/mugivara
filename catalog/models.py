@@ -69,10 +69,14 @@ def _compress_photo(field, max_side=900, quality=82):
         # пишет в EXIF-тег Orientation. Pillow этот тег не применяет, и при
         # пересохранении в WebP он терялся — фото с айфона вставало боком.
         # exif_transpose разворачивает пиксели так, как задумано съёмкой.
+        # Формат запоминаем до поворота: exif_transpose отдаёт новую картинку
+        # с format=None, поэтому проверка ниже не срабатывала и готовый webp
+        # пересжимался при каждом сохранении блюда.
+        was_webp = (img.format or "").upper() == "WEBP"
         img = ImageOps.exif_transpose(img) or img
         # Уже готовый лёгкий WebP не трогаем: повторное кодирование не уменьшает
         # файл, а качество съедает (и нередко делает его даже тяжелее).
-        if img.format == "WEBP" and max(img.size) <= max_side:
+        if was_webp and max(img.size) <= max_side:
             return False
         # Прозрачный фон сохраняем: блюдо «вырезанное» из фона красиво ложится
         # на любую подложку. convert("RGB") залил бы альфу чёрным.

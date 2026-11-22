@@ -194,7 +194,9 @@ class Branch(TimeStampedModel):
                 img.save(buf, format="WEBP", quality=85, method=6)
                 compressed_size = buf.tell()
                 buf.seek(0)
-                name = os.path.splitext(self.promo_photo.name)[0] + ".webp"
+                # basename: иначе upload_to подставляется второй раз и
+                # путь уходит глубже с каждым сохранением
+                name = os.path.splitext(os.path.basename(self.promo_photo.name))[0] + ".webp"
                 self.promo_photo.save(name, ContentFile(buf.read()), save=False)
                 self.photo_compression = {
                     "before_kb": round(original_size / 1024, 1),

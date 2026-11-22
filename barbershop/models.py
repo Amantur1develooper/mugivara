@@ -20,13 +20,26 @@ def _compress(field, max_side=900, quality=82):
         # пишет в EXIF-тег Orientation. Pillow этот тег не применяет, и при
         # пересохранении в WebP он терялся — фото с айфона вставало боком.
         # exif_transpose разворачивает пиксели так, как задумано съёмкой.
+        # Формат запоминаем до поворота: exif_transpose возвращает новую
+        # картинку, у которой format уже None, и проверка «это и так webp»
+        # никогда не срабатывала — фото пересжималось при каждом сохранении
+        # модели, теряя качество и оставляя на диске мусорные копии.
+        was_webp = (img.format or "").upper() == "WEBP"
         img = ImageOps.exif_transpose(img) or img
+        if was_webp and max(img.size) <= max_side:
+            return False
         img = img.convert("RGB")
         img.thumbnail((max_side, max_side), Image.LANCZOS)
         buf = BytesIO()
         img.save(buf, format="WEBP", quality=quality, method=6)
         buf.seek(0)
-        name = os.path.splitext(field.name)[0] + ".webp"
+        # basename, не field.name — иначе upload_to подставится дважды:
+        # после первого сохранения field.name уже содержит путь
+        # («fitness/members/x.webp»), а field.save() применяет upload_to
+        # заново, и папка уходит на уровень глубже с каждым сохранением:
+        # media/fitness/members/fitness/members/… Такие пути уже встречались
+        # в базе, и файл по ним потом не находился.
+        name = os.path.splitext(os.path.basename(field.name))[0] + ".webp"
         field.save(name, ContentFile(buf.read()), save=False)
         return True
     except Exception:
