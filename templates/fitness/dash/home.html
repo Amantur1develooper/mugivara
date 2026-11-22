@@ -61,6 +61,47 @@
 </div>
 {% endif %}
 
+{% if can_money %}
+<div class="fc-card">
+  <div class="fc-card-t">Кому позвонить</div>
+  <div class="fc-list">
+    {% for b in birthdays %}
+      <a class="fc-row" href="{% url 'fitness_dash:member_detail' club.id b.member.id %}">
+        <div class="fc-row-main">
+          <div class="fc-row-name">🎂 {{ b.member.full_name }}</div>
+          <div class="fc-row-sub">день рождения {{ b.when|date:"d.m" }}{% if b.member.phone %} · {{ b.member.phone }}{% endif %}</div>
+        </div>
+        <div class="fc-row-right"><span class="fc-chip ok">поздравить</span></div>
+      </a>
+    {% endfor %}
+    {% for l in lost_members %}
+      <a class="fc-row" href="{% url 'fitness_dash:member_detail' club.id l.member.id %}">
+        <div class="fc-row-main">
+          <div class="fc-row-name">😴 {{ l.member.full_name }}</div>
+          <div class="fc-row-sub">
+            {% if l.days %}не приходил {{ l.days }} дней{% else %}ни разу не приходил{% endif %}
+            {% if l.member.phone %} · {{ l.member.phone }}{% endif %}
+          </div>
+        </div>
+        <div class="fc-row-right"><span class="fc-chip warn">вернуть</span></div>
+      </a>
+    {% endfor %}
+    {% for l in overdue_leads %}
+      <a class="fc-row" href="{% url 'fitness_dash:lead_detail' club.id l.id %}">
+        <div class="fc-row-main">
+          <div class="fc-row-name">⏰ {{ l.name|default:l.phone }}</div>
+          <div class="fc-row-sub">обещали связаться {{ l.next_contact_at|date:"d.m H:i" }}</div>
+        </div>
+        <div class="fc-row-right"><span class="fc-chip bad">просрочено</span></div>
+      </a>
+    {% endfor %}
+    {% if not birthdays and not lost_members and not overdue_leads %}
+      <div class="fc-empty">Звонить некому — всё в порядке</div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
 <div class="fc-card">
   <div class="fc-card-t">Абонементы кончаются на этой неделе</div>
   <div class="fc-list">

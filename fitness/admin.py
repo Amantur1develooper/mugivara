@@ -1,8 +1,8 @@
 from django.contrib import admin
 
-from .models import (ClubStaff, Expense, FitnessClub, Lead, LeadNote, Member,
-                     Membership, MembershipPlan, Payment, Section, Trainer,
-                     TrainerBooking, TrainerSchedule, Visit)
+from .models import (ClassBooking, ClubStaff, Expense, FitnessClub, GroupClass,
+                     Lead, LeadNote, Member, Membership, MembershipPlan, Payment,
+                     Section, Trainer, TrainerBooking, TrainerSchedule, Visit)
 
 
 class StaffInline(admin.TabularInline):
@@ -54,6 +54,21 @@ class LeadAdmin(admin.ModelAdmin):
 class TrainerBookingAdmin(admin.ModelAdmin):
     list_display = ("id", "trainer", "date", "time_from", "who", "status")
     list_filter = ("club", "status", "date")
+    search_fields = ("client_name", "phone", "member__full_name")
+
+
+@admin.register(GroupClass)
+class GroupClassAdmin(admin.ModelAdmin):
+    list_display = ("id", "name", "club", "get_weekday_display", "time_from",
+                    "capacity", "trainer", "is_active")
+    list_filter = ("club", "is_active", "weekday")
+    search_fields = ("name",)
+
+
+@admin.register(ClassBooking)
+class ClassBookingAdmin(admin.ModelAdmin):
+    list_display = ("id", "group_class", "date", "who", "status")
+    list_filter = ("status", "date", "group_class__club")
     search_fields = ("client_name", "phone", "member__full_name")
 
 

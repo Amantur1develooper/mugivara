@@ -1,0 +1,84 @@
+{% extends "fitness/dash/_base.html" %}
+{% block title %}{{ cls.name }} · {{ day|date:"d.m" }}{% endblock %}
+{% block t_classes %}on{% endblock %}
+{% block fc_sub %}{{ cls.time_from|time:"H:i" }} · {{ day|date:"l, d.m.Y" }}{% endblock %}
+
+{% block fc_content %}
+<div class="fc-kpis">
+  <div class="fc-kpi"><div class="fc-kpi-l">Записано</div>
+    <div class="fc-kpi-v">{{ rows|length }}</div></div>
+  <div class="fc-kpi"><div class="fc-kpi-l">Свободно</div>
+    <div class="fc-kpi-v">{{ free }} <small>из {{ cls.capacity }}</small></div></div>
+  {% if cls.trainer %}
+  <div class="fc-kpi"><div class="fc-kpi-l">Тренер</div>
+    <div class="fc-kpi-v" style="font-size:17px">{{ cls.trainer.name }}</div></div>
+  {% endif %}
+</div>
+
+<div class="fc-card">
+  <div class="fc-card-t">Кто записан</div>
+  <div class="fc-list">
+    {% for b in rows %}
+      <div class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name">
+            {{ b.who }}
+            {% if b.status == 'came' %}<span class="fc-chip ok">пришёл</span>
+            {% elif b.status == 'no_show' %}<span class="fc-chip bad">не пришёл</span>
+            {% elif b.status == 'cancelled' %}<span class="fc-chip">отменена</span>{% endif %}
+          </div>
+          <div class="fc-row-sub">
+            {% if b.phone %}{{ b.phone }}{% endif %}
+            {% if b.comment %} · {{ b.comment }}{% endif %}
+          </div>
+        </div>
+        <form method="post" action="{% url 'fitness_dash:class_booking_status' club.id b.id %}"
+              style="display:flex;gap:5px">
+          {% csrf_token %}
+          {% if b.status == 'booked' %}
+            <button class="fc-btn small" name="action" value="came">Пришёл</button>
+            <button class="fc-btn small ghost" name="action" value="no_show">Нет</button>
+            <button class="fc-btn small ghost" name="action" value="cancel">✖️</button>
+          {% else %}
+            <button class="fc-btn small ghost" name="action" value="back">↩️</button>
+          {% endif %}
+        </form>
+      </div>
+    {% empty %}
+      <div class="fc-empty">Пока никто не записан</div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if free > 0 %}
+<div class="fc-card">
+  <div class="fc-card-t">Записать</div>
+  <form method="post" action="{% url 'fitness_dash:class_book' club.id cls.id %}">
+    {% csrf_token %}
+    <input type="hidden" name="date" value="{{ day|date:'Y-m-d' }}">
+    <div class="fc-grid2">
+      <div><label class="fc-label">Клиент клуба</label>
+        <select class="fc-select" name="member_id">
+          <option value="">— выбрать —</option>
+          {% for m in members %}<option value="{{ m.id }}">{{ m.full_name }}</option>{% endfor %}
+        </select></div>
+      <div><label class="fc-label">Или имя гостя</label>
+        <input class="fc-input" name="client_name" placeholder="Азамат"></div>
+      <div><label class="fc-label">Телефон</label>
+        <input class="fc-input" name="phone" inputmode="tel"></div>
+      <div><label class="fc-label">Комментарий</label>
+        <input class="fc-input" name="comment" placeholder="первое занятие"></div>
+    </div>
+    <button class="fc-btn" type="submit" style="margin-top:12px">Записать</button>
+    <div class="fc-sub" style="margin-top:8px">
+      Отметка «Пришёл» у клиента клуба сразу списывает посещение с абонемента.
+    </div>
+  </form>
+</div>
+{% else %}
+<div class="fc-card fc-empty">Все {{ cls.capacity }} мест заняты</div>
+{% endif %}
+
+<a href="{% url 'fitness_dash:classes' club.id %}?date={{ day|date:'Y-m-d' }}"
+   class="fc-btn ghost">← Расписание</a>
+{% endblock %}

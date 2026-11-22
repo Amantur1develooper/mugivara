@@ -529,3 +529,83 @@ class TrainerBooking(TimeStampedModel):
         from datetime import datetime, timedelta as _td
         base = datetime.combine(self.date, self.time_from)
         return (base + _td(minutes=self.duration_min or 60)).time()
+
+# ── Групповые занятия ───────────────────────────────────────────────────────
+
+class GroupClass(TimeStampedModel):
+    """Групповое занятие в расписании: йога в 19:00 на 12 мест.
+
+    Расписание задаётся по дням недели — так его ведут в клубах, — а
+    записи и отметки о приходе привязаны к конкретной дате.
+    """
+    club     = models.ForeignKey(FitnessClub, on_delete=models.CASCADE, related_name="classes")
+    section  = models.ForeignKey(Section, null=True, blank=True, on_delete=models.SET_NULL,
+                                 related_name="classes", verbose_name="Секция")
+    trainer  = models.ForeignKey(Trainer, null=True, blank=True, on_delete=models.SET_NULL,
+                                 related_name="classes", verbose_name="Тренер")
+    name     = models.CharField("Название", max_length=150)
+    weekday  = models.PositiveSmallIntegerField("День недели", choices=[
+        (0, "Понедельник"), (1, "Вторник"), (2, "Среда"), (3, "Четверг"),
+        (4, "Пятница"), (5, "Суббота"), (6, "Воскресенье"),
+    ])
+    time_from = models.TimeField("Начало")
+    duration_min = models.PositiveSmallIntegerField("Длительность, мин", default=60)
+    capacity = models.PositiveSmallIntegerField("Мест", default=12)
+    price    = models.DecimalField("Цена разового (сом)", max_digits=10, decimal_places=0, default=0)
+    room     = models.CharField("Зал", max_length=100, blank=True, default="")
+    is_active = models.BooleanField("В расписании", default=True)
+    sort_order = models.PositiveSmallIntegerField("Порядок", default=0)
+
+    class Meta:
+        verbose_name = "Групповое занятие"
+        verbose_name_plural = "Групповые занятия"
+        ordering = ["weekday", "time_from"]
+
+    def __str__(self):
+        return f"{self.name} — {self.get_weekday_display()} {self.time_from:%H:%M}"
+
+    def taken_on(self, day):
+        return self.bookings.filter(date=day).exclude(
+            status=ClassBooking.Status.CANCELLED).count()
+
+    def free_on(self, day):
+        return max(0, self.capacity - self.taken_on(day))
+
+
+class ClassBooking(TimeStampedModel):
+    """Запись на групповое занятие на конкретную дату."""
+    class Status(models.TextChoices):
+        BOOKED    = "booked", "Записан"
+        CAME      = "came", "Пришёл"
+        NO_SHOW   = "no_show", "Не пришёл"
+        CANCELLED = "cancelled", "Отменена"
+
+    group_class = models.ForeignKey(GroupClass, on_delete=models.CASCADE, related_name="bookings")
+    date   = models.DateField("Дата")
+    member = models.ForeignKey(Member, null=True, blank=True, on_delete=models.SET_NULL,
+                               related_name="class_bookings")
+    lead   = models.ForeignKey(Lead, null=True, blank=True, on_delete=models.SET_NULL,
+                               related_name="class_bookings")
+    client_name = models.CharField("Имя", max_length=150, blank=True, default="")
+    phone  = models.CharField("Телефон", max_length=30, blank=True, default="")
+    status = models.CharField("Статус", max_length=10, choices=Status.choices,
+                              default=Status.BOOKED)
+    comment = models.CharField("Комментарий", max_length=300, blank=True, default="")
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                   on_delete=models.SET_NULL, related_name="+")
+
+    class Meta:
+        verbose_name = "Запись на занятие"
+        verbose_name_plural = "Записи на занятия"
+        ordering = ["date", "id"]
+        indexes = [models.Index(fields=["group_class", "date"])]
+
+    def __str__(self):
+        return f"{self.group_class.name} {self.date:%d.%m} — {self.who}"
+
+    @property
+    def who(self):
+        if self.member_id:
+            return self.member.full_name
+        return self.client_name or self.phone or "Гость"
+

@@ -40,7 +40,38 @@ def club_page(request, slug):
     return render(request, "fitness/public/club.html", {
         "club": club, "sections": sections, "trainers": trainers, "plans": plans,
         "days": _next_days(),
+        "schedule_days": _week_schedule(club),
     })
+
+
+def _week_schedule(club):
+    """Расписание групповых занятий на неделю вперёд со свободными местами."""
+    from django.db.models import Count
+
+    from .models import ClassBooking, GroupClass
+
+    today = timezone.localdate()
+    days = [today + timedelta(days=i) for i in range(7)]
+    classes = list(GroupClass.objects.filter(club=club, is_active=True)
+                   .select_related("trainer").order_by("time_from", "id"))
+    if not classes:
+        return []
+
+    # Занятость считаем одним запросом на всю неделю: иначе страница клуба
+    # делает по запросу на каждое занятие каждого дня.
+    taken = {}
+    for row in (ClassBooking.objects
+                .filter(group_class__in=classes, date__in=days)
+                .exclude(status=ClassBooking.Status.CANCELLED)
+                .values("group_class_id", "date").annotate(n=Count("id"))):
+        taken[(row["group_class_id"], row["date"])] = row["n"]
+
+    out = []
+    for d in days:
+        items = [{"cls": c, "free": max(0, c.capacity - taken.get((c.id, d), 0))}
+                 for c in classes if c.weekday == d.weekday()]
+        out.append({"day": d, "items": items, "is_today": d == today})
+    return out
 
 
 def trainer_page(request, slug, trainer_id):

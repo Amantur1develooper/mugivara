@@ -46,6 +46,48 @@
 </div>
 
 <div class="fc-card">
+  <div class="fc-card-t">Загрузка тренеров</div>
+  <div class="fc-list">
+    {% for t in trainer_load %}
+      <div class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name" style="font-size:13.5px">{{ t.trainer.name }}</div>
+          <div class="fc-row-sub">
+            записей {{ t.booked }} · пришли {{ t.came }}
+            {% if t.noshow %}· не пришли {{ t.noshow }}{% endif %}
+          </div>
+        </div>
+        <div class="fc-row-right">
+          {% if t.share >= 80 %}<span class="fc-chip ok">{{ t.share }}%</span>
+          {% elif t.share >= 50 %}<span class="fc-chip warn">{{ t.share }}%</span>
+          {% else %}<span class="fc-chip bad">{{ t.share }}%</span>{% endif %}
+        </div>
+      </div>
+    {% empty %}<div class="fc-empty">Записей к тренерам за период не было</div>{% endfor %}
+  </div>
+  <div class="fc-sub" style="margin-top:8px">
+    Процент — доля тех, кто дошёл до тренировки.
+  </div>
+</div>
+
+<div class="fc-card">
+  <div class="fc-card-t">Откуда заявки</div>
+  <div class="fc-list">
+    {% for label, n, sold in lead_sources %}
+      <div class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name" style="font-size:13.5px">{{ label }}</div>
+          <div class="fc-row-sub">заявок {{ n }} · купили {{ sold }}</div>
+        </div>
+        <div class="fc-row-right">
+          {% if n %}{% widthratio sold n 100 %}%{% endif %}
+        </div>
+      </div>
+    {% empty %}<div class="fc-empty">Заявок за период не было</div>{% endfor %}
+  </div>
+</div>
+
+<div class="fc-card">
   <div class="fc-card-t">Чем платили</div>
   <div class="fc-list">
     {% for label, amount in by_method %}

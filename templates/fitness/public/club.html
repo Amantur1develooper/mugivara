@@ -169,6 +169,47 @@
   </section>
   {% endif %}
 
+  {% if schedule_days %}
+  <section id="raspisanie">
+    <div class="sec-h"><h2>Расписание занятий</h2><span>на неделю</span></div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      {% for d in schedule_days %}
+        {% if d.items %}
+        <div>
+          <div style="font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);margin-bottom:7px">
+            {{ d.day|date:"l, d.m" }}{% if d.is_today %} · сегодня{% endif %}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            {% for it in d.items %}
+              <div class="plan">
+                <div>
+                  <div class="plan-n">{{ it.cls.time_from|time:"H:i" }} · {{ it.cls.name }}</div>
+                  <div class="plan-s">
+                    {% if it.cls.trainer %}{{ it.cls.trainer.name }}{% endif %}
+                    {% if it.cls.room %} · {{ it.cls.room }}{% endif %}
+                    · {{ it.cls.duration_min }} мин
+                  </div>
+                </div>
+                <div style="text-align:right">
+                  {% if it.free == 0 %}
+                    <div class="plan-s" style="color:#f87171">мест нет</div>
+                  {% else %}
+                    <div class="plan-p" style="font-size:14px">{{ it.free }} мест</div>
+                  {% endif %}
+                  {% if it.cls.price %}<div class="plan-s">{{ it.cls.price|floatformat:0 }} сом</div>{% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+    <div class="note">Чтобы записаться на занятие — оставьте заявку ниже,
+      администратор запишет и напомнит.</div>
+  </section>
+  {% endif %}
+
   {% if trainers %}
   <section id="trenery">
     <div class="sec-h"><h2>Тренеры</h2><span>{{ trainers|length }}</span></div>

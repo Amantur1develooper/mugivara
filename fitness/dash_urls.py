@@ -25,6 +25,13 @@ urlpatterns = [
     path("<int:club_id>/board/add/", v.booking_save, name="booking_save"),
     path("<int:club_id>/booking/<int:booking_id>/status/", v.booking_status, name="booking_status"),
 
+    path("<int:club_id>/classes/", v.classes, name="classes"),
+    path("<int:club_id>/classes/add/", v.class_save, name="class_save"),
+    path("<int:club_id>/classes/<int:class_id>/", v.class_day, name="class_day"),
+    path("<int:club_id>/classes/<int:class_id>/book/", v.class_book, name="class_book"),
+    path("<int:club_id>/class-booking/<int:booking_id>/status/", v.class_booking_status,
+         name="class_booking_status"),
+
     path("<int:club_id>/leads/", v.leads, name="leads"),
     path("<int:club_id>/leads/new/", v.lead_save, name="lead_new"),
     path("<int:club_id>/leads/<int:lead_id>/", v.lead_detail, name="lead_detail"),

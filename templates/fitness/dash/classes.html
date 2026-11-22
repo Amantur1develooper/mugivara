@@ -1,0 +1,87 @@
+{% extends "fitness/dash/_base.html" %}
+{% block title %}Расписание — {{ club.name }}{% endblock %}
+{% block t_classes %}on{% endblock %}
+{% block fc_sub %}Групповые занятия, неделя с {{ week_start|date:"d.m" }}{% endblock %}
+
+{% block fc_content %}
+<div class="fc-card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+  <a href="?date={{ prev_week|date:'Y-m-d' }}" class="fc-btn ghost small">← неделя</a>
+  <a href="?date={{ next_week|date:'Y-m-d' }}" class="fc-btn ghost small">неделя →</a>
+  <span class="fc-chip">{{ all_classes|length }} занятий в расписании</span>
+</div>
+
+{% for d in grid %}
+  <div class="fc-card" {% if d.is_today %}style="border-color:var(--accent)"{% endif %}>
+    <div class="fc-card-t">
+      {{ d.day|date:"l, d.m" }}{% if d.is_today %} · сегодня{% endif %}
+    </div>
+    <div class="fc-list">
+      {% for it in d.items %}
+        <a class="fc-row" href="{% url 'fitness_dash:class_day' club.id it.cls.id %}?date={{ d.day|date:'Y-m-d' }}">
+          <div class="fc-row-main">
+            <div class="fc-row-name">{{ it.cls.time_from|time:"H:i" }} · {{ it.cls.name }}</div>
+            <div class="fc-row-sub">
+              {% if it.cls.trainer %}{{ it.cls.trainer.name }}{% else %}без тренера{% endif %}
+              {% if it.cls.room %} · {{ it.cls.room }}{% endif %}
+              · {{ it.cls.duration_min }} мин
+              {% if it.cls.price %} · {{ it.cls.price|floatformat:0 }} сом{% endif %}
+            </div>
+          </div>
+          <div class="fc-row-right">
+            {% if it.free == 0 %}
+              <span class="fc-chip bad">мест нет</span>
+            {% elif it.free <= 2 %}
+              <span class="fc-chip warn">{{ it.free }} места</span>
+            {% else %}
+              <span class="fc-chip ok">{{ it.free }} из {{ it.cls.capacity }}</span>
+            {% endif %}
+          </div>
+        </a>
+      {% empty %}
+        <div class="fc-empty" style="padding:14px">Занятий нет</div>
+      {% endfor %}
+    </div>
+  </div>
+{% endfor %}
+
+{% if is_admin %}
+<details class="fc-card">
+  <summary style="cursor:pointer;font-weight:700;font-size:13.5px">+ Занятие в расписание</summary>
+  <form method="post" action="{% url 'fitness_dash:class_save' club.id %}" style="margin-top:12px">
+    {% csrf_token %}
+    <div class="fc-grid3">
+      <div><label class="fc-label">Название</label>
+        <input class="fc-input" name="name" required placeholder="Йога"></div>
+      <div><label class="fc-label">День</label>
+        <select class="fc-select" name="weekday">
+          <option value="0">Понедельник</option><option value="1">Вторник</option>
+          <option value="2">Среда</option><option value="3">Четверг</option>
+          <option value="4">Пятница</option><option value="5">Суббота</option>
+          <option value="6">Воскресенье</option>
+        </select></div>
+      <div><label class="fc-label">Начало</label>
+        <input class="fc-input" name="time_from" placeholder="19:00" required></div>
+      <div><label class="fc-label">Длительность</label>
+        <input class="fc-input" name="duration_min" type="number" value="60" min="15" step="15"></div>
+      <div><label class="fc-label">Мест</label>
+        <input class="fc-input" name="capacity" type="number" value="12" min="1"></div>
+      <div><label class="fc-label">Цена разового</label>
+        <input class="fc-input" name="price" inputmode="numeric" placeholder="400"></div>
+      <div><label class="fc-label">Тренер</label>
+        <select class="fc-select" name="trainer_id">
+          <option value="">—</option>
+          {% for t in trainers %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
+        </select></div>
+      <div><label class="fc-label">Секция</label>
+        <select class="fc-select" name="section_id">
+          <option value="">—</option>
+          {% for s in sections %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+        </select></div>
+      <div><label class="fc-label">Зал</label>
+        <input class="fc-input" name="room" placeholder="Малый зал"></div>
+    </div>
+    <button class="fc-btn" type="submit" style="margin-top:12px">Добавить</button>
+  </form>
+</details>
+{% endif %}
+{% endblock %}

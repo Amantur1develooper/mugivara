@@ -21,9 +21,9 @@ from integrations import tgbot
 from . import services, tg
 from .access import (ADMIN, CASHIER, TRAINER, can_see_money, can_see_profit,
                      my_clubs, my_trainer, require, staff_of)
-from .models import (ClubStaff, Expense, FitnessClub, Lead, LeadNote, Member,
-                     Membership, MembershipPlan, Payment, Section, Trainer,
-                     TrainerBooking, TrainerSchedule, Visit)
+from .models import (ClassBooking, ClubStaff, Expense, FitnessClub, GroupClass,
+                     Lead, LeadNote, Member, Membership, MembershipPlan, Payment,
+                     Section, Trainer, TrainerBooking, TrainerSchedule, Visit)
 
 LOGIN_URL = "dashboard:login"
 
@@ -109,7 +109,49 @@ def home(request, club, staff):
                             .filter(trainer=trainer, date=today)
                             .exclude(status=TrainerBooking.Status.CANCELLED)
                             .select_related("member").order_by("time_from"))
+
+    if can_see_money(staff):
+        data.update(_reminders(club, today))
     return render(request, "fitness/dash/home.html", data)
+
+
+def _reminders(club, today):
+    """Три повода позвонить: день рождения, пропал, просрочен звонок.
+
+    Это то, из-за чего клиенты уходят молча. Клуб узнаёт об уходе через
+    месяц, когда абонемент давно кончился, и возвращать уже поздно.
+    """
+    week = [(today + timedelta(days=i)) for i in range(7)]
+    md = {(d.month, d.day): d for d in week}
+    birthdays = []
+    for m in (Member.objects.filter(club=club, is_active=True, birth_date__isnull=False)
+              .only("id", "full_name", "phone", "birth_date")):
+        when = md.get((m.birth_date.month, m.birth_date.day))
+        if when:
+            birthdays.append({"member": m, "when": when})
+    birthdays.sort(key=lambda x: x["when"])
+
+    # Пропал: есть действующий абонемент, но две недели не приходил
+    gone_edge = timezone.now() - timedelta(days=14)
+    lost = []
+    for ms in (Membership.objects
+               .filter(member__club=club, is_active=True, start_date__isnull=False,
+                       end_date__gte=today)
+               .select_related("member")
+               .order_by("end_date")[:200]):
+        last = ms.member.visits.filter(success=True).order_by("-visit_time").first()
+        if last and last.visit_time < gone_edge:
+            lost.append({"member": ms.member, "last": last.visit_time,
+                         "days": (timezone.now() - last.visit_time).days})
+        elif not last and ms.created_at < gone_edge:
+            lost.append({"member": ms.member, "last": None, "days": None})
+    lost = lost[:10]
+
+    overdue = (Lead.objects.filter(club=club, next_contact_at__lt=timezone.now())
+               .exclude(status__in=[Lead.Status.SOLD, Lead.Status.LOST])
+               .order_by("next_contact_at")[:10])
+
+    return {"birthdays": birthdays[:10], "lost_members": lost, "overdue_leads": overdue}
 
 
 # ── Касса: проход в зал ─────────────────────────────────────────────────────
@@ -554,6 +596,38 @@ def reports(request, club, staff):
                 debts=Membership.objects.filter(member__club=club, debt_amount__gt=0)
                       .aggregate(s=Sum("debt_amount"))["s"] or 0)
 
+    # Загрузка тренеров: сколько провели, сколько не пришло. Без этого
+    # нельзя понять, кто из тренеров держит клиентов, а кто теряет.
+    load = []
+    for t in club.trainers.filter(is_active=True):
+        personal = TrainerBooking.objects.filter(trainer=t, date__gte=start, date__lte=end)
+        groups = ClassBooking.objects.filter(group_class__trainer=t,
+                                             date__gte=start, date__lte=end)
+        came = (personal.filter(status=TrainerBooking.Status.CAME).count()
+                + groups.filter(status=ClassBooking.Status.CAME).count())
+        noshow = (personal.filter(status=TrainerBooking.Status.NO_SHOW).count()
+                  + groups.filter(status=ClassBooking.Status.NO_SHOW).count())
+        booked = personal.exclude(status=TrainerBooking.Status.CANCELLED).count() + \
+            groups.exclude(status=ClassBooking.Status.CANCELLED).count()
+        if booked or came:
+            load.append({"trainer": t, "booked": booked, "came": came,
+                         "noshow": noshow,
+                         "share": round(came / booked * 100) if booked else 0})
+    load.sort(key=lambda x: -x["came"])
+    data["trainer_load"] = load
+
+    # Откуда приходят заявки — чтобы знать, какая реклама работает
+    sources = dict(Lead.Source.choices)
+    data["lead_sources"] = [
+        (sources.get(r["source"], r["source"]), r["n"], r["sold"])
+        for r in (Lead.objects.filter(club=club, created_at__date__gte=start,
+                                      created_at__date__lte=end)
+                  .values("source")
+                  .annotate(n=Count("id"),
+                            sold=Count("id", filter=Q(status=Lead.Status.SOLD)))
+                  .order_by("-n"))
+    ]
+
     if can_see_profit(staff):
         exp = Expense.objects.filter(club=club, spent_on__gte=start, spent_on__lte=end)
         data["expenses"] = exp.aggregate(s=Sum("amount"))["s"] or 0
@@ -617,3 +691,145 @@ def setup(request, club, staff):
                        trainers=club.trainers.all().prefetch_related("sections"),
                        staff_list=club.staff.select_related("user"),
                        roles=ClubStaff.Role.choices))
+
+# ── Расписание групповых занятий ────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+@require()
+def classes(request, club, staff):
+    """Расписание на неделю: занятие, тренер, сколько мест осталось."""
+    day = _date(request.GET.get("date"))
+    week_start = day - timedelta(days=day.weekday())
+    days = [week_start + timedelta(days=i) for i in range(7)]
+
+    trainer = my_trainer(request.user, club)
+    rows = (GroupClass.objects.filter(club=club, is_active=True)
+            .select_related("trainer", "section").order_by("time_from", "id"))
+    if staff.role == TRAINER and trainer:
+        rows = rows.filter(trainer=trainer)
+    rows = list(rows)
+
+    # Считаем занятость одним запросом на неделю, а не по занятию на день:
+    # иначе страница расписания делает сотню запросов.
+    taken = {}
+    booked = (ClassBooking.objects
+              .filter(group_class__in=rows, date__in=days)
+              .exclude(status=ClassBooking.Status.CANCELLED)
+              .values("group_class_id", "date").annotate(n=Count("id")))
+    for b in booked:
+        taken[(b["group_class_id"], b["date"])] = b["n"]
+
+    grid = []
+    for d in days:
+        items = []
+        for c in rows:
+            if c.weekday != d.weekday():
+                continue
+            used = taken.get((c.id, d), 0)
+            items.append({"cls": c, "used": used,
+                          "free": max(0, c.capacity - used)})
+        grid.append({"day": d, "items": items, "is_today": d == timezone.localdate()})
+
+    return render(request, "fitness/dash/classes.html",
+                  _ctx(club, staff, grid=grid, day=day, week_start=week_start,
+                       prev_week=week_start - timedelta(days=7),
+                       next_week=week_start + timedelta(days=7),
+                       all_classes=rows,
+                       sections=club.sections.filter(is_active=True),
+                       trainers=club.trainers.filter(is_active=True)))
+
+
+@login_required(login_url=LOGIN_URL)
+@require(ADMIN)
+@require_POST
+def class_save(request, club, staff):
+    hhmm = (request.POST.get("time_from") or "").strip()
+    try:
+        t = datetime.strptime(hhmm, "%H:%M").time()
+    except ValueError:
+        messages.error(request, "Время в формате 19:00")
+        return redirect("fitness_dash:classes", club_id=club.id)
+
+    sec = request.POST.get("section_id")
+    tr = request.POST.get("trainer_id")
+    GroupClass.objects.create(
+        club=club,
+        name=(request.POST.get("name") or "").strip()[:150] or "Занятие",
+        section=Section.objects.filter(id=sec, club=club).first() if (sec or "").isdigit() else None,
+        trainer=Trainer.objects.filter(id=tr, club=club).first() if (tr or "").isdigit() else None,
+        weekday=int(request.POST.get("weekday") or 0),
+        time_from=t,
+        duration_min=int(request.POST.get("duration_min") or 60),
+        capacity=int(request.POST.get("capacity") or 12),
+        price=_money(request.POST.get("price"), "0"),
+        room=(request.POST.get("room") or "").strip()[:100],
+    )
+    messages.success(request, "Занятие добавлено в расписание")
+    return redirect("fitness_dash:classes", club_id=club.id)
+
+
+@login_required(login_url=LOGIN_URL)
+@require()
+def class_day(request, club, staff, class_id):
+    """Кто записан на занятие в этот день — и отметки о приходе."""
+    cls = get_object_or_404(GroupClass.objects.select_related("trainer", "section"),
+                            id=class_id, club=club)
+    day = _date(request.GET.get("date"))
+    rows = (cls.bookings.filter(date=day).select_related("member")
+            .order_by("id"))
+    return render(request, "fitness/dash/class_day.html",
+                  _ctx(club, staff, cls=cls, day=day, rows=rows,
+                       free=cls.free_on(day),
+                       members=Member.objects.filter(club=club, is_active=True)
+                               .order_by("full_name")[:500]))
+
+
+@login_required(login_url=LOGIN_URL)
+@require()
+@require_POST
+def class_book(request, club, staff, class_id):
+    cls = get_object_or_404(GroupClass, id=class_id, club=club)
+    day = _date(request.POST.get("date"))
+
+    # Мест может не остаться, пока админ открывал форму
+    if cls.free_on(day) <= 0:
+        messages.error(request, f"Мест нет: {cls.capacity} из {cls.capacity} заняты")
+        return redirect(f"/ru/cabinet/fitness/{club.id}/classes/{cls.id}/?date={day:%Y-%m-%d}")
+
+    member = None
+    raw = request.POST.get("member_id")
+    if raw and raw.isdigit():
+        member = Member.objects.filter(id=int(raw), club=club).first()
+
+    ClassBooking.objects.create(
+        group_class=cls, date=day, member=member,
+        client_name=(request.POST.get("client_name") or "").strip()[:150],
+        phone=(request.POST.get("phone") or "").strip()[:30],
+        comment=(request.POST.get("comment") or "").strip()[:300],
+        created_by=request.user,
+    )
+    messages.success(request, "Записали")
+    return redirect(f"/ru/cabinet/fitness/{club.id}/classes/{cls.id}/?date={day:%Y-%m-%d}")
+
+
+@login_required(login_url=LOGIN_URL)
+@require()
+@require_POST
+def class_booking_status(request, club, staff, booking_id):
+    b = get_object_or_404(ClassBooking.objects.select_related("group_class", "member"),
+                          id=booking_id, group_class__club=club)
+    action = request.POST.get("action")
+    labels = {"came": ClassBooking.Status.CAME,
+              "no_show": ClassBooking.Status.NO_SHOW,
+              "cancel": ClassBooking.Status.CANCELLED,
+              "back": ClassBooking.Status.BOOKED}
+    if action in labels:
+        b.status = labels[action]
+        b.save(update_fields=["status", "updated_at"])
+        # Пришёл на групповое — это посещение зала: списываем, как на входе
+        if b.status == ClassBooking.Status.CAME and b.member_id:
+            services.check_in(club, b.member, trainer=b.group_class.trainer,
+                              actor=request.user)
+    return redirect(f"/ru/cabinet/fitness/{club.id}/classes/{b.group_class_id}/"
+                    f"?date={b.date:%Y-%m-%d}")
+
