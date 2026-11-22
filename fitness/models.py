@@ -117,6 +117,10 @@ class Section(TimeStampedModel):
     description = models.TextField("Описание", blank=True, default="")
     description_en = models.TextField("Описание (EN)", blank=True, default="")
     photo       = models.ImageField("Фото", upload_to="fitness/sections/", blank=True, null=True)
+    # Значок нужен, пока нет фотографии: карточка направления без картинки
+    # выглядит пустой, а фото единоборств появляются не сразу.
+    icon        = models.CharField("Значок", max_length=8, blank=True, default="",
+                                   help_text="Один символ: 🥊, 🤼, 🏋️")
     price_from  = models.DecimalField("Цена от (сом)", max_digits=10, decimal_places=0, default=0)
     is_active   = models.BooleanField("Активна", default=True)
     sort_order  = models.PositiveSmallIntegerField("Порядок", default=0)
@@ -132,6 +136,21 @@ class Section(TimeStampedModel):
     def save(self, *args, **kwargs):
         _compress(self.photo)
         super().save(*args, **kwargs)
+
+
+# Типовые направления единоборств и зала: их заводят почти все клубы, и
+# набирать руками восемь названий с нуля незачем. Значок подставляется
+# сразу, чтобы карточка на сайте не выглядела пустой без фото.
+SECTION_PRESETS = [
+    ("Боевое самбо", "🥋"),
+    ("Бокс", "🥊"),
+    ("Кикбоксинг", "🦵"),
+    ("Вольная борьба", "🤼"),
+    ("Грэпплинг", "🫳"),
+    ("ММА", "🥇"),
+    ("Кроссфит", "🏋️"),
+    ("Фитнес", "💪"),
+]
 
 
 class Trainer(TimeStampedModel):

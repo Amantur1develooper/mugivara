@@ -21,9 +21,10 @@ from integrations import tgbot
 from . import services, tg
 from .access import (ADMIN, CASHIER, TRAINER, can_see_money, can_see_profit,
                      my_clubs, my_trainer, require, staff_of)
-from .models import (ClassBooking, ClubStaff, Expense, FitnessClub, GroupClass,
-                     Lead, LeadNote, Member, Membership, MembershipPlan, Payment,
-                     Section, Trainer, TrainerBooking, TrainerSchedule, Visit)
+from .models import (SECTION_PRESETS, ClassBooking, ClubStaff, Expense,
+                     FitnessClub, GroupClass, Lead, LeadNote, Member, Membership,
+                     MembershipPlan, Payment, Section, Trainer, TrainerBooking,
+                     TrainerSchedule, Visit)
 
 LOGIN_URL = "dashboard:login"
 
@@ -661,12 +662,67 @@ def setup(request, club, staff):
             club.save()
             messages.success(request, "Клуб сохранён")
         elif what == "section":
-            Section.objects.create(
-                club=club, name=(request.POST.get("s_name") or "").strip()[:150],
-                price_from=_money(request.POST.get("s_price"), "0"),
-                description=(request.POST.get("s_desc") or "").strip(),
-                photo=request.FILES.get("s_photo"))
-            messages.success(request, "Секция добавлена")
+            name = (request.POST.get("s_name") or "").strip()[:150]
+            if not name:
+                messages.error(request, "Без названия направление не добавить")
+            elif Section.objects.filter(club=club, name__iexact=name).exists():
+                messages.error(request, f"«{name}» уже есть")
+            else:
+                Section.objects.create(
+                    club=club, name=name,
+                    icon=(request.POST.get("s_icon") or "").strip()[:8],
+                    price_from=_money(request.POST.get("s_price"), "0"),
+                    description=(request.POST.get("s_desc") or "").strip(),
+                    photo=request.FILES.get("s_photo"),
+                    sort_order=Section.objects.filter(club=club).count())
+                messages.success(request, f"«{name}» добавлено")
+        elif what == "section_presets":
+            # Добавляем только те, которых ещё нет: кнопку нажимают повторно,
+            # и дублировать «Бокс» вторым разом незачем.
+            have = {s.name.strip().lower() for s in Section.objects.filter(club=club)}
+            made = 0
+            order = Section.objects.filter(club=club).count()
+            for title, icon in SECTION_PRESETS:
+                if title.strip().lower() in have:
+                    continue
+                Section.objects.create(club=club, name=title, icon=icon,
+                                       sort_order=order)
+                order += 1
+                made += 1
+            if made:
+                messages.success(request, f"Добавлено направлений: {made}. "
+                                          f"Цены и описания допишите ниже.")
+            else:
+                messages.info(request, "Все типовые направления уже есть")
+        elif what == "section_edit":
+            sec = Section.objects.filter(id=request.POST.get("section_id"), club=club).first()
+            if sec:
+                sec.name = (request.POST.get("s_name") or sec.name).strip()[:150]
+                sec.icon = (request.POST.get("s_icon") or "").strip()[:8]
+                sec.price_from = _money(request.POST.get("s_price"), "0")
+                sec.description = (request.POST.get("s_desc") or "").strip()
+                sec.is_active = request.POST.get("s_active") == "on"
+                if request.FILES.get("s_photo"):
+                    sec.photo = request.FILES["s_photo"]
+                sec.save()
+                messages.success(request, f"«{sec.name}» сохранено")
+        elif what == "section_delete":
+            sec = Section.objects.filter(id=request.POST.get("section_id"), club=club).first()
+            if sec:
+                # Удаляем только пустое направление: к нему могут быть
+                # привязаны абонементы, занятия и заявки, и терять их нельзя.
+                busy = (sec.plans.exists() or sec.classes.exists()
+                        or sec.trainers.exists() or sec.leads.exists())
+                if busy:
+                    sec.is_active = False
+                    sec.save(update_fields=["is_active", "updated_at"])
+                    messages.info(request, f"«{sec.name}» скрыто с сайта: "
+                                           f"к нему привязаны занятия или абонементы, "
+                                           f"поэтому запись сохранена")
+                else:
+                    name = sec.name
+                    sec.delete()
+                    messages.success(request, f"«{name}» удалено")
         elif what == "plan":
             MembershipPlan.objects.create(
                 club=club, name=(request.POST.get("p_name") or "").strip()[:150],

@@ -56,32 +56,91 @@
 </div>
 
 <div class="fc-card">
-  <div class="fc-card-t">Секции · {{ sections|length }}</div>
-  <div class="fc-list" style="margin-bottom:12px">
+  <div class="fc-card-t">Направления · {{ sections|length }}</div>
+
+  {% if not sections %}
+    <div class="fc-sub" style="margin-bottom:12px;line-height:1.5">
+      Направления — это то, что видят на сайте и к чему привязываются
+      абонементы, занятия и заявки. Можно добавить типовые одним нажатием и
+      потом дописать цены, а можно завести свои.
+    </div>
+  {% endif %}
+
+  <form method="post" style="margin-bottom:14px">
+    {% csrf_token %}
+    <input type="hidden" name="what" value="section_presets">
+    <button class="fc-btn ghost" type="submit">
+      + Боевое самбо, бокс, кикбоксинг, борьба, грэпплинг, ММА, кроссфит, фитнес
+    </button>
+    <div class="fc-sub" style="margin-top:6px">
+      Добавит только те, которых ещё нет. Нажимать можно сколько угодно.
+    </div>
+  </form>
+
+  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
     {% for s in sections %}
-      <div class="fc-row">
-        <div class="fc-row-main">
-          <div class="fc-row-name">{{ s.name }}</div>
-          <div class="fc-row-sub">{{ s.description|truncatechars:70 }}</div>
-        </div>
-        <div class="fc-row-right">от {{ s.price_from|floatformat:0 }} сом</div>
-      </div>
-    {% empty %}<div class="fc-empty">Секций нет — на сайте показывать нечего</div>{% endfor %}
+      <details class="fc-row" style="grid-template-columns:1fr;cursor:pointer">
+        <summary style="display:flex;align-items:center;gap:10px;justify-content:space-between">
+          <span>
+            <span style="font-size:18px">{{ s.icon|default:"•" }}</span>
+            <b style="font-size:14px;margin-left:6px">{{ s.name }}</b>
+            {% if not s.is_active %}<span class="fc-chip">скрыто</span>{% endif %}
+          </span>
+          <span class="fc-row-right">
+            {% if s.price_from %}от {{ s.price_from|floatformat:0 }} сом{% else %}цена не задана{% endif %}
+          </span>
+        </summary>
+        <form method="post" enctype="multipart/form-data" style="margin-top:12px">
+          {% csrf_token %}
+          <input type="hidden" name="what" value="section_edit">
+          <input type="hidden" name="section_id" value="{{ s.id }}">
+          <div class="fc-grid3">
+            <div><label class="fc-label">Название</label>
+              <input class="fc-input" name="s_name" value="{{ s.name }}"></div>
+            <div><label class="fc-label">Значок</label>
+              <input class="fc-input" name="s_icon" value="{{ s.icon }}" placeholder="🥊" maxlength="8"></div>
+            <div><label class="fc-label">Цена от</label>
+              <input class="fc-input" name="s_price" value="{{ s.price_from|floatformat:0 }}" inputmode="numeric"></div>
+            <div><label class="fc-label">Фото</label>
+              <input class="fc-input" type="file" name="s_photo" accept="image/*"></div>
+          </div>
+          <div style="margin-top:10px"><label class="fc-label">Описание для сайта</label>
+            <input class="fc-input" name="s_desc" value="{{ s.description }}"
+                   placeholder="Тренировки для взрослых и детей, тренер — КМС"></div>
+          <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:12.5px;color:var(--text2)">
+            <input type="checkbox" name="s_active" {% if s.is_active %}checked{% endif %}>
+            Показывать на сайте
+          </label>
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+            <button class="fc-btn small" type="submit">Сохранить</button>
+            <button class="fc-btn small ghost" type="submit"
+                    formaction="" name="what" value="section_delete">Удалить</button>
+          </div>
+          <div class="fc-sub" style="margin-top:6px">
+            Если к направлению привязаны занятия или абонементы, оно не удалится,
+            а скроется с сайта — история останется целой.
+          </div>
+        </form>
+      </details>
+    {% endfor %}
   </div>
+
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     <input type="hidden" name="what" value="section">
     <div class="fc-grid3">
-      <div><label class="fc-label">Название</label>
-        <input class="fc-input" name="s_name" required placeholder="Тренажёрный зал"></div>
+      <div><label class="fc-label">Своё направление</label>
+        <input class="fc-input" name="s_name" required placeholder="Тайский бокс"></div>
+      <div><label class="fc-label">Значок</label>
+        <input class="fc-input" name="s_icon" placeholder="🥊" maxlength="8"></div>
       <div><label class="fc-label">Цена от</label>
-        <input class="fc-input" name="s_price" inputmode="numeric" placeholder="1500"></div>
+        <input class="fc-input" name="s_price" inputmode="numeric" placeholder="2000"></div>
       <div><label class="fc-label">Фото</label>
         <input class="fc-input" type="file" name="s_photo" accept="image/*"></div>
     </div>
     <div style="margin-top:10px"><label class="fc-label">Описание</label>
-      <input class="fc-input" name="s_desc" placeholder="Кардио и силовые, тренер в зале"></div>
-    <button class="fc-btn ghost" type="submit" style="margin-top:10px">+ Добавить секцию</button>
+      <input class="fc-input" name="s_desc" placeholder="Группы утром и вечером"></div>
+    <button class="fc-btn ghost" type="submit" style="margin-top:10px">+ Добавить направление</button>
   </form>
 </div>
 
