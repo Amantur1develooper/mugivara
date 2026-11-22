@@ -66,6 +66,10 @@ class FitnessClub(TimeStampedModel):
     is_active  = models.BooleanField("Активен", default=True)
     sort_order = models.PositiveSmallIntegerField("Порядок", default=0)
 
+    # Когда последний раз отправляли утреннюю сводку: нужно, чтобы запуск
+    # по расписанию дважды в день не присылал одно и то же.
+    digest_sent_on = models.DateField("Сводка отправлена", null=True, blank=True)
+
     class Meta:
         verbose_name = "Фитнес-клуб"
         verbose_name_plural = "Фитнес-клубы"

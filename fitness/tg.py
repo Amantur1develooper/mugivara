@@ -249,3 +249,66 @@ def apply_booking_action(booking, action, actor=""):
     stamp = timezone.localtime().strftime("%d.%m %H:%M")
     refresh_booking(booking, footer=f"{booking.get_status_display()} — {actor or 'Telegram'}, {stamp}")
     return toast
+
+# ── Утренняя сводка ─────────────────────────────────────────────────────────
+
+def _years(n):
+    """«31 год», «22 года», «25 лет» — сообщение читают люди."""
+    if n % 100 in (11, 12, 13, 14):
+        return f"{n} лет"
+    last = n % 10
+    if last == 1:
+        return f"{n} год"
+    if last in (2, 3, 4):
+        return f"{n} года"
+    return f"{n} лет"
+
+
+def digest_text(club, day, birthdays, expiring=(), lost=(), overdue=()):
+    """Короткая сводка на день: кого поздравить и кому позвонить.
+
+    Поздравление — повод для разговора, который почти всегда заканчивается
+    продлением. Но помнить о нём некому, поэтому напоминаем сами.
+    """
+    lines = [f"☀️ {club.name} — {day:%d.%m}"]
+
+    if birthdays:
+        lines.append("")
+        lines.append("🎂 ДЕНЬ РОЖДЕНИЯ")
+        for item in birthdays:
+            m = item["member"]
+            when = "сегодня" if item["when"] == day else f"{item['when']:%d.%m}"
+            age = f", {_years(item['age'])}" if item.get("age") else ""
+            phone = f" · {m.phone}" if m.phone else ""
+            lines.append(f"• {m.full_name}{age} — {when}{phone}")
+
+    if expiring:
+        lines.append("")
+        lines.append("⏳ АБОНЕМЕНТ КОНЧАЕТСЯ")
+        for ms in expiring:
+            left = (ms.end_date - day).days
+            phone = f" · {ms.member.phone}" if ms.member.phone else ""
+            lines.append(f"• {ms.member.full_name} — {left} дн."
+                         f" (до {ms.end_date:%d.%m}){phone}")
+
+    if lost:
+        lines.append("")
+        lines.append("😴 ДАВНО НЕ ПРИХОДИЛИ")
+        for item in lost:
+            m = item["member"]
+            phone = f" · {m.phone}" if m.phone else ""
+            days = f"{item['days']} дн." if item.get("days") else "ни разу"
+            lines.append(f"• {m.full_name} — {days}{phone}")
+
+    if overdue:
+        lines.append("")
+        lines.append("⏰ ПРОСРОЧЕН ЗВОНОК ПО ЗАЯВКЕ")
+        for lead in overdue:
+            lines.append(f"• {lead.name or 'без имени'} · {lead.phone}"
+                         f" — обещали {timezone.localtime(lead.next_contact_at):%d.%m %H:%M}")
+
+    if len(lines) == 1:
+        lines.append("")
+        lines.append("Сегодня никого поздравлять и никому звонить не нужно.")
+    return "\n".join(lines)
+
