@@ -532,6 +532,22 @@ def restaurant_detail(request, slug):
 
 
 
+def cx_ing_labels(ings):
+    """Подписи ингредиентов с количеством: ['Шаурма ×2', 'Фри'].
+
+    Нужен отдельно от cx_ings_text, потому что корзина выводит их списком
+    и сама расставляет запятые.
+    """
+    from collections import Counter
+
+    counts = Counter()
+    for i in ings or []:
+        name = (i or {}).get("name")
+        if name:
+            counts[name] += max(1, int(i.get("qty", 1) or 1))
+    return [f"{name} ×{n}" if n > 1 else name for name, n in counts.items()]
+
+
 def cx_ings_text(ings):
     """Состав шага набора строкой: «Шаурма ×2, Фри».
 
@@ -781,16 +797,19 @@ def cart_json(request, branch_id: int):
         line = unit * qty
         cx_total += line
         cx_qty   += qty
+        # С количеством: две порции одного ингредиента в корзине выглядели
+        # как одна, и человек не видел, что взял дважды.
         detail = " · ".join(
-            f"{s['gname']}: {', '.join(i['name'] for i in s.get('ings', []))}"
+            f"{s['gname']}: {cx_ings_text(s.get('ings', []))}"
             for s in item.get("selections", [])
+            if cx_ings_text(s.get("ings", []))
         )
         cx_items.append({
             "cx_idx":     item["idx"],
             "name":       item["cx_name"],
             "detail":     detail,
             "selections": [
-                {"gname": s["gname"], "ings": [i["name"] for i in s.get("ings", [])]}
+                {"gname": s["gname"], "ings": cx_ing_labels(s.get("ings", []))}
                 for s in item.get("selections", [])
             ],
             "photo":      cx_photos.get(item.get("cx_id"), ""),

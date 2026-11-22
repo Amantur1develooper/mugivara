@@ -255,7 +255,7 @@ const T = {
         <div class="tc-row-main">
           <div class="tc-row-name">{{ item.cx_name }}</div>
           <div class="tc-row-price" style="font-size:11px;color:var(--muted);margin-top:3px;">
-            {% for sel in item.selections %}{{ sel.gname }}: {% for ing in sel.ings %}{{ ing.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if not forloop.last %} · {% endif %}{% endfor %}
+            {% for sel in item.selections %}{{ sel.gname }}: {% for ing in sel.ings %}{{ ing.name }}{% if ing.qty and ing.qty > 1 %} ×{{ ing.qty }}{% endif %}{% if not forloop.last %}, {% endif %}{% endfor %}{% if not forloop.last %} · {% endif %}{% endfor %}
           </div>
           <div class="tc-row-price">{{ item.unit_price|som }} / {% trans "шт." %}</div>
         </div>

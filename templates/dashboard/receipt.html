@@ -4,22 +4,32 @@
 <meta charset="UTF-8">
 <title>Чек #{{ order.id }}</title>
 <style>
+  /* Лента 58 мм — такая стоит в кассах. Печатаемая область 48 мм:
+     остальное уходит на поля самого принтера. Шире чек не влезал, и
+     длинные строки — особенно состав «Собери сам» — обрезались по краю. */
   @page {
-    size: 80mm auto;
-    margin: 3mm 2mm;
+    size: 58mm auto;
+    margin: 0;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
     font-family: 'Courier New', Courier, monospace;
-    font-size: 12px;
+    font-size: 11px;
     color: #000;
     background: #fff;
-    width: 76mm;
+    width: 48mm;
+    margin: 0;
   }
 
-  .receipt { width: 76mm; }
+  /* Переносим по словам и по буквам: в 48 мм не влезает ни длинное
+     название блюда, ни состав набора, а обрезка по краю теряет текст. */
+  .receipt {
+    width: 48mm;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
 
   /* ── Helpers ── */
   /* Чек читают слева: названия, состав и подписи выровнены по левому краю,
@@ -33,8 +43,9 @@
     display: flex;
     justify-content: space-between;
     gap: 4px;
-    margin-bottom: 2px;
-    font-size: 11px;
+    margin-bottom: 1px;
+    font-size: 10px;
+    flex-wrap: wrap;
   }
   .row .lbl { color: #333; flex-shrink: 0; }
   .row .val { font-weight: bold; text-align: right; }
@@ -47,7 +58,7 @@
     border-bottom: 1px dashed #000;
   }
   .r-name {
-    font-size: 14px;
+    font-size: 12.5px;
     font-weight: bold;
     letter-spacing: 1px;
     text-transform: uppercase;
@@ -56,13 +67,13 @@
 
   /* ── Items ── */
   .r-item { margin-bottom: 5px; }
-  .r-item-name { font-size: 12px; font-weight: bold; word-break: break-word; }
+  .r-item-name { font-size: 11px; font-weight: bold; word-break: break-word; }
   /* Состав набора — одним абзацем, а не строкой на каждый шаг: на
      ленте 76 мм каждый шаг занимал свою строку, и чек на один набор
      выходил в пол-метра. Названия шагов на кухне не нужны — важен
      список того, что положить, и сколько. */
   .r-item-ing  {
-    font-size: 9.5px; color: #333; line-height: 1.35;
+    font-size: 9px; color: #333; line-height: 1.3;
     padding-left: 8px; text-align: left;
   }
   .r-item-line {
@@ -84,7 +95,7 @@
   .r-total {
     display: flex;
     justify-content: space-between;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: bold;
     border-top: 1px solid #000;
     padding-top: 5px;
@@ -99,8 +110,8 @@
     padding-top: 8px;
     margin-top: 4px;
   }
-  .r-footer .thanks { font-size: 13px; font-weight: bold; margin-bottom: 3px; }
-  .r-footer .sub    { font-size: 10px; color: #444; }
+  .r-footer .thanks { font-size: 11px; font-weight: bold; margin-bottom: 3px; }
+  .r-footer .sub    { font-size: 9.5px; color: #444; }
 
   /* ── Print button (screen only) ── */
   .r-print-btn {
@@ -119,7 +130,7 @@
   .r-print-btn:active { background: #333; }
 
   @media print {
-    body { width: 76mm; }
+    body { width: 48mm; }
     .r-print-btn { display: none !important; }
   }
 </style>

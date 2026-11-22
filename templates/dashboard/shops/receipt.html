@@ -5,17 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Чек #{{ order.id }}</title>
 <style>
+  /* Лента 58 мм, печатаемое поле 48 мм — как у чека кафе. Раньше чек был
+     шириной 300 px и печатался шире ленты: края обрезались. */
+  @page {
+    size: 58mm auto;
+    margin: 0;
+  }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: 'Courier New', Courier, monospace;
-    font-size: 13px;
+    font-size: 11px;
     color: #111;
     background: #fff;
-    display: flex;
-    justify-content: center;
-    padding: 20px;
+    width: 48mm;
+    margin: 0;
+    padding: 4px 0;
   }
-  .receipt { width: 300px; padding: 16px 12px; }
+  .receipt {
+    width: 48mm; padding: 0 2px;
+    overflow-wrap: anywhere; word-break: break-word;
+  }
 
   /* Чек читают слева — как и у кафе */
   .r-header { text-align: left; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px dashed #888; }
@@ -48,8 +58,8 @@
   .r-print-btn:hover { background: #333; }
 
   @media print {
-    body { padding: 0; }
-    .receipt { width: 100%; }
+    body { padding: 0; width: 48mm; }
+    .receipt { width: 48mm; }
     .r-print-btn { display: none !important; }
   }
 </style>
