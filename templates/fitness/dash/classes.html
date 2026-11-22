@@ -60,7 +60,8 @@
           <option value="6">Воскресенье</option>
         </select></div>
       <div><label class="fc-label">Начало</label>
-        <input class="fc-input" name="time_from" placeholder="19:00" required></div>
+        <input class="fc-input" name="time_from" type="time" required
+               data-slots data-slots-from="7" data-slots-to="22" data-slots-step="30"></div>
       <div><label class="fc-label">Длительность</label>
         <input class="fc-input" name="duration_min" type="number" value="60" min="15" step="15"></div>
       <div><label class="fc-label">Мест</label>

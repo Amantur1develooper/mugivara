@@ -85,6 +85,20 @@
   }
   .fc-btn.ghost { background: var(--bg); color: var(--text2); border: 1.5px solid var(--border); }
   .fc-btn.small { padding: 8px 12px; font-size: 12px; }
+
+  /* Выбор времени: родное поле браузера (на телефоне это колесо) плюс ряд
+     частых часов в одно нажатие. Руками набирать «14:30» на ресепшене
+     неудобно и легко промахнуться. */
+  .fc-slots { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+  .fc-slot {
+    appearance: none; cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 700;
+    /* Высота под палец: по кнопке на ресепшене тыкают быстро и не глядя */
+    min-height: 36px; padding: 8px 11px; border-radius: 9px; color: var(--text2);
+    background: var(--bg); border: 1.5px solid var(--border);
+  }
+  .fc-slot:hover { border-color: var(--accent); color: var(--accent); }
+  .fc-slot.on { border-color: var(--accent); color: var(--accent); background: rgba(255,77,28,.06); }
+  @media (max-width: 420px) { .fc-slot { padding: 8px 9px; font-size: 12px; } }
   .fc-empty { padding: 26px 12px; text-align: center; color: var(--muted); font-size: 13px; }
 
   @media (max-width: 560px) {
@@ -131,4 +145,36 @@
 {% endif %}
 
 {% block fc_content %}{% endblock %}
+
+<script>
+  // Любое поле со data-slots получает ряд готовых часов: нажал — время
+  // подставилось. Шаг и границы задаются атрибутами, чтобы на разных
+  // страницах не плодить копии скрипта.
+  (function () {
+    document.querySelectorAll('input[data-slots]').forEach(input => {
+      const from = parseInt(input.dataset.slotsFrom || '8', 10);
+      const to = parseInt(input.dataset.slotsTo || '22', 10);
+      const step = parseInt(input.dataset.slotsStep || '60', 10);
+      const box = document.createElement('div');
+      box.className = 'fc-slots';
+
+      const mark = () => {
+        [...box.children].forEach(b => b.classList.toggle('on', b.textContent === input.value));
+      };
+      for (let m = from * 60; m <= to * 60; m += step) {
+        const hh = String(Math.floor(m / 60)).padStart(2, '0');
+        const mm = String(m % 60).padStart(2, '0');
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'fc-slot';
+        b.textContent = `${hh}:${mm}`;
+        b.addEventListener('click', () => { input.value = b.textContent; mark(); });
+        box.appendChild(b);
+      }
+      input.insertAdjacentElement('afterend', box);
+      input.addEventListener('input', mark);
+      mark();
+    });
+  })();
+</script>
 {% endblock %}
