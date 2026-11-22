@@ -65,6 +65,7 @@ urlpatterns += i18n_patterns(
     path("agency/", include(("agency.urls", "agency"), namespace="agency")),
     path("entertainment/karaoke/", include(("karaoke.urls", "karaoke"), namespace="karaoke")),
     path("barbershop/", include(("barbershop.urls", "barbershop"), namespace="barbershop")),
+    path("fitness/", include(("fitness.urls", "fitness"), namespace="fitness")),
     path("simracing/", include(("simracing.urls", "simracing"), namespace="simracing")),
     path("eco/", include(("eco.urls", "eco"), namespace="eco")),
     path("printshop/", include(("printshop.urls", "printshop"), namespace="printshop")),
@@ -72,6 +73,10 @@ urlpatterns += i18n_patterns(
     path("autosalon/", include(("autosalon.urls", "autosalon"), namespace="autosalon")),
     path("metal/", include(("metalwork.urls", "metalwork"), namespace="metalwork")),
     path("cabinet/", include(("dashboard.urls", "dashboard"), namespace="dashboard")),
+    # Кабинет фитнес-клуба: своё приложение, но внутри общего /cabinet/,
+    # чтобы адреса и вход были такими же, как у других направлений.
+    path("cabinet/fitness/", include(("fitness.dash_urls", "fitness_dash"),
+                                     namespace="fitness_dash")),
     path("rcabinet/", include(("realestate.cabinet_urls", "rcabinet"), namespace="rcabinet")),
     path("acabinet/", include(("autosalon.cabinet_urls", "acabinet"), namespace="acabinet")),
     path("mcabinet/", include(("metalwork.cabinet_urls", "mcabinet"), namespace="mcabinet")),

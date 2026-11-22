@@ -1,0 +1,258 @@
+{% load static i18n i18n_attrs l10n %}<!doctype html>
+<html lang="{{ LANGUAGE_CODE|default:'ru' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>{{ club.name }}{% if club.tagline %} — {{ club.tagline }}{% endif %}</title>
+  <meta name="theme-color" content="#0b0b0d">
+  {% if club.description %}
+  <meta name="description" content="{{ club.description|striptags|truncatewords:26 }}">
+  {% endif %}
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Тёмный зал, один акцент, крупные кнопки под палец. Ничего мигающего:
+       человек пришёл узнать цены и записаться, а не рассматривать эффекты. */
+    :root {
+      --bg: #0b0b0d; --card: #15151a; --line: #26262e;
+      --text: #f4f4f6; --muted: #9b9ba6; --accent: #ff4d1c;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Inter', -apple-system, sans-serif; line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+    h1, h2, h3 { font-family: 'Unbounded', sans-serif; letter-spacing: -.5px; }
+
+    .hero { padding: 28px 0 22px; }
+    .hero-logo {
+      width: clamp(76px, 22vw, 108px); height: clamp(76px, 22vw, 108px);
+      border-radius: 24px; object-fit: cover; background: var(--card);
+      border: 1px solid var(--line); display: block; margin-bottom: 14px;
+    }
+    .hero h1 { font-size: clamp(24px, 7vw, 40px); font-weight: 900; }
+    .hero-tag { color: var(--muted); font-size: clamp(13px, 3.6vw, 16px); margin-top: 6px; }
+    .hero-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+    .pill {
+      font-size: 12px; font-weight: 600; padding: 7px 12px; border-radius: 100px;
+      background: var(--card); border: 1px solid var(--line); color: var(--muted);
+      text-decoration: none;
+    }
+    .pill.on { color: var(--accent); border-color: rgba(255,77,28,.4); }
+
+    .cta { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+    .btn {
+      appearance: none; border: 0; cursor: pointer; text-decoration: none;
+      font: inherit; font-size: 14px; font-weight: 700; padding: 14px 22px;
+      border-radius: 14px; background: var(--accent); color: #fff;
+      display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    }
+    .btn.ghost { background: transparent; border: 1.5px solid var(--line); color: var(--text); }
+
+    section { padding: 26px 0; border-top: 1px solid var(--line); }
+    .sec-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
+    .sec-h h2 { font-size: clamp(17px, 5vw, 24px); font-weight: 700; }
+    .sec-h span { font-size: 12px; color: var(--muted); }
+
+    .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+    .card {
+      background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+      overflow: hidden; display: flex; flex-direction: column;
+    }
+    .card img { width: 100%; height: 150px; object-fit: cover; display: block; }
+    .card-b { padding: 14px; }
+    .card-t { font-size: 15px; font-weight: 700; }
+    .card-d { font-size: 12.5px; color: var(--muted); margin-top: 5px; line-height: 1.45; }
+    .card-p { font-size: 14px; font-weight: 800; color: var(--accent); margin-top: 9px; }
+
+    .tr-card { display: grid; grid-template-columns: auto 1fr; gap: 12px; padding: 12px;
+      background: var(--card); border: 1px solid var(--line); border-radius: 18px; align-items: center; }
+    .tr-ph { width: 74px; height: 74px; border-radius: 16px; object-fit: cover; background: #1f1f27; }
+    .tr-ph-e { width: 74px; height: 74px; border-radius: 16px; background: #1f1f27;
+      display: flex; align-items: center; justify-content: center; font-size: 28px; }
+    .tr-n { font-size: 15px; font-weight: 700; }
+    .tr-s { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+
+    .plan { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 14px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+    .plan-n { font-size: 14px; font-weight: 700; }
+    .plan-s { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .plan-p { font-size: 16px; font-weight: 800; white-space: nowrap; }
+
+    .form { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
+    .inp {
+      width: 100%; padding: 13px 14px; border-radius: 12px; font: inherit; font-size: 15px;
+      background: #0f0f13; border: 1.5px solid var(--line); color: var(--text);
+    }
+    .inp:focus { outline: none; border-color: var(--accent); }
+    .lbl { display: block; font-size: 11px; font-weight: 700; letter-spacing: .4px;
+      text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+    .row2 { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+    .note { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.45; }
+    .ok { color: #34d399; } .bad { color: #f87171; }
+
+    footer { padding: 26px 0 40px; color: var(--muted); font-size: 12.5px; border-top: 1px solid var(--line); }
+
+    @media (max-width: 520px) {
+      .row2 { grid-template-columns: 1fr; }
+      .card img { height: 128px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="hero">
+    {% if club.logo %}<img class="hero-logo" src="{{ club.logo.url }}" alt="{{ club.name }}">{% endif %}
+    <h1>{{ club.name }}</h1>
+    {% if club.tagline %}<div class="hero-tag">{{ club.tagline }}</div>{% endif %}
+    <div class="hero-meta">
+      {% if club.working_hours %}<span class="pill">🕒 {{ club.working_hours }}</span>{% endif %}
+      {% if club.address %}
+        {% if club.map_url %}<a class="pill" href="{{ club.map_url }}" target="_blank" rel="noopener">📍 {{ club.address }}</a>
+        {% else %}<span class="pill">📍 {{ club.address }}</span>{% endif %}
+      {% endif %}
+      {% if club.instagram %}<a class="pill" href="https://instagram.com/{{ club.instagram }}" target="_blank" rel="noopener">Instagram</a>{% endif %}
+    </div>
+    <div class="cta">
+      <a class="btn" href="#zayavka">Записаться</a>
+      {% if club.phone %}<a class="btn ghost" href="tel:{{ club.phone }}">📞 {{ club.phone }}</a>{% endif %}
+      {% if club.whatsapp %}<a class="btn ghost" href="https://wa.me/{{ club.whatsapp }}" target="_blank" rel="noopener">WhatsApp</a>{% endif %}
+    </div>
+  </header>
+
+  {% if club.description %}
+  <section>
+    <div style="font-size:14.5px;color:var(--muted);line-height:1.65">{{ club.description|linebreaksbr }}</div>
+  </section>
+  {% endif %}
+
+  {% if sections %}
+  <section id="sekcii">
+    <div class="sec-h"><h2>Направления</h2><span>{{ sections|length }}</span></div>
+    <div class="grid">
+      {% for s in sections %}
+        <div class="card">
+          {% if s.photo %}<img src="{{ s.photo.url }}" alt="{{ s.name }}" loading="lazy">{% endif %}
+          <div class="card-b">
+            <div class="card-t">{{ s.name }}</div>
+            {% if s.description %}<div class="card-d">{{ s.description|truncatechars:110 }}</div>{% endif %}
+            {% if s.price_from %}<div class="card-p">от {{ s.price_from|floatformat:0 }} сом</div>{% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if plans %}
+  <section id="abonementy">
+    <div class="sec-h"><h2>Абонементы</h2></div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      {% for p in plans %}
+        <div class="plan">
+          <div>
+            <div class="plan-n">{{ p.name }}</div>
+            <div class="plan-s">
+              {% if p.visits_number %}{{ p.visits_number }} посещений{% else %}без ограничения{% endif %}
+              · {{ p.validity_days }} дней
+            </div>
+          </div>
+          <div class="plan-p">{{ p.price|floatformat:0 }} сом</div>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="note">Срок абонемента начинается с первого посещения — покупайте
+      заранее, дни не сгорят.</div>
+  </section>
+  {% endif %}
+
+  {% if trainers %}
+  <section id="trenery">
+    <div class="sec-h"><h2>Тренеры</h2><span>{{ trainers|length }}</span></div>
+    <div class="grid">
+      {% for t in trainers %}
+        <a class="tr-card" href="{% url 'fitness:trainer' club.slug t.id %}" style="text-decoration:none">
+          {% if t.photo %}<img class="tr-ph" src="{{ t.photo.url }}" alt="{{ t.name }}" loading="lazy">
+          {% else %}<div class="tr-ph-e">🧑‍🏫</div>{% endif %}
+          <div>
+            <div class="tr-n">{{ t.name }}</div>
+            <div class="tr-s">
+              {% for s in t.sections.all %}{{ s.name }}{% if not forloop.last %} · {% endif %}{% endfor %}
+              {% if t.experience_years %}{% if t.sections.all %}<br>{% endif %}опыт {{ t.experience_years }} лет{% endif %}
+            </div>
+            {% if t.price_per_session %}<div class="card-p" style="margin-top:6px">{{ t.price_per_session|floatformat:0 }} сом / тренировка</div>{% endif %}
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section id="zayavka">
+    <div class="sec-h"><h2>Записаться</h2></div>
+    <form class="form" method="post" action="{% url 'fitness:lead_create' club.slug %}" id="leadForm">
+      {% csrf_token %}
+      <div class="row2">
+        <div><label class="lbl" for="ln">Имя</label>
+          <input class="inp" id="ln" name="name" placeholder="Как к вам обращаться"></div>
+        <div><label class="lbl" for="lp">Телефон</label>
+          <input class="inp" id="lp" name="phone" required inputmode="tel" placeholder="+996 700 11 22 33"></div>
+      </div>
+      {% if sections %}
+      <div style="margin-top:10px"><label class="lbl" for="ls">Что интересует</label>
+        <select class="inp" id="ls" name="section_id">
+          <option value="">Любое направление</option>
+          {% for s in sections %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+        </select></div>
+      {% endif %}
+      <div style="margin-top:10px"><label class="lbl" for="lc">Комментарий</label>
+        <input class="inp" id="lc" name="comment" placeholder="удобно вечером, хочу пробное занятие"></div>
+      <button class="btn" type="submit" style="margin-top:14px;width:100%">Отправить заявку</button>
+      <div class="note" id="leadMsg"></div>
+      <div class="note">Перезвоним и подберём абонемент. Никакой рассылки.</div>
+    </form>
+  </section>
+
+  <footer>
+    {{ club.name }}{% if club.address %} · {{ club.address }}{% endif %}
+    {% if club.phone %} · <a href="tel:{{ club.phone }}">{{ club.phone }}</a>{% endif %}
+  </footer>
+</div>
+
+<script>
+  // Отправляем без перезагрузки: человек видит ответ там же, где нажал.
+  (function () {
+    const form = document.getElementById('leadForm');
+    const msg = document.getElementById('leadMsg');
+    if (!form) return;
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = form.querySelector('button[type=submit]');
+      btn.disabled = true;
+      const was = btn.textContent;
+      btn.textContent = 'Отправляем…';
+      msg.className = 'note';
+      try {
+        const r = await fetch(form.action, {
+          method: 'POST', body: new FormData(form),
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        const d = await r.json();
+        msg.classList.add(d.ok ? 'ok' : 'bad');
+        msg.textContent = d.message || (d.ok ? 'Заявка принята' : 'Не получилось');
+        if (d.ok) form.reset();
+      } catch (err) {
+        msg.classList.add('bad');
+        msg.textContent = 'Не получилось отправить — позвоните нам';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = was;
+      }
+    });
+  })();
+</script>
+</body>
+</html>

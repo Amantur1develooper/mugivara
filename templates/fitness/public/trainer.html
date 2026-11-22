@@ -1,0 +1,175 @@
+{% load static i18n %}<!doctype html>
+<html lang="{{ LANGUAGE_CODE|default:'ru' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>{{ trainer.name }} — {{ club.name }}</title>
+  <meta name="theme-color" content="#0b0b0d">
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#0b0b0d; --card:#15151a; --line:#26262e; --text:#f4f4f6; --muted:#9b9ba6; --accent:#ff4d1c; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--bg); color:var(--text); font-family:'Inter',-apple-system,sans-serif; line-height:1.5; }
+    a { color:inherit; }
+    .wrap { max-width:720px; margin:0 auto; padding:0 16px; }
+    h1 { font-family:'Unbounded',sans-serif; font-size:clamp(22px,6vw,34px); font-weight:900; letter-spacing:-.6px; }
+    .back { display:inline-block; font-size:13px; color:var(--muted); text-decoration:none; padding:18px 0 10px; }
+    .top { display:grid; grid-template-columns:auto 1fr; gap:16px; align-items:center; padding-bottom:20px; }
+    .ph { width:clamp(92px,26vw,132px); height:clamp(92px,26vw,132px); border-radius:22px; object-fit:cover; background:#1f1f27; }
+    .ph-e { width:clamp(92px,26vw,132px); height:clamp(92px,26vw,132px); border-radius:22px; background:#1f1f27;
+            display:flex; align-items:center; justify-content:center; font-size:40px; }
+    .tags { display:flex; gap:7px; flex-wrap:wrap; margin-top:8px; }
+    .pill { font-size:11.5px; font-weight:600; padding:6px 11px; border-radius:100px;
+            background:var(--card); border:1px solid var(--line); color:var(--muted); }
+    .price { font-size:17px; font-weight:800; color:var(--accent); margin-top:10px; }
+    section { padding:22px 0; border-top:1px solid var(--line); }
+    h2 { font-family:'Unbounded',sans-serif; font-size:17px; font-weight:700; margin-bottom:12px; }
+    .bio { font-size:14.5px; color:var(--muted); line-height:1.65; }
+    .sch { display:flex; flex-direction:column; gap:7px; }
+    .sch-row { display:flex; justify-content:space-between; font-size:13.5px;
+               padding:10px 12px; background:var(--card); border:1px solid var(--line); border-radius:12px; }
+    .form { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px; }
+    .inp { width:100%; padding:13px 14px; border-radius:12px; font:inherit; font-size:15px;
+           background:#0f0f13; border:1.5px solid var(--line); color:var(--text); }
+    .inp:focus { outline:none; border-color:var(--accent); }
+    .lbl { display:block; font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase;
+           color:var(--muted); margin:0 0 6px; }
+    .row2 { display:grid; gap:10px; grid-template-columns:1fr 1fr; }
+    .btn { appearance:none; border:0; cursor:pointer; font:inherit; font-size:14px; font-weight:700;
+           padding:14px 22px; border-radius:14px; background:var(--accent); color:#fff; width:100%; }
+    .note { font-size:12px; color:var(--muted); margin-top:10px; line-height:1.45; }
+    .ok { color:#34d399; } .bad { color:#f87171; }
+    .slots { display:grid; gap:7px; grid-template-columns:repeat(auto-fill,minmax(72px,1fr)); margin-top:6px; }
+    .slot { padding:11px 6px; border-radius:11px; text-align:center; cursor:pointer; font-size:13.5px;
+            font-weight:700; background:#0f0f13; border:1.5px solid var(--line); color:var(--text); }
+    .slot.on { border-color:var(--accent); color:var(--accent); }
+    @media (max-width:520px) { .row2 { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="{% url 'fitness:club' club.slug %}">← {{ club.name }}</a>
+
+  <div class="top">
+    {% if trainer.photo %}<img class="ph" src="{{ trainer.photo.url }}" alt="{{ trainer.name }}">
+    {% else %}<div class="ph-e">🧑‍🏫</div>{% endif %}
+    <div>
+      <h1>{{ trainer.name }}</h1>
+      <div class="tags">
+        {% for s in trainer.sections.all %}<span class="pill">{{ s.name }}</span>{% endfor %}
+        {% if trainer.experience_years %}<span class="pill">опыт {{ trainer.experience_years }} лет</span>{% endif %}
+      </div>
+      {% if trainer.price_per_session %}
+        <div class="price">{{ trainer.price_per_session|floatformat:0 }} сом / тренировка</div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if trainer.bio %}
+  <section><h2>О тренере</h2><div class="bio">{{ trainer.bio|linebreaksbr }}</div></section>
+  {% endif %}
+
+  {% if schedule %}
+  <section>
+    <h2>Когда работает</h2>
+    <div class="sch">
+      {% for s in schedule %}
+        <div class="sch-row">
+          <span>{{ s.get_weekday_display }}</span>
+          <b>{{ s.time_from|time:"H:i" }}–{{ s.time_to|time:"H:i" }}</b>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section>
+    <h2>Записаться на тренировку</h2>
+    <form class="form" method="post" action="{% url 'fitness:booking_create' club.slug %}" id="bookForm">
+      {% csrf_token %}
+      <input type="hidden" name="trainer_id" value="{{ trainer.id }}">
+      <input type="hidden" name="time" id="timeField">
+      <div class="row2">
+        <div><label class="lbl" for="bn">Имя</label>
+          <input class="inp" id="bn" name="name" placeholder="Как вас зовут"></div>
+        <div><label class="lbl" for="bp">Телефон</label>
+          <input class="inp" id="bp" name="phone" required inputmode="tel" placeholder="+996 700 11 22 33"></div>
+      </div>
+      <div style="margin-top:10px">
+        <label class="lbl" for="bd">День</label>
+        <select class="inp" id="bd" name="date">
+          {% for d in days %}
+            <option value="{{ d|date:'Y-m-d' }}">{{ d|date:"l, d.m" }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="margin-top:12px">
+        <label class="lbl">Время</label>
+        <div class="slots" id="slots"></div>
+        <div class="note" id="slotNote">Выберите удобный час</div>
+      </div>
+      <div style="margin-top:10px"><label class="lbl" for="bc">Комментарий</label>
+        <input class="inp" id="bc" name="comment" placeholder="первая тренировка, нужна программа"></div>
+      <button class="btn" type="submit" style="margin-top:14px">Записаться</button>
+      <div class="note" id="bookMsg"></div>
+    </form>
+  </section>
+</div>
+
+<script>
+  // Часы рисуем на месте: держать их в шаблоне циклом по строке — трюк,
+  // который потом невозможно прочитать.
+  (function () {
+    const box = document.getElementById('slots');
+    const field = document.getElementById('timeField');
+    for (let h = 8; h <= 21; h++) {
+      const b = document.createElement('div');
+      b.className = 'slot';
+      b.textContent = String(h).padStart(2, '0') + ':00';
+      b.addEventListener('click', () => {
+        [...box.children].forEach(c => c.classList.remove('on'));
+        b.classList.add('on');
+        field.value = b.textContent;
+      });
+      box.appendChild(b);
+    }
+
+    const form = document.getElementById('bookForm');
+    const msg = document.getElementById('bookMsg');
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!field.value) {
+        msg.className = 'note bad';
+        msg.textContent = 'Выберите время';
+        return;
+      }
+      const btn = form.querySelector('button');
+      btn.disabled = true;
+      const was = btn.textContent;
+      btn.textContent = 'Записываем…';
+      msg.className = 'note';
+      try {
+        const r = await fetch(form.action, {
+          method: 'POST', body: new FormData(form),
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        });
+        const d = await r.json();
+        msg.classList.add(d.ok ? 'ok' : 'bad');
+        msg.textContent = d.message || (d.ok ? 'Записали' : 'Не получилось');
+        if (d.ok) {
+          form.reset();
+          field.value = '';
+          [...box.children].forEach(c => c.classList.remove('on'));
+        }
+      } catch (err) {
+        msg.classList.add('bad');
+        msg.textContent = 'Не получилось — позвоните нам';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = was;
+      }
+    });
+  })();
+</script>
+</body>
+</html>

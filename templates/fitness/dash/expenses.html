@@ -1,0 +1,60 @@
+{% extends "fitness/dash/_base.html" %}
+{% load fitness_extras %}
+{% block title %}Расходы — {{ club.name }}{% endblock %}
+{% block t_expenses %}on{% endblock %}
+{% block fc_sub %}С {{ month|date:"d.m.Y" }}{% endblock %}
+
+{% block fc_content %}
+<div class="fc-kpis">
+  <div class="fc-kpi">
+    <div class="fc-kpi-l">Всего за период</div>
+    <div class="fc-kpi-v">{{ total|money }} <small>сом</small></div>
+  </div>
+  {% for label, amount in by_cat %}
+    <div class="fc-kpi">
+      <div class="fc-kpi-l">{{ label }}</div>
+      <div class="fc-kpi-v" style="font-size:19px">{{ amount|money }} <small>сом</small></div>
+    </div>
+  {% endfor %}
+</div>
+
+<div class="fc-card">
+  <div class="fc-card-t">Записать расход</div>
+  <form method="post" action="{% url 'fitness_dash:expense_add' club.id %}">
+    {% csrf_token %}
+    <div class="fc-grid3">
+      <div><label class="fc-label">Категория</label>
+        <select class="fc-select" name="category">
+          {% for value, label in categories %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+        </select></div>
+      <div><label class="fc-label">Сумма</label>
+        <input class="fc-input" name="amount" inputmode="numeric" required placeholder="8400"></div>
+      <div><label class="fc-label">Дата</label>
+        <input class="fc-input" type="date" name="spent_on" value="{{ month|date:'Y-m-d' }}"></div>
+    </div>
+    <div style="margin-top:10px"><label class="fc-label">На что</label>
+      <input class="fc-input" name="note" placeholder="свет за ноябрь, починили дорожку"></div>
+    <button class="fc-btn" type="submit" style="margin-top:12px">Записать</button>
+  </form>
+</div>
+
+<div class="fc-card">
+  <div class="fc-card-t">Расходы</div>
+  <div class="fc-list">
+    {% for e in expenses %}
+      <div class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name" style="font-size:13.5px">{{ e.get_category_display }}</div>
+          <div class="fc-row-sub">
+            {{ e.spent_on|date:"d.m.Y" }}{% if e.note %} · {{ e.note }}{% endif %}
+            {% if e.created_by %} · {{ e.created_by.get_full_name|default:e.created_by.username }}{% endif %}
+          </div>
+        </div>
+        <div class="fc-row-right">−{{ e.amount|money }} сом</div>
+      </div>
+    {% empty %}
+      <div class="fc-empty">Расходов за период нет</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

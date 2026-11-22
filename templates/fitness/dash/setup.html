@@ -1,0 +1,179 @@
+{% extends "fitness/dash/_base.html" %}
+{% block title %}Настройки — {{ club.name }}{% endblock %}
+{% block t_setup %}on{% endblock %}
+{% block fc_sub %}Клуб, секции, абонементы, тренеры, чаты{% endblock %}
+
+{% block fc_content %}
+<div class="fc-card">
+  <div class="fc-card-t">Клуб и чаты Telegram</div>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="what" value="club">
+    <div class="fc-grid2">
+      <div><label class="fc-label">Название</label>
+        <input class="fc-input" name="name" value="{{ club.name }}"></div>
+      <div><label class="fc-label">Телефон</label>
+        <input class="fc-input" name="phone" value="{{ club.phone }}"></div>
+      <div><label class="fc-label">WhatsApp</label>
+        <input class="fc-input" name="whatsapp" value="{{ club.whatsapp }}" placeholder="996700112233"></div>
+      <div><label class="fc-label">Часы работы</label>
+        <input class="fc-input" name="working_hours" value="{{ club.working_hours }}" placeholder="07:00–23:00"></div>
+      <div><label class="fc-label">Адрес</label>
+        <input class="fc-input" name="address" value="{{ club.address }}"></div>
+      <div><label class="fc-label">Логотип</label>
+        <input class="fc-input" type="file" name="logo" accept="image/*"></div>
+      <div><label class="fc-label">Обложка</label>
+        <input class="fc-input" type="file" name="cover" accept="image/*"></div>
+    </div>
+    <div style="margin-top:10px"><label class="fc-label">Описание для сайта</label>
+      <textarea class="fc-input" name="description" rows="3">{{ club.description }}</textarea></div>
+
+    <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:14px">
+      <div class="fc-card-t" style="margin-bottom:8px">Два чата</div>
+      <div class="fc-sub" style="margin-bottom:12px;line-height:1.5">
+        В первый летят заявки с сайта и записи к тренерам — с кнопками, их надо
+        обрабатывать. Во второй — жизнь зала: кто прошёл, что продали, какие
+        расходы. Вперемешку это читать невозможно, поэтому чатов два.
+        Номер узнать: добавьте бота в группу и напишите там <code>/id</code>.
+      </div>
+      <div class="fc-grid2">
+        <div><label class="fc-label">Чат заявок — Chat ID</label>
+          <input class="fc-input" name="tg_leads_chat_id" value="{{ club.tg_leads_chat_id }}"
+                 placeholder="-1001234567890"></div>
+        <div><label class="fc-label">Чат заявок — Topic ID</label>
+          <input class="fc-input" name="tg_leads_thread_id" type="number"
+                 value="{{ club.tg_leads_thread_id|default_if_none:'' }}" placeholder="если с темами"></div>
+        <div><label class="fc-label">Чат зала — Chat ID</label>
+          <input class="fc-input" name="tg_gym_chat_id" value="{{ club.tg_gym_chat_id }}"
+                 placeholder="-1001234567890"></div>
+        <div><label class="fc-label">Чат зала — Topic ID</label>
+          <input class="fc-input" name="tg_gym_thread_id" type="number"
+                 value="{{ club.tg_gym_thread_id|default_if_none:'' }}" placeholder="если с темами"></div>
+      </div>
+    </div>
+    <button class="fc-btn" type="submit" style="margin-top:14px">Сохранить клуб</button>
+  </form>
+</div>
+
+<div class="fc-card">
+  <div class="fc-card-t">Секции · {{ sections|length }}</div>
+  <div class="fc-list" style="margin-bottom:12px">
+    {% for s in sections %}
+      <div class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name">{{ s.name }}</div>
+          <div class="fc-row-sub">{{ s.description|truncatechars:70 }}</div>
+        </div>
+        <div class="fc-row-right">от {{ s.price_from|floatformat:0 }} сом</div>
+      </div>
+    {% empty %}<div class="fc-empty">Секций нет — на сайте показывать нечего</div>{% endfor %}
+  </div>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="what" value="section">
+    <div class="fc-grid3">
+      <div><label class="fc-label">Название</label>
+        <input class="fc-input" name="s_name" required placeholder="Тренажёрный зал"></div>
+      <div><label class="fc-label">Цена от</label>
+        <input class="fc-input" name="s_price" inputmode="numeric" placeholder="1500"></div>
+      <div><label class="fc-label">Фото</label>
+        <input class="fc-input" type="file" name="s_photo" accept="image/*"></div>
+    </div>
+    <div style="margin-top:10px"><label class="fc-label">Описание</label>
+      <input class="fc-input" name="s_desc" placeholder="Кардио и силовые, тренер в зале"></div>
+    <button class="fc-btn ghost" type="submit" style="margin-top:10px">+ Добавить секцию</button>
+  </form>
+</div>
+
+<div class="fc-card">
+  <div class="fc-card-t">Виды абонементов · {{ plans|length }}</div>
+  <div class="fc-list" style="margin-bottom:12px">
+    {% for p in plans %}
+      <div class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name">{{ p.name }}</div>
+          <div class="fc-row-sub">
+            {% if p.visits_number %}{{ p.visits_number }} посещений{% else %}без ограничения{% endif %}
+            · {{ p.validity_days }} дней
+          </div>
+        </div>
+        <div class="fc-row-right">{{ p.price|floatformat:0 }} сом</div>
+      </div>
+    {% empty %}<div class="fc-empty">Абонементов нет — продавать нечего</div>{% endfor %}
+  </div>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="what" value="plan">
+    <div class="fc-grid3">
+      <div><label class="fc-label">Название</label>
+        <input class="fc-input" name="p_name" required placeholder="12 посещений"></div>
+      <div><label class="fc-label">Посещений</label>
+        <input class="fc-input" name="p_visits" type="number" value="12" min="0"></div>
+      <div><label class="fc-label">Дней</label>
+        <input class="fc-input" name="p_days" type="number" value="30" min="1"></div>
+      <div><label class="fc-label">Цена</label>
+        <input class="fc-input" name="p_price" inputmode="numeric" placeholder="2500"></div>
+    </div>
+    <div class="fc-sub" style="margin-top:8px">
+      0 посещений — безлимит: ограничивает только срок.
+    </div>
+    <button class="fc-btn ghost" type="submit" style="margin-top:10px">+ Добавить абонемент</button>
+  </form>
+</div>
+
+<div class="fc-card">
+  <div class="fc-card-t">Тренеры · {{ trainers|length }}</div>
+  <div class="fc-list" style="margin-bottom:12px">
+    {% for t in trainers %}
+      <div class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name">{{ t.name }}{% if not t.is_active %} <span class="fc-chip">скрыт</span>{% endif %}</div>
+          <div class="fc-row-sub">
+            {% if t.phone %}{{ t.phone }} · {% endif %}
+            {% for s in t.sections.all %}{{ s.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+            {% if t.user %}· вход: {{ t.user.username }}{% else %}· <span class="fc-chip warn">нет входа</span>{% endif %}
+          </div>
+        </div>
+        <div class="fc-row-right">{{ t.price_per_session|floatformat:0 }} сом</div>
+      </div>
+    {% empty %}<div class="fc-empty">Тренеров нет</div>{% endfor %}
+  </div>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="what" value="trainer">
+    <div class="fc-grid3">
+      <div><label class="fc-label">Имя</label>
+        <input class="fc-input" name="t_name" required placeholder="Руслан"></div>
+      <div><label class="fc-label">Телефон</label>
+        <input class="fc-input" name="t_phone" placeholder="+996700112233"></div>
+      <div><label class="fc-label">Цена тренировки</label>
+        <input class="fc-input" name="t_price" inputmode="numeric" placeholder="700"></div>
+      <div><label class="fc-label">Фото</label>
+        <input class="fc-input" type="file" name="t_photo" accept="image/*"></div>
+    </div>
+    <div style="margin-top:10px"><label class="fc-label">О тренере</label>
+      <input class="fc-input" name="t_bio" placeholder="КМС по боксу, 6 лет в зале"></div>
+    <button class="fc-btn ghost" type="submit" style="margin-top:10px">+ Добавить тренера</button>
+  </form>
+</div>
+
+<div class="fc-card">
+  <div class="fc-card-t">Доступы · {{ staff_list|length }}</div>
+  <div class="fc-list">
+    {% for s in staff_list %}
+      <div class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name">{{ s.user.get_full_name|default:s.user.username }}</div>
+          <div class="fc-row-sub">{{ s.user.username }}{% if not s.is_active %} · выключен{% endif %}</div>
+        </div>
+        <div class="fc-row-right"><span class="fc-chip">{{ s.get_role_display }}</span></div>
+      </div>
+    {% empty %}<div class="fc-empty">Кроме вас никого</div>{% endfor %}
+  </div>
+  <div class="fc-sub" style="margin-top:10px;line-height:1.5">
+    Администратор видит всё, кассир — продажи и проход, тренер — только свои
+    записи и своих клиентов. Добавить сотрудника пока можно через поддержку:
+    нужен его логин.
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% load static i18n %}<!doctype html>
+<html lang="{{ LANGUAGE_CODE|default:'ru' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Фитнес-клубы — Webordo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#0b0b0d; --card:#15151a; --line:#26262e; --text:#f4f4f6; --muted:#9b9ba6; --accent:#ff4d1c; }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; }
+    .wrap { max-width:880px; margin:0 auto; padding:28px 16px 48px; }
+    h1 { font-family:'Unbounded',sans-serif; font-size:clamp(22px,6vw,34px); font-weight:900; letter-spacing:-.6px; margin-bottom:18px; }
+    .grid { display:grid; gap:12px; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); }
+    .c { background:var(--card); border:1px solid var(--line); border-radius:18px; overflow:hidden; text-decoration:none; color:inherit; display:block; }
+    .c img { width:100%; height:140px; object-fit:cover; display:block; }
+    .c-b { padding:14px; }
+    .c-t { font-size:16px; font-weight:700; }
+    .c-s { font-size:12.5px; color:var(--muted); margin-top:5px; line-height:1.45; }
+    .empty { color:var(--muted); font-size:14px; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Фитнес-клубы</h1>
+  <div class="grid">
+    {% for c in clubs %}
+      <a class="c" href="{% url 'fitness:club' c.slug %}">
+        {% if c.cover %}<img src="{{ c.cover.url }}" alt="{{ c.name }}" loading="lazy">
+        {% elif c.logo %}<img src="{{ c.logo.url }}" alt="{{ c.name }}" loading="lazy"
+             style="object-fit:contain;background:#fff;padding:14px">{% endif %}
+        <div class="c-b">
+          <div class="c-t">{{ c.name }}</div>
+          <div class="c-s">
+            {% if c.address %}{{ c.address }}{% endif %}
+            {% with secs=c.sections.all %}
+              {% if secs %}<br>{% for s in secs|slice:":3" %}{{ s.name }}{% if not forloop.last %} · {% endif %}{% endfor %}{% endif %}
+            {% endwith %}
+          </div>
+        </div>
+      </a>
+    {% empty %}
+      <div class="empty">Клубов пока нет</div>
+    {% endfor %}
+  </div>
+</div>
+</body>
+</html>

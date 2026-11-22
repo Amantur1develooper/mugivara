@@ -1,0 +1,79 @@
+{% extends "fitness/dash/_base.html" %}
+{% block title %}Клиенты — {{ club.name }}{% endblock %}
+{% block t_members %}on{% endblock %}
+{% block fc_sub %}{% if is_trainer %}Ваши клиенты{% else %}Все клиенты клуба{% endif %}{% endblock %}
+
+{% block fc_content %}
+<form class="fc-card" method="get">
+  <div style="display:flex;gap:8px">
+    <input class="fc-input" name="q" value="{{ q }}" placeholder="Имя, телефон, карта">
+    <button class="fc-btn" type="submit">Найти</button>
+  </div>
+  <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+    <a href="?" class="fc-chip{% if not only %} ok{% endif %}">Все</a>
+    <a href="?filter=debt" class="fc-chip{% if only == 'debt' %} bad{% endif %}">С долгом</a>
+    <a href="?filter=expiring" class="fc-chip{% if only == 'expiring' %} warn{% endif %}">Кончается</a>
+    <a href="?filter=no_membership" class="fc-chip{% if only == 'no_membership' %} warn{% endif %}">Без абонемента</a>
+  </div>
+</form>
+
+<div class="fc-card">
+  <div class="fc-card-t">Клиенты · {{ members|length }}</div>
+  <div class="fc-list">
+    {% for m in members %}
+      {% with ms=m.active_membership %}
+      <a href="{% url 'fitness_dash:member_detail' club.id m.id %}" class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name">{{ m.full_name }}</div>
+          <div class="fc-row-sub">
+            {% if m.phone %}{{ m.phone }}{% endif %}
+            {% if ms %}
+              · {{ ms.plan.name }}{% if ms.plan.visits_number %} · {{ ms.remaining_visits }} ост.{% endif %}
+              {% if not ms.activated %}· <span class="fc-chip">не начат</span>{% endif %}
+            {% else %}· <span class="fc-chip bad">без абонемента</span>{% endif %}
+          </div>
+        </div>
+        <div class="fc-row-right">
+          {% if ms and ms.end_date %}до {{ ms.end_date|date:"d.m" }}{% endif %}
+        </div>
+      </a>
+      {% endwith %}
+    {% empty %}
+      <div class="fc-empty">Клиентов не найдено</div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if can_money %}
+<details class="fc-card">
+  <summary style="cursor:pointer;font-weight:700;font-size:13.5px">+ Новый клиент</summary>
+  <form method="post" action="{% url 'fitness_dash:member_new' club.id %}"
+        enctype="multipart/form-data" style="margin-top:12px">
+    {% csrf_token %}
+    <div class="fc-grid2">
+      <div>
+        <label class="fc-label">ФИО</label>
+        <input class="fc-input" name="full_name" required placeholder="Иванов Иван">
+      </div>
+      <div>
+        <label class="fc-label">Телефон</label>
+        <input class="fc-input" name="phone" placeholder="+996700112233" inputmode="tel">
+      </div>
+      <div>
+        <label class="fc-label">Номер карты</label>
+        <input class="fc-input" name="card_id" placeholder="если выдаёте">
+      </div>
+      <div>
+        <label class="fc-label">Дата рождения</label>
+        <input class="fc-input" type="date" name="birth_date">
+      </div>
+    </div>
+    <div style="margin-top:10px">
+      <label class="fc-label">Примечание</label>
+      <input class="fc-input" name="notes" placeholder="травма колена, спрашивал про бокс">
+    </div>
+    <button class="fc-btn" type="submit" style="margin-top:12px">Создать</button>
+  </form>
+</details>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "fitness/dash/_base.html" %}
+{% block title %}Заявка · {{ lead.phone }}{% endblock %}
+{% block t_leads %}on{% endblock %}
+{% block fc_sub %}{{ lead.get_source_display }} · {{ lead.created_at|date:"d.m.Y H:i" }}{% endblock %}
+
+{% block fc_content %}
+<div class="fc-card">
+  <form method="post" action="{% url 'fitness_dash:lead_save' club.id lead.id %}">
+    {% csrf_token %}
+    <div class="fc-grid2">
+      <div><label class="fc-label">Имя</label>
+        <input class="fc-input" name="name" value="{{ lead.name }}"></div>
+      <div><label class="fc-label">Телефон</label>
+        <input class="fc-input" name="phone" value="{{ lead.phone }}" required></div>
+      <div><label class="fc-label">Статус</label>
+        <select class="fc-select" name="status">
+          {% for value, label in statuses %}
+            <option value="{{ value }}" {% if lead.status == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select></div>
+      <div><label class="fc-label">Когда связаться</label>
+        <input class="fc-input" type="datetime-local" name="next_contact"
+               value="{{ lead.next_contact_at|date:'Y-m-d\\TH:i' }}"></div>
+      <div><label class="fc-label">Интересует секция</label>
+        <select class="fc-select" name="section_id">
+          <option value="">—</option>
+          {% for s in club.sections.all %}
+            <option value="{{ s.id }}" {% if lead.section_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+          {% endfor %}
+        </select></div>
+      <div><label class="fc-label">Тренер</label>
+        <select class="fc-select" name="trainer_id">
+          <option value="">—</option>
+          {% for t in trainers %}
+            <option value="{{ t.id }}" {% if lead.trainer_id == t.id %}selected{% endif %}>{{ t.name }}</option>
+          {% endfor %}
+        </select></div>
+    </div>
+    <div style="margin-top:10px"><label class="fc-label">Комментарий</label>
+      <textarea class="fc-input" name="comment" rows="2">{{ lead.comment }}</textarea></div>
+    <div style="margin-top:10px"><label class="fc-label">Что сделали сейчас</label>
+      <input class="fc-input" name="note" placeholder="позвонил, договорились на субботу 10:00"></div>
+    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+      <button class="fc-btn" type="submit">Сохранить</button>
+      {% if not lead.member_id %}
+        <button class="fc-btn ghost" type="submit"
+                formaction="{% url 'fitness_dash:lead_to_member' club.id lead.id %}">
+          Сделать клиентом
+        </button>
+      {% else %}
+        <a class="fc-btn ghost" href="{% url 'fitness_dash:member_detail' club.id lead.member_id %}">
+          Карточка клиента →
+        </a>
+      {% endif %}
+      {% if lead.phone %}
+        <a class="fc-btn ghost" href="tel:{{ lead.phone }}">📞 Позвонить</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<div class="fc-card">
+  <div class="fc-card-t">История</div>
+  <div class="fc-list">
+    {% for n in notes %}
+      <div class="fc-row" style="grid-template-columns:1fr">
+        <div class="fc-row-main">
+          <div class="fc-row-sub">{{ n.created_at|date:"d.m.Y H:i" }}{% if n.author %} · {{ n.author.get_full_name|default:n.author.username }}{% endif %}</div>
+          <div style="font-size:13px;margin-top:2px">{{ n.text }}</div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="fc-empty">Пока ничего не делали</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

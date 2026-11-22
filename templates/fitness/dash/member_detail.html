@@ -1,0 +1,222 @@
+{% extends "fitness/dash/_base.html" %}
+{% block title %}{{ member.full_name }}{% endblock %}
+{% block t_members %}on{% endblock %}
+{% block fc_sub %}{{ member.phone }}{% if member.card_id %} · карта {{ member.card_id }}{% endif %}{% endblock %}
+
+{% block fc_content %}
+<div class="fc-card">
+  <div class="fc-card-t">Сейчас</div>
+  {% if active %}
+    <div class="fc-row" style="background:var(--card)">
+      <div class="fc-row-main">
+        <div class="fc-row-name">{{ active.plan.name }}</div>
+        <div class="fc-row-sub">
+          {% if active.plan.visits_number %}осталось {{ active.remaining_visits }} из {{ active.plan.visits_number }}{% else %}без ограничения по посещениям{% endif %}
+          {% if active.activated %}· до {{ active.end_date|date:"d.m.Y" }} ({{ active.days_left }} дн.)
+          {% else %}· <span class="fc-chip">начнётся с первого посещения</span>{% endif %}
+          {% if active.debt_amount %}· <span class="fc-chip bad">долг {{ active.debt_amount|floatformat:0 }} сом</span>{% endif %}
+        </div>
+      </div>
+      {% if can_money %}
+      <form method="post" action="{% url 'fitness_dash:checkin_pass' club.id member.id %}">
+        {% csrf_token %}
+        <button class="fc-btn small" type="submit">🚪 Пропустить</button>
+      </form>
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="fc-empty">Действующего абонемента нет</div>
+  {% endif %}
+</div>
+
+{% if can_money %}
+<details class="fc-card">
+  <summary style="cursor:pointer;font-weight:700;font-size:13.5px">+ Продать абонемент</summary>
+  <form method="post" action="{% url 'fitness_dash:membership_sell' club.id member.id %}" style="margin-top:12px">
+    {% csrf_token %}
+    <div class="fc-grid2">
+      <div>
+        <label class="fc-label">Абонемент</label>
+        <select class="fc-select" name="plan_id" id="planSel" required>
+          {% for p in plans %}
+            <option value="{{ p.id }}" data-price="{{ p.price|floatformat:0 }}">
+              {{ p.name }} — {{ p.price|floatformat:0 }} сом
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="fc-label">Цена</label>
+        <input class="fc-input" name="price" id="priceInp" inputmode="numeric">
+      </div>
+      <div>
+        <label class="fc-label">Скидка</label>
+        <input class="fc-input" name="discount" value="0" inputmode="numeric">
+      </div>
+      <div>
+        <label class="fc-label">Оплачено сейчас</label>
+        <input class="fc-input" name="paid" id="paidInp" inputmode="numeric">
+      </div>
+      <div>
+        <label class="fc-label">Способ</label>
+        <select class="fc-select" name="method">
+          <option value="cash">Наличные</option>
+          <option value="card">Карта</option>
+          <option value="online">Перевод</option>
+        </select>
+      </div>
+      <div>
+        <label class="fc-label">Персональный тренер</label>
+        <select class="fc-select" name="trainer_id">
+          <option value="">нет</option>
+          {% for t in trainers %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <label style="display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:12.5px;color:var(--text2)">
+      <input type="checkbox" name="start_today" style="margin-top:3px">
+      <span>Начать сегодня. Если не ставить — срок пойдёт с первого посещения,
+        клиент не теряет дни, пока собирается прийти.</span>
+    </label>
+    <button class="fc-btn" type="submit" style="margin-top:12px">Продать</button>
+  </form>
+  <script>
+    // Цена и «оплачено» подставляются из выбранного абонемента: кассир
+    // чаще всего берёт полную сумму, и перебивать её вручную незачем.
+    (function () {
+      const sel = document.getElementById('planSel');
+      const price = document.getElementById('priceInp');
+      const paid = document.getElementById('paidInp');
+      if (!sel) return;
+      const fill = () => {
+        const p = sel.options[sel.selectedIndex].dataset.price || '';
+        price.value = p; paid.value = p;
+      };
+      sel.addEventListener('change', fill);
+      fill();
+    })();
+  </script>
+</details>
+{% endif %}
+
+<div class="fc-card">
+  <div class="fc-card-t">Абонементы</div>
+  <div class="fc-list">
+    {% for ms in memberships %}
+      <div class="fc-row" style="grid-template-columns:1fr">
+        <div class="fc-row-main">
+          <div class="fc-row-name">
+            {{ ms.plan.name }}
+            {% if not ms.is_active %}<span class="fc-chip">закрыт</span>
+            {% elif ms.is_frozen %}<span class="fc-chip warn">заморожен</span>
+            {% elif not ms.activated %}<span class="fc-chip">не начат</span>
+            {% else %}<span class="fc-chip ok">активен</span>{% endif %}
+          </div>
+          <div class="fc-row-sub">
+            куплен {{ ms.purchase_date|date:"d.m.Y" }}
+            {% if ms.activated %}· {{ ms.start_date|date:"d.m.y" }}–{{ ms.end_date|date:"d.m.y" }}{% endif %}
+            {% if ms.plan.visits_number %}· осталось {{ ms.remaining_visits }}{% endif %}
+            {% if ms.trainer %}· тренер {{ ms.trainer.name }}{% endif %}
+          </div>
+          {% if can_money %}
+          <div class="fc-row-sub">
+            цена {{ ms.price|floatformat:0 }}
+            {% if ms.discount_amount %}· скидка {{ ms.discount_amount|floatformat:0 }}{% endif %}
+            · оплачено {{ ms.paid_amount|floatformat:0 }}
+            {% if ms.debt_amount %}· <b style="color:#dc2626">долг {{ ms.debt_amount|floatformat:0 }}</b>{% endif %}
+          </div>
+          {% endif %}
+        </div>
+        {% if can_money and ms.is_active %}
+        <form method="post" action="{% url 'fitness_dash:membership_action' club.id ms.id %}"
+              style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px">
+          {% csrf_token %}
+          {% if ms.debt_amount %}
+            <input class="fc-input" name="amount" placeholder="сумма" inputmode="numeric"
+                   style="width:110px;padding:7px 9px;font-size:12.5px">
+            <button class="fc-btn small" name="action" value="pay">Принять долг</button>
+          {% endif %}
+          {% if not ms.activated %}
+            <button class="fc-btn small ghost" name="action" value="activate">Начать сегодня</button>
+          {% endif %}
+          {% if ms.is_frozen %}
+            <button class="fc-btn small ghost" name="action" value="unfreeze">Снять заморозку</button>
+          {% else %}
+            <input class="fc-input" name="days" value="7" inputmode="numeric"
+                   style="width:70px;padding:7px 9px;font-size:12.5px">
+            <button class="fc-btn small ghost" name="action" value="freeze">Заморозить</button>
+          {% endif %}
+          {% if is_admin %}
+            <button class="fc-btn small ghost" name="action" value="close">Закрыть</button>
+          {% endif %}
+        </form>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="fc-empty">Абонементов не было</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="fc-card">
+  <div class="fc-card-t">Посещения</div>
+  <div class="fc-list">
+    {% for v in visits %}
+      <div class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name" style="font-size:13px">
+            {% if v.success %}✅{% else %}⛔️{% endif %} {{ v.visit_time|date:"d.m.Y H:i" }}
+          </div>
+          <div class="fc-row-sub">
+            {% if v.trainer %}с {{ v.trainer.name }}{% endif %}
+            {% if not v.success %}{{ v.reason }}{% endif %}
+          </div>
+        </div>
+      </div>
+    {% empty %}
+      <div class="fc-empty">Ещё не приходил</div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if can_money and payments %}
+<div class="fc-card">
+  <div class="fc-card-t">Платежи</div>
+  <div class="fc-list">
+    {% for p in payments %}
+      <div class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name" style="font-size:13px">{{ p.get_kind_display }}</div>
+          <div class="fc-row-sub">{{ p.created_at|date:"d.m.Y H:i" }} · {{ p.get_method_display }}</div>
+        </div>
+        <div class="fc-row-right">{{ p.amount|floatformat:0 }} сом</div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if can_money %}
+<details class="fc-card">
+  <summary style="cursor:pointer;font-weight:700;font-size:13.5px">Правка клиента</summary>
+  <form method="post" action="{% url 'fitness_dash:member_save' club.id member.id %}"
+        enctype="multipart/form-data" style="margin-top:12px">
+    {% csrf_token %}
+    <div class="fc-grid2">
+      <div><label class="fc-label">ФИО</label>
+        <input class="fc-input" name="full_name" value="{{ member.full_name }}" required></div>
+      <div><label class="fc-label">Телефон</label>
+        <input class="fc-input" name="phone" value="{{ member.phone }}"></div>
+      <div><label class="fc-label">Карта</label>
+        <input class="fc-input" name="card_id" value="{{ member.card_id }}"></div>
+      <div><label class="fc-label">Дата рождения</label>
+        <input class="fc-input" type="date" name="birth_date"
+               value="{{ member.birth_date|date:'Y-m-d' }}"></div>
+    </div>
+    <div style="margin-top:10px"><label class="fc-label">Примечание</label>
+      <input class="fc-input" name="notes" value="{{ member.notes }}"></div>
+    <button class="fc-btn" type="submit" style="margin-top:12px">Сохранить</button>
+  </form>
+</details>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends "fitness/dash/_base.html" %}
+{% block title %}{{ club.name }} — сводка{% endblock %}
+{% block t_home %}on{% endblock %}
+{% block fc_sub %}{{ today|date:"d.m.Y" }}{% endblock %}
+
+{% block fc_content %}
+<div class="fc-kpis">
+  <div class="fc-kpi">
+    <div class="fc-kpi-l">Сегодня в зале</div>
+    <div class="fc-kpi-v">{{ visits_today }}</div>
+  </div>
+  <div class="fc-kpi">
+    <div class="fc-kpi-l">Клиентов</div>
+    <div class="fc-kpi-v">{{ members_total }}</div>
+  </div>
+  {% if can_money %}
+  <div class="fc-kpi">
+    <div class="fc-kpi-l">Касса сегодня</div>
+    <div class="fc-kpi-v">{{ income_today|floatformat:0 }} <small>сом</small></div>
+  </div>
+  <div class="fc-kpi">
+    <div class="fc-kpi-l">Выручка за месяц</div>
+    <div class="fc-kpi-v">{{ income_month|floatformat:0 }} <small>сом</small></div>
+  </div>
+  {% endif %}
+  {% if can_profit %}
+  <div class="fc-kpi">
+    <div class="fc-kpi-l">Расходы за месяц</div>
+    <div class="fc-kpi-v">{{ expenses_month|floatformat:0 }} <small>сом</small></div>
+  </div>
+  <div class="fc-kpi">
+    <div class="fc-kpi-l">Осталось</div>
+    <div class="fc-kpi-v">{{ profit_month|floatformat:0 }} <small>сом</small></div>
+  </div>
+  {% endif %}
+  {% if can_money %}
+  <div class="fc-kpi">
+    <div class="fc-kpi-l">Новые заявки</div>
+    <div class="fc-kpi-v">{{ new_leads }}</div>
+  </div>
+  {% endif %}
+</div>
+
+{% if is_trainer and my_today is not None %}
+<div class="fc-card">
+  <div class="fc-card-t">Мои тренировки сегодня</div>
+  <div class="fc-list">
+    {% for b in my_today %}
+      <div class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name">{{ b.time_from|time:"H:i" }} · {{ b.who }}</div>
+          <div class="fc-row-sub">{{ b.get_status_display }}{% if b.phone %} · {{ b.phone }}{% endif %}</div>
+        </div>
+        <div class="fc-row-right">{{ b.duration_min }} мин</div>
+      </div>
+    {% empty %}
+      <div class="fc-empty">На сегодня записей нет</div>
+    {% endfor %}
+  </div>
+  <a href="{% url 'fitness_dash:board' club.id %}" class="fc-btn ghost small" style="margin-top:10px">Вся шахматка →</a>
+</div>
+{% endif %}
+
+<div class="fc-card">
+  <div class="fc-card-t">Абонементы кончаются на этой неделе</div>
+  <div class="fc-list">
+    {% for ms in expiring %}
+      <a href="{% url 'fitness_dash:member_detail' club.id ms.member_id %}" class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name">{{ ms.member.full_name }}</div>
+          <div class="fc-row-sub">{{ ms.plan.name }}{% if ms.member.phone %} · {{ ms.member.phone }}{% endif %}</div>
+        </div>
+        <div class="fc-row-right">
+          до {{ ms.end_date|date:"d.m" }}
+          {% if ms.days_left <= 2 %}<div class="fc-chip bad">{{ ms.days_left }} дн.</div>
+          {% else %}<div class="fc-chip warn">{{ ms.days_left }} дн.</div>{% endif %}
+        </div>
+      </a>
+    {% empty %}
+      <div class="fc-empty">Никто не заканчивается — хорошо</div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if can_money %}
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+  <a href="{% url 'fitness_dash:checkin' club.id %}" class="fc-btn">🚪 Пропустить в зал</a>
+  <a href="{% url 'fitness_dash:members' club.id %}" class="fc-btn ghost">👥 Клиенты</a>
+  <a href="{% url 'fitness_dash:leads' club.id %}" class="fc-btn ghost">🔥 Заявки</a>
+</div>
+{% endif %}
+{% endblock %}

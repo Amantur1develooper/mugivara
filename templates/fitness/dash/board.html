@@ -1,0 +1,144 @@
+{% extends "fitness/dash/_base.html" %}
+{% load fitness_extras %}
+{% block title %}Шахматка — {{ club.name }}{% endblock %}
+{% block t_board %}on{% endblock %}
+{% block fc_sub %}Кто к какому тренеру записан{% endblock %}
+
+{% block fc_content %}
+<div class="fc-card" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+  <a href="?date={{ prev_day|date:'Y-m-d' }}" class="fc-btn ghost small">←</a>
+  <form method="get" style="display:flex;gap:8px;align-items:center;flex:1;min-width:180px">
+    <input class="fc-input" type="date" name="date" value="{{ day|date:'Y-m-d' }}"
+           onchange="this.form.submit()">
+  </form>
+  <a href="?date={{ next_day|date:'Y-m-d' }}" class="fc-btn ghost small">→</a>
+  {% if day != today %}<a href="?date={{ today|date:'Y-m-d' }}" class="fc-btn ghost small">Сегодня</a>{% endif %}
+  <span class="fc-chip">{{ total }} зап.</span>
+</div>
+
+{% if trainers %}
+<div class="bd-wrap">
+  <table class="bd">
+    <thead>
+      <tr>
+        <th class="bd-h">Время</th>
+        {% for t in trainers %}<th class="bd-h">{{ t.name }}</th>{% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for h in hours %}
+      <tr>
+        <td class="bd-time">{{ h }}:00</td>
+        {% for t in trainers %}
+        <td class="bd-cell">
+          {% with slot=cells|get:t.id %}
+            {% for b in slot|get:h %}
+            <form method="post" action="{% url 'fitness_dash:booking_status' club.id b.id %}"
+                  class="bd-chip st-{{ b.status }}">
+              {% csrf_token %}
+              <div class="bd-chip-t">{{ b.time_from|time:"H:i" }} · {{ b.who }}</div>
+              {% if b.phone %}<div class="bd-chip-s">{{ b.phone }}</div>{% endif %}
+              {% if b.comment %}<div class="bd-chip-s">{{ b.comment }}</div>{% endif %}
+              <div class="bd-acts">
+                {% if b.status == 'new' or b.status == 'confirmed' %}
+                  <button name="action" value="b_came" class="bd-act" title="Пришёл">🚪</button>
+                  <button name="action" value="b_noshow" class="bd-act" title="Не пришёл">🚫</button>
+                  <button name="action" value="b_cancel" class="bd-act" title="Отменить">✖️</button>
+                {% else %}
+                  <span class="bd-st">{{ b.get_status_display }}</span>
+                  <button name="action" value="b_confirm" class="bd-act" title="Вернуть">↩️</button>
+                {% endif %}
+              </div>
+            </form>
+            {% endfor %}
+          {% endwith %}
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+  <div class="fc-card fc-empty">Тренеров пока нет. Добавьте их в настройках клуба.</div>
+{% endif %}
+
+<details class="fc-card">
+  <summary style="cursor:pointer;font-weight:700;font-size:13.5px">+ Записать к тренеру</summary>
+  <form method="post" action="{% url 'fitness_dash:booking_save' club.id %}" style="margin-top:12px">
+    {% csrf_token %}
+    <div class="fc-grid2">
+      <div>
+        <label class="fc-label">Тренер</label>
+        <select class="fc-select" name="trainer_id" required>
+          {% for t in trainers %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="fc-label">Клиент (имя)</label>
+        <input class="fc-input" name="client_name" placeholder="Иван">
+      </div>
+      <div>
+        <label class="fc-label">Телефон</label>
+        <input class="fc-input" name="phone" placeholder="+996700112233" inputmode="tel">
+      </div>
+      <div>
+        <label class="fc-label">Дата</label>
+        <input class="fc-input" type="date" name="date" value="{{ day|date:'Y-m-d' }}" required>
+      </div>
+      <div>
+        <label class="fc-label">Время</label>
+        <input class="fc-input" name="time_from" placeholder="14:30" required>
+      </div>
+      <div>
+        <label class="fc-label">Длительность, мин</label>
+        <input class="fc-input" type="number" name="duration_min" value="60" min="15" step="15">
+      </div>
+    </div>
+    <div style="margin-top:10px">
+      <label class="fc-label">Комментарий</label>
+      <input class="fc-input" name="comment" placeholder="первая тренировка, нужна консультация">
+    </div>
+    <button class="fc-btn" type="submit" style="margin-top:12px">Записать</button>
+  </form>
+</details>
+
+<style>
+  .bd-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--border); border-radius: 16px; }
+  table.bd { border-collapse: collapse; width: 100%; min-width: 320px; }
+  .bd-h {
+    font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .3px;
+    color: var(--muted); padding: 10px 8px; text-align: left; background: var(--bg);
+    position: sticky; top: 0; white-space: nowrap;
+  }
+  .bd-time {
+    font-size: 11.5px; font-weight: 700; color: var(--text2); padding: 8px;
+    border-top: 1px solid var(--border); white-space: nowrap; vertical-align: top;
+    background: var(--bg); position: sticky; left: 0;
+  }
+  .bd-cell {
+    border-top: 1px solid var(--border); border-left: 1px solid var(--border);
+    padding: 5px; vertical-align: top; min-width: 132px;
+  }
+  .bd-chip {
+    display: block; border-radius: 10px; padding: 7px 8px; margin-bottom: 5px;
+    background: rgba(255,77,28,.07); border: 1.5px solid rgba(255,77,28,.3);
+  }
+  .bd-chip.st-came { background: rgba(5,150,105,.08); border-color: rgba(5,150,105,.35); }
+  .bd-chip.st-no_show { background: rgba(220,38,38,.07); border-color: rgba(220,38,38,.3); }
+  .bd-chip-t { font-size: 12px; font-weight: 700; line-height: 1.25; }
+  .bd-chip-s { font-size: 10.5px; color: var(--muted); line-height: 1.3; }
+  .bd-acts { display: flex; gap: 4px; align-items: center; margin-top: 5px; flex-wrap: wrap; }
+  .bd-act {
+    border: 1px solid var(--border); background: var(--card); border-radius: 7px;
+    cursor: pointer; font-size: 11px; padding: 3px 6px; line-height: 1;
+  }
+  .bd-st { font-size: 10px; color: var(--muted); font-weight: 700; }
+  /* На телефоне таблица едет по горизонтали, а колонка времени липнет —
+     иначе непонятно, к какому часу относится запись. */
+  @media (max-width: 560px) {
+    .bd-cell { min-width: 118px; padding: 4px; }
+    .bd-chip-t { font-size: 11.5px; }
+  }
+</style>
+{% endblock %}

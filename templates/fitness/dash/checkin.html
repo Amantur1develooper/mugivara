@@ -1,0 +1,88 @@
+{% extends "fitness/dash/_base.html" %}
+{% block title %}Проход в зал{% endblock %}
+{% block t_checkin %}on{% endblock %}
+{% block fc_sub %}Найдите клиента по имени, телефону или номеру карты{% endblock %}
+
+{% block fc_content %}
+<form class="fc-card" method="get" autocomplete="off">
+  <label class="fc-label" for="q">Клиент</label>
+  <div style="display:flex;gap:8px">
+    <input class="fc-input" id="q" name="q" value="{{ q }}" autofocus
+           placeholder="Иван, 0700…, номер карты" inputmode="search">
+    <button class="fc-btn" type="submit">Найти</button>
+  </div>
+</form>
+
+{% if q %}
+<div class="fc-card">
+  <div class="fc-card-t">Найдено</div>
+  <div class="fc-list">
+    {% for m in found %}
+      {% with ms=m.active_membership %}
+      <div class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name">{{ m.full_name }}</div>
+          <div class="fc-row-sub">
+            {% if ms %}
+              {{ ms.plan.name }} ·
+              {% if ms.plan.visits_number %}осталось {{ ms.remaining_visits }}{% else %}без ограничения{% endif %}
+              {% if ms.activated %}· до {{ ms.end_date|date:"d.m.Y" }}
+              {% else %}· <span class="fc-chip">начнётся сегодня</span>{% endif %}
+            {% else %}
+              <span class="fc-chip bad">нет действующего абонемента</span>
+            {% endif %}
+            {% if m.phone %} · {{ m.phone }}{% endif %}
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <form method="post" action="{% url 'fitness_dash:checkin_pass' club.id m.id %}">
+            {% csrf_token %}
+            {% if trainers %}
+            <select name="trainer_id" class="fc-select" style="width:auto;font-size:12px;padding:7px 8px">
+              <option value="">без тренера</option>
+              {% for t in trainers %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
+            </select>
+            {% endif %}
+            <button class="fc-btn small" type="submit">Пропустить</button>
+          </form>
+          <a href="{% url 'fitness_dash:member_detail' club.id m.id %}" class="fc-btn ghost small">Карточка</a>
+        </div>
+      </div>
+      {% endwith %}
+    {% empty %}
+      <div class="fc-empty">
+        Не нашли. <a href="{% url 'fitness_dash:members' club.id %}">Создать клиента →</a>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="fc-card">
+  <div class="fc-card-t">Последние проходы</div>
+  <div class="fc-list">
+    {% for v in recent %}
+      <div class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name">
+            {% if v.success %}✅{% else %}⛔️{% endif %}
+            {{ v.member.full_name|default:"неизвестный" }}
+          </div>
+          <div class="fc-row-sub">
+            {{ v.visit_time|date:"d.m H:i" }}
+            {% if v.trainer %} · с {{ v.trainer.name }}{% endif %}
+            {% if not v.success %} · {{ v.reason }}{% endif %}
+          </div>
+        </div>
+        <div class="fc-row-right">
+          {% if v.membership and v.membership.plan.visits_number %}
+            осталось {{ v.membership.remaining_visits }}
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="fc-empty">Сегодня ещё никто не приходил</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

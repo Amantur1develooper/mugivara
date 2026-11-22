@@ -1,0 +1,79 @@
+{% extends "fitness/dash/_base.html" %}
+{% load fitness_extras %}
+{% block title %}Заявки — {{ club.name }}{% endblock %}
+{% block t_leads %}on{% endblock %}
+{% block fc_sub %}Воронка: заявка → записан → пришёл → купил{% endblock %}
+
+{% block fc_content %}
+{% if overdue %}
+<div class="fc-card" style="border-color:#dc2626">
+  <div style="font-size:13px;font-weight:700;color:#dc2626">
+    ⏰ Просрочено звонков: {{ overdue }}
+  </div>
+  <div class="fc-sub" style="margin-top:3px">
+    Это заявки, по которым обещали связаться и не связались.
+  </div>
+</div>
+{% endif %}
+
+<div class="fc-card">
+  <div style="display:flex;gap:6px;flex-wrap:wrap">
+    <a href="?" class="fc-chip{% if not status %} ok{% endif %}">Все</a>
+    {% for value, label in statuses %}
+      <a href="?status={{ value }}" class="fc-chip{% if status == value %} ok{% endif %}">
+        {{ label }} · {{ counts|get:value|default:0 }}
+      </a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="fc-card">
+  <div class="fc-card-t">Заявки · {{ leads|length }}</div>
+  <div class="fc-list">
+    {% for l in leads %}
+      <a href="{% url 'fitness_dash:lead_detail' club.id l.id %}" class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name">{{ l.name|default:"Без имени" }} · {{ l.phone }}</div>
+          <div class="fc-row-sub">
+            {{ l.get_source_display }}
+            {% if l.section %}· {{ l.section.name }}{% endif %}
+            {% if l.trainer %}· к {{ l.trainer.name }}{% endif %}
+            {% if l.next_contact_at %}· связаться {{ l.next_contact_at|date:"d.m H:i" }}{% endif %}
+          </div>
+        </div>
+        <div class="fc-row-right">
+          <span class="fc-chip{% if l.status == 'sold' %} ok{% elif l.status == 'lost' %} bad{% elif l.status == 'new' %} warn{% endif %}">
+            {{ l.get_status_display }}
+          </span>
+        </div>
+      </a>
+    {% empty %}
+      <div class="fc-empty">Заявок нет</div>
+    {% endfor %}
+  </div>
+</div>
+
+<details class="fc-card">
+  <summary style="cursor:pointer;font-weight:700;font-size:13.5px">+ Заявка вручную (звонок, пришёл сам)</summary>
+  <form method="post" action="{% url 'fitness_dash:lead_new' club.id %}" style="margin-top:12px">
+    {% csrf_token %}
+    <div class="fc-grid2">
+      <div><label class="fc-label">Имя</label><input class="fc-input" name="name"></div>
+      <div><label class="fc-label">Телефон</label>
+        <input class="fc-input" name="phone" required inputmode="tel" placeholder="+996700112233"></div>
+      <div><label class="fc-label">Источник</label>
+        <select class="fc-select" name="source">
+          <option value="phone">Звонок</option>
+          <option value="walkin">Пришёл сам</option>
+          <option value="insta">Instagram</option>
+          <option value="other">Другое</option>
+        </select></div>
+      <div><label class="fc-label">Когда связаться</label>
+        <input class="fc-input" type="datetime-local" name="next_contact"></div>
+    </div>
+    <div style="margin-top:10px"><label class="fc-label">Комментарий</label>
+      <input class="fc-input" name="comment" placeholder="спрашивал про бокс, просил перезвонить вечером"></div>
+    <button class="fc-btn" type="submit" style="margin-top:12px">Добавить</button>
+  </form>
+</details>
+{% endblock %}

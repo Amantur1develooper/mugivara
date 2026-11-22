@@ -83,6 +83,9 @@ def _handle_callback(cq):
     callback_data первым идёт префикс: bs — барбершоп, sr — картинг,
     sh — магазин, rs — кафе и рестораны."""
     data = (cq.get("data") or "").split(":")
+    if data and data[0] == "ft":
+        from fitness.tg_views import handle_callback as fitness
+        return fitness(cq)
     if len(data) != 3:
         return
     if data[0] == "sr":
@@ -94,6 +97,11 @@ def _handle_callback(cq):
     if data[0] == "rs":
         from orders.tg_views import handle_callback as restaurant
         return restaurant(cq)
+    if data[0] == "ft":
+        # У клуба в данных четыре части (ft:lead:take:12), поэтому сюда
+        # попадаем до проверки на три.
+        from fitness.tg_views import handle_callback as fitness
+        return fitness(cq)
     if data[0] != "bs":
         return
     _, action, raw_id = data

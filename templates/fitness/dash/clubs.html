@@ -1,0 +1,17 @@
+{% extends "dashboard/base.html" %}
+{% block nav_fitness %}active{% endblock %}
+{% block title %}Фитнес-клубы{% endblock %}
+{% block content %}
+<div class="db-card">
+  <div class="db-card-title">🏋️ Фитнес-клубы</div>
+  {% for c in clubs %}
+    <a href="{% url 'fitness_dash:home' c.id %}" class="db-btn" style="display:block;margin-bottom:8px">
+      {{ c.name }}
+    </a>
+  {% empty %}
+    <div style="color:var(--muted);font-size:13px">
+      Доступных клубов нет. Попросите администратора добавить вас в клуб.
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -9,6 +9,7 @@ _ALL_TRUE = {
     "has_legal": True,
     "has_agency": True,
     "has_eco": True,
+    "has_fitness": True,
 }
 
 _ALL_FALSE = {k: False for k in _ALL_TRUE}
@@ -49,6 +50,12 @@ def _compute_flags(user):
         result["has_barbershop"] = BarbershopMembership.objects.filter(user=user).exists()
     except Exception:
         result["has_barbershop"] = False
+
+    try:
+        from fitness.models import ClubStaff
+        result["has_fitness"] = ClubStaff.objects.filter(user=user, is_active=True).exists()
+    except Exception:
+        result["has_fitness"] = False
 
     try:
         from simracing.models import SimRacingMembership

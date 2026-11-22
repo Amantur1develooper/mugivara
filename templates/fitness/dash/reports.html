@@ -1,0 +1,59 @@
+{% extends "fitness/dash/_base.html" %}
+{% load fitness_extras %}
+{% block title %}Отчёт — {{ club.name }}{% endblock %}
+{% block t_reports %}on{% endblock %}
+{% block fc_sub %}{{ start|date:"d.m.Y" }} — {{ end|date:"d.m.Y" }}{% endblock %}
+
+{% block fc_content %}
+<form class="fc-card" method="get">
+  <div class="fc-grid3">
+    <div><label class="fc-label">С</label>
+      <input class="fc-input" type="date" name="from" value="{{ start|date:'Y-m-d' }}"></div>
+    <div><label class="fc-label">По</label>
+      <input class="fc-input" type="date" name="to" value="{{ end|date:'Y-m-d' }}"></div>
+    <div style="display:flex;align-items:flex-end">
+      <button class="fc-btn" type="submit" style="width:100%">Показать</button></div>
+  </div>
+</form>
+
+<div class="fc-kpis">
+  <div class="fc-kpi"><div class="fc-kpi-l">Поступило</div>
+    <div class="fc-kpi-v">{{ income|money }} <small>сом</small></div></div>
+  {% if can_profit %}
+  <div class="fc-kpi"><div class="fc-kpi-l">Расходы</div>
+    <div class="fc-kpi-v">{{ expenses|money }} <small>сом</small></div></div>
+  <div class="fc-kpi"><div class="fc-kpi-l">Осталось</div>
+    <div class="fc-kpi-v">{{ profit|money }} <small>сом</small></div></div>
+  {% endif %}
+  <div class="fc-kpi"><div class="fc-kpi-l">Посещений</div>
+    <div class="fc-kpi-v">{{ visits }}</div></div>
+  <div class="fc-kpi"><div class="fc-kpi-l">Продано абонементов</div>
+    <div class="fc-kpi-v">{{ sold }}</div></div>
+  <div class="fc-kpi"><div class="fc-kpi-l">Долги клиентов</div>
+    <div class="fc-kpi-v">{{ debts|money }} <small>сом</small></div></div>
+</div>
+
+<div class="fc-card">
+  <div class="fc-card-t">За что платили</div>
+  <div class="fc-list">
+    {% for label, amount in by_kind %}
+      <div class="fc-row">
+        <div class="fc-row-main"><div class="fc-row-name" style="font-size:13.5px">{{ label }}</div></div>
+        <div class="fc-row-right">{{ amount|money }} сом</div>
+      </div>
+    {% empty %}<div class="fc-empty">Платежей за период нет</div>{% endfor %}
+  </div>
+</div>
+
+<div class="fc-card">
+  <div class="fc-card-t">Чем платили</div>
+  <div class="fc-list">
+    {% for label, amount in by_method %}
+      <div class="fc-row">
+        <div class="fc-row-main"><div class="fc-row-name" style="font-size:13.5px">{{ label }}</div></div>
+        <div class="fc-row-right">{{ amount|money }} сом</div>
+      </div>
+    {% empty %}<div class="fc-empty">—</div>{% endfor %}
+  </div>
+</div>
+{% endblock %}
