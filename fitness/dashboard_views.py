@@ -203,11 +203,15 @@ def checkin_pass(request, club, staff, member_id):
 
 # ── Клиенты ─────────────────────────────────────────────────────────────────
 
-@login_required(login_url=LOGIN_URL)
-@require()
-def members(request, club, staff):
+def _members_queryset(request, club, staff):
+    """Отбор клиентов — один для страницы и для выгрузки.
+
+    Иначе в файл попадает не то, что человек видит на экране: он ищет
+    должников, а выгружает всю базу.
+    """
     q = (request.GET.get("q") or "").strip()
-    rows = Member.objects.filter(club=club).prefetch_related("memberships__plan")
+    rows = (Member.objects.filter(club=club)
+            .prefetch_related("memberships__plan", "visits"))
     if q:
         rows = rows.filter(Q(full_name__icontains=q) | Q(phone__icontains=q)
                            | Q(card_id__icontains=q))
@@ -229,9 +233,20 @@ def members(request, club, staff):
                            memberships__end_date__lte=today + timedelta(days=7)).distinct()
     elif only == "no_membership":
         rows = rows.exclude(memberships__is_active=True)
+    return rows.order_by("full_name")
 
+
+@login_required(login_url=LOGIN_URL)
+@require()
+def members(request, club, staff):
+    rows = _members_queryset(request, club, staff)
     return render(request, "fitness/dash/members.html",
-                  _ctx(club, staff, q=q, only=only, members=rows.order_by("full_name")[:300]))
+                  _ctx(club, staff,
+                       q=(request.GET.get("q") or "").strip(),
+                       only=(request.GET.get("filter") or "").strip(),
+                       members=rows[:300],
+                       total=rows.count(),
+                       export_qs=request.GET.urlencode()))
 
 
 @login_required(login_url=LOGIN_URL)
@@ -450,7 +465,8 @@ def leads(request, club, staff):
     return render(request, "fitness/dash/leads.html",
                   _ctx(club, staff, leads=rows.order_by("-id")[:200], status=status,
                        counts=counts, overdue=overdue,
-                       statuses=Lead.Status.choices))
+                       statuses=Lead.Status.choices,
+                       export_qs=request.GET.urlencode()))
 
 
 @login_required(login_url=LOGIN_URL)
@@ -633,6 +649,7 @@ def reports(request, club, staff):
         exp = Expense.objects.filter(club=club, spent_on__gte=start, spent_on__lte=end)
         data["expenses"] = exp.aggregate(s=Sum("amount"))["s"] or 0
         data["profit"] = data["income"] - data["expenses"]
+    data["export_qs"] = request.GET.urlencode()
     return render(request, "fitness/dash/reports.html", data)
 
 
@@ -1058,4 +1075,41 @@ def staff_password(request, club, staff, staff_id):
         link.user.save(update_fields=["password"])
         messages.success(request, f"{link.user.username}: пароль изменён")
     return redirect("fitness_dash:setup", club_id=club.id)
+
+# ── Выгрузка в Excel ────────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+@require(ADMIN, CASHIER)
+def reports_export(request, club, staff):
+    """Полный отчёт за период: сводка, платежи, посещения, абонементы, заявки."""
+    from . import export
+
+    start = _date(request.GET.get("from"), timezone.localdate().replace(day=1))
+    end = _date(request.GET.get("to"))
+    return export.report_response(club, start, end,
+                                  with_money=can_see_money(staff),
+                                  with_profit=can_see_profit(staff))
+
+
+@login_required(login_url=LOGIN_URL)
+@require()
+def members_export(request, club, staff):
+    """Клиентская база — с теми же фильтрами, что на странице."""
+    from . import export
+
+    rows = _members_queryset(request, club, staff)
+    return export.members_response(club, rows, with_money=can_see_money(staff))
+
+
+@login_required(login_url=LOGIN_URL)
+@require(ADMIN, CASHIER)
+def leads_export(request, club, staff):
+    from . import export
+
+    status = (request.GET.get("status") or "").strip()
+    rows = Lead.objects.filter(club=club).select_related("section", "trainer",
+                                                         "assigned_to", "member")
+    if status:
+        rows = rows.filter(status=status)
+    return export.leads_response(club, rows.order_by("id"))
 

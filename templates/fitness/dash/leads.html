@@ -28,7 +28,13 @@
 </div>
 
 <div class="fc-card">
-  <div class="fc-card-t">Заявки · {{ leads|length }}</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+    <div class="fc-card-t" style="margin:0">Заявки · {{ leads|length }}</div>
+    <a class="fc-btn small ghost" style="background:#1D6F42;color:#fff;border:0"
+       href="{% url 'fitness_dash:leads_export' club.id %}{% if export_qs %}?{{ export_qs }}{% endif %}">
+      ⬇ Excel
+    </a>
+  </div>
   <div class="fc-list">
     {% for l in leads %}
       <a href="{% url 'fitness_dash:lead_detail' club.id l.id %}" class="fc-row">

@@ -18,7 +18,15 @@
 </form>
 
 <div class="fc-card">
-  <div class="fc-card-t">Клиенты · {{ members|length }}</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+    <div class="fc-card-t" style="margin:0">
+      Клиенты · {{ members|length }}{% if total > members|length %} из {{ total }}{% endif %}
+    </div>
+    <a class="fc-btn small ghost" style="background:#1D6F42;color:#fff;border:0"
+       href="{% url 'fitness_dash:members_export' club.id %}{% if export_qs %}?{{ export_qs }}{% endif %}">
+      ⬇ Excel
+    </a>
+  </div>
   <div class="fc-list">
     {% for m in members %}
       {% with ms=m.active_membership %}

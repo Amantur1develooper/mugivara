@@ -14,6 +14,13 @@
     <div style="display:flex;align-items:flex-end">
       <button class="fc-btn" type="submit" style="width:100%">Показать</button></div>
   </div>
+  <a class="fc-btn ghost" style="margin-top:10px;background:#1D6F42;color:#fff;border:0"
+     href="{% url 'fitness_dash:reports_export' club.id %}{% if export_qs %}?{{ export_qs }}{% endif %}">
+    ⬇ Скачать Excel за период
+  </a>
+  <div class="fc-sub" style="margin-top:6px;line-height:1.5">
+    В файле листы: сводка, платежи, посещения, абонементы, заявки, тренеры{% if can_profit %}, расходы{% endif %}.
+  </div>
 </form>
 
 <div class="fc-kpis">
