@@ -239,6 +239,12 @@
     width:100%; height:100%; display:flex; align-items:center; justify-content:center;
     font-size:26px;
   }
+  /* Под названием клуба — его направления: «Бокс · Борьба · ММА» объясняет
+     карточку лучше, чем одно имя зала. */
+  .svc-card-sub {
+    padding: 0 10px 10px; font-size: 10px; line-height: 1.35; color: var(--muted);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
   .svc-card-name {
     padding:8px 10px 10px; font-size:11.5px; font-weight:700; line-height:1.3;
     color:var(--text); font-family:'Unbounded',sans-serif; letter-spacing:-.2px;
@@ -583,7 +589,7 @@
     {% if store_cards %}
     <a href="#stores" class="cat-pill" data-section="stores">{% trans "🛍️ Магазины" %}</a>
     {% endif %}
-    {% if karaoke_cards or market_cards or hotel_cards or pharmacy_cards or barbershop_cards or printshop_cards or legal_cards or eco_cards or agency_cards or realty_cards or autosalon_cards or metal_cards %}
+    {% if karaoke_cards or market_cards or hotel_cards or pharmacy_cards or barbershop_cards or printshop_cards or legal_cards or eco_cards or agency_cards or realty_cards or autosalon_cards or metal_cards or fitness_cards %}
     <a href="#services" class="cat-pill" data-section="services">{% trans "⚡ Услуги" %}</a>
     {% endif %}
 
@@ -865,6 +871,35 @@
       {% endif %}
 
       <!-- Karaoke -->
+      <!-- Спорт и единоборства -->
+      {% if fitness_cards %}
+      <div class="svc-block" id="svc-fitness">
+        <div class="svc-block-head">
+          <div class="svc-block-icon" style="background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.2);">🥊</div>
+          <div>
+            <div class="svc-block-title">{% trans "Спорт и единоборства" %}</div>
+            <div class="svc-block-sub">{% trans "Бокс, борьба, ММА, кроссфит, фитнес" %}</div>
+          </div>
+          <a href="{% url 'fitness:index' %}" class="svc-block-all" style="color:#dc2626;border-color:rgba(220,38,38,.3);">{% trans "Все →" %}</a>
+        </div>
+        <div class="svc-cards-grid">
+          {% for club in fitness_cards %}
+          <a href="{% url 'fitness:club' club.slug %}" class="svc-card">
+            <div class="svc-card-img{% if club.logo %} is-logo{% endif %}">
+              {% if club.logo %}<img src="{{ club.logo.url }}" alt="{{ club.name }}" loading="lazy">
+              {% elif club.cover %}<img src="{{ club.cover.url }}" alt="{{ club.name }}" loading="lazy">
+              {% else %}<div class="svc-card-img-ph">🥊</div>{% endif %}
+            </div>
+            <div class="svc-card-name">{{ club.name }}</div>
+            <div class="svc-card-sub">
+              {% for s in club.sections.all|slice:":3" %}{% if s.is_active %}{{ s.name }}{% if not forloop.last %} · {% endif %}{% endif %}{% endfor %}
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
       <!-- Barbershop -->
       {% if barbershop_cards %}
       <div class="svc-block" id="svc-barbershop">

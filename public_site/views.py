@@ -311,6 +311,16 @@ def home(request):
         SimRacingVenue.objects.filter(is_active=True).order_by("sort_order", "name")[:12]
     )
 
+    # ── СПОРТ И ЕДИНОБОРСТВА ─────────────────────────────────────────────────
+    # Клуб показываем, только если у него есть направления: пустая карточка
+    # ведёт на страницу, где нечего смотреть.
+    from fitness.models import FitnessClub
+    fitness_cards = list(
+        FitnessClub.objects.filter(is_active=True, sections__is_active=True)
+        .prefetch_related("sections")
+        .distinct().order_by("sort_order", "name")[:12]
+    )
+
     # ── БАРБЕРШОПЫ ────────────────────────────────────────────────────────────
     barbershop_cards = list(
         Barbershop.objects.filter(is_active=True).order_by("sort_order", "name")[:12]
@@ -430,6 +440,7 @@ def home(request):
         "karaoke_cards":      karaoke_cards,
         "simracing_cards":    simracing_cards,
         "barbershop_cards":   barbershop_cards,
+        "fitness_cards":      fitness_cards,
         "printshop_cards":    printshop_cards,
         "realty_cards":       realty_cards,
         "autosalon_cards":    autosalon_cards,
