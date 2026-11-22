@@ -8,12 +8,29 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from urllib.parse import quote
+
 from core.phones import normalize as _normalize_phone
+from core.phones import wa_digits
 from integrations import tgbot
 
 from . import tg
 from .models import FitnessClub, Lead, Section, Trainer, TrainerBooking
 
+
+def _wa_link(club, lines):
+    """Ссылка на WhatsApp клуба с готовым текстом заявки.
+
+    Клубу удобнее разговаривать в WhatsApp, а не ждать, пока кто-то
+    откроет кабинет: заявка всё равно сохраняется, но человек сразу
+    попадает в переписку с готовым сообщением. Номер берём рабочий, а
+    если он не заполнен — обычный телефон клуба.
+    """
+    digits = wa_digits(club.whatsapp) or wa_digits(club.phone)
+    if not digits:
+        return ""
+    text = "\n".join(x for x in lines if x)
+    return f"https://wa.me/{digits}?text={quote(text)}"
 
 def _phone(raw):
     """Номер в едином виде или («», ошибка).
@@ -110,7 +127,16 @@ def lead_create(request, slug):
         comment=(request.POST.get("comment") or "").strip()[:500],
     )
     tgbot.in_background(tg.send_lead, lead)
-    return _answer(request, True, "Заявка принята — перезвоним")
+
+    wa = _wa_link(club, [
+        f"Здравствуйте! Заявка с сайта {club.name}.",
+        f"Имя: {lead.name}" if lead.name else "",
+        f"Телефон: {lead.phone}",
+        f"Интересует: {lead.section.name}" if lead.section_id else "",
+        f"Тренер: {lead.trainer.name}" if lead.trainer_id else "",
+        lead.comment,
+    ])
+    return _answer(request, True, "Заявка принята — перезвоним", wa=wa)
 
 
 @require_POST
@@ -157,12 +183,27 @@ def booking_create(request, slug):
     booking.save(update_fields=["lead"])
 
     tgbot.in_background(tg.send_booking, booking)
+
+    wa = _wa_link(club, [
+        f"Здравствуйте! Записался на тренировку через сайт {club.name}.",
+        f"Тренер: {trainer.name}",
+        f"Когда: {day:%d.%m.%Y} в {t:%H:%M}",
+        f"Имя: {name}" if name else "",
+        f"Телефон: {phone}",
+        booking.comment,
+    ])
     return _answer(request, True,
-                   f"Записали к {trainer.name} на {day:%d.%m} в {t:%H:%M}")
+                   f"Записали к {trainer.name} на {day:%d.%m} в {t:%H:%M}",
+                   wa=wa)
 
 
-def _answer(request, ok, text):
+def _answer(request, ok, text, wa=""):
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
-        return JsonResponse({"ok": ok, "message": text}, status=200 if ok else 400)
+        return JsonResponse({"ok": ok, "message": text, "wa": wa},
+                            status=200 if ok else 400)
+    # Без JavaScript уводим в WhatsApp сразу: заявка уже сохранена, и
+    # человеку не нужно возвращаться на страницу, чтобы нажать ссылку.
+    if ok and wa:
+        return redirect(wa)
     (messages.success if ok else messages.error)(request, text)
     return redirect(request.META.get("HTTP_REFERER", "/"))

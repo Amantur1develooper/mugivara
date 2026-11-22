@@ -160,6 +160,14 @@
           form.reset();
           field.value = '';
           [...box.children].forEach(c => c.classList.remove('on'));
+          // Дальше договариваются в WhatsApp: отправляем туда с готовым
+          // текстом записи, ссылку оставляем рядом на случай блокировки.
+          if (d.wa) {
+            msg.innerHTML = d.message +
+              ' <a href="' + d.wa + '" style="color:var(--accent);font-weight:700">' +
+              'Открыть WhatsApp →</a>';
+            setTimeout(() => { window.location.href = d.wa; }, 400);
+          }
         }
       } catch (err) {
         msg.classList.add('bad');

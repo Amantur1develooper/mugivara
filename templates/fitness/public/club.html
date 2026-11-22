@@ -292,7 +292,18 @@
         const d = await r.json();
         msg.classList.add(d.ok ? 'ok' : 'bad');
         msg.textContent = d.message || (d.ok ? 'Заявка принята' : 'Не получилось');
-        if (d.ok) form.reset();
+        if (d.ok) {
+          form.reset();
+          // Уводим в WhatsApp с готовым текстом: заявка уже сохранена, а
+          // договариваются всё равно там. Если браузер переход заблокирует,
+          // рядом остаётся ссылка, которую можно нажать руками.
+          if (d.wa) {
+            msg.innerHTML = d.message +
+              ' <a href="' + d.wa + '" style="color:var(--accent);font-weight:700">' +
+              'Открыть WhatsApp →</a>';
+            setTimeout(() => { window.location.href = d.wa; }, 400);
+          }
+        }
       } catch (err) {
         msg.classList.add('bad');
         msg.textContent = 'Не получилось отправить — позвоните нам';
