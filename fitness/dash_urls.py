@@ -42,4 +42,8 @@ urlpatterns = [
     path("<int:club_id>/expenses/add/", v.expense_add, name="expense_add"),
     path("<int:club_id>/reports/", v.reports, name="reports"),
     path("<int:club_id>/setup/", v.setup, name="setup"),
+    path("<int:club_id>/staff/add/", v.staff_add, name="staff_add"),
+    path("<int:club_id>/staff/<int:staff_id>/edit/", v.staff_edit, name="staff_edit"),
+    path("<int:club_id>/staff/<int:staff_id>/password/", v.staff_password,
+         name="staff_password"),
 ]

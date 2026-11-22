@@ -217,22 +217,118 @@
 </div>
 
 <div class="fc-card">
-  <div class="fc-card-t">Доступы · {{ staff_list|length }}</div>
-  <div class="fc-list">
+  <div class="fc-card-t">Сотрудники · {{ staff_list|length }}</div>
+  <div class="fc-sub" style="margin-bottom:12px;line-height:1.5">
+    Администратор видит всё, кассир — продажи и проход в зал, тренер — только
+    свои записи и своих клиентов.
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
     {% for s in staff_list %}
-      <div class="fc-row">
-        <div class="fc-row-main">
-          <div class="fc-row-name">{{ s.user.get_full_name|default:s.user.username }}</div>
-          <div class="fc-row-sub">{{ s.user.username }}{% if not s.is_active %} · выключен{% endif %}</div>
-        </div>
-        <div class="fc-row-right"><span class="fc-chip">{{ s.get_role_display }}</span></div>
+      <details class="fc-row" style="grid-template-columns:1fr;cursor:pointer">
+        <summary style="display:flex;align-items:center;gap:10px;justify-content:space-between">
+          <span style="min-width:0">
+            <b style="font-size:14px">{{ s.user.get_full_name|default:s.user.username }}</b>
+            <span class="fc-row-sub" style="margin-top:2px">
+              логин: {{ s.user.username }}{% if not s.is_active %} · выключен{% endif %}
+            </span>
+          </span>
+          <span class="fc-chip{% if s.role == 'admin' %} ok{% elif not s.is_active %} bad{% endif %}">
+            {{ s.get_role_display }}
+          </span>
+        </summary>
+
+        <form method="post" action="{% url 'fitness_dash:staff_edit' club.id s.id %}"
+              style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+          {% csrf_token %}
+          <div style="flex:1;min-width:160px">
+            <label class="fc-label">Уровень доступа</label>
+            <select class="fc-select" name="role">
+              {% for value, label in roles %}
+                <option value="{{ value }}" {% if s.role == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button class="fc-btn small" type="submit">Сохранить</button>
+          {% if s.is_active %}
+            <button class="fc-btn small ghost" name="action" value="off">Выключить</button>
+          {% else %}
+            <button class="fc-btn small ghost" name="action" value="on">Включить</button>
+          {% endif %}
+          <button class="fc-btn small ghost" name="action" value="remove">Убрать из клуба</button>
+        </form>
+
+        <form method="post" action="{% url 'fitness_dash:staff_password' club.id s.id %}"
+              style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+          {% csrf_token %}
+          <div style="flex:1;min-width:160px">
+            <label class="fc-label">Новый пароль (если забыл)</label>
+            <input class="fc-input" name="password" type="text" autocomplete="off"
+                   placeholder="не короче 6 символов">
+          </div>
+          <button class="fc-btn small ghost" type="submit">Сменить пароль</button>
+        </form>
+      </details>
+    {% empty %}
+      <div class="fc-empty">Кроме вас никого</div>
+    {% endfor %}
+  </div>
+
+  <form method="post" action="{% url 'fitness_dash:staff_add' club.id %}">
+    {% csrf_token %}
+    <div class="fc-card-t">Добавить сотрудника</div>
+    <div class="fc-grid2">
+      <div><label class="fc-label">Логин</label>
+        <input class="fc-input" name="login" required placeholder="ruslan" autocomplete="off"></div>
+      <div><label class="fc-label">Уровень доступа</label>
+        <select class="fc-select" name="role" id="staffRole">
+          {% for value, label in roles %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+        </select></div>
+      <div><label class="fc-label">Имя и фамилия</label>
+        <input class="fc-input" name="full_name" placeholder="Руслан Абдыкадыров"></div>
+      <div><label class="fc-label">Телефон</label>
+        <input class="fc-input" name="phone" placeholder="+996700112233" inputmode="tel"></div>
+      <div><label class="fc-label">Пароль</label>
+        <input class="fc-input" name="password" type="text" autocomplete="new-password"
+               placeholder="нужен, если логина ещё нет"></div>
+    </div>
+
+    <div id="trainerBox" style="margin-top:10px;display:none">
+      <label class="fc-label">Карточка тренера</label>
+      <select class="fc-select" name="trainer_id">
+        <option value="">— создать новую —</option>
+        {% for t in trainers %}
+          <option value="{{ t.id }}">{{ t.name }}{% if t.user %} (уже привязан к {{ t.user.username }}){% endif %}</option>
+        {% endfor %}
+      </select>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:12.5px;color:var(--text2)">
+        <input type="checkbox" name="make_trainer" checked>
+        Создать карточку тренера, если не выбрал существующую
+      </label>
+      <div class="fc-sub" style="margin-top:6px">
+        Без карточки тренер войдёт и не увидит ни своих записей, ни своих клиентов.
       </div>
-    {% empty %}<div class="fc-empty">Кроме вас никого</div>{% endfor %}
-  </div>
-  <div class="fc-sub" style="margin-top:10px;line-height:1.5">
-    Администратор видит всё, кассир — продажи и проход, тренер — только свои
-    записи и своих клиентов. Добавить сотрудника пока можно через поддержку:
-    нужен его логин.
-  </div>
+    </div>
+
+    <button class="fc-btn" type="submit" style="margin-top:12px">Добавить</button>
+    <div class="fc-sub" style="margin-top:8px;line-height:1.5">
+      Если логин уже есть в системе — просто впишите его, пароль не нужен.
+      Нового сотрудника создаём сразу: логин, пароль и уровень доступа.
+      Пароль передайте человеку сами — здесь он больше не покажется.
+    </div>
+  </form>
+
+  <script>
+    // Поля тренера показываем только когда выбрана эта роль: кассиру
+    // карточка тренера не нужна и только мешает.
+    (function () {
+      const role = document.getElementById('staffRole');
+      const box = document.getElementById('trainerBox');
+      if (!role || !box) return;
+      const sync = () => { box.style.display = role.value === 'trainer' ? 'block' : 'none'; };
+      role.addEventListener('change', sync);
+      sync();
+    })();
+  </script>
 </div>
 {% endblock %}

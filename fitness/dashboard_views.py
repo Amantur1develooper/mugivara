@@ -889,3 +889,125 @@ def class_booking_status(request, club, staff, booking_id):
     return redirect(f"/ru/cabinet/fitness/{club.id}/classes/{b.group_class_id}/"
                     f"?date={b.date:%Y-%m-%d}")
 
+# ── Сотрудники клуба ────────────────────────────────────────────────────────
+
+def _club_admins(club):
+    """Действующие администраторы клуба."""
+    return ClubStaff.objects.filter(club=club, role=ADMIN, is_active=True)
+
+
+@login_required(login_url=LOGIN_URL)
+@require(ADMIN)
+@require_POST
+def staff_add(request, club, staff):
+    """Добавляет сотрудника: по существующему логину или создаёт новый.
+
+    Логины сотрудников заводит сам администратор клуба — ждать поддержки
+    ради кассира на смену неудобно.
+    """
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    login = (request.POST.get("login") or "").strip()
+    role = request.POST.get("role")
+    if role not in dict(ClubStaff.Role.choices):
+        role = ClubStaff.Role.CASHIER
+    if not login:
+        messages.error(request, "Укажите логин сотрудника")
+        return redirect("fitness_dash:setup", club_id=club.id)
+
+    user = User.objects.filter(username__iexact=login).first()
+    created = False
+    if not user:
+        password = (request.POST.get("password") or "").strip()
+        if len(password) < 6:
+            messages.error(request, f"Пользователя «{login}» нет. "
+                                    f"Чтобы создать нового, задайте пароль "
+                                    f"не короче 6 символов.")
+            return redirect("fitness_dash:setup", club_id=club.id)
+        user = User.objects.create_user(
+            username=login, password=password,
+            first_name=(request.POST.get("full_name") or "").strip()[:150])
+        created = True
+
+    if ClubStaff.objects.filter(user=user, club=club).exists():
+        link = ClubStaff.objects.get(user=user, club=club)
+        link.role = role
+        link.is_active = True
+        link.save(update_fields=["role", "is_active", "updated_at"])
+        messages.success(request, f"{login}: доступ обновлён — {link.get_role_display()}")
+    else:
+        ClubStaff.objects.create(user=user, club=club, role=role)
+        messages.success(
+            request,
+            f"{login} добавлен как «{dict(ClubStaff.Role.choices)[role]}»"
+            + (" · логин создан" if created else ""))
+
+    # Тренеру нужна его карточка, иначе он войдёт и не увидит своих записей
+    if role == TRAINER:
+        raw = request.POST.get("trainer_id")
+        if (raw or "").isdigit():
+            Trainer.objects.filter(id=int(raw), club=club).update(user=user)
+        elif request.POST.get("make_trainer") == "on":
+            name = ((request.POST.get("full_name") or "").strip()
+                    or user.get_full_name() or login)
+            Trainer.objects.create(club=club, user=user, name=name[:150],
+                                   phone=(request.POST.get("phone") or "").strip()[:50])
+            messages.info(request, f"Создана карточка тренера «{name}»")
+    return redirect("fitness_dash:setup", club_id=club.id)
+
+
+@login_required(login_url=LOGIN_URL)
+@require(ADMIN)
+@require_POST
+def staff_edit(request, club, staff, staff_id):
+    """Меняет уровень доступа или выключает сотрудника."""
+    link = get_object_or_404(ClubStaff.objects.select_related("user"),
+                             id=staff_id, club=club)
+    action = request.POST.get("action")
+    role = request.POST.get("role")
+
+    # Последнего администратора не отбираем: клуб останется без хозяина и
+    # никто уже не сможет ни добавить сотрудника, ни поправить настройки.
+    last_admin = (link.role == ADMIN and link.is_active
+                  and _club_admins(club).count() <= 1)
+    if last_admin and (action in ("off", "remove") or (role and role != ADMIN)):
+        messages.error(request, "Это единственный администратор клуба. "
+                                "Сначала назначьте другого.")
+        return redirect("fitness_dash:setup", club_id=club.id)
+
+    if action == "off":
+        link.is_active = False
+        link.save(update_fields=["is_active", "updated_at"])
+        messages.success(request, f"{link.user.username}: доступ выключен")
+    elif action == "on":
+        link.is_active = True
+        link.save(update_fields=["is_active", "updated_at"])
+        messages.success(request, f"{link.user.username}: доступ включён")
+    elif action == "remove":
+        name = link.user.username
+        link.delete()
+        messages.success(request, f"{name}: доступ к клубу убран")
+    elif role in dict(ClubStaff.Role.choices):
+        link.role = role
+        link.save(update_fields=["role", "updated_at"])
+        messages.success(request, f"{link.user.username}: теперь {link.get_role_display()}")
+    return redirect("fitness_dash:setup", club_id=club.id)
+
+
+@login_required(login_url=LOGIN_URL)
+@require(ADMIN)
+@require_POST
+def staff_password(request, club, staff, staff_id):
+    """Задаёт сотруднику новый пароль — когда тот его забыл."""
+    link = get_object_or_404(ClubStaff.objects.select_related("user"),
+                             id=staff_id, club=club)
+    password = (request.POST.get("password") or "").strip()
+    if len(password) < 6:
+        messages.error(request, "Пароль не короче 6 символов")
+    else:
+        link.user.set_password(password)
+        link.user.save(update_fields=["password"])
+        messages.success(request, f"{link.user.username}: пароль изменён")
+    return redirect("fitness_dash:setup", club_id=club.id)
+
