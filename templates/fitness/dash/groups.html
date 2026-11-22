@@ -1,0 +1,71 @@
+{% extends "fitness/dash/_base.html" %}
+{% block t_groups %}on{% endblock %}
+{% block fc_title %}Группы{% endblock %}
+
+{% block fc_content %}
+<div class="fc-card">
+  <div class="fc-card-t">Группы</div>
+  <div class="fc-sub" style="line-height:1.5">
+    Группа — это состав людей, который ходит вместе: «Бокс · дети 10–12».
+    Секция отвечает, чем занимаются, группа — кто именно и с каким тренером.
+    {% if is_trainer %}Здесь ваши группы.{% endif %}
+  </div>
+
+  <div class="fc-list" style="margin-top:12px">
+    {% for g in rows %}
+      <a href="{% url 'fitness_dash:group_detail' club.id g.id %}" class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name">
+            {% if g.section and g.section.icon %}{{ g.section.icon }} {% endif %}{{ g.title }}
+            {% if not g.is_active %} · набор закрыт{% endif %}
+          </div>
+          <div class="fc-row-sub">
+            {{ g.people }} из {{ g.capacity }} чел.
+            {% if g.trainer %} · {{ g.trainer.name }}{% else %} · тренер не назначен{% endif %}
+            {% if g.note %} · {{ g.note }}{% endif %}
+            {% with sl=g.slots.all %}
+              {% if sl %}
+                <br>{% for s in sl %}{% if s.is_active %}{{ s.get_weekday_display|slice:":2" }}
+                  {{ s.time_from|time:"H:i" }}{% if not forloop.last %} · {% endif %}{% endif %}{% endfor %}
+              {% else %}
+                <br>расписание не заполнено
+              {% endif %}
+            {% endwith %}
+          </div>
+        </div>
+        <div class="fc-row-right">{{ g.free }} своб. →</div>
+      </a>
+    {% empty %}
+      <div class="fc-empty">Групп пока нет. Создайте первую — например «Бокс · дети 10–12».</div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if staff.role != "trainer" %}
+<div class="fc-card">
+  <div class="fc-card-t">Новая группа</div>
+  <form method="post" action="{% url 'fitness_dash:group_new' club.id %}">
+    {% csrf_token %}
+    <div class="fc-grid2">
+      <div><label class="fc-label">Название</label>
+        <input class="fc-input" name="name" placeholder="Дети 10–12, вечер" required></div>
+      <div><label class="fc-label">Секция</label>
+        <select class="fc-input" name="section">
+          <option value="">— не выбрана —</option>
+          {% for s in sections %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+        </select></div>
+      <div><label class="fc-label">Тренер</label>
+        <select class="fc-input" name="trainer">
+          <option value="">— не назначен —</option>
+          {% for t in trainers %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
+        </select></div>
+      <div><label class="fc-label">Мест в группе</label>
+        <input class="fc-input" name="capacity" type="number" min="1" max="200" value="14"></div>
+    </div>
+    <div style="margin-top:10px"><label class="fc-label">Пометка</label>
+      <input class="fc-input" name="note" placeholder="начинающие, малый зал"></div>
+    <button class="fc-btn" type="submit" style="margin-top:12px">Создать группу</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

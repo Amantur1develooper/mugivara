@@ -191,7 +191,10 @@
             {% for it in d.items %}
               <div class="plan">
                 <div>
-                  <div class="plan-n">{{ it.cls.time_from|time:"H:i" }} · {{ it.cls.name }}</div>
+                  <div class="plan-n">
+                    {{ it.cls.time_from|time:"H:i" }} ·
+                    {% if it.cls.group_id %}{{ it.cls.group.title }}{% else %}{{ it.cls.name }}{% endif %}
+                  </div>
                   <div class="plan-s">
                     {% if it.cls.trainer %}{{ it.cls.trainer.name }}{% endif %}
                     {% if it.cls.room %} · {{ it.cls.room }}{% endif %}
@@ -199,7 +202,9 @@
                   </div>
                 </div>
                 <div style="text-align:right">
-                  {% if it.free == 0 %}
+                  {% if it.is_group and it.free == 0 %}
+                    <div class="plan-p" style="font-size:13px">группа набрана</div>
+                  {% elif it.free == 0 %}
                     <div class="plan-s" style="color:#f87171">мест нет</div>
                   {% else %}
                     <div class="plan-p" style="font-size:14px">{{ it.free }} мест</div>

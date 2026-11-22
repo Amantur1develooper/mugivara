@@ -2,7 +2,7 @@
 {% load fitness_extras %}
 {% block title %}Шахматка — {{ club.name }}{% endblock %}
 {% block t_board %}on{% endblock %}
-{% block fc_sub %}Кто к какому тренеру записан{% endblock %}
+{% block fc_sub %}Кто к какому тренеру записан и какие группы тренируются{% endblock %}
 
 {% block fc_content %}
 <div class="fc-card" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -14,6 +14,7 @@
   <a href="?date={{ next_day|date:'Y-m-d' }}" class="fc-btn ghost small">→</a>
   {% if day != today %}<a href="?date={{ today|date:'Y-m-d' }}" class="fc-btn ghost small">Сегодня</a>{% endif %}
   <span class="fc-chip">{{ total }} зап.</span>
+  {% if groups_today %}<span class="fc-chip ok">{{ groups_today }} групп.</span>{% endif %}
 </div>
 
 {% if trainers %}
@@ -31,6 +32,19 @@
         <td class="bd-time">{{ h }}:00</td>
         {% for t in trainers %}
         <td class="bd-cell">
+          {% with gslot=group_cells|get:t.id %}
+            {% for g in gslot|get:h %}
+            <a class="bd-chip bd-group"
+               href="{% url 'fitness_dash:class_day' club.id g.slot.id %}?date={{ day|date:'Y-m-d' }}">
+              <div class="bd-chip-t">{{ g.slot.time_from|time:"H:i" }} · {{ g.title }}</div>
+              <div class="bd-chip-s">
+                {% if g.size %}группа {{ g.size }} чел.{% else %}открытая запись{% endif %}
+                {% if g.came %} · пришли {{ g.came }}{% endif %}
+                {% if g.slot.room %} · {{ g.slot.room }}{% endif %}
+              </div>
+            </a>
+            {% endfor %}
+          {% endwith %}
           {% with slot=cells|get:t.id %}
             {% for b in slot|get:h %}
             <form method="post" action="{% url 'fitness_dash:booking_status' club.id b.id %}"
@@ -61,6 +75,27 @@
 </div>
 {% else %}
   <div class="fc-card fc-empty">Тренеров пока нет. Добавьте их в настройках клуба.</div>
+{% endif %}
+
+{% if orphans %}
+<div class="fc-card">
+  <div class="fc-card-t">Без тренера — в сетку не встали</div>
+  <div class="fc-list">
+    {% for g in orphans %}
+      <a href="{% url 'fitness_dash:class_day' club.id g.slot.id %}?date={{ day|date:'Y-m-d' }}"
+         class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name">{{ g.slot.time_from|time:"H:i" }} · {{ g.title }}</div>
+          <div class="fc-row-sub">
+            {% if g.size %}группа {{ g.size }} чел.{% else %}открытая запись{% endif %}
+            {% if g.came %} · пришли {{ g.came }}{% endif %}
+          </div>
+        </div>
+        <div class="fc-row-right">назначить тренера →</div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
 {% endif %}
 
 <details class="fc-card">
@@ -125,6 +160,14 @@
     display: block; border-radius: 10px; padding: 7px 8px; margin-bottom: 5px;
     background: rgba(255,77,28,.07); border: 1.5px solid rgba(255,77,28,.3);
   }
+  /* Группа в клетке отличается от личной записи: это не один человек, а
+     состав, и спутать их на бегу нельзя. Синий против оранжевого. */
+  .bd-chip.bd-group {
+    text-decoration: none; color: inherit;
+    background: rgba(37,99,235,.07); border-color: rgba(37,99,235,.32);
+    border-left-width: 4px;
+  }
+  .bd-chip.bd-group:hover { border-color: rgba(37,99,235,.6); }
   .bd-chip.st-came { background: rgba(5,150,105,.08); border-color: rgba(5,150,105,.35); }
   .bd-chip.st-no_show { background: rgba(220,38,38,.07); border-color: rgba(220,38,38,.3); }
   .bd-chip-t { font-size: 12px; font-weight: 700; line-height: 1.25; }

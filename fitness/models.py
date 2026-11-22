@@ -555,6 +555,81 @@ class TrainerBooking(TimeStampedModel):
 
 # ── Групповые занятия ───────────────────────────────────────────────────────
 
+class TrainingGroup(TimeStampedModel):
+    """Группа — живой состав людей, который ходит тренироваться вместе.
+
+    Секция это дисциплина («Бокс»), а группа это конкретные люди у
+    конкретного тренера: «Бокс · дети 10–12 · вечер». Раньше в расписании
+    стояло занятие, но кто именно на него ходит, нигде не было написано —
+    состав держали в голове или в тетради. Теперь у группы есть список
+    людей, своё расписание и свой тренер, и в шахматке видно, кто когда
+    тренируется и с кем.
+    """
+    club    = models.ForeignKey(FitnessClub, on_delete=models.CASCADE,
+                                related_name="training_groups")
+    section = models.ForeignKey(Section, null=True, blank=True, on_delete=models.SET_NULL,
+                                related_name="training_groups", verbose_name="Секция")
+    trainer = models.ForeignKey(Trainer, null=True, blank=True, on_delete=models.SET_NULL,
+                                related_name="training_groups", verbose_name="Тренер")
+    name     = models.CharField("Название", max_length=150,
+                                help_text="«Дети 10–12», «Взрослые вечер», «Начинающие»")
+    note     = models.CharField("Пометка", max_length=200, blank=True, default="",
+                                help_text="Возраст, уровень, зал — что важно помнить")
+    capacity = models.PositiveSmallIntegerField("Мест в группе", default=14)
+    is_active = models.BooleanField("Набор идёт", default=True)
+    sort_order = models.PositiveSmallIntegerField("Порядок", default=0)
+
+    class Meta:
+        verbose_name = "Группа"
+        verbose_name_plural = "Группы"
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        head = self.section.name + " · " if self.section_id else ""
+        return f"{head}{self.name}"
+
+    @property
+    def title(self):
+        """Как группу называют вслух: «Бокс · дети 10–12»."""
+        return str(self)
+
+    def roster(self):
+        """Кто сейчас в группе."""
+        return (self.links.filter(is_active=True)
+                .select_related("member")
+                .order_by("member__full_name"))
+
+    @property
+    def size(self):
+        return self.links.filter(is_active=True).count()
+
+    @property
+    def free(self):
+        return max(0, self.capacity - self.size)
+
+    def schedule(self):
+        return self.slots.filter(is_active=True).order_by("weekday", "time_from")
+
+
+class GroupMember(TimeStampedModel):
+    """Человек в группе. Ушёл — связь выключаем, а не удаляем: по истории
+    видно, кто в группе занимался раньше."""
+    group  = models.ForeignKey(TrainingGroup, on_delete=models.CASCADE, related_name="links")
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="group_links")
+    joined_on = models.DateField("В группе с", default=timezone.localdate)
+    left_on   = models.DateField("Вышел", null=True, blank=True)
+    is_active = models.BooleanField("В группе", default=True)
+
+    class Meta:
+        verbose_name = "Состав группы"
+        verbose_name_plural = "Состав групп"
+        unique_together = [("group", "member")]
+        ordering = ["member__full_name"]
+
+    def __str__(self):
+        return f"{self.member.full_name} — {self.group}"
+
+
 class GroupClass(TimeStampedModel):
     """Групповое занятие в расписании: йога в 19:00 на 12 мест.
 
@@ -564,6 +639,11 @@ class GroupClass(TimeStampedModel):
     club     = models.ForeignKey(FitnessClub, on_delete=models.CASCADE, related_name="classes")
     section  = models.ForeignKey(Section, null=True, blank=True, on_delete=models.SET_NULL,
                                  related_name="classes", verbose_name="Секция")
+    # Занятие группы: состав брать не из записей, а из списка группы.
+    # Открытое занятие (куда записываются по одному) группы не имеет.
+    group    = models.ForeignKey("TrainingGroup", null=True, blank=True,
+                                 on_delete=models.SET_NULL, related_name="slots",
+                                 verbose_name="Группа")
     trainer  = models.ForeignKey(Trainer, null=True, blank=True, on_delete=models.SET_NULL,
                                  related_name="classes", verbose_name="Тренер")
     name     = models.CharField("Название", max_length=150)
@@ -593,6 +673,16 @@ class GroupClass(TimeStampedModel):
 
     def free_on(self, day):
         return max(0, self.capacity - self.taken_on(day))
+
+    @property
+    def who(self):
+        """Кто ходит: название группы или «открытая запись»."""
+        return self.group.title if self.group_id else "открытая запись"
+
+    @property
+    def seats(self):
+        """Мест: у группы — её размер, у открытого занятия — своё число."""
+        return self.group.capacity if self.group_id else self.capacity
 
 
 class ClassBooking(TimeStampedModel):

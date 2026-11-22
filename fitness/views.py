@@ -63,14 +63,18 @@ def club_page(request, slug):
 
 def _week_schedule(club):
     """Расписание групповых занятий на неделю вперёд со свободными местами."""
-    from django.db.models import Count
+    from django.db.models import Count, Q
 
     from .models import ClassBooking, GroupClass
 
     today = timezone.localdate()
     days = [today + timedelta(days=i) for i in range(7)]
     classes = list(GroupClass.objects.filter(club=club, is_active=True)
-                   .select_related("trainer").order_by("time_from", "id"))
+                   .select_related("trainer", "group")
+                   .annotate(group_size=Count("group__links",
+                                              filter=Q(group__links__is_active=True),
+                                              distinct=True))
+                   .order_by("time_from", "id"))
     if not classes:
         return []
 
@@ -85,8 +89,18 @@ def _week_schedule(club):
 
     out = []
     for d in days:
-        items = [{"cls": c, "free": max(0, c.capacity - taken.get((c.id, d), 0))}
-                 for c in classes if c.weekday == d.weekday()]
+        items = []
+        for c in classes:
+            if c.weekday != d.weekday():
+                continue
+            if c.group_id:
+                # У группы места считаются по составу, а не по отметкам о
+                # приходе: набранная группа из четырнадцати детей иначе
+                # показывала бы на сайте «14 мест свободно».
+                free = max(0, c.group.capacity - c.group_size)
+            else:
+                free = max(0, c.capacity - taken.get((c.id, d), 0))
+            items.append({"cls": c, "free": free, "is_group": bool(c.group_id)})
         out.append({"day": d, "items": items, "is_today": d == today})
     return out
 

@@ -37,6 +37,33 @@
   </div>
 </div>
 
+{% if group_links %}
+<div class="fc-card">
+  <div class="fc-card-t">Группы</div>
+  <div class="fc-list">
+    {% for link in group_links %}
+      <a href="{% url 'fitness_dash:group_detail' club.id link.group.id %}" class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name">
+            {% if link.group.section and link.group.section.icon %}{{ link.group.section.icon }} {% endif %}
+            {{ link.group.title }}
+          </div>
+          <div class="fc-row-sub">
+            {% if link.group.trainer %}{{ link.group.trainer.name }}{% else %}тренер не назначен{% endif %}
+            · с {{ link.joined_on|date:"d.m.Y" }}
+            {% with sl=link.group.slots.all %}{% if sl %}
+              <br>{% for s in sl %}{% if s.is_active %}{{ s.get_weekday_display|slice:":2" }}
+                {{ s.time_from|time:"H:i" }}{% if not forloop.last %} · {% endif %}{% endif %}{% endfor %}
+            {% endif %}{% endwith %}
+          </div>
+        </div>
+        <div class="fc-row-right">→</div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <div class="fc-card">
   <div class="fc-card-t">Сейчас</div>
   {% if active %}

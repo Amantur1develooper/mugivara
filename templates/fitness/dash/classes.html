@@ -19,8 +19,12 @@
       {% for it in d.items %}
         <a class="fc-row" href="{% url 'fitness_dash:class_day' club.id it.cls.id %}?date={{ d.day|date:'Y-m-d' }}">
           <div class="fc-row-main">
-            <div class="fc-row-name">{{ it.cls.time_from|time:"H:i" }} · {{ it.cls.name }}</div>
+            <div class="fc-row-name">
+              {{ it.cls.time_from|time:"H:i" }} ·
+              {% if it.cls.group_id %}{{ it.cls.group.title }}{% else %}{{ it.cls.name }}{% endif %}
+            </div>
             <div class="fc-row-sub">
+              {% if it.cls.group_id %}👥 группа {{ it.cls.group_size }} чел. · {% endif %}
               {% if it.cls.trainer %}{{ it.cls.trainer.name }}{% else %}без тренера{% endif %}
               {% if it.cls.room %} · {{ it.cls.room }}{% endif %}
               · {{ it.cls.duration_min }} мин
@@ -33,7 +37,11 @@
             {% elif it.free <= 2 %}
               <span class="fc-chip warn">{{ it.free }} места</span>
             {% else %}
-              <span class="fc-chip ok">{{ it.free }} из {{ it.cls.capacity }}</span>
+              {% if it.cls.group_id %}
+                <span class="fc-chip">состав {{ it.cls.group_size }}</span>
+              {% else %}
+                <span class="fc-chip ok">{{ it.free }} из {{ it.cls.capacity }}</span>
+              {% endif %}
             {% endif %}
           </div>
         </a>

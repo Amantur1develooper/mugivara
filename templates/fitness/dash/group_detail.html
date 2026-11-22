@@ -1,0 +1,200 @@
+{% extends "fitness/dash/_base.html" %}
+{% block t_groups %}on{% endblock %}
+{% block fc_title %}{{ g.title }}{% endblock %}
+
+{% block fc_content %}
+<div class="fc-card">
+  <div style="font-size:17px;font-weight:800;line-height:1.25">
+    {% if g.section and g.section.icon %}{{ g.section.icon }} {% endif %}{{ g.title }}
+  </div>
+  <div class="fc-row-sub" style="margin-top:5px">
+    {{ g.size }} из {{ g.capacity }} чел. · свободно {{ g.free }}
+    {% if g.trainer %}<br>🧑‍🏫 {{ g.trainer.name }}{% else %}<br>тренер не назначен{% endif %}
+    {% if g.note %}<br>💬 {{ g.note }}{% endif %}
+    {% if not g.is_active %}<br>⛔️ набор закрыт{% endif %}
+  </div>
+  <div style="margin-top:10px">
+    <a href="{% url 'fitness_dash:groups' club.id %}" class="fc-btn ghost small">← Все группы</a>
+  </div>
+</div>
+
+<div class="fc-card">
+  <div class="fc-card-t">Расписание группы</div>
+  <div class="fc-list">
+    {% for s in slots %}
+      <div class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name">{{ s.get_weekday_display }}, {{ s.time_from|time:"H:i" }}</div>
+          <div class="fc-row-sub">
+            {{ s.duration_min }} мин{% if s.room %} · {{ s.room }}{% endif %}
+            {% if s.trainer %} · {{ s.trainer.name }}{% endif %}
+          </div>
+        </div>
+        <div class="fc-row-right" style="display:flex;gap:6px;align-items:center">
+          <a href="{% url 'fitness_dash:class_day' club.id s.id %}" class="fc-btn ghost small">Отметить</a>
+          {% if staff.role != "trainer" %}
+          <form method="post" action="{% url 'fitness_dash:group_slot' club.id g.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="remove">
+            <input type="hidden" name="slot" value="{{ s.id }}">
+            <button class="fc-btn ghost small" type="submit">Убрать</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="fc-empty">Тренировок не поставлено. Добавьте день и время ниже —
+        группа появится в расписании и в шахматке.</div>
+    {% endfor %}
+  </div>
+
+  {% if staff.role != "trainer" %}
+  <form method="post" action="{% url 'fitness_dash:group_slot' club.id g.id %}"
+        style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+    {% csrf_token %}
+    <div class="fc-grid2">
+      <div><label class="fc-label">День</label>
+        <select class="fc-input" name="weekday">
+          {% for val, label in weekdays %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+        </select></div>
+      <div><label class="fc-label">Начало</label>
+        <input class="fc-input" name="time_from" type="time" required
+               data-slots data-slots-from="7" data-slots-to="22" data-slots-step="30"></div>
+      <div><label class="fc-label">Длительность, мин</label>
+        <input class="fc-input" name="duration_min" type="number" min="15" max="300" value="60"></div>
+      <div><label class="fc-label">Зал</label>
+        <input class="fc-input" name="room" placeholder="малый зал"></div>
+    </div>
+    <button class="fc-btn" type="submit" style="margin-top:12px">Поставить тренировку</button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="fc-card">
+  <div class="fc-card-t">Состав — {{ g.size }} чел.</div>
+  <div class="fc-list">
+    {% for link in roster %}
+      <div class="fc-row" style="grid-template-columns:auto 1fr auto">
+        <span class="fc-ava{% if not link.member.photo %} empty{% endif %}">
+          {% if link.member.photo %}<img src="{{ link.member.photo.url }}" alt="" loading="lazy">
+          {% else %}👤{% endif %}
+        </span>
+        <div class="fc-row-main">
+          <a class="fc-row-name" style="text-decoration:none"
+             href="{% url 'fitness_dash:member_detail' club.id link.member.id %}">
+            {{ link.member.full_name }} →
+          </a>
+          <div class="fc-row-sub">
+            {% if link.member.phone %}{{ link.member.phone }} · {% endif %}
+            в группе с {{ link.joined_on|date:"d.m.Y" }}
+          </div>
+        </div>
+        {% if staff.role != "trainer" %}
+        <form method="post" action="{% url 'fitness_dash:group_roster' club.id g.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="remove">
+          <input type="hidden" name="link" value="{{ link.id }}">
+          <button class="fc-btn ghost small" type="submit">Вывести</button>
+        </form>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="fc-empty">В группе пока никого. Добавьте людей ниже.</div>
+    {% endfor %}
+  </div>
+</div>
+
+{% if staff.role != "trainer" %}
+<div class="fc-card">
+  <div class="fc-card-t">Добавить в группу</div>
+  <form method="get" style="display:flex;gap:8px">
+    <input class="fc-input" name="q" value="{{ q }}" placeholder="имя или телефон" style="flex:1">
+    <button class="fc-btn ghost" type="submit">Найти</button>
+  </form>
+  <div class="fc-list" style="margin-top:10px">
+    {% for m in free %}
+      <div class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name">{{ m.full_name }}</div>
+          <div class="fc-row-sub">{{ m.phone }}</div>
+        </div>
+        <form method="post" action="{% url 'fitness_dash:group_roster' club.id g.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add">
+          <input type="hidden" name="member" value="{{ m.id }}">
+          <button class="fc-btn small" type="submit">В группу</button>
+        </form>
+      </div>
+    {% empty %}
+      <div class="fc-empty">
+        {% if q %}Никого не нашли по «{{ q }}».{% else %}Все клиенты уже в группе.{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  {% if not q and free %}
+    <div class="fc-sub" style="margin-top:8px">Показаны первые — остальных найдите поиском.</div>
+  {% endif %}
+</div>
+
+{% if left %}
+<div class="fc-card">
+  <div class="fc-card-t">Выходили из группы</div>
+  <div class="fc-list">
+    {% for link in left %}
+      <div class="fc-row">
+        <div class="fc-row-main">
+          <a class="fc-row-name" style="text-decoration:none"
+             href="{% url 'fitness_dash:member_detail' club.id link.member.id %}">
+            {{ link.member.full_name }} →
+          </a>
+          <div class="fc-row-sub">вышел {{ link.left_on|date:"d.m.Y"|default:"—" }}</div>
+        </div>
+        <form method="post" action="{% url 'fitness_dash:group_roster' club.id g.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="add">
+          <input type="hidden" name="member" value="{{ link.member.id }}">
+          <button class="fc-btn ghost small" type="submit">Вернуть</button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endif %}
+
+{% if staff.role != "trainer" %}
+<div class="fc-card">
+  <div class="fc-card-t">Настройки группы</div>
+  <form method="post" action="{% url 'fitness_dash:group_save' club.id g.id %}">
+    {% csrf_token %}
+    <div class="fc-grid2">
+      <div><label class="fc-label">Название</label>
+        <input class="fc-input" name="name" value="{{ g.name }}" required></div>
+      <div><label class="fc-label">Секция</label>
+        <select class="fc-input" name="section">
+          <option value="">— не выбрана —</option>
+          {% for s in sections %}
+            <option value="{{ s.id }}" {% if g.section_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+          {% endfor %}
+        </select></div>
+      <div><label class="fc-label">Тренер</label>
+        <select class="fc-input" name="trainer">
+          <option value="">— не назначен —</option>
+          {% for t in trainers %}
+            <option value="{{ t.id }}" {% if g.trainer_id == t.id %}selected{% endif %}>{{ t.name }}</option>
+          {% endfor %}
+        </select></div>
+      <div><label class="fc-label">Мест в группе</label>
+        <input class="fc-input" name="capacity" type="number" min="1" max="200" value="{{ g.capacity }}"></div>
+    </div>
+    <div style="margin-top:10px"><label class="fc-label">Пометка</label>
+      <input class="fc-input" name="note" value="{{ g.note }}"></div>
+    <label style="display:flex;gap:8px;align-items:center;margin-top:10px">
+      <input type="checkbox" name="is_active" {% if g.is_active %}checked{% endif %}>
+      <span class="fc-sub">Набор идёт</span>
+    </label>
+    <button class="fc-btn" type="submit" style="margin-top:12px">Сохранить</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

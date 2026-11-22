@@ -13,6 +13,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q, Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -22,9 +23,10 @@ from . import services, tg
 from .access import (ADMIN, CASHIER, TRAINER, can_see_money, can_see_profit,
                      my_clubs, my_trainer, require, staff_of)
 from .models import (SECTION_PRESETS, ClassBooking, ClubStaff, Expense,
-                     FitnessClub, GroupClass, Lead, LeadNote, Member, Membership,
-                     MembershipPlan, Payment, Section, Trainer, TrainerBooking,
-                     TrainerSchedule, Visit)
+                     FitnessClub, GroupClass, GroupMember, Lead, LeadNote,
+                     Member, Membership, MembershipPlan, Payment, Section,
+                     Trainer, TrainerBooking, TrainerSchedule, TrainingGroup,
+                     Visit)
 
 LOGIN_URL = "dashboard:login"
 
@@ -41,6 +43,22 @@ def _date(raw, default=None):
         return datetime.strptime(raw, "%Y-%m-%d").date()
     except (TypeError, ValueError):
         return default or timezone.localdate()
+
+
+def _int(raw, default=0, lo=0, hi=10000):
+    """Число из формы: пустое поле и опечатка не должны валить страницу."""
+    try:
+        return max(lo, min(hi, int(str(raw).strip())))
+    except (TypeError, ValueError):
+        return default
+
+
+def _time(raw):
+    """Время из поля type="time" — «19:00». Не разобрали — None."""
+    try:
+        return datetime.strptime((raw or "").strip()[:5], "%H:%M").time()
+    except ValueError:
+        return None
 
 
 def _ctx(club, staff, **extra):
@@ -258,6 +276,12 @@ def member_detail(request, club, staff, member_id):
         "memberships__plan", "memberships__trainer"), id=member_id, club=club)
     data = _ctx(club, staff,
                 member=member,
+                # В каких группах человек занимается: с карточки должно быть
+                # видно, к кому и когда он ходит.
+                group_links=(member.group_links.filter(is_active=True)
+                             .select_related("group", "group__section",
+                                             "group__trainer")
+                             .prefetch_related("group__slots")),
                 memberships=member.memberships.select_related("plan", "trainer"),
                 visits=member.visits.select_related("membership__plan", "trainer")[:30],
                 plans=club.plans.filter(is_active=True),
@@ -369,21 +393,60 @@ def board(request, club, staff):
             .exclude(status=TrainerBooking.Status.CANCELLED)
             .select_related("trainer", "member", "lead"))
 
+    # Групповые тренировки этого дня недели: без них в шахматке видны только
+    # личные записи, и выходит, что у тренера день пустой, хотя в это время
+    # у него группа на двенадцать человек.
+    slots = (GroupClass.objects
+             .filter(club=club, is_active=True, weekday=day.weekday())
+             .select_related("group", "group__section", "trainer", "section")
+             .order_by("time_from"))
+    if staff.role == TRAINER and trainer:
+        slots = slots.filter(trainer=trainer)
+    slots = list(slots)
+
+    # Сколько человек уже отметили на каждом занятии — одним запросом на всех
+    marked = dict(ClassBooking.objects
+                  .filter(group_class__in=slots, date=day,
+                          status=ClassBooking.Status.CAME)
+                  .values_list("group_class")
+                  .annotate(n=Count("id")))
+
     # Сетка часов: от самого раннего начала до самого позднего конца, но не
     # уже 8:00–22:00 — иначе пустая таблица выглядит сломанной.
     start_hour, end_hour = 8, 22
     for b in rows:
         start_hour = min(start_hour, b.time_from.hour)
         end_hour = max(end_hour, (b.time_to.hour + 1) if b.time_to.minute else b.time_to.hour)
+    for sl in slots:
+        start_hour = min(start_hour, sl.time_from.hour)
     hours = list(range(start_hour, max(end_hour, start_hour + 1)))
 
     cells = {}
     for b in rows:
         cells.setdefault(b.trainer_id, {}).setdefault(b.time_from.hour, []).append(b)
 
+    # Группы кладём в ту же сетку отдельным слоем: в клетке сначала группа,
+    # потом личные записи — так читается «в 19:00 у него группа и один свой».
+    group_cells = {}
+    orphans = []
+    for sl in slots:
+        card = {"slot": sl,
+                "title": sl.group.title if sl.group_id else sl.name,
+                "size": sl.group.size if sl.group_id else None,
+                "came": marked.get(sl.id, 0)}
+        # Занятие без тренера в колонку не попадёт — колонки именно по
+        # тренерам. Молча терять его нельзя, поэтому собираем отдельно и
+        # показываем под таблицей: это ещё и напоминание назначить тренера.
+        if sl.trainer_id:
+            group_cells.setdefault(sl.trainer_id, {}) \
+                       .setdefault(sl.time_from.hour, []).append(card)
+        else:
+            orphans.append(card)
+
     return render(request, "fitness/dash/board.html",
                   _ctx(club, staff, day=day, hours=hours, trainers=list(trainers),
-                       cells=cells, total=rows.count(),
+                       cells=cells, group_cells=group_cells, total=rows.count(),
+                       groups_today=len(slots), orphans=orphans,
                        prev_day=day - timedelta(days=1), next_day=day + timedelta(days=1),
                        today=timezone.localdate()))
 
@@ -446,6 +509,149 @@ def booking_status(request, club, staff, booking_id):
                              "label": booking.get_status_display()})
     messages.success(request, toast or "Не понял действие")
     return redirect(f"/ru/cabinet/fitness/{club.id}/board/?date={booking.date:%Y-%m-%d}")
+
+
+# ── Группы ──────────────────────────────────────────────────────────────────
+
+
+def _group_or_404(club, group_id):
+    return get_object_or_404(
+        TrainingGroup.objects.select_related("section", "trainer"),
+        id=group_id, club=club)
+
+
+@login_required(login_url=LOGIN_URL)
+@require()
+def groups(request, club, staff):
+    """Группы клуба: кто с кем занимается и по каким дням."""
+    rows = (TrainingGroup.objects.filter(club=club)
+            .select_related("section", "trainer")
+            .annotate(people=Count("links", filter=Q(links__is_active=True),
+                                   distinct=True))
+            .prefetch_related("slots")
+            .order_by("-is_active", "sort_order", "id"))
+
+    # Тренер видит свои группы первыми: на телефоне листать чужие незачем.
+    trainer = my_trainer(request.user, club)
+    if staff.role == TRAINER and trainer:
+        rows = rows.filter(trainer=trainer)
+
+    return render(request, "fitness/dash/groups.html",
+                  _ctx(club, staff, rows=list(rows),
+                       sections=club.sections.filter(is_active=True),
+                       trainers=club.trainers.filter(is_active=True),
+                       is_trainer=(staff.role == TRAINER)))
+
+
+@login_required(login_url=LOGIN_URL)
+@require(ADMIN, CASHIER)
+@require_POST
+def group_save(request, club, staff, group_id=None):
+    g = _group_or_404(club, group_id) if group_id else TrainingGroup(club=club)
+    name = (request.POST.get("name") or "").strip()
+    if not name:
+        messages.error(request, "У группы должно быть название.")
+        return redirect("fitness_dash:groups", club.id)
+
+    g.name = name
+    g.note = (request.POST.get("note") or "").strip()
+    g.section = club.sections.filter(id=request.POST.get("section") or 0).first()
+    g.trainer = club.trainers.filter(id=request.POST.get("trainer") or 0).first()
+    g.capacity = _int(request.POST.get("capacity"), 14)
+    g.is_active = bool(request.POST.get("is_active")) or not group_id
+    g.save()
+    messages.success(request, f"Группа «{g.title}» сохранена.")
+    return redirect("fitness_dash:group_detail", club.id, g.id)
+
+
+@login_required(login_url=LOGIN_URL)
+@require()
+def group_detail(request, club, staff, group_id):
+    """Состав группы и её расписание."""
+    g = _group_or_404(club, group_id)
+    roster = list(g.roster())
+    inside = {link.member_id for link in roster}
+
+    # Кого можно добавить: клиенты клуба, которых в группе ещё нет. Поиск
+    # нужен, потому что в зале их бывает несколько сотен.
+    q = (request.GET.get("q") or "").strip()
+    free = Member.objects.filter(club=club, is_active=True).exclude(id__in=inside)
+    if q:
+        free = free.filter(Q(full_name__icontains=q) | Q(phone__icontains=q))
+    free = free.order_by("full_name")[:40 if q else 20]
+
+    return render(request, "fitness/dash/group_detail.html",
+                  _ctx(club, staff, g=g, roster=roster, free=list(free), q=q,
+                       left=list(g.links.filter(is_active=False)
+                                 .select_related("member")[:30]),
+                       slots=list(g.schedule().select_related("trainer")),
+                       sections=club.sections.filter(is_active=True),
+                       trainers=club.trainers.filter(is_active=True),
+                       weekdays=GroupClass._meta.get_field("weekday").choices))
+
+
+@login_required(login_url=LOGIN_URL)
+@require(ADMIN, CASHIER)
+@require_POST
+def group_roster(request, club, staff, group_id):
+    """Добавить человека в группу или вывести из неё."""
+    g = _group_or_404(club, group_id)
+    action = request.POST.get("action")
+
+    if action == "add":
+        member = get_object_or_404(Member, id=request.POST.get("member") or 0, club=club)
+        link, created = GroupMember.objects.get_or_create(group=g, member=member)
+        if not created and not link.is_active:
+            # Вернулся: ту же связь включаем обратно, чтобы в истории не
+            # появилось два «вошёл» на одного человека.
+            link.is_active = True
+            link.left_on = None
+            link.joined_on = timezone.localdate()
+            link.save(update_fields=["is_active", "left_on", "joined_on", "updated_at"])
+            created = True
+        messages.success(request, f"{member.full_name} в группе «{g.title}»."
+                         if created else f"{member.full_name} уже в группе.")
+    elif action == "remove":
+        link = get_object_or_404(GroupMember, id=request.POST.get("link") or 0, group=g)
+        link.is_active = False
+        link.left_on = timezone.localdate()
+        link.save(update_fields=["is_active", "left_on", "updated_at"])
+        messages.success(request, f"{link.member.full_name} выведен из группы. "
+                         "Данные и история занятий остались.")
+    return redirect("fitness_dash:group_detail", club.id, g.id)
+
+
+@login_required(login_url=LOGIN_URL)
+@require(ADMIN, CASHIER)
+@require_POST
+def group_slot(request, club, staff, group_id):
+    """Поставить группе тренировку в расписание или убрать её."""
+    g = _group_or_404(club, group_id)
+
+    if request.POST.get("action") == "remove":
+        slot = get_object_or_404(GroupClass, id=request.POST.get("slot") or 0,
+                                 club=club, group=g)
+        slot.is_active = False
+        slot.save(update_fields=["is_active", "updated_at"])
+        messages.success(request, "Тренировка убрана из расписания.")
+        return redirect("fitness_dash:group_detail", club.id, g.id)
+
+    hhmm = _time(request.POST.get("time_from"))
+    if hhmm is None:
+        messages.error(request, "Укажите время начала.")
+        return redirect("fitness_dash:group_detail", club.id, g.id)
+
+    GroupClass.objects.create(
+        club=club, group=g, section=g.section, trainer=g.trainer,
+        name=g.title,
+        weekday=_int(request.POST.get("weekday"), 0),
+        time_from=hhmm,
+        duration_min=_int(request.POST.get("duration_min"), 60),
+        capacity=g.capacity,
+        room=(request.POST.get("room") or "").strip(),
+    )
+    messages.success(request, "Тренировка добавлена в расписание.")
+    return redirect("fitness_dash:group_detail", club.id, g.id)
 
 
 # ── Заявки (CRM) ────────────────────────────────────────────────────────────
@@ -787,7 +993,11 @@ def classes(request, club, staff):
 
     trainer = my_trainer(request.user, club)
     rows = (GroupClass.objects.filter(club=club, is_active=True)
-            .select_related("trainer", "section").order_by("time_from", "id"))
+            .select_related("trainer", "section", "group", "group__section")
+            .annotate(group_size=Count("group__links",
+                                       filter=Q(group__links__is_active=True),
+                                       distinct=True))
+            .order_by("time_from", "id"))
     if staff.role == TRAINER and trainer:
         rows = rows.filter(trainer=trainer)
     rows = list(rows)
@@ -855,13 +1065,27 @@ def class_save(request, club, staff):
 @require()
 def class_day(request, club, staff, class_id):
     """Кто записан на занятие в этот день — и отметки о приходе."""
-    cls = get_object_or_404(GroupClass.objects.select_related("trainer", "section"),
-                            id=class_id, club=club)
+    cls = get_object_or_404(
+        GroupClass.objects.select_related("trainer", "section", "group"),
+        id=class_id, club=club)
     day = _date(request.GET.get("date"))
-    rows = (cls.bookings.filter(date=day).select_related("member")
-            .order_by("id"))
+    rows = list(cls.bookings.filter(date=day).select_related("member")
+                .order_by("id"))
+
+    # У занятия группы состав известен заранее: показываем весь список и
+    # отмечаем каждого одним нажатием. Записи на эту дату заводить заранее
+    # незачем — они появляются в момент отметки.
+    roster = []
+    if cls.group_id:
+        marks = {b.member_id: b for b in rows if b.member_id}
+        for link in cls.group.roster():
+            roster.append({"member": link.member, "booking": marks.get(link.member_id)})
+        rows = [b for b in rows if b.member_id not in marks or not b.member_id]
+
     return render(request, "fitness/dash/class_day.html",
-                  _ctx(club, staff, cls=cls, day=day, rows=rows,
+                  _ctx(club, staff, cls=cls, day=day, rows=rows, roster=roster,
+                       came=sum(1 for r in roster
+                                if r["booking"] and r["booking"].status == "came"),
                        free=cls.free_on(day),
                        members=Member.objects.filter(club=club, is_active=True)
                                .order_by("full_name")[:500]))
@@ -898,23 +1122,61 @@ def class_book(request, club, staff, class_id):
 @login_required(login_url=LOGIN_URL)
 @require()
 @require_POST
-def class_booking_status(request, club, staff, booking_id):
-    b = get_object_or_404(ClassBooking.objects.select_related("group_class", "member"),
-                          id=booking_id, group_class__club=club)
+def class_mark(request, club, staff, class_id):
+    """Отметить человека из состава группы: пришёл или нет.
+
+    Запись на дату создаём в момент отметки: заводить её заранее на весь
+    состав и на все дни значило бы засорить базу занятиями, которых никто
+    не открывал.
+    """
+    cls = get_object_or_404(GroupClass.objects.select_related("group", "trainer"),
+                            id=class_id, club=club)
+    day = _date(request.POST.get("date"))
+    member = get_object_or_404(Member, id=request.POST.get("member") or 0, club=club)
     action = request.POST.get("action")
+
+    b, _ = ClassBooking.objects.get_or_create(
+        group_class=cls, date=day, member=member,
+        defaults={"created_by": request.user,
+                  "client_name": member.full_name, "phone": member.phone})
+    _booking_mark(request, club, b, action)
+    return redirect(reverse("fitness_dash:class_day", args=[club.id, cls.id])
+                    + f"?date={day:%Y-%m-%d}")
+
+
+def _booking_mark(request, club, b, action):
+    """Ставит отметку на записи; «пришёл» списывает посещение."""
     labels = {"came": ClassBooking.Status.CAME,
               "no_show": ClassBooking.Status.NO_SHOW,
               "cancel": ClassBooking.Status.CANCELLED,
               "back": ClassBooking.Status.BOOKED}
-    if action in labels:
-        b.status = labels[action]
-        b.save(update_fields=["status", "updated_at"])
-        # Пришёл на групповое — это посещение зала: списываем, как на входе
-        if b.status == ClassBooking.Status.CAME and b.member_id:
-            services.check_in(club, b.member, trainer=b.group_class.trainer,
-                              actor=request.user)
-    return redirect(f"/ru/cabinet/fitness/{club.id}/classes/{b.group_class_id}/"
-                    f"?date={b.date:%Y-%m-%d}")
+    if action not in labels:
+        return
+    b.status = labels[action]
+    b.save(update_fields=["status", "updated_at"])
+    # Пришёл на групповое — это посещение зала: списываем, как на входе
+    if b.status == ClassBooking.Status.CAME and b.member_id:
+        ok, note, _visit = services.check_in(club, b.member,
+                                             trainer=b.group_class.trainer,
+                                             actor=request.user)
+        # Не пропустили — говорим вслух: у человека мог кончиться абонемент,
+        # и отметка «пришёл» без предупреждения выглядела бы как списание.
+        if not ok:
+            messages.warning(request, f"{b.member.full_name}: {note}")
+
+
+@login_required(login_url=LOGIN_URL)
+@require()
+@require_POST
+def class_booking_status(request, club, staff, booking_id):
+    b = get_object_or_404(ClassBooking.objects.select_related("group_class", "member"),
+                          id=booking_id, group_class__club=club)
+    _booking_mark(request, club, b, request.POST.get("action"))
+    # Адрес собираем через reverse: кабинет живёт под /ru/, /ky/ и /en/, а
+    # прибитый «/ru/» выкидывал кассира из его языка на каждой отметке.
+    return redirect(reverse("fitness_dash:class_day",
+                            args=[club.id, b.group_class_id])
+                    + f"?date={b.date:%Y-%m-%d}")
 
 # ── Сотрудники клуба ────────────────────────────────────────────────────────
 

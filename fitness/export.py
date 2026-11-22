@@ -188,6 +188,27 @@ def report_workbook(club, start, end, *, with_money=True, with_profit=False):
     ])
 
     # ── Тренеры ──
+    # Состав групп: кто в какой группе и по каким дням ходит. Это первое,
+    # что спрашивают, когда тренер уходит и группу надо передать.
+    ws = wb.create_sheet("Группы")
+    _head(ws, ["Группа", "Секция", "Тренер", "Людей", "Мест", "Расписание",
+               "Состав", "Пометка"],
+          widths=[26, 18, 18, 9, 8, 26, 50, 24])
+    WD = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+    grows = []
+    for g in (club.training_groups.filter(is_active=True)
+              .select_related("section", "trainer")
+              .prefetch_related("slots", "links__member")):
+        roster = [l.member.full_name for l in g.links.all() if l.is_active]
+        plan = [f"{WD[s.weekday]} {s.time_from:%H:%M}"
+                for s in sorted(g.slots.all(), key=lambda x: (x.weekday, x.time_from))
+                if s.is_active]
+        grows.append((g.title, g.section.name if g.section_id else "",
+                      g.trainer.name if g.trainer_id else "не назначен",
+                      len(roster), g.capacity, ", ".join(plan),
+                      ", ".join(sorted(roster)), g.note))
+    _rows(ws, grows)
+
     ws = wb.create_sheet("Тренеры")
     _head(ws, ["Тренер", "Записей", "Пришли", "Не пришли", "Дошли, %",
                "Групповых занятий", "Цена тренировки"],
@@ -239,9 +260,10 @@ def members_response(club, members, *, with_money=True):
     """База клиентов — её выгружают, чтобы прозвонить или свести долги."""
     wb = _book()
     ws = wb.create_sheet("Клиенты")
-    cols = ["ФИО", "Телефон", "Карта", "Дата рождения", "Абонемент", "Осталось",
-            "Действует до", "Состояние", "Последнее посещение", "Всего посещений"]
-    widths = [28, 16, 14, 14, 24, 11, 14, 16, 20, 16]
+    cols = ["ФИО", "Телефон", "Карта", "Дата рождения", "Группы", "Абонемент",
+            "Осталось", "Действует до", "Состояние", "Последнее посещение",
+            "Всего посещений"]
+    widths = [28, 16, 14, 14, 26, 24, 11, 14, 16, 20, 16]
     if with_money:
         cols += ["Долг, сом"]
         widths += [12]
@@ -256,6 +278,8 @@ def members_response(club, members, *, with_money=True):
         line = [
             m.full_name, m.phone, m.card_id,
             m.birth_date.strftime("%d.%m.%Y") if m.birth_date else "",
+            ", ".join(sorted(l.group.title for l in m.group_links.all()
+                             if l.is_active)),
             ms.plan.name if ms else "",
             (ms.remaining_visits if ms and ms.plan.visits_number else
              ("безлимит" if ms else "")),
@@ -269,7 +293,7 @@ def members_response(club, members, *, with_money=True):
             line.append(int(sum(x.debt_amount for x in m.memberships.all())))
         line.append(m.notes)
         rows.append(line)
-    _rows(ws, rows, money_cols=((11,) if with_money else ()))
+    _rows(ws, rows, money_cols=((12,) if with_money else ()))
     return _answer(wb, f"klienty_{club.id}_{timezone.localdate():%Y%m%d}.xlsx")
 
 
