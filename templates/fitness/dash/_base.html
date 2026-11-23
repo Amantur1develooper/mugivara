@@ -89,6 +89,10 @@
   /* Выбор времени: родное поле браузера (на телефоне это колесо) плюс ряд
      частых часов в одно нажатие. Руками набирать «14:30» на ресепшене
      неудобно и легко промахнуться. */
+  /* Отменённое не прячем, а гасим: иначе про отмену никто не узнает */
+  .fc-row.is-off { opacity: .6; }
+  .fc-row.is-off .fc-row-name { text-decoration: line-through; }
+
   .fc-slots { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
   .fc-slot {
     appearance: none; cursor: pointer; font: inherit; font-size: 12.5px; font-weight: 700;

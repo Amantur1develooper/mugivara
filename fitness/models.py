@@ -576,6 +576,12 @@ class TrainingGroup(TimeStampedModel):
     note     = models.CharField("Пометка", max_length=200, blank=True, default="",
                                 help_text="Возраст, уровень, зал — что важно помнить")
     capacity = models.PositiveSmallIntegerField("Мест в группе", default=14)
+    # Свой чат группы: у детских групп это чат родителей, и напоминание
+    # о тренировке им нужнее, чем общему чату зала. Не заполнен — шлём в
+    # чат зала, чтобы напоминание не пропало.
+    tg_chat_id = models.CharField("Чат группы в Telegram", max_length=50,
+                                  blank=True, default="")
+    tg_thread_id = models.PositiveIntegerField("Тема в чате", null=True, blank=True)
     is_active = models.BooleanField("Набор идёт", default=True)
     sort_order = models.PositiveSmallIntegerField("Порядок", default=0)
 
@@ -674,6 +680,14 @@ class GroupClass(TimeStampedModel):
     def free_on(self, day):
         return max(0, self.capacity - self.taken_on(day))
 
+    def day_state(self, day):
+        """Состояние этой тренировки в конкретный день (может не быть)."""
+        return self.days.filter(date=day).first()
+
+    def is_cancelled_on(self, day):
+        st = self.day_state(day)
+        return bool(st and st.is_cancelled)
+
     @property
     def who(self):
         """Кто ходит: название группы или «открытая запись»."""
@@ -683,6 +697,36 @@ class GroupClass(TimeStampedModel):
     def seats(self):
         """Мест: у группы — её размер, у открытого занятия — своё число."""
         return self.group.capacity if self.group_id else self.capacity
+
+
+class ClassDay(TimeStampedModel):
+    """Что с тренировкой в конкретный день: отменена ли и напоминали ли.
+
+    Расписание задано по дням недели, но жизнь вносит правки: праздник,
+    карантин, тренер заболел. Раньше отменить одну тренировку было нельзя
+    — только убрать её из расписания целиком, а потом вернуть. Здесь
+    хранится состояние одной даты, и здесь же отметка об отправленном
+    напоминании, чтобы повторный запуск не слал его второй раз.
+    """
+    group_class = models.ForeignKey(GroupClass, on_delete=models.CASCADE,
+                                    related_name="days")
+    date = models.DateField("Дата")
+    is_cancelled = models.BooleanField("Отменена", default=False)
+    reason = models.CharField("Причина", max_length=200, blank=True, default="")
+    cancelled_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                     on_delete=models.SET_NULL, related_name="+")
+    reminded_at = models.DateTimeField("Напомнили", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "День занятия"
+        verbose_name_plural = "Дни занятий"
+        unique_together = [("group_class", "date")]
+        ordering = ["-date"]
+        indexes = [models.Index(fields=["date", "is_cancelled"])]
+
+    def __str__(self):
+        mark = "отменена" if self.is_cancelled else "идёт"
+        return f"{self.group_class.name} {self.date:%d.%m} — {mark}"
 
 
 class ClassBooking(TimeStampedModel):

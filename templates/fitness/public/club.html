@@ -191,7 +191,7 @@
             {% for it in d.items %}
               <div class="plan">
                 <div>
-                  <div class="plan-n">
+                  <div class="plan-n"{% if it.cancelled %} style="text-decoration:line-through;opacity:.6"{% endif %}>
                     {{ it.cls.time_from|time:"H:i" }} ·
                     {% if it.cls.group_id %}{{ it.cls.group.title }}{% else %}{{ it.cls.name }}{% endif %}
                   </div>
@@ -202,7 +202,9 @@
                   </div>
                 </div>
                 <div style="text-align:right">
-                  {% if it.is_group and it.free == 0 %}
+                  {% if it.cancelled %}
+                    <div class="plan-p" style="font-size:13px">отменена</div>
+                  {% elif it.is_group and it.free == 0 %}
                     <div class="plan-p" style="font-size:13px">группа набрана</div>
                   {% elif it.free == 0 %}
                     <div class="plan-s" style="color:#f87171">мест нет</div>

@@ -17,13 +17,15 @@
     </div>
     <div class="fc-list">
       {% for it in d.items %}
-        <a class="fc-row" href="{% url 'fitness_dash:class_day' club.id it.cls.id %}?date={{ d.day|date:'Y-m-d' }}">
+        <a class="fc-row{% if it.cancelled %} is-off{% endif %}"
+           href="{% url 'fitness_dash:class_day' club.id it.cls.id %}?date={{ d.day|date:'Y-m-d' }}">
           <div class="fc-row-main">
             <div class="fc-row-name">
               {{ it.cls.time_from|time:"H:i" }} ·
               {% if it.cls.group_id %}{{ it.cls.group.title }}{% else %}{{ it.cls.name }}{% endif %}
             </div>
             <div class="fc-row-sub">
+              {% if it.cancelled %}⛔️ отменена · {% endif %}
               {% if it.cls.group_id %}👥 группа {{ it.cls.group_size }} чел. · {% endif %}
               {% if it.cls.trainer %}{{ it.cls.trainer.name }}{% else %}без тренера{% endif %}
               {% if it.cls.room %} · {{ it.cls.room }}{% endif %}

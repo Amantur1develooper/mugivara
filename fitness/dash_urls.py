@@ -37,6 +37,7 @@ urlpatterns = [
     path("<int:club_id>/classes/<int:class_id>/", v.class_day, name="class_day"),
     path("<int:club_id>/classes/<int:class_id>/book/", v.class_book, name="class_book"),
     path("<int:club_id>/classes/<int:class_id>/mark/", v.class_mark, name="class_mark"),
+    path("<int:club_id>/classes/<int:class_id>/cancel/", v.class_cancel, name="class_cancel"),
     path("<int:club_id>/class-booking/<int:booking_id>/status/", v.class_booking_status,
          name="class_booking_status"),
 

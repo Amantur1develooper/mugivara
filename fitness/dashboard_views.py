@@ -22,8 +22,8 @@ from integrations import tgbot
 from . import services, tg
 from .access import (ADMIN, CASHIER, TRAINER, can_see_money, can_see_profit,
                      my_clubs, my_trainer, require, staff_of)
-from .models import (SECTION_PRESETS, ClassBooking, ClubStaff, Expense,
-                     FitnessClub, GroupClass, GroupMember, Lead, LeadNote,
+from .models import (SECTION_PRESETS, ClassBooking, ClassDay, ClubStaff,
+                     Expense, FitnessClub, GroupClass, GroupMember, Lead, LeadNote,
                      Member, Membership, MembershipPlan, Payment, Section,
                      Trainer, TrainerBooking, TrainerSchedule, TrainingGroup,
                      Visit)
@@ -404,6 +404,10 @@ def board(request, club, staff):
         slots = slots.filter(trainer=trainer)
     slots = list(slots)
 
+    cancelled = {c.group_class_id for c in
+                 ClassDay.objects.filter(group_class__in=slots, date=day,
+                                         is_cancelled=True)}
+
     # Сколько человек уже отметили на каждом занятии — одним запросом на всех
     marked = dict(ClassBooking.objects
                   .filter(group_class__in=slots, date=day,
@@ -433,7 +437,8 @@ def board(request, club, staff):
         card = {"slot": sl,
                 "title": sl.group.title if sl.group_id else sl.name,
                 "size": sl.group.size if sl.group_id else None,
-                "came": marked.get(sl.id, 0)}
+                "came": marked.get(sl.id, 0),
+                "cancelled": sl.id in cancelled}
         # Занятие без тренера в колонку не попадёт — колонки именно по
         # тренерам. Молча терять его нельзя, поэтому собираем отдельно и
         # показываем под таблицей: это ещё и напоминание назначить тренера.
@@ -558,6 +563,9 @@ def group_save(request, club, staff, group_id=None):
     g.section = club.sections.filter(id=request.POST.get("section") or 0).first()
     g.trainer = club.trainers.filter(id=request.POST.get("trainer") or 0).first()
     g.capacity = _int(request.POST.get("capacity"), 14)
+    g.tg_chat_id = (request.POST.get("tg_chat_id") or "").strip()[:50]
+    thread = (request.POST.get("tg_thread_id") or "").strip()
+    g.tg_thread_id = int(thread) if thread.isdigit() else None
     g.is_active = bool(request.POST.get("is_active")) or not group_id
     g.save()
     messages.success(request, f"Группа «{g.title}» сохранена.")
@@ -1012,6 +1020,11 @@ def classes(request, club, staff):
     for b in booked:
         taken[(b["group_class_id"], b["date"])] = b["n"]
 
+    # Отменённые дни одним запросом на неделю
+    cancelled = {(c.group_class_id, c.date) for c in
+                 ClassDay.objects.filter(group_class__in=rows, date__in=days,
+                                         is_cancelled=True)}
+
     grid = []
     for d in days:
         items = []
@@ -1020,7 +1033,8 @@ def classes(request, club, staff):
                 continue
             used = taken.get((c.id, d), 0)
             items.append({"cls": c, "used": used,
-                          "free": max(0, c.capacity - used)})
+                          "free": max(0, c.capacity - used),
+                          "cancelled": (c.id, d) in cancelled})
         grid.append({"day": d, "items": items, "is_today": d == timezone.localdate()})
 
     return render(request, "fitness/dash/classes.html",
@@ -1069,6 +1083,7 @@ def class_day(request, club, staff, class_id):
         GroupClass.objects.select_related("trainer", "section", "group"),
         id=class_id, club=club)
     day = _date(request.GET.get("date"))
+    trainer_of = my_trainer(request.user, club)
     rows = list(cls.bookings.filter(date=day).select_related("member")
                 .order_by("id"))
 
@@ -1082,8 +1097,12 @@ def class_day(request, club, staff, class_id):
             roster.append({"member": link.member, "booking": marks.get(link.member_id)})
         rows = [b for b in rows if b.member_id not in marks or not b.member_id]
 
+    state = cls.day_state(day)
     return render(request, "fitness/dash/class_day.html",
                   _ctx(club, staff, cls=cls, day=day, rows=rows, roster=roster,
+                       state=state,
+                       can_cancel=(staff.role != TRAINER
+                                   or (trainer_of and cls.trainer_id == trainer_of.id)),
                        came=sum(1 for r in roster
                                 if r["booking"] and r["booking"].status == "came"),
                        free=cls.free_on(day),
@@ -1117,6 +1136,60 @@ def class_book(request, club, staff, class_id):
     )
     messages.success(request, "Записали")
     return redirect(f"/ru/cabinet/fitness/{club.id}/classes/{cls.id}/?date={day:%Y-%m-%d}")
+
+
+@login_required(login_url=LOGIN_URL)
+@require()
+@require_POST
+def class_cancel(request, club, staff, class_id):
+    """Отменить тренировку в один конкретный день — или вернуть её.
+
+    Убирать занятие из расписания целиком ради праздника неправильно: оно
+    пропадёт и на все следующие недели. Отмена живёт на дате.
+    """
+    cls = get_object_or_404(GroupClass.objects.select_related("group", "trainer"),
+                            id=class_id, club=club)
+    day = _date(request.POST.get("date"))
+    back = (reverse("fitness_dash:class_day", args=[club.id, cls.id])
+            + f"?date={day:%Y-%m-%d}")
+
+    # Тренер отменяет только свою тренировку: чужие отменять ему незачем.
+    trainer = my_trainer(request.user, club)
+    if staff.role == TRAINER and (not trainer or cls.trainer_id != trainer.id):
+        messages.error(request, "Отменить можно только свою тренировку.")
+        return redirect(back)
+
+    state, _ = ClassDay.objects.get_or_create(group_class=cls, date=day)
+    # В родительском чате логин вида «boss_cn» выглядит мусором: если имя
+    # сотрудника не заполнено, строку «отменил» лучше не писать вовсе.
+    actor = request.user.get_full_name().strip()
+
+    if request.POST.get("action") == "restore":
+        state.is_cancelled = False
+        state.reason = ""
+        state.save(update_fields=["is_cancelled", "reason", "updated_at"])
+        if cls.group_id:
+            tgbot.in_background(tg.notify_group, cls.group,
+                                tg.class_restored_text(cls, day))
+        messages.success(request, "Тренировка возвращена в расписание.")
+        return redirect(back)
+
+    state.is_cancelled = True
+    state.reason = (request.POST.get("reason") or "").strip()[:200]
+    state.cancelled_by = request.user
+    state.save(update_fields=["is_cancelled", "reason", "cancelled_by", "updated_at"])
+
+    # Группе сообщаем сразу: отмена, о которой узнали у закрытой двери,
+    # хуже самой отмены.
+    if cls.group_id:
+        tgbot.in_background(tg.notify_group, cls.group,
+                            tg.class_cancelled_text(cls, day, state.reason, actor))
+        messages.success(request, "Тренировка отменена, группе отправлено сообщение.")
+    else:
+        tgbot.in_background(tg.notify_gym, club,
+                            tg.class_cancelled_text(cls, day, state.reason, actor))
+        messages.success(request, "Тренировка отменена.")
+    return redirect(back)
 
 
 @login_required(login_url=LOGIN_URL)

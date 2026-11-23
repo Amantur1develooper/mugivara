@@ -65,7 +65,7 @@ def _week_schedule(club):
     """Расписание групповых занятий на неделю вперёд со свободными местами."""
     from django.db.models import Count, Q
 
-    from .models import ClassBooking, GroupClass
+    from .models import ClassBooking, ClassDay, GroupClass
 
     today = timezone.localdate()
     days = [today + timedelta(days=i) for i in range(7)]
@@ -87,6 +87,12 @@ def _week_schedule(club):
                 .values("group_class_id", "date").annotate(n=Count("id"))):
         taken[(row["group_class_id"], row["date"])] = row["n"]
 
+    # Отменённые дни: человек не должен прийти к закрытой двери, потому
+    # что на сайте занятие стояло как обычно.
+    cancelled = {(c.group_class_id, c.date) for c in
+                 ClassDay.objects.filter(group_class__in=classes, date__in=days,
+                                         is_cancelled=True)}
+
     out = []
     for d in days:
         items = []
@@ -100,7 +106,8 @@ def _week_schedule(club):
                 free = max(0, c.group.capacity - c.group_size)
             else:
                 free = max(0, c.capacity - taken.get((c.id, d), 0))
-            items.append({"cls": c, "free": free, "is_group": bool(c.group_id)})
+            items.append({"cls": c, "free": free, "is_group": bool(c.group_id),
+                          "cancelled": (c.id, d) in cancelled})
         out.append({"day": d, "items": items, "is_today": d == today})
     return out
 

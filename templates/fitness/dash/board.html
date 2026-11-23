@@ -34,13 +34,15 @@
         <td class="bd-cell">
           {% with gslot=group_cells|get:t.id %}
             {% for g in gslot|get:h %}
-            <a class="bd-chip bd-group"
+            <a class="bd-chip bd-group{% if g.cancelled %} bd-off{% endif %}"
                href="{% url 'fitness_dash:class_day' club.id g.slot.id %}?date={{ day|date:'Y-m-d' }}">
               <div class="bd-chip-t">{{ g.slot.time_from|time:"H:i" }} · {{ g.title }}</div>
               <div class="bd-chip-s">
-                {% if g.size %}группа {{ g.size }} чел.{% else %}открытая запись{% endif %}
-                {% if g.came %} · пришли {{ g.came }}{% endif %}
-                {% if g.slot.room %} · {{ g.slot.room }}{% endif %}
+                {% if g.cancelled %}⛔️ отменена{% else %}
+                  {% if g.size %}группа {{ g.size }} чел.{% else %}открытая запись{% endif %}
+                  {% if g.came %} · пришли {{ g.came }}{% endif %}
+                  {% if g.slot.room %} · {{ g.slot.room }}{% endif %}
+                {% endif %}
               </div>
             </a>
             {% endfor %}
@@ -168,6 +170,10 @@
     border-left-width: 4px;
   }
   .bd-chip.bd-group:hover { border-color: rgba(37,99,235,.6); }
+  /* Отменённая тренировка остаётся в сетке, но гасится и перечёркивается:
+     убрать её совсем значило бы, что про отмену никто не узнает. */
+  .bd-chip.bd-off { opacity: .55; background: var(--bg); border-color: var(--border); }
+  .bd-chip.bd-off .bd-chip-t { text-decoration: line-through; }
   .bd-chip.st-came { background: rgba(5,150,105,.08); border-color: rgba(5,150,105,.35); }
   .bd-chip.st-no_show { background: rgba(220,38,38,.07); border-color: rgba(220,38,38,.3); }
   .bd-chip-t { font-size: 12px; font-weight: 700; line-height: 1.25; }

@@ -189,6 +189,19 @@
     </div>
     <div style="margin-top:10px"><label class="fc-label">Пометка</label>
       <input class="fc-input" name="note" value="{{ g.note }}"></div>
+    <div class="fc-grid2" style="margin-top:10px">
+      <div><label class="fc-label">Чат группы в Telegram</label>
+        <input class="fc-input" name="tg_chat_id" value="{{ g.tg_chat_id }}"
+               placeholder="-1001234567890"></div>
+      <div><label class="fc-label">Тема в чате</label>
+        <input class="fc-input" name="tg_thread_id" type="number"
+               value="{{ g.tg_thread_id|default_if_none:'' }}"></div>
+    </div>
+    <div class="fc-sub" style="margin-top:6px;line-height:1.5">
+      Сюда уйдут напоминания о тренировке и сообщение об отмене — у детских
+      групп это чат родителей. Номер узнать: добавьте бота в чат и напишите
+      там <code>/id</code>. Пусто — напоминание пойдёт в общий чат зала.
+    </div>
     <label style="display:flex;gap:8px;align-items:center;margin-top:10px">
       <input type="checkbox" name="is_active" {% if g.is_active %}checked{% endif %}>
       <span class="fc-sub">Набор идёт</span>

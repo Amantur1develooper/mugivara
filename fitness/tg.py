@@ -7,6 +7,7 @@
 прошёл в зал». Поэтому чатов два, и шлём мы в них разное.
 """
 import logging
+from datetime import timedelta
 
 from django.utils import timezone
 
@@ -311,4 +312,77 @@ def digest_text(club, day, birthdays, expiring=(), lost=(), overdue=()):
         lines.append("")
         lines.append("Сегодня никого поздравлять и никому звонить не нужно.")
     return "\n".join(lines)
+
+# ── Тренировки: напоминание и отмена ────────────────────────────────────────
+
+WEEKDAYS_SHORT = ["понедельник", "вторник", "среду", "четверг",
+                  "пятницу", "субботу", "воскресенье"]
+
+
+def group_chat(group):
+    """Куда писать группе: её собственный чат, иначе чат зала.
+
+    У детских групп свой чат с родителями — напоминание о тренировке
+    нужно им, а не общему чату зала. Чата нет — пишем в зал, лишь бы
+    напоминание не пропало вовсе.
+    """
+    chat = (group.tg_chat_id or "").strip() if group else ""
+    if chat:
+        return chat, group.tg_thread_id
+    return gym_chat(group.club) if group else (None, None)
+
+
+def notify_group(group, text):
+    chat, thread = group_chat(group)
+    if not chat:
+        return False
+    return bool(tgbot.send_card(chat, thread, text, None))
+
+
+def _when_word(day):
+    """«сегодня», «завтра» или дата: так читают расписание вслух."""
+    today = timezone.localdate()
+    if day == today:
+        return "сегодня"
+    if day == today + timedelta(days=1):
+        return "завтра"
+    return f"в {WEEKDAYS_SHORT[day.weekday()]} {day:%d.%m}"
+
+
+def class_reminder_text(slot, day):
+    """Напоминание о тренировке."""
+    title = slot.group.title if slot.group_id else slot.name
+    lines = [f"🔔 ТРЕНИРОВКА {_when_word(day).upper()}",
+             f"🥋 {title}",
+             f"🕒 {day:%d.%m} в {slot.time_from:%H:%M}"
+             f" · {slot.duration_min} мин"]
+    if slot.trainer_id:
+        lines.append(f"🧑‍🏫 {slot.trainer.name}")
+    if slot.room:
+        lines.append(f"📍 {slot.room}")
+    if slot.group_id:
+        lines.append(f"👥 в группе {slot.group.size} чел.")
+    return "\n".join(lines)
+
+
+def class_cancelled_text(slot, day, reason="", actor=""):
+    """Сообщение об отмене одной тренировки."""
+    title = slot.group.title if slot.group_id else slot.name
+    lines = ["⛔️ ТРЕНИРОВКА ОТМЕНЕНА",
+             f"🥋 {title}",
+             f"🗓 {day:%d.%m} ({_when_word(day)}) в {slot.time_from:%H:%M}"]
+    if reason:
+        lines.append(f"💬 {reason}")
+    if slot.trainer_id:
+        lines.append(f"🧑‍🏫 {slot.trainer.name}")
+    if actor:
+        lines.append(f"✍️ отменил: {actor}")
+    return "\n".join(lines)
+
+
+def class_restored_text(slot, day):
+    title = slot.group.title if slot.group_id else slot.name
+    return ("✅ ТРЕНИРОВКА СОСТОИТСЯ\n"
+            f"🥋 {title}\n"
+            f"🗓 {day:%d.%m} ({_when_word(day)}) в {slot.time_from:%H:%M}")
 

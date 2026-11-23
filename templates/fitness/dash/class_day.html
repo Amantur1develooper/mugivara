@@ -4,6 +4,25 @@
 {% block fc_sub %}{{ cls.time_from|time:"H:i" }} · {{ day|date:"l, d.m.Y" }}{% endblock %}
 
 {% block fc_content %}
+{% if state and state.is_cancelled %}
+<div class="fc-card" style="border-color:rgba(220,38,38,.45);background:rgba(220,38,38,.05)">
+  <div style="font-weight:800;font-size:15px">⛔️ Тренировка отменена</div>
+  <div class="fc-row-sub" style="margin-top:5px">
+    {% if state.reason %}{{ state.reason }}<br>{% endif %}
+    {% if cls.group_id %}Группе отправлено сообщение.{% endif %}
+  </div>
+  {% if can_cancel %}
+  <form method="post" action="{% url 'fitness_dash:class_cancel' club.id cls.id %}"
+        style="margin-top:10px">
+    {% csrf_token %}
+    <input type="hidden" name="date" value="{{ day|date:'Y-m-d' }}">
+    <input type="hidden" name="action" value="restore">
+    <button class="fc-btn" type="submit">Вернуть тренировку</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+
 <div class="fc-kpis">
   {% if cls.group_id %}
   <div class="fc-kpi"><div class="fc-kpi-l">Группа</div>
@@ -137,6 +156,26 @@
 </div>
 {% else %}
 <div class="fc-card fc-empty">Все {{ cls.capacity }} мест заняты</div>
+{% endif %}
+
+{% if can_cancel and not state.is_cancelled %}
+<details class="fc-card">
+  <summary style="cursor:pointer;font-weight:700;font-size:13.5px">Отменить эту тренировку</summary>
+  <form method="post" action="{% url 'fitness_dash:class_cancel' club.id cls.id %}"
+        style="margin-top:12px">
+    {% csrf_token %}
+    <input type="hidden" name="date" value="{{ day|date:'Y-m-d' }}">
+    <label class="fc-label">Причина</label>
+    <input class="fc-input" name="reason" placeholder="праздник, тренер заболел">
+    <button class="fc-btn" type="submit" style="margin-top:12px">
+      Отменить {{ day|date:"d.m" }}
+    </button>
+    <div class="fc-sub" style="margin-top:8px">
+      Отменится только этот день — расписание на следующие недели останется.
+      {% if cls.group_id %}Группе уйдёт сообщение в Telegram.{% endif %}
+    </div>
+  </form>
+</details>
 {% endif %}
 
 <a href="{% url 'fitness_dash:classes' club.id %}?date={{ day|date:'Y-m-d' }}"
