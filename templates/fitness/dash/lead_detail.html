@@ -1,6 +1,5 @@
 {% extends "fitness/dash/_base.html" %}
 {% block title %}Заявка · {{ lead.phone }}{% endblock %}
-{% block t_leads %}on{% endblock %}
 {% block fc_sub %}{{ lead.get_source_display }} · {{ lead.created_at|date:"d.m.Y H:i" }}{% endblock %}
 
 {% block fc_content %}

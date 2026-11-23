@@ -1,7 +1,6 @@
 {% extends "fitness/dash/_base.html" %}
 {% load fitness_extras %}
 {% block title %}Отчёт — {{ club.name }}{% endblock %}
-{% block t_reports %}on{% endblock %}
 {% block fc_sub %}{{ start|date:"d.m.Y" }} — {{ end|date:"d.m.Y" }}{% endblock %}
 
 {% block fc_content %}

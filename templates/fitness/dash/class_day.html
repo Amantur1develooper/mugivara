@@ -1,6 +1,5 @@
 {% extends "fitness/dash/_base.html" %}
 {% block title %}{{ cls.name }} · {{ day|date:"d.m" }}{% endblock %}
-{% block t_classes %}on{% endblock %}
 {% block fc_sub %}{{ cls.time_from|time:"H:i" }} · {{ day|date:"l, d.m.Y" }}{% endblock %}
 
 {% block fc_content %}

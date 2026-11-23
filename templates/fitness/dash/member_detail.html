@@ -1,6 +1,5 @@
 {% extends "fitness/dash/_base.html" %}
 {% block title %}{{ member.full_name }}{% endblock %}
-{% block t_members %}on{% endblock %}
 {% block fc_sub %}{{ member.phone }}{% if member.card_id %} · карта {{ member.card_id }}{% endif %}{% endblock %}
 
 {% block fc_content %}

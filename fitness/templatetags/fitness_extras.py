@@ -24,3 +24,35 @@ def money(value):
         return f"{int(value):,}".replace(",", " ")
     except (TypeError, ValueError):
         return value
+
+# Какому разделу принадлежит страница: подсветить пункт меню надо и в
+# левом меню кабинета, и в ленте на телефоне. Выводить это блоками
+# шаблона нельзя — блок можно вставить только один раз, — поэтому
+# определяем по имени адреса.
+_SECTIONS = {
+    "home": "home",
+    "checkin": "checkin", "checkin_pass": "checkin",
+    "members": "members", "member_detail": "members", "member_save": "members",
+    "member_new": "members", "membership_sell": "members",
+    "membership_action": "members", "members_export": "members",
+    "debt_settle": "members",
+    "groups": "groups", "group_detail": "groups", "group_new": "groups",
+    "group_save": "groups", "group_roster": "groups", "group_slot": "groups",
+    "debts": "debts", "debts_settle_member": "debts",
+    "classes": "classes", "class_save": "classes", "class_day": "classes",
+    "class_book": "classes", "class_mark": "classes", "class_mark_all": "classes",
+    "class_cancel": "classes", "class_booking_status": "classes",
+    "board": "board", "booking_save": "board", "booking_status": "board",
+    "leads": "leads", "lead_detail": "leads", "lead_save": "leads",
+    "lead_new": "leads", "lead_to_member": "leads", "leads_export": "leads",
+    "reports": "reports", "reports_export": "reports",
+    "expenses": "expenses", "expense_add": "expenses",
+    "setup": "setup", "staff_add": "setup", "staff_edit": "setup",
+    "staff_password": "setup",
+}
+
+
+@register.filter
+def fit_section(url_name):
+    return _SECTIONS.get(url_name or "", "")
+

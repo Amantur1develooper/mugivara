@@ -346,6 +346,12 @@
 
   <nav class="db-nav">
 
+    {% comment %}
+      Разделы текущего заведения — первыми: работают в них, а не в общей
+      аналитике, и прокручивать до них меню неправильно.
+    {% endcomment %}
+    {% block sidebar_first %}{% endblock %}
+
     {# Бизнес — section скрыт если нет ни одной орг. Блоки вне {% if %} — иначе 500 при наследовании #}
     <div class="db-nav-section"{% if not has_restaurants and not has_hotels and not has_shops and not has_karaoke and not has_barbershop and not has_simracing and not has_printshop %} style="display:none"{% endif %}>
       <span class="db-nav-label">Бизнес</span>

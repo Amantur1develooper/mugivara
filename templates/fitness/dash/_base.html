@@ -13,17 +13,50 @@
     background: var(--bg); border: 1px solid var(--border); color: var(--text2);
   }
 
-  .fc-tabs {
-    display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 16px;
-    scrollbar-width: none; position: sticky; top: 0; z-index: 10; background: var(--bg);
+  /* Разделы клуба стоят в левом меню кабинета — одним меню, а не вторым
+     рядом с первым. Подсветка приходит классом .on, а не .active, как у
+     остальных пунктов: активный раздел определяется по адресу. */
+  .db-nav a.on {
+    background: rgba(255,77,28,.1); color: var(--accent); font-weight: 700;
   }
-  .fc-tabs::-webkit-scrollbar { display: none; }
-  .fc-tabs a {
-    flex: none; font-size: 12.5px; font-weight: 600; text-decoration: none;
-    color: var(--text2); background: var(--card); border: 1.5px solid var(--border);
-    border-radius: 100px; padding: 8px 14px; white-space: nowrap;
+  .db-nav a.on::before {
+    content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 18px; background: var(--accent); border-radius: 0 3px 3px 0;
   }
-  .fc-tabs a.on { border-color: var(--accent); color: var(--accent); }
+  .db-nav a { position: relative; }
+  .db-nav .nb {
+    margin-left: auto; min-width: 18px; height: 18px; border-radius: 100px;
+    background: #dc2626; color: #fff; font-size: 10px; font-weight: 800;
+    line-height: 18px; text-align: center; padding: 0 5px;
+  }
+
+  /* На телефоне левое меню спрятано за гамбургером, а «Проход» должен
+     открываться одним нажатием — поэтому там те же разделы лентой. */
+  .fc-rail {
+    display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
+    background: #0f1729; border-radius: 16px; padding: 7px;
+    position: sticky; top: 0; z-index: 20; margin-bottom: 14px;
+  }
+  .fc-rail::-webkit-scrollbar { display: none; }
+  .fc-rail a {
+    flex: none; text-decoration: none; color: rgba(255,255,255,.62);
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 7px 9px; border-radius: 11px; min-width: 62px; position: relative;
+    font-size: 10px; font-weight: 700; line-height: 1.15; text-align: center;
+  }
+  .fc-rail a .ic { font-size: 17px; line-height: 1; width: auto; }
+  .fc-rail a.on { color: #fff; background: var(--accent); }
+  .fc-rail a.on::before { display: none; }
+  .fc-rail .nb {
+    position: absolute; top: 3px; right: 6px; min-width: 15px; height: 15px;
+    margin: 0; font-size: 9.5px; line-height: 15px; padding: 0 4px;
+  }
+  .fc-rail a.on .nb { background: #fff; color: var(--accent); }
+
+  @media (min-width: 1000px) {
+    /* Меню кабинета на экране — лента ни к чему */
+    .fc-rail { display: none; }
+  }
 
   .fc-kpis { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-bottom: 16px; }
   .fc-kpi { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; }
@@ -127,7 +160,19 @@
 </style>
 {% endblock %}
 
+{% block sidebar_first %}
+<div class="db-nav-section">
+  <span class="db-nav-label">{{ club.name|truncatechars:22 }}</span>
+  {% include "fitness/dash/_nav.html" %}
+</div>
+<div class="db-nav-divider"></div>
+{% endblock %}
+
 {% block content %}
+<nav class="fc-rail">
+  {% include "fitness/dash/_nav.html" %}
+</nav>
+
 <div class="fc-head">
   <div style="flex:1;min-width:0">
     <div class="fc-title">🏋️ {{ club.name }}</div>
@@ -135,28 +180,6 @@
   </div>
   <span class="fc-role">{{ staff.get_role_display }}</span>
 </div>
-
-<nav class="fc-tabs">
-  <a href="{% url 'fitness_dash:home' club.id %}" class="{% block t_home %}{% endblock %}">Сводка</a>
-  {% if can_money %}
-  <a href="{% url 'fitness_dash:checkin' club.id %}" class="{% block t_checkin %}{% endblock %}">Проход</a>
-  {% endif %}
-  <a href="{% url 'fitness_dash:members' club.id %}" class="{% block t_members %}{% endblock %}">Клиенты</a>
-  <a href="{% url 'fitness_dash:groups' club.id %}" class="{% block t_groups %}{% endblock %}">Группы</a>
-  {% if can_money %}
-  <a href="{% url 'fitness_dash:debts' club.id %}" class="{% block t_debts %}{% endblock %}">Долги</a>
-  {% endif %}
-  <a href="{% url 'fitness_dash:classes' club.id %}" class="{% block t_classes %}{% endblock %}">Расписание</a>
-  <a href="{% url 'fitness_dash:board' club.id %}" class="{% block t_board %}{% endblock %}">Шахматка</a>
-  {% if can_money %}
-  <a href="{% url 'fitness_dash:leads' club.id %}" class="{% block t_leads %}{% endblock %}">Заявки</a>
-  <a href="{% url 'fitness_dash:reports' club.id %}" class="{% block t_reports %}{% endblock %}">Отчёт</a>
-  {% endif %}
-  {% if can_profit %}
-  <a href="{% url 'fitness_dash:expenses' club.id %}" class="{% block t_expenses %}{% endblock %}">Расходы</a>
-  <a href="{% url 'fitness_dash:setup' club.id %}" class="{% block t_setup %}{% endblock %}">Настройки</a>
-  {% endif %}
-</nav>
 
 {% if messages %}
   {% for m in messages %}

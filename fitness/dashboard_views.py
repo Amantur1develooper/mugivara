@@ -65,6 +65,24 @@ def _time(raw):
         return None
 
 
+def _nav_counts(club, staff):
+    """Счётчики на пунктах меню: заявки без ответа и занятия в долг.
+
+    В навигации они нужнее, чем на страницах: по ним видно, куда идти, не
+    открывая всё подряд. Кассиру и администратору — тренеру деньги и
+    заявки не показываем, у него и счётчиков нет.
+    """
+    if not can_see_money(staff):
+        return {}
+    return {
+        # Заявки, которые ещё ведут: записанные и пришедшие тоже требуют
+        # внимания, пока не купили и не отказались.
+        "nav_leads": Lead.objects.filter(club=club).exclude(
+            status__in=[Lead.Status.SOLD, Lead.Status.LOST]).count(),
+        "nav_debts": OwedVisit.objects.filter(club=club, is_settled=False).count(),
+    }
+
+
 def _ctx(club, staff, **extra):
     """Общий контекст: в шаблонах нужны права и клуб."""
     base = {
@@ -77,6 +95,7 @@ def _ctx(club, staff, **extra):
         "can_money": can_see_money(staff),
         "can_profit": can_see_profit(staff),
     }
+    base.update(_nav_counts(club, staff))
     base.update(extra)
     return base
 
