@@ -483,7 +483,8 @@ def member_detail(request, club, staff, member_id):
                 visits_total=member.visits.filter(success=True).count(),
                 last_visit=(member.visits.filter(success=True)
                             .order_by("-visit_time").first()),
-                plans=club.plans.filter(is_active=True),
+                plans=club.plans.filter(is_active=True).select_related("section"),
+                sections=club.sections.filter(is_active=True),
                 discounts=club.discounts.filter(is_active=True),
                 trainers=club.trainers.filter(is_active=True),
                 active=member.active_membership())
@@ -571,6 +572,8 @@ def membership_sell(request, club, staff, member_id):
         method=request.POST.get("method") or "cash",
         actor=request.user,
         discount_note=note,
+        section=(club.sections.filter(id=request.POST.get("section") or 0).first()
+                 or plan.section),
     )
     note = "начнётся с первого посещения" if not ms.activated else f"с {ms.start_date:%d.%m.%Y}"
     tail = ""
@@ -915,12 +918,27 @@ def group_detail(request, club, staff, group_id):
     state = {}
     for ms in (Membership.objects.filter(member__in=ids, is_active=True)
                .select_related("plan").order_by("-id")):
+        # Абонемент чужого направления в состоянии не участвует: по нему на
+        # эту тренировку всё равно не пустят.
+        if (g.section_id and ms.section_id and ms.section_id != g.section_id):
+            continue
         now = ms.state(today)
         # У человека может быть несколько абонементов: действующий важнее
         # замороженного, замороженный — важнее кончившегося.
         rank = {"active": 3, "frozen": 2, "none": 1}
         if rank[now] > rank.get(state.get(ms.member_id, "none"), 0):
             state[ms.member_id] = now
+
+    # Кто придёт с живым абонементом, но чужого направления: сказать об
+    # этом надо отдельно, иначе «нет абонемента» выглядит неправдой — он у
+    # человека есть, просто на самбо, а тренировка по боксу.
+    other_section = set()
+    if g.section_id:
+        for ms in (Membership.objects.filter(member__in=ids, is_active=True)
+                   .exclude(section_id=g.section_id)
+                   .exclude(section__isnull=True).select_related("plan")):
+            if ms.is_usable(today) and state.get(ms.member_id, "none") != "active":
+                other_section.add(ms.member_id)
 
     owed = {}
     for d in OwedVisit.objects.filter(member__in=ids, is_settled=False):
@@ -930,6 +948,7 @@ def group_detail(request, club, staff, group_id):
         link.mark = marks.get(link.member_id)
         link.state = state.get(link.member_id, "none")
         link.payless = link.state != "active"
+        link.other_section = link.member_id in other_section
         link.owed = owed.get(link.member_id, 0)
 
     slots = list(g.schedule().select_related("trainer"))
@@ -1814,8 +1833,12 @@ def _booking_mark(request, club, b, action):
     b.save(update_fields=["status", "updated_at"])
     # Пришёл на групповое — это посещение зала: списываем, как на входе
     if b.status == ClassBooking.Status.CAME and b.member_id:
+        cls = b.group_class
+        # Направление тренировки: у занятия своё, иначе берём у группы.
+        section = cls.section or (cls.group.section if cls.group_id else None)
         ok, note, _visit = services.check_in(club, b.member,
-                                             trainer=b.group_class.trainer,
+                                             trainer=cls.trainer,
+                                             section=section,
                                              actor=request.user)
         # Не пропустили — говорим вслух: у человека мог кончиться абонемент,
         # и отметка «пришёл» без предупреждения выглядела бы как списание.

@@ -27,7 +27,10 @@
   {% if ms %}
     <div class="fc-row" style="grid-template-columns:1fr">
       <div class="fc-row-main">
-        <div class="fc-row-name">{{ ms.plan.name }}</div>
+        <div class="fc-row-name">
+          {{ ms.plan.name }}
+          {% if ms.section %}<span class="fc-chip">{{ ms.section.name }}</span>{% endif %}
+        </div>
         <div class="fc-row-sub">
           {% if ms.plan.visits_number %}осталось {{ ms.remaining_visits }} из {{ ms.plan.visits_number }}
           {% else %}без ограничения по посещениям{% endif %}

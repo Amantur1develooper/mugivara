@@ -266,13 +266,35 @@ class Member(TimeStampedModel):
         _compress(self.photo)
         super().save(*args, **kwargs)
 
-    def active_membership(self):
-        """Абонемент, по которому сейчас можно пройти."""
+    def active_membership(self, section=None):
+        """Абонемент, по которому сейчас можно пройти.
+
+        У человека их может быть несколько: бокс, самбо и отдельно зал.
+        Когда отмечают приход на тренировку группы, section — направление
+        этой группы, и списывать надо именно с «боксового» абонемента, а
+        не с того, что просто первым подвернулся.
+
+        Правило мягкое: если есть абонемент этого направления — берём его;
+        если направлений в абонементах вообще не проставляли, берём любой
+        подходящий, чтобы клубам, которые их не заполняли, ничего не
+        сломать. И только когда у человека есть абонементы, но все они
+        чужих направлений, не берём ничего — занятие уйдёт в долг.
+        """
         today = timezone.localdate()
-        for m in self.memberships.filter(is_active=True).order_by("end_date", "id"):
-            if m.is_usable(today):
-                return m
-        return None
+        usable = [m for m in self.memberships.filter(is_active=True)
+                  .order_by("end_date", "id") if m.is_usable(today)]
+        if not usable:
+            return None
+        if section is None:
+            return usable[0]
+
+        same = [m for m in usable if m.section_id == section.id]
+        if same:
+            return same[0]
+        # Абонемент без направления подходит к любой группе: так было до
+        # появления направлений, и клубы на это полагаются.
+        free = [m for m in usable if m.section_id is None]
+        return free[0] if free else None
 
     @property
     def debt_total(self):
@@ -321,6 +343,11 @@ class Membership(TimeStampedModel):
     """
     member     = models.ForeignKey(Member, on_delete=models.CASCADE, related_name="memberships")
     plan       = models.ForeignKey(MembershipPlan, on_delete=models.PROTECT, related_name="memberships")
+    # Направление берём из тарифа при продаже, но оставляем поле у самого
+    # абонемента: один и тот же тариф «8 занятий» продают и на бокс, и на
+    # самбо, а списывать надо с того, по которому человек ходит.
+    section    = models.ForeignKey(Section, null=True, blank=True, on_delete=models.SET_NULL,
+                                   related_name="memberships", verbose_name="Направление")
     trainer    = models.ForeignKey(Trainer, null=True, blank=True, on_delete=models.SET_NULL,
                                    related_name="memberships", verbose_name="Персональный тренер")
     purchase_date = models.DateField("Дата покупки", default=timezone.localdate)

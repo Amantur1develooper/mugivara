@@ -160,6 +160,8 @@
           <div class="ros-sub">
             {% if link.state == 'active' %}<span class="fc-chip ok">активен</span>
             {% elif link.state == 'frozen' %}<span class="fc-chip cold">заморожен</span>
+            {% elif link.other_section %}
+              <span class="fc-chip bad">абонемент другого направления</span>
             {% else %}<span class="fc-chip bad">нет абонемента</span>{% endif %}
             {% if link.owed %}<span class="fc-chip bad">долг {{ link.owed }}</span>{% endif %}
             <span class="mk-state">

@@ -273,7 +273,10 @@
         {% for ms in memberships %}
           <details class="ms"{% if forloop.first and ms.is_active %} open{% endif %}>
             <summary>
-              <span style="font-weight:700;font-size:13px;min-width:0">{{ ms.plan.name }}</span>
+              <span style="font-weight:700;font-size:13px;min-width:0">
+                {{ ms.plan.name }}
+                {% if ms.section %}<span class="fc-chip">{{ ms.section.name }}</span>{% endif %}
+              </span>
               {% if not ms.is_active %}<span class="fc-chip">закрыт</span>
               {% elif ms.is_frozen %}<span class="fc-chip cold">заморожен</span>
               {% elif not ms.activated %}<span class="fc-chip">не начат</span>
@@ -286,6 +289,10 @@
               {% else %}
                 <div class="ms-line"><b>Посещений</b><span>без ограничения</span></div>
               {% endif %}
+              <div class="ms-line"><b>Направление</b>
+                <span>{% if ms.section %}{{ ms.section.name }} — посещения спишутся
+                  на тренировках этой секции{% else %}без направления — зал,
+                  подойдёт к любой группе{% endif %}</span></div>
               <div class="ms-line"><b>Куплен</b><span>{{ ms.purchase_date|date:"d.m.Y" }}</span></div>
               <div class="ms-line"><b>Активирован</b>
                 <span>{% if ms.activated %}{{ ms.start_date|date:"d.m.Y" }}

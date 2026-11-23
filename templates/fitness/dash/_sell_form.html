@@ -10,11 +10,30 @@
   <label class="fc-label">Абонемент</label>
   <select class="fc-select" name="plan_id" id="planSel" required>
     {% for p in plans %}
-      <option value="{{ p.id }}" data-price="{{ p.price|floatformat:0 }}">
+      <option value="{{ p.id }}" data-price="{{ p.price|floatformat:0 }}"
+              data-section="{{ p.section_id|default_if_none:'' }}">
         {{ p.name }} — {{ p.price|floatformat:0 }} сом
+        {% if p.section %}· {{ p.section.name }}{% endif %}
       </option>
     {% endfor %}
   </select>
+
+  {% if sections %}
+  <div style="margin-top:12px">
+    <label class="fc-label">Направление</label>
+    <select class="fc-select" name="section" id="sectionSel">
+      <option value="">— без направления (зал, фитнес) —</option>
+      {% for s in sections %}
+        <option value="{{ s.id }}">{% if s.icon %}{{ s.icon }} {% endif %}{{ s.name }}</option>
+      {% endfor %}
+    </select>
+    <div class="fc-sub" style="margin-top:5px;line-height:1.45">
+      На тренировках этой секции посещение спишется именно с этого
+      абонемента. «Без направления» — абонемент в зал: он подойдёт к любой
+      группе, пока у человека нет абонемента нужного направления.
+    </div>
+  </div>
+  {% endif %}
 
   {% if discounts %}
   <div style="margin-top:12px">
@@ -110,8 +129,15 @@
       pct.value = base > 0 ? Math.round(num(disc) / base * 100) : 0;
       show();
     };
+    const sectionSel = document.getElementById('sectionSel');
     const fill = () => {
-      price.value = sel.options[sel.selectedIndex].dataset.price || '';
+      const opt = sel.options[sel.selectedIndex];
+      price.value = opt.dataset.price || '';
+      // Направление берём из тарифа: тариф «Бокс 12 занятий» и заводят под
+      // бокс, выбирать второй раз незачем. Поменять можно руками.
+      if (sectionSel && opt.dataset.section !== undefined) {
+        sectionSel.value = opt.dataset.section || '';
+      }
       fromPct();
     };
 

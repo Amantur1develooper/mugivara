@@ -31,7 +31,7 @@ def _notify(club, text):
 @transaction.atomic
 def sell_membership(club, member, plan, *, price=None, discount=0, paid=None,
                     trainer=None, start_today=False, method="cash", actor=None,
-                    discount_note=""):
+                    discount_note="", section=None):
     """Продаёт абонемент.
 
     По умолчанию абонемент не активируется: срок пойдёт с первого
@@ -45,6 +45,9 @@ def sell_membership(club, member, plan, *, price=None, discount=0, paid=None,
 
     ms = Membership.objects.create(
         member=member, plan=plan, trainer=trainer,
+        # Направление: что выбрали при продаже, иначе из тарифа — чаще
+        # всего тариф и заведён под направление.
+        section=section or plan.section,
         remaining_visits=plan.visits_number or 0,
         price=price, discount_amount=discount,
         discount_note=(discount_note or "")[:100],
@@ -84,14 +87,17 @@ def sell_membership(club, member, plan, *, price=None, discount=0, paid=None,
 # ── Проход в зал ────────────────────────────────────────────────────────────
 
 @transaction.atomic
-def check_in(club, member, *, trainer=None, actor=None):
+def check_in(club, member, *, trainer=None, actor=None, section=None):
     """Пропускает клиента. Возвращает (ok, сообщение, visit).
 
     Здесь же случается то, из-за чего всё и затевалось: если абонемент ещё
     не начат, первое посещение его активирует и срок пойдёт с сегодня.
+
+    section — направление тренировки, если приход отмечают в группе:
+    списываем с абонемента этого направления, а не с первого попавшегося.
     """
     today = timezone.localdate()
-    ms = member.active_membership()
+    ms = member.active_membership(section=section)
 
     if ms is None:
         # Причину называем точно: «нет абонемента» и «срок вышел» — разные
@@ -107,6 +113,11 @@ def check_in(club, member, *, trainer=None, actor=None):
             reason = f"Срок вышел {last.end_date:%d.%m.%Y}"
         else:
             reason = "Нет действующего абонемента"
+        # Самый частый случай с направлениями: абонемент есть и он живой,
+        # но на другое направление. Так и говорим, иначе кассир смотрит на
+        # действующий абонемент и не понимает, почему не пускает.
+        if section is not None and member.active_membership() is not None:
+            reason = f"Абонемент другого направления, не «{section.name}»"
         visit = Visit.objects.create(club=club, member=member, success=False,
                                      reason=reason, created_by=actor)
         transaction.on_commit(lambda: _notify(club, tg.visit_text(visit)))
