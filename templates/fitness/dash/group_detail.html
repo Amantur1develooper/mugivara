@@ -18,6 +18,82 @@
   </div>
 </div>
 
+{% if slot_today %}
+<div class="fc-card" id="today-card"
+     {% if state_today.is_cancelled %}style="border-color:rgba(220,38,38,.45);background:rgba(220,38,38,.05)"{% endif %}>
+  {% if state_today.is_cancelled %}
+    <div style="font-weight:800;font-size:15px">⛔️ Сегодня тренировка отменена</div>
+    <div class="fc-row-sub" style="margin-top:5px">
+      {% if state_today.reason %}{{ state_today.reason }}{% endif %}
+    </div>
+    <a href="{% url 'fitness_dash:class_day' club.id slot_today.id %}?date={{ today|date:'Y-m-d' }}"
+       class="fc-btn ghost small" style="margin-top:10px">Открыть тренировку</a>
+  {% else %}
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="flex:1;min-width:150px">
+        <div class="fc-card-t" style="margin:0">
+          Сегодня в {{ slot_today.time_from|time:"H:i" }} — отметьте, кто пришёл
+        </div>
+        <div class="fc-row-sub" style="margin-top:3px">
+          пришли <b id="came-count">{{ came_today }}</b> из {{ roster|length }}
+          {% if slot_today.room %} · {{ slot_today.room }}{% endif %}
+        </div>
+      </div>
+      {% if roster %}
+      <form method="post" action="{% url 'fitness_dash:class_mark_all' club.id slot_today.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="date" value="{{ today|date:'Y-m-d' }}">
+        <input type="hidden" name="back" value="{{ request.get_full_path }}">
+        <button class="fc-btn" type="submit">Все пришли</button>
+      </form>
+      {% endif %}
+    </div>
+
+    <div class="fc-list" style="margin-top:12px">
+      {% for link in roster %}
+        <div class="fc-row mk-row" data-member="{{ link.member.id }}"
+             style="grid-template-columns:auto 1fr auto">
+          <span class="fc-ava{% if not link.member.photo %} empty{% endif %}">
+            {% if link.member.photo %}<img src="{{ link.member.photo.url }}" alt="" loading="lazy">
+            {% else %}👤{% endif %}
+          </span>
+          <div class="fc-row-main">
+            <div class="fc-row-name">{{ link.member.full_name }}</div>
+            <div class="fc-row-sub">
+              <span class="mk-state">
+                {% if link.mark.status == 'came' %}<span class="fc-chip ok">пришёл</span>
+                {% elif link.mark.status == 'no_show' %}<span class="fc-chip bad">не пришёл</span>
+                {% else %}не отмечен{% endif %}
+              </span>
+              {% if link.payless %}<span class="fc-chip bad">абонемент не действует</span>{% endif %}
+            </div>
+          </div>
+          <form method="post" class="mk-form"
+                action="{% url 'fitness_dash:class_mark' club.id slot_today.id %}"
+                style="display:flex;gap:5px">
+            {% csrf_token %}
+            <input type="hidden" name="date" value="{{ today|date:'Y-m-d' }}">
+            <input type="hidden" name="member" value="{{ link.member.id }}">
+            <input type="hidden" name="back" value="{{ request.get_full_path }}">
+            <button class="fc-btn small" name="action" value="came">Пришёл</button>
+            <button class="fc-btn small ghost" name="action" value="no_show">Нет</button>
+            <button class="fc-btn small ghost" name="action" value="back"
+                    title="Снять отметку">↩️</button>
+          </form>
+        </div>
+      {% empty %}
+        <div class="fc-empty">В группе никого — добавьте людей ниже.</div>
+      {% endfor %}
+    </div>
+    <div class="fc-sub" style="margin-top:9px">
+      «Пришёл» списывает посещение с абонемента, как отметка на входе.
+      <a href="{% url 'fitness_dash:class_day' club.id slot_today.id %}?date={{ today|date:'Y-m-d' }}">
+        Открыть тренировку целиком →</a>
+    </div>
+  {% endif %}
+</div>
+{% endif %}
+
 <div class="fc-card">
   <div class="fc-card-t">Расписание группы</div>
   <div class="fc-list">
@@ -210,4 +286,61 @@
   </form>
 </div>
 {% endif %}
+
+<script>
+  // Отмечают подряд десяток человек. Обычная отправка формы перезагружала
+  // бы страницу после каждого и сбрасывала прокрутку к началу, поэтому
+  // отмечаем запросом, а строку перекрашиваем на месте. Если скрипт не
+  // отработал, формы остаются обычными и всё работает как прежде.
+  (function () {
+    const card = document.getElementById('today-card');
+    if (!card || !window.fetch) return;
+
+    const CHIP = {
+      came: '<span class="fc-chip ok">пришёл</span>',
+      no_show: '<span class="fc-chip bad">не пришёл</span>',
+      booked: 'не отмечен',
+    };
+
+    card.querySelectorAll('.mk-form').forEach(form => {
+      form.addEventListener('click', async ev => {
+        const btn = ev.target.closest('button[name="action"]');
+        if (!btn) return;
+        ev.preventDefault();
+
+        const row = form.closest('.mk-row');
+        const body = new FormData(form);
+        body.append('action', btn.value);
+        form.querySelectorAll('button').forEach(b => b.disabled = true);
+        row.style.opacity = '.5';
+
+        try {
+          const res = await fetch(form.action, {
+            method: 'POST', body,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
+          });
+          if (!res.ok) throw new Error(res.status);
+          const data = await res.json();
+          row.querySelector('.mk-state').innerHTML =
+            (CHIP[data.status] || '') +
+            (data.note ? ' <span class="fc-chip bad">' + data.note + '</span>' : '');
+          const counter = document.getElementById('came-count');
+          if (counter && typeof data.came === 'number') counter.textContent = data.came;
+        } catch (e) {
+          // Не вышло — отправляем форму обычным способом, чтобы отметка
+          // не потерялась из-за сети
+          form.querySelectorAll('button').forEach(b => b.disabled = false);
+          const hidden = document.createElement('input');
+          hidden.type = 'hidden'; hidden.name = 'action'; hidden.value = btn.value;
+          form.appendChild(hidden);
+          form.submit();
+          return;
+        }
+        form.querySelectorAll('button').forEach(b => b.disabled = false);
+        row.style.opacity = '';
+      });
+    });
+  })();
+</script>
 {% endblock %}

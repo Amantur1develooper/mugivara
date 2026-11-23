@@ -588,8 +588,36 @@ def group_detail(request, club, staff, group_id):
         free = free.filter(Q(full_name__icontains=q) | Q(phone__icontains=q))
     free = free.order_by("full_name")[:40 if q else 20]
 
+    # Ближайшая тренировка: сегодняшнюю отмечают прямо здесь, не уходя на
+    # отдельную страницу занятия — на ресепшене лишний переход это время.
+    today = timezone.localdate()
+    slot_today = (g.slots.filter(is_active=True, weekday=today.weekday())
+                  .select_related("trainer").order_by("time_from").first())
+    state_today = slot_today.day_state(today) if slot_today else None
+    marks = {}
+    if slot_today:
+        marks = {b.member_id: b for b in
+                 ClassBooking.objects.filter(group_class=slot_today, date=today)}
+
+    # У кого абонемент не пускает: отметка «пришёл» у него ничего не спишет,
+    # и без пометки он выглядел бы на странице так же, как оплативший.
+    # Видно это и до тренировки — понятно, с кого взять деньги. Абонементы
+    # берём одним запросом: дёргать active_membership() на каждого значило
+    # бы по два запроса на человека.
+    usable = set()
+    for ms in (Membership.objects
+               .filter(member__in=[l.member_id for l in roster], is_active=True)
+               .select_related("plan")):
+        if ms.is_usable(today):
+            usable.add(ms.member_id)
+    for link in roster:
+        link.mark = marks.get(link.member_id)
+        link.payless = link.member_id not in usable
+
     return render(request, "fitness/dash/group_detail.html",
                   _ctx(club, staff, g=g, roster=roster, free=list(free), q=q,
+                       slot_today=slot_today, state_today=state_today, today=today,
+                       came_today=sum(1 for m in marks.values() if m.status == "came"),
                        left=list(g.links.filter(is_active=False)
                                  .select_related("member")[:30]),
                        slots=list(g.schedule().select_related("trainer")),
@@ -1212,9 +1240,64 @@ def class_mark(request, club, staff, class_id):
         group_class=cls, date=day, member=member,
         defaults={"created_by": request.user,
                   "client_name": member.full_name, "phone": member.phone})
-    _booking_mark(request, club, b, action)
-    return redirect(reverse("fitness_dash:class_day", args=[club.id, cls.id])
+    note = _booking_mark(request, club, b, action)
+
+    # Со страницы отмечают подряд десяток человек: отвечаем коротко, чтобы
+    # строка обновилась на месте и страница не прыгала после каждого.
+    if _wants_json(request):
+        return JsonResponse({"ok": True, "status": b.status,
+                             "member": member.id, "note": note,
+                             "came": _came_count(cls, day)})
+    return redirect(request.POST.get("back")
+                    or reverse("fitness_dash:class_day", args=[club.id, cls.id])
                     + f"?date={day:%Y-%m-%d}")
+
+
+@login_required(login_url=LOGIN_URL)
+@require()
+@require_POST
+def class_mark_all(request, club, staff, class_id):
+    """Отметить пришедшими весь состав группы.
+
+    Обычно приходят почти все, а не пришли один-двое: быстрее отметить
+    всех и снять отметку у отсутствующих, чем жать по человеку.
+    """
+    cls = get_object_or_404(GroupClass.objects.select_related("group", "trainer"),
+                            id=class_id, club=club)
+    day = _date(request.POST.get("date"))
+    if not cls.group_id:
+        messages.error(request, "У этого занятия нет состава — отмечайте по записям.")
+        return redirect(request.POST.get("back") or reverse(
+            "fitness_dash:class_day", args=[club.id, cls.id]) + f"?date={day:%Y-%m-%d}")
+
+    done = skipped = 0
+    for link in cls.group.roster():
+        b, created = ClassBooking.objects.get_or_create(
+            group_class=cls, date=day, member=link.member,
+            defaults={"created_by": request.user,
+                      "client_name": link.member.full_name,
+                      "phone": link.member.phone})
+        # Уже отмеченных не трогаем: иначе «все пришли» затрёт поставленное
+        # вручную «не пришёл».
+        if not created and b.status != ClassBooking.Status.BOOKED:
+            skipped += 1
+            continue
+        _booking_mark(request, club, b, "came")
+        done += 1
+
+    messages.success(request, f"Отмечено пришедшими: {done}."
+                     + (f" Уже были отмечены: {skipped}." if skipped else ""))
+    return redirect(request.POST.get("back") or reverse(
+        "fitness_dash:class_day", args=[club.id, cls.id]) + f"?date={day:%Y-%m-%d}")
+
+
+def _wants_json(request):
+    return (request.headers.get("X-Requested-With") == "XMLHttpRequest"
+            or "application/json" in request.headers.get("Accept", ""))
+
+
+def _came_count(cls, day):
+    return cls.bookings.filter(date=day, status=ClassBooking.Status.CAME).count()
 
 
 def _booking_mark(request, club, b, action):
@@ -1236,6 +1319,8 @@ def _booking_mark(request, club, b, action):
         # и отметка «пришёл» без предупреждения выглядела бы как списание.
         if not ok:
             messages.warning(request, f"{b.member.full_name}: {note}")
+            return note
+    return ""
 
 
 @login_required(login_url=LOGIN_URL)
