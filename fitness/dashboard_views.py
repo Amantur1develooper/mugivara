@@ -24,7 +24,7 @@ from .access import (ADMIN, CASHIER, TRAINER, can_see_money, can_see_profit,
                      my_clubs, my_trainer, require, staff_of)
 from .models import (SECTION_PRESETS, ClassBooking, ClassDay, ClubStaff,
                      Expense, FitnessClub, GroupClass, GroupMember, Lead, LeadNote,
-                     Member, Membership, MembershipPlan, Payment, Section,
+                     Member, Membership, MembershipPlan, OwedVisit, Payment, Section,
                      Trainer, TrainerBooking, TrainerSchedule, TrainingGroup,
                      Visit)
 
@@ -282,6 +282,10 @@ def member_detail(request, club, staff, member_id):
                              .select_related("group", "group__section",
                                              "group__trainer")
                              .prefetch_related("group__slots")),
+                debts=(member.owed_visits.filter(is_settled=False)
+                       .select_related("group_class", "training_group")),
+                settled=(member.owed_visits.filter(is_settled=True)
+                         .select_related("settled_from__plan")[:10]),
                 memberships=member.memberships.select_related("plan", "trainer"),
                 visits=member.visits.select_related("membership__plan", "trainer")[:30],
                 plans=club.plans.filter(is_active=True),
@@ -604,15 +608,28 @@ def group_detail(request, club, staff, group_id):
     # Видно это и до тренировки — понятно, с кого взять деньги. Абонементы
     # берём одним запросом: дёргать active_membership() на каждого значило
     # бы по два запроса на человека.
-    usable = set()
-    for ms in (Membership.objects
-               .filter(member__in=[l.member_id for l in roster], is_active=True)
-               .select_related("plan")):
-        if ms.is_usable(today):
-            usable.add(ms.member_id)
+    # Состояние абонемента каждого: зелёный пускаем, синий заморожен,
+    # красный пройти нельзя. Берём одним запросом на весь состав.
+    ids = [l.member_id for l in roster]
+    state = {}
+    for ms in (Membership.objects.filter(member__in=ids, is_active=True)
+               .select_related("plan").order_by("-id")):
+        now = ms.state(today)
+        # У человека может быть несколько абонементов: действующий важнее
+        # замороженного, замороженный — важнее кончившегося.
+        rank = {"active": 3, "frozen": 2, "none": 1}
+        if rank[now] > rank.get(state.get(ms.member_id, "none"), 0):
+            state[ms.member_id] = now
+
+    owed = {}
+    for d in OwedVisit.objects.filter(member__in=ids, is_settled=False):
+        owed[d.member_id] = owed.get(d.member_id, 0) + 1
+
     for link in roster:
         link.mark = marks.get(link.member_id)
-        link.payless = link.member_id not in usable
+        link.state = state.get(link.member_id, "none")
+        link.payless = link.state != "active"
+        link.owed = owed.get(link.member_id, 0)
 
     return render(request, "fitness/dash/group_detail.html",
                   _ctx(club, staff, g=g, roster=roster, free=list(free), q=q,
@@ -1318,8 +1335,14 @@ def _booking_mark(request, club, b, action):
         # Не пропустили — говорим вслух: у человека мог кончиться абонемент,
         # и отметка «пришёл» без предупреждения выглядела бы как списание.
         if not ok:
-            messages.warning(request, f"{b.member.full_name}: {note}")
-            return note
+            # Не пустить человека из-за просроченного абонемента в клубе всё
+            # равно не станут: отмечаем приход и вешаем долг, чтобы занятие
+            # не растворилось.
+            services.owe_visit(club, b.member, group_class=b.group_class,
+                               day=b.date, actor=request.user, note=note)
+            messages.warning(request, f"{b.member.full_name}: {note} — "
+                                      f"занятие записано в долг")
+            return f"{note} · в долг"
     return ""
 
 
@@ -1337,6 +1360,38 @@ def class_booking_status(request, club, staff, booking_id):
                     + f"?date={b.date:%Y-%m-%d}")
 
 # ── Сотрудники клуба ────────────────────────────────────────────────────────
+
+@login_required(login_url=LOGIN_URL)
+@require(ADMIN, CASHIER)
+@require_POST
+def debt_settle(request, club, staff, debt_id):
+    """Закрыть занятие в долг: списать с абонемента или простить."""
+    debt = get_object_or_404(OwedVisit.objects.select_related("member"),
+                             id=debt_id, club=club, is_settled=False)
+    note = (request.POST.get("note") or "").strip()
+    raw = request.POST.get("membership")
+
+    ms = None
+    if (raw or "").isdigit():
+        ms = Membership.objects.filter(id=int(raw), member=debt.member).first()
+        if ms is None:
+            messages.error(request, "Абонемент не найден.")
+            return redirect("fitness_dash:member_detail", club.id, debt.member_id)
+    elif not note:
+        # Прощаем — причина обязательна: через месяц никто не вспомнит,
+        # почему это занятие просто исчезло.
+        messages.error(request, "Чтобы закрыть долг без абонемента, "
+                                "напишите причину.")
+        return redirect("fitness_dash:member_detail", club.id, debt.member_id)
+
+    services.settle_visit_debt(debt, membership=ms, note=note, actor=request.user)
+    if ms:
+        messages.success(request, f"Занятие от {debt.date:%d.%m} списано с "
+                                  f"«{ms.plan.name}». Осталось: {ms.remaining_visits}.")
+    else:
+        messages.success(request, f"Занятие от {debt.date:%d.%m} закрыто: {note}")
+    return redirect("fitness_dash:member_detail", club.id, debt.member_id)
+
 
 def _club_admins(club):
     """Действующие администраторы клуба."""

@@ -37,6 +37,71 @@
   </div>
 </div>
 
+{% if debts %}
+<div class="fc-card" style="border-color:rgba(220,38,38,.4)">
+  <div class="fc-card-t">Занятия в долг — {{ debts|length }}</div>
+  <div class="fc-sub" style="margin-bottom:10px;line-height:1.5">
+    Человек был на тренировке, а абонемент не пускал. Закройте долг:
+    спишите занятие с действующего абонемента или простите с причиной.
+  </div>
+  <div class="fc-list">
+    {% for d in debts %}
+      <div class="fc-row" style="display:block">
+        <div class="fc-row-name">
+          {{ d.date|date:"d.m.Y" }}
+          {% if d.training_group %} · {{ d.training_group.title }}{% endif %}
+        </div>
+        <div class="fc-row-sub" style="margin-top:3px">
+          {{ d.get_reason_display }}{% if d.note %} · {{ d.note }}{% endif %}
+        </div>
+        {% if can_money %}
+        <form method="post" action="{% url 'fitness_dash:debt_settle' club.id d.id %}"
+              style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          {% csrf_token %}
+          <select class="fc-input" name="membership" style="flex:1;min-width:150px">
+            <option value="">— простить, без списания —</option>
+            {% for ms in memberships %}
+              {% if ms.is_active %}
+                <option value="{{ ms.id }}">
+                  {{ ms.plan.name }}{% if ms.plan.visits_number %} · осталось {{ ms.remaining_visits }}{% endif %}
+                </option>
+              {% endif %}
+            {% endfor %}
+          </select>
+          <input class="fc-input" name="note" placeholder="причина"
+                 style="flex:1;min-width:130px">
+          <button class="fc-btn small" type="submit">Закрыть</button>
+        </form>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% if settled %}
+<details class="fc-card">
+  <summary style="cursor:pointer;font-weight:700;font-size:13.5px">
+    Закрытые долги ({{ settled|length }})
+  </summary>
+  <div class="fc-list" style="margin-top:10px">
+    {% for d in settled %}
+      <div class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name">{{ d.date|date:"d.m.Y" }}</div>
+          <div class="fc-row-sub">
+            {% if d.settled_from %}списано с «{{ d.settled_from.plan.name }}»
+            {% else %}прощено{% endif %}
+            {% if d.settle_note %} · {{ d.settle_note }}{% endif %}
+            · {{ d.settled_on|date:"d.m.Y" }}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</details>
+{% endif %}
+
 {% if group_links %}
 <div class="fc-card">
   <div class="fc-card-t">Группы</div>

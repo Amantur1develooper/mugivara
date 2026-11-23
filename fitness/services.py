@@ -195,3 +195,53 @@ def add_expense(club, category, amount, *, note="", spent_on=None, actor=None):
     )
     transaction.on_commit(lambda: _notify(club, tg.expense_text(exp)))
     return exp
+
+# ── Занятия в долг ──────────────────────────────────────────────────────────
+
+def owe_visit(club, member, *, group_class=None, day=None, actor=None, note=""):
+    """Записывает занятие в долг: пришёл, а абонемент не пускает.
+
+    Причину определяем сами: заморожен — одно дело, кончился — другое.
+    Повторная отметка того же занятия долг не удваивает.
+    """
+    from .models import Membership, OwedVisit
+
+    day = day or timezone.localdate()
+    ms = member.active_membership()
+    frozen = bool(Membership.objects.filter(member=member, is_active=True,
+                                            is_frozen=True).exists())
+    reason = (OwedVisit.Reason.FROZEN if (frozen and not ms)
+              or (ms and ms.is_frozen) else OwedVisit.Reason.NO_PASS)
+
+    debt, created = OwedVisit.objects.get_or_create(
+        member=member, group_class=group_class, date=day,
+        defaults={"club": club, "reason": reason, "note": note,
+                  "training_group": group_class.group if group_class and
+                                    group_class.group_id else None,
+                  "created_by": actor if getattr(actor, "pk", None) else None})
+    return debt, created
+
+
+def settle_visit_debt(debt, *, membership=None, note="", actor=None):
+    """Закрывает долг: списывает занятие с абонемента или прощает.
+
+    Списываем ровно одно посещение — то самое, что человек уже отходил.
+    Без абонемента долг можно закрыть «просто так», но причина
+    обязательна: иначе через месяц никто не вспомнит, почему простили.
+    """
+    from django.db import transaction as db_tx
+
+    with db_tx.atomic():
+        if membership is not None:
+            if membership.plan.visits_number and membership.remaining_visits > 0:
+                membership.remaining_visits -= 1
+                membership.save(update_fields=["remaining_visits", "updated_at"])
+            debt.settled_from = membership
+        debt.is_settled = True
+        debt.settled_on = timezone.localdate()
+        debt.settle_note = (note or "").strip()[:200]
+        debt.settled_by = actor if getattr(actor, "pk", None) else None
+        debt.save(update_fields=["is_settled", "settled_on", "settled_from",
+                                 "settle_note", "settled_by", "updated_at"])
+    return debt
+

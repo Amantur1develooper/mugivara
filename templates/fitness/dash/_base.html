@@ -89,6 +89,20 @@
   /* Выбор времени: родное поле браузера (на телефоне это колесо) плюс ряд
      частых часов в одно нажатие. Руками набирать «14:30» на ресепшене
      неудобно и легко промахнуться. */
+  /* Состояние абонемента цветом по левому краю строки: на отметке
+     присутствия это видно раньше, чем успеваешь прочитать подпись.
+     Зелёный пускаем, синий заморожен, красный пройти нельзя. */
+  .fc-row.st-active { box-shadow: inset 4px 0 0 #059669; padding-left: 13px; }
+  .fc-row.st-frozen { box-shadow: inset 4px 0 0 #2563eb; padding-left: 13px; }
+  .fc-row.st-none   { box-shadow: inset 4px 0 0 #dc2626; padding-left: 13px; }
+  .fc-chip.cold {
+    color: #2563eb; border-color: rgba(37,99,235,.4); background: rgba(37,99,235,.07);
+  }
+  .lg { display: inline-block; width: 9px; height: 9px; border-radius: 3px; }
+  .lg-ok { background: #059669; }
+  .lg-cold { background: #2563eb; }
+  .lg-bad { background: #dc2626; }
+
   /* Отменённое не прячем, а гасим: иначе про отмену никто не узнает */
   .fc-row.is-off { opacity: .6; }
   .fc-row.is-off .fc-row-name { text-decoration: line-through; }

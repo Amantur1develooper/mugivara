@@ -342,6 +342,19 @@ class Membership(TimeStampedModel):
         self.save(update_fields=["start_date", "end_date", "updated_at"])
         return True
 
+    def state(self, today=None):
+        """Одно слово о состоянии: на нём держатся цвета в списках.
+
+        active — пускаем, frozen — заморожен, none — пройти нельзя
+        (кончился срок, кончились посещения, снят).
+        """
+        today = today or timezone.localdate()
+        if self.is_frozen:
+            return "frozen"
+        if self.is_usable(today):
+            return "active"
+        return "none"
+
     @property
     def days_left(self):
         if not self.end_date:
@@ -727,6 +740,59 @@ class ClassDay(TimeStampedModel):
     def __str__(self):
         mark = "отменена" if self.is_cancelled else "идёт"
         return f"{self.group_class.name} {self.date:%d.%m} — {mark}"
+
+
+class OwedVisit(TimeStampedModel):
+    """Занятие в долг: пришёл, а абонемента нет или он заморожен.
+
+    Не пустить ребёнка на тренировку из-за того, что мать забыла продлить
+    абонемент, в клубе никто не станет — его отмечают пришедшим, и
+    посещение повисает в воздухе. Теперь оно записывается долгом: видно,
+    кто сколько должен, и потом долг закрывают — списывают с нового
+    абонемента или прощают, с причиной.
+    """
+    class Reason(models.TextChoices):
+        NO_PASS = "no_pass", "Нет действующего абонемента"
+        FROZEN  = "frozen", "Абонемент заморожен"
+        OTHER   = "other", "Другое"
+
+    club   = models.ForeignKey(FitnessClub, on_delete=models.CASCADE,
+                               related_name="owed_visits")
+    member = models.ForeignKey(Member, on_delete=models.CASCADE,
+                               related_name="owed_visits")
+    date   = models.DateField("Дата занятия", default=timezone.localdate)
+    group_class = models.ForeignKey(GroupClass, null=True, blank=True,
+                                    on_delete=models.SET_NULL, related_name="owed_visits")
+    training_group = models.ForeignKey(TrainingGroup, null=True, blank=True,
+                                       on_delete=models.SET_NULL, related_name="owed_visits")
+    reason = models.CharField("Почему в долг", max_length=10, choices=Reason.choices,
+                              default=Reason.NO_PASS)
+    note   = models.CharField("Пометка", max_length=200, blank=True, default="")
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                   on_delete=models.SET_NULL, related_name="+")
+
+    is_settled  = models.BooleanField("Закрыт", default=False)
+    settled_on  = models.DateField("Когда закрыт", null=True, blank=True)
+    settled_from = models.ForeignKey(Membership, null=True, blank=True,
+                                     on_delete=models.SET_NULL, related_name="settled_debts",
+                                     verbose_name="Списано с абонемента")
+    settle_note = models.CharField("Причина закрытия", max_length=200, blank=True, default="")
+    settled_by  = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                    on_delete=models.SET_NULL, related_name="+")
+
+    class Meta:
+        verbose_name = "Занятие в долг"
+        verbose_name_plural = "Занятия в долг"
+        ordering = ["-date", "-id"]
+        indexes = [models.Index(fields=["member", "is_settled"]),
+                   models.Index(fields=["club", "is_settled"])]
+        # Один долг на человека за одно занятие в один день: повторная
+        # отметка не должна удваивать долг.
+        unique_together = [("member", "group_class", "date")]
+
+    def __str__(self):
+        mark = "закрыт" if self.is_settled else "не закрыт"
+        return f"{self.member.full_name} — {self.date:%d.%m} ({mark})"
 
 
 class ClassBooking(TimeStampedModel):
