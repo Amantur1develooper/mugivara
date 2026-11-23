@@ -763,6 +763,8 @@ def group_roster(request, club, staff, group_id):
             created = True
         messages.success(request, f"{member.full_name} в группе «{g.title}»."
                          if created else f"{member.full_name} уже в группе.")
+        if request.POST.get("back"):
+            return redirect(request.POST["back"])
     elif action == "remove":
         link = get_object_or_404(GroupMember, id=request.POST.get("link") or 0, group=g)
         link.is_active = False
@@ -1319,10 +1321,28 @@ def class_day(request, club, staff, class_id):
             roster.append({"member": link.member, "booking": marks.get(link.member_id)})
         rows = [b for b in rows if b.member_id not in marks or not b.member_id]
 
+    # Поиск по имени и карте прямо здесь: выпадающий список из пятисот
+    # человек на ресепшене бесполезен, а карту называют чаще имени.
+    q = (request.GET.get("q") or "").strip()
+    found = []
+    if q:
+        inside = set()
+        if cls.group_id:
+            inside = {l.member_id for l in cls.group.links.filter(is_active=True)}
+        rows_q = (Member.objects.filter(club=club, is_active=True)
+                  .filter(Q(full_name__icontains=q) | Q(phone__icontains=q)
+                          | Q(card_id__icontains=q))
+                  .order_by("full_name")[:12])
+        marks = {b.member_id: b for b in cls.bookings.filter(date=day) if b.member_id}
+        for mem in rows_q:
+            found.append({"member": mem,
+                          "in_group": mem.id in inside,
+                          "mark": marks.get(mem.id)})
+
     state = cls.day_state(day)
     return render(request, "fitness/dash/class_day.html",
                   _ctx(club, staff, cls=cls, day=day, rows=rows, roster=roster,
-                       state=state,
+                       state=state, q=q, found=found,
                        can_cancel=(staff.role != TRAINER
                                    or (trainer_of and cls.trainer_id == trainer_of.id)),
                        came=sum(1 for r in roster

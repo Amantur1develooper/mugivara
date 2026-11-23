@@ -40,6 +40,78 @@
   {% endif %}
 </div>
 
+<div class="fc-card" id="searchCard">
+  <div class="fc-card-t">Найти клиента — по имени, телефону или карте</div>
+  <form method="get" id="searchForm" style="display:flex;gap:8px;flex-wrap:wrap">
+    <input type="hidden" name="date" value="{{ day|date:'Y-m-d' }}">
+    <input class="fc-input" name="q" id="searchInp" value="{{ q }}" autocomplete="off"
+           placeholder="Асилбеков, 0700…, FB000000" style="flex:1;min-width:170px">
+    <button class="fc-btn ghost" type="submit">Найти</button>
+    {% if q %}
+      <a href="?date={{ day|date:'Y-m-d' }}" class="fc-btn ghost">Сбросить</a>
+    {% endif %}
+  </form>
+
+  <div id="searchResults">
+    {% if q %}
+      <div class="fc-list" style="margin-top:11px">
+        {% for f in found %}
+          <div class="fc-row" style="grid-template-columns:auto 1fr auto">
+            <span class="fc-ava{% if not f.member.photo %} empty{% endif %}">
+              {% if f.member.photo %}<img src="{{ f.member.photo.url }}" alt="" loading="lazy">
+              {% else %}👤{% endif %}
+            </span>
+            <div class="fc-row-main">
+              <a class="fc-row-name" style="text-decoration:none"
+                 href="{% url 'fitness_dash:member_detail' club.id f.member.id %}">
+                {{ f.member.full_name }} →
+              </a>
+              <div class="fc-row-sub">
+                {% if f.member.card_id %}карта {{ f.member.card_id }} · {% endif %}
+                {{ f.member.phone }}
+                {% if f.in_group %}<span class="fc-chip ok">в группе</span>{% endif %}
+                {% if f.mark.status == 'came' %}<span class="fc-chip ok">пришёл</span>
+                {% elif f.mark.status == 'no_show' %}<span class="fc-chip bad">не пришёл</span>{% endif %}
+              </div>
+            </div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end">
+              {% if cls.group_id and not f.in_group %}
+                <form method="post" action="{% url 'fitness_dash:group_roster' club.id cls.group_id %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="add">
+                  <input type="hidden" name="member" value="{{ f.member.id }}">
+                  <input type="hidden" name="back" value="{{ request.get_full_path }}">
+                  <button class="fc-btn small" type="submit">В группу</button>
+                </form>
+              {% endif %}
+              {% if not f.mark or f.mark.status == 'booked' %}
+                <form method="post" action="{% url 'fitness_dash:class_mark' club.id cls.id %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="date" value="{{ day|date:'Y-m-d' }}">
+                  <input type="hidden" name="member" value="{{ f.member.id }}">
+                  <input type="hidden" name="back" value="{{ request.get_full_path }}">
+                  <button class="fc-btn small ghost" name="action" value="came">Пришёл</button>
+                </form>
+              {% endif %}
+            </div>
+          </div>
+        {% empty %}
+          <div class="fc-empty">
+            По «{{ q }}» никого не нашли.
+            <a href="{% url 'fitness_dash:members' club.id %}">Завести клиента →</a>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="fc-sub" style="margin-top:8px;line-height:1.5">
+        {% if cls.group_id %}Найдите человека и добавьте его в группу — он сразу
+          появится в составе ниже. Или отметьте приход, если он зашёл разово.
+        {% else %}Найдите человека и отметьте его приход.{% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
 {% if cls.group_id %}
 <div class="fc-card">
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -145,13 +217,12 @@
   <form method="post" action="{% url 'fitness_dash:class_book' club.id cls.id %}">
     {% csrf_token %}
     <input type="hidden" name="date" value="{{ day|date:'Y-m-d' }}">
+    <div class="fc-sub" style="margin-bottom:10px;line-height:1.5">
+      Клиента клуба ищите поиском наверху — там видно карту и можно сразу
+      отметить приход. Здесь записывают того, кого в базе ещё нет.
+    </div>
     <div class="fc-grid2">
-      <div><label class="fc-label">Клиент клуба</label>
-        <select class="fc-select" name="member_id">
-          <option value="">— выбрать —</option>
-          {% for m in members %}<option value="{{ m.id }}">{{ m.full_name }}</option>{% endfor %}
-        </select></div>
-      <div><label class="fc-label">Или имя гостя</label>
+      <div><label class="fc-label">Имя гостя</label>
         <input class="fc-input" name="client_name" placeholder="Азамат"></div>
       <div><label class="fc-label">Телефон</label>
         <input class="fc-input" name="phone" inputmode="tel"></div>
@@ -190,4 +261,48 @@
 
 <a href="{% url 'fitness_dash:classes' club.id %}?date={{ day|date:'Y-m-d' }}"
    class="fc-btn ghost">← Расписание</a>
+
+<script>
+  // Поиск без перезагрузки: страница та же, меняется только список
+  // найденных. Серверная форма работает и без скрипта — она и рисует
+  // результаты, скрипт лишь подставляет их на место.
+  (function () {
+    const form = document.getElementById('searchForm');
+    const inp = document.getElementById('searchInp');
+    const box = document.getElementById('searchResults');
+    if (!form || !inp || !box || !window.fetch) return;
+
+    let timer = null;
+    let last = inp.value;
+
+    const load = async () => {
+      const q = inp.value.trim();
+      if (q === last) return;
+      last = q;
+      const url = form.action.split('?')[0] + '?' +
+        new URLSearchParams({ date: form.querySelector('[name=date]').value, q });
+      try {
+        const res = await fetch(url, { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+        const fresh = doc.getElementById('searchResults');
+        if (fresh) box.innerHTML = fresh.innerHTML;
+        history.replaceState(null, '', url);
+      } catch (e) { /* молча: форма по Enter всё равно сработает */ }
+    };
+
+    inp.addEventListener('input', () => {
+      clearTimeout(timer);
+      // Ждём, пока человек допечатает: на каждую букву ходить незачем
+      timer = setTimeout(load, 320);
+    });
+    form.addEventListener('submit', e => {
+      if (!window.fetch) return;
+      e.preventDefault();
+      clearTimeout(timer);
+      last = null;
+      load();
+    });
+  })();
+</script>
 {% endblock %}
