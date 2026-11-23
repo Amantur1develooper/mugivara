@@ -92,6 +92,28 @@
     .card-d { font-size: 12.5px; color: var(--muted); margin-top: 5px; line-height: 1.45; }
     .card-p { font-size: 14px; font-weight: 800; color: var(--accent); margin-top: 9px; }
 
+    /* День расписания раскрывается по нажатию: вся неделя разом занимала
+       целый экран, а человеку нужен один-два дня. Сегодняшний открыт. */
+    .day {
+      background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+      padding: 11px 13px;
+    }
+    .day > summary {
+      cursor: pointer; list-style: none; display: flex; align-items: center; gap: 10px;
+    }
+    .day > summary::-webkit-details-marker { display: none; }
+    .day > summary::after {
+      content: '⌄'; margin-left: auto; color: var(--muted); font-size: 15px;
+    }
+    .day[open] > summary::after { content: '⌃'; }
+    .day-n {
+      font-size: 12.5px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase;
+    }
+    .day-c {
+      font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 100px;
+      background: rgba(255,255,255,.07); color: var(--muted);
+    }
+
     .tr-card { display: grid; grid-template-columns: auto 1fr; gap: 12px; padding: 12px;
       background: var(--card); border: 1px solid var(--line); border-radius: 18px; align-items: center; }
     .tr-ph { width: 74px; height: 74px; border-radius: 16px; object-fit: cover; background: #1f1f27; }
@@ -197,15 +219,16 @@
 
   {% if schedule_days %}
   <section id="raspisanie">
-    <div class="sec-h"><h2>Расписание занятий</h2><span>на неделю</span></div>
-    <div style="display:flex;flex-direction:column;gap:14px">
+    <div class="sec-h"><h2>Расписание групп</h2><span>на неделю</span></div>
+    <div style="display:flex;flex-direction:column;gap:8px">
       {% for d in schedule_days %}
         {% if d.items %}
-        <div>
-          <div style="font-size:12px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);margin-bottom:7px">
-            {{ d.day|date:"l, d.m" }}{% if d.is_today %} · сегодня{% endif %}
-          </div>
-          <div style="display:flex;flex-direction:column;gap:7px">
+        <details class="day"{% if d.is_today %} open{% endif %}>
+          <summary>
+            <span class="day-n">{{ d.day|date:"l, d.m" }}{% if d.is_today %} · сегодня{% endif %}</span>
+            <span class="day-c">{{ d.items|length }}</span>
+          </summary>
+          <div style="display:flex;flex-direction:column;gap:7px;margin-top:9px">
             {% for it in d.items %}
               <div class="plan">
                 <div>
@@ -234,12 +257,14 @@
               </div>
             {% endfor %}
           </div>
-        </div>
+        </details>
         {% endif %}
+      {% empty %}
+        <div class="note">Расписание пока не заполнено — спросите у администратора.</div>
       {% endfor %}
     </div>
-    <div class="note">Чтобы записаться на занятие — оставьте заявку ниже,
-      администратор запишет и напомнит.</div>
+    <div class="note">Нажмите день, чтобы раскрыть. Записаться — оставьте
+      заявку ниже, администратор запишет и напомнит.</div>
   </section>
   {% endif %}
 

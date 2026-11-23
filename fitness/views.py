@@ -108,6 +108,12 @@ def _week_schedule(club):
                 free = max(0, c.capacity - taken.get((c.id, d), 0))
             items.append({"cls": c, "free": free, "is_group": bool(c.group_id),
                           "cancelled": (c.id, d) in cancelled})
+        # На сайте показываем группы: их и набирают. Открытые занятия
+        # остаются, только если групп в этот день нет вовсе — иначе у клуба,
+        # который ведёт всё открытыми записями, расписание опустело бы.
+        groups_only = [i for i in items if i["is_group"]]
+        if groups_only:
+            items = groups_only
         out.append({"day": d, "items": items, "is_today": d == today})
     return out
 
