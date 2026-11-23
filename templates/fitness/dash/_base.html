@@ -160,6 +160,9 @@
 </style>
 {% endblock %}
 
+{# В клубе своя сводка и свой отчёт — общая аналитика платформы тут лишняя #}
+{% block nav_analytics_section %}{% endblock %}
+
 {% block sidebar_first %}
 <div class="db-nav-section">
   <span class="db-nav-label">{{ club.name|truncatechars:22 }}</span>
