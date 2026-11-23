@@ -1,419 +1,489 @@
 {% extends "fitness/dash/_base.html" %}
-{% block title %}{{ member.full_name }}{% endblock %}
-{% block fc_sub %}{{ member.phone }}{% if member.card_id %} · карта {{ member.card_id }}{% endif %}{% endblock %}
+{% block title %}{{ member.full_name }} — {{ club.name }}{% endblock %}
+{% block fc_title %}{{ member.full_name }}{% endblock %}
+{% block fc_sub %}{{ club.name }}{% if member.phone %} · {{ member.phone }}{% endif %}{% if member.card_id %} · карта {{ member.card_id }}{% endif %}{% endblock %}
 
 {% block fc_content %}
-<div class="fc-card" style="display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center">
-  <span class="fc-ava fc-ava-big{% if not member.photo %} empty{% endif %}">
-    {% if member.photo %}<img src="{{ member.photo.url }}" alt="{{ member.full_name }}">
-    {% else %}👤{% endif %}
-  </span>
-  <div style="min-width:0">
-    <div style="font-size:17px;font-weight:800;line-height:1.25">{{ member.full_name }}</div>
-    <div class="fc-row-sub" style="margin-top:4px">
-      {% if member.phone %}<a href="tel:{{ member.phone }}" style="color:inherit">{{ member.phone }}</a>{% endif %}
-      {% if member.card_id %} · карта {{ member.card_id }}{% endif %}
-      {% if member.birth_date %}<br>родился {{ member.birth_date|date:"d.m.Y" }}{% endif %}
-    </div>
-    {% if member.notes %}
-      <div class="fc-row-sub" style="margin-top:6px">💬 {{ member.notes }}</div>
-    {% endif %}
-    {% if can_money %}
-    <form method="post" action="{% url 'fitness_dash:member_save' club.id member.id %}"
-          enctype="multipart/form-data" style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      {% csrf_token %}
-      <input type="hidden" name="full_name" value="{{ member.full_name }}">
-      <input type="hidden" name="phone" value="{{ member.phone }}">
-      <input type="hidden" name="card_id" value="{{ member.card_id }}">
-      <input type="hidden" name="notes" value="{{ member.notes }}">
-      <input type="hidden" name="birth_date" value="{{ member.birth_date|date:'Y-m-d' }}">
-      <input class="fc-input" type="file" name="photo" accept="image/*" capture="user"
-             style="flex:1;min-width:150px;font-size:12.5px;padding:7px 9px"
-             onchange="this.form.submit()">
-      <span class="fc-sub">{% if member.photo %}заменить фото{% else %}добавить фото{% endif %}</span>
-    </form>
-    {% endif %}
-  </div>
-</div>
+<style>
+  /* Карточка клиента: слева «паспорт» — фото и факты, которые нужны при
+     разговоре, справа вкладки. Раньше всё шло одним столбцом, и чтобы
+     увидеть посещения, надо было пролистать абонементы и формы. */
+  .mc { display: grid; grid-template-columns: 1fr; gap: 14px; align-items: start; }
+  @media (min-width: 1000px) { .mc { grid-template-columns: 272px 1fr; } }
 
-{% if debts %}
-<div class="fc-card" style="border-color:rgba(220,38,38,.4)">
-  <div class="fc-card-t">Занятия в долг — {{ debts|length }}</div>
-  <div class="fc-sub" style="margin-bottom:10px;line-height:1.5">
-    Человек был на тренировке, а абонемент не пускал. Закройте долг:
-    спишите занятие с действующего абонемента или простите с причиной.
-  </div>
-  <div class="fc-list">
-    {% for d in debts %}
-      <div class="fc-row" style="display:block">
-        <div class="fc-row-name">
-          {{ d.date|date:"d.m.Y" }}
-          {% if d.training_group %} · {{ d.training_group.title }}{% endif %}
+  .mc-side { display: flex; flex-direction: column; gap: 12px; }
+  @media (min-width: 1000px) { .mc-side { position: sticky; top: 14px; } }
+
+  /* На телефоне фото во весь экран отодвигало вкладки за нижний край:
+     там «паспорт» — компактная полоса, фото рядом с именем. На широком
+     экране столбец, и фото большое. */
+  .mc-id { display: flex; gap: 12px; align-items: center; }
+  .mc-photo {
+    width: 88px; height: 88px; flex: none; border-radius: 14px; overflow: hidden;
+    background: var(--bg); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; font-size: 34px;
+    color: var(--muted);
+  }
+  .mc-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .mc-name { font-size: 17px; font-weight: 800; line-height: 1.25; }
+  @media (min-width: 1000px) {
+    .mc-id { display: block; }
+    .mc-photo { width: 100%; height: auto; aspect-ratio: 1; font-size: 60px;
+                border-radius: 16px; }
+    .mc-name { margin-top: 11px; }
+  }
+
+  .mc-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 14px; margin-top: 11px; }
+  @media (min-width: 1000px) { .mc-facts { grid-template-columns: 1fr; } }
+  @media (max-width: 560px) { .mc-facts { grid-template-columns: 1fr; } }
+  .mc-fact { display: flex; gap: 8px; font-size: 12.5px; line-height: 1.35; }
+  .mc-fact b { color: var(--muted); font-weight: 600; flex: none; width: 92px; }
+  .mc-fact span { color: var(--text2); min-width: 0; word-break: break-word; }
+
+  /* Вкладки — как разделы: нажал и видишь только нужное */
+  .mc-tabs {
+    display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+    margin-bottom: 12px; padding-bottom: 2px;
+  }
+  /* На широком экране вкладки переносятся: прятать «Правку» за боковой
+     прокруткой там незачем. */
+  @media (min-width: 1000px) { .mc-tabs { flex-wrap: wrap; overflow: visible; } }
+  .mc-tabs::-webkit-scrollbar { display: none; }
+  .mc-tab {
+    appearance: none; cursor: pointer; font: inherit; flex: none;
+    font-size: 12.5px; font-weight: 700; padding: 9px 14px; border-radius: 100px;
+    color: var(--text2); background: var(--card); border: 1.5px solid var(--border);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .mc-tab .n {
+    font-size: 10.5px; font-weight: 800; padding: 1px 6px; border-radius: 100px;
+    background: var(--bg); color: var(--muted);
+  }
+  .mc-tab.on { border-color: var(--accent); color: var(--accent); }
+  .mc-tab.on .n { background: var(--accent); color: #fff; }
+  .mc-tab.alert { border-color: #dc2626; color: #dc2626; }
+  .mc-tab.alert .n { background: #dc2626; color: #fff; }
+  .mc-pane[hidden] { display: none; }
+
+  /* Абонемент: строка раскрывается в подробности — как в журнале */
+  .ms { border: 1px solid var(--border); border-radius: 13px; background: var(--bg);
+        overflow: hidden; }
+  .ms + .ms { margin-top: 8px; }
+  .ms > summary {
+    cursor: pointer; padding: 11px 13px; list-style: none;
+    display: flex; gap: 9px; align-items: center;
+  }
+  .ms > summary::-webkit-details-marker { display: none; }
+  .ms > summary::after {
+    content: '⌄'; margin-left: auto; color: var(--muted); font-size: 15px; flex: none;
+  }
+  .ms[open] > summary::after { content: '⌃'; }
+  .ms[open] > summary { border-bottom: 1px solid var(--border); }
+  .ms-body { padding: 12px 13px; }
+  .ms-line { display: flex; gap: 10px; font-size: 12.5px; padding: 5px 0;
+             border-bottom: 1px dashed var(--border); }
+  .ms-line:last-child { border-bottom: 0; }
+  .ms-line b { color: var(--muted); font-weight: 600; width: 130px; flex: none; }
+  /* Полоса срока: сколько прошло — видно, не вчитываясь в даты */
+  .ms-bar { height: 7px; border-radius: 100px; background: var(--border);
+            overflow: hidden; margin-top: 5px; }
+  .ms-bar i { display: block; height: 100%; background: #059669; }
+  .ms-bar.low i { background: #dc2626; }
+</style>
+
+<div class="mc">
+  <aside class="mc-side">
+    <div class="fc-card">
+      <div class="mc-id">
+        <div class="mc-photo">
+          {% if member.photo %}<img src="{{ member.photo.url }}" alt="{{ member.full_name }}">
+          {% else %}👤{% endif %}
         </div>
-        <div class="fc-row-sub" style="margin-top:3px">
-          {{ d.get_reason_display }}{% if d.note %} · {{ d.note }}{% endif %}
+        <div style="min-width:0">
+          <div class="mc-name">{{ member.full_name }}</div>
+          <div style="margin-top:7px">
+            {% if not active %}<span class="fc-chip bad">нет абонемента</span>
+            {% elif active.is_frozen %}<span class="fc-chip cold">заморожен</span>
+            {% elif not active.activated %}<span class="fc-chip">не начат</span>
+            {% else %}<span class="fc-chip ok">абонемент активен</span>{% endif %}
+          </div>
         </div>
-        {% if can_money %}
-        <form method="post" action="{% url 'fitness_dash:debt_settle' club.id d.id %}"
-              style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-          {% csrf_token %}
-          <select class="fc-input" name="membership" style="flex:1;min-width:150px">
-            <option value="">— простить, без списания —</option>
-            {% for ms in memberships %}
-              {% if ms.is_active %}
-                <option value="{{ ms.id }}">
-                  {{ ms.plan.name }}{% if ms.plan.visits_number %} · осталось {{ ms.remaining_visits }}{% endif %}
-                </option>
-              {% endif %}
-            {% endfor %}
-          </select>
-          <input class="fc-input" name="note" placeholder="причина"
-                 style="flex:1;min-width:130px">
-          <button class="fc-btn small" type="submit">Закрыть</button>
-        </form>
+      </div>
+
+      <div class="mc-facts">
+        {% if member.phone %}
+        <div class="mc-fact"><b>Телефон</b>
+          <span><a href="tel:{{ member.phone }}" style="color:inherit">{{ member.phone }}</a></span></div>
         {% endif %}
+        {% if member.card_id %}
+        <div class="mc-fact"><b>Карта</b><span>{{ member.card_id }}</span></div>{% endif %}
+        {% if member.birth_date %}
+        <div class="mc-fact"><b>Родился</b><span>{{ member.birth_date|date:"d.m.Y" }}</span></div>{% endif %}
+        <div class="mc-fact"><b>В клубе с</b><span>{{ member.created_at|date:"d.m.Y" }}</span></div>
+        <div class="mc-fact"><b>Посещений</b><span>{{ visits_total }}</span></div>
+        {% if last_visit %}
+        <div class="mc-fact"><b>Был</b><span>{{ last_visit.visit_time|date:"d.m.Y H:i" }}</span></div>{% endif %}
+        {% if member.notes %}
+        <div class="mc-fact"><b>Пометка</b><span>{{ member.notes }}</span></div>{% endif %}
       </div>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
 
-{% if settled %}
-<details class="fc-card">
-  <summary style="cursor:pointer;font-weight:700;font-size:13.5px">
-    Закрытые долги ({{ settled|length }})
-  </summary>
-  <div class="fc-list" style="margin-top:10px">
-    {% for d in settled %}
-      <div class="fc-row">
-        <div class="fc-row-main">
-          <div class="fc-row-name">{{ d.date|date:"d.m.Y" }}</div>
-          <div class="fc-row-sub">
-            {% if d.settled_from %}списано с «{{ d.settled_from.plan.name }}»
-            {% else %}прощено{% endif %}
-            {% if d.settle_note %} · {{ d.settle_note }}{% endif %}
-            · {{ d.settled_on|date:"d.m.Y" }}
-          </div>
-        </div>
-      </div>
-    {% endfor %}
-  </div>
-</details>
-{% endif %}
-
-{% if group_links %}
-<div class="fc-card">
-  <div class="fc-card-t">Группы</div>
-  <div class="fc-list">
-    {% for link in group_links %}
-      <a href="{% url 'fitness_dash:group_detail' club.id link.group.id %}" class="fc-row">
-        <div class="fc-row-main">
-          <div class="fc-row-name">
-            {% if link.group.section and link.group.section.icon %}{{ link.group.section.icon }} {% endif %}
-            {{ link.group.title }}
-          </div>
-          <div class="fc-row-sub">
-            {% if link.group.trainer %}{{ link.group.trainer.name }}{% else %}тренер не назначен{% endif %}
-            · с {{ link.joined_on|date:"d.m.Y" }}
-            {% with sl=link.group.slots.all %}{% if sl %}
-              <br>{% for s in sl %}{% if s.is_active %}{{ s.get_weekday_display|slice:":2" }}
-                {{ s.time_from|time:"H:i" }}{% if not forloop.last %} · {% endif %}{% endif %}{% endfor %}
-            {% endif %}{% endwith %}
-          </div>
-        </div>
-        <div class="fc-row-right">→</div>
-      </a>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
-
-<div class="fc-card">
-  <div class="fc-card-t">Сейчас</div>
-  {% if active %}
-    <div class="fc-row" style="background:var(--card)">
-      <div class="fc-row-main">
-        <div class="fc-row-name">{{ active.plan.name }}</div>
-        <div class="fc-row-sub">
-          {% if active.plan.visits_number %}осталось {{ active.remaining_visits }} из {{ active.plan.visits_number }}{% else %}без ограничения по посещениям{% endif %}
-          {% if active.activated %}· до {{ active.end_date|date:"d.m.Y" }} ({{ active.days_left }} дн.)
-          {% else %}· <span class="fc-chip">начнётся с первого посещения</span>{% endif %}
-          {% if active.debt_amount %}· <span class="fc-chip bad">долг {{ active.debt_amount|floatformat:0 }} сом</span>{% endif %}
-        </div>
-      </div>
       {% if can_money %}
-      <form method="post" action="{% url 'fitness_dash:checkin_pass' club.id member.id %}">
+      <form method="post" action="{% url 'fitness_dash:checkin_pass' club.id member.id %}"
+            style="margin-top:12px">
         {% csrf_token %}
-        <button class="fc-btn small" type="submit">🚪 Пропустить</button>
+        <button class="fc-btn" type="submit" style="width:100%">🚪 Пропустить в зал</button>
+      </form>
+      <form method="post" action="{% url 'fitness_dash:member_save' club.id member.id %}"
+            enctype="multipart/form-data" style="margin-top:8px">
+        {% csrf_token %}
+        <input type="hidden" name="full_name" value="{{ member.full_name }}">
+        <input type="hidden" name="phone" value="{{ member.phone }}">
+        <input type="hidden" name="card_id" value="{{ member.card_id }}">
+        <input type="hidden" name="notes" value="{{ member.notes }}">
+        <input type="hidden" name="birth_date" value="{{ member.birth_date|date:'Y-m-d' }}">
+        <input class="fc-input" type="file" name="photo" accept="image/*" capture="user"
+               style="font-size:12px;padding:7px 9px" onchange="this.form.submit()">
+        <div class="fc-sub" style="margin-top:4px">
+          {% if member.photo %}заменить фото{% else %}добавить фото{% endif %}
+        </div>
       </form>
       {% endif %}
+      <a href="{% url 'fitness_dash:members' club.id %}" class="fc-btn ghost small"
+         style="margin-top:10px;display:inline-block">← Все клиенты</a>
     </div>
-  {% else %}
-    <div class="fc-empty">Действующего абонемента нет</div>
-  {% endif %}
-</div>
+  </aside>
 
-{% if can_money %}
-<details class="fc-card">
-  <summary style="cursor:pointer;font-weight:700;font-size:13.5px">+ Продать абонемент</summary>
-  <form method="post" action="{% url 'fitness_dash:membership_sell' club.id member.id %}" style="margin-top:12px">
-    {% csrf_token %}
-    <div class="fc-grid2">
-      <div>
-        <label class="fc-label">Абонемент</label>
-        <select class="fc-select" name="plan_id" id="planSel" required>
-          {% for p in plans %}
-            <option value="{{ p.id }}" data-price="{{ p.price|floatformat:0 }}">
-              {{ p.name }} — {{ p.price|floatformat:0 }} сом
-            </option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label class="fc-label">Цена</label>
-        <input class="fc-input" name="price" id="priceInp" inputmode="numeric">
-      </div>
-      <div>
-        <label class="fc-label">Скидка, %</label>
-        <input class="fc-input" name="discount_pct" id="pctInp" value="0"
-               inputmode="numeric" min="0" max="100">
-        <div class="fc-slots" id="pctSlots"></div>
-      </div>
-      <div>
-        <label class="fc-label">Скидка, сом</label>
-        <input class="fc-input" name="discount" id="discInp" value="0" inputmode="numeric">
-      </div>
-      <div>
-        <label class="fc-label">Оплачено сейчас</label>
-        <input class="fc-input" name="paid" id="paidInp" inputmode="numeric">
-      </div>
-      <div>
-        <label class="fc-label">Способ</label>
-        <select class="fc-select" name="method">
-          <option value="cash">Наличные</option>
-          <option value="card">Карта</option>
-          <option value="online">Перевод</option>
-        </select>
-      </div>
-      <div>
-        <label class="fc-label">Персональный тренер</label>
-        <select class="fc-select" name="trainer_id">
-          <option value="">нет</option>
-          {% for t in trainers %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
-        </select>
-      </div>
+  <div style="min-width:0">
+    <div class="mc-tabs" id="mcTabs">
+      <button class="mc-tab on" data-pane="now" type="button">Сейчас</button>
+      <button class="mc-tab" data-pane="subs" type="button">Абонементы
+        {% if memberships %}<span class="n">{{ memberships|length }}</span>{% endif %}</button>
+      <button class="mc-tab" data-pane="visits" type="button">Посещения
+        {% if visits %}<span class="n">{{ visits_total }}</span>{% endif %}</button>
+      {% if group_links %}
+      <button class="mc-tab" data-pane="groups" type="button">Группы
+        <span class="n">{{ group_links|length }}</span></button>
+      {% endif %}
+      {% if debts %}
+      <button class="mc-tab alert" data-pane="debts" type="button">Долги
+        <span class="n">{{ debts|length }}</span></button>
+      {% endif %}
+      {% if can_money %}
+      <button class="mc-tab" data-pane="money" type="button">Платежи</button>
+      <button class="mc-tab" data-pane="edit" type="button">Правка</button>
+      {% endif %}
     </div>
-    <div class="fc-sub" id="sumLine" style="margin-top:10px;font-size:13px"></div>
-    <label style="display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:12.5px;color:var(--text2)">
-      <input type="checkbox" name="start_today" style="margin-top:3px">
-      <span>Начать сегодня. Если не ставить — срок пойдёт с первого посещения,
-        клиент не теряет дни, пока собирается прийти.</span>
-    </label>
-    <button class="fc-btn" type="submit" style="margin-top:12px">Продать</button>
-  </form>
-  <script>
-    // Цена и «оплачено» подставляются из выбранного абонемента: кассир
-    // чаще всего берёт полную сумму, и перебивать её вручную незачем.
-    (function () {
-      const sel = document.getElementById('planSel');
-      const price = document.getElementById('priceInp');
-      const paid = document.getElementById('paidInp');
-      const pct = document.getElementById('pctInp');
-      const disc = document.getElementById('discInp');
-      const sumLine = document.getElementById('sumLine');
-      if (!sel) return;
 
-      const num = el => {
-        const v = parseFloat(String(el.value).replace(',', '.').replace(/\s/g, ''));
-        return isFinite(v) ? v : 0;
-      };
-      const money = n => Math.round(n).toLocaleString('ru-RU') + ' сом';
-
-      // Считаем в одну сторону: процент задаёт сумму скидки. Кассир может
-      // вписать и сумму руками — тогда процент пересчитывается обратно,
-      // чтобы в полях не было двух разных правд.
-      const fromPct = () => {
-        const p = Math.max(0, Math.min(100, num(pct)));
-        disc.value = Math.round(num(price) * p / 100);
-        show();
-      };
-      const fromSum = () => {
-        const base = num(price);
-        pct.value = base > 0 ? Math.round(num(disc) / base * 100) : 0;
-        show();
-      };
-      const show = () => {
-        const toPay = Math.max(0, num(price) - num(disc));
-        paid.value = Math.round(toPay);
-        const d = num(disc);
-        sumLine.textContent = d > 0
-          ? `К оплате ${money(toPay)} — скидка ${money(d)} от ${money(num(price))}`
-          : `К оплате ${money(toPay)}`;
-      };
-
-      const fill = () => {
-        const p = sel.options[sel.selectedIndex].dataset.price || '';
-        price.value = p;
-        fromPct();
-      };
-      sel.addEventListener('change', fill);
-      price.addEventListener('input', fromPct);
-      pct.addEventListener('input', fromPct);
-      disc.addEventListener('input', fromSum);
-      paid.addEventListener('input', () => {
-        // Оплатили меньше — остальное повиснет долгом, и это надо видеть
-        const toPay = Math.max(0, num(price) - num(disc));
-        const left = toPay - num(paid);
-        if (left > 0) {
-          sumLine.textContent = `К оплате ${money(toPay)} · в долг ${money(left)}`;
-        } else {
-          show();
-        }
-      });
-
-      // Частые скидки в одно нажатие: 5, 10, 15, 20, 30, 50
-      const slots = document.getElementById('pctSlots');
-      if (slots) {
-        [0, 5, 10, 15, 20, 30, 50].forEach(v => {
-          const b = document.createElement('button');
-          b.type = 'button';
-          b.className = 'fc-slot';
-          b.textContent = v + '%';
-          b.addEventListener('click', () => {
-            pct.value = v;
-            fromPct();
-            [...slots.children].forEach(x => x.classList.toggle('on', x === b));
-          });
-          slots.appendChild(b);
-        });
-      }
-      fill();
-    })();
-  </script>
-</details>
-{% endif %}
-
-<div class="fc-card">
-  <div class="fc-card-t">Абонементы</div>
-  <div class="fc-list">
-    {% for ms in memberships %}
-      <div class="fc-row" style="grid-template-columns:1fr">
-        <div class="fc-row-main">
-          <div class="fc-row-name">
-            {{ ms.plan.name }}
-            {% if not ms.is_active %}<span class="fc-chip">закрыт</span>
-            {% elif ms.is_frozen %}<span class="fc-chip warn">заморожен</span>
-            {% elif not ms.activated %}<span class="fc-chip">не начат</span>
-            {% else %}<span class="fc-chip ok">активен</span>{% endif %}
+    {# Сейчас #}
+    <section class="mc-pane" data-pane="now">
+      <div class="fc-card">
+        <div class="fc-card-t">Сейчас</div>
+        {% if active %}
+          <div class="fc-row" style="grid-template-columns:1fr">
+            <div class="fc-row-main">
+              <div class="fc-row-name">{{ active.plan.name }}</div>
+              <div class="fc-row-sub">
+                {% if active.plan.visits_number %}осталось {{ active.remaining_visits }} из {{ active.plan.visits_number }}
+                {% else %}без ограничения по посещениям{% endif %}
+                {% if active.activated %}· до {{ active.end_date|date:"d.m.Y" }} ({{ active.days_left }} дн.)
+                {% else %}· начнётся с первого посещения{% endif %}
+                {% if active.debt_amount %}<br><span class="fc-chip bad">долг {{ active.debt_amount|floatformat:0 }} сом</span>{% endif %}
+              </div>
+            </div>
           </div>
-          <div class="fc-row-sub">
-            куплен {{ ms.purchase_date|date:"d.m.Y" }}
-            {% if ms.activated %}· {{ ms.start_date|date:"d.m.y" }}–{{ ms.end_date|date:"d.m.y" }}{% endif %}
-            {% if ms.plan.visits_number %}· осталось {{ ms.remaining_visits }}{% endif %}
-            {% if ms.trainer %}· тренер {{ ms.trainer.name }}{% endif %}
-          </div>
-          {% if can_money %}
-          <div class="fc-row-sub">
-            цена {{ ms.price|floatformat:0 }}
-            {% if ms.discount_amount %}· скидка {{ ms.discount_amount|floatformat:0 }}{% endif %}
-            · оплачено {{ ms.paid_amount|floatformat:0 }}
-            {% if ms.debt_amount %}· <b style="color:#dc2626">долг {{ ms.debt_amount|floatformat:0 }}</b>{% endif %}
-          </div>
-          {% endif %}
-        </div>
-        {% if can_money and ms.is_active %}
-        <form method="post" action="{% url 'fitness_dash:membership_action' club.id ms.id %}"
-              style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px">
-          {% csrf_token %}
-          {% if ms.debt_amount %}
-            <input class="fc-input" name="amount" placeholder="сумма" inputmode="numeric"
-                   style="width:110px;padding:7px 9px;font-size:12.5px">
-            <button class="fc-btn small" name="action" value="pay">Принять долг</button>
-          {% endif %}
-          {% if not ms.activated %}
-            <button class="fc-btn small ghost" name="action" value="activate">Начать сегодня</button>
-          {% endif %}
-          {% if ms.is_frozen %}
-            <button class="fc-btn small ghost" name="action" value="unfreeze">Снять заморозку</button>
-          {% else %}
-            <input class="fc-input" name="days" value="7" inputmode="numeric"
-                   style="width:70px;padding:7px 9px;font-size:12.5px">
-            <button class="fc-btn small ghost" name="action" value="freeze">Заморозить</button>
-          {% endif %}
-          {% if is_admin %}
-            <button class="fc-btn small ghost" name="action" value="close">Закрыть</button>
-          {% endif %}
-        </form>
+        {% else %}
+          <div class="fc-empty">Действующего абонемента нет</div>
         {% endif %}
       </div>
-    {% empty %}
-      <div class="fc-empty">Абонементов не было</div>
-    {% endfor %}
-  </div>
-</div>
 
-<div class="fc-card">
-  <div class="fc-card-t">Посещения</div>
-  <div class="fc-list">
-    {% for v in visits %}
-      <div class="fc-row">
-        <div class="fc-row-main">
-          <div class="fc-row-name" style="font-size:13px">
-            {% if v.success %}✅{% else %}⛔️{% endif %} {{ v.visit_time|date:"d.m.Y H:i" }}
-          </div>
-          <div class="fc-row-sub">
-            {% if v.trainer %}с {{ v.trainer.name }}{% endif %}
-            {% if not v.success %}{{ v.reason }}{% endif %}
-          </div>
+      {% if can_money %}
+      <div class="fc-card">
+        <div class="fc-card-t">Продать абонемент</div>
+        {% include "fitness/dash/_sell_form.html" %}
+      </div>
+      {% endif %}
+    </section>
+
+    {# Абонементы #}
+    <section class="mc-pane" data-pane="subs" hidden>
+      <div class="fc-card">
+        <div class="fc-card-t">Абонементы</div>
+        {% for ms in memberships %}
+          <details class="ms"{% if forloop.first and ms.is_active %} open{% endif %}>
+            <summary>
+              <span style="font-weight:700;font-size:13px;min-width:0">{{ ms.plan.name }}</span>
+              {% if not ms.is_active %}<span class="fc-chip">закрыт</span>
+              {% elif ms.is_frozen %}<span class="fc-chip cold">заморожен</span>
+              {% elif not ms.activated %}<span class="fc-chip">не начат</span>
+              {% else %}<span class="fc-chip ok">активен</span>{% endif %}
+            </summary>
+            <div class="ms-body">
+              {% if ms.plan.visits_number %}
+                <div class="ms-line"><b>Посещений</b>
+                  <span>осталось {{ ms.remaining_visits }} из {{ ms.plan.visits_number }}</span></div>
+              {% else %}
+                <div class="ms-line"><b>Посещений</b><span>без ограничения</span></div>
+              {% endif %}
+              <div class="ms-line"><b>Куплен</b><span>{{ ms.purchase_date|date:"d.m.Y" }}</span></div>
+              <div class="ms-line"><b>Активирован</b>
+                <span>{% if ms.activated %}{{ ms.start_date|date:"d.m.Y" }}
+                      {% else %}с первого посещения{% endif %}</span></div>
+              {% if ms.activated and ms.end_date %}
+              <div class="ms-line" style="display:block">
+                <b style="display:inline-block">Действует до</b>
+                <span>{{ ms.end_date|date:"d.m.Y" }}
+                  {% if ms.days_left >= 0 %}· осталось {{ ms.days_left }} дн.
+                  {% else %}· срок вышел{% endif %}</span>
+                <div class="ms-bar{% if ms.days_left < 4 %} low{% endif %}">
+                  <i data-left="{{ ms.days_left }}" data-all="{{ ms.plan.validity_days }}"></i>
+                </div>
+              </div>
+              {% endif %}
+              {% if ms.is_frozen %}
+                <div class="ms-line"><b>Заморозка</b>
+                  <span>с {{ ms.freeze_start|date:"d.m.Y" }}, {{ ms.freeze_days }} дн.</span></div>
+              {% endif %}
+              {% if ms.trainer %}
+                <div class="ms-line"><b>Тренер</b><span>{{ ms.trainer.name }}</span></div>{% endif %}
+              {% if can_money %}
+                <div class="ms-line"><b>Сумма</b>
+                  <span>{{ ms.paid_amount|floatformat:0 }} из {{ ms.price|floatformat:0 }} сом
+                    {% if ms.discount_amount %}· скидка {{ ms.discount_amount|floatformat:0 }}{% endif %}
+                    {% if ms.debt_amount %}· <b style="color:#dc2626">долг {{ ms.debt_amount|floatformat:0 }}</b>{% endif %}
+                  </span></div>
+              {% endif %}
+
+              {% if can_money and ms.is_active %}
+              <form method="post" action="{% url 'fitness_dash:membership_action' club.id ms.id %}"
+                    style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:11px">
+                {% csrf_token %}
+                {% if ms.debt_amount %}
+                  <input class="fc-input" name="amount" placeholder="сумма" inputmode="numeric"
+                         style="width:110px;padding:7px 9px;font-size:12.5px">
+                  <button class="fc-btn small" name="action" value="pay">Принять долг</button>
+                {% endif %}
+                {% if not ms.activated %}
+                  <button class="fc-btn small ghost" name="action" value="activate">Начать сегодня</button>
+                {% endif %}
+                {% if ms.is_frozen %}
+                  <button class="fc-btn small ghost" name="action" value="unfreeze">Снять заморозку</button>
+                {% else %}
+                  <input class="fc-input" name="days" value="7" inputmode="numeric"
+                         style="width:70px;padding:7px 9px;font-size:12.5px">
+                  <button class="fc-btn small ghost" name="action" value="freeze">Заморозить</button>
+                {% endif %}
+                {% if is_admin %}
+                  <button class="fc-btn small ghost" name="action" value="close">Закрыть</button>
+                {% endif %}
+              </form>
+              {% endif %}
+            </div>
+          </details>
+        {% empty %}
+          <div class="fc-empty">Абонементов не было</div>
+        {% endfor %}
+      </div>
+    </section>
+
+    {# Посещения #}
+    <section class="mc-pane" data-pane="visits" hidden>
+      <div class="fc-card">
+        <div class="fc-card-t">Посещения — всего {{ visits_total }}</div>
+        <div class="fc-list">
+          {% for v in visits %}
+            <div class="fc-row">
+              <div class="fc-row-main">
+                <div class="fc-row-name" style="font-size:13px">
+                  {% if v.success %}✅{% else %}⛔️{% endif %} {{ v.visit_time|date:"d.m.Y H:i" }}
+                </div>
+                <div class="fc-row-sub">
+                  {% if v.trainer %}с {{ v.trainer.name }}{% endif %}
+                  {% if not v.success %}{{ v.reason }}{% endif %}
+                </div>
+              </div>
+            </div>
+          {% empty %}
+            <div class="fc-empty">Ещё не приходил</div>
+          {% endfor %}
         </div>
       </div>
-    {% empty %}
-      <div class="fc-empty">Ещё не приходил</div>
-    {% endfor %}
-  </div>
-</div>
+    </section>
 
-{% if can_money and payments %}
-<div class="fc-card">
-  <div class="fc-card-t">Платежи</div>
-  <div class="fc-list">
-    {% for p in payments %}
-      <div class="fc-row">
-        <div class="fc-row-main">
-          <div class="fc-row-name" style="font-size:13px">{{ p.get_kind_display }}</div>
-          <div class="fc-row-sub">{{ p.created_at|date:"d.m.Y H:i" }} · {{ p.get_method_display }}</div>
+    {# Группы #}
+    {% if group_links %}
+    <section class="mc-pane" data-pane="groups" hidden>
+      <div class="fc-card">
+        <div class="fc-card-t">Группы</div>
+        <div class="fc-list">
+          {% for link in group_links %}
+            <a href="{% url 'fitness_dash:group_detail' club.id link.group.id %}" class="fc-row">
+              <div class="fc-row-main">
+                <div class="fc-row-name">
+                  {% if link.group.section and link.group.section.icon %}{{ link.group.section.icon }} {% endif %}
+                  {{ link.group.title }}
+                </div>
+                <div class="fc-row-sub">
+                  {% if link.group.trainer %}{{ link.group.trainer.name }}{% else %}тренер не назначен{% endif %}
+                  · с {{ link.joined_on|date:"d.m.Y" }}
+                  {% with sl=link.group.slots.all %}{% if sl %}
+                    <br>{% for s in sl %}{% if s.is_active %}{{ s.get_weekday_display|slice:":2" }}
+                      {{ s.time_from|time:"H:i" }}{% if not forloop.last %} · {% endif %}{% endif %}{% endfor %}
+                  {% endif %}{% endwith %}
+                </div>
+              </div>
+              <div class="fc-row-right">→</div>
+            </a>
+          {% endfor %}
         </div>
-        <div class="fc-row-right">{{ p.amount|floatformat:0 }} сом</div>
       </div>
-    {% endfor %}
+    </section>
+    {% endif %}
+
+    {# Долги #}
+    {% if debts %}
+    <section class="mc-pane" data-pane="debts" hidden>
+      <div class="fc-card" style="border-color:rgba(220,38,38,.4)">
+        <div class="fc-card-t">Занятия в долг — {{ debts|length }}</div>
+        <div class="fc-sub" style="margin-bottom:10px;line-height:1.5">
+          Человек был на тренировке, а абонемент не пускал. Спишите занятие с
+          действующего абонемента или простите с причиной.
+        </div>
+        <div class="fc-list">
+          {% for d in debts %}
+            <div class="fc-row" style="display:block">
+              <div class="fc-row-name">
+                {{ d.date|date:"d.m.Y" }}
+                {% if d.training_group %} · {{ d.training_group.title }}{% endif %}
+              </div>
+              <div class="fc-row-sub" style="margin-top:3px">
+                {{ d.get_reason_display }}{% if d.note %} · {{ d.note }}{% endif %}
+              </div>
+              {% if can_money %}
+              <form method="post" action="{% url 'fitness_dash:debt_settle' club.id d.id %}"
+                    style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                {% csrf_token %}
+                <select class="fc-input" name="membership" style="flex:1;min-width:150px">
+                  <option value="">— простить, без списания —</option>
+                  {% for ms in memberships %}{% if ms.is_active %}
+                    <option value="{{ ms.id }}">{{ ms.plan.name }}{% if ms.plan.visits_number %} · осталось {{ ms.remaining_visits }}{% endif %}</option>
+                  {% endif %}{% endfor %}
+                </select>
+                <input class="fc-input" name="note" placeholder="причина" style="flex:1;min-width:130px">
+                <button class="fc-btn small" type="submit">Закрыть</button>
+              </form>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      {% if settled %}
+      <details class="fc-card">
+        <summary style="cursor:pointer;font-weight:700;font-size:13.5px">
+          Закрытые долги ({{ settled|length }})
+        </summary>
+        <div class="fc-list" style="margin-top:10px">
+          {% for d in settled %}
+            <div class="fc-row">
+              <div class="fc-row-main">
+                <div class="fc-row-name">{{ d.date|date:"d.m.Y" }}</div>
+                <div class="fc-row-sub">
+                  {% if d.settled_from %}списано с «{{ d.settled_from.plan.name }}»
+                  {% else %}прощено{% endif %}
+                  {% if d.settle_note %} · {{ d.settle_note }}{% endif %}
+                  · {{ d.settled_on|date:"d.m.Y" }}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </details>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    {# Платежи #}
+    {% if can_money %}
+    <section class="mc-pane" data-pane="money" hidden>
+      <div class="fc-card">
+        <div class="fc-card-t">Платежи</div>
+        <div class="fc-list">
+          {% for p in payments %}
+            <div class="fc-row">
+              <div class="fc-row-main">
+                <div class="fc-row-name" style="font-size:13px">{{ p.get_kind_display }}</div>
+                <div class="fc-row-sub">{{ p.created_at|date:"d.m.Y H:i" }} · {{ p.get_method_display }}</div>
+              </div>
+              <div class="fc-row-right">{{ p.amount|floatformat:0 }} сом</div>
+            </div>
+          {% empty %}
+            <div class="fc-empty">Платежей не было</div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    {# Правка #}
+    <section class="mc-pane" data-pane="edit" hidden>
+      <div class="fc-card">
+        <div class="fc-card-t">Данные клиента</div>
+        <form method="post" action="{% url 'fitness_dash:member_save' club.id member.id %}"
+              enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="fc-grid2">
+            <div><label class="fc-label">ФИО</label>
+              <input class="fc-input" name="full_name" value="{{ member.full_name }}" required></div>
+            <div><label class="fc-label">Телефон</label>
+              <input class="fc-input" name="phone" value="{{ member.phone }}"></div>
+            <div><label class="fc-label">Карта</label>
+              <input class="fc-input" name="card_id" value="{{ member.card_id }}"></div>
+            <div><label class="fc-label">Дата рождения</label>
+              <input class="fc-input" type="date" name="birth_date"
+                     value="{{ member.birth_date|date:'Y-m-d' }}"></div>
+          </div>
+          <div style="margin-top:10px"><label class="fc-label">Примечание</label>
+            <input class="fc-input" name="notes" value="{{ member.notes }}"></div>
+          <div style="margin-top:10px"><label class="fc-label">Фото</label>
+            <input class="fc-input" type="file" name="photo" accept="image/*" capture="user">
+            <div class="fc-sub" style="margin-top:5px">Пусто — останется прежнее.</div></div>
+          <button class="fc-btn" type="submit" style="margin-top:12px">Сохранить</button>
+        </form>
+      </div>
+    </section>
+    {% endif %}
   </div>
 </div>
-{% endif %}
 
-{% if can_money %}
-<details class="fc-card">
-  <summary style="cursor:pointer;font-weight:700;font-size:13.5px">Правка клиента</summary>
-  <form method="post" action="{% url 'fitness_dash:member_save' club.id member.id %}"
-        enctype="multipart/form-data" style="margin-top:12px">
-    {% csrf_token %}
-    <div class="fc-grid2">
-      <div><label class="fc-label">ФИО</label>
-        <input class="fc-input" name="full_name" value="{{ member.full_name }}" required></div>
-      <div><label class="fc-label">Телефон</label>
-        <input class="fc-input" name="phone" value="{{ member.phone }}"></div>
-      <div><label class="fc-label">Карта</label>
-        <input class="fc-input" name="card_id" value="{{ member.card_id }}"></div>
-      <div><label class="fc-label">Дата рождения</label>
-        <input class="fc-input" type="date" name="birth_date"
-               value="{{ member.birth_date|date:'Y-m-d' }}"></div>
-    </div>
-    <div style="margin-top:10px"><label class="fc-label">Примечание</label>
-      <input class="fc-input" name="notes" value="{{ member.notes }}"></div>
-    <div style="margin-top:10px"><label class="fc-label">Фото</label>
-      <input class="fc-input" type="file" name="photo" accept="image/*" capture="user">
-      <div class="fc-sub" style="margin-top:5px">Пусто — останется прежнее.</div></div>
-    <button class="fc-btn" type="submit" style="margin-top:12px">Сохранить</button>
-  </form>
-</details>
-{% endif %}
+<script>
+  // Вкладки карточки. Выбранная держится в адресе (#subs): после
+  // сохранения страница возвращается туда же, а не в начало.
+  (function () {
+    const tabs = document.getElementById('mcTabs');
+    if (!tabs) return;
+    const panes = [...document.querySelectorAll('.mc-pane')];
+
+    const show = key => {
+      const btn = [...tabs.children].find(b => b.dataset.pane === key)
+                  || tabs.firstElementChild;
+      [...tabs.children].forEach(b => b.classList.toggle('on', b === btn));
+      panes.forEach(p => { p.hidden = p.dataset.pane !== btn.dataset.pane; });
+    };
+
+    tabs.addEventListener('click', e => {
+      const btn = e.target.closest('.mc-tab');
+      if (!btn) return;
+      show(btn.dataset.pane);
+      history.replaceState(null, '', '#' + btn.dataset.pane);
+    });
+    show((location.hash || '').replace('#', '') || 'now');
+
+    // Полоса срока: сколько времени у абонемента ещё есть
+    document.querySelectorAll('.ms-bar i').forEach(bar => {
+      const left = parseInt(bar.dataset.left || '0', 10);
+      const all = parseInt(bar.dataset.all || '0', 10) || 30;
+      const part = Math.max(0, Math.min(100, Math.round(left / all * 100)));
+      bar.style.width = part + '%';
+    });
+  })();
+</script>
 {% endblock %}

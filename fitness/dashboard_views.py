@@ -311,6 +311,11 @@ def member_detail(request, club, staff, member_id):
                          .select_related("settled_from__plan")[:10]),
                 memberships=member.memberships.select_related("plan", "trainer"),
                 visits=member.visits.select_related("membership__plan", "trainer")[:30],
+                # В «паспорте» слева нужны итог и последний приход: по ним
+                # сразу видно, ходит человек или пропал.
+                visits_total=member.visits.filter(success=True).count(),
+                last_visit=(member.visits.filter(success=True)
+                            .order_by("-visit_time").first()),
                 plans=club.plans.filter(is_active=True),
                 trainers=club.trainers.filter(is_active=True),
                 active=member.active_membership())

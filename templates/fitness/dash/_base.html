@@ -175,7 +175,7 @@
 
 <div class="fc-head">
   <div style="flex:1;min-width:0">
-    <div class="fc-title">🏋️ {{ club.name }}</div>
+    <div class="fc-title">{% block fc_title %}🏋️ {{ club.name }}{% endblock %}</div>
     <div class="fc-sub">{% block fc_sub %}{% endblock %}</div>
   </div>
   <span class="fc-role">{{ staff.get_role_display }}</span>
