@@ -284,11 +284,36 @@ def _members_queryset(request, club, staff):
 @require()
 def members(request, club, staff):
     rows = _members_queryset(request, club, staff)
+    shown = list(rows.prefetch_related("memberships__plan")[:300])
+
+    # Состояние абонемента и долги — одним проходом на всех. Раньше шаблон
+    # звал active_membership() на каждую строку, и список из трёхсот человек
+    # делал три сотни запросов.
+    today = timezone.localdate()
+    owed = {}
+    for d in OwedVisit.objects.filter(member__in=shown, is_settled=False):
+        owed[d.member_id] = owed.get(d.member_id, 0) + 1
+
+    rank = {"active": 3, "frozen": 2, "none": 1}
+    for m in shown:
+        best, best_ms = "none", None
+        for ms in m.memberships.all():
+            if not ms.is_active:
+                continue
+            now = ms.state(today)
+            if rank[now] > rank[best]:
+                best, best_ms = now, ms
+            elif best_ms is None:
+                best_ms = ms
+        m.state = best
+        m.ms = best_ms
+        m.owed = owed.get(m.id, 0)
+
     return render(request, "fitness/dash/members.html",
                   _ctx(club, staff,
                        q=(request.GET.get("q") or "").strip(),
                        only=(request.GET.get("filter") or "").strip(),
-                       members=rows[:300],
+                       members=shown,
                        total=rows.count(),
                        export_qs=request.GET.urlencode()))
 
