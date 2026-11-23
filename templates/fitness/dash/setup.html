@@ -345,12 +345,9 @@
           <option value="{{ t.id }}">{{ t.name }}{% if t.user %} (уже привязан к {{ t.user.username }}){% endif %}</option>
         {% endfor %}
       </select>
-      <label style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:12.5px;color:var(--text2)">
-        <input type="checkbox" name="make_trainer" checked>
-        Создать карточку тренера, если не выбрал существующую
-      </label>
       <div class="fc-sub" style="margin-top:6px">
-        Без карточки тренер войдёт и не увидит ни своих записей, ни своих клиентов.
+        Не выбрали — карточка создастся сама по имени сотрудника. Без неё
+        тренер вошёл бы и не увидел ни своих записей, ни своих групп.
       </div>
     </div>
 

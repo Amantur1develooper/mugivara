@@ -164,7 +164,22 @@ def home(request):
         ids = KaraokeMembership.objects.filter(user=user).values_list("venue_id", flat=True)
         karaoke_venues = list(KaraokeVenue.objects.filter(id__in=ids).prefetch_related("rooms"))
 
-    return render(request, "dashboard/home.html", {"data": data, "karaoke_venues": karaoke_venues})
+    # Фитнес-клубы, к которым человека пустили. Без них сотрудник клуба
+    # входил и видел «заведений нет»: доступ ему дали, а на главной он его
+    # не находил и адрес кабинета приходилось присылать отдельно.
+    from fitness.access import my_clubs
+    clubs = list(my_clubs(user))
+
+    # Человеку с одним только фитнесом главная не нужна — отправляем сразу
+    # в клуб, как если бы это был его единственный кабинет.
+    if clubs and not data and not karaoke_venues:
+        if len(clubs) == 1:
+            return redirect("fitness_dash:home", club_id=clubs[0].id)
+        return redirect("fitness_dash:clubs")
+
+    return render(request, "dashboard/home.html",
+                  {"data": data, "karaoke_venues": karaoke_venues,
+                   "fitness_clubs": clubs})
 
 
 # ── RESTAURANT ───────────────────────────────────────────────────────────────

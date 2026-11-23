@@ -1315,17 +1315,35 @@ def staff_add(request, club, staff):
             + (" · логин создан" if created else "")
             + (" · вход снова открыт" if reopened else ""))
 
-    # Тренеру нужна его карточка, иначе он войдёт и не увидит своих записей
+    # Тренеру нужна карточка, иначе он войдёт и не увидит ни своих записей,
+    # ни своих групп: роль дали, а привязать к карточке забыли. Поэтому
+    # связываем сами — с выбранной карточкой, с подходящей по имени, а если
+    # никакой нет, заводим новую.
     if role == TRAINER:
         raw = request.POST.get("trainer_id")
+        name = ((request.POST.get("full_name") or "").strip()
+                or user.get_full_name() or login)
+        card = None
         if (raw or "").isdigit():
-            Trainer.objects.filter(id=int(raw), club=club).update(user=user)
-        elif request.POST.get("make_trainer") == "on":
-            name = ((request.POST.get("full_name") or "").strip()
-                    or user.get_full_name() or login)
-            Trainer.objects.create(club=club, user=user, name=name[:150],
-                                   phone=(request.POST.get("phone") or "").strip()[:50])
-            messages.info(request, f"Создана карточка тренера «{name}»")
+            card = Trainer.objects.filter(id=int(raw), club=club).first()
+        if card is None:
+            card = Trainer.objects.filter(club=club, user=user).first()
+        if card is None:
+            # Карточка этого человека могла остаться с прошлого раза — после
+            # увольнения её отвязывают от аккаунта и прячут. Находим по имени
+            # и возвращаем, чтобы не плодить второго «Руслана».
+            card = Trainer.objects.filter(club=club, user__isnull=True,
+                                          name__iexact=name).first()
+        if card:
+            card.user = user
+            card.is_active = True
+            card.save(update_fields=["user", "is_active", "updated_at"])
+            messages.info(request, f"Привязан к карточке тренера «{card.name}»")
+        else:
+            card = Trainer.objects.create(
+                club=club, user=user, name=name[:150],
+                phone=(request.POST.get("phone") or "").strip()[:50])
+            messages.info(request, f"Создана карточка тренера «{card.name}»")
     return redirect("fitness_dash:setup", club_id=club.id)
 
 

@@ -288,6 +288,42 @@
 </div>
 {% endif %}
 
+{% if fitness_clubs %}
+<div class="ent-section">
+  <div class="ent-head">
+    <div class="ent-title">🥊 Фитнес и единоборства</div>
+    <div class="ent-divider"></div>
+    <a href="{% url 'fitness_dash:clubs' %}" class="db-btn db-btn-ghost db-btn-sm">Все →</a>
+  </div>
+  <div class="kr-grid">
+    {% for club in fitness_clubs %}
+    <div class="kr-card">
+      <div class="kr-cover">
+        {% if club.cover %}<img src="{{ club.cover.url }}" alt="">{% else %}🥊{% endif %}
+        <div class="kr-logo">
+          {% if club.logo %}<img src="{{ club.logo.url }}" alt="">{% else %}🥊{% endif %}
+        </div>
+      </div>
+      <div class="kr-body">
+        <div class="kr-name">{{ club.name }}</div>
+        <div class="kr-meta">
+          {% if club.address %}📍 {{ club.address }}{% endif %}
+        </div>
+        <div class="kr-btns">
+          <a href="{% url 'fitness_dash:checkin' club.id %}" class="kr-chess">🚪 Проход</a>
+          <a href="{% url 'fitness_dash:board' club.id %}" class="kr-rooms">♟️ Шахматка</a>
+        </div>
+        <div class="kr-btns" style="margin-top:4px">
+          <a href="{% url 'fitness_dash:home' club.id %}" class="kr-rooms"
+             style="text-align:center">📊 Сводка клуба</a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 {% if karaoke_venues %}
 <div class="ent-section">
   <div class="ent-head">
