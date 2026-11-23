@@ -57,6 +57,16 @@
     .sec-h span { font-size: 12px; color: var(--muted); }
 
     .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+    /* Направления — всегда по две в ряд, в том числе на телефоне: их
+       восемь, и в один столбец список уезжает на три экрана, а выбирают
+       их сравнивая. На узких самсунгах две колонки помещаются, если
+       убрать лишние отступы и уменьшить картинку. */
+    .dirs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .dirs .card img { height: clamp(96px, 28vw, 150px); }
+    .dirs .card-ico { height: clamp(68px, 20vw, 92px); font-size: clamp(26px, 8vw, 38px); }
+    @media (min-width: 760px) {
+      .dirs { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+    }
     .card {
       background: var(--card); border: 1px solid var(--line); border-radius: 18px;
       overflow: hidden; display: flex; flex-direction: column;
@@ -71,6 +81,14 @@
     }
     .card-b { padding: 14px; }
     .card-t { font-size: 15px; font-weight: 700; }
+    /* В двух колонках на телефоне карточке нужно меньше воздуха, иначе
+       название переносится по одному слову в строку. */
+    @media (max-width: 480px) {
+      .dirs .card-b { padding: 10px 11px; }
+      .dirs .card-t { font-size: 13.5px; line-height: 1.25; }
+      .dirs .card-d { font-size: 11.5px; }
+      .dirs .card-p { font-size: 12.5px; }
+    }
     .card-d { font-size: 12.5px; color: var(--muted); margin-top: 5px; line-height: 1.45; }
     .card-p { font-size: 14px; font-weight: 800; color: var(--accent); margin-top: 9px; }
 
@@ -139,7 +157,7 @@
   {% if sections %}
   <section id="sekcii">
     <div class="sec-h"><h2>Направления</h2><span>{{ sections|length }}</span></div>
-    <div class="grid">
+    <div class="grid dirs">
       {% for s in sections %}
         <div class="card">
           {% if s.photo %}<img src="{{ s.photo.url }}" alt="{{ s.name }}" loading="lazy">
