@@ -246,46 +246,95 @@
 </style>
 
 <div class="fc-card">
-  <div class="fc-card-t">Расписание группы</div>
-  <div class="fc-list">
-    {% for s in slots %}
-      <div class="fc-row">
-        <div class="fc-row-main">
-          <div class="fc-row-name">{{ s.get_weekday_display }}, {{ s.time_from|time:"H:i" }}</div>
-          <div class="fc-row-sub">
-            {{ s.duration_min }} мин{% if s.room %} · {{ s.room }}{% endif %}
-            {% if s.trainer %} · {{ s.trainer.name }}{% endif %}
-          </div>
-        </div>
-        <div class="fc-row-right" style="display:flex;gap:6px;align-items:center">
-          <a href="{% url 'fitness_dash:class_day' club.id s.id %}" class="fc-btn ghost small">Отметить</a>
-          {% if staff.role != "trainer" %}
-          <form method="post" action="{% url 'fitness_dash:group_slot' club.id g.id %}">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="remove">
-            <input type="hidden" name="slot" value="{{ s.id }}">
-            <button class="fc-btn ghost small" type="submit">Убрать</button>
-          </form>
-          {% endif %}
-        </div>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+    <div class="fc-card-t" style="margin:0;flex:1;min-width:150px">
+      Расписание группы · {{ slots|length }} в неделю
+    </div>
+    {% if staff.role != "trainer" %}
+      <button class="fc-btn small" type="button" data-slot-add>+ Поставить тренировку</button>
+    {% endif %}
+  </div>
+
+  {# Неделя полоской: сразу видно, в какие дни группа ходит, а в какие нет #}
+  <div class="sl-week">
+    {% for d in week %}
+      <div class="sl-day{% if d.items %} has{% endif %}{% if d.is_today %} today{% endif %}">
+        <div class="sl-dn">{{ d.short }}</div>
+        {% for s in d.items %}
+          <details class="sl-item">
+            <summary>
+              <b>{{ s.time_from|time:"H:i" }}</b>
+              <span class="sl-min">{{ s.duration_min }}м</span>
+            </summary>
+            <div class="sl-edit">
+              {% if s.room %}<div class="fc-sub">{{ s.room }}</div>{% endif %}
+              <a href="{% url 'fitness_dash:class_day' club.id s.id %}"
+                 class="fc-btn ghost small" style="width:100%;margin-bottom:6px">Отметить</a>
+              {% if staff.role != "trainer" %}
+              <form method="post" action="{% url 'fitness_dash:group_slot' club.id g.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="slot" value="{{ s.id }}">
+                <label class="fc-label">День</label>
+                <select class="fc-input" name="weekday">
+                  {% for val, label in weekdays %}
+                    <option value="{{ val }}" {% if s.weekday == val %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+                <label class="fc-label" style="margin-top:7px">Начало</label>
+                <input class="fc-input" name="time_from" type="time"
+                       value="{{ s.time_from|time:'H:i' }}" required>
+                <label class="fc-label" style="margin-top:7px">Минут</label>
+                <input class="fc-input" name="duration_min" type="number"
+                       min="15" max="300" value="{{ s.duration_min }}">
+                <label class="fc-label" style="margin-top:7px">Зал</label>
+                <input class="fc-input" name="room" value="{{ s.room }}" placeholder="малый зал">
+                <button class="fc-btn small" type="submit"
+                        style="width:100%;margin-top:9px">Сохранить</button>
+              </form>
+              <form method="post" action="{% url 'fitness_dash:group_slot' club.id g.id %}"
+                    style="margin-top:5px">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="remove">
+                <input type="hidden" name="slot" value="{{ s.id }}">
+                <button class="fc-btn ghost small" type="submit"
+                        style="width:100%">Убрать из расписания</button>
+              </form>
+              {% endif %}
+            </div>
+          </details>
+        {% endfor %}
+        {% if staff.role != "trainer" %}
+          <button class="sl-plus" type="button" data-slot-add data-weekday="{{ d.i }}"
+                  title="Поставить тренировку в {{ d.name|lower }}">+</button>
+        {% endif %}
       </div>
-    {% empty %}
-      <div class="fc-empty">Тренировок не поставлено. Добавьте день и время ниже —
-        группа появится в расписании и в шахматке.</div>
     {% endfor %}
   </div>
 
+  {% if not slots %}
+    <div class="fc-sub" style="margin-top:10px">
+      Тренировок не поставлено. Нажмите «+» в нужном дне — группа появится в
+      расписании клуба и в шахматке.
+    </div>
+  {% else %}
+    <div class="fc-sub" style="margin-top:10px">
+      Нажмите время, чтобы перенести тренировку, поменять зал или убрать её.
+    </div>
+  {% endif %}
+
   {% if staff.role != "trainer" %}
   <form method="post" action="{% url 'fitness_dash:group_slot' club.id g.id %}"
-        style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+        id="slotAdd" class="sl-add" style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
     {% csrf_token %}
+    <div class="fc-card-t" style="margin-bottom:10px">Новая тренировка</div>
     <div class="fc-grid2">
       <div><label class="fc-label">День</label>
-        <select class="fc-input" name="weekday">
+        <select class="fc-input" name="weekday" id="slotDay">
           {% for val, label in weekdays %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
         </select></div>
       <div><label class="fc-label">Начало</label>
-        <input class="fc-input" name="time_from" type="time" required
+        <input class="fc-input" name="time_from" id="slotTime" type="time" required
                data-slots data-slots-from="7" data-slots-to="22" data-slots-step="30"></div>
       <div><label class="fc-label">Длительность, мин</label>
         <input class="fc-input" name="duration_min" type="number" min="15" max="300" value="60"></div>
@@ -296,6 +345,73 @@
   </form>
   {% endif %}
 </div>
+
+<style>
+  /* Расписание группы неделей: видно, в какие дни ходят, а в какие нет, и
+     время правится на месте — раньше ради переноса на полчаса тренировку
+     убирали и ставили заново. */
+  .sl-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+  .sl-day {
+    border: 1px solid var(--border); border-radius: 12px; background: var(--bg);
+    padding: 7px 5px; min-width: 0; display: flex; flex-direction: column; gap: 5px;
+  }
+  .sl-day.has { border-color: rgba(37,99,235,.35); background: rgba(37,99,235,.04); }
+  .sl-day.today { border-color: var(--accent); }
+  .sl-dn {
+    font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted);
+    text-align: center;
+  }
+  .sl-day.has .sl-dn { color: #2563eb; }
+  .sl-day.today .sl-dn { color: var(--accent); }
+
+  .sl-item > summary {
+    cursor: pointer; list-style: none; text-align: center; border-radius: 8px;
+    padding: 5px 3px; background: var(--card); border: 1px solid var(--border);
+    font-size: 11.5px; line-height: 1.2;
+  }
+  .sl-item > summary::-webkit-details-marker { display: none; }
+  .sl-item > summary:hover { border-color: var(--accent); }
+  .sl-item[open] > summary { border-color: var(--accent); color: var(--accent); }
+  .sl-min { display: block; font-size: 9.5px; color: var(--muted); font-weight: 700; }
+  /* Правка раскрывается поверх узкого столбца — иначе поля в нём не влезают */
+  .sl-edit {
+    position: absolute; z-index: 30; width: 230px; margin-top: 6px;
+    background: var(--card); border: 1px solid var(--accent); border-radius: 12px;
+    padding: 11px; box-shadow: 0 14px 34px rgba(0,0,0,.18);
+  }
+  .sl-item { position: relative; }
+  .sl-day:nth-child(n+5) .sl-edit { right: 0; }
+
+  .sl-plus {
+    appearance: none; cursor: pointer; border: 1px dashed var(--border);
+    background: transparent; color: var(--muted); border-radius: 8px;
+    font-size: 14px; font-weight: 700; padding: 3px 0; margin-top: auto;
+  }
+  .sl-plus:hover { border-color: var(--accent); color: var(--accent); }
+
+  @media (max-width: 620px) {
+    .sl-week { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .sl-edit { width: 200px; }
+  }
+</style>
+
+<script>
+  // «+» в дне подставляет этот день в бланк ниже и уводит фокус на время:
+  // выбирать день второй раз в выпадашке незачем.
+  (function () {
+    const form = document.getElementById('slotAdd');
+    if (!form) return;
+    const day = document.getElementById('slotDay');
+    const time = document.getElementById('slotTime');
+    document.querySelectorAll('[data-slot-add]').forEach(b => {
+      b.addEventListener('click', () => {
+        if (b.dataset.weekday !== undefined) day.value = b.dataset.weekday;
+        form.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        setTimeout(() => time.focus(), 250);
+      });
+    });
+  })();
+</script>
 
 {% if staff.role != "trainer" %}
 <div class="fc-card">

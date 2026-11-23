@@ -920,6 +920,8 @@ def group_detail(request, club, staff, group_id):
         link.payless = link.state != "active"
         link.owed = owed.get(link.member_id, 0)
 
+    slots = list(g.schedule().select_related("trainer"))
+
     return render(request, "fitness/dash/group_detail.html",
                   _ctx(club, staff, g=g, roster=roster, free=list(free), q=q,
                        # Процент заполненности считаем здесь: в шаблоне
@@ -933,7 +935,12 @@ def group_detail(request, club, staff, group_id):
                        came_today=sum(1 for m in marks.values() if m.status == "came"),
                        left=list(g.links.filter(is_active=False)
                                  .select_related("member")[:30]),
-                       slots=list(g.schedule().select_related("trainer")),
+                       slots=slots,
+                       week=[{"i": i, "short": WEEKDAY_SHORT[i],
+                              "name": dict(GroupClass._meta.get_field("weekday").choices)[i],
+                              "items": [sl for sl in slots if sl.weekday == i],
+                              "is_today": i == today.weekday()}
+                             for i in range(7)],
                        sections=club.sections.filter(is_active=True),
                        trainers=club.trainers.filter(is_active=True),
                        weekdays=GroupClass._meta.get_field("weekday").choices))
@@ -979,12 +986,36 @@ def group_slot(request, club, staff, group_id):
     """Поставить группе тренировку в расписание или убрать её."""
     g = _group_or_404(club, group_id)
 
-    if request.POST.get("action") == "remove":
+    action = request.POST.get("action")
+
+    if action == "remove":
         slot = get_object_or_404(GroupClass, id=request.POST.get("slot") or 0,
                                  club=club, group=g)
         slot.is_active = False
         slot.save(update_fields=["is_active", "updated_at"])
-        messages.success(request, "Тренировка убрана из расписания.")
+        messages.success(request, f"Тренировка {slot.get_weekday_display()} "
+                                  f"{slot.time_from:%H:%M} убрана из расписания.")
+        return redirect("fitness_dash:group_detail", club.id, g.id)
+
+    if action == "edit":
+        # Правка прямо в строке: перенести время или поменять зал — обычное
+        # дело, а раньше для этого тренировку убирали и ставили заново.
+        slot = get_object_or_404(GroupClass, id=request.POST.get("slot") or 0,
+                                 club=club, group=g)
+        hhmm = _time(request.POST.get("time_from"))
+        if hhmm is None:
+            messages.error(request, "Укажите время начала.")
+            return redirect("fitness_dash:group_detail", club.id, g.id)
+        was = f"{slot.get_weekday_display()} {slot.time_from:%H:%M}"
+        slot.weekday = _int(request.POST.get("weekday"), slot.weekday, hi=6)
+        slot.time_from = hhmm
+        slot.duration_min = _int(request.POST.get("duration_min"),
+                                 slot.duration_min, lo=15, hi=300)
+        slot.room = (request.POST.get("room") or "").strip()[:100]
+        slot.save(update_fields=["weekday", "time_from", "duration_min", "room",
+                                 "updated_at"])
+        messages.success(request, f"{was} → {slot.get_weekday_display()} "
+                                  f"{slot.time_from:%H:%M}.")
         return redirect("fitness_dash:group_detail", club.id, g.id)
 
     hhmm = _time(request.POST.get("time_from"))
