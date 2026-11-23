@@ -109,7 +109,7 @@
   }
 </style>
 
-{% if slot_today %}
+{# Состав показываем всегда — отметки появляются только в день тренировки #}
 <div class="fc-card" id="today-card"
      {% if state_today.is_cancelled %}style="border-color:rgba(220,38,38,.45);background:rgba(220,38,38,.05)"{% endif %}>
   {% if state_today.is_cancelled %}
@@ -119,79 +119,131 @@
     </div>
     <a href="{% url 'fitness_dash:class_day' club.id slot_today.id %}?date={{ today|date:'Y-m-d' }}"
        class="fc-btn ghost small" style="margin-top:10px">Открыть тренировку</a>
-  {% else %}
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <div style="flex:1;min-width:150px">
-        <div class="fc-card-t" style="margin:0">
-          Сегодня в {{ slot_today.time_from|time:"H:i" }} — отметьте, кто пришёл
+  {% endif %}
+
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:{% if state_today.is_cancelled %}14px{% else %}0{% endif %}">
+    <div style="flex:1;min-width:160px">
+      <div class="fc-card-t" style="margin:0">
+        Состав — {{ roster|length }} чел.
+      </div>
+      <div class="fc-row-sub" style="margin-top:3px">
+        {% if slot_today and not state_today.is_cancelled %}
+          сегодня в {{ slot_today.time_from|time:"H:i" }}{% if slot_today.room %} · {{ slot_today.room }}{% endif %}
+          · пришли <b id="came-count">{{ came_today }}</b> из {{ roster|length }}
+        {% else %}
+          сегодня тренировки нет — отметки появятся в день занятия
+        {% endif %}
+        {% if no_pass %} · <span class="fc-chip bad">без абонемента: {{ no_pass }}</span>{% endif %}
+      </div>
+    </div>
+    {% if roster and slot_today and not state_today.is_cancelled %}
+    <form method="post" action="{% url 'fitness_dash:class_mark_all' club.id slot_today.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="date" value="{{ today|date:'Y-m-d' }}">
+      <input type="hidden" name="back" value="{{ request.get_full_path }}">
+      <button class="fc-btn" type="submit">Все пришли</button>
+    </form>
+    {% endif %}
+  </div>
+
+  <div class="ros" style="margin-top:12px">
+    {% for link in roster %}
+      <div class="ros-row mk-row st-{{ link.state }}" data-member="{{ link.member.id }}">
+        <span class="fc-ava{% if not link.member.photo %} empty{% endif %}">
+          {% if link.member.photo %}<img src="{{ link.member.photo.url }}" alt="" loading="lazy">
+          {% else %}👤{% endif %}
+        </span>
+        <div style="min-width:0">
+          <a class="ros-name" href="{% url 'fitness_dash:member_detail' club.id link.member.id %}">
+            {{ link.member.full_name }}
+          </a>
+          <div class="ros-sub">
+            {% if link.state == 'active' %}<span class="fc-chip ok">активен</span>
+            {% elif link.state == 'frozen' %}<span class="fc-chip cold">заморожен</span>
+            {% else %}<span class="fc-chip bad">нет абонемента</span>{% endif %}
+            {% if link.owed %}<span class="fc-chip bad">долг {{ link.owed }}</span>{% endif %}
+            <span class="mk-state">
+              {% if link.mark.status == 'came' %}<span class="fc-chip ok">пришёл</span>
+              {% elif link.mark.status == 'no_show' %}<span class="fc-chip bad">не пришёл</span>{% endif %}
+            </span>
+            <span class="ros-dim">
+              {% if link.member.phone %}{{ link.member.phone }} · {% endif %}с {{ link.joined_on|date:"d.m.y" }}
+            </span>
+          </div>
         </div>
-        <div class="fc-row-sub" style="margin-top:3px">
-          пришли <b id="came-count">{{ came_today }}</b> из {{ roster|length }}
-          {% if slot_today.room %} · {{ slot_today.room }}{% endif %}
+
+        <div class="ros-act">
+          {% if slot_today and not state_today.is_cancelled %}
+            <form method="post" class="mk-form"
+                  action="{% url 'fitness_dash:class_mark' club.id slot_today.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="date" value="{{ today|date:'Y-m-d' }}">
+              <input type="hidden" name="member" value="{{ link.member.id }}">
+              <input type="hidden" name="back" value="{{ request.get_full_path }}">
+              <button class="fc-btn small" name="action" value="came">Пришёл</button>
+              <button class="fc-btn small ghost" name="action" value="no_show">Нет</button>
+              <button class="fc-btn small ghost" name="action" value="back"
+                      title="Снять отметку">↩️</button>
+            </form>
+          {% endif %}
+          {% if staff.role != "trainer" %}
+            <form method="post" action="{% url 'fitness_dash:group_roster' club.id g.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="remove">
+              <input type="hidden" name="link" value="{{ link.id }}">
+              <button class="fc-btn ghost small" type="submit"
+                      title="Вывести из группы">✕</button>
+            </form>
+          {% endif %}
         </div>
       </div>
-      {% if roster %}
-      <form method="post" action="{% url 'fitness_dash:class_mark_all' club.id slot_today.id %}">
-        {% csrf_token %}
-        <input type="hidden" name="date" value="{{ today|date:'Y-m-d' }}">
-        <input type="hidden" name="back" value="{{ request.get_full_path }}">
-        <button class="fc-btn" type="submit">Все пришли</button>
-      </form>
-      {% endif %}
-    </div>
+    {% empty %}
+      <div class="fc-empty">В группе пока никого. Найдите людей ниже и добавьте.</div>
+    {% endfor %}
+  </div>
 
-    <div class="fc-list" style="margin-top:12px">
-      {% for link in roster %}
-        <div class="fc-row mk-row st-{{ link.state }}" data-member="{{ link.member.id }}"
-             style="grid-template-columns:auto 1fr auto">
-          <span class="fc-ava{% if not link.member.photo %} empty{% endif %}">
-            {% if link.member.photo %}<img src="{{ link.member.photo.url }}" alt="" loading="lazy">
-            {% else %}👤{% endif %}
-          </span>
-          <div class="fc-row-main">
-            <div class="fc-row-name">{{ link.member.full_name }}</div>
-            <div class="fc-row-sub">
-              <span class="mk-state">
-                {% if link.mark.status == 'came' %}<span class="fc-chip ok">пришёл</span>
-                {% elif link.mark.status == 'no_show' %}<span class="fc-chip bad">не пришёл</span>
-                {% else %}не отмечен{% endif %}
-              </span>
-              {% if link.state == 'active' %}<span class="fc-chip ok">абонемент активен</span>
-              {% elif link.state == 'frozen' %}<span class="fc-chip cold">заморожен</span>
-              {% else %}<span class="fc-chip bad">нет абонемента</span>{% endif %}
-              {% if link.owed %}<span class="fc-chip bad">долг: {{ link.owed }}</span>{% endif %}
-            </div>
-          </div>
-          <form method="post" class="mk-form"
-                action="{% url 'fitness_dash:class_mark' club.id slot_today.id %}"
-                style="display:flex;gap:5px">
-            {% csrf_token %}
-            <input type="hidden" name="date" value="{{ today|date:'Y-m-d' }}">
-            <input type="hidden" name="member" value="{{ link.member.id }}">
-            <input type="hidden" name="back" value="{{ request.get_full_path }}">
-            <button class="fc-btn small" name="action" value="came">Пришёл</button>
-            <button class="fc-btn small ghost" name="action" value="no_show">Нет</button>
-            <button class="fc-btn small ghost" name="action" value="back"
-                    title="Снять отметку">↩️</button>
-          </form>
-        </div>
-      {% empty %}
-        <div class="fc-empty">В группе никого — добавьте людей ниже.</div>
-      {% endfor %}
-    </div>
-    <div class="fc-sub" style="margin-top:9px;line-height:1.5">
-      <span class="lg lg-ok"></span> активен ·
-      <span class="lg lg-cold"></span> заморожен ·
-      <span class="lg lg-bad"></span> нет абонемента
-      <br>«Пришёл» списывает посещение с абонемента, как отметка на входе.
-      У кого абонемент не пускает, занятие запишется в долг — закрыть его
-      можно в карточке клиента.
+  <div class="fc-sub" style="margin-top:10px;line-height:1.5">
+    <span class="lg lg-ok"></span> активен ·
+    <span class="lg lg-cold"></span> заморожен ·
+    <span class="lg lg-bad"></span> нет абонемента
+    {% if slot_today and not state_today.is_cancelled %}
+      <br>«Пришёл» списывает посещение с абонемента. У кого абонемент не
+      пускает — занятие запишется в долг, закрыть его можно в карточке клиента.
       <a href="{% url 'fitness_dash:class_day' club.id slot_today.id %}?date={{ today|date:'Y-m-d' }}">
         Открыть тренировку целиком →</a>
-    </div>
-  {% endif %}
+    {% endif %}
+  </div>
 </div>
-{% endif %}
+
+<style>
+  /* Состав — один список вместо двух: раньше те же люди шли сначала в
+     «отметьте, кто пришёл», а потом ещё раз в «Составе», и страница была
+     вдвое длиннее. Строка плотная: фото, имя, состояние и действия в один
+     ряд, на широком экране — по две в ряд. */
+  .ros { display: grid; gap: 7px; grid-template-columns: 1fr; }
+  @media (min-width: 1100px) { .ros { grid-template-columns: 1fr 1fr; } }
+
+  .ros-row {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 9px; align-items: center;
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: 12px;
+    background: var(--bg);
+  }
+  .ros-row .fc-ava { width: 36px; height: 36px; font-size: 16px; }
+  .ros-name {
+    font-size: 13.5px; font-weight: 700; text-decoration: none; color: inherit;
+    display: block; line-height: 1.25;
+  }
+  .ros-name:hover { color: var(--accent); }
+  .ros-sub { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; margin-top: 3px; }
+  .ros-dim { font-size: 10.5px; color: var(--muted); }
+  .ros-act { display: flex; gap: 4px; align-items: center; flex-wrap: wrap;
+             justify-content: flex-end; }
+  .ros-act form { display: flex; gap: 4px; }
+  @media (max-width: 520px) {
+    .ros-row { grid-template-columns: auto 1fr; }
+    .ros-act { grid-column: 1 / -1; justify-content: flex-start; }
+  }
+</style>
 
 <div class="fc-card">
   <div class="fc-card-t">Расписание группы</div>
@@ -243,40 +295,6 @@
     <button class="fc-btn" type="submit" style="margin-top:12px">Поставить тренировку</button>
   </form>
   {% endif %}
-</div>
-
-<div class="fc-card">
-  <div class="fc-card-t">Состав — {{ g.size }} чел.</div>
-  <div class="fc-list">
-    {% for link in roster %}
-      <div class="fc-row" style="grid-template-columns:auto 1fr auto">
-        <span class="fc-ava{% if not link.member.photo %} empty{% endif %}">
-          {% if link.member.photo %}<img src="{{ link.member.photo.url }}" alt="" loading="lazy">
-          {% else %}👤{% endif %}
-        </span>
-        <div class="fc-row-main">
-          <a class="fc-row-name" style="text-decoration:none"
-             href="{% url 'fitness_dash:member_detail' club.id link.member.id %}">
-            {{ link.member.full_name }} →
-          </a>
-          <div class="fc-row-sub">
-            {% if link.member.phone %}{{ link.member.phone }} · {% endif %}
-            в группе с {{ link.joined_on|date:"d.m.Y" }}
-          </div>
-        </div>
-        {% if staff.role != "trainer" %}
-        <form method="post" action="{% url 'fitness_dash:group_roster' club.id g.id %}">
-          {% csrf_token %}
-          <input type="hidden" name="action" value="remove">
-          <input type="hidden" name="link" value="{{ link.id }}">
-          <button class="fc-btn ghost small" type="submit">Вывести</button>
-        </form>
-        {% endif %}
-      </div>
-    {% empty %}
-      <div class="fc-empty">В группе пока никого. Добавьте людей ниже.</div>
-    {% endfor %}
-  </div>
 </div>
 
 {% if staff.role != "trainer" %}

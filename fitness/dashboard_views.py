@@ -926,6 +926,9 @@ def group_detail(request, club, staff, group_id):
                        # деление дало бы «66,7» с запятой и сломало CSS.
                        fill=(min(100, round(len(roster) / g.capacity * 100))
                              if g.capacity else 0),
+                       # Сколько человек в группе не пустит абонемент: это
+                       # первое, что спрашивают перед тренировкой.
+                       no_pass=sum(1 for l in roster if l.payless),
                        slot_today=slot_today, state_today=state_today, today=today,
                        came_today=sum(1 for m in marks.values() if m.status == "came"),
                        left=list(g.links.filter(is_active=False)
