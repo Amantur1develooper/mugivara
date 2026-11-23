@@ -551,12 +551,60 @@ def board(request, club, staff):
         else:
             orphans.append(card)
 
+    # «Где будет этот человек» — поиск по имени, телефону и карте. На
+    # ресепшене спрашивают именно так, а не «покажи записи тренера».
+    q = (request.GET.get("q") or "").strip()
+    found = []
+    if q:
+        for mem in (Member.objects.filter(club=club, is_active=True)
+                    .filter(Q(full_name__icontains=q) | Q(phone__icontains=q)
+                            | Q(card_id__icontains=q))
+                    .prefetch_related("group_links__group__slots__trainer",
+                                      "group_links__group__section")
+                    .order_by("full_name")[:8]):
+            links = [l for l in mem.group_links.all() if l.is_active]
+            plan = _week_plan(links)
+            # Что у человека сегодня: личная запись к тренеру и тренировки
+            # его групп в этот день недели.
+            personal = list(TrainerBooking.objects
+                            .filter(club=club, member=mem, date=day)
+                            .exclude(status=TrainerBooking.Status.CANCELLED)
+                            .select_related("trainer").order_by("time_from"))
+            found.append({
+                "member": mem,
+                "today": plan[day.weekday()]["items"],
+                "personal": personal,
+                "days": [d for d in plan if d["items"]],
+            })
+
     return render(request, "fitness/dash/board.html",
                   _ctx(club, staff, day=day, hours=hours, trainers=list(trainers),
+                       q=q, found=found,
                        cells=cells, group_cells=group_cells, total=rows.count(),
                        groups_today=len(slots), orphans=orphans,
                        prev_day=day - timedelta(days=1), next_day=day + timedelta(days=1),
                        today=timezone.localdate()))
+
+
+@login_required(login_url=LOGIN_URL)
+@require()
+def members_find(request, club, staff):
+    """Короткий ответ для поиска клиента в панелях: имя, карта, телефон.
+
+    Отдаём ровно то, что показывают в списке выбора, — страницу целиком
+    ради трёх строк гонять незачем.
+    """
+    q = (request.GET.get("q") or "").strip()
+    if len(q) < 2:
+        return JsonResponse({"items": []})
+    rows = (Member.objects.filter(club=club, is_active=True)
+            .filter(Q(full_name__icontains=q) | Q(phone__icontains=q)
+                    | Q(card_id__icontains=q))
+            .order_by("full_name")[:10])
+    return JsonResponse({"items": [
+        {"id": m.id, "name": m.full_name, "card": m.card_id, "phone": m.phone}
+        for m in rows
+    ]})
 
 
 @login_required(login_url=LOGIN_URL)
@@ -596,7 +644,10 @@ def booking_save(request, club, staff):
     )
     tgbot.in_background(tg.send_booking, booking)
     messages.success(request, f"Записан: {booking.who} на {booking.date:%d.%m} {t:%H:%M}")
-    return redirect(f"/ru/cabinet/fitness/{club.id}/board/?date={booking.date:%Y-%m-%d}")
+    # Адрес собираем через reverse: кабинет живёт под /ru/, /ky/ и /en/, а
+    # прибитый «/ru/» выкидывал кассира из его языка после каждой записи.
+    return redirect(reverse("fitness_dash:board", args=[club.id])
+                    + f"?date={booking.date:%Y-%m-%d}")
 
 
 @login_required(login_url=LOGIN_URL)

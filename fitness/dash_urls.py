@@ -27,6 +27,7 @@ urlpatterns = [
 
     path("<int:club_id>/board/", v.board, name="board"),
     path("<int:club_id>/board/add/", v.booking_save, name="booking_save"),
+    path("<int:club_id>/members/find/", v.members_find, name="members_find"),
     path("<int:club_id>/booking/<int:booking_id>/status/", v.booking_status, name="booking_status"),
 
     path("<int:club_id>/groups/", v.groups, name="groups"),

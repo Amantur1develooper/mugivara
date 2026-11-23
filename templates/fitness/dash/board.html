@@ -14,6 +14,76 @@
   {% if day != today %}<a href="?date={{ today|date:'Y-m-d' }}" class="fc-btn ghost small">Сегодня</a>{% endif %}
   <span class="fc-chip">{{ total }} зап.</span>
   {% if groups_today %}<span class="fc-chip ok">{{ groups_today }} групп.</span>{% endif %}
+  {% if trainers %}
+  <button class="fc-btn small" type="button" data-book-open
+          style="margin-left:auto">+ Записать к тренеру</button>
+  {% endif %}
+</div>
+
+<div class="fc-card" id="searchCard">
+  <div class="fc-card-t">Где будет человек — поиск по имени, телефону или карте</div>
+  <form method="get" id="searchForm" style="display:flex;gap:8px;flex-wrap:wrap">
+    <input type="hidden" name="date" value="{{ day|date:'Y-m-d' }}">
+    <input class="fc-input" name="q" id="searchInp" value="{{ q }}" autocomplete="off"
+           placeholder="Асилбеков, 0700…, FB000000" style="flex:1;min-width:170px">
+    <button class="fc-btn ghost" type="submit">Найти</button>
+    {% if q %}<a href="?date={{ day|date:'Y-m-d' }}" class="fc-btn ghost">Сбросить</a>{% endif %}
+  </form>
+
+  <div id="searchResults">
+    {% if q %}
+      <div class="fc-list" style="margin-top:11px">
+        {% for f in found %}
+          <div class="fc-row" style="grid-template-columns:auto 1fr;align-items:start">
+            <span class="fc-ava{% if not f.member.photo %} empty{% endif %}">
+              {% if f.member.photo %}<img src="{{ f.member.photo.url }}" alt="" loading="lazy">
+              {% else %}👤{% endif %}
+            </span>
+            <div class="fc-row-main">
+              <a class="fc-row-name" style="text-decoration:none"
+                 href="{% url 'fitness_dash:member_detail' club.id f.member.id %}">
+                {{ f.member.full_name }} →
+              </a>
+              <div class="fc-row-sub">
+                {% if f.member.card_id %}карта {{ f.member.card_id }} · {% endif %}
+                {{ f.member.phone }}
+              </div>
+              <div class="fc-row-sub" style="margin-top:5px">
+                <b>{{ day|date:"d.m" }}:</b>
+                {% if f.today or f.personal %}
+                  {% for it in f.today %}
+                    <br>🥋 {{ it.time|time:"H:i" }} {{ it.group.title }}
+                    {% if it.trainer %}· {{ it.trainer.name }}{% endif %}
+                    {% if it.room %}· {{ it.room }}{% endif %}
+                  {% endfor %}
+                  {% for b in f.personal %}
+                    <br>🧑‍🏫 {{ b.time_from|time:"H:i" }} лично к {{ b.trainer.name }}
+                    · {{ b.get_status_display }}
+                  {% endfor %}
+                {% else %}
+                  в этот день ничего
+                {% endif %}
+              </div>
+              {% if f.days %}
+                <div class="fc-row-sub" style="margin-top:4px">
+                  Обычно: {% for d in f.days %}{{ d.short }}
+                    {% for it in d.items %}{{ it.time|time:"H:i" }}{% if not forloop.last %}/{% endif %}{% endfor %}{% if not forloop.last %} · {% endif %}
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% empty %}
+          <div class="fc-empty">По «{{ q }}» никого не нашли.</div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="fc-sub" style="margin-top:8px;line-height:1.5">
+        Покажет, что у человека в этот день — тренировка группы или личная
+        запись к тренеру, — и в какие дни он обычно приходит.
+      </div>
+    {% endif %}
+  </div>
 </div>
 
 {% if trainers %}
@@ -46,6 +116,11 @@
             </a>
             {% endfor %}
           {% endwith %}
+          {% if staff.role != "trainer" or t.user_id == request.user.id %}
+            <button class="bd-add" type="button" data-book-open
+                    data-trainer="{{ t.id }}" data-time="{{ h }}:00"
+                    title="Записать к {{ t.name }} на {{ h }}:00">+</button>
+          {% endif %}
           {% with slot=cells|get:t.id %}
             {% for b in slot|get:h %}
             <form method="post" action="{% url 'fitness_dash:booking_status' club.id b.id %}"
@@ -99,46 +174,57 @@
 </div>
 {% endif %}
 
-<details class="fc-card">
-  <summary style="cursor:pointer;font-weight:700;font-size:13.5px">+ Записать к тренеру</summary>
-  <form method="post" action="{% url 'fitness_dash:booking_save' club.id %}" style="margin-top:12px">
-    {% csrf_token %}
-    <div class="fc-grid2">
-      <div>
-        <label class="fc-label">Тренер</label>
-        <select class="fc-select" name="trainer_id" required>
-          {% for t in trainers %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
-        </select>
-      </div>
-      <div>
-        <label class="fc-label">Клиент (имя)</label>
-        <input class="fc-input" name="client_name" placeholder="Иван">
-      </div>
-      <div>
-        <label class="fc-label">Телефон</label>
-        <input class="fc-input" name="phone" placeholder="+996700112233" inputmode="tel">
-      </div>
-      <div>
-        <label class="fc-label">Дата</label>
-        <input class="fc-input" type="date" name="date" value="{{ day|date:'Y-m-d' }}" required>
-      </div>
-      <div>
-        <label class="fc-label">Время</label>
-        <input class="fc-input" name="time_from" type="time" required
-               data-slots data-slots-from="8" data-slots-to="21" data-slots-step="60">
-      </div>
-      <div>
-        <label class="fc-label">Длительность, мин</label>
-        <input class="fc-input" type="number" name="duration_min" value="60" min="15" step="15">
-      </div>
+<div class="bk-wrap" id="bookWrap">
+  <div class="bk-bg" data-book-close></div>
+  <div class="bk-panel">
+    <div class="bk-head">
+      <div class="t">Записать к тренеру</div>
+      <button class="bk-x" type="button" data-book-close title="Закрыть">✕</button>
     </div>
-    <div style="margin-top:10px">
-      <label class="fc-label">Комментарий</label>
-      <input class="fc-input" name="comment" placeholder="первая тренировка, нужна консультация">
-    </div>
-    <button class="fc-btn" type="submit" style="margin-top:12px">Записать</button>
-  </form>
-</details>
+    <div class="fc-sub" id="bkWhen" style="margin-bottom:10px"></div>
+
+    <form method="post" action="{% url 'fitness_dash:booking_save' club.id %}">
+      {% csrf_token %}
+      <div class="fc-grid2">
+        <div><label class="fc-label">Тренер</label>
+          <select class="fc-select" name="trainer_id" id="bkTrainer" required>
+            {% for t in trainers %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
+          </select></div>
+        <div><label class="fc-label">Дата</label>
+          <input class="fc-input" type="date" name="date" id="bkDate"
+                 value="{{ day|date:'Y-m-d' }}" required></div>
+        <div><label class="fc-label">Время</label>
+          <input class="fc-input" name="time_from" id="bkTime" type="time" required></div>
+        <div><label class="fc-label">Длительность, мин</label>
+          <input class="fc-input" type="number" name="duration_min" value="60" min="15" step="15"></div>
+      </div>
+
+      <div style="margin-top:12px">
+        <label class="fc-label">Клиент клуба</label>
+        <input class="fc-input" id="bkFind" autocomplete="off"
+               placeholder="имя, телефон или карта">
+        <div class="fc-list" id="bkFound" style="margin-top:7px"></div>
+        <input type="hidden" name="member_id" id="bkMember">
+        <div class="fc-sub" id="bkChosen" style="margin-top:5px"></div>
+      </div>
+
+      <div class="fc-grid2" style="margin-top:12px">
+        <div><label class="fc-label">Или имя гостя</label>
+          <input class="fc-input" name="client_name" id="bkName" placeholder="Азамат"></div>
+        <div><label class="fc-label">Телефон</label>
+          <input class="fc-input" name="phone" id="bkPhone" inputmode="tel"
+                 placeholder="+996700112233"></div>
+      </div>
+
+      <div style="margin-top:12px">
+        <label class="fc-label">Комментарий</label>
+        <input class="fc-input" name="comment" placeholder="первая тренировка">
+      </div>
+
+      <button class="fc-btn" type="submit" style="margin-top:14px;width:100%">Записать</button>
+    </form>
+  </div>
+</div>
 
 <style>
   .bd-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--border); border-radius: 16px; }
@@ -183,6 +269,39 @@
     cursor: pointer; font-size: 11px; padding: 3px 6px; line-height: 1;
   }
   .bd-st { font-size: 10px; color: var(--muted); font-weight: 700; }
+
+  /* Пустая клетка кликается: тренер и час уже известны из неё, остаётся
+     вписать человека. Плюс виден при наведении, иначе сетка пестрит. */
+  .bd-add {
+    appearance: none; border: 0; background: transparent; cursor: pointer;
+    position: absolute; inset: 3px; border-radius: 9px; color: var(--muted);
+    font-size: 16px; font-weight: 700; opacity: 0; transition: opacity .12s;
+  }
+  .bd-add:hover, .bd-add:focus-visible {
+    opacity: 1; background: rgba(255,77,28,.07); color: var(--accent);
+    outline: 1.5px dashed rgba(255,77,28,.45); outline-offset: -3px;
+  }
+  @media (hover: none) { .bd-add { opacity: .3; } }
+  .bd-cell { position: relative; }
+
+  /* Панель записи — как панели продажи и постановки тренировки */
+  .bk-wrap.ready { position: fixed; inset: 0; z-index: 140; display: none; }
+  .bk-wrap.ready.open { display: block; }
+  .bk-wrap.ready .bk-bg { position: absolute; inset: 0; background: rgba(5,10,20,.45); }
+  .bk-wrap.ready .bk-panel {
+    position: absolute; top: 0; right: 0; bottom: 0; width: min(420px, 100%);
+    background: var(--card); border-left: 1px solid var(--border);
+    overflow-y: auto; padding: 16px; box-shadow: -14px 0 40px rgba(0,0,0,.18);
+  }
+  .bk-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .bk-head .t { font-size: 16px; font-weight: 800; flex: 1; }
+  .bk-x {
+    appearance: none; cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg); border-radius: 10px; width: 32px; height: 32px;
+    font-size: 15px; color: var(--text2);
+  }
+  #bkFound .fc-row { cursor: pointer; padding: 8px 10px; }
+  #bkFound .fc-row:hover { border-color: var(--accent); }
   /* На телефоне таблица едет по горизонтали, а колонка времени липнет —
      иначе непонятно, к какому часу относится запись. */
   @media (max-width: 560px) {
@@ -190,4 +309,148 @@
     .bd-chip-t { font-size: 11.5px; }
   }
 </style>
+
+<script>
+  // Панель записи. Нажали пустую клетку — тренер и час уже проставлены.
+  // Класс ready ставит скрипт: без него панель остаётся обычной формой
+  // внизу страницы, и записать всё равно можно.
+  (function () {
+    const wrap = document.getElementById('bookWrap');
+    if (!wrap) return;
+    wrap.classList.add('ready');
+
+    const trainer = document.getElementById('bkTrainer');
+    const date = document.getElementById('bkDate');
+    const time = document.getElementById('bkTime');
+    const when = document.getElementById('bkWhen');
+
+    const retitle = () => {
+      const t = trainer.options[trainer.selectedIndex];
+      when.textContent = (t && date.value && time.value)
+        ? `${t.textContent.trim()} · ${date.value.split('-').reverse().join('.')} в ${time.value}`
+        : 'Выберите тренера, дату и время';
+    };
+
+    const open = (tr, hhmm) => {
+      if (tr) trainer.value = String(tr);
+      if (hhmm) time.value = hhmm;
+      retitle();
+      wrap.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    };
+    const close = () => {
+      wrap.classList.remove('open');
+      document.body.style.overflow = '';
+    };
+
+    document.querySelectorAll('[data-book-open]').forEach(b => {
+      b.addEventListener('click', () => open(b.dataset.trainer, b.dataset.time));
+    });
+    wrap.querySelectorAll('[data-book-close]').forEach(b => b.addEventListener('click', close));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+    [trainer, date, time].forEach(el => el.addEventListener('input', retitle));
+    trainer.addEventListener('change', retitle);
+
+    // Поиск клиента внутри панели: список из пятисот человек в выпадашке
+    // бесполезен, а карту называют чаще имени.
+    const find = document.getElementById('bkFind');
+    const box = document.getElementById('bkFound');
+    const hidden = document.getElementById('bkMember');
+    const chosen = document.getElementById('bkChosen');
+    const nameInp = document.getElementById('bkName');
+    const phoneInp = document.getElementById('bkPhone');
+    const URL_FIND = '{% url "fitness_dash:members_find" club.id %}';
+    let timer = null;
+
+    const pick = item => {
+      hidden.value = item.id;
+      chosen.textContent = 'Выбран: ' + item.name +
+        (item.card ? ' · карта ' + item.card : '');
+      box.innerHTML = '';
+      find.value = item.name;
+      // Гостевые поля очищаем: иначе запись уйдёт и на клиента, и на гостя
+      nameInp.value = '';
+      phoneInp.value = '';
+    };
+
+    const load = async () => {
+      const q = find.value.trim();
+      hidden.value = '';
+      chosen.textContent = '';
+      if (q.length < 2) { box.innerHTML = ''; return; }
+      try {
+        const res = await fetch(URL_FIND + '?q=' + encodeURIComponent(q),
+                                { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const data = await res.json();
+        box.innerHTML = '';
+        if (!data.items.length) {
+          const empty = document.createElement('div');
+          empty.className = 'fc-sub';
+          empty.textContent = 'Никого не нашли — впишите имя гостя ниже.';
+          box.appendChild(empty);
+          return;
+        }
+        data.items.forEach(item => {
+          const row = document.createElement('div');
+          row.className = 'fc-row';
+          row.innerHTML = '<div class="fc-row-main"><div class="fc-row-name">' +
+            item.name + '</div><div class="fc-row-sub"></div></div>';
+          row.querySelector('.fc-row-sub').textContent =
+            [item.card ? 'карта ' + item.card : '', item.phone].filter(Boolean).join(' · ');
+          row.addEventListener('click', () => pick(item));
+          box.appendChild(row);
+        });
+      } catch (e) { /* молча: имя гостя можно вписать руками */ }
+    };
+
+    if (find) {
+      find.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(load, 300);
+      });
+    }
+    retitle();
+  })();
+</script>
+
+<script>
+  // Поиск «где будет человек» — без перезагрузки: меняется только список
+  // найденных. Результаты рисует сервер, так что по Enter всё работает и
+  // без скрипта.
+  (function () {
+    const form = document.getElementById('searchForm');
+    const inp = document.getElementById('searchInp');
+    const box = document.getElementById('searchResults');
+    if (!form || !inp || !box || !window.fetch) return;
+    let timer = null, last = inp.value;
+
+    const load = async () => {
+      const q = inp.value.trim();
+      if (q === last) return;
+      last = q;
+      const url = location.pathname + '?' + new URLSearchParams({
+        date: form.querySelector('[name=date]').value, q });
+      try {
+        const res = await fetch(url, { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+        const fresh = doc.getElementById('searchResults');
+        if (fresh) box.innerHTML = fresh.innerHTML;
+        history.replaceState(null, '', url);
+      } catch (e) { /* молча: форма по Enter сработает */ }
+    };
+
+    inp.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(load, 320);
+    });
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      clearTimeout(timer);
+      last = null;
+      load();
+    });
+  })();
+</script>
 {% endblock %}
