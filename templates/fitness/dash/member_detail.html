@@ -1,4 +1,5 @@
 {% extends "fitness/dash/_base.html" %}
+{% load fitness_extras %}
 {% block title %}{{ member.full_name }} — {{ club.name }}{% endblock %}
 {% block fc_title %}{{ member.full_name }}{% endblock %}
 {% block fc_sub %}{{ club.name }}{% if member.phone %} · {{ member.phone }}{% endif %}{% if member.card_id %} · карта {{ member.card_id }}{% endif %}{% endblock %}
@@ -107,6 +108,25 @@
     border-color: var(--accent); color: var(--accent); background: rgba(255,77,28,.06);
   }
 
+  /* Когда приходит: неделя полоской. Расписание лежит у каждой группы
+     отдельно, а спрашивают человека иначе — «когда мне приходить?», —
+     поэтому недели всех его групп сложены в одну. */
+  .wd { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+  .wd-day {
+    border: 1px solid var(--border); border-radius: 10px; background: var(--bg);
+    padding: 7px 4px; text-align: center; min-width: 0;
+  }
+  .wd-day.has { border-color: rgba(37,99,235,.4); background: rgba(37,99,235,.05); }
+  .wd-day.today { border-color: var(--accent); }
+  .wd-n {
+    font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted);
+  }
+  .wd-day.has .wd-n { color: #2563eb; }
+  .wd-day.today .wd-n { color: var(--accent); }
+  .wd-t { font-size: 11.5px; font-weight: 800; margin-top: 3px; line-height: 1.3; }
+  .wd-e { font-size: 13px; color: var(--border); margin-top: 3px; }
+  @media (max-width: 560px) { .wd-t { font-size: 10.5px; } }
+
   /* Абонемент: строка раскрывается в подробности — как в журнале */
   .ms { border: 1px solid var(--border); border-radius: 13px; background: var(--bg);
         overflow: hidden; }
@@ -165,6 +185,10 @@
         <div class="mc-fact"><b>Посещений</b><span>{{ visits_total }}</span></div>
         {% if last_visit %}
         <div class="mc-fact"><b>Был</b><span>{{ last_visit.visit_time|date:"d.m.Y H:i" }}</span></div>{% endif %}
+        {% if week_days %}
+        <div class="mc-fact"><b>Приходит</b>
+          <span>{% for d in week_days %}{{ d.short }}{% if not forloop.last %}, {% endif %}{% endfor %}</span></div>
+        {% endif %}
         {% if member.notes %}
         <div class="mc-fact"><b>Пометка</b><span>{{ member.notes }}</span></div>{% endif %}
       </div>
@@ -351,6 +375,41 @@
     {% if group_links %}
     <section class="mc-pane" data-pane="groups" hidden>
       <div class="fc-card">
+        <div class="fc-card-t">Когда приходит</div>
+        <div class="wd">
+          {% for d in week_plan %}
+            <div class="wd-day{% if d.items %} has{% endif %}{% if d.i == today_weekday %} today{% endif %}">
+              <div class="wd-n">{{ d.short }}</div>
+              {% for it in d.items %}
+                <div class="wd-t">{{ it.time|time:"H:i" }}</div>
+              {% empty %}
+                <div class="wd-e">—</div>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+        {% if week_days %}
+          <div class="fc-sub" style="margin-top:10px;line-height:1.5">
+            {% for d in week_days %}
+              {{ d.name }}:
+              {% for it in d.items %}
+                {{ it.time|time:"H:i" }} {{ it.group.title }}
+                {% if it.trainer %}({{ it.trainer.name }}){% endif %}
+                {% if it.room %} · {{ it.room }}{% endif %}
+                {% if not forloop.last %}, {% endif %}
+              {% endfor %}
+              {% if not forloop.last %}<br>{% endif %}
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="fc-sub" style="margin-top:10px">
+            У групп не заполнено расписание — поставьте тренировки в карточке
+            группы, и дни появятся здесь.
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="fc-card">
         <div class="fc-card-t">Группы</div>
         <div class="fc-list">
           {% for link in group_links %}
@@ -364,7 +423,7 @@
                   {% if link.group.trainer %}{{ link.group.trainer.name }}{% else %}тренер не назначен{% endif %}
                   · с {{ link.joined_on|date:"d.m.Y" }}
                   {% with sl=link.group.slots.all %}{% if sl %}
-                    <br>{% for s in sl %}{% if s.is_active %}{{ s.get_weekday_display|slice:":2" }}
+                    <br>{% for s in sl %}{% if s.is_active %}{{ s.weekday|wd_short }}
                       {{ s.time_from|time:"H:i" }}{% if not forloop.last %} · {% endif %}{% endif %}{% endfor %}
                   {% endif %}{% endwith %}
                 </div>

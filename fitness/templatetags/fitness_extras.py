@@ -65,3 +65,15 @@ def weekday_py(w):
     except (TypeError, ValueError):
         return 0
 
+# Обрезка названия по две буквы давала «Су» вместо «Сб» и «Пя» вместо
+# «Пт»: по-русски сокращения не совпадают с первыми буквами.
+_WD_SHORT = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+
+
+@register.filter
+def wd_short(weekday):
+    try:
+        return _WD_SHORT[int(weekday)]
+    except (TypeError, ValueError, IndexError):
+        return ""
+

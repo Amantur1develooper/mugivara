@@ -293,19 +293,49 @@ def members(request, club, staff):
                        export_qs=request.GET.urlencode()))
 
 
+WEEKDAY_SHORT = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]
+
+
+def _week_plan(group_links):
+    """Личное расписание клиента: в какие дни и часы он приходит.
+
+    Расписание лежит у каждой группы отдельно, а человека спрашивают
+    иначе: «когда ему приходить?» — значит, недели всех его групп надо
+    сложить в одну.
+    """
+    plan = [{"i": i, "short": WEEKDAY_SHORT[i],
+             "name": dict(GroupClass._meta.get_field("weekday").choices)[i],
+             "items": []} for i in range(7)]
+    for link in group_links:
+        for slot in link.group.slots.all():
+            if not slot.is_active:
+                continue
+            plan[slot.weekday]["items"].append({
+                "time": slot.time_from, "group": link.group, "slot": slot,
+                "room": slot.room, "trainer": slot.trainer,
+            })
+    for day in plan:
+        day["items"].sort(key=lambda x: x["time"])
+    return plan
+
+
 @login_required(login_url=LOGIN_URL)
 @require()
 def member_detail(request, club, staff, member_id):
     member = get_object_or_404(Member.objects.prefetch_related(
         "memberships__plan", "memberships__trainer"), id=member_id, club=club)
+    group_links = list(member.group_links.filter(is_active=True)
+                       .select_related("group", "group__section", "group__trainer")
+                       .prefetch_related("group__slots__trainer"))
+    week_plan = _week_plan(group_links)
     data = _ctx(club, staff,
                 member=member,
                 # В каких группах человек занимается: с карточки должно быть
                 # видно, к кому и когда он ходит.
-                group_links=(member.group_links.filter(is_active=True)
-                             .select_related("group", "group__section",
-                                             "group__trainer")
-                             .prefetch_related("group__slots")),
+                group_links=group_links,
+                week_plan=week_plan,
+                week_days=[d for d in week_plan if d["items"]],
+                today_weekday=timezone.localdate().weekday(),
                 debts=(member.owed_visits.filter(is_settled=False)
                        .select_related("group_class", "training_group")),
                 settled=(member.owed_visits.filter(is_settled=True)
