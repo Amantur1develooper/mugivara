@@ -18,13 +18,13 @@
   <div class="fc-list">
     {% for m in found %}
       {% with ms=m.active_membership %}
-      <div class="fc-row" style="grid-template-columns:auto 1fr auto">
+      <div class="fc-row pass-row" data-card="{% url 'fitness_dash:member_pass_card' club.id m.id %}"
+           style="grid-template-columns:auto 1fr auto">
         <span class="fc-ava{% if not m.photo %} empty{% endif %}">
           {% if m.photo %}<img src="{{ m.photo.url }}" alt="" loading="lazy">{% else %}👤{% endif %}
         </span>
         <div class="fc-row-main">
-          <a class="fc-row-name" style="text-decoration:none" data-pass
-             data-card="{% url 'fitness_dash:member_pass_card' club.id m.id %}"
+          <a class="fc-row-name" style="text-decoration:none"
              href="{% url 'fitness_dash:member_detail' club.id m.id %}">{{ m.full_name }} →</a>
           <div class="fc-row-sub">
             {% if ms %}
@@ -125,6 +125,9 @@
     background: var(--bg); border-radius: 10px; width: 32px; height: 32px;
     font-size: 15px; color: var(--text2);
   }
+  /* Вся строка найденного — одна цель для пальца */
+  .pass-row:hover { border-color: var(--accent); }
+
   .pc-top { display: flex; gap: 13px; align-items: flex-start; }
   .pc-top .fc-ava-big { width: 96px; height: 96px; font-size: 34px; flex: none; }
   .pc-done {
@@ -196,13 +199,18 @@
       });
     }
 
-    document.querySelectorAll('[data-pass]').forEach(a => {
-      a.addEventListener('click', ev => {
+    // Нажимается вся строка, а не только имя: на ресепшене целятся в
+    // человека, а не в ссылку. Кнопки, выпадашки и телефон внутри строки
+    // при этом работают по-своему.
+    document.querySelectorAll('.pass-row').forEach(row => {
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', ev => {
+        if (ev.target.closest('button, select, input, textarea, a[href^="tel"]')) return;
         ev.preventDefault();
         body.innerHTML = '<div class="fc-sub">Загружаем…</div>';
         wrap.classList.add('open');
         document.body.style.overflow = 'hidden';
-        load(a.dataset.card);
+        load(row.dataset.card);
       });
     });
 
