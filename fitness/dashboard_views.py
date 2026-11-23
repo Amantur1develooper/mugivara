@@ -616,6 +616,14 @@ def membership_action(request, club, staff, membership_id):
             messages.success(request, f"Активирован до {ms.end_date:%d.%m.%Y}")
         else:
             messages.info(request, "Уже активирован")
+    elif action == "section":
+        # Проданные до появления направлений абонементы остались без него:
+        # дать их поправить надо, иначе списываться будет не с того.
+        ms.section = club.sections.filter(id=request.POST.get("section") or 0).first()
+        ms.save(update_fields=["section", "updated_at"])
+        messages.success(request, f"{ms.plan.name}: " + (
+            f"направление «{ms.section.name}»" if ms.section
+            else "без направления — подойдёт к любой группе"))
     elif action == "close" and staff.role == ADMIN:
         ms.is_active = False
         ms.save(update_fields=["is_active", "updated_at"])
@@ -1408,12 +1416,31 @@ def setup(request, club, staff):
                     sec.delete()
                     messages.success(request, f"«{name}» удалено")
         elif what == "plan":
-            MembershipPlan.objects.create(
+            raw_sec = request.POST.get("p_section")
+            plan = MembershipPlan.objects.create(
                 club=club, name=(request.POST.get("p_name") or "").strip()[:150],
                 visits_number=int(request.POST.get("p_visits") or 0),
                 validity_days=int(request.POST.get("p_days") or 30),
+                # Направление тарифа: отсюда оно попадёт в проданный
+                # абонемент, а дальше решит, с какого списывать посещение.
+                section=club.sections.filter(id=raw_sec or 0).first(),
                 price=_money(request.POST.get("p_price"), "0"))
-            messages.success(request, "Абонемент добавлен")
+            tail = (f" — направление «{plan.section.name}»" if plan.section
+                    else " — без направления, подойдёт к любой группе")
+            messages.success(request, f"Абонемент добавлен{tail}")
+        elif what == "plan_section":
+            plan = MembershipPlan.objects.filter(
+                id=request.POST.get("plan_id") or 0, club=club).first()
+            if plan:
+                plan.section = club.sections.filter(
+                    id=request.POST.get("section") or 0).first()
+                plan.save(update_fields=["section", "updated_at"])
+                messages.success(
+                    request,
+                    f"«{plan.name}»: " + (f"направление «{plan.section.name}»"
+                                          if plan.section else "без направления")
+                    + ". Новые продажи пойдут с ним; у проданных раньше "
+                      "направление можно поменять в карточке клиента.")
         elif what == "trainer_toggle":
             tr = Trainer.objects.filter(id=request.POST.get("trainer_id"), club=club).first()
             if tr:
@@ -1436,7 +1463,7 @@ def setup(request, club, staff):
                   _ctx(club, staff,
                        sections=club.sections.all(),
                        discount_list=club.discounts.all(),
-                       plans=club.plans.all(),
+                       plans=club.plans.select_related("section"),
                        trainers=club.trainers.all().prefetch_related("sections"),
                        staff_list=club.staff.select_related("user"),
                        roles=ClubStaff.Role.choices))

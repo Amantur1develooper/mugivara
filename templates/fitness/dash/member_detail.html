@@ -289,10 +289,29 @@
               {% else %}
                 <div class="ms-line"><b>Посещений</b><span>без ограничения</span></div>
               {% endif %}
-              <div class="ms-line"><b>Направление</b>
+              <div class="ms-line" style="display:block">
+                <b style="display:inline-block">Направление</b>
                 <span>{% if ms.section %}{{ ms.section.name }} — посещения спишутся
                   на тренировках этой секции{% else %}без направления — зал,
-                  подойдёт к любой группе{% endif %}</span></div>
+                  подойдёт к любой группе{% endif %}</span>
+                {% if can_money and sections and ms.is_active %}
+                <form method="post" action="{% url 'fitness_dash:membership_action' club.id ms.id %}"
+                      style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="section">
+                  <select class="fc-input" name="section"
+                          style="flex:1;min-width:150px;padding:6px 9px;font-size:12.5px">
+                    <option value="">— без направления —</option>
+                    {% for sec in sections %}
+                      <option value="{{ sec.id }}" {% if ms.section_id == sec.id %}selected{% endif %}>
+                        {% if sec.icon %}{{ sec.icon }} {% endif %}{{ sec.name }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                  <button class="fc-btn ghost small" type="submit">Сохранить</button>
+                </form>
+                {% endif %}
+              </div>
               <div class="ms-line"><b>Куплен</b><span>{{ ms.purchase_date|date:"d.m.Y" }}</span></div>
               <div class="ms-line"><b>Активирован</b>
                 <span>{% if ms.activated %}{{ ms.start_date|date:"d.m.Y" }}

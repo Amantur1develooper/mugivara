@@ -173,15 +173,37 @@
   <div class="fc-card-t">Виды абонементов · {{ plans|length }}</div>
   <div class="fc-list" style="margin-bottom:12px">
     {% for p in plans %}
-      <div class="fc-row">
-        <div class="fc-row-main">
-          <div class="fc-row-name">{{ p.name }}</div>
-          <div class="fc-row-sub">
-            {% if p.visits_number %}{{ p.visits_number }} посещений{% else %}без ограничения{% endif %}
-            · {{ p.validity_days }} дней
+      <div class="fc-row" style="display:block">
+        <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+          <div style="flex:1;min-width:150px">
+            <div class="fc-row-name">
+              {{ p.name }}
+              {% if p.section %}<span class="fc-chip">{{ p.section.name }}</span>
+              {% else %}<span class="fc-chip">без направления</span>{% endif %}
+            </div>
+            <div class="fc-row-sub">
+              {% if p.visits_number %}{{ p.visits_number }} посещений{% else %}без ограничения{% endif %}
+              · {{ p.validity_days }} дней
+            </div>
           </div>
+          <div class="fc-row-right">{{ p.price|floatformat:0 }} сом</div>
         </div>
-        <div class="fc-row-right">{{ p.price|floatformat:0 }} сом</div>
+        {% if is_admin and sections %}
+        <form method="post" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          {% csrf_token %}
+          <input type="hidden" name="what" value="plan_section">
+          <input type="hidden" name="plan_id" value="{{ p.id }}">
+          <select class="fc-input" name="section" style="flex:1;min-width:150px;padding:7px 9px;font-size:12.5px">
+            <option value="">— без направления (зал, фитнес) —</option>
+            {% for s in sections %}
+              <option value="{{ s.id }}" {% if p.section_id == s.id %}selected{% endif %}>
+                {% if s.icon %}{{ s.icon }} {% endif %}{{ s.name }}
+              </option>
+            {% endfor %}
+          </select>
+          <button class="fc-btn ghost small" type="submit">Сохранить</button>
+        </form>
+        {% endif %}
       </div>
     {% empty %}<div class="fc-empty">Абонементов нет — продавать нечего</div>{% endfor %}
   </div>
@@ -197,7 +219,24 @@
         <input class="fc-input" name="p_days" type="number" value="30" min="1"></div>
       <div><label class="fc-label">Цена</label>
         <input class="fc-input" name="p_price" inputmode="numeric" placeholder="2500"></div>
+      {% if sections %}
+      <div><label class="fc-label">Направление</label>
+        <select class="fc-input" name="p_section">
+          <option value="">— без направления —</option>
+          {% for s in sections %}
+            <option value="{{ s.id }}">{% if s.icon %}{{ s.icon }} {% endif %}{{ s.name }}</option>
+          {% endfor %}
+        </select></div>
+      {% endif %}
     </div>
+    {% if sections %}
+    <div class="fc-sub" style="margin-top:8px;line-height:1.5">
+      Направление решает, с какого абонемента списывать посещение: на
+      тренировке группы по боксу уйдёт боксовый, а не самбовый. «Без
+      направления» — абонемент в зал: он подойдёт к любой группе, пока у
+      человека нет абонемента нужного направления.
+    </div>
+    {% endif %}
     <div class="fc-sub" style="margin-top:8px">
       0 посещений — безлимит: ограничивает только срок.
     </div>
