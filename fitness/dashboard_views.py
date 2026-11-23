@@ -111,6 +111,74 @@ def clubs(request):
     return render(request, "fitness/dash/clubs.html", {"clubs": items})
 
 
+CHART_DAYS = 14
+
+
+def _home_chart(club, today, *, money=True):
+    """Данные графика на сводке: посещения и выручка по дням.
+
+    Геометрию считаем здесь, а не в шаблоне: в русской локали числа
+    выводятся с запятой, и координаты вида «12,5» ломают и SVG, и JS. А
+    рисуем обычным SVG — без библиотек, которые на телефоне с плохой
+    связью грузятся дольше самой страницы.
+    """
+    start = today - timedelta(days=CHART_DAYS - 1)
+    days = [start + timedelta(days=i) for i in range(CHART_DAYS)]
+
+    visits = {}
+    for row in (Visit.objects
+                .filter(club=club, success=True, visit_time__date__gte=start)
+                .values("visit_time__date").annotate(n=Count("id"))):
+        visits[row["visit_time__date"]] = row["n"]
+
+    cash = {}
+    if money:
+        for row in (Payment.objects
+                    .filter(club=club, created_at__date__gte=start)
+                    .values("created_at__date").annotate(s=Sum("amount"))):
+            cash[row["created_at__date"]] = int(row["s"] or 0)
+
+    v_max = max([visits.get(d, 0) for d in days] + [1])
+    m_max = max([cash.get(d, 0) for d in days] + [1])
+
+    # Сетка: 14 столбиков с отступами, высота 100 — остальное тянется CSS
+    step = 100 / CHART_DAYS
+    bar_w = step * 0.56
+    bars, points = [], []
+    for i, d in enumerate(days):
+        v = visits.get(d, 0)
+        m = cash.get(d, 0)
+        x = i * step + (step - bar_w) / 2
+        h = (v / v_max) * 72 if v else 0
+        bars.append({
+            "day": d,
+            "visits": v,
+            "money": m,
+            "x": f"{x:.2f}",
+            "w": f"{bar_w:.2f}",
+            "y": f"{(78 - h):.2f}",
+            "h": f"{h:.2f}",
+            "is_today": d == today,
+            "label": f"{d.day}",
+            "weekend": d.weekday() >= 5,
+        })
+        if money:
+            points.append(f"{(i * step + step / 2):.2f},"
+                          f"{(78 - (m / m_max) * 66):.2f}")
+
+    return {
+        "bars": bars,
+        "line": " ".join(points),
+        "visits_total": sum(visits.get(d, 0) for d in days),
+        "money_total": sum(cash.get(d, 0) for d in days),
+        "visits_max": v_max,
+        "money_max": m_max,
+        "money": money,
+        "from": start,
+        "to": today,
+    }
+
+
 @login_required(login_url=LOGIN_URL)
 @require()
 def home(request, club, staff):
@@ -146,6 +214,8 @@ def home(request, club, staff):
             .aggregate(s=Sum("amount"))["s"] or 0
         data.update(expenses_month=exp_month,
                     profit_month=(data.get("income_month") or 0) - exp_month)
+
+    data["chart"] = _home_chart(club, today, money=can_see_money(staff))
 
     if trainer:
         data["my_today"] = (TrainerBooking.objects

@@ -40,7 +40,89 @@
   {% endif %}
 </div>
 
+{% if chart %}
+<div class="fc-card">
+  <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+    <div class="fc-card-t" style="margin:0">Как шли дела — 14 дней</div>
+    <div class="fc-sub" style="margin-left:auto">
+      {{ chart.from|date:"d.m" }} — {{ chart.to|date:"d.m" }}
+      · посещений {{ chart.visits_total }}
+      {% if chart.money %}· касса {{ chart.money_total }} сом{% endif %}
+    </div>
+  </div>
+
+  <div class="ch-wrap">
+    <svg class="ch" viewBox="0 0 100 86" preserveAspectRatio="none" role="img"
+         aria-label="Посещения по дням за две недели">
+      {# Линейки: по ним видно, большой столбик или нет #}
+      <line x1="0" y1="78" x2="100" y2="78" class="ch-axis"></line>
+      <line x1="0" y1="42" x2="100" y2="42" class="ch-grid"></line>
+      <line x1="0" y1="6" x2="100" y2="6" class="ch-grid"></line>
+
+      {% for b in chart.bars %}
+        <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" rx="1.2"
+              class="ch-bar{% if b.is_today %} today{% elif b.weekend %} wknd{% endif %}">
+          <title>{{ b.day|date:"d.m" }}: {{ b.visits }} посещений{% if chart.money %}, {{ b.money }} сом{% endif %}</title>
+        </rect>
+      {% endfor %}
+
+      {% if chart.money and chart.line %}
+        <polyline points="{{ chart.line }}" class="ch-line"></polyline>
+      {% endif %}
+    </svg>
+
+    <div class="ch-days">
+      {% for b in chart.bars %}
+        <span class="{% if b.is_today %}now{% elif b.weekend %}wk{% endif %}">{{ b.label }}</span>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="fc-sub" style="margin-top:9px">
+    <span class="lg" style="background:var(--accent)"></span> посещения
+    (максимум за день — {{ chart.visits_max }})
+    {% if chart.money %}
+      · <span class="lg" style="background:#059669"></span> касса
+      (максимум — {{ chart.money_max }} сом)
+    {% endif %}
+  </div>
+</div>
+
+<style>
+  /* График рисуем обычным SVG: библиотека на телефоне с плохой связью
+     грузится дольше самой страницы, а тут всего два ряда чисел.
+     preserveAspectRatio=none растягивает его по ширине карточки, поэтому
+     толщину линий задаём в vector-effect, иначе её тоже растянет. */
+  .ch-wrap { width: 100%; }
+  .ch { width: 100%; height: 190px; display: block; overflow: visible; }
+  .ch-axis, .ch-grid {
+    stroke: var(--border); stroke-width: 1; vector-effect: non-scaling-stroke;
+  }
+  .ch-grid { stroke-dasharray: 3 4; opacity: .7; }
+  .ch-bar { fill: var(--accent); opacity: .85; }
+  .ch-bar.wknd { opacity: .45; }
+  .ch-bar.today { fill: var(--accent); opacity: 1; }
+  .ch-line {
+    fill: none; stroke: #059669; stroke-width: 2;
+    vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round;
+  }
+  .ch-days {
+    display: grid; grid-template-columns: repeat(14, 1fr); gap: 0; margin-top: 4px;
+  }
+  .ch-days span {
+    text-align: center; font-size: 10px; color: var(--muted); font-weight: 700;
+  }
+  .ch-days .now { color: var(--accent); }
+  .ch-days .wk { opacity: .55; }
+  @media (max-width: 560px) {
+    .ch { height: 150px; }
+    .ch-days span { font-size: 8.5px; }
+  }
+</style>
+{% endif %}
+
 {% if is_trainer and my_today is not None %}
+
 <div class="fc-card">
   <div class="fc-card-t">Мои тренировки сегодня</div>
   <div class="fc-list">
