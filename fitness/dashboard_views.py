@@ -285,6 +285,8 @@ def checkin(request, club, staff):
                              | Q(card_id__iexact=q))
                      .prefetch_related("memberships__plan")[:20])
 
+    # select_related тянет и фото: оно лежит полем клиента, так что лишних
+    # запросов на строку не будет.
     recent = (Visit.objects.filter(club=club)
               .select_related("member", "membership__plan", "trainer")
               .order_by("-visit_time")[:15])
