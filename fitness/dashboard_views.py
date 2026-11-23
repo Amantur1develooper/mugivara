@@ -904,6 +904,8 @@ def leads(request, club, staff):
                   _ctx(club, staff, leads=rows.order_by("-id")[:200], status=status,
                        counts=counts, overdue=overdue,
                        statuses=Lead.Status.choices,
+                       # Для подсветки просроченных звонков прямо в списке
+                       now=timezone.now(),
                        export_qs=request.GET.urlencode()))
 
 
@@ -972,6 +974,43 @@ def lead_save(request, club, staff, lead_id=0):
                             f"{lead.get_status_display()} — {name}, {stamp}")
     messages.success(request, "Заявка сохранена")
     return redirect("fitness_dash:lead_detail", club_id=club.id, lead_id=lead.id)
+
+
+@login_required(login_url=LOGIN_URL)
+@require(ADMIN, CASHIER)
+@require_POST
+def lead_status(request, club, staff, lead_id):
+    """Сменить статус заявки прямо в списке.
+
+    Раньше ради одного нажатия надо было открыть заявку, поменять статус и
+    вернуться — а их двадцать, и после обзвона статус меняют у каждой.
+    """
+    lead = get_object_or_404(Lead, id=lead_id, club=club)
+    status = request.POST.get("status")
+    if status not in dict(Lead.Status.choices):
+        return JsonResponse({"ok": False}, status=400) if _wants_json(request) else \
+            redirect("fitness_dash:leads", club_id=club.id)
+
+    was = lead.get_status_display()
+    lead.status = status
+    if not lead.assigned_to_id:
+        lead.assigned_to = request.user
+    lead.save(update_fields=["status", "assigned_to", "updated_at"])
+
+    LeadNote.objects.create(
+        lead=lead, author=request.user,
+        text=f"Статус: {was} → {lead.get_status_display()}")
+    tgbot.in_background(tg.refresh_lead, lead,
+                        f"{lead.get_status_display()} — "
+                        f"{request.user.get_full_name() or request.user.username}")
+
+    if _wants_json(request):
+        return JsonResponse({"ok": True, "status": lead.status,
+                             "label": lead.get_status_display(),
+                             "lead": lead.id})
+    messages.success(request, f"{lead.name or lead.phone}: {lead.get_status_display()}")
+    return redirect(request.POST.get("back")
+                    or reverse("fitness_dash:leads", args=[club.id]))
 
 
 @login_required(login_url=LOGIN_URL)

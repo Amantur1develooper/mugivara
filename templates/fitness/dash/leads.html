@@ -16,6 +16,11 @@
 {% endif %}
 
 <div class="fc-card">
+  {% if can_money %}
+  <div style="margin-bottom:11px">
+    <button class="fc-btn" type="button" data-lead-open>+ Новая заявка</button>
+  </div>
+  {% endif %}
   <div style="display:flex;gap:6px;flex-wrap:wrap">
     <a href="?" class="fc-chip{% if not status %} ok{% endif %}">Все</a>
     {% for value, label in statuses %}
@@ -36,31 +41,60 @@
   </div>
   <div class="fc-list">
     {% for l in leads %}
-      <a href="{% url 'fitness_dash:lead_detail' club.id l.id %}" class="fc-row">
-        <div class="fc-row-main">
-          <div class="fc-row-name">{{ l.name|default:"Без имени" }} · {{ l.phone }}</div>
-          <div class="fc-row-sub">
-            {{ l.get_source_display }}
-            {% if l.section %}· {{ l.section.name }}{% endif %}
-            {% if l.trainer %}· к {{ l.trainer.name }}{% endif %}
-            {% if l.next_contact_at %}· связаться {{ l.next_contact_at|date:"d.m H:i" }}{% endif %}
+      <div class="fc-row ld-row st-{{ l.status }}" data-lead="{{ l.id }}"
+           style="display:block">
+        <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+          <div style="flex:1;min-width:150px">
+            <a class="fc-row-name" style="text-decoration:none"
+               href="{% url 'fitness_dash:lead_detail' club.id l.id %}">
+              {{ l.name|default:"Без имени" }} →
+            </a>
+            <div class="fc-row-sub" style="margin-top:2px">
+              <a href="tel:{{ l.phone }}" style="color:inherit">{{ l.phone }}</a>
+              · {{ l.get_source_display }}
+              {% if l.section %}· {{ l.section.name }}{% endif %}
+              {% if l.trainer %}· к {{ l.trainer.name }}{% endif %}
+              {% if l.next_contact_at %}
+                · <b{% if l.next_contact_at < now %} style="color:#dc2626"{% endif %}>связаться
+                  {{ l.next_contact_at|date:"d.m H:i" }}</b>
+              {% endif %}
+            </div>
           </div>
-        </div>
-        <div class="fc-row-right">
-          <span class="fc-chip{% if l.status == 'sold' %} ok{% elif l.status == 'lost' %} bad{% elif l.status == 'new' %} warn{% endif %}">
+          <span class="fc-chip ld-now{% if l.status == 'sold' %} ok{% elif l.status == 'lost' %} bad{% elif l.status == 'new' %} warn{% endif %}">
             {{ l.get_status_display }}
           </span>
         </div>
-      </a>
+
+        {% if can_money %}
+        <form method="post" action="{% url 'fitness_dash:lead_status' club.id l.id %}"
+              class="ld-form" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:8px">
+          {% csrf_token %}
+          <input type="hidden" name="back" value="{{ request.get_full_path }}">
+          {% for val, label in statuses %}
+            <button class="fc-slot ld-btn{% if l.status == val %} on{% endif %}"
+                    name="status" value="{{ val }}"
+                    {% if l.status == val %}disabled{% endif %}>{{ label }}</button>
+          {% endfor %}
+        </form>
+        {% endif %}
+      </div>
     {% empty %}
       <div class="fc-empty">Заявок нет</div>
     {% endfor %}
   </div>
 </div>
 
-<details class="fc-card">
-  <summary style="cursor:pointer;font-weight:700;font-size:13.5px">+ Заявка вручную (звонок, пришёл сам)</summary>
-  <form method="post" action="{% url 'fitness_dash:lead_new' club.id %}" style="margin-top:12px">
+<div class="nl-wrap" id="leadWrap">
+  <div class="nl-bg" data-lead-close></div>
+  <div class="nl-panel">
+    <div class="nl-head">
+      <div class="t">Новая заявка</div>
+      <button class="nl-x" type="button" data-lead-close title="Закрыть">✕</button>
+    </div>
+    <div class="fc-sub" style="margin-bottom:12px">
+      Звонок, пришёл сам, написал в Instagram — всё, что пришло не с сайта.
+    </div>
+  <form method="post" action="{% url 'fitness_dash:lead_new' club.id %}">
     {% csrf_token %}
     <div class="fc-grid2">
       <div><label class="fc-label">Имя</label><input class="fc-input" name="name"></div>
@@ -78,7 +112,118 @@
     </div>
     <div style="margin-top:10px"><label class="fc-label">Комментарий</label>
       <input class="fc-input" name="comment" placeholder="спрашивал про бокс, просил перезвонить вечером"></div>
-    <button class="fc-btn" type="submit" style="margin-top:12px">Добавить</button>
+    <button class="fc-btn" type="submit" style="margin-top:14px;width:100%">Добавить</button>
   </form>
-</details>
+  </div>
+</div>
+
+<style>
+  /* Бланк заявки — панелью справа, как продажа, запись и новый клиент.
+     Класс ready ставит скрипт: без него панель остаётся обычным блоком
+     внизу страницы, и заявку всё равно можно завести. */
+  .nl-wrap.ready { position: fixed; inset: 0; z-index: 140; display: none; }
+  .nl-wrap.ready.open { display: block; }
+  .nl-wrap.ready .nl-bg { position: absolute; inset: 0; background: rgba(5,10,20,.45); }
+  .nl-wrap.ready .nl-panel {
+    position: absolute; top: 0; right: 0; bottom: 0; width: min(420px, 100%);
+    background: var(--card); border-left: 1px solid var(--border);
+    overflow-y: auto; padding: 16px; box-shadow: -14px 0 40px rgba(0,0,0,.18);
+  }
+  .nl-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .nl-head .t { font-size: 16px; font-weight: 800; flex: 1; }
+  .nl-x {
+    appearance: none; cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg); border-radius: 10px; width: 32px; height: 32px;
+    font-size: 15px; color: var(--text2);
+  }
+</style>
+
+<script>
+  (function () {
+    const wrap = document.getElementById('leadWrap');
+    if (!wrap) return;
+    wrap.classList.add('ready');
+    const open = () => {
+      wrap.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      // Курсор в телефон: с него и начинают, имя часто узнают потом
+      const first = wrap.querySelector('input[name="phone"]');
+      if (first) setTimeout(() => first.focus(), 40);
+    };
+    const close = () => {
+      wrap.classList.remove('open');
+      document.body.style.overflow = '';
+    };
+    document.querySelectorAll('[data-lead-open]').forEach(b => b.addEventListener('click', open));
+    wrap.querySelectorAll('[data-lead-close]').forEach(b => b.addEventListener('click', close));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  })();
+</script>
+
+<style>
+  /* Цвет статуса по левому краю строки: в списке из двадцати заявок видно,
+     где новая, а где уже купили, не вчитываясь. */
+  .ld-row { border-left-width: 4px; }
+  .ld-row.st-new { border-left-color: #f59e0b; }
+  .ld-row.st-working { border-left-color: #2563eb; }
+  .ld-row.st-booked, .ld-row.st-came { border-left-color: #7c3aed; }
+  .ld-row.st-sold { border-left-color: #059669; }
+  .ld-row.st-lost { border-left-color: #dc2626; opacity: .7; }
+  .ld-btn { min-height: 30px; padding: 5px 9px; font-size: 11.5px; }
+  .ld-btn:disabled { opacity: 1; border-color: var(--accent); color: var(--accent);
+                     background: rgba(255,77,28,.06); cursor: default; }
+</style>
+
+<script>
+  // Статус меняется на месте: страница из двадцати заявок не должна
+  // перезагружаться после каждого нажатия, иначе список прыгает к началу.
+  // Формы остаются обычными — без скрипта всё работает как прежде.
+  (function () {
+    const COLOR = ['new', 'working', 'booked', 'came', 'sold', 'lost'];
+    document.querySelectorAll('.ld-form').forEach(form => {
+      form.addEventListener('click', async ev => {
+        const btn = ev.target.closest('button[name="status"]');
+        if (!btn || btn.disabled || !window.fetch) return;
+        ev.preventDefault();
+
+        const row = form.closest('.ld-row');
+        const body = new FormData(form);
+        body.append('status', btn.value);
+        form.querySelectorAll('button').forEach(b => b.disabled = true);
+        row.style.opacity = '.5';
+
+        try {
+          const res = await fetch(form.action, {
+            method: 'POST', body,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
+          });
+          if (!res.ok) throw new Error(res.status);
+          const data = await res.json();
+          COLOR.forEach(s => row.classList.remove('st-' + s));
+          row.classList.add('st-' + data.status);
+          const now = row.querySelector('.ld-now');
+          now.textContent = data.label;
+          now.className = 'fc-chip ld-now' +
+            (data.status === 'sold' ? ' ok' : data.status === 'lost' ? ' bad'
+              : data.status === 'new' ? ' warn' : '');
+          form.querySelectorAll('button').forEach(b => {
+            const mine = b.value === data.status;
+            b.disabled = mine;
+            b.classList.toggle('on', mine);
+          });
+        } catch (e) {
+          // Не вышло — отправляем обычным способом, статус не потеряется
+          form.querySelectorAll('button').forEach(b => b.disabled = false);
+          const hidden = document.createElement('input');
+          hidden.type = 'hidden'; hidden.name = 'status'; hidden.value = btn.value;
+          form.appendChild(hidden);
+          form.submit();
+          return;
+        }
+        row.style.opacity = '';
+      });
+    });
+  })();
+</script>
 {% endblock %}
