@@ -3,94 +3,136 @@
 {% block fc_sub %}Групповые занятия, неделя с {{ week_start|date:"d.m" }}{% endblock %}
 
 {% block fc_content %}
+<style>
+  /* Неделя столбцами: день — столбец, занятия внутри по времени. Списком
+     друг под другом неделя занимала семь экранов, и сравнить дни было
+     нельзя — а именно это и нужно, когда ставят новую тренировку. */
+  .wk { display: flex; flex-direction: column; gap: 10px; }
+  .wk-day {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 10px; min-width: 0; display: flex; flex-direction: column;
+  }
+  .wk-day.today { border-color: var(--accent); }
+  .wk-head {
+    font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px;
+    color: var(--muted); padding-bottom: 8px; margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .wk-day.today .wk-head { color: var(--accent); }
+  .wk-items { display: flex; flex-direction: column; gap: 7px; flex: 1; }
+
+  .wk-cls {
+    display: block; text-decoration: none; color: inherit;
+    border: 1px solid var(--border); border-left-width: 4px; border-radius: 10px;
+    padding: 8px 9px; background: var(--bg);
+  }
+  .wk-cls:hover { border-color: var(--accent); }
+  .wk-cls.group { border-left-color: #2563eb; }
+  .wk-cls.open-reg { border-left-color: var(--accent); }
+  .wk-cls.off { opacity: .55; }
+  .wk-cls.off .wk-t { text-decoration: line-through; }
+  .wk-t { font-size: 13px; font-weight: 800; }
+  .wk-n { font-size: 12px; font-weight: 700; line-height: 1.25; margin-top: 2px; }
+  .wk-s { font-size: 10.5px; color: var(--muted); line-height: 1.35; margin-top: 3px; }
+  .wk-empty { font-size: 11.5px; color: var(--muted); padding: 10px 2px; }
+
+  @media (min-width: 900px) {
+    /* Семь столбцов рядом: вся неделя на одном экране */
+    .wk {
+      display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px; align-items: stretch;
+    }
+    .wk-head { font-size: 10.5px; }
+  }
+</style>
+
 <div class="fc-card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
   <a href="?date={{ prev_week|date:'Y-m-d' }}" class="fc-btn ghost small">← неделя</a>
   <a href="?date={{ next_week|date:'Y-m-d' }}" class="fc-btn ghost small">неделя →</a>
   <span class="fc-chip">{{ all_classes|length }} занятий в расписании</span>
+  <span class="fc-sub" style="margin-left:auto">
+    <span class="lg lg-cold"></span> группа · <span class="lg" style="background:var(--accent)"></span> открытая запись
+  </span>
 </div>
 
-{% for d in grid %}
-  <div class="fc-card" {% if d.is_today %}style="border-color:var(--accent)"{% endif %}>
-    <div class="fc-card-t">
-      {{ d.day|date:"l, d.m" }}{% if d.is_today %} · сегодня{% endif %}
-    </div>
-    <div class="fc-list">
-      {% for it in d.items %}
-        <a class="fc-row{% if it.cancelled %} is-off{% endif %}"
-           href="{% url 'fitness_dash:class_day' club.id it.cls.id %}?date={{ d.day|date:'Y-m-d' }}">
-          <div class="fc-row-main">
-            <div class="fc-row-name">
-              {{ it.cls.time_from|time:"H:i" }} ·
+<div class="wk">
+  {% for d in grid %}
+    <div class="wk-day{% if d.is_today %} today{% endif %}">
+      <div class="wk-head">
+        {{ d.day|date:"D, d.m" }}{% if d.is_today %} · сегодня{% endif %}
+      </div>
+      <div class="wk-items">
+        {% for it in d.items %}
+          <a class="wk-cls {% if it.cls.group_id %}group{% else %}open-reg{% endif %}{% if it.cancelled %} off{% endif %}"
+             href="{% url 'fitness_dash:class_day' club.id it.cls.id %}?date={{ d.day|date:'Y-m-d' }}">
+            <div class="wk-t">{{ it.cls.time_from|time:"H:i" }}</div>
+            <div class="wk-n">
               {% if it.cls.group_id %}{{ it.cls.group.title }}{% else %}{{ it.cls.name }}{% endif %}
             </div>
-            <div class="fc-row-sub">
-              {% if it.cancelled %}⛔️ отменена · {% endif %}
-              {% if it.cls.group_id %}👥 группа {{ it.cls.group_size }} чел. · {% endif %}
+            <div class="wk-s">
+              {% if it.cancelled %}⛔️ отменена<br>{% endif %}
               {% if it.cls.trainer %}{{ it.cls.trainer.name }}{% else %}без тренера{% endif %}
-              {% if it.cls.room %} · {{ it.cls.room }}{% endif %}
-              · {{ it.cls.duration_min }} мин
-              {% if it.cls.price %} · {{ it.cls.price|floatformat:0 }} сом{% endif %}
-            </div>
-          </div>
-          <div class="fc-row-right">
-            {% if it.free == 0 %}
-              <span class="fc-chip bad">мест нет</span>
-            {% elif it.free <= 2 %}
-              <span class="fc-chip warn">{{ it.free }} места</span>
-            {% else %}
+              {% if it.cls.room %}<br>{{ it.cls.room }}{% endif %}
+              <br>{{ it.cls.duration_min }} мин
               {% if it.cls.group_id %}
-                <span class="fc-chip">состав {{ it.cls.group_size }}</span>
+                · 👥 {{ it.cls.group_size }}
+              {% elif it.free == 0 %}
+                · <b style="color:#dc2626">мест нет</b>
               {% else %}
-                <span class="fc-chip ok">{{ it.free }} из {{ it.cls.capacity }}</span>
+                · {{ it.free }} из {{ it.cls.capacity }}
               {% endif %}
-            {% endif %}
-          </div>
-        </a>
-      {% empty %}
-        <div class="fc-empty" style="padding:14px">Занятий нет</div>
-      {% endfor %}
+              {% if it.cls.price %}<br>{{ it.cls.price|floatformat:0 }} сом{% endif %}
+            </div>
+          </a>
+        {% empty %}
+          <div class="wk-empty">—</div>
+        {% endfor %}
+      </div>
     </div>
-  </div>
-{% endfor %}
+  {% endfor %}
+</div>
 
-{% if is_admin %}
-<details class="fc-card">
-  <summary style="cursor:pointer;font-weight:700;font-size:13.5px">+ Занятие в расписание</summary>
+{% if staff.role != "trainer" %}
+<details class="fc-card" style="margin-top:14px">
+  <summary style="cursor:pointer;font-weight:700;font-size:13.5px">+ Добавить занятие</summary>
+  <div class="fc-sub" style="margin-top:10px;line-height:1.5">
+    Тренировку группы удобнее ставить в её карточке: там видно состав и всё
+    расписание группы сразу. Здесь — открытое занятие, на которое
+    записываются по одному.
+    <a href="{% url 'fitness_dash:groups' club.id %}">Группы →</a>
+  </div>
   <form method="post" action="{% url 'fitness_dash:class_save' club.id %}" style="margin-top:12px">
     {% csrf_token %}
-    <div class="fc-grid3">
+    <div class="fc-grid2">
       <div><label class="fc-label">Название</label>
-        <input class="fc-input" name="name" required placeholder="Йога"></div>
+        <input class="fc-input" name="name" placeholder="Йога утро" required></div>
       <div><label class="fc-label">День</label>
         <select class="fc-select" name="weekday">
-          <option value="0">Понедельник</option><option value="1">Вторник</option>
-          <option value="2">Среда</option><option value="3">Четверг</option>
-          <option value="4">Пятница</option><option value="5">Суббота</option>
-          <option value="6">Воскресенье</option>
+          {% for val, label in weekdays %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
         </select></div>
       <div><label class="fc-label">Начало</label>
         <input class="fc-input" name="time_from" type="time" required
                data-slots data-slots-from="7" data-slots-to="22" data-slots-step="30"></div>
-      <div><label class="fc-label">Длительность</label>
-        <input class="fc-input" name="duration_min" type="number" value="60" min="15" step="15"></div>
-      <div><label class="fc-label">Мест</label>
-        <input class="fc-input" name="capacity" type="number" value="12" min="1"></div>
-      <div><label class="fc-label">Цена разового</label>
-        <input class="fc-input" name="price" inputmode="numeric" placeholder="400"></div>
+      <div><label class="fc-label">Длительность, мин</label>
+        <input class="fc-input" name="duration_min" type="number" min="15" max="300" value="60"></div>
       <div><label class="fc-label">Тренер</label>
         <select class="fc-select" name="trainer_id">
-          <option value="">—</option>
+          <option value="">— не назначен —</option>
           {% for t in trainers %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
         </select></div>
       <div><label class="fc-label">Секция</label>
         <select class="fc-select" name="section_id">
-          <option value="">—</option>
+          <option value="">— не выбрана —</option>
           {% for s in sections %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
         </select></div>
+      <div><label class="fc-label">Мест</label>
+        <input class="fc-input" name="capacity" type="number" min="1" max="200" value="12"></div>
+      <div><label class="fc-label">Цена разового, сом</label>
+        <input class="fc-input" name="price" inputmode="numeric" value="0"></div>
       <div><label class="fc-label">Зал</label>
-        <input class="fc-input" name="room" placeholder="Малый зал"></div>
+        <input class="fc-input" name="room" placeholder="малый зал"></div>
     </div>
-    <button class="fc-btn" type="submit" style="margin-top:12px">Добавить</button>
+    <button class="fc-btn" type="submit" style="margin-top:12px">Добавить в расписание</button>
   </form>
 </details>
 {% endif %}

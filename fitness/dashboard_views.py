@@ -1157,6 +1157,7 @@ def classes(request, club, staff):
                        prev_week=week_start - timedelta(days=7),
                        next_week=week_start + timedelta(days=7),
                        all_classes=rows,
+                       weekdays=GroupClass._meta.get_field("weekday").choices,
                        sections=club.sections.filter(is_active=True),
                        trainers=club.trainers.filter(is_active=True)))
 
