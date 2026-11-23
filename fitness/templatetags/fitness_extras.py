@@ -56,3 +56,12 @@ _SECTIONS = {
 def fit_section(url_name):
     return _SECTIONS.get(url_name or "", "")
 
+@register.filter
+def weekday_py(w):
+    """date:'w' считает с воскресенья (вс=0), а модель — с понедельника.
+    Без перевода тренировка вставала не в тот день."""
+    try:
+        return (int(w) + 6) % 7
+    except (TypeError, ValueError):
+        return 0
+

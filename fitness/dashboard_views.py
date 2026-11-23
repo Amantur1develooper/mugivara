@@ -1143,23 +1143,99 @@ def classes(request, club, staff):
     grid = []
     for d in days:
         items = []
+        by_hour = {}
         for c in rows:
             if c.weekday != d.weekday():
                 continue
             used = taken.get((c.id, d), 0)
-            items.append({"cls": c, "used": used,
-                          "free": max(0, c.capacity - used),
-                          "cancelled": (c.id, d) in cancelled})
-        grid.append({"day": d, "items": items, "is_today": d == timezone.localdate()})
+            item = {"cls": c, "used": used,
+                    "free": max(0, c.capacity - used),
+                    "cancelled": (c.id, d) in cancelled}
+            items.append(item)
+            # Раскладываем по часам: в сетке занятие стоит в строке своего
+            # часа, как на доске расписания.
+            by_hour.setdefault(c.time_from.hour, []).append(item)
+        grid.append({"day": d, "items": items, "by_hour": by_hour,
+                     "is_today": d == timezone.localdate()})
+
+    # Часы сетки: от самого раннего занятия до самого позднего, но не уже
+    # 8:00–21:00 — иначе пустое расписание выглядит сломанным.
+    start_hour, end_hour = 8, 21
+    for c in rows:
+        start_hour = min(start_hour, c.time_from.hour)
+        end_hour = max(end_hour, c.time_from.hour)
+    hours = list(range(start_hour, end_hour + 1))
 
     return render(request, "fitness/dash/classes.html",
                   _ctx(club, staff, grid=grid, day=day, week_start=week_start,
+                       hours=hours,
+                       today_weekday=timezone.localdate().weekday(),
+                       groups=club.training_groups.filter(is_active=True)
+                              .select_related("section", "trainer"),
                        prev_week=week_start - timedelta(days=7),
                        next_week=week_start + timedelta(days=7),
                        all_classes=rows,
                        weekdays=GroupClass._meta.get_field("weekday").choices,
                        sections=club.sections.filter(is_active=True),
                        trainers=club.trainers.filter(is_active=True)))
+
+
+@login_required(login_url=LOGIN_URL)
+@require(ADMIN, CASHIER)
+@require_POST
+def schedule_add(request, club, staff):
+    """Ставит тренировку в расписание из клетки сетки.
+
+    День и час приходят из нажатой клетки, остальное — из панели: либо
+    тренировка существующей группы, либо открытое занятие, на которое
+    записываются по одному.
+    """
+    weekday = _int(request.POST.get("weekday"), 0, hi=6)
+    hhmm = _time(request.POST.get("time_from"))
+    if hhmm is None:
+        messages.error(request, "Укажите время начала.")
+        return redirect("fitness_dash:classes", club_id=club.id)
+
+    back = reverse("fitness_dash:classes", args=[club.id])
+    if request.POST.get("date"):
+        back += f"?date={request.POST['date']}"
+
+    raw_group = request.POST.get("group")
+    if (raw_group or "").isdigit():
+        group = club.training_groups.filter(id=int(raw_group)).first()
+        if not group:
+            messages.error(request, "Группа не найдена.")
+            return redirect(back)
+        GroupClass.objects.create(
+            club=club, group=group, section=group.section, trainer=group.trainer,
+            name=group.title, weekday=weekday, time_from=hhmm,
+            duration_min=_int(request.POST.get("duration_min"), 60, lo=15, hi=300),
+            capacity=group.capacity,
+            room=(request.POST.get("room") or "").strip()[:100],
+        )
+        messages.success(request, f"«{group.title}» встала в расписание: "
+                                  f"{dict(GroupClass._meta.get_field('weekday').choices)[weekday]}"
+                                  f", {hhmm:%H:%M}.")
+        return redirect(back)
+
+    name = (request.POST.get("name") or "").strip()
+    if not name:
+        messages.error(request, "Выберите группу или назовите открытое занятие.")
+        return redirect(back)
+
+    tr = request.POST.get("trainer_id")
+    sec = request.POST.get("section_id")
+    GroupClass.objects.create(
+        club=club, name=name[:150], weekday=weekday, time_from=hhmm,
+        duration_min=_int(request.POST.get("duration_min"), 60, lo=15, hi=300),
+        capacity=_int(request.POST.get("capacity"), 12, lo=1, hi=200),
+        price=_money(request.POST.get("price"), "0"),
+        trainer=Trainer.objects.filter(id=tr, club=club).first() if (tr or "").isdigit() else None,
+        section=Section.objects.filter(id=sec, club=club).first() if (sec or "").isdigit() else None,
+        room=(request.POST.get("room") or "").strip()[:100],
+    )
+    messages.success(request, f"«{name}» встало в расписание.")
+    return redirect(back)
 
 
 @login_required(login_url=LOGIN_URL)

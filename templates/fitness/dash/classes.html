@@ -1,139 +1,301 @@
 {% extends "fitness/dash/_base.html" %}
+{% load fitness_extras %}
 {% block title %}Расписание — {{ club.name }}{% endblock %}
 {% block fc_sub %}Групповые занятия, неделя с {{ week_start|date:"d.m" }}{% endblock %}
 
 {% block fc_content %}
 <style>
-  /* Неделя столбцами: день — столбец, занятия внутри по времени. Списком
-     друг под другом неделя занимала семь экранов, и сравнить дни было
-     нельзя — а именно это и нужно, когда ставят новую тренировку. */
-  .wk { display: flex; flex-direction: column; gap: 10px; }
-  .wk-day {
-    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
-    padding: 10px; min-width: 0; display: flex; flex-direction: column;
+  /* Неделя сеткой: слева часы, сверху дни. Списком неделя занимала семь
+     экранов, и сравнить дни было нельзя — а именно это и нужно, когда
+     ставят новую тренировку. Пустая клетка кликается: день и час уже
+     известны, остаётся выбрать группу. */
+  .wg-wrap {
+    overflow-x: auto; background: var(--card); border: 1px solid var(--border);
+    border-radius: 16px;
   }
-  .wk-day.today { border-color: var(--accent); }
-  .wk-head {
-    font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px;
-    color: var(--muted); padding-bottom: 8px; margin-bottom: 8px;
-    border-bottom: 1px solid var(--border);
+  table.wg { border-collapse: collapse; width: 100%; min-width: 760px; }
+  .wg th, .wg td { border-top: 1px solid var(--border); }
+  .wg th {
+    font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .3px;
+    color: var(--muted); padding: 10px 8px; text-align: left; background: var(--bg);
+    position: sticky; top: 0; z-index: 5; white-space: nowrap; border-top: 0;
   }
-  .wk-day.today .wk-head { color: var(--accent); }
-  .wk-items { display: flex; flex-direction: column; gap: 7px; flex: 1; }
+  .wg th.today { color: var(--accent); }
+  .wg th a { color: inherit; text-decoration: none; }
+  .wg-time {
+    font-size: 11.5px; font-weight: 700; color: var(--text2); padding: 6px 9px;
+    white-space: nowrap; vertical-align: top; background: var(--bg);
+    position: sticky; left: 0; z-index: 4; width: 1%;
+  }
+  .wg-cell {
+    border-left: 1px solid var(--border); padding: 4px; vertical-align: top;
+    min-width: 128px; height: 46px; position: relative;
+  }
+  .wg-cell.today { background: rgba(255,77,28,.03); }
 
-  .wk-cls {
-    display: block; text-decoration: none; color: inherit;
-    border: 1px solid var(--border); border-left-width: 4px; border-radius: 10px;
-    padding: 8px 9px; background: var(--bg);
+  /* Кнопка «поставить сюда»: занимает всю пустую клетку, но видна только
+     при наведении — иначе сетка пестрит плюсами. На телефоне нажатие по
+     клетке работает так же. */
+  .wg-add {
+    appearance: none; border: 0; background: transparent; cursor: pointer;
+    position: absolute; inset: 3px; border-radius: 9px; color: var(--muted);
+    font-size: 17px; font-weight: 700; opacity: 0; transition: opacity .12s;
   }
-  .wk-cls:hover { border-color: var(--accent); }
-  .wk-cls.group { border-left-color: #2563eb; }
-  .wk-cls.open-reg { border-left-color: var(--accent); }
-  .wk-cls.off { opacity: .55; }
-  .wk-cls.off .wk-t { text-decoration: line-through; }
-  .wk-t { font-size: 13px; font-weight: 800; }
-  .wk-n { font-size: 12px; font-weight: 700; line-height: 1.25; margin-top: 2px; }
-  .wk-s { font-size: 10.5px; color: var(--muted); line-height: 1.35; margin-top: 3px; }
-  .wk-empty { font-size: 11.5px; color: var(--muted); padding: 10px 2px; }
+  .wg-add:hover, .wg-add:focus-visible {
+    opacity: 1; background: rgba(255,77,28,.07); color: var(--accent);
+    outline: 1.5px dashed rgba(255,77,28,.45); outline-offset: -3px;
+  }
+  @media (hover: none) { .wg-add { opacity: .35; } }
 
-  @media (min-width: 900px) {
-    /* Семь столбцов рядом: вся неделя на одном экране */
-    .wk {
-      display: grid; grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: 8px; align-items: stretch;
-    }
-    .wk-head { font-size: 10.5px; }
+  .wg-cls {
+    display: block; text-decoration: none; color: inherit; position: relative; z-index: 2;
+    border: 1px solid var(--border); border-left-width: 4px; border-radius: 9px;
+    padding: 6px 7px; background: var(--bg); margin-bottom: 4px;
   }
+  .wg-cls:last-child { margin-bottom: 0; }
+  .wg-cls:hover { border-color: var(--accent); }
+  .wg-cls.group { border-left-color: #2563eb; }
+  .wg-cls.open-reg { border-left-color: var(--accent); }
+  .wg-cls.off { opacity: .5; }
+  .wg-cls.off .wg-n { text-decoration: line-through; }
+  .wg-t { font-size: 12px; font-weight: 800; }
+  .wg-n { font-size: 11.5px; font-weight: 700; line-height: 1.2; margin-top: 1px; }
+  .wg-s { font-size: 10px; color: var(--muted); line-height: 1.3; margin-top: 2px; }
+
+  /* Панель постановки — как панель продажи: без скрипта остаётся
+     обычной формой внизу страницы. */
+  .pl-wrap.ready { position: fixed; inset: 0; z-index: 140; display: none; }
+  .pl-wrap.ready.open { display: block; }
+  .pl-wrap.ready .pl-bg { position: absolute; inset: 0; background: rgba(5,10,20,.45); }
+  .pl-wrap.ready .pl-panel {
+    position: absolute; top: 0; right: 0; bottom: 0; width: min(420px, 100%);
+    background: var(--card); border-left: 1px solid var(--border);
+    overflow-y: auto; padding: 16px; box-shadow: -14px 0 40px rgba(0,0,0,.18);
+  }
+  .pl-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .pl-head .t { font-size: 16px; font-weight: 800; flex: 1; }
+  .pl-x {
+    appearance: none; cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg); border-radius: 10px; width: 32px; height: 32px;
+    font-size: 15px; color: var(--text2);
+  }
+  .pl-mode { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin: 12px 0; }
+  .pl-mode label {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 10px 6px; border: 1.5px solid var(--border); border-radius: 12px;
+    background: var(--bg); cursor: pointer; font-size: 12px; font-weight: 700;
+    color: var(--text2); text-align: center;
+  }
+  .pl-mode label .ic { font-size: 18px; line-height: 1; }
+  .pl-mode input { position: absolute; opacity: 0; pointer-events: none; }
+  .pl-mode label:has(input:checked) {
+    border-color: var(--accent); color: var(--accent); background: rgba(255,77,28,.06);
+  }
+  .pl-part[hidden] { display: none; }
 </style>
 
 <div class="fc-card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
   <a href="?date={{ prev_week|date:'Y-m-d' }}" class="fc-btn ghost small">← неделя</a>
   <a href="?date={{ next_week|date:'Y-m-d' }}" class="fc-btn ghost small">неделя →</a>
-  <span class="fc-chip">{{ all_classes|length }} занятий в расписании</span>
+  <span class="fc-chip">{{ all_classes|length }} занятий</span>
+  {% if staff.role != "trainer" %}
+  <button class="fc-btn small" type="button" data-place-open
+          data-weekday="{{ today_weekday }}" data-time="19:00">+ Поставить тренировку</button>
+  {% endif %}
   <span class="fc-sub" style="margin-left:auto">
-    <span class="lg lg-cold"></span> группа · <span class="lg" style="background:var(--accent)"></span> открытая запись
+    <span class="lg lg-cold"></span> группа ·
+    <span class="lg" style="background:var(--accent)"></span> открытая запись
   </span>
 </div>
 
-<div class="wk">
-  {% for d in grid %}
-    <div class="wk-day{% if d.is_today %} today{% endif %}">
-      <div class="wk-head">
-        {{ d.day|date:"D, d.m" }}{% if d.is_today %} · сегодня{% endif %}
-      </div>
-      <div class="wk-items">
-        {% for it in d.items %}
-          <a class="wk-cls {% if it.cls.group_id %}group{% else %}open-reg{% endif %}{% if it.cancelled %} off{% endif %}"
-             href="{% url 'fitness_dash:class_day' club.id it.cls.id %}?date={{ d.day|date:'Y-m-d' }}">
-            <div class="wk-t">{{ it.cls.time_from|time:"H:i" }}</div>
-            <div class="wk-n">
-              {% if it.cls.group_id %}{{ it.cls.group.title }}{% else %}{{ it.cls.name }}{% endif %}
-            </div>
-            <div class="wk-s">
-              {% if it.cancelled %}⛔️ отменена<br>{% endif %}
-              {% if it.cls.trainer %}{{ it.cls.trainer.name }}{% else %}без тренера{% endif %}
-              {% if it.cls.room %}<br>{{ it.cls.room }}{% endif %}
-              <br>{{ it.cls.duration_min }} мин
-              {% if it.cls.group_id %}
-                · 👥 {{ it.cls.group_size }}
-              {% elif it.free == 0 %}
-                · <b style="color:#dc2626">мест нет</b>
-              {% else %}
-                · {{ it.free }} из {{ it.cls.capacity }}
-              {% endif %}
-              {% if it.cls.price %}<br>{{ it.cls.price|floatformat:0 }} сом{% endif %}
-            </div>
-          </a>
-        {% empty %}
-          <div class="wk-empty">—</div>
+<div class="wg-wrap">
+  <table class="wg">
+    <thead>
+      <tr>
+        <th>Время</th>
+        {% for d in grid %}
+          <th class="{% if d.is_today %}today{% endif %}">
+            {{ d.day|date:"D, d.m" }}{% if d.is_today %} · сегодня{% endif %}
+          </th>
         {% endfor %}
-      </div>
-    </div>
-  {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for h in hours %}
+      <tr>
+        <td class="wg-time">{{ h }}:00</td>
+        {% for d in grid %}
+          <td class="wg-cell{% if d.is_today %} today{% endif %}">
+            {% for it in d.by_hour|get:h %}
+              <a class="wg-cls {% if it.cls.group_id %}group{% else %}open-reg{% endif %}{% if it.cancelled %} off{% endif %}"
+                 href="{% url 'fitness_dash:class_day' club.id it.cls.id %}?date={{ d.day|date:'Y-m-d' }}">
+                <div class="wg-t">{{ it.cls.time_from|time:"H:i" }}</div>
+                <div class="wg-n">
+                  {% if it.cls.group_id %}{{ it.cls.group.title }}{% else %}{{ it.cls.name }}{% endif %}
+                </div>
+                <div class="wg-s">
+                  {% if it.cancelled %}⛔️ отменена<br>{% endif %}
+                  {% if it.cls.trainer %}{{ it.cls.trainer.name }}{% endif %}
+                  {% if it.cls.room %} · {{ it.cls.room }}{% endif %}
+                  <br>{{ it.cls.duration_min }} мин
+                  {% if it.cls.group_id %}· 👥 {{ it.cls.group_size }}
+                  {% elif it.free == 0 %}· <b style="color:#dc2626">мест нет</b>
+                  {% else %}· {{ it.free }} из {{ it.cls.capacity }}{% endif %}
+                </div>
+              </a>
+            {% endfor %}
+            {% if staff.role != "trainer" %}
+              <button class="wg-add" type="button" data-place-open
+                      data-weekday="{{ d.day|date:'w'|weekday_py }}"
+                      data-time="{{ h }}:00"
+                      title="Поставить тренировку в {{ d.day|date:'D' }} в {{ h }}:00">+</button>
+            {% endif %}
+          </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 
 {% if staff.role != "trainer" %}
-<details class="fc-card" style="margin-top:14px">
-  <summary style="cursor:pointer;font-weight:700;font-size:13.5px">+ Добавить занятие</summary>
-  <div class="fc-sub" style="margin-top:10px;line-height:1.5">
-    Тренировку группы удобнее ставить в её карточке: там видно состав и всё
-    расписание группы сразу. Здесь — открытое занятие, на которое
-    записываются по одному.
-    <a href="{% url 'fitness_dash:groups' club.id %}">Группы →</a>
-  </div>
-  <form method="post" action="{% url 'fitness_dash:class_save' club.id %}" style="margin-top:12px">
-    {% csrf_token %}
-    <div class="fc-grid2">
-      <div><label class="fc-label">Название</label>
-        <input class="fc-input" name="name" placeholder="Йога утро" required></div>
-      <div><label class="fc-label">День</label>
-        <select class="fc-select" name="weekday">
-          {% for val, label in weekdays %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
-        </select></div>
-      <div><label class="fc-label">Начало</label>
-        <input class="fc-input" name="time_from" type="time" required
-               data-slots data-slots-from="7" data-slots-to="22" data-slots-step="30"></div>
-      <div><label class="fc-label">Длительность, мин</label>
-        <input class="fc-input" name="duration_min" type="number" min="15" max="300" value="60"></div>
-      <div><label class="fc-label">Тренер</label>
-        <select class="fc-select" name="trainer_id">
-          <option value="">— не назначен —</option>
-          {% for t in trainers %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
-        </select></div>
-      <div><label class="fc-label">Секция</label>
-        <select class="fc-select" name="section_id">
-          <option value="">— не выбрана —</option>
-          {% for s in sections %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
-        </select></div>
-      <div><label class="fc-label">Мест</label>
-        <input class="fc-input" name="capacity" type="number" min="1" max="200" value="12"></div>
-      <div><label class="fc-label">Цена разового, сом</label>
-        <input class="fc-input" name="price" inputmode="numeric" value="0"></div>
-      <div><label class="fc-label">Зал</label>
-        <input class="fc-input" name="room" placeholder="малый зал"></div>
+<div class="pl-wrap" id="placeWrap" style="margin-top:14px">
+  <div class="pl-bg" data-place-close></div>
+  <div class="pl-panel">
+    <div class="pl-head">
+      <div class="t">Поставить тренировку</div>
+      <button class="pl-x" type="button" data-place-close title="Закрыть">✕</button>
     </div>
-    <button class="fc-btn" type="submit" style="margin-top:12px">Добавить в расписание</button>
-  </form>
-</details>
+    <div class="fc-sub" id="placeWhen" style="margin-bottom:6px"></div>
+
+    <form method="post" action="{% url 'fitness_dash:schedule_add' club.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="date" value="{{ week_start|date:'Y-m-d' }}">
+
+      <div class="fc-grid2">
+        <div><label class="fc-label">День</label>
+          <select class="fc-select" name="weekday" id="plDay">
+            {% for val, label in weekdays %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+          </select></div>
+        <div><label class="fc-label">Начало</label>
+          {# Готовых часов здесь нет: время уже пришло из нажатой клетки #}
+          <input class="fc-input" name="time_from" id="plTime" type="time" required></div>
+      </div>
+
+      <div class="pl-mode">
+        <label><input type="radio" name="mode" value="group" checked>
+          <span class="ic">🥋</span>Группа</label>
+        <label><input type="radio" name="mode" value="open">
+          <span class="ic">📝</span>Открытая запись</label>
+      </div>
+
+      <div class="pl-part" data-part="group">
+        <label class="fc-label">Какая группа</label>
+        <select class="fc-select" name="group" id="plGroup">
+          {% for g in groups %}
+            <option value="{{ g.id }}">{{ g.title }}{% if g.trainer %} · {{ g.trainer.name }}{% endif %}</option>
+          {% empty %}
+            <option value="">групп пока нет</option>
+          {% endfor %}
+        </select>
+        <div class="fc-sub" style="margin-top:6px">
+          Тренер, секция и число мест возьмутся из группы.
+          {% if not groups %}
+            <a href="{% url 'fitness_dash:groups' club.id %}">Создать группу →</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="pl-part" data-part="open" hidden>
+        <label class="fc-label">Название</label>
+        <input class="fc-input" name="name" placeholder="Йога утро">
+        <div class="fc-grid2" style="margin-top:10px">
+          <div><label class="fc-label">Тренер</label>
+            <select class="fc-select" name="trainer_id">
+              <option value="">— не назначен —</option>
+              {% for t in trainers %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
+            </select></div>
+          <div><label class="fc-label">Секция</label>
+            <select class="fc-select" name="section_id">
+              <option value="">— не выбрана —</option>
+              {% for s in sections %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+            </select></div>
+          <div><label class="fc-label">Мест</label>
+            <input class="fc-input" name="capacity" type="number" min="1" max="200" value="12"></div>
+          <div><label class="fc-label">Цена разового, сом</label>
+            <input class="fc-input" name="price" inputmode="numeric" value="0"></div>
+        </div>
+      </div>
+
+      <div class="fc-grid2" style="margin-top:12px">
+        <div><label class="fc-label">Длительность, мин</label>
+          <input class="fc-input" name="duration_min" type="number" min="15" max="300" value="60"></div>
+        <div><label class="fc-label">Зал</label>
+          <input class="fc-input" name="room" placeholder="малый зал"></div>
+      </div>
+
+      <button class="fc-btn" type="submit" style="margin-top:14px;width:100%">
+        Поставить в расписание
+      </button>
+      <div class="fc-sub" style="margin-top:8px">
+        Тренировка станет еженедельной: будет повторяться в этот день каждую
+        неделю. Отменить один раз можно на странице самой тренировки.
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Нажали пустую клетку — панель открывается с уже выбранным днём и
+  // часом. Класс ready ставит скрипт: без него панель остаётся обычной
+  // формой внизу страницы, и поставить тренировку всё равно можно.
+  (function () {
+    const wrap = document.getElementById('placeWrap');
+    if (!wrap) return;
+    wrap.classList.add('ready');
+
+    const day = document.getElementById('plDay');
+    const time = document.getElementById('plTime');
+    const when = document.getElementById('placeWhen');
+    const parts = [...wrap.querySelectorAll('.pl-part')];
+    const DAYS = [...day.options].map(o => o.textContent.trim());
+
+    const retitle = () => {
+      const d = DAYS[day.selectedIndex] || '';
+      when.textContent = d && time.value
+        ? `${d}, ${time.value} — каждую неделю`
+        : 'Выберите день и время';
+    };
+
+    const open = (weekday, hhmm) => {
+      if (weekday !== undefined && weekday !== '') day.value = String(weekday);
+      if (hhmm) time.value = hhmm;
+      retitle();
+      wrap.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    };
+    const close = () => {
+      wrap.classList.remove('open');
+      document.body.style.overflow = '';
+    };
+
+    document.querySelectorAll('[data-place-open]').forEach(b => {
+      b.addEventListener('click', () => open(b.dataset.weekday, b.dataset.time));
+    });
+    wrap.querySelectorAll('[data-place-close]').forEach(b => b.addEventListener('click', close));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+    day.addEventListener('change', retitle);
+    time.addEventListener('input', retitle);
+
+    // Группа или открытая запись: лишние поля прячем, чтобы в панели было
+    // видно только то, что сейчас заполняют
+    wrap.querySelectorAll('input[name="mode"]').forEach(r => {
+      r.addEventListener('change', () => {
+        parts.forEach(p => { p.hidden = p.dataset.part !== r.value; });
+      });
+    });
+    retitle();
+  })();
+</script>
 {% endif %}
 {% endblock %}
