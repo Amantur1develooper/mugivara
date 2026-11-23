@@ -37,6 +37,7 @@
     </a>
   </div>
   <div class="fc-sub" style="margin-bottom:9px">
+    {% if can_money %}Нажмите строку — откроется карточка с кнопкой прохода.<br>{% endif %}
     <span class="lg lg-ok"></span> абонемент активен ·
     <span class="lg lg-cold"></span> заморожен ·
     <span class="lg lg-bad"></span> нет абонемента
@@ -44,7 +45,9 @@
   <div class="fc-list">
     {% for m in members %}
       <a href="{% url 'fitness_dash:member_detail' club.id m.id %}"
-         class="fc-row st-{{ m.state }}" style="grid-template-columns:auto 1fr auto">
+         class="fc-row pass-row st-{{ m.state }}"
+         data-card="{% url 'fitness_dash:member_pass_card' club.id m.id %}"
+         style="grid-template-columns:auto 1fr auto">
         <span class="fc-ava{% if not m.photo %} empty{% endif %}">
           {% if m.photo %}<img src="{{ m.photo.url }}" alt="" loading="lazy">{% else %}👤{% endif %}
         </span>
@@ -174,4 +177,6 @@
   })();
 </script>
 {% endif %}
+
+{% if can_money %}{% include "fitness/dash/_pass_panel.html" %}{% endif %}
 {% endblock %}

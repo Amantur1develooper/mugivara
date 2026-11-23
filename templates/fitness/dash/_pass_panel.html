@@ -1,0 +1,132 @@
+{% comment %}
+  Панель быстрой карточки клиента: состояние абонемента и кнопка прохода.
+  Один кусок на страницу прохода и на список клиентов — держать две копии
+  одного и того же значит однажды поправить только одну.
+
+  Как подключить: поставить {% include "fitness/dash/_pass_panel.html" %},
+  а строкам списка дать класс pass-row и data-card с адресом карточки.
+{% endcomment %}
+<div class="pc-wrap" id="passWrap">
+  <div class="pc-bg" data-pass-close></div>
+  <div class="pc-panel">
+    <div class="pc-head">
+      <div class="t">Проход в зал</div>
+      <button class="pc-x" type="button" data-pass-close title="Закрыть">✕</button>
+    </div>
+    <div id="passBody"><div class="fc-sub">Загружаем…</div></div>
+  </div>
+</div>
+
+<style>
+  /* Панель прохода: нажал на имя — видно, пускать или нет, и большая
+     кнопка. Полную карточку с абонементами, платежами и правкой ради
+     этого открывать незачем. */
+  .pc-wrap.ready { position: fixed; inset: 0; z-index: 140; display: none; }
+  .pc-wrap.ready.open { display: block; }
+  .pc-wrap:not(.ready) { display: none; }
+  .pc-wrap.ready .pc-bg { position: absolute; inset: 0; background: rgba(5,10,20,.45); }
+  .pc-wrap.ready .pc-panel {
+    position: absolute; top: 0; right: 0; bottom: 0; width: min(420px, 100%);
+    background: var(--card); border-left: 1px solid var(--border);
+    overflow-y: auto; padding: 16px; box-shadow: -14px 0 40px rgba(0,0,0,.18);
+  }
+  .pc-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .pc-head .t { font-size: 16px; font-weight: 800; flex: 1; }
+  .pc-x {
+    appearance: none; cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg); border-radius: 10px; width: 32px; height: 32px;
+    font-size: 15px; color: var(--text2);
+  }
+  /* Вся строка найденного — одна цель для пальца */
+  .pass-row:hover { border-color: var(--accent); }
+
+  .pc-top { display: flex; gap: 13px; align-items: flex-start; }
+  .pc-top .fc-ava-big { width: 96px; height: 96px; font-size: 34px; flex: none; }
+  .pc-done {
+    border-radius: 14px; padding: 16px; text-align: center;
+    border: 1px solid rgba(5,150,105,.4); background: rgba(5,150,105,.07);
+  }
+  .pc-done.bad { border-color: rgba(220,38,38,.45); background: rgba(220,38,38,.06); }
+  .pc-done .big { font-size: 17px; font-weight: 800; }
+  .pc-done .sub { font-size: 13px; color: var(--text2); margin-top: 6px; line-height: 1.45; }
+</style>
+
+<script>
+  // Нажали имя — справа открывается панель прохода. Без скрипта ссылка
+  // просто ведёт в карточку клиента, как раньше.
+  (function () {
+    const wrap = document.getElementById('passWrap');
+    const body = document.getElementById('passBody');
+    if (!wrap || !window.fetch) return;
+    wrap.classList.add('ready');
+
+    const close = () => {
+      wrap.classList.remove('open');
+      document.body.style.overflow = '';
+    };
+
+    const load = async url => {
+      try {
+        const res = await fetch(url, { credentials: 'same-origin' });
+        if (!res.ok) throw new Error(res.status);
+        body.innerHTML = await res.text();
+        bindPass();
+      } catch (e) {
+        body.innerHTML = '<div class="fc-sub">Не загрузилось. ' +
+          '<a href="' + url.replace('/card/', '/') + '">Открыть карточку</a></div>';
+      }
+    };
+
+    // Проход отмечаем запросом: страница не перезагружается, и кассир
+    // сразу видит, сколько у человека осталось.
+    function bindPass() {
+      const form = body.querySelector('.pc-form');
+      if (!form) return;
+      form.addEventListener('submit', async ev => {
+        ev.preventDefault();
+        const btn = form.querySelector('button');
+        btn.disabled = true;
+        btn.textContent = 'Отмечаем…';
+        try {
+          const res = await fetch(form.action, {
+            method: 'POST', body: new FormData(form),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
+          });
+          if (!res.ok) throw new Error(res.status);
+          const d = await res.json();
+          const left = (d.left === null || d.left === undefined)
+            ? '' : 'осталось ' + d.left;
+          const until = d.until ? 'до ' + d.until : '';
+          body.innerHTML =
+            '<div class="pc-done' + (d.ok ? '' : ' bad') + '">' +
+              '<div class="big">' + (d.ok ? '✅ ' : '⛔️ ') + d.name + '</div>' +
+              '<div class="sub">' + d.message +
+                (left || until ? '<br>' + [left, until].filter(Boolean).join(' · ') : '') +
+              '</div>' +
+            '</div>';
+        } catch (e) {
+          form.submit();
+        }
+      });
+    }
+
+    // Нажимается вся строка, а не только имя: на ресепшене целятся в
+    // человека, а не в ссылку. Кнопки, выпадашки и телефон внутри строки
+    // при этом работают по-своему.
+    document.querySelectorAll('.pass-row').forEach(row => {
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', ev => {
+        if (ev.target.closest('button, select, input, textarea, a[href^="tel"]')) return;
+        ev.preventDefault();
+        body.innerHTML = '<div class="fc-sub">Загружаем…</div>';
+        wrap.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        load(row.dataset.card);
+      });
+    });
+
+    wrap.querySelectorAll('[data-pass-close]').forEach(b => b.addEventListener('click', close));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  })();
+</script>
