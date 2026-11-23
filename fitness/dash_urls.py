@@ -60,6 +60,7 @@ urlpatterns = [
     path("<int:club_id>/members/export/", v.members_export, name="members_export"),
     path("<int:club_id>/leads/export/", v.leads_export, name="leads_export"),
     path("<int:club_id>/setup/", v.setup, name="setup"),
+    path("<int:club_id>/setup/discount/", v.discount_save, name="discount_save"),
     path("<int:club_id>/staff/add/", v.staff_add, name="staff_add"),
     path("<int:club_id>/staff/<int:staff_id>/edit/", v.staff_edit, name="staff_edit"),
     path("<int:club_id>/staff/<int:staff_id>/password/", v.staff_password,

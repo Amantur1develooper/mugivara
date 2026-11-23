@@ -1,139 +1,172 @@
 {% comment %}
-  Бланк продажи абонемента. Вынесен из карточки клиента: карточка стала
-  вкладками, и держать в ней полторы сотни строк формы со скриптом
-  неудобно — её перестало быть видно целиком.
+  Бланк продажи абонемента. Живёт в боковой панели карточки клиента:
+  продажа — отдельное действие, и место в общем потоке страницы ему ни к
+  чему. Без скрипта панель остаётся открытой, так что форма доступна в
+  любом случае.
 {% endcomment %}
-  <form method="post" action="{% url 'fitness_dash:membership_sell' club.id member.id %}" style="margin-top:12px">
-    {% csrf_token %}
-    <div class="fc-grid2">
-      <div>
-        <label class="fc-label">Абонемент</label>
-        <select class="fc-select" name="plan_id" id="planSel" required>
-          {% for p in plans %}
-            <option value="{{ p.id }}" data-price="{{ p.price|floatformat:0 }}">
-              {{ p.name }} — {{ p.price|floatformat:0 }} сом
-            </option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label class="fc-label">Цена</label>
-        <input class="fc-input" name="price" id="priceInp" inputmode="numeric">
-      </div>
-      <div>
-        <label class="fc-label">Скидка, %</label>
-        <input class="fc-input" name="discount_pct" id="pctInp" value="0"
-               inputmode="numeric" min="0" max="100">
-        <div class="fc-slots" id="pctSlots"></div>
-      </div>
-      <div>
-        <label class="fc-label">Скидка, сом</label>
-        <input class="fc-input" name="discount" id="discInp" value="0" inputmode="numeric">
-      </div>
-      <div>
-        <label class="fc-label">Оплачено сейчас</label>
-        <input class="fc-input" name="paid" id="paidInp" inputmode="numeric">
-      </div>
-      <div>
-        <label class="fc-label">Способ</label>
-        <select class="fc-select" name="method">
-          <option value="cash">Наличные</option>
-          <option value="card">Карта</option>
-          <option value="online">Перевод</option>
-        </select>
-      </div>
-      <div>
-        <label class="fc-label">Персональный тренер</label>
-        <select class="fc-select" name="trainer_id">
-          <option value="">нет</option>
-          {% for t in trainers %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
-        </select>
-      </div>
+<form method="post" action="{% url 'fitness_dash:membership_sell' club.id member.id %}">
+  {% csrf_token %}
+
+  <label class="fc-label">Абонемент</label>
+  <select class="fc-select" name="plan_id" id="planSel" required>
+    {% for p in plans %}
+      <option value="{{ p.id }}" data-price="{{ p.price|floatformat:0 }}">
+        {{ p.name }} — {{ p.price|floatformat:0 }} сом
+      </option>
+    {% endfor %}
+  </select>
+
+  {% if discounts %}
+  <div style="margin-top:12px">
+    <label class="fc-label">Скидка</label>
+    <div class="fc-slots" id="presetSlots">
+      {% for d in discounts %}
+        <button class="fc-slot" type="button" data-preset="{{ d.id }}"
+                data-pct="{{ d.percent }}" data-sum="{{ d.amount|floatformat:0 }}">
+          {{ d.name }} · {{ d.label }}
+        </button>
+      {% endfor %}
     </div>
-    <div class="fc-sub" id="sumLine" style="margin-top:10px;font-size:13px"></div>
-    <label style="display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:12.5px;color:var(--text2)">
-      <input type="checkbox" name="start_today" style="margin-top:3px">
-      <span>Начать сегодня. Если не ставить — срок пойдёт с первого посещения,
-        клиент не теряет дни, пока собирается прийти.</span>
-    </label>
-    <button class="fc-btn" type="submit" style="margin-top:12px">Продать</button>
-  </form>
-  <script>
-    // Цена и «оплачено» подставляются из выбранного абонемента: кассир
-    // чаще всего берёт полную сумму, и перебивать её вручную незачем.
-    (function () {
-      const sel = document.getElementById('planSel');
-      const price = document.getElementById('priceInp');
-      const paid = document.getElementById('paidInp');
-      const pct = document.getElementById('pctInp');
-      const disc = document.getElementById('discInp');
-      const sumLine = document.getElementById('sumLine');
-      if (!sel) return;
+    <input type="hidden" name="preset" id="presetInp" value="">
+  </div>
+  {% endif %}
 
-      const num = el => {
-        const v = parseFloat(String(el.value).replace(',', '.').replace(/\s/g, ''));
-        return isFinite(v) ? v : 0;
-      };
-      const money = n => Math.round(n).toLocaleString('ru-RU') + ' сом';
+  <div class="fc-grid2" style="margin-top:12px">
+    <div><label class="fc-label">Цена</label>
+      <input class="fc-input" name="price" id="priceInp" inputmode="numeric"></div>
+    <div><label class="fc-label">Скидка, %</label>
+      <input class="fc-input" name="discount_pct" id="pctInp" value="0" inputmode="numeric"></div>
+    <div><label class="fc-label">Скидка, сом</label>
+      <input class="fc-input" name="discount" id="discInp" value="0" inputmode="numeric"></div>
+    <div><label class="fc-label">Оплачено сейчас</label>
+      <input class="fc-input" name="paid" id="paidInp" inputmode="numeric"></div>
+  </div>
+  <div class="fc-slots" id="pctSlots" style="margin-top:7px"></div>
 
-      // Считаем в одну сторону: процент задаёт сумму скидки. Кассир может
-      // вписать и сумму руками — тогда процент пересчитывается обратно,
-      // чтобы в полях не было двух разных правд.
-      const fromPct = () => {
-        const p = Math.max(0, Math.min(100, num(pct)));
-        disc.value = Math.round(num(price) * p / 100);
-        show();
-      };
-      const fromSum = () => {
-        const base = num(price);
-        pct.value = base > 0 ? Math.round(num(disc) / base * 100) : 0;
-        show();
-      };
-      const show = () => {
-        const toPay = Math.max(0, num(price) - num(disc));
-        paid.value = Math.round(toPay);
-        const d = num(disc);
-        sumLine.textContent = d > 0
-          ? `К оплате ${money(toPay)} — скидка ${money(d)} от ${money(num(price))}`
-          : `К оплате ${money(toPay)}`;
-      };
+  <div style="margin-top:12px">
+    <label class="fc-label">Способ оплаты</label>
+    <div class="pay-tiles">
+      <label class="pay"><input type="radio" name="method" value="cash" checked>
+        <span class="ic">💵</span>Наличные</label>
+      <label class="pay"><input type="radio" name="method" value="card">
+        <span class="ic">💳</span>Карта</label>
+      <label class="pay"><input type="radio" name="method" value="online">
+        <span class="ic">📲</span>Перевод</label>
+    </div>
+  </div>
 
-      const fill = () => {
-        const p = sel.options[sel.selectedIndex].dataset.price || '';
-        price.value = p;
-        fromPct();
-      };
-      sel.addEventListener('change', fill);
-      price.addEventListener('input', fromPct);
-      pct.addEventListener('input', fromPct);
-      disc.addEventListener('input', fromSum);
-      paid.addEventListener('input', () => {
-        // Оплатили меньше — остальное повиснет долгом, и это надо видеть
-        const toPay = Math.max(0, num(price) - num(disc));
-        const left = toPay - num(paid);
-        if (left > 0) {
-          sumLine.textContent = `К оплате ${money(toPay)} · в долг ${money(left)}`;
-        } else {
-          show();
-        }
+  <div style="margin-top:12px">
+    <label class="fc-label">Персональный тренер</label>
+    <select class="fc-select" name="trainer_id">
+      <option value="">нет</option>
+      {% for t in trainers %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
+    </select>
+  </div>
+
+  <label style="display:flex;gap:9px;align-items:flex-start;margin-top:13px;font-size:12.5px;color:var(--text2)">
+    <input type="checkbox" name="by_first_visit" checked style="margin-top:3px">
+    <span>Активация с 1 посещения. Снимите — срок пойдёт с сегодня; пока
+      галочка стоит, клиент не теряет дни, пока собирается прийти.</span>
+  </label>
+
+  <div class="fc-sub" id="sumLine" style="margin-top:12px;font-size:13.5px;font-weight:700"></div>
+  <button class="fc-btn" type="submit" style="margin-top:10px;width:100%">Продать</button>
+</form>
+
+<script>
+  // Цена, скидка и «к оплате» считаются на лету: кассир видит итог до
+  // нажатия, а не после. Сервер всё равно пересчитывает сам.
+  (function () {
+    const sel = document.getElementById('planSel');
+    const price = document.getElementById('priceInp');
+    const paid = document.getElementById('paidInp');
+    const pct = document.getElementById('pctInp');
+    const disc = document.getElementById('discInp');
+    const sumLine = document.getElementById('sumLine');
+    const presetInp = document.getElementById('presetInp');
+    if (!sel) return;
+
+    const num = el => {
+      const v = parseFloat(String(el.value).replace(',', '.').replace(/\s/g, ''));
+      return isFinite(v) ? v : 0;
+    };
+    const money = n => Math.round(n).toLocaleString('ru-RU') + ' сом';
+
+    const show = () => {
+      const toPay = Math.max(0, num(price) - num(disc));
+      paid.value = Math.round(toPay);
+      const d = num(disc);
+      sumLine.textContent = d > 0
+        ? `К оплате ${money(toPay)} — скидка ${money(d)} от ${money(num(price))}`
+        : `К оплате ${money(toPay)}`;
+    };
+    const fromPct = () => {
+      const p = Math.max(0, Math.min(100, num(pct)));
+      disc.value = Math.round(num(price) * p / 100);
+      show();
+    };
+    const fromSum = () => {
+      const base = num(price);
+      pct.value = base > 0 ? Math.round(num(disc) / base * 100) : 0;
+      show();
+    };
+    const fill = () => {
+      price.value = sel.options[sel.selectedIndex].dataset.price || '';
+      fromPct();
+    };
+
+    sel.addEventListener('change', fill);
+    price.addEventListener('input', fromPct);
+    pct.addEventListener('input', () => { clearPreset(); fromPct(); });
+    disc.addEventListener('input', () => { clearPreset(); fromSum(); });
+    paid.addEventListener('input', () => {
+      const toPay = Math.max(0, num(price) - num(disc));
+      const left = toPay - num(paid);
+      sumLine.textContent = left > 0
+        ? `К оплате ${money(toPay)} · в долг ${money(left)}`
+        : sumLine.textContent;
+      if (left <= 0) show();
+    });
+
+    // Готовые скидки клуба: нажал — подставилась, нажал ещё раз — снял
+    const slots = document.getElementById('presetSlots');
+    const clearPreset = () => {
+      if (!slots) return;
+      [...slots.children].forEach(b => b.classList.remove('on'));
+      if (presetInp) presetInp.value = '';
+    };
+    if (slots) {
+      slots.addEventListener('click', e => {
+        const b = e.target.closest('[data-preset]');
+        if (!b) return;
+        const was = b.classList.contains('on');
+        clearPreset();
+        if (was) { pct.value = 0; fromPct(); return; }
+        b.classList.add('on');
+        presetInp.value = b.dataset.preset;
+        const p = parseInt(b.dataset.pct || '0', 10);
+        if (p > 0) { pct.value = p; fromPct(); }
+        else { disc.value = b.dataset.sum || 0; fromSum(); }
       });
+    }
 
-      // Частые скидки в одно нажатие: 5, 10, 15, 20, 30, 50
-      const slots = document.getElementById('pctSlots');
-      if (slots) {
-        [0, 5, 10, 15, 20, 30, 50].forEach(v => {
-          const b = document.createElement('button');
-          b.type = 'button';
-          b.className = 'fc-slot';
-          b.textContent = v + '%';
-          b.addEventListener('click', () => {
-            pct.value = v;
-            fromPct();
-            [...slots.children].forEach(x => x.classList.toggle('on', x === b));
-          });
-          slots.appendChild(b);
+    // Частые проценты — когда готовой скидки нет
+    const quick = document.getElementById('pctSlots');
+    if (quick) {
+      [0, 5, 10, 15, 20, 30, 50].forEach(v => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'fc-slot';
+        b.textContent = v + '%';
+        b.addEventListener('click', () => {
+          clearPreset();
+          pct.value = v;
+          fromPct();
+          [...quick.children].forEach(x => x.classList.toggle('on', x === b));
         });
-      }
-      fill();
-    })();
-  </script>
+        quick.appendChild(b);
+      });
+    }
+    fill();
+  })();
+</script>

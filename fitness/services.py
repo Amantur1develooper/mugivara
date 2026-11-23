@@ -30,7 +30,8 @@ def _notify(club, text):
 
 @transaction.atomic
 def sell_membership(club, member, plan, *, price=None, discount=0, paid=None,
-                    trainer=None, start_today=False, method="cash", actor=None):
+                    trainer=None, start_today=False, method="cash", actor=None,
+                    discount_note=""):
     """Продаёт абонемент.
 
     По умолчанию абонемент не активируется: срок пойдёт с первого
@@ -46,6 +47,7 @@ def sell_membership(club, member, plan, *, price=None, discount=0, paid=None,
         member=member, plan=plan, trainer=trainer,
         remaining_visits=plan.visits_number or 0,
         price=price, discount_amount=discount,
+        discount_note=(discount_note or "")[:100],
         paid_amount=paid, debt_amount=debt,
         created_by=actor,
     )

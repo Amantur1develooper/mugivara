@@ -279,6 +279,39 @@ class Member(TimeStampedModel):
         return sum((m.debt_amount for m in self.memberships.all()), 0)
 
 
+class DiscountPreset(TimeStampedModel):
+    """Готовая скидка клуба: «за рекомендацию», «скидка блогерам», «худ.
+    гимнастика».
+
+    Проценты кассир и так может вписать руками, но скидки в клубе
+    называются словами и повторяются изо дня в день. Когда они кнопками,
+    их не путают и в отчёте видно, за что скидка дана.
+    """
+    club    = models.ForeignKey(FitnessClub, on_delete=models.CASCADE,
+                                related_name="discounts")
+    name    = models.CharField("Название", max_length=100)
+    percent = models.PositiveSmallIntegerField("Процент", default=0,
+                                               help_text="0 — если скидка суммой")
+    amount  = models.DecimalField("Сумма (сом)", max_digits=10, decimal_places=0,
+                                  default=0, help_text="0 — если скидка процентом")
+    is_active  = models.BooleanField("Показывать", default=True)
+    sort_order = models.PositiveSmallIntegerField("Порядок", default=0)
+
+    class Meta:
+        verbose_name = "Скидка"
+        verbose_name_plural = "Скидки"
+        ordering = ["sort_order", "id"]
+
+    def __str__(self):
+        return f"{self.name} — {self.label}"
+
+    @property
+    def label(self):
+        if self.percent:
+            return f"{self.percent}%"
+        return f"{self.amount:.0f} сом"
+
+
 class Membership(TimeStampedModel):
     """Купленный абонемент.
 
@@ -301,6 +334,11 @@ class Membership(TimeStampedModel):
     discount_amount = models.DecimalField("Скидка", max_digits=10, decimal_places=0, default=0)
     paid_amount    = models.DecimalField("Оплачено", max_digits=10, decimal_places=0, default=0)
     debt_amount    = models.DecimalField("Долг", max_digits=10, decimal_places=0, default=0)
+
+    # Какой именно скидкой воспользовались: «за рекомендацию» или
+    # «блогерам» — в отчёте это важнее, чем голые проценты.
+    discount_note = models.CharField("Название скидки", max_length=100,
+                                     blank=True, default="")
 
     is_frozen   = models.BooleanField("Заморожен", default=False)
     freeze_start = models.DateField("Заморозка с", null=True, blank=True)

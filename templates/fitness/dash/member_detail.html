@@ -65,6 +65,48 @@
   .mc-tab.alert .n { background: #dc2626; color: #fff; }
   .mc-pane[hidden] { display: none; }
 
+  /* Продажа — боковая панель поверх карточки: это отдельное действие, и
+     место в общем потоке страницы ему ни к чему. Пока скрипт не
+     отработал, панель — обычный блок внизу страницы, так что продать
+     можно в любом случае. */
+  .sell-wrap.ready {
+    /* Выше бокового меню (100) и верхней панели кабинета (90): иначе они
+       накрывали заголовок панели и кнопку закрытия. */
+    position: fixed; inset: 0; z-index: 140; display: none;
+  }
+  .sell-wrap.ready.open { display: block; }
+  .sell-wrap.ready .sell-bg {
+    position: absolute; inset: 0; background: rgba(5,10,20,.45);
+  }
+  .sell-wrap.ready .sell-panel {
+    position: absolute; top: 0; right: 0; bottom: 0; width: min(420px, 100%);
+    background: var(--card); border-left: 1px solid var(--border);
+    overflow-y: auto; padding: 16px; box-shadow: -14px 0 40px rgba(0,0,0,.18);
+  }
+  .sell-head {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+  }
+  .sell-head .t { font-size: 16px; font-weight: 800; flex: 1; }
+  .sell-x {
+    appearance: none; cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg); border-radius: 10px; width: 32px; height: 32px;
+    font-size: 15px; color: var(--text2);
+  }
+
+  /* Способ оплаты плитками: на кассе выбирают пальцем, а не из списка */
+  .pay-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+  .pay {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 10px 6px; border: 1.5px solid var(--border); border-radius: 12px;
+    background: var(--bg); cursor: pointer; font-size: 11.5px; font-weight: 700;
+    color: var(--text2); text-align: center;
+  }
+  .pay .ic { font-size: 18px; line-height: 1; }
+  .pay input { position: absolute; opacity: 0; pointer-events: none; }
+  .pay:has(input:checked) {
+    border-color: var(--accent); color: var(--accent); background: rgba(255,77,28,.06);
+  }
+
   /* Абонемент: строка раскрывается в подробности — как в журнале */
   .ms { border: 1px solid var(--border); border-radius: 13px; background: var(--bg);
         overflow: hidden; }
@@ -128,10 +170,12 @@
       </div>
 
       {% if can_money %}
+      <button class="fc-btn" type="button" data-sell-open
+              style="width:100%;margin-top:12px">+ Продать абонемент</button>
       <form method="post" action="{% url 'fitness_dash:checkin_pass' club.id member.id %}"
-            style="margin-top:12px">
+            style="margin-top:8px">
         {% csrf_token %}
-        <button class="fc-btn" type="submit" style="width:100%">🚪 Пропустить в зал</button>
+        <button class="fc-btn ghost" type="submit" style="width:100%">🚪 Пропустить в зал</button>
       </form>
       <form method="post" action="{% url 'fitness_dash:member_save' club.id member.id %}"
             enctype="multipart/form-data" style="margin-top:8px">
@@ -196,12 +240,6 @@
         {% endif %}
       </div>
 
-      {% if can_money %}
-      <div class="fc-card">
-        <div class="fc-card-t">Продать абонемент</div>
-        {% include "fitness/dash/_sell_form.html" %}
-      </div>
-      {% endif %}
     </section>
 
     {# Абонементы #}
@@ -453,6 +491,38 @@
     {% endif %}
   </div>
 </div>
+
+{% if can_money %}
+<div class="sell-wrap" id="sellWrap">
+  <div class="sell-bg" data-sell-close></div>
+  <div class="sell-panel">
+    <div class="sell-head">
+      <div class="t">Продать абонемент</div>
+      <button class="sell-x" type="button" data-sell-close title="Закрыть">✕</button>
+    </div>
+    <div class="fc-sub" style="margin-bottom:12px">
+      {{ member.full_name }}{% if member.card_id %} · карта {{ member.card_id }}{% endif %}
+    </div>
+    {% include "fitness/dash/_sell_form.html" %}
+  </div>
+</div>
+{% endif %}
+
+<script>
+  // Боковая панель продажи. Класс ready ставится скриптом: без него
+  // панель остаётся обычным блоком внизу страницы и продажа работает
+  // даже если скрипт не отработал.
+  (function () {
+    const wrap = document.getElementById('sellWrap');
+    if (!wrap) return;
+    wrap.classList.add('ready');
+    const open = () => { wrap.classList.add('open'); document.body.style.overflow = 'hidden'; };
+    const close = () => { wrap.classList.remove('open'); document.body.style.overflow = ''; };
+    document.querySelectorAll('[data-sell-open]').forEach(b => b.addEventListener('click', open));
+    wrap.querySelectorAll('[data-sell-close]').forEach(b => b.addEventListener('click', close));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  })();
+</script>
 
 <script>
   // Вкладки карточки. Выбранная держится в адресе (#subs): после

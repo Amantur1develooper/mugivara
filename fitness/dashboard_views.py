@@ -23,7 +23,8 @@ from . import services, tg
 from .access import (ADMIN, CASHIER, TRAINER, can_see_money, can_see_profit,
                      my_clubs, my_trainer, require, staff_of)
 from .models import (SECTION_PRESETS, ClassBooking, ClassDay, ClubStaff,
-                     Expense, FitnessClub, GroupClass, GroupMember, Lead, LeadNote,
+                     DiscountPreset, Expense, FitnessClub, GroupClass, GroupMember,
+                     Lead, LeadNote,
                      Member, Membership, MembershipPlan, OwedVisit, Payment, Section,
                      Trainer, TrainerBooking, TrainerSchedule, TrainingGroup,
                      Visit)
@@ -317,6 +318,7 @@ def member_detail(request, club, staff, member_id):
                 last_visit=(member.visits.filter(success=True)
                             .order_by("-visit_time").first()),
                 plans=club.plans.filter(is_active=True),
+                discounts=club.discounts.filter(is_active=True),
                 trainers=club.trainers.filter(is_active=True),
                 active=member.active_membership())
     if can_see_money(staff):
@@ -368,6 +370,20 @@ def membership_sell(request, club, staff, member_id):
     price = _money(request.POST.get("price"), str(plan.price))
     discount = _money(request.POST.get("discount"), "0")
     pct = _money(request.POST.get("discount_pct"), "0")
+
+    # Нажали готовую скидку клуба — она и решает, сколько снять: кассир
+    # выбирал её, а не цифру в поле.
+    note = ""
+    raw_preset = request.POST.get("preset")
+    if (raw_preset or "").isdigit():
+        preset = club.discounts.filter(id=int(raw_preset), is_active=True).first()
+        if preset:
+            note = preset.name
+            if preset.percent:
+                pct = Decimal(preset.percent)
+            else:
+                pct = Decimal("0")
+                discount = Decimal(preset.amount)
     if pct > 0:
         pct = min(pct, Decimal("100"))
         by_pct = (price * pct / Decimal("100")).quantize(Decimal("1"))
@@ -383,15 +399,19 @@ def membership_sell(request, club, staff, member_id):
         discount=discount,
         paid=_money(request.POST.get("paid"), str(price - discount)),
         trainer=trainer,
-        start_today=request.POST.get("start_today") == "on",
+        # «Активация с 1 посещения» — галочка в бланке, поэтому логика
+        # обратная: снял её — абонемент начинается сегодня.
+        start_today=request.POST.get("by_first_visit") != "on",
         method=request.POST.get("method") or "cash",
         actor=request.user,
+        discount_note=note,
     )
     note = "начнётся с первого посещения" if not ms.activated else f"с {ms.start_date:%d.%m.%Y}"
     tail = ""
     if ms.discount_amount:
         share = int(ms.discount_amount / ms.price * 100) if ms.price else 0
-        tail = f" · скидка {ms.discount_amount:.0f} сом ({share}%)"
+        named = f" «{ms.discount_note}»" if ms.discount_note else ""
+        tail = f" · скидка{named} {ms.discount_amount:.0f} сом ({share}%)"
     if ms.debt_amount:
         tail += f" · долг {ms.debt_amount:.0f} сом"
     messages.success(request, f"Абонемент продан, {note}{tail}")
@@ -1078,6 +1098,7 @@ def setup(request, club, staff):
     return render(request, "fitness/dash/setup.html",
                   _ctx(club, staff,
                        sections=club.sections.all(),
+                       discount_list=club.discounts.all(),
                        plans=club.plans.all(),
                        trainers=club.trainers.all().prefetch_related("sections"),
                        staff_list=club.staff.select_related("user"),
@@ -1440,6 +1461,35 @@ def debt_settle(request, club, staff, debt_id):
     else:
         messages.success(request, f"Занятие от {debt.date:%d.%m} закрыто: {note}")
     return redirect("fitness_dash:member_detail", club.id, debt.member_id)
+
+
+@login_required(login_url=LOGIN_URL)
+@require(ADMIN)
+@require_POST
+def discount_save(request, club, staff):
+    """Заводит готовую скидку клуба или выключает её."""
+    raw = request.POST.get("off")
+    if (raw or "").isdigit():
+        club.discounts.filter(id=int(raw)).update(is_active=False)
+        messages.success(request, "Скидка убрана из бланка продажи.")
+        return redirect("fitness_dash:setup", club_id=club.id)
+
+    name = (request.POST.get("name") or "").strip()
+    if not name:
+        messages.error(request, "У скидки должно быть название.")
+        return redirect("fitness_dash:setup", club_id=club.id)
+
+    percent = _int(request.POST.get("percent"), 0, hi=100)
+    amount = _money(request.POST.get("amount"), "0")
+    if not percent and not amount:
+        messages.error(request, "Укажите процент или сумму скидки.")
+        return redirect("fitness_dash:setup", club_id=club.id)
+
+    DiscountPreset.objects.create(club=club, name=name[:100],
+                                  percent=percent if percent else 0,
+                                  amount=0 if percent else amount)
+    messages.success(request, f"Скидка «{name}» появится в бланке продажи.")
+    return redirect("fitness_dash:setup", club_id=club.id)
 
 
 @login_required(login_url=LOGIN_URL)

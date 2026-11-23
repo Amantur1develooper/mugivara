@@ -371,4 +371,55 @@
     })();
   </script>
 </div>
+
+<div class="fc-card">
+  <div class="fc-card-t">Скидки</div>
+  <div class="fc-sub" style="margin-bottom:11px;line-height:1.5">
+    Готовые скидки клуба: «за рекомендацию», «скидка блогерам», «семейная».
+    В бланке продажи они станут кнопками — кассир не вписывает проценты
+    руками и не путает их, а в отчёте видно, за что скидка дана.
+  </div>
+  <div class="fc-list">
+    {% for d in discount_list %}
+      <div class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name">
+            {{ d.name }} <span class="fc-chip">{{ d.label }}</span>
+            {% if not d.is_active %}<span class="fc-chip">убрана</span>{% endif %}
+          </div>
+        </div>
+        {% if d.is_active and is_admin %}
+        <form method="post" action="{% url 'fitness_dash:discount_save' club.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="off" value="{{ d.id }}">
+          <button class="fc-btn ghost small" type="submit">Убрать</button>
+        </form>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="fc-empty">Скидок нет — кассир сможет вписать процент руками.</div>
+    {% endfor %}
+  </div>
+
+  {% if is_admin %}
+  <form method="post" action="{% url 'fitness_dash:discount_save' club.id %}"
+        style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+    {% csrf_token %}
+    <div class="fc-grid2">
+      <div><label class="fc-label">Название</label>
+        <input class="fc-input" name="name" placeholder="за рекомендацию" required></div>
+      <div><label class="fc-label">Процент</label>
+        <input class="fc-input" name="percent" type="number" min="0" max="100"
+               placeholder="15"></div>
+      <div><label class="fc-label">Или сумма, сом</label>
+        <input class="fc-input" name="amount" inputmode="numeric" placeholder="500"></div>
+    </div>
+    <div class="fc-sub" style="margin-top:6px">
+      Заполните что-то одно: процент или сумму.
+    </div>
+    <button class="fc-btn" type="submit" style="margin-top:11px">Добавить скидку</button>
+  </form>
+  {% endif %}
+</div>
+
 {% endblock %}
