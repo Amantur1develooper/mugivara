@@ -1,21 +1,113 @@
 {% extends "fitness/dash/_base.html" %}
+{% load fitness_extras %}
 {% block fc_title %}{{ g.title }}{% endblock %}
+{% block fc_sub %}{{ club.name }} · группа{% endblock %}
 
 {% block fc_content %}
-<div class="fc-card">
-  <div style="font-size:17px;font-weight:800;line-height:1.25">
-    {% if g.section and g.section.icon %}{{ g.section.icon }} {% endif %}{{ g.title }}
+{% with line=g.section|hue:"line" bg=g.section|hue:"bg" %}
+<div class="gd-head" style="border-left-color:{{ line }}">
+  <div class="gd-top">
+    <span class="gd-ic" style="background:{{ bg }};color:{{ line }}">
+      {% if g.section and g.section.icon %}{{ g.section.icon }}{% else %}🥋{% endif %}
+    </span>
+    <div style="min-width:0;flex:1">
+      {% if g.section %}
+        <div class="gd-sec" style="color:{{ line }}">{{ g.section.name }}</div>
+      {% endif %}
+      <div class="gd-name">{{ g.name }}</div>
+      <div class="gd-sub">
+        {% if g.trainer %}🧑‍🏫 {{ g.trainer.name }}{% else %}тренер не назначен{% endif %}
+        {% if g.note %} · 💬 {{ g.note }}{% endif %}
+        {% if not g.is_active %} · <span class="fc-chip bad">набор закрыт</span>{% endif %}
+      </div>
+    </div>
+    <a href="{% url 'fitness_dash:groups' club.id %}" class="fc-btn ghost small gd-back">
+      ← Все группы
+    </a>
   </div>
-  <div class="fc-row-sub" style="margin-top:5px">
-    {{ g.size }} из {{ g.capacity }} чел. · свободно {{ g.free }}
-    {% if g.trainer %}<br>🧑‍🏫 {{ g.trainer.name }}{% else %}<br>тренер не назначен{% endif %}
-    {% if g.note %}<br>💬 {{ g.note }}{% endif %}
-    {% if not g.is_active %}<br>⛔️ набор закрыт{% endif %}
+
+  <div class="gd-nums">
+    <div class="gd-num">
+      <div class="l">В группе</div>
+      <div class="v" style="color:{{ line }}">{{ g.size }}<small> из {{ g.capacity }}</small></div>
+    </div>
+    <div class="gd-num">
+      <div class="l">Свободно</div>
+      <div class="v">{{ g.free }}</div>
+    </div>
+    <div class="gd-num">
+      <div class="l">Тренировок в неделю</div>
+      <div class="v">{{ slots|length }}</div>
+    </div>
+    {% if slot_today %}
+      <div class="gd-num">
+        <div class="l">Сегодня</div>
+        <div class="v" style="font-size:17px">{{ slot_today.time_from|time:"H:i" }}</div>
+      </div>
+    {% endif %}
   </div>
-  <div style="margin-top:10px">
-    <a href="{% url 'fitness_dash:groups' club.id %}" class="fc-btn ghost small">← Все группы</a>
+
+  <div class="gd-fill">
+    <i style="width:{{ fill }}%;background:{{ line }}"></i>
+  </div>
+  <div class="gd-days">
+    {% for s in slots %}
+      <span class="gd-day">{{ s.weekday|wd_short }} {{ s.time_from|time:"H:i" }}</span>
+    {% empty %}
+      <span class="gd-day none">расписание не заполнено — добавьте ниже</span>
+    {% endfor %}
   </div>
 </div>
+{% endwith %}
+
+<style>
+  /* Шапка группы: цвет направления, крупные числа и полоса заполненности
+     — чтобы с одного взгляда понимать, что за группа, кто ведёт и надо ли
+     добирать людей. Раньше всё это было мелкой подписью в три строки. */
+  .gd-head {
+    background: var(--card); border: 1px solid var(--border);
+    border-left: 5px solid var(--border); border-radius: 16px;
+    padding: 15px; margin-bottom: 14px;
+  }
+  .gd-top { display: flex; gap: 12px; align-items: flex-start; }
+  .gd-ic {
+    width: 52px; height: 52px; border-radius: 15px; flex: none;
+    display: flex; align-items: center; justify-content: center; font-size: 25px;
+  }
+  .gd-sec {
+    font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px;
+  }
+  .gd-name { font-size: 18px; font-weight: 800; line-height: 1.2; margin-top: 2px; }
+  .gd-sub { font-size: 12.5px; color: var(--muted); margin-top: 5px; line-height: 1.45; }
+  .gd-back { flex: none; }
+
+  .gd-nums {
+    display: grid; gap: 8px; margin-top: 13px;
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  }
+  .gd-num { background: var(--bg); border: 1px solid var(--border);
+            border-radius: 12px; padding: 9px 11px; }
+  .gd-num .l {
+    font-size: 9.5px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase;
+    color: var(--muted); line-height: 1.25;
+  }
+  .gd-num .v { font-size: 20px; font-weight: 800; margin-top: 3px; }
+  .gd-num .v small { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+
+  .gd-fill { height: 8px; border-radius: 100px; background: var(--bg);
+             border: 1px solid var(--border); overflow: hidden; margin-top: 12px; }
+  .gd-fill i { display: block; height: 100%; }
+  .gd-days { display: flex; gap: 5px; margin-top: 9px; flex-wrap: wrap; }
+  .gd-day {
+    font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 8px;
+    background: var(--bg); border: 1px solid var(--border); color: var(--text2);
+  }
+  .gd-day.none { font-weight: 600; color: var(--muted); }
+  @media (max-width: 560px) {
+    .gd-back { display: none; }
+    .gd-name { font-size: 16px; }
+  }
+</style>
 
 {% if slot_today %}
 <div class="fc-card" id="today-card"

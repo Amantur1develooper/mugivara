@@ -827,8 +827,15 @@ def groups(request, club, staff):
     if staff.role == TRAINER and trainer:
         rows = rows.filter(trainer=trainer)
 
+    rows = list(rows)
+    # Заполненность в процентах считаем здесь: в шаблоне деление дало бы
+    # «66,7» с запятой — русская локаль, и в CSS это ломается.
+    for g in rows:
+        g.fill = min(100, round(g.people / g.capacity * 100)) if g.capacity else 0
+
     return render(request, "fitness/dash/groups.html",
-                  _ctx(club, staff, rows=list(rows),
+                  _ctx(club, staff, rows=rows,
+                       total_people=sum(g.people for g in rows),
                        sections=club.sections.filter(is_active=True),
                        trainers=club.trainers.filter(is_active=True),
                        is_trainer=(staff.role == TRAINER)))
@@ -915,6 +922,10 @@ def group_detail(request, club, staff, group_id):
 
     return render(request, "fitness/dash/group_detail.html",
                   _ctx(club, staff, g=g, roster=roster, free=list(free), q=q,
+                       # Процент заполненности считаем здесь: в шаблоне
+                       # деление дало бы «66,7» с запятой и сломало CSS.
+                       fill=(min(100, round(len(roster) / g.capacity * 100))
+                             if g.capacity else 0),
                        slot_today=slot_today, state_today=state_today, today=today,
                        came_today=sum(1 for m in marks.values() if m.status == "came"),
                        left=list(g.links.filter(is_active=False)

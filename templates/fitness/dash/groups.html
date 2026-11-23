@@ -3,47 +3,135 @@
 {% block fc_title %}Группы{% endblock %}
 
 {% block fc_content %}
-<div class="fc-card">
-  <div class="fc-card-t">Группы</div>
-  <div class="fc-sub" style="line-height:1.5">
-    Группа — это состав людей, который ходит вместе: «Бокс · дети 10–12».
-    Секция отвечает, чем занимаются, группа — кто именно и с каким тренером.
-    {% if is_trainer %}Здесь ваши группы.{% endif %}
-  </div>
+<style>
+  /* Группы различают глазом: у каждого направления свой цвет — он идёт
+     полосой слева и кружком со значком, — а полоса заполненности сразу
+     показывает, добирать людей или группа укомплектована. Списком с
+     одинаковыми строками они сливались. */
+  .gr-grid { display: grid; gap: 12px; grid-template-columns: 1fr; }
+  @media (min-width: 840px) { .gr-grid { grid-template-columns: 1fr 1fr; } }
 
-  <div class="fc-list" style="margin-top:12px">
-    {% for g in rows %}
-      <a href="{% url 'fitness_dash:group_detail' club.id g.id %}" class="fc-row">
-        <div class="fc-row-main">
-          <div class="fc-row-name">
-            {% if g.section and g.section.icon %}{{ g.section.icon }} {% endif %}{{ g.title }}
-            {% if not g.is_active %} · набор закрыт{% endif %}
-          </div>
-          <div class="fc-row-sub">
-            {{ g.people }} из {{ g.capacity }} чел.
-            {% if g.trainer %} · {{ g.trainer.name }}{% else %} · тренер не назначен{% endif %}
-            {% if g.note %} · {{ g.note }}{% endif %}
-            {% with sl=g.slots.all %}
-              {% if sl %}
-                <br>{% for s in sl %}{% if s.is_active %}{{ s.weekday|wd_short }}
-                  {{ s.time_from|time:"H:i" }}{% if not forloop.last %} · {% endif %}{% endif %}{% endfor %}
-              {% else %}
-                <br>расписание не заполнено
-              {% endif %}
-            {% endwith %}
+  .gr {
+    display: block; text-decoration: none; color: inherit; position: relative;
+    background: var(--card); border: 1px solid var(--border);
+    border-left: 5px solid var(--border); border-radius: 16px; padding: 14px;
+    transition: border-color .12s, transform .12s;
+  }
+  .gr:hover { transform: translateY(-1px); }
+  .gr.off { opacity: .62; }
+
+  .gr-top { display: flex; gap: 11px; align-items: flex-start; }
+  .gr-ic {
+    width: 44px; height: 44px; border-radius: 13px; flex: none;
+    display: flex; align-items: center; justify-content: center; font-size: 21px;
+  }
+  .gr-name { font-size: 15px; font-weight: 800; line-height: 1.25; }
+  .gr-sec {
+    font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px;
+    margin-bottom: 2px;
+  }
+  .gr-sub { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+
+  /* Полоса заполненности: цифры «9 из 14» читаются дольше, чем полоска */
+  .gr-fill { height: 8px; border-radius: 100px; background: var(--bg); overflow: hidden;
+             margin-top: 11px; border: 1px solid var(--border); }
+  .gr-fill i { display: block; height: 100%; }
+  .gr-meta {
+    display: flex; align-items: center; gap: 8px; margin-top: 7px; flex-wrap: wrap;
+    font-size: 11.5px; color: var(--muted);
+  }
+  .gr-meta b { color: var(--text2); font-weight: 800; }
+
+  .gr-days { display: flex; gap: 4px; margin-top: 10px; flex-wrap: wrap; }
+  .gr-day {
+    font-size: 10.5px; font-weight: 800; padding: 4px 7px; border-radius: 8px;
+    background: var(--bg); border: 1px solid var(--border); color: var(--text2);
+  }
+  .gr-day.none { color: var(--muted); font-weight: 600; }
+  .gr-arrow { position: absolute; right: 13px; top: 13px; color: var(--muted); font-size: 15px; }
+</style>
+
+<div class="fc-card" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+  <div class="fc-card-t" style="margin:0;flex:1;min-width:150px">
+    Группы · {{ rows|length }}
+    {% if total_people %}<span class="fc-chip">{{ total_people }} чел.</span>{% endif %}
+  </div>
+  {% if staff.role != "trainer" %}
+    <button class="fc-btn small" type="button" data-group-open>+ Новая группа</button>
+  {% endif %}
+</div>
+
+<div class="fc-sub" style="margin:-4px 0 12px;line-height:1.5">
+  Группа — это состав людей, который ходит вместе: «Бокс · дети 10–12».
+  Секция отвечает, чем занимаются, группа — кто именно и с каким тренером.
+  {% if is_trainer %}Здесь ваши группы.{% endif %}
+</div>
+
+<div class="gr-grid">
+  {% for g in rows %}
+    {% with line=g.section|hue:"line" bg=g.section|hue:"bg" %}
+    <a href="{% url 'fitness_dash:group_detail' club.id g.id %}"
+       class="gr{% if not g.is_active %} off{% endif %}"
+       style="border-left-color:{{ line }}">
+      <span class="gr-arrow">→</span>
+      <div class="gr-top">
+        <span class="gr-ic" style="background:{{ bg }};color:{{ line }}">
+          {% if g.section and g.section.icon %}{{ g.section.icon }}{% else %}🥋{% endif %}
+        </span>
+        <div style="min-width:0;flex:1">
+          {% if g.section %}
+            <div class="gr-sec" style="color:{{ line }}">{{ g.section.name }}</div>
+          {% endif %}
+          <div class="gr-name">{{ g.name }}</div>
+          <div class="gr-sub">
+            {% if g.trainer %}🧑‍🏫 {{ g.trainer.name }}{% else %}тренер не назначен{% endif %}
+            {% if g.note %}<br>💬 {{ g.note }}{% endif %}
+            {% if not g.is_active %}<br>⛔️ набор закрыт{% endif %}
           </div>
         </div>
-        <div class="fc-row-right">{{ g.free }} своб. →</div>
-      </a>
-    {% empty %}
-      <div class="fc-empty">Групп пока нет. Создайте первую — например «Бокс · дети 10–12».</div>
-    {% endfor %}
-  </div>
+      </div>
+
+      <div class="gr-fill">
+        <i style="width:{{ g.fill }}%;background:{{ line }}"></i>
+      </div>
+      <div class="gr-meta">
+        <span><b>{{ g.people }}</b> из {{ g.capacity }} чел.</span>
+        {% if g.free %}
+          <span>· свободно {{ g.free }}</span>
+        {% else %}
+          <span class="fc-chip ok">набрана</span>
+        {% endif %}
+      </div>
+
+      <div class="gr-days">
+        {% for s in g.slots.all %}
+          {% if s.is_active %}
+            <span class="gr-day">{{ s.weekday|wd_short }} {{ s.time_from|time:"H:i" }}</span>
+          {% endif %}
+        {% empty %}
+          <span class="gr-day none">расписание не заполнено</span>
+        {% endfor %}
+      </div>
+    </a>
+    {% endwith %}
+  {% empty %}
+    <div class="fc-card fc-empty" style="grid-column:1/-1">
+      Групп пока нет. Создайте первую — например «Бокс · дети 10–12».
+    </div>
+  {% endfor %}
 </div>
 
 {% if staff.role != "trainer" %}
-<div class="fc-card">
-  <div class="fc-card-t">Новая группа</div>
+<div class="ng-wrap" id="groupWrap">
+  <div class="ng-bg" data-group-close></div>
+  <div class="ng-panel">
+    <div class="ng-head">
+      <div class="t">Новая группа</div>
+      <button class="ng-x" type="button" data-group-close title="Закрыть">✕</button>
+    </div>
+    <div class="fc-sub" style="margin-bottom:12px">
+      Состав и расписание добавите в её карточке сразу после создания.
+    </div>
   <form method="post" action="{% url 'fitness_dash:group_new' club.id %}">
     {% csrf_token %}
     <div class="fc-grid2">
@@ -64,8 +152,51 @@
     </div>
     <div style="margin-top:10px"><label class="fc-label">Пометка</label>
       <input class="fc-input" name="note" placeholder="начинающие, малый зал"></div>
-    <button class="fc-btn" type="submit" style="margin-top:12px">Создать группу</button>
+    <button class="fc-btn" type="submit" style="margin-top:14px;width:100%">Создать группу</button>
   </form>
+  </div>
 </div>
+
+<style>
+  /* Бланк новой группы — панелью справа, как остальные бланки клуба */
+  .ng-wrap.ready { position: fixed; inset: 0; z-index: 140; display: none; }
+  .ng-wrap.ready.open { display: block; }
+  .ng-wrap:not(.ready) { display: none; }
+  .ng-wrap.ready .ng-bg { position: absolute; inset: 0; background: rgba(5,10,20,.45); }
+  .ng-wrap.ready .ng-panel {
+    position: absolute; top: 0; right: 0; bottom: 0; width: min(420px, 100%);
+    background: var(--card); border-left: 1px solid var(--border);
+    overflow-y: auto; padding: 16px; box-shadow: -14px 0 40px rgba(0,0,0,.18);
+  }
+  .ng-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .ng-head .t { font-size: 16px; font-weight: 800; flex: 1; }
+  .ng-x {
+    appearance: none; cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg); border-radius: 10px; width: 32px; height: 32px;
+    font-size: 15px; color: var(--text2);
+  }
+</style>
+
+<script>
+  (function () {
+    const wrap = document.getElementById('groupWrap');
+    if (!wrap) return;
+    wrap.classList.add('ready');
+    const open = () => {
+      wrap.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      const first = wrap.querySelector('input[name="name"]');
+      if (first) setTimeout(() => first.focus(), 40);
+    };
+    const close = () => {
+      wrap.classList.remove('open');
+      document.body.style.overflow = '';
+    };
+    document.querySelectorAll('[data-group-open]').forEach(b => b.addEventListener('click', open));
+    wrap.querySelectorAll('[data-group-close]').forEach(b => b.addEventListener('click', close));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  })();
+</script>
 {% endif %}
+
 {% endblock %}
