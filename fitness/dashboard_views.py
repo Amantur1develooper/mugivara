@@ -32,8 +32,12 @@ LOGIN_URL = "dashboard:login"
 
 
 def _money(raw, default="0"):
+    """Сумма из формы. Пробелы любые: браузер и телефонные клавиатуры
+    подставляют не только обычный пробел, но и неразрывный, а на нём
+    Decimal падал и сумма молча становилась нулевой."""
+    text = "".join(ch for ch in str(raw or default) if not ch.isspace())
     try:
-        return Decimal(str(raw or default).replace(",", ".").replace(" ", ""))
+        return Decimal(text.replace(",", "."))
     except InvalidOperation:
         return Decimal(default)
 
@@ -334,18 +338,39 @@ def membership_sell(request, club, staff, member_id):
     if raw and raw.isdigit():
         trainer = Trainer.objects.filter(id=int(raw), club=club).first()
 
+    # Скидку принимаем и процентом, и суммой. Считает сервер: на процент в
+    # браузере полагаться нельзя — там мог не отработать скрипт, да и
+    # подправить поле в отправке может кто угодно.
+    price = _money(request.POST.get("price"), str(plan.price))
+    discount = _money(request.POST.get("discount"), "0")
+    pct = _money(request.POST.get("discount_pct"), "0")
+    if pct > 0:
+        pct = min(pct, Decimal("100"))
+        by_pct = (price * pct / Decimal("100")).quantize(Decimal("1"))
+        # Если сумма в поле не отвечает проценту (скрипт не отработал),
+        # верим проценту: его кассир и выбирал.
+        if abs(by_pct - discount) > 1:
+            discount = by_pct
+    discount = max(Decimal("0"), min(discount, price))
+
     ms = services.sell_membership(
         club, member, plan,
-        price=_money(request.POST.get("price"), str(plan.price)),
-        discount=_money(request.POST.get("discount"), "0"),
-        paid=_money(request.POST.get("paid"), str(plan.price)),
+        price=price,
+        discount=discount,
+        paid=_money(request.POST.get("paid"), str(price - discount)),
         trainer=trainer,
         start_today=request.POST.get("start_today") == "on",
         method=request.POST.get("method") or "cash",
         actor=request.user,
     )
     note = "начнётся с первого посещения" if not ms.activated else f"с {ms.start_date:%d.%m.%Y}"
-    messages.success(request, f"Абонемент продан, {note}")
+    tail = ""
+    if ms.discount_amount:
+        share = int(ms.discount_amount / ms.price * 100) if ms.price else 0
+        tail = f" · скидка {ms.discount_amount:.0f} сом ({share}%)"
+    if ms.debt_amount:
+        tail += f" · долг {ms.debt_amount:.0f} сом"
+    messages.success(request, f"Абонемент продан, {note}{tail}")
     return redirect("fitness_dash:member_detail", club_id=club.id, member_id=member.id)
 
 
@@ -1391,6 +1416,80 @@ def debt_settle(request, club, staff, debt_id):
     else:
         messages.success(request, f"Занятие от {debt.date:%d.%m} закрыто: {note}")
     return redirect("fitness_dash:member_detail", club.id, debt.member_id)
+
+
+@login_required(login_url=LOGIN_URL)
+@require(ADMIN, CASHIER)
+def debts(request, club, staff):
+    """Все занятия в долг по клубу — списком, по людям.
+
+    В карточке клиента долг видно только у него одного, а на входе нужен
+    общий список: кто сколько отходил без абонемента.
+    """
+    show_settled = request.GET.get("show") == "settled"
+    rows = (OwedVisit.objects
+            .filter(club=club, is_settled=show_settled)
+            .select_related("member", "training_group", "settled_from__plan")
+            .order_by("member__full_name", "date"))
+
+    # Группируем по человеку: «Орозов Данияр — 3 занятия» читается, а
+    # двадцать строк с датами вперемешку по людям — нет.
+    people = []
+    current = None
+    for d in rows:
+        if current is None or current["member"].id != d.member_id:
+            current = {"member": d.member, "items": []}
+            people.append(current)
+        current["items"].append(d)
+
+    # Чем закрывать: действующие абонементы этих людей
+    plans = {}
+    if not show_settled and people:
+        for ms in (Membership.objects
+                   .filter(member__in=[p["member"].id for p in people], is_active=True)
+                   .select_related("plan")):
+            plans.setdefault(ms.member_id, []).append(ms)
+    for p in people:
+        p["plans"] = plans.get(p["member"].id, [])
+
+    return render(request, "fitness/dash/debts.html",
+                  _ctx(club, staff, people=people, show_settled=show_settled,
+                       total=rows.count(),
+                       open_count=OwedVisit.objects.filter(club=club,
+                                                           is_settled=False).count()))
+
+
+@login_required(login_url=LOGIN_URL)
+@require(ADMIN, CASHIER)
+@require_POST
+def debts_settle_member(request, club, staff, member_id):
+    """Закрыть все долги человека одним действием."""
+    member = get_object_or_404(Member, id=member_id, club=club)
+    rows = list(member.owed_visits.filter(is_settled=False).order_by("date"))
+    if not rows:
+        messages.info(request, "Долгов нет.")
+        return redirect("fitness_dash:debts", club.id)
+
+    note = (request.POST.get("note") or "").strip()
+    raw = request.POST.get("membership")
+    ms = None
+    if (raw or "").isdigit():
+        ms = Membership.objects.filter(id=int(raw), member=member).first()
+    elif not note:
+        messages.error(request, "Чтобы закрыть долги без абонемента, "
+                                "напишите причину.")
+        return redirect("fitness_dash:debts", club.id)
+
+    closed, left = services.settle_many(rows, membership=ms, note=note,
+                                        actor=request.user)
+    tail = ""
+    if left:
+        tail = (f" На абонементе не хватило посещений — осталось не закрыто: "
+                f"{len(left)}.")
+    messages.success(request, f"{member.full_name}: закрыто занятий — {closed}."
+                     + (f" Списано с «{ms.plan.name}», осталось "
+                        f"{ms.remaining_visits}." if ms else "") + tail)
+    return redirect("fitness_dash:debts", club.id)
 
 
 def _club_admins(club):

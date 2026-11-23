@@ -175,8 +175,14 @@
         <input class="fc-input" name="price" id="priceInp" inputmode="numeric">
       </div>
       <div>
-        <label class="fc-label">Скидка</label>
-        <input class="fc-input" name="discount" value="0" inputmode="numeric">
+        <label class="fc-label">Скидка, %</label>
+        <input class="fc-input" name="discount_pct" id="pctInp" value="0"
+               inputmode="numeric" min="0" max="100">
+        <div class="fc-slots" id="pctSlots"></div>
+      </div>
+      <div>
+        <label class="fc-label">Скидка, сом</label>
+        <input class="fc-input" name="discount" id="discInp" value="0" inputmode="numeric">
       </div>
       <div>
         <label class="fc-label">Оплачено сейчас</label>
@@ -198,6 +204,7 @@
         </select>
       </div>
     </div>
+    <div class="fc-sub" id="sumLine" style="margin-top:10px;font-size:13px"></div>
     <label style="display:flex;gap:8px;align-items:flex-start;margin-top:12px;font-size:12.5px;color:var(--text2)">
       <input type="checkbox" name="start_today" style="margin-top:3px">
       <span>Начать сегодня. Если не ставить — срок пойдёт с первого посещения,
@@ -212,12 +219,75 @@
       const sel = document.getElementById('planSel');
       const price = document.getElementById('priceInp');
       const paid = document.getElementById('paidInp');
+      const pct = document.getElementById('pctInp');
+      const disc = document.getElementById('discInp');
+      const sumLine = document.getElementById('sumLine');
       if (!sel) return;
+
+      const num = el => {
+        const v = parseFloat(String(el.value).replace(',', '.').replace(/\s/g, ''));
+        return isFinite(v) ? v : 0;
+      };
+      const money = n => Math.round(n).toLocaleString('ru-RU') + ' сом';
+
+      // Считаем в одну сторону: процент задаёт сумму скидки. Кассир может
+      // вписать и сумму руками — тогда процент пересчитывается обратно,
+      // чтобы в полях не было двух разных правд.
+      const fromPct = () => {
+        const p = Math.max(0, Math.min(100, num(pct)));
+        disc.value = Math.round(num(price) * p / 100);
+        show();
+      };
+      const fromSum = () => {
+        const base = num(price);
+        pct.value = base > 0 ? Math.round(num(disc) / base * 100) : 0;
+        show();
+      };
+      const show = () => {
+        const toPay = Math.max(0, num(price) - num(disc));
+        paid.value = Math.round(toPay);
+        const d = num(disc);
+        sumLine.textContent = d > 0
+          ? `К оплате ${money(toPay)} — скидка ${money(d)} от ${money(num(price))}`
+          : `К оплате ${money(toPay)}`;
+      };
+
       const fill = () => {
         const p = sel.options[sel.selectedIndex].dataset.price || '';
-        price.value = p; paid.value = p;
+        price.value = p;
+        fromPct();
       };
       sel.addEventListener('change', fill);
+      price.addEventListener('input', fromPct);
+      pct.addEventListener('input', fromPct);
+      disc.addEventListener('input', fromSum);
+      paid.addEventListener('input', () => {
+        // Оплатили меньше — остальное повиснет долгом, и это надо видеть
+        const toPay = Math.max(0, num(price) - num(disc));
+        const left = toPay - num(paid);
+        if (left > 0) {
+          sumLine.textContent = `К оплате ${money(toPay)} · в долг ${money(left)}`;
+        } else {
+          show();
+        }
+      });
+
+      // Частые скидки в одно нажатие: 5, 10, 15, 20, 30, 50
+      const slots = document.getElementById('pctSlots');
+      if (slots) {
+        [0, 5, 10, 15, 20, 30, 50].forEach(v => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'fc-slot';
+          b.textContent = v + '%';
+          b.addEventListener('click', () => {
+            pct.value = v;
+            fromPct();
+            [...slots.children].forEach(x => x.classList.toggle('on', x === b));
+          });
+          slots.appendChild(b);
+        });
+      }
       fill();
     })();
   </script>

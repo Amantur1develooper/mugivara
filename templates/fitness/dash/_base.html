@@ -143,6 +143,9 @@
   {% endif %}
   <a href="{% url 'fitness_dash:members' club.id %}" class="{% block t_members %}{% endblock %}">Клиенты</a>
   <a href="{% url 'fitness_dash:groups' club.id %}" class="{% block t_groups %}{% endblock %}">Группы</a>
+  {% if can_money %}
+  <a href="{% url 'fitness_dash:debts' club.id %}" class="{% block t_debts %}{% endblock %}">Долги</a>
+  {% endif %}
   <a href="{% url 'fitness_dash:classes' club.id %}" class="{% block t_classes %}{% endblock %}">Расписание</a>
   <a href="{% url 'fitness_dash:board' club.id %}" class="{% block t_board %}{% endblock %}">Шахматка</a>
   {% if can_money %}

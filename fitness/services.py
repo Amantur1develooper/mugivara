@@ -245,3 +245,22 @@ def settle_visit_debt(debt, *, membership=None, note="", actor=None):
                                  "settle_note", "settled_by", "updated_at"])
     return debt
 
+def settle_many(debts, *, membership=None, note="", actor=None):
+    """Закрывает несколько долгов разом.
+
+    Если абонемент с посещениями, а долгов больше, чем на нём осталось,
+    закрываем столько, сколько абонемент покрывает, и возвращаем остаток:
+    молча списать в минус хуже, чем сказать «хватило на два из трёх».
+    """
+    closed = 0
+    left_over = []
+    for debt in debts:
+        if membership is not None and membership.plan.visits_number:
+            membership.refresh_from_db(fields=["remaining_visits"])
+            if membership.remaining_visits <= 0:
+                left_over.append(debt)
+                continue
+        settle_visit_debt(debt, membership=membership, note=note, actor=actor)
+        closed += 1
+    return closed, left_over
+

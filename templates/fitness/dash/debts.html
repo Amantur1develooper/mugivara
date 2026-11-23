@@ -1,0 +1,89 @@
+{% extends "fitness/dash/_base.html" %}
+{% block t_debts %}on{% endblock %}
+{% block title %}Долги занятий — {{ club.name }}{% endblock %}
+{% block fc_sub %}Кто отходил без действующего абонемента{% endblock %}
+
+{% block fc_content %}
+<div class="fc-card" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+  <a href="?" class="fc-chip{% if not show_settled %} bad{% endif %}">
+    Не закрыты{% if open_count %} · {{ open_count }}{% endif %}
+  </a>
+  <a href="?show=settled" class="fc-chip{% if show_settled %} ok{% endif %}">Закрытые</a>
+</div>
+
+{% if people %}
+  {% for p in people %}
+  <div class="fc-card">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <span class="fc-ava{% if not p.member.photo %} empty{% endif %}">
+        {% if p.member.photo %}<img src="{{ p.member.photo.url }}" alt="" loading="lazy">
+        {% else %}👤{% endif %}
+      </span>
+      <div style="flex:1;min-width:140px">
+        <a class="fc-row-name" style="text-decoration:none"
+           href="{% url 'fitness_dash:member_detail' club.id p.member.id %}">
+          {{ p.member.full_name }} →
+        </a>
+        <div class="fc-row-sub" style="margin-top:3px">
+          {% if p.member.phone %}{{ p.member.phone }} · {% endif %}
+          занятий: {{ p.items|length }}
+        </div>
+      </div>
+    </div>
+
+    <div class="fc-list" style="margin-top:10px">
+      {% for d in p.items %}
+        <div class="fc-row">
+          <div class="fc-row-main">
+            <div class="fc-row-name">
+              {{ d.date|date:"d.m.Y" }}
+              {% if d.training_group %} · {{ d.training_group.title }}{% endif %}
+            </div>
+            <div class="fc-row-sub">
+              {{ d.get_reason_display }}
+              {% if show_settled %}
+                <br>{% if d.settled_from %}списано с «{{ d.settled_from.plan.name }}»
+                {% else %}прощено{% endif %}
+                {% if d.settle_note %} · {{ d.settle_note }}{% endif %}
+                · {{ d.settled_on|date:"d.m.Y" }}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if not show_settled %}
+    <form method="post" action="{% url 'fitness_dash:debts_settle_member' club.id p.member.id %}"
+          style="margin-top:11px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      {% csrf_token %}
+      <select class="fc-input" name="membership" style="flex:1;min-width:160px">
+        <option value="">— простить, без списания —</option>
+        {% for ms in p.plans %}
+          <option value="{{ ms.id }}">
+            {{ ms.plan.name }}{% if ms.plan.visits_number %} · осталось {{ ms.remaining_visits }}{% endif %}
+            {% if ms.is_frozen %} (заморожен){% endif %}
+          </option>
+        {% endfor %}
+      </select>
+      <input class="fc-input" name="note" placeholder="причина" style="flex:1;min-width:130px">
+      <button class="fc-btn small" type="submit">
+        Закрыть все {{ p.items|length }}
+      </button>
+    </form>
+    {% if not p.plans %}
+      <div class="fc-sub" style="margin-top:6px">
+        Действующего абонемента нет — продайте его в карточке клиента или
+        закройте долг с причиной.
+      </div>
+    {% endif %}
+    {% endif %}
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="fc-card fc-empty">
+    {% if show_settled %}Закрытых долгов пока нет.
+    {% else %}Долгов нет — все занимаются по действующим абонементам.{% endif %}
+  </div>
+{% endif %}
+{% endblock %}

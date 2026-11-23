@@ -265,7 +265,7 @@ def _years(n):
     return f"{n} лет"
 
 
-def digest_text(club, day, birthdays, expiring=(), lost=(), overdue=()):
+def digest_text(club, day, birthdays, expiring=(), lost=(), overdue=(), owed=()):
     """Короткая сводка на день: кого поздравить и кому позвонить.
 
     Поздравление — повод для разговора, который почти всегда заканчивается
@@ -300,6 +300,15 @@ def digest_text(club, day, birthdays, expiring=(), lost=(), overdue=()):
             phone = f" · {m.phone}" if m.phone else ""
             days = f"{item['days']} дн." if item.get("days") else "ни разу"
             lines.append(f"• {m.full_name} — {days}{phone}")
+
+    if owed:
+        lines.append("")
+        total = sum(item["count"] for item in owed)
+        lines.append(f"🧾 ЗАНЯТИЯ В ДОЛГ — {total}")
+        for item in owed:
+            m = item["member"]
+            phone = f" · {m.phone}" if m.phone else ""
+            lines.append(f"• {m.full_name} — {item['count']}{phone}")
 
     if overdue:
         lines.append("")

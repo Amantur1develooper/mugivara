@@ -19,7 +19,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from fitness import tg
-from fitness.models import FitnessClub, Lead, Member, Membership
+from fitness.models import FitnessClub, Lead, Member, Membership, OwedVisit
 
 
 class Command(BaseCommand):
@@ -114,10 +114,20 @@ class Command(BaseCommand):
                              "days": (timezone.now() - last.visit_time).days})
         lost = lost[:8]
 
+        # Занятия в долг: без них долг тихо копится, пока кто-нибудь не
+        # откроет карточку клиента.
+        owed = []
+        counts = {}
+        for d in (OwedVisit.objects.filter(club=club, is_settled=False)
+                  .select_related("member")):
+            counts.setdefault(d.member_id, {"member": d.member, "count": 0})
+            counts[d.member_id]["count"] += 1
+        owed = sorted(counts.values(), key=lambda x: -x["count"])[:8]
+
         overdue = list(Lead.objects
                        .filter(club=club, next_contact_at__lt=timezone.now())
                        .exclude(status__in=[Lead.Status.SOLD, Lead.Status.LOST])
                        .order_by("next_contact_at")[:8])
 
         return {"birthdays": birthdays, "expiring": expiring,
-                "lost": lost, "overdue": overdue}
+                "lost": lost, "overdue": overdue, "owed": owed}
