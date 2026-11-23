@@ -1,0 +1,54 @@
+{% comment %}
+  Меню клуба для левой колонки кабинета. Отличается от ленты на телефоне
+  одним: проход, клиенты и группы собраны в пункт «Люди» — наводишь, и
+  три кнопки раскрываются вбок. Это три стороны одной работы с людьми, и
+  держать их тремя строками в коротком меню расточительно.
+
+  На устройстве без наведения (телефон, планшет) три пункта показываются
+  сразу развёрнутыми: иначе до них было бы не добраться.
+{% endcomment %}
+{% load fitness_extras %}
+{% with cur=request.resolver_match.url_name|fit_section %}
+  <a href="{% url 'fitness_dash:home' club.id %}" class="{% if cur == 'home' %}on{% endif %}">
+    <span class="db-nav-icon">📊</span> Сводка</a>
+
+  <div class="nav-grp{% if cur == 'checkin' or cur == 'members' or cur == 'groups' %} open{% endif %}">
+    <a class="nav-grp-top" href="{% url 'fitness_dash:members' club.id %}">
+      <span class="db-nav-icon">👥</span> Люди
+      <span class="nav-chev">›</span>
+    </a>
+    <div class="nav-sub">
+      {% if can_money %}
+      <a href="{% url 'fitness_dash:checkin' club.id %}" class="{% if cur == 'checkin' %}on{% endif %}">
+        <span class="db-nav-icon">🚪</span> Проход</a>
+      {% endif %}
+      <a href="{% url 'fitness_dash:members' club.id %}" class="{% if cur == 'members' %}on{% endif %}">
+        <span class="db-nav-icon">👥</span> Клиенты</a>
+      <a href="{% url 'fitness_dash:groups' club.id %}" class="{% if cur == 'groups' %}on{% endif %}">
+        <span class="db-nav-icon">🥋</span> Группы</a>
+    </div>
+  </div>
+
+  {% if can_money %}
+  <a href="{% url 'fitness_dash:debts' club.id %}" class="{% if cur == 'debts' %}on{% endif %}">
+    <span class="db-nav-icon">🧾</span> Долги
+    {% if nav_debts %}<span class="nb">{{ nav_debts }}</span>{% endif %}</a>
+  {% endif %}
+  <a href="{% url 'fitness_dash:classes' club.id %}" class="{% if cur == 'classes' %}on{% endif %}">
+    <span class="db-nav-icon">🗓</span> Расписание</a>
+  <a href="{% url 'fitness_dash:board' club.id %}" class="{% if cur == 'board' %}on{% endif %}">
+    <span class="db-nav-icon">♟️</span> Шахматка</a>
+  {% if can_money %}
+  <a href="{% url 'fitness_dash:leads' club.id %}" class="{% if cur == 'leads' %}on{% endif %}">
+    <span class="db-nav-icon">🔥</span> Заявки
+    {% if nav_leads %}<span class="nb">{{ nav_leads }}</span>{% endif %}</a>
+  <a href="{% url 'fitness_dash:reports' club.id %}" class="{% if cur == 'reports' %}on{% endif %}">
+    <span class="db-nav-icon">📈</span> Отчёт</a>
+  {% endif %}
+  {% if can_profit %}
+  <a href="{% url 'fitness_dash:expenses' club.id %}" class="{% if cur == 'expenses' %}on{% endif %}">
+    <span class="db-nav-icon">💸</span> Расходы</a>
+  <a href="{% url 'fitness_dash:setup' club.id %}" class="{% if cur == 'setup' %}on{% endif %}">
+    <span class="db-nav-icon">⚙️</span> Настройки</a>
+  {% endif %}
+{% endwith %}

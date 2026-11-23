@@ -17,6 +17,8 @@
     <span class="db-nav-icon ic">👥</span><span class="lb">Клиенты</span></a>
   <a href="{% url 'fitness_dash:groups' club.id %}" class="{% if cur == 'groups' %}on{% endif %}">
     <span class="db-nav-icon ic">🥋</span><span class="lb">Группы</span></a>
+  {# Лента на телефоне остаётся плоской: наведения там нет, и прятать
+     «Проход» за второй нажатие значит сделать хуже. #}
   {% if can_money %}
   <a href="{% url 'fitness_dash:debts' club.id %}" class="{% if cur == 'debts' %}on{% endif %}">
     <span class="db-nav-icon ic">🧾</span><span class="lb">Долги</span>

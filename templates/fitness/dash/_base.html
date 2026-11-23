@@ -24,6 +24,29 @@
     width: 3px; height: 18px; background: var(--accent); border-radius: 0 3px 3px 0;
   }
   .db-nav a { position: relative; }
+  /* «Люди» — три стороны одной работы: проход, клиенты, группы. Наводишь
+     — раскрываются вбок, нажимаешь сам пункт — попадаешь к клиентам.
+     Открытым он остаётся и на страницах этих трёх разделов, чтобы было
+     видно, где ты. */
+  .nav-grp { position: relative; }
+  .nav-grp-top { cursor: pointer; }
+  .nav-chev { margin-left: auto; color: var(--muted); font-size: 15px; line-height: 1; }
+  /* Прячем высотой, а не display:none: скрытую через display ссылку
+     нельзя поймать табом, и до «Прохода» с клавиатуры было не добраться —
+     а заодно не срабатывал focus-within, который и должен раскрывать. */
+  .nav-sub { max-height: 0; overflow: hidden; transition: max-height .14s ease; }
+  .nav-grp:hover > .nav-sub,
+  .nav-grp:focus-within > .nav-sub,
+  .nav-grp.open > .nav-sub { max-height: 180px; }
+  .nav-sub a { padding-left: 34px; font-size: 12.5px; }
+  .nav-grp:hover > .nav-grp-top .nav-chev { transform: rotate(90deg); }
+
+  /* Где наведения нет — показываем три пункта сразу: иначе до них никак */
+  @media (hover: none) {
+    .nav-sub { max-height: 180px; }
+    .nav-chev { display: none; }
+  }
+
   .db-nav .nb {
     margin-left: auto; min-width: 18px; height: 18px; border-radius: 100px;
     background: #dc2626; color: #fff; font-size: 10px; font-weight: 800;
@@ -166,7 +189,7 @@
 {% block sidebar_first %}
 <div class="db-nav-section">
   <span class="db-nav-label">{{ club.name|truncatechars:22 }}</span>
-  {% include "fitness/dash/_nav.html" %}
+  {% include "fitness/dash/_nav_side.html" %}
 </div>
 <div class="db-nav-divider"></div>
 {% endblock %}
