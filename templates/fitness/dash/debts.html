@@ -1,14 +1,85 @@
 {% extends "fitness/dash/_base.html" %}
 {% block title %}Долги занятий — {{ club.name }}{% endblock %}
-{% block fc_sub %}Кто отходил без действующего абонемента{% endblock %}
+{% block fc_sub %}Кто сколько должен — деньгами и занятиями{% endblock %}
 
 {% block fc_content %}
-<div class="fc-card" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-  <a href="?" class="fc-chip{% if not show_settled %} bad{% endif %}">
-    Не закрыты{% if open_count %} · {{ open_count }}{% endif %}
-  </a>
-  <a href="?show=settled" class="fc-chip{% if show_settled %} ok{% endif %}">Закрытые</a>
+<div class="fc-card">
+  <div class="fc-sub" style="margin-bottom:10px;line-height:1.5">
+    Две разные вещи, их легко спутать. <b>Деньги</b> — недоплата за
+    абонемент: продали за 4500, взяли 2250. <b>Занятия</b> — человека
+    пустили на тренировку, когда абонемент не действовал, и занятие
+    повисло за ним.
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <a href="?show=money" class="fc-chip{% if show == 'money' %} bad{% endif %}">
+      Деньги{% if money_count %} · {{ money_count }}{% endif %}
+    </a>
+    <a href="?show=visits" class="fc-chip{% if show == 'visits' %} bad{% endif %}">
+      Занятия{% if open_count %} · {{ open_count }}{% endif %}
+    </a>
+    <a href="?show=settled" class="fc-chip{% if show_settled %} ok{% endif %}">Закрытые занятия</a>
+  </div>
 </div>
+
+{% if show == 'money' %}
+  {% if money %}
+    <div class="fc-card" style="border-color:rgba(220,38,38,.4)">
+      <div class="fc-card-t">
+        Денежный долг — {{ money_total|floatformat:0 }} сом у {{ money_count }} чел.
+      </div>
+      <div class="fc-list">
+        {% for ms in money %}
+          <div class="fc-row" style="display:block">
+            <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+              <span class="fc-ava{% if not ms.member.photo %} empty{% endif %}">
+                {% if ms.member.photo %}<img src="{{ ms.member.photo.url }}" alt="" loading="lazy">
+                {% else %}👤{% endif %}
+              </span>
+              <div style="flex:1;min-width:150px">
+                <a class="fc-row-name" style="text-decoration:none"
+                   href="{% url 'fitness_dash:member_detail' club.id ms.member.id %}">
+                  {{ ms.member.full_name }} →
+                </a>
+                <div class="fc-row-sub" style="margin-top:3px">
+                  {% if ms.member.phone %}<a href="tel:{{ ms.member.phone }}" style="color:inherit">{{ ms.member.phone }}</a> · {% endif %}
+                  {{ ms.plan.name }} · куплен {{ ms.purchase_date|date:"d.m.Y" }}
+                  <br>цена {{ ms.price|floatformat:0 }} · оплачено {{ ms.paid_amount|floatformat:0 }}
+                </div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:19px;font-weight:800;color:#dc2626">
+                  {{ ms.debt_amount|floatformat:0 }} <small style="font-size:12px">сом</small>
+                </div>
+              </div>
+            </div>
+
+            {% if can_money %}
+            <form method="post" action="{% url 'fitness_dash:membership_action' club.id ms.id %}"
+                  style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="pay">
+              <input type="hidden" name="back" value="{{ request.get_full_path }}">
+              <input class="fc-input" name="amount" inputmode="numeric"
+                     value="{{ ms.debt_amount|floatformat:0 }}"
+                     style="width:120px;padding:7px 9px;font-size:13px">
+              <select class="fc-input" name="method" style="width:auto;padding:7px 9px;font-size:13px">
+                <option value="cash">Наличные</option>
+                <option value="card">Карта</option>
+                <option value="online">Перевод</option>
+              </select>
+              <button class="fc-btn small" type="submit">Принять</button>
+            </form>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% else %}
+    <div class="fc-card fc-empty">
+      Денежных долгов нет — все абонементы оплачены полностью.
+    </div>
+  {% endif %}
+{% else %}
 
 {% if people %}
   {% for p in people %}
@@ -82,7 +153,8 @@
 {% else %}
   <div class="fc-card fc-empty">
     {% if show_settled %}Закрытых долгов пока нет.
-    {% else %}Долгов нет — все занимаются по действующим абонементам.{% endif %}
+    {% else %}Занятий в долг нет — все занимаются по действующим абонементам.{% endif %}
   </div>
+{% endif %}
 {% endif %}
 {% endblock %}

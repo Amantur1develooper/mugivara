@@ -80,7 +80,11 @@ def _nav_counts(club, staff):
         # внимания, пока не купили и не отказались.
         "nav_leads": Lead.objects.filter(club=club).exclude(
             status__in=[Lead.Status.SOLD, Lead.Status.LOST]).count(),
-        "nav_debts": OwedVisit.objects.filter(club=club, is_settled=False).count(),
+        # В меню считаем оба долга: и занятия, и людей с недоплатой —
+        # иначе цифра врёт, а кассир верит цифре.
+        "nav_debts": (OwedVisit.objects.filter(club=club, is_settled=False).count()
+                      + Membership.objects.filter(member__club=club, is_active=True,
+                                                  debt_amount__gt=0).count()),
     }
 
 
@@ -589,9 +593,13 @@ def membership_action(request, club, staff, membership_id):
     action = request.POST.get("action")
 
     if action == "pay":
-        services.pay_debt(club, ms, _money(request.POST.get("amount"), "0"),
+        paid = _money(request.POST.get("amount"), "0")
+        services.pay_debt(club, ms, paid,
                           method=request.POST.get("method") or "cash", actor=request.user)
-        messages.success(request, "Долг принят")
+        ms.refresh_from_db()
+        tail = (f" Осталось {ms.debt_amount:.0f} сом." if ms.debt_amount
+                else " Долг закрыт полностью.")
+        messages.success(request, f"{ms.member.full_name}: принято {paid:.0f} сом.{tail}")
     elif action == "freeze":
         services.freeze(ms, request.POST.get("days") or 7, actor=request.user)
         messages.success(request, "Абонемент заморожен")
@@ -607,6 +615,10 @@ def membership_action(request, club, staff, membership_id):
         ms.is_active = False
         ms.save(update_fields=["is_active", "updated_at"])
         messages.success(request, "Абонемент закрыт")
+    # Долг принимают и из общего списка долгов — возвращаем туда, откуда
+    # пришли, иначе кассир после каждого платежа ищет список заново.
+    if request.POST.get("back"):
+        return redirect(request.POST["back"])
     return redirect("fitness_dash:member_detail", club_id=club.id, member_id=ms.member_id)
 
 
@@ -1898,12 +1910,23 @@ def discount_save(request, club, staff):
 @login_required(login_url=LOGIN_URL)
 @require(ADMIN, CASHIER)
 def debts(request, club, staff):
-    """Все занятия в долг по клубу — списком, по людям.
+    """Долги клуба: деньги за абонементы и занятия, отходившие без него.
 
-    В карточке клиента долг видно только у него одного, а на входе нужен
-    общий список: кто сколько отходил без абонемента.
+    Это две разные вещи, и их путают: «долг 2500 сом» — недоплата за
+    абонемент, «долг: 3» — три занятия, на которые человека пустили без
+    действующего абонемента. Показываем обе на одной странице, но
+    отдельно, и деньги первыми: их и спрашивают чаще.
     """
-    show_settled = request.GET.get("show") == "settled"
+    show = request.GET.get("show") or "money"
+    show_settled = show == "settled"
+
+    # Деньги: недоплаты по действующим абонементам
+    money = (Membership.objects
+             .filter(member__club=club, is_active=True, debt_amount__gt=0)
+             .select_related("member", "plan")
+             .order_by("-debt_amount", "member__full_name"))
+    money_total = sum(ms.debt_amount for ms in money)
+
     rows = (OwedVisit.objects
             .filter(club=club, is_settled=show_settled)
             .select_related("member", "training_group", "settled_from__plan")
@@ -1931,6 +1954,8 @@ def debts(request, club, staff):
 
     return render(request, "fitness/dash/debts.html",
                   _ctx(club, staff, people=people, show_settled=show_settled,
+                       show=show, money=list(money), money_total=money_total,
+                       money_count=len(money),
                        total=rows.count(),
                        open_count=OwedVisit.objects.filter(club=club,
                                                            is_settled=False).count()))
