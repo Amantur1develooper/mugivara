@@ -92,6 +92,25 @@
     border-color: var(--accent); color: var(--accent); background: rgba(255,77,28,.06);
   }
   .pl-part[hidden] { display: none; }
+
+  /* Панель состава группы — та же механика, что у остальных панелей */
+  .rs-wrap.ready { position: fixed; inset: 0; z-index: 140; display: none; }
+  .rs-wrap.ready.open { display: block; }
+  .rs-wrap.ready .rs-bg { position: absolute; inset: 0; background: rgba(5,10,20,.45); }
+  .rs-wrap.ready .rs-panel {
+    position: absolute; top: 0; right: 0; bottom: 0; width: min(440px, 100%);
+    background: var(--card); border-left: 1px solid var(--border);
+    overflow-y: auto; padding: 16px; box-shadow: -14px 0 40px rgba(0,0,0,.18);
+  }
+  .rs-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .rs-head .t { font-size: 15px; font-weight: 800; flex: 1; line-height: 1.25; }
+  .rs-x {
+    appearance: none; cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg); border-radius: 10px; width: 32px; height: 32px;
+    font-size: 15px; color: var(--text2); flex: none;
+  }
+  /* Панель не создана скриптом — пусть не висит пустым блоком на странице */
+  .rs-wrap:not(.ready) { display: none; }
 </style>
 
 <div class="fc-card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -128,6 +147,10 @@
           <td class="wg-cell{% if d.is_today %} today{% endif %}">
             {% for it in d.by_hour|get:h %}
               <a class="wg-cls {% if it.cls.group_id %}group{% else %}open-reg{% endif %}{% if it.cancelled %} off{% endif %}"
+                 {% if it.cls.group_id and not it.cancelled %}
+                   data-roster
+                   data-title="{{ it.cls.group.title }} · {{ d.day|date:'D, d.m' }} {{ it.cls.time_from|time:'H:i' }}"
+                 {% endif %}
                  href="{% url 'fitness_dash:class_day' club.id it.cls.id %}?date={{ d.day|date:'Y-m-d' }}">
                 <div class="wg-t">{{ it.cls.time_from|time:"H:i" }}</div>
                 <div class="wg-n">
@@ -244,6 +267,100 @@
     </form>
   </div>
 </div>
+
+<div class="rs-wrap" id="rosterWrap">
+  <div class="rs-bg" data-roster-close></div>
+  <div class="rs-panel">
+    <div class="rs-head">
+      <div class="t" id="rosterTitle">Состав группы</div>
+      <a class="fc-btn ghost small" id="rosterOpen" href="#">Открыть</a>
+      <button class="rs-x" type="button" data-roster-close title="Закрыть">✕</button>
+    </div>
+    <div id="rosterBody">
+      <div class="fc-sub">Загружаем…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Нажали группу в сетке — состав открывается панелью справа, отмечать
+  // можно не уходя с расписания. Состав рисует та же страница тренировки:
+  // забираем из неё готовый блок, а не строим второй такой же. Без
+  // скрипта ссылка просто открывает тренировку, как раньше.
+  (function () {
+    const wrap = document.getElementById('rosterWrap');
+    const body = document.getElementById('rosterBody');
+    const title = document.getElementById('rosterTitle');
+    const openLink = document.getElementById('rosterOpen');
+    if (!wrap || !window.fetch) return;
+    wrap.classList.add('ready');
+
+    let url = '';
+
+    const close = () => {
+      wrap.classList.remove('open');
+      document.body.style.overflow = '';
+    };
+
+    const fill = async () => {
+      try {
+        const res = await fetch(url, { credentials: 'same-origin' });
+        if (!res.ok) throw new Error(res.status);
+        const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+        const block = doc.getElementById('rosterBlock');
+        if (!block) throw new Error('нет состава');
+        body.innerHTML = block.innerHTML;
+      } catch (e) {
+        // Не подгрузилось — ведём себя как до панели: просто открываем
+        // страницу тренировки. Хуже прежнего быть не должно.
+        close();
+        location.href = url;
+      }
+    };
+
+    document.querySelectorAll('[data-roster]').forEach(a => {
+      a.addEventListener('click', ev => {
+        ev.preventDefault();
+        url = a.getAttribute('href');
+        title.textContent = a.dataset.title || 'Состав группы';
+        openLink.href = url;
+        body.innerHTML = '<div class="fc-sub">Загружаем…</div>';
+        wrap.classList.add('open');
+        document.body.style.overflow = 'hidden';
+        fill();
+      });
+    });
+
+    wrap.querySelectorAll('[data-roster-close]').forEach(b => b.addEventListener('click', close));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+
+    // Отметки внутри панели: тот же запрос, что и на странице тренировки,
+    // после него состав перечитываем целиком — так он точно совпадает с
+    // тем, что в базе.
+    body.addEventListener('click', async ev => {
+      const btn = ev.target.closest('button[name="action"], button[type="submit"]');
+      if (!btn) return;
+      const form = btn.closest('form');
+      if (!form) return;
+      ev.preventDefault();
+
+      const data = new FormData(form);
+      if (btn.name === 'action') data.append('action', btn.value);
+      body.querySelectorAll('button').forEach(b => b.disabled = true);
+      try {
+        const res = await fetch(form.action, {
+          method: 'POST', body: data,
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          credentials: 'same-origin',
+        });
+        if (!res.ok) throw new Error(res.status);
+        await fill();
+      } catch (e) {
+        form.submit();
+      }
+    });
+  })();
+</script>
 
 <script>
   // Нажали пустую клетку — панель открывается с уже выбранным днём и

@@ -113,10 +113,11 @@
 </div>
 
 {% if cls.group_id %}
-<div class="fc-card">
+<div class="fc-card" id="rosterBlock">
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
     <div class="fc-card-t" style="margin:0;flex:1;min-width:160px">
       Состав группы — отметьте, кто пришёл
+      <span class="fc-chip ok" id="rosterCame">{{ came }} из {{ roster|length }}</span>
     </div>
     {% if roster and not state.is_cancelled %}
     <form method="post" action="{% url 'fitness_dash:class_mark_all' club.id cls.id %}">

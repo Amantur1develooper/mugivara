@@ -1614,8 +1614,12 @@ def class_mark_all(request, club, staff, class_id):
         _booking_mark(request, club, b, "came")
         done += 1
 
-    messages.success(request, f"Отмечено пришедшими: {done}."
-                     + (f" Уже были отмечены: {skipped}." if skipped else ""))
+    note = (f"Отмечено пришедшими: {done}."
+            + (f" Уже были отмечены: {skipped}." if skipped else ""))
+    if _wants_json(request):
+        return JsonResponse({"ok": True, "done": done, "skipped": skipped,
+                             "note": note, "came": _came_count(cls, day)})
+    messages.success(request, note)
     return redirect(request.POST.get("back") or reverse(
         "fitness_dash:class_day", args=[club.id, cls.id]) + f"?date={day:%Y-%m-%d}")
 
