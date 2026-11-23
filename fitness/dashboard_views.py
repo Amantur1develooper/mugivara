@@ -313,6 +313,43 @@ def checkin_pass(request, club, staff, member_id):
     return redirect("fitness_dash:checkin", club_id=club.id)
 
 
+@login_required(login_url=LOGIN_URL)
+@require(ADMIN, CASHIER)
+def member_pass_card(request, club, staff, member_id):
+    """Короткая карточка клиента для панели прохода.
+
+    На ресепшене нужно одно: посмотреть, пускать ли человека, и пустить.
+    Открывать ради этого полную карточку с абонементами, платежами и
+    правкой — лишние полэкрана и лишний переход.
+    """
+    member = get_object_or_404(Member, id=member_id, club=club)
+    today = timezone.localdate()
+    ms = member.active_membership()
+    frozen = Membership.objects.filter(member=member, is_active=True,
+                                       is_frozen=True).first()
+
+    state = "none"
+    if ms and ms.is_usable(today):
+        state = "active"
+    elif frozen:
+        state = "frozen"
+
+    # Сегодняшняя тренировка его групп: кассиру полезно сказать вслух
+    # «вам в малый зал к 19:00», а не просто открыть дверь.
+    links = [l for l in member.group_links.filter(is_active=True)
+             .select_related("group", "group__trainer")
+             .prefetch_related("group__slots__trainer")]
+    today_items = _week_plan(links)[today.weekday()]["items"]
+
+    return render(request, "fitness/dash/_pass_card.html", _ctx(
+        club, staff, member=member, ms=ms, state=state, frozen=frozen,
+        today_items=today_items,
+        debts=member.owed_visits.filter(is_settled=False).count(),
+        visited_today=member.visits.filter(visit_time__date=today, success=True).exists(),
+        trainers=club.trainers.filter(is_active=True),
+    ))
+
+
 # ── Клиенты ─────────────────────────────────────────────────────────────────
 
 def _members_queryset(request, club, staff):

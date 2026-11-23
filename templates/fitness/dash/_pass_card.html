@@ -1,0 +1,78 @@
+{% comment %}
+  Короткая карточка клиента для панели прохода: пускать или нет, и чем
+  закрыть, если нет. Полную карточку открывают отсюда ссылкой.
+{% endcomment %}
+<div class="pc-top">
+  <span class="fc-ava fc-ava-big{% if not member.photo %} empty{% endif %}">
+    {% if member.photo %}<img src="{{ member.photo.url }}" alt="{{ member.full_name }}">
+    {% else %}👤{% endif %}
+  </span>
+  <div style="min-width:0">
+    <div style="font-size:16px;font-weight:800;line-height:1.25">{{ member.full_name }}</div>
+    <div style="margin-top:6px">
+      {% if state == 'active' %}<span class="fc-chip ok">абонемент активен</span>
+      {% elif state == 'frozen' %}<span class="fc-chip cold">заморожен</span>
+      {% else %}<span class="fc-chip bad">нет абонемента</span>{% endif %}
+      {% if debts %}<span class="fc-chip bad">долг: {{ debts }}</span>{% endif %}
+      {% if visited_today %}<span class="fc-chip">сегодня уже был</span>{% endif %}
+    </div>
+    <div class="fc-row-sub" style="margin-top:6px">
+      {% if member.phone %}<a href="tel:{{ member.phone }}" style="color:inherit">{{ member.phone }}</a>{% endif %}
+      {% if member.card_id %} · карта {{ member.card_id }}{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="fc-list" style="margin-top:12px">
+  {% if ms %}
+    <div class="fc-row" style="grid-template-columns:1fr">
+      <div class="fc-row-main">
+        <div class="fc-row-name">{{ ms.plan.name }}</div>
+        <div class="fc-row-sub">
+          {% if ms.plan.visits_number %}осталось {{ ms.remaining_visits }} из {{ ms.plan.visits_number }}
+          {% else %}без ограничения по посещениям{% endif %}
+          {% if ms.activated %}<br>действует до {{ ms.end_date|date:"d.m.Y" }}
+            {% if ms.days_left >= 0 %} · {{ ms.days_left }} дн.{% else %} · срок вышел{% endif %}
+          {% else %}<br>начнётся с этого прохода{% endif %}
+          {% if ms.is_frozen %}<br>⛔️ заморожен с {{ ms.freeze_start|date:"d.m.Y" }}{% endif %}
+          {% if ms.debt_amount %}<br><span class="fc-chip bad">долг {{ ms.debt_amount|floatformat:0 }} сом</span>{% endif %}
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div class="fc-empty" style="padding:14px">
+      Действующего абонемента нет. Проход запишется в долг — закрыть его
+      можно в карточке клиента.
+    </div>
+  {% endif %}
+
+  {% for it in today_items %}
+    <div class="fc-row" style="grid-template-columns:1fr">
+      <div class="fc-row-main">
+        <div class="fc-row-name">🥋 сегодня {{ it.time|time:"H:i" }} · {{ it.group.title }}</div>
+        <div class="fc-row-sub">
+          {% if it.trainer %}{{ it.trainer.name }}{% endif %}
+          {% if it.room %} · {{ it.room }}{% endif %}
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<form method="post" action="{% url 'fitness_dash:checkin_pass' club.id member.id %}"
+      class="pc-form" style="margin-top:14px">
+  {% csrf_token %}
+  {% if trainers %}
+    <label class="fc-label">С тренером</label>
+    <select class="fc-select" name="trainer_id" style="margin-bottom:10px">
+      <option value="">без тренера</option>
+      {% for t in trainers %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
+    </select>
+  {% endif %}
+  <button class="fc-btn" type="submit" style="width:100%">🚪 Пропустить в зал</button>
+</form>
+
+<a href="{% url 'fitness_dash:member_detail' club.id member.id %}"
+   class="fc-btn ghost small" style="margin-top:10px;display:inline-block">
+  Открыть полную карточку →
+</a>

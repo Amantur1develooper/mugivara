@@ -12,6 +12,8 @@ urlpatterns = [
 
     path("<int:club_id>/checkin/", v.checkin, name="checkin"),
     path("<int:club_id>/checkin/<int:member_id>/pass/", v.checkin_pass, name="checkin_pass"),
+    path("<int:club_id>/checkin/<int:member_id>/card/", v.member_pass_card,
+         name="member_pass_card"),
 
     path("<int:club_id>/members/", v.members, name="members"),
     path("<int:club_id>/members/new/", v.member_save, name="member_new"),
