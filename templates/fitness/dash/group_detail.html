@@ -323,28 +323,169 @@
     </div>
   {% endif %}
 
-  {% if staff.role != "trainer" %}
-  <form method="post" action="{% url 'fitness_dash:group_slot' club.id g.id %}"
-        id="slotAdd" class="sl-add" style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
-    {% csrf_token %}
-    <div class="fc-card-t" style="margin-bottom:10px">Новая тренировка</div>
-    <div class="fc-grid2">
-      <div><label class="fc-label">День</label>
-        <select class="fc-input" name="weekday" id="slotDay">
-          {% for val, label in weekdays %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
-        </select></div>
-      <div><label class="fc-label">Начало</label>
-        <input class="fc-input" name="time_from" id="slotTime" type="time" required
-               data-slots data-slots-from="7" data-slots-to="22" data-slots-step="30"></div>
-      <div><label class="fc-label">Длительность, мин</label>
-        <input class="fc-input" name="duration_min" type="number" min="15" max="300" value="60"></div>
-      <div><label class="fc-label">Зал</label>
-        <input class="fc-input" name="room" placeholder="малый зал"></div>
-    </div>
-    <button class="fc-btn" type="submit" style="margin-top:12px">Поставить тренировку</button>
-  </form>
-  {% endif %}
 </div>
+
+{% if staff.role != "trainer" %}
+<div class="ns-wrap" id="slotWrap">
+  <div class="ns-bg" data-slot-close></div>
+  <div class="ns-panel">
+    <div class="ns-head">
+      <div class="t">Новая тренировка</div>
+      <button class="ns-x" type="button" data-slot-close title="Закрыть">✕</button>
+    </div>
+    <div class="fc-sub" id="slotWhen" style="margin-bottom:12px"></div>
+
+    <form method="post" action="{% url 'fitness_dash:group_slot' club.id g.id %}" id="slotAdd">
+      {% csrf_token %}
+      <input type="hidden" name="weekday" id="slotDay" value="0">
+
+      <label class="fc-label">День недели</label>
+      <div class="fc-slots" id="slotDays">
+        {# Сокращения из общего списка: обрезка названия давала «Чет» и «Суб» #}
+        {% for val, label in weekdays %}
+          <button class="fc-slot" type="button" data-day="{{ val }}"
+                  title="{{ label }}">{{ val|wd_short }}</button>
+        {% endfor %}
+      </div>
+
+      <label class="fc-label" style="margin-top:12px">Начало</label>
+      <input class="fc-input" name="time_from" id="slotTime" type="time" required
+             data-slots data-slots-from="7" data-slots-to="22" data-slots-step="30">
+
+      <label class="fc-label" style="margin-top:12px">Длительность</label>
+      <input class="fc-input" name="duration_min" id="slotDur" type="number"
+             min="15" max="300" value="60">
+      <div class="fc-slots" id="slotDurs">
+        <button class="fc-slot" type="button" data-dur="45">45 мин</button>
+        <button class="fc-slot on" type="button" data-dur="60">1 час</button>
+        <button class="fc-slot" type="button" data-dur="90">1,5 часа</button>
+        <button class="fc-slot" type="button" data-dur="120">2 часа</button>
+      </div>
+
+      <label class="fc-label" style="margin-top:12px">Зал</label>
+      <input class="fc-input" name="room" list="roomList" placeholder="малый зал">
+      <datalist id="roomList">
+        {% for r in rooms %}<option value="{{ r }}"></option>{% endfor %}
+      </datalist>
+      {% if rooms %}
+        <div class="fc-slots" id="slotRooms">
+          {% for r in rooms %}
+            <button class="fc-slot" type="button" data-room="{{ r }}">{{ r }}</button>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <button class="fc-btn" type="submit" style="margin-top:14px;width:100%">
+        Поставить тренировку
+      </button>
+      <div class="fc-sub" style="margin-top:8px">
+        Тренировка станет еженедельной: будет повторяться в этот день каждую
+        неделю. Тренер, секция и число мест возьмутся из группы.
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  /* Бланк тренировки — панелью справа, как остальные бланки клуба. День,
+     длительность и зал выбираются кнопками: на ресепшене печатать «малый
+     зал» руками каждый раз незачем. */
+  .ns-wrap.ready { position: fixed; inset: 0; z-index: 140; display: none; }
+  .ns-wrap.ready.open { display: block; }
+  .ns-wrap:not(.ready) { display: none; }
+  .ns-wrap.ready .ns-bg { position: absolute; inset: 0; background: rgba(5,10,20,.45); }
+  .ns-wrap.ready .ns-panel {
+    position: absolute; top: 0; right: 0; bottom: 0; width: min(420px, 100%);
+    background: var(--card); border-left: 1px solid var(--border);
+    overflow-y: auto; padding: 16px; box-shadow: -14px 0 40px rgba(0,0,0,.18);
+  }
+  .ns-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .ns-head .t { font-size: 16px; font-weight: 800; flex: 1; }
+  .ns-x {
+    appearance: none; cursor: pointer; border: 1px solid var(--border);
+    background: var(--bg); border-radius: 10px; width: 32px; height: 32px;
+    font-size: 15px; color: var(--text2);
+  }
+</style>
+
+<script>
+  (function () {
+    const wrap = document.getElementById('slotWrap');
+    if (!wrap) return;
+    wrap.classList.add('ready');
+
+    const dayInp = document.getElementById('slotDay');
+    const dayBox = document.getElementById('slotDays');
+    const time = document.getElementById('slotTime');
+    const dur = document.getElementById('slotDur');
+    const when = document.getElementById('slotWhen');
+    const NAMES = [...dayBox.children].map(b => b.textContent.trim());
+
+    const retitle = () => {
+      const i = parseInt(dayInp.value || '0', 10);
+      when.textContent = time.value
+        ? `${NAMES[i]}, ${time.value} — каждую неделю`
+        : `${NAMES[i]} — выберите время`;
+    };
+    const markDay = () => {
+      [...dayBox.children].forEach(b => b.classList.toggle('on', b.dataset.day === dayInp.value));
+      retitle();
+    };
+
+    dayBox.addEventListener('click', e => {
+      const b = e.target.closest('[data-day]');
+      if (!b) return;
+      dayInp.value = b.dataset.day;
+      markDay();
+    });
+    time.addEventListener('input', retitle);
+
+    // Длительность кнопками: 45 минут, час, полтора, два — других почти не бывает
+    const durs = document.getElementById('slotDurs');
+    if (durs) {
+      durs.addEventListener('click', e => {
+        const b = e.target.closest('[data-dur]');
+        if (!b) return;
+        dur.value = b.dataset.dur;
+        [...durs.children].forEach(x => x.classList.toggle('on', x === b));
+      });
+      dur.addEventListener('input', () => {
+        [...durs.children].forEach(x => x.classList.toggle('on', x.dataset.dur === dur.value));
+      });
+    }
+
+    const rooms = document.getElementById('slotRooms');
+    if (rooms) {
+      const roomInp = wrap.querySelector('input[name="room"]');
+      rooms.addEventListener('click', e => {
+        const b = e.target.closest('[data-room]');
+        if (!b) return;
+        roomInp.value = b.dataset.room;
+        [...rooms.children].forEach(x => x.classList.toggle('on', x === b));
+      });
+    }
+
+    const open = weekday => {
+      if (weekday !== undefined && weekday !== '') dayInp.value = String(weekday);
+      markDay();
+      wrap.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => time.focus(), 60);
+    };
+    const close = () => {
+      wrap.classList.remove('open');
+      document.body.style.overflow = '';
+    };
+
+    document.querySelectorAll('[data-slot-add]').forEach(b => {
+      b.addEventListener('click', () => open(b.dataset.weekday));
+    });
+    wrap.querySelectorAll('[data-slot-close]').forEach(b => b.addEventListener('click', close));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+    markDay();
+  })();
+</script>
+{% endif %}
 
 <style>
   /* Расписание группы неделей: видно, в какие дни ходят, а в какие нет, и

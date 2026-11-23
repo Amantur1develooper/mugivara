@@ -943,6 +943,11 @@ def group_detail(request, club, staff, group_id):
                              for i in range(7)],
                        sections=club.sections.filter(is_active=True),
                        trainers=club.trainers.filter(is_active=True),
+                       # Залы, которые уже где-то вписывали: печатать
+                       # «малый зал» руками каждый раз незачем.
+                       rooms=sorted({r for r in GroupClass.objects
+                                     .filter(club=club).exclude(room="")
+                                     .values_list("room", flat=True)}),
                        weekdays=GroupClass._meta.get_field("weekday").choices))
 
 
