@@ -595,6 +595,18 @@
         <input class="db-input" type="text" name="lon" id="inp-lon" value="{{ branch.lon|unlocalize|default:'' }}" placeholder="72.7985">
       </div>
     </div>
+
+    <div class="db-form-group" style="margin:14px 0 0">
+      <label class="db-label" for="map_url">Ссылка на карту</label>
+      <input class="db-input" id="map_url" name="map_url" type="url"
+             value="{{ branch.map_url }}"
+             placeholder="https://2gis.kg/osh/firm/70000001006123456">
+      <div class="ph-note" style="margin-top:6px">
+        Страница точки в 2ГИС или Google Maps. На странице контактов
+        появится кнопка «Как добраться» — она откроет карту с готовым
+        маршрутом. Метка выше нужна для карты на главной, это разные вещи.
+      </div>
+    </div>
   </div>
 
   <div class="db-form-card wide" id="sec-tg" style="margin-top:20px">

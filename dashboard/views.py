@@ -6,6 +6,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
+from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django.db import transaction
 from decimal import Decimal, InvalidOperation
 
@@ -752,6 +754,24 @@ def branch_edit(request, branch_id):
             else:
                 setattr(branch, field, value[:limit])
         branch.address  = request.POST.get("address", branch.address).strip()[:300]
+
+        # Ссылку на карту обычно копируют из приложения 2ГИС, и там она
+        # приходит без схемы — «2gis.kg/osh/firm/...». В href такая строка
+        # ведёт на несуществующую страницу самого кабинета, поэтому схему
+        # дописываем сами, а совсем непохожее на адрес не сохраняем, чтобы
+        # кнопка «Как добраться» не вела в никуда.
+        if "map_url" in request.POST:
+            link = request.POST.get("map_url", "").strip()[:200]
+            if link and "://" not in link:
+                link = "https://" + link
+            if link:
+                try:
+                    URLValidator()(link)
+                except ValidationError:
+                    messages.error(request, "Ссылка на карту не похожа на адрес — "
+                                            "не сохранил её. Остальное записано.")
+                    link = branch.map_url
+            branch.map_url = link
 
         # Тему оформления меняет только администратор: это платная доп. услуга,
         # и неверный код просто вернул бы филиал на стандартное меню.
