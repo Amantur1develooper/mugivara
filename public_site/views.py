@@ -654,6 +654,10 @@ def _build_branch_menu_context(request, branch):
         "items_in_category",
         queryset=BranchCategoryItem.objects
             .select_related("branch_item__item")
+            # Размеры блюда тянем заранее. Без этого карточка спрашивала
+            # их у базы сама, и на меню из двух сотен блюд набегала тысяча
+            # запросов: страница открывалась около секунды на пустом месте.
+            .prefetch_related("branch_item__sizes")
             .filter(branch_item__is_available=True, branch_item__delivery_available=True)
             .order_by("sort_order", "-branch_item__item__order_count", "id"),
         to_attr="prefetched_items",
@@ -661,6 +665,8 @@ def _build_branch_menu_context(request, branch):
     categories = list(
         BranchCategory.objects
         .filter(branch=branch, is_active=True)
+        # Название раздела берут из category — иначе запрос на каждый раздел.
+        .select_related("category")
         .prefetch_related(rows_prefetch)
         .order_by("sort_order", "id")
     )
@@ -692,9 +698,11 @@ def _build_branch_menu_context(request, branch):
         .prefetch_related("groups__ingredients")
         .order_by("sort_order", "id")
     )
+    # Ингредиенты уже загружены prefetch_related — перебираем их в памяти.
+    # filter().exists() сходил бы в базу заново на каждый шаг конструктора.
     constructors = [
         cx for cx in constructors_qs
-        if any(g.ingredients.filter(is_active=True).exists() for g in cx.groups.all())
+        if any(any(i.is_active for i in g.ingredients.all()) for g in cx.groups.all())
     ]
 
     cart = get_cart(request, branch.id)

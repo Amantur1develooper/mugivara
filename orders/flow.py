@@ -9,7 +9,10 @@
 """
 import logging
 
+from django.db import transaction
 from django.utils import timezone
+
+from integrations import tgbot
 
 log = logging.getLogger(__name__)
 
@@ -124,9 +127,20 @@ def apply_status(order, new_status, actor="", notify=True, payment_status=None,
         stamp = timezone.localtime().strftime("%d.%m %H:%M")
         mark = f"{STATUS_LABEL.get(order.status, order.status)} — {actor or 'кабинет'}, {stamp}"
         tail = " · ".join(n for n in notes if n)
-        try:
-            order_tg.refresh_order(order, footer=f"{mark}\n{tail}" if tail else mark)
-        except Exception:
-            log.exception("не смог обновить карточку заказа %s в Telegram", order.id)
+        footer = f"{mark}\n{tail}" if tail else mark
+
+        # Карточку в Telegram переписываем в фоне. Это сетевой вызов на
+        # каждый чат филиала, а api.telegram.org из Кыргызстана отвечает
+        # через раз — до восьми секунд на попытку. При закрытии стола
+        # статус меняют у всех заказов стола подряд, и официант ждал их
+        # все: счёт «долго выходил», а иногда отваливался по таймауту.
+        # Заказ к этому моменту уже сохранён, ответу ждать нечего.
+        def _refresh():
+            try:
+                order_tg.refresh_order(order, footer=footer)
+            except Exception:
+                log.exception("не смог обновить карточку заказа %s в Telegram", order.id)
+
+        transaction.on_commit(lambda: tgbot.in_background(_refresh))
 
     return notes

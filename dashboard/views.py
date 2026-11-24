@@ -132,31 +132,52 @@ def profile_view(request):
 def home(request):
     from orders.models import Order
 
-    restaurants = _user_restaurants(request.user).prefetch_related("branches")
+    from django.db.models import Prefetch
 
     now = timezone.now()
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start  = today_start - timedelta(days=today_start.weekday())
     month_start = today_start.replace(day=1)
 
+    # Филиалы забираем уже отфильтрованными. Обычный prefetch тут не
+    # помогал: .filter(is_active=True) на предзагруженной связи ходит в
+    # базу заново, по запросу на каждое заведение.
+    restaurants = list(_user_restaurants(request.user).prefetch_related(
+        Prefetch("branches",
+                 queryset=Branch.objects.filter(is_active=True).order_by("name_ru"),
+                 to_attr="active_branches")))
+
+    # Выручка и число заказов за день, неделю и месяц — одним запросом на
+    # все заведения сразу. Раньше их было шесть на каждое: у владельца
+    # полутора десятков точек главная открывалась заметно медленно.
+    totals = {}
+    if restaurants:
+        rows = (Order.objects
+                .filter(branch__restaurant__in=[r.id for r in restaurants],
+                        branch__is_active=True)
+                .exclude(status=Order.Status.CANCELLED)
+                .values("branch__restaurant_id")
+                .annotate(
+                    today=Sum("total_amount", filter=Q(created_at__gte=today_start)),
+                    week=Sum("total_amount", filter=Q(created_at__gte=week_start)),
+                    month=Sum("total_amount", filter=Q(created_at__gte=month_start)),
+                    today_cnt=Count("id", filter=Q(created_at__gte=today_start)),
+                    week_cnt=Count("id", filter=Q(created_at__gte=week_start)),
+                    month_cnt=Count("id", filter=Q(created_at__gte=month_start)),
+                ))
+        totals = {row["branch__restaurant_id"]: row for row in rows}
+
     data = []
     for r in restaurants:
-        branches = list(r.branches.filter(is_active=True).order_by("name_ru"))
-        branch_ids = [b.id for b in branches]
-
-        def _sum(qs):
-            return qs.aggregate(s=Sum("total_amount"))["s"] or 0
-
-        base = Order.objects.filter(branch_id__in=branch_ids).exclude(status=Order.Status.CANCELLED)
-        rev = {
-            "today":  _sum(base.filter(created_at__gte=today_start)),
-            "week":   _sum(base.filter(created_at__gte=week_start)),
-            "month":  _sum(base.filter(created_at__gte=month_start)),
-            "today_cnt":  base.filter(created_at__gte=today_start).count(),
-            "week_cnt":   base.filter(created_at__gte=week_start).count(),
-            "month_cnt":  base.filter(created_at__gte=month_start).count(),
-        }
-        data.append({"restaurant": r, "branches": branches, "rev": rev})
+        row = totals.get(r.id, {})
+        data.append({
+            "restaurant": r,
+            "branches": r.active_branches,
+            # Заведение без заказов в запрос не попало, и пустые суммы
+            # приходят как None — в шаблоне нужен ноль.
+            "rev": {key: (row.get(key) or 0) for key in
+                    ("today", "week", "month", "today_cnt", "week_cnt", "month_cnt")},
+        })
 
     from karaoke.models import KaraokeVenue, KaraokeMembership
     user = request.user

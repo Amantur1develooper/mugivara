@@ -287,8 +287,15 @@ class BranchItem(ServingWindowMixin, TimeStampedModel):
     # ── Размеры ──────────────────────────────────────────────────────────────
 
     def size_list(self):
-        """Активные размеры по порядку. Пусто — у блюда один размер."""
-        return [z for z in self.sizes.all() if z.is_active]
+        """Активные размеры по порядку. Пусто — у блюда один размер.
+
+        Результат запоминаем на объекте: шаблон карточки спрашивает
+        размеры несколько раз подряд (есть ли они, какой по умолчанию,
+        цена от), и без этого каждая проверка шла бы в базу отдельно.
+        """
+        if not hasattr(self, "_size_list_cache"):
+            self._size_list_cache = [z for z in self.sizes.all() if z.is_active]
+        return self._size_list_cache
 
     @property
     def has_sizes(self):

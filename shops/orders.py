@@ -8,7 +8,10 @@
 """
 import logging
 
+from django.db import transaction
 from django.utils import timezone
+
+from integrations import tgbot
 
 from . import stock as shop_stock
 
@@ -72,6 +75,16 @@ def apply_status(order, new_status, actor="", notify=True):
         stamp = timezone.localtime().strftime("%d.%m %H:%M")
         mark = f"{STATUS_LABEL.get(new_status, new_status)} — {actor or 'кабинет'}, {stamp}"
         tail = " · ".join(n for n in notes if n)
-        shop_tg.refresh_order(order, footer=f"{mark}\n{tail}" if tail else mark)
+        footer = f"{mark}\n{tail}" if tail else mark
+
+        # В фоне, как и у ресторанов: переписать карточку — сетевой вызов
+        # на каждый чат, и держать из-за него ответ кассы незачем.
+        def _refresh():
+            try:
+                shop_tg.refresh_order(order, footer=footer)
+            except Exception:
+                log.exception("не смог обновить карточку заказа %s в Telegram", order.id)
+
+        transaction.on_commit(lambda: tgbot.in_background(_refresh))
 
     return notes
