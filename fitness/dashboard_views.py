@@ -1463,19 +1463,44 @@ def setup(request, club, staff):
             tail = (f" — направление «{plan.section.name}»" if plan.section
                     else " — без направления, подойдёт к любой группе")
             messages.success(request, f"Абонемент добавлен{tail}")
-        elif what == "plan_section":
+        elif what == "plan_edit":
             plan = MembershipPlan.objects.filter(
                 id=request.POST.get("plan_id") or 0, club=club).first()
             if plan:
+                was_section = plan.section
+                plan.name = (request.POST.get("p_name") or plan.name).strip()[:150]
+                plan.visits_number = _int(request.POST.get("p_visits"))
+                plan.validity_days = max(1, _int(request.POST.get("p_days"), 30))
+                plan.price = _money(request.POST.get("p_price"), "0")
+                plan.description = (request.POST.get("p_desc") or "").strip()
                 plan.section = club.sections.filter(
-                    id=request.POST.get("section") or 0).first()
-                plan.save(update_fields=["section", "updated_at"])
-                messages.success(
-                    request,
-                    f"«{plan.name}»: " + (f"направление «{plan.section.name}»"
-                                          if plan.section else "без направления")
-                    + ". Новые продажи пойдут с ним; у проданных раньше "
-                      "направление можно поменять в карточке клиента.")
+                    id=request.POST.get("p_section") or 0).first()
+                plan.is_active = request.POST.get("p_active") == "on"
+                plan.save()
+                note = f"«{plan.name}» сохранён"
+                # Смена направления у тарифа на проданное не действует:
+                # у абонемента своё поле, иначе списания задним числом
+                # поехали бы не с того абонемента.
+                if plan.section != was_section:
+                    note += (". Новые продажи пойдут с новым направлением; "
+                             "у проданных раньше его меняют в карточке клиента")
+                messages.success(request, note)
+        elif what == "plan_delete":
+            plan = MembershipPlan.objects.filter(
+                id=request.POST.get("plan_id") or 0, club=club).first()
+            if plan:
+                # По проданным абонементам считают выручку и посещения —
+                # такой тариф не удаляем, а убираем из продажи.
+                if plan.memberships.exists():
+                    plan.is_active = False
+                    plan.save(update_fields=["is_active", "updated_at"])
+                    messages.info(request, f"«{plan.name}» убран из продажи: "
+                                           f"по нему есть проданные абонементы, "
+                                           f"поэтому запись сохранена")
+                else:
+                    name = plan.name
+                    plan.delete()
+                    messages.success(request, f"«{name}» удалён")
         elif what == "trainer_toggle":
             tr = Trainer.objects.filter(id=request.POST.get("trainer_id"), club=club).first()
             if tr:

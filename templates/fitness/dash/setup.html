@@ -173,13 +173,14 @@
   <div class="fc-card-t">Виды абонементов · {{ plans|length }}</div>
   <div class="fc-list" style="margin-bottom:12px">
     {% for p in plans %}
-      <div class="fc-row" style="display:block">
-        <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+      <details class="fc-row" style="grid-template-columns:1fr;display:block;cursor:pointer">
+        <summary style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
           <div style="flex:1;min-width:150px">
             <div class="fc-row-name">
               {{ p.name }}
               {% if p.section %}<span class="fc-chip">{{ p.section.name }}</span>
               {% else %}<span class="fc-chip">без направления</span>{% endif %}
+              {% if not p.is_active %}<span class="fc-chip">не продаётся</span>{% endif %}
             </div>
             <div class="fc-row-sub">
               {% if p.visits_number %}{{ p.visits_number }} посещений{% else %}без ограничения{% endif %}
@@ -187,24 +188,56 @@
             </div>
           </div>
           <div class="fc-row-right">{{ p.price|floatformat:0 }} сом</div>
-        </div>
-        {% if is_admin and sections %}
-        <form method="post" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        </summary>
+        {% if is_admin %}
+        <form method="post" style="margin-top:12px">
           {% csrf_token %}
-          <input type="hidden" name="what" value="plan_section">
+          <input type="hidden" name="what" value="plan_edit">
           <input type="hidden" name="plan_id" value="{{ p.id }}">
-          <select class="fc-input" name="section" style="flex:1;min-width:150px;padding:7px 9px;font-size:12.5px">
-            <option value="">— без направления (зал, фитнес) —</option>
-            {% for s in sections %}
-              <option value="{{ s.id }}" {% if p.section_id == s.id %}selected{% endif %}>
-                {% if s.icon %}{{ s.icon }} {% endif %}{{ s.name }}
-              </option>
-            {% endfor %}
-          </select>
-          <button class="fc-btn ghost small" type="submit">Сохранить</button>
+          <div class="fc-grid3">
+            <div><label class="fc-label">Название</label>
+              <input class="fc-input" name="p_name" value="{{ p.name }}"></div>
+            <div><label class="fc-label">Посещений</label>
+              <input class="fc-input" name="p_visits" type="number" min="0"
+                     value="{{ p.visits_number }}"></div>
+            <div><label class="fc-label">Дней</label>
+              <input class="fc-input" name="p_days" type="number" min="1"
+                     value="{{ p.validity_days }}"></div>
+            <div><label class="fc-label">Цена</label>
+              <input class="fc-input" name="p_price" inputmode="numeric"
+                     value="{{ p.price|floatformat:0 }}"></div>
+            {% if sections %}
+            <div><label class="fc-label">Направление</label>
+              <select class="fc-input" name="p_section">
+                <option value="">— без направления (зал, фитнес) —</option>
+                {% for s in sections %}
+                  <option value="{{ s.id }}" {% if p.section_id == s.id %}selected{% endif %}>
+                    {% if s.icon %}{{ s.icon }} {% endif %}{{ s.name }}
+                  </option>
+                {% endfor %}
+              </select></div>
+            {% endif %}
+          </div>
+          <div style="margin-top:10px"><label class="fc-label">Описание</label>
+            <input class="fc-input" name="p_desc" value="{{ p.description }}"
+                   placeholder="Абонемент выходного дня, до 14:00"></div>
+          <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:12.5px;color:var(--text2)">
+            <input type="checkbox" name="p_active" {% if p.is_active %}checked{% endif %}>
+            Продаётся — показывать при продаже абонемента
+          </label>
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+            <button class="fc-btn small" type="submit">Сохранить</button>
+            <button class="fc-btn small ghost" type="submit"
+                    name="what" value="plan_delete">Удалить</button>
+          </div>
+          <div class="fc-sub" style="margin-top:6px">
+            Если по виду уже продавали, он не удалится, а уйдёт из продажи —
+            выручка и посещения по проданным абонементам останутся целы.
+            Цена и срок меняются только для новых продаж.
+          </div>
         </form>
         {% endif %}
-      </div>
+      </details>
     {% empty %}<div class="fc-empty">Абонементов нет — продавать нечего</div>{% endfor %}
   </div>
   <form method="post">
