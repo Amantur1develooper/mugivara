@@ -624,6 +624,41 @@ def membership_action(request, club, staff, membership_id):
         messages.success(request, f"{ms.plan.name}: " + (
             f"направление «{ms.section.name}»" if ms.section
             else "без направления — подойдёт к любой группе"))
+    elif action == "edit" and can_see_money(staff):
+        # Что пришло в форме, то и правим: незаполненную галочку от
+        # неотправленного поля не отличить, поэтому ключи собираем по
+        # самому запросу.
+        data = {}
+        if "section" in request.POST:
+            data["section"] = club.sections.filter(id=_int(request.POST.get("section"))).first()
+        if "trainer" in request.POST:
+            data["trainer"] = club.trainers.filter(id=_int(request.POST.get("trainer"))).first()
+        if "remaining_visits" in request.POST:
+            data["remaining_visits"] = _int(request.POST.get("remaining_visits"))
+        for key in ("start_date", "end_date"):
+            if key in request.POST:
+                raw = (request.POST.get(key) or "").strip()
+                data[key] = _date(raw) if raw else None
+        for key in ("price", "discount"):
+            if key in request.POST:
+                data[key] = _money(request.POST.get(key), "0")
+        if "discount_note" in request.POST:
+            data["discount_note"] = (request.POST.get("discount_note") or "").strip()
+        if staff.role == ADMIN and "is_active" in request.POST:
+            data["is_active"] = request.POST.get("is_active") == "on"
+
+        # Дата окончания раньше начала означала бы абонемент, по которому
+        # нельзя пройти ни одного дня: это заведомо описка в форме.
+        start = data.get("start_date", ms.start_date)
+        end = data.get("end_date", ms.end_date)
+        if start and end and end < start:
+            messages.error(request, "Дата окончания раньше даты начала — не сохранил")
+        else:
+            changed = services.edit_membership(ms, data, actor=request.user)
+            if changed:
+                messages.success(request, "Абонемент изменён: " + "; ".join(changed))
+            else:
+                messages.info(request, "Ничего не изменилось")
     elif action == "close" and staff.role == ADMIN:
         ms.is_active = False
         ms.save(update_fields=["is_active", "updated_at"])

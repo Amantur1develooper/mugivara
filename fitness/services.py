@@ -198,6 +198,116 @@ def unfreeze(membership, *, actor=None):
     return membership
 
 
+@transaction.atomic
+def edit_membership(ms, data, *, actor=None):
+    """Правит уже проданный абонемент. Возвращает список изменений словами.
+
+    Продают абонементы на ходу и ошибаются: не тот тариф, не то
+    направление, не та дата окончания, посещение списалось зря. Раньше
+    такое правили только через админку, то есть никак.
+
+    Оплату тут не трогают. Выручка в отчётах считается по кассе
+    (Payment), и ручная правка «оплачено» разошлась бы с ней: деньги
+    принимают кнопкой «Принять долг», она и проводит платёж. Долг же
+    пересчитывается сам — из цены, скидки и того, что уже оплачено.
+
+    В data кладут только те поля, которые меняют; остальных ключей нет.
+    """
+    def money(x):
+        return f"{Decimal(str(x or 0)):.0f}"
+
+    changes = []
+    fields = []
+
+    if "section" in data and data["section"] != ms.section:
+        was = ms.section.name if ms.section else "без направления"
+        now = data["section"].name if data["section"] else "без направления"
+        ms.section = data["section"]
+        fields.append("section")
+        changes.append(f"направление: {was} → {now}")
+
+    if "trainer" in data and data["trainer"] != ms.trainer:
+        was = ms.trainer.name if ms.trainer else "без тренера"
+        now = data["trainer"].name if data["trainer"] else "без тренера"
+        ms.trainer = data["trainer"]
+        fields.append("trainer")
+        changes.append(f"тренер: {was} → {now}")
+
+    # Безлимитному тарифу остаток посещений ни на что не влияет, и
+    # показывать его там незачем — значит и править нечего.
+    if "remaining_visits" in data and ms.plan.visits_number:
+        want = max(0, int(data["remaining_visits"] or 0))
+        if want != ms.remaining_visits:
+            changes.append(f"осталось посещений: {ms.remaining_visits} → {want}")
+            ms.remaining_visits = want
+            fields.append("remaining_visits")
+
+    if "start_date" in data and data["start_date"] != ms.start_date:
+        was = f"{ms.start_date:%d.%m.%Y}" if ms.start_date else "с первого посещения"
+        now = f"{data['start_date']:%d.%m.%Y}" if data["start_date"] else "с первого посещения"
+        ms.start_date = data["start_date"]
+        fields.append("start_date")
+        changes.append(f"начало: {was} → {now}")
+
+    if "end_date" in data and data["end_date"] != ms.end_date:
+        was = f"{ms.end_date:%d.%m.%Y}" if ms.end_date else "без срока"
+        now = f"{data['end_date']:%d.%m.%Y}" if data["end_date"] else "без срока"
+        ms.end_date = data["end_date"]
+        fields.append("end_date")
+        changes.append(f"действует до: {was} → {now}")
+
+    # Дату начала поставили, а до какого числа — не сказали: считаем по
+    # сроку тарифа, иначе абонемент остался бы бессрочным по недосмотру.
+    if ms.start_date and not ms.end_date and ms.plan.validity_days:
+        ms.end_date = ms.start_date + timedelta(days=ms.plan.validity_days)
+        if "end_date" not in fields:
+            fields.append("end_date")
+        changes.append(f"действует до: {ms.end_date:%d.%m.%Y} (по сроку тарифа)")
+
+    for key, field, label in (("price", "price", "цена"),
+                              ("discount", "discount_amount", "скидка")):
+        if key in data:
+            want = Decimal(str(data[key] or 0))
+            if want != getattr(ms, field):
+                changes.append(f"{label}: {money(getattr(ms, field))} → {money(want)} сом")
+                setattr(ms, field, want)
+                fields.append(field)
+
+    if "discount_note" in data:
+        want = (data["discount_note"] or "")[:100]
+        if want != ms.discount_note:
+            ms.discount_note = want
+            fields.append("discount_note")
+            changes.append(f"название скидки: {want or '—'}")
+
+    if "is_active" in data and bool(data["is_active"]) != ms.is_active:
+        ms.is_active = bool(data["is_active"])
+        fields.append("is_active")
+        changes.append("возвращён в работу" if ms.is_active else "закрыт")
+
+    # Долг не вводят руками: он всегда равен недоплате по текущим условиям.
+    debt = max(Decimal("0"), ms.price - ms.discount_amount - ms.paid_amount)
+    if debt != ms.debt_amount:
+        changes.append(f"долг: {money(ms.debt_amount)} → {money(debt)} сом")
+        ms.debt_amount = debt
+        fields.append("debt_amount")
+
+    if not fields:
+        return []
+
+    fields.append("updated_at")
+    ms.save(update_fields=fields)
+
+    who = getattr(actor, "get_full_name", lambda: "")() or getattr(actor, "username", "")
+    text = ("✏️ ПРАВКА АБОНЕМЕНТА\n"
+            f"👤 {ms.member.full_name}\n"
+            f"🎫 {ms.plan.name}\n"
+            + "\n".join(f"• {c}" for c in changes)
+            + (f"\n👟 {who}" if who else ""))
+    transaction.on_commit(lambda: _notify(ms.member.club, text))
+    return changes
+
+
 # ── Расходы ─────────────────────────────────────────────────────────────────
 
 @transaction.atomic

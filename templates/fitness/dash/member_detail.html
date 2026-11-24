@@ -151,6 +151,21 @@
             overflow: hidden; margin-top: 5px; }
   .ms-bar i { display: block; height: 100%; background: #059669; }
   .ms-bar.low i { background: #dc2626; }
+  /* Правка абонемента: раскрывается по кнопке, чтобы не мешать чтению */
+  .ms-edit { margin-top: 11px; border-top: 1px solid var(--border); padding-top: 10px; }
+  .ms-edit > summary {
+    cursor: pointer; list-style: none; font-size: 12.5px; font-weight: 700;
+    color: var(--muted); display: inline-flex; gap: 6px; align-items: center;
+  }
+  .ms-edit > summary::-webkit-details-marker { display: none; }
+  .ms-edit[open] > summary { margin-bottom: 10px; color: var(--text); }
+  .ms-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .ms-grid .wide { grid-column: 1 / -1; }
+  .ms-grid label { display: block; font-size: 11px; font-weight: 600;
+                   color: var(--muted); margin-bottom: 3px; }
+  .ms-grid .fc-input { width: 100%; padding: 7px 9px; font-size: 12.5px; }
+  .ms-note { font-size: 11.5px; color: var(--muted); margin: 9px 0 0; line-height: 1.45; }
+  @media (max-width: 520px) { .ms-grid { grid-template-columns: 1fr; } }
 </style>
 
 <div class="mc">
@@ -294,23 +309,6 @@
                 <span>{% if ms.section %}{{ ms.section.name }} — посещения спишутся
                   на тренировках этой секции{% else %}без направления — зал,
                   подойдёт к любой группе{% endif %}</span>
-                {% if can_money and sections and ms.is_active %}
-                <form method="post" action="{% url 'fitness_dash:membership_action' club.id ms.id %}"
-                      style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-                  {% csrf_token %}
-                  <input type="hidden" name="action" value="section">
-                  <select class="fc-input" name="section"
-                          style="flex:1;min-width:150px;padding:6px 9px;font-size:12.5px">
-                    <option value="">— без направления —</option>
-                    {% for sec in sections %}
-                      <option value="{{ sec.id }}" {% if ms.section_id == sec.id %}selected{% endif %}>
-                        {% if sec.icon %}{{ sec.icon }} {% endif %}{{ sec.name }}
-                      </option>
-                    {% endfor %}
-                  </select>
-                  <button class="fc-btn ghost small" type="submit">Сохранить</button>
-                </form>
-                {% endif %}
               </div>
               <div class="ms-line"><b>Куплен</b><span>{{ ms.purchase_date|date:"d.m.Y" }}</span></div>
               <div class="ms-line"><b>Активирован</b>
@@ -365,11 +363,100 @@
                 {% endif %}
               </form>
               {% endif %}
+
+              {% if can_money %}
+              <details class="ms-edit">
+                <summary>✏️ Изменить абонемент</summary>
+                <form method="post"
+                      action="{% url 'fitness_dash:membership_action' club.id ms.id %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="edit">
+                  <div class="ms-grid">
+                    <div>
+                      <label for="sec-{{ ms.id }}">Направление</label>
+                      <select class="fc-input" id="sec-{{ ms.id }}" name="section">
+                        <option value="">— без направления —</option>
+                        {% for sec in sections %}
+                          <option value="{{ sec.id }}" {% if ms.section_id == sec.id %}selected{% endif %}>
+                            {% if sec.icon %}{{ sec.icon }} {% endif %}{{ sec.name }}
+                          </option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    <div>
+                      <label for="trn-{{ ms.id }}">Персональный тренер</label>
+                      <select class="fc-input" id="trn-{{ ms.id }}" name="trainer">
+                        <option value="">— без тренера —</option>
+                        {% for t in trainers %}
+                          <option value="{{ t.id }}" {% if ms.trainer_id == t.id %}selected{% endif %}>{{ t.name }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+                    {% if ms.plan.visits_number %}
+                    <div>
+                      <label for="vis-{{ ms.id }}">Осталось посещений</label>
+                      <input class="fc-input" id="vis-{{ ms.id }}" name="remaining_visits"
+                             type="number" min="0" value="{{ ms.remaining_visits }}">
+                    </div>
+                    {% endif %}
+                    <div>
+                      <label for="sd-{{ ms.id }}">Дата начала</label>
+                      <input class="fc-input" id="sd-{{ ms.id }}" name="start_date" type="date"
+                             value="{{ ms.start_date|date:'Y-m-d' }}">
+                    </div>
+                    <div>
+                      <label for="ed-{{ ms.id }}">Действует до</label>
+                      <input class="fc-input" id="ed-{{ ms.id }}" name="end_date" type="date"
+                             value="{{ ms.end_date|date:'Y-m-d' }}">
+                    </div>
+                    <div>
+                      <label for="pr-{{ ms.id }}">Цена, сом</label>
+                      <input class="fc-input" id="pr-{{ ms.id }}" name="price" inputmode="numeric"
+                             value="{{ ms.price|floatformat:0 }}">
+                    </div>
+                    <div>
+                      <label for="ds-{{ ms.id }}">Скидка, сом</label>
+                      <input class="fc-input" id="ds-{{ ms.id }}" name="discount" inputmode="numeric"
+                             value="{{ ms.discount_amount|floatformat:0 }}">
+                    </div>
+                    <div class="wide">
+                      <label for="dn-{{ ms.id }}">Название скидки</label>
+                      <input class="fc-input" id="dn-{{ ms.id }}" name="discount_note" type="text"
+                             list="fc-discounts" value="{{ ms.discount_note }}"
+                             placeholder="за рекомендацию">
+                    </div>
+                    {% if is_admin %}
+                    <div class="wide">
+                      <label style="display:flex;gap:7px;align-items:center;
+                                    font-size:12.5px;color:var(--text);cursor:pointer">
+                        <input type="checkbox" name="is_active" {% if ms.is_active %}checked{% endif %}>
+                        Абонемент в работе
+                        <span style="color:var(--muted);font-weight:400">— снимите, чтобы закрыть</span>
+                      </label>
+                    </div>
+                    {% endif %}
+                  </div>
+                  <p class="ms-note">
+                    Оплаченное не правим: выручка считается по кассе. Деньги
+                    принимают кнопкой «Принять долг» — она и проводит платёж.
+                    Долг пересчитается сам: цена минус скидка минус оплаченное
+                    ({{ ms.paid_amount|floatformat:0 }} сом).
+                  </p>
+                  <button class="fc-btn small" type="submit" style="margin-top:10px">Сохранить</button>
+                </form>
+              </details>
+              {% endif %}
             </div>
           </details>
         {% empty %}
           <div class="fc-empty">Абонементов не было</div>
         {% endfor %}
+        {% if discounts %}
+          {# Подсказка к названию скидки: те же, что заведены в клубе #}
+          <datalist id="fc-discounts">
+            {% for d in discounts %}<option value="{{ d.name }}"></option>{% endfor %}
+          </datalist>
+        {% endif %}
       </div>
     </section>
 
