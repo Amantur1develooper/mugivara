@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 """Публичная часть клуба: секции, тренеры, запись и заявка."""
+import hashlib
+import logging
 from datetime import datetime, timedelta
+from pathlib import Path
+
+from django.conf import settings
 
 from django.contrib import messages
 from django.http import JsonResponse
@@ -15,7 +20,11 @@ from core.phones import wa_digits
 from integrations import tgbot
 
 from . import tg
+from django.urls import reverse
+
 from .models import FitnessClub, Lead, Section, Trainer, TrainerBooking
+
+log = logging.getLogger(__name__)
 
 
 def _wa_link(club, lines):
@@ -54,11 +63,135 @@ def club_page(request, slug):
     trainers = (club.trainers.filter(is_active=True)
                 .prefetch_related("sections").order_by("sort_order", "id"))
     plans = club.plans.filter(is_active=True).order_by("sort_order", "id")
+
+    # Картинки для вкладки браузера и для ссылки в мессенджерах. Адреса
+    # нужны полные: Telegram и WhatsApp забирают картинку со стороны, и
+    # относительный путь им ничего не скажет. В превью идёт обложка (она
+    # широкая и выглядит как надо), иконкой — логотип; чего нет, того
+    # заменяет второе.
+    has_image = bool(club.logo or club.cover)
+    link = (lambda name: request.build_absolute_uri(
+        reverse(name, args=[club.slug])) if has_image else "")
+    icon = link("fitness:club_icon")
+    preview = link("fitness:club_preview")
+
     return render(request, "fitness/public/club.html", {
         "club": club, "sections": sections, "trainers": trainers, "plans": plans,
         "days": _next_days(),
         "schedule_days": _week_schedule(club),
+        "icon_url": icon,
+        "preview_url": preview,
+        "page_url": request.build_absolute_uri(),
     })
+
+
+def _cached_image(club, source, suffix):
+    """Путь к готовой картинке. В имени — отпечаток исходника.
+
+    Поэтому после замены логотипа появляется новый файл, а не остаётся
+    вчерашняя картинка под тем же адресом у всех, кто её уже кэшировал.
+    """
+    from django.http import Http404
+
+    try:
+        stamp = f"{source.name}|{source.size}"
+    except (OSError, ValueError):
+        raise Http404("файл картинки недоступен")
+    digest = hashlib.md5(stamp.encode()).hexdigest()[:10]
+    return Path(settings.MEDIA_ROOT) / "fitness" / "preview" / f"{club.slug}-{digest}{suffix}"
+
+
+def _serve(path, content_type):
+    from django.http import FileResponse
+
+    response = FileResponse(path.open("rb"), content_type=content_type)
+    # Имя файла меняется вместе с картинкой — кэшировать можно долго.
+    response["Cache-Control"] = "public, max-age=604800"
+    return response
+
+
+def club_icon(request, slug):
+    """Квадратная иконка 512×512 PNG.
+
+    Логотип клуба лежит в WebP: на странице это правильно, но иконку в
+    таком виде не берёт ни «на экран Домой» у айфона, ни часть браузеров.
+    Поэтому для иконки отдаём PNG — логотип по центру на фоне страницы.
+    """
+    from django.http import Http404
+
+    club = get_object_or_404(FitnessClub, slug=slug, is_active=True)
+    source = club.logo or club.cover
+    if not source:
+        raise Http404("у клуба нет логотипа")
+
+    path = _cached_image(club, source, "-icon.png")
+    if not path.exists():
+        try:
+            _build_image(source, path, size=(512, 512), fmt="PNG", fill=bool(club.logo))
+        except Exception:
+            log.exception("не собрал иконку клуба %s", club.slug)
+            raise Http404("не удалось собрать иконку")
+    return _serve(path, "image/png")
+
+
+def club_preview(request, slug):
+    """Картинка 1200×630 для ссылки в мессенджерах.
+
+    Все картинки клуба хранятся в WebP — он лёгкий, и на странице это
+    правильно. Но WhatsApp такие превью не показывает: ссылка приходит
+    голой строкой. Поэтому для og:image отдаём отдельный JPEG, собранный
+    из обложки (а если её нет — из логотипа на тёмном фоне, как на самой
+    странице).
+
+    Собираем один раз и кладём рядом с медиа: в имени — отпечаток
+    исходника, так что после замены логотипа появится новый файл, а
+    старые ссылки не покажут вчерашнюю картинку.
+    """
+    from django.http import FileResponse, Http404
+
+    from django.http import Http404
+
+    club = get_object_or_404(FitnessClub, slug=slug, is_active=True)
+    source = club.cover or club.logo
+    if not source:
+        raise Http404("у клуба нет ни обложки, ни логотипа")
+
+    path = _cached_image(club, source, "-og.jpg")
+    if not path.exists():
+        try:
+            _build_image(source, path, size=(1200, 630), fmt="JPEG",
+                         fill=bool(club.cover))
+        except Exception:
+            log.exception("не собрал превью клуба %s", club.slug)
+            raise Http404("не удалось собрать картинку")
+    return _serve(path, "image/jpeg")
+
+
+def _build_image(source, path, *, size, fmt, fill):
+    """Рисует картинку заданного размера на фоне страницы.
+
+    fill=True — исходник закрывает кадр целиком, лишнее обрезается: так
+    поступаем с обложкой, иначе по краям висели бы чёрные поля.
+    fill=False — вписываем с запасом по краям: логотип задуман отдельным
+    знаком, и растянутый во весь кадр выглядит как ошибка вёрстки.
+    """
+    from PIL import Image
+
+    W, H = size
+    BG = (11, 11, 13)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    canvas = Image.new("RGB", (W, H), BG)
+
+    with Image.open(source.path) as im:
+        im = im.convert("RGB")
+        scale = (max(W / im.width, H / im.height) if fill
+                 else min(W / im.width, H / im.height) * 0.72)
+        box = (max(1, round(im.width * scale)), max(1, round(im.height * scale)))
+        im = im.resize(box, Image.LANCZOS)
+        canvas.paste(im, ((W - box[0]) // 2, (H - box[1]) // 2))
+
+    canvas.save(path, fmt, quality=88, optimize=True)
+    return path
 
 
 def _week_schedule(club):

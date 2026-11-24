@@ -228,7 +228,8 @@
           <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
             <button class="fc-btn small" type="submit">Сохранить</button>
             <button class="fc-btn small ghost" type="submit"
-                    name="what" value="plan_delete">Удалить</button>
+                    name="what" value="plan_delete"
+                    data-del-plan="{{ p.name }}" data-sold="{{ p.sold }}">Удалить</button>
           </div>
           <div class="fc-sub" style="margin-top:6px">
             Если по виду уже продавали, он не удалится, а уйдёт из продажи —
@@ -275,6 +276,22 @@
     </div>
     <button class="fc-btn ghost" type="submit" style="margin-top:10px">+ Добавить абонемент</button>
   </form>
+
+  {% comment %}
+    Окно подтверждения: удаление вида необратимо, а по проданным ещё и
+    считают выручку. Спрашиваем до, а не жалеем после. Без JS кнопка
+    просто отправит форму, как раньше.
+  {% endcomment %}
+  <dialog class="fc-dlg" id="planDel">
+    <div class="fc-dlg-box">
+      <div class="fc-dlg-t" id="planDelTitle">Удалить вид абонемента?</div>
+      <p class="fc-dlg-txt" id="planDelText"></p>
+      <div class="fc-dlg-row">
+        <button class="fc-btn ghost small" type="button" data-dlg-close>Отмена</button>
+        <button class="fc-btn small danger" type="button" id="planDelGo">Удалить</button>
+      </div>
+    </div>
+  </dialog>
 </div>
 
 <div class="fc-card">
@@ -493,5 +510,85 @@
   </form>
   {% endif %}
 </div>
+
+<style>
+  .fc-dlg { border: 0; padding: 0; background: transparent; max-width: 420px; width: 92vw; }
+  .fc-dlg::backdrop { background: rgba(15, 23, 42, .5); }
+  .fc-dlg-box { background: var(--bg); color: var(--text);
+                border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+  .fc-dlg-t { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
+  .fc-dlg-txt { font-size: 13px; line-height: 1.55; color: var(--text2); margin: 0; }
+  .fc-dlg-row { display: flex; gap: 9px; justify-content: flex-end; margin-top: 18px; }
+  .fc-btn.danger { background: #dc2626; border-color: #dc2626; color: #fff; }
+  .fc-btn.danger:hover { background: #b91c1c; border-color: #b91c1c; }
+</style>
+
+<script>
+(function () {
+  // Окно подтверждения для удаления вида абонемента. Пока скрипт не
+  // отработал, кнопка остаётся обычной отправкой формы: без JS удалять
+  // всё равно можно, просто без вопроса.
+  const dlg = document.getElementById('planDel');
+  if (!dlg || typeof dlg.showModal !== 'function') return;
+
+  const title = document.getElementById('planDelTitle');
+  const text = document.getElementById('planDelText');
+  const go = document.getElementById('planDelGo');
+  let pending = null;          // {form, button} — что отправим по «Удалить»
+
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-del-plan]');
+    if (!btn) return;
+    e.preventDefault();
+    const name = btn.dataset.delPlan || 'этот вид';
+    const sold = parseInt(btn.dataset.sold || '0', 10);
+    pending = { form: btn.form, button: btn };
+
+    if (sold > 0) {
+      // Запись не исчезнет: по ней считают выручку и посещения. Говорим
+      // прямо, что произойдёт, иначе обещание и результат разойдутся.
+      title.textContent = 'Убрать из продажи?';
+      text.textContent = '«' + name + '» уже продавали — ' + sold + ' шт. ' +
+        'Удалить насовсем нельзя: пропала бы выручка и история посещений. ' +
+        'Вид уйдёт из списка при продаже, проданные абонементы продолжат работать.';
+      go.textContent = 'Убрать из продажи';
+      go.classList.remove('danger');
+    } else {
+      title.textContent = 'Удалить вид абонемента?';
+      text.textContent = '«' + name + '» удалится насовсем. По нему ещё ' +
+        'ни разу не продавали, так что терять нечего — но вернуть не получится.';
+      go.textContent = 'Удалить';
+      go.classList.add('danger');
+    }
+    dlg.showModal();
+  });
+
+  dlg.addEventListener('click', function (e) {
+    if (e.target.hasAttribute('data-dlg-close')) dlg.close();
+    // Клик мимо окна — тоже отмена: так ведут себя все модальные окна
+    if (e.target === dlg) dlg.close();
+  });
+  dlg.addEventListener('close', function () { pending = null; });
+
+  go.addEventListener('click', function () {
+    if (!pending) return;
+    const { form, button } = pending;
+    pending = null;
+    dlg.close();
+    // Имя и значение кнопки («what=plan_delete») форма возьмёт только у
+    // нажатой кнопки, поэтому отправляем именно ею.
+    if (form.requestSubmit) {
+      form.requestSubmit(button);
+    } else {
+      const hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.name = button.name;
+      hidden.value = button.value;
+      form.appendChild(hidden);
+      form.submit();
+    }
+  });
+})();
+</script>
 
 {% endblock %}

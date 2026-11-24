@@ -8,6 +8,33 @@
   {% if club.description %}
   <meta name="description" content="{{ club.description|striptags|truncatewords:26 }}">
   {% endif %}
+
+  {% comment %}
+    Иконка вкладки и картинка ссылки. Без них зал в закладках выглядит
+    пустым листом, а присланная в чат ссылка — голой строкой: открывать
+    такую не хочется. Логотип идёт в иконку, обложка — в превью.
+  {% endcomment %}
+  {% if icon_url %}
+    <link rel="icon" href="{{ icon_url }}">
+    <link rel="apple-touch-icon" href="{{ icon_url }}">
+  {% endif %}
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ club.name }}">
+  <meta property="og:title" content="{{ club.name }}{% if club.tagline %} — {{ club.tagline }}{% endif %}">
+  {% if club.description %}
+    <meta property="og:description" content="{{ club.description|striptags|truncatewords:26 }}">
+  {% elif club.address %}
+    <meta property="og:description" content="{{ club.address }}">
+  {% endif %}
+  <meta property="og:url" content="{{ page_url }}">
+  <meta property="og:locale" content="{{ LANGUAGE_CODE|default:'ru' }}">
+  {% if preview_url %}
+    <meta property="og:image" content="{{ preview_url }}">
+    <meta name="twitter:card" content="summary_large_image">
+  {% else %}
+    <meta name="twitter:card" content="summary">
+  {% endif %}
+  <meta name="twitter:title" content="{{ club.name }}">
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     /* Тёмный зал, один акцент, крупные кнопки под палец. Ничего мигающего:
@@ -127,6 +154,15 @@
     .plan-n { font-size: 14px; font-weight: 700; }
     .plan-s { font-size: 12px; color: var(--muted); margin-top: 2px; }
     .plan-p { font-size: 16px; font-weight: 800; white-space: nowrap; }
+    /* Абонементы — плиткой: цены сравнивают взглядом, а в одну колонку
+       на телефоне приходилось листать. Карточка тут вертикальная, иначе
+       название и цена в узком столбце наезжают друг на друга. Тот же
+       класс .plan используется в расписании — там карточка остаётся
+       строкой, поэтому правило привязано к сетке. */
+    .plans { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .plans .plan { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .plans .plan-p { margin-top: auto; color: var(--accent); }
+    @media (min-width: 700px) { .plans { grid-template-columns: repeat(3, 1fr); } }
 
     .form { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px; }
     .inp {
@@ -198,7 +234,7 @@
   {% if plans %}
   <section id="abonementy">
     <div class="sec-h"><h2>Абонементы</h2></div>
-    <div style="display:flex;flex-direction:column;gap:10px">
+    <div class="plans">
       {% for p in plans %}
         <div class="plan">
           <div>

@@ -31,11 +31,16 @@ def _notify(club, text):
 @transaction.atomic
 def sell_membership(club, member, plan, *, price=None, discount=0, paid=None,
                     trainer=None, start_today=False, method="cash", actor=None,
-                    discount_note="", section=None):
+                    discount_note="", section=None, start_date=None, used_visits=0):
     """Продаёт абонемент.
 
     По умолчанию абонемент не активируется: срок пойдёт с первого
     посещения. start_today=True — если клиент просит начать сразу.
+
+    start_date — срок идёт с этого дня, в том числе прошедшего. Так
+    оформляют задним числом: человек ходит неделю, а абонемент пробивают
+    сегодня. Тогда и дни уже идут, и used_visits списывает те посещения,
+    которые он успел отходить, — иначе кассир вычитала их вручную.
     """
     price = Decimal(str(price if price is not None else plan.price))
     discount = Decimal(str(discount or 0))
@@ -54,8 +59,22 @@ def sell_membership(club, member, plan, *, price=None, discount=0, paid=None,
         paid_amount=paid, debt_amount=debt,
         created_by=actor,
     )
-    if start_today:
+    if start_date:
+        ms.start_date = start_date
+        ms.end_date = start_date + timedelta(days=plan.validity_days or 0)
+        ms.save(update_fields=["start_date", "end_date", "updated_at"])
+    elif start_today:
         ms.activate()
+
+    # Посещения за уже отхоженные дни. Больше, чем есть в тарифе, списать
+    # нельзя: остаток ушёл бы в минус и абонемент выглядел бы испорченным.
+    used = max(0, int(used_visits or 0))
+    if used and plan.visits_number:
+        used = min(used, ms.remaining_visits)
+        ms.remaining_visits -= used
+        ms.save(update_fields=["remaining_visits", "updated_at"])
+    else:
+        used = 0
 
     if paid > 0:
         Payment.objects.create(
@@ -76,6 +95,13 @@ def sell_membership(club, member, plan, *, price=None, discount=0, paid=None,
         lines.append("📅 Начало: " +
                      (f"{ms.start_date:%d.%m.%Y}" if ms.activated
                       else "с первого посещения"))
+        # Задним числом — отдельной строкой: в чате зала это видно сразу,
+        # и вопросов «почему срок уже идёт» не возникает.
+        if ms.activated and ms.start_date < timezone.localdate():
+            lines.append(f"↩️ Оформлен задним числом, до {ms.end_date:%d.%m.%Y}")
+        if used:
+            lines.append(f"➖ Списано за отхоженные дни: {used} "
+                         f"(осталось {ms.remaining_visits})")
         if trainer:
             lines.append(f"🧑‍🏫 Тренер: {trainer.name}")
         _notify(club, "\n".join(lines))

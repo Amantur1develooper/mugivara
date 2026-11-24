@@ -11,6 +11,7 @@
   <select class="fc-select" name="plan_id" id="planSel" required>
     {% for p in plans %}
       <option value="{{ p.id }}" data-price="{{ p.price|floatformat:0 }}"
+              data-visits="{{ p.visits_number }}"
               data-section="{{ p.section_id|default_if_none:'' }}">
         {{ p.name }} — {{ p.price|floatformat:0 }} сом
         {% if p.section %}· {{ p.section.name }}{% endif %}
@@ -83,10 +84,28 @@
   </div>
 
   <label style="display:flex;gap:9px;align-items:flex-start;margin-top:13px;font-size:12.5px;color:var(--text2)">
-    <input type="checkbox" name="by_first_visit" checked style="margin-top:3px">
+    <input type="checkbox" name="by_first_visit" id="byFirst" checked style="margin-top:3px">
     <span>Активация с 1 посещения. Снимите — срок пойдёт с сегодня; пока
       галочка стоит, клиент не теряет дни, пока собирается прийти.</span>
   </label>
+
+  <div class="fc-grid2" style="margin-top:12px">
+    <div>
+      <label class="fc-label" for="startInp">Начать с даты</label>
+      <input class="fc-input" type="date" name="start_date" id="startInp"
+             max="{{ today|date:'Y-m-d' }}">
+    </div>
+    <div id="usedBox">
+      <label class="fc-label" for="usedInp">Уже отходил, посещений</label>
+      <input class="fc-input" type="number" name="used_visits" id="usedInp"
+             min="0" value="0" inputmode="numeric">
+    </div>
+  </div>
+  <div class="fc-sub" id="backdateHint" style="margin-top:6px;line-height:1.45">
+    Для продажи задним числом: клиент ходит с прошлой недели, а абонемент
+    пробиваете сегодня. Срок пойдёт с указанного дня, а отхоженные
+    посещения спишутся сразу — вручную вычитать не нужно.
+  </div>
 
   <div class="fc-sub" id="sumLine" style="margin-top:12px;font-size:13.5px;font-weight:700"></div>
   <button class="fc-btn" type="submit" style="margin-top:10px;width:100%">Продать</button>
@@ -141,7 +160,30 @@
       fromPct();
     };
 
-    sel.addEventListener('change', fill);
+    // Дата начала и галочка «с 1 посещения» спорят друг с другом:
+    // выставили дату — галочку снимаем, вернули галочку — дату чистим.
+    const startInp = document.getElementById('startInp');
+    const byFirst = document.getElementById('byFirst');
+    const usedBox = document.getElementById('usedBox');
+    const usedInp = document.getElementById('usedInp');
+    if (startInp && byFirst) {
+      startInp.addEventListener('input', () => {
+        if (startInp.value) byFirst.checked = false;
+      });
+      byFirst.addEventListener('change', () => {
+        if (byFirst.checked) { startInp.value = ''; if (usedInp) usedInp.value = 0; }
+      });
+    }
+    // У безлимитного тарифа списывать нечего — поле только мешает
+    const usedVisible = () => {
+      if (!usedBox) return;
+      const opt = sel.options[sel.selectedIndex];
+      const has = parseInt((opt && opt.dataset.visits) || '0', 10) > 0;
+      usedBox.style.display = has ? '' : 'none';
+      if (!has && usedInp) usedInp.value = 0;
+    };
+
+    sel.addEventListener('change', () => { fill(); usedVisible(); });
     price.addEventListener('input', fromPct);
     pct.addEventListener('input', () => { clearPreset(); fromPct(); });
     disc.addEventListener('input', () => { clearPreset(); fromSum(); });
@@ -194,5 +236,6 @@
       });
     }
     fill();
+    usedVisible();
   })();
 </script>

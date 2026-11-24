@@ -99,6 +99,8 @@ def _ctx(club, staff, **extra):
         "is_trainer": staff.role == TRAINER,
         "can_money": can_see_money(staff),
         "can_profit": can_see_profit(staff),
+        # Нужна формам: дальше сегодняшнего дня даты в кабинете не ставят.
+        "today": timezone.localdate(),
     }
     base.update(_nav_counts(club, staff))
     base.update(extra)
@@ -562,6 +564,15 @@ def membership_sell(request, club, staff, member_id):
             discount = by_pct
     discount = max(Decimal("0"), min(discount, price))
 
+    # Дата начала: пустая — как раньше. Вперёд её не пускаем: абонемент,
+    # который начнётся послезавтра, не сможет открыть дверь сегодня, а
+    # выглядит это как поломка.
+    raw_start = (request.POST.get("start_date") or "").strip()
+    start_from = _date(raw_start, None) if raw_start else None
+    if start_from and start_from > timezone.localdate():
+        messages.info(request, "Дата начала в будущем — поставил сегодняшнюю")
+        start_from = timezone.localdate()
+
     ms = services.sell_membership(
         club, member, plan,
         price=price,
@@ -569,8 +580,12 @@ def membership_sell(request, club, staff, member_id):
         paid=_money(request.POST.get("paid"), str(price - discount)),
         trainer=trainer,
         # «Активация с 1 посещения» — галочка в бланке, поэтому логика
-        # обратная: снял её — абонемент начинается сегодня.
+        # обратная: снял её — абонемент начинается сегодня. Указанная
+        # дата сильнее галочки: её заполняют как раз тогда, когда срок
+        # нужно вести с прошедшего дня.
+        start_date=start_from,
         start_today=request.POST.get("by_first_visit") != "on",
+        used_visits=_int(request.POST.get("used_visits")),
         method=request.POST.get("method") or "cash",
         actor=request.user,
         discount_note=note,
@@ -578,7 +593,12 @@ def membership_sell(request, club, staff, member_id):
                  or plan.section),
     )
     note = "начнётся с первого посещения" if not ms.activated else f"с {ms.start_date:%d.%m.%Y}"
+    if ms.activated and ms.end_date:
+        note += f" по {ms.end_date:%d.%m.%Y}"
     tail = ""
+    used = plan.visits_number - ms.remaining_visits if plan.visits_number else 0
+    if used > 0:
+        tail += f" · списано {used} за отхоженные дни, осталось {ms.remaining_visits}"
     if ms.discount_amount:
         share = int(ms.discount_amount / ms.price * 100) if ms.price else 0
         named = f" «{ms.discount_note}»" if ms.discount_note else ""
@@ -1523,7 +1543,11 @@ def setup(request, club, staff):
                   _ctx(club, staff,
                        sections=club.sections.all(),
                        discount_list=club.discounts.all(),
-                       plans=club.plans.select_related("section"),
+                       # sold — сколько раз вид продавали: от этого зависит,
+                       # что предупредить в окне удаления и что вообще
+                       # произойдёт — удаление или уход из продажи.
+                       plans=club.plans.select_related("section")
+                                 .annotate(sold=Count("memberships")),
                        trainers=club.trainers.all().prefetch_related("sections"),
                        staff_list=club.staff.select_related("user"),
                        roles=ClubStaff.Role.choices))
