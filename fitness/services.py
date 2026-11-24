@@ -71,10 +71,27 @@ def sell_membership(club, member, plan, *, price=None, discount=0, paid=None,
     used = max(0, int(used_visits or 0))
     if used and plan.visits_number:
         used = min(used, ms.remaining_visits)
-        ms.remaining_visits -= used
-        ms.save(update_fields=["remaining_visits", "updated_at"])
+        # Сначала закрываем записанные занятия в долг — те самые дни, что
+        # человек отходил без абонемента. Иначе получилось бы вдвойне:
+        # посещение списали, а долг так и висит в карточке.
+        closed = 0
+        for debt in (member.owed_visits.filter(is_settled=False)
+                     .order_by("date", "id")[:used]):
+            settle_visit_debt(debt, membership=ms,
+                              note=f"списано при продаже «{plan.name}»", actor=actor)
+            closed += 1
+        ms.refresh_from_db(fields=["remaining_visits"])
+        # Долгов записано меньше, чем отходил: остальное снимаем просто
+        # числом — в зале не всегда отмечают каждый приход.
+        rest = used - closed
+        if rest > 0:
+            rest = min(rest, ms.remaining_visits)
+            ms.remaining_visits -= rest
+            ms.save(update_fields=["remaining_visits", "updated_at"])
+        used = closed + rest
     else:
         used = 0
+        closed = 0
 
     if paid > 0:
         Payment.objects.create(
@@ -100,7 +117,8 @@ def sell_membership(club, member, plan, *, price=None, discount=0, paid=None,
         if ms.activated and ms.start_date < timezone.localdate():
             lines.append(f"↩️ Оформлен задним числом, до {ms.end_date:%d.%m.%Y}")
         if used:
-            lines.append(f"➖ Списано за отхоженные дни: {used} "
+            tail = f", из них по записанным долгам {closed}" if closed else ""
+            lines.append(f"➖ Списано за отхоженные дни: {used}{tail} "
                          f"(осталось {ms.remaining_visits})")
         if trainer:
             lines.append(f"🧑‍🏫 Тренер: {trainer.name}")

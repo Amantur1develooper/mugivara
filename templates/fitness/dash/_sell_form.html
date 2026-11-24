@@ -98,13 +98,20 @@
     <div id="usedBox">
       <label class="fc-label" for="usedInp">Уже отходил, посещений</label>
       <input class="fc-input" type="number" name="used_visits" id="usedInp"
-             min="0" value="0" inputmode="numeric">
+             min="0" value="{{ debts|length }}" inputmode="numeric"
+             data-owed="{{ debts|length }}">
     </div>
   </div>
   <div class="fc-sub" id="backdateHint" style="margin-top:6px;line-height:1.45">
-    Для продажи задним числом: клиент ходит с прошлой недели, а абонемент
-    пробиваете сегодня. Срок пойдёт с указанного дня, а отхоженные
-    посещения спишутся сразу — вручную вычитать не нужно.
+    {% if debts %}
+      У клиента {{ debts|length }} занятий в долг — он ходил без
+      абонемента. Они спишутся с этого абонемента и закроются сами; число
+      можно поправить.
+    {% else %}
+      Для продажи задним числом: клиент ходит с прошлой недели, а абонемент
+      пробиваете сегодня. Срок пойдёт с указанного дня, а отхоженные
+      посещения спишутся сразу — вручную вычитать не нужно.
+    {% endif %}
   </div>
 
   <div class="fc-sub" id="sumLine" style="margin-top:12px;font-size:13.5px;font-weight:700"></div>
@@ -171,7 +178,12 @@
         if (startInp.value) byFirst.checked = false;
       });
       byFirst.addEventListener('change', () => {
-        if (byFirst.checked) { startInp.value = ''; if (usedInp) usedInp.value = 0; }
+        // Долги по посещениям от даты начала не зависят: человек их уже
+        // отходил. Возвращаем подставленное число, а не ноль.
+        if (byFirst.checked) {
+          startInp.value = '';
+          if (usedInp) usedInp.value = usedInp.dataset.owed || 0;
+        }
       });
     }
     // У безлимитного тарифа списывать нечего — поле только мешает
@@ -181,6 +193,7 @@
       const has = parseInt((opt && opt.dataset.visits) || '0', 10) > 0;
       usedBox.style.display = has ? '' : 'none';
       if (!has && usedInp) usedInp.value = 0;
+      if (has && usedInp && !usedInp.value) usedInp.value = usedInp.dataset.owed || 0;
     };
 
     sel.addEventListener('change', () => { fill(); usedVisible(); });
