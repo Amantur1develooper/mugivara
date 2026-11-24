@@ -5,8 +5,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 
-  <link rel="icon" type="image/jpg" href="{% static 'mini_logo.jpg' %}">
-  <link rel="shortcut icon" href="{% static 'mini_logo.jpg' %}">
+  {% comment %}
+    Иконка сайта. Раньше это был JPG — такие браузеры часто просто не
+    показывают, поэтому во вкладке не было ничего. Теперь вектор: он
+    чёткий на любом экране и весит меньше килобайта. PNG оставлены для
+    тех, кто вектор не понимает, и для экрана «Домой» на айфоне — там
+    фон обязан быть непрозрачным, иначе станет чёрным.
+  {% endcomment %}
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'favicon-32.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
+  <meta name="theme-color" content="#FF4D1C">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
   <title>{% block title %}Webordo — {% trans "Глобальная цифровая экосистема" %}{% endblock %}</title>

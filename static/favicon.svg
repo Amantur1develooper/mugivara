@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Буква W фирменным оранжевым. Нарисована контуром, а не текстом:
+       шрифт во вкладке браузера не подгружается, и «текстовая» буква
+       съехала бы на системный шрифт. Толщина подобрана так, чтобы
+       читалась в 16 пикселях — именно в таком размере её и видят. -->
+  <defs>
+    <linearGradient id="w" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FF6A33"/>
+      <stop offset="1" stop-color="#FF4D1C"/>
+    </linearGradient>
+  </defs>
+  <path d="M12 21 L31 80 L50 44 L69 80 L88 21"
+        fill="none" stroke="url(#w)" stroke-width="17"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
