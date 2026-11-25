@@ -592,6 +592,17 @@ def membership_sell(request, club, staff, member_id):
         section=(club.sections.filter(id=request.POST.get("section") or 0).first()
                  or plan.section),
     )
+    # Рассрочка: остаток долга разбиваем на равные платежи с датами.
+    parts = _int(request.POST.get("parts"), 1, lo=1, hi=12)
+    if parts > 1 and ms.debt_amount > 0:
+        raw_due = (request.POST.get("first_due") or "").strip()
+        first_due = _date(raw_due, None) if raw_due else None
+        rows = services.plan_installments(ms, parts, first_due, actor=request.user)
+        if rows:
+            messages.info(request, f"Рассрочка: {len(rows)} платежа, "
+                                   f"первый {rows[0].amount:.0f} сом "
+                                   f"до {rows[0].due_date:%d.%m.%Y}")
+
     note = "начнётся с первого посещения" if not ms.activated else f"с {ms.start_date:%d.%m.%Y}"
     if ms.activated and ms.end_date:
         note += f" по {ms.end_date:%d.%m.%Y}"
@@ -2148,7 +2159,15 @@ def debts(request, club, staff):
              .filter(member__club=club, is_active=True, debt_amount__gt=0)
              .select_related("member", "plan")
              .order_by("-debt_amount", "member__full_name"))
+    money = list(money.prefetch_related("installments"))
     money_total = sum(ms.debt_amount for ms in money)
+    # Ближайший неоплаченный платёж рассрочки — чтобы просроченных было
+    # видно сразу, а не после захода в каждую карточку.
+    for ms in money:
+        ms.next_part = next((p for p in ms.installments.all() if not p.is_paid), None)
+    # Просроченные вперёд: с них и начинают обзванивать.
+    money.sort(key=lambda m: (0 if (m.next_part and m.next_part.is_overdue) else 1,
+                              -m.debt_amount))
 
     rows = (OwedVisit.objects
             .filter(club=club, is_settled=show_settled)

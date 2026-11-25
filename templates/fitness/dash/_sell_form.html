@@ -114,6 +114,22 @@
     {% endif %}
   </div>
 
+  <div class="fc-grid2" style="margin-top:12px">
+    <div>
+      <label class="fc-label" for="partsInp">Рассрочка, платежей</label>
+      <input class="fc-input" type="number" name="parts" id="partsInp"
+             min="1" max="12" value="1" inputmode="numeric">
+    </div>
+    <div>
+      <label class="fc-label" for="dueInp">Первый платёж до</label>
+      <input class="fc-input" type="date" name="first_due" id="dueInp">
+    </div>
+  </div>
+  <div class="fc-sub" id="partsHint" style="margin-top:6px;line-height:1.45">
+    1 — без рассрочки. Если оплачено не всё, остаток разобьётся на равные
+    платежи с шагом в месяц; принимать их будете кнопкой «Принять долг».
+  </div>
+
   <div class="fc-sub" id="sumLine" style="margin-top:12px;font-size:13.5px;font-weight:700"></div>
   <button class="fc-btn" type="submit" style="margin-top:10px;width:100%">Продать</button>
 </form>
@@ -248,7 +264,39 @@
         quick.appendChild(b);
       });
     }
+    // Показываем, во что превратится рассрочка: кассир называет человеку
+    // суммы и даты сразу, а не после продажи.
+    const partsInp = document.getElementById('partsInp');
+    const dueInp = document.getElementById('dueInp');
+    const partsHint = document.getElementById('partsHint');
+    const DEFAULT_HINT = partsHint ? partsHint.textContent.trim() : '';
+
+    const showParts = () => {
+      if (!partsInp || !partsHint) return;
+      const n = Math.max(1, Math.min(12, parseInt(partsInp.value || '1', 10) || 1));
+      const debt = Math.max(0, num(price) - num(disc) - num(paid));
+      if (n < 2 || debt <= 0) {
+        partsHint.textContent = DEFAULT_HINT;
+        return;
+      }
+      const base = Math.round(debt / n);
+      const first = debt - base * (n - 1);
+      const start = dueInp && dueInp.value ? new Date(dueInp.value) : new Date(Date.now() + 30 * 864e5);
+      const fmt = d => String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0');
+      const last = new Date(start.getTime() + 30 * 864e5 * (n - 1));
+      partsHint.textContent = n + ' платежа: первый ' + money(first) + ' до ' + fmt(start)
+        + ', далее по ' + money(base) + ' каждые 30 дней, последний до ' + fmt(last) + '.';
+    };
+    if (partsInp) {
+      partsInp.addEventListener('input', showParts);
+      dueInp.addEventListener('input', showParts);
+      price.addEventListener('input', showParts);
+      disc.addEventListener('input', showParts);
+      paid.addEventListener('input', showParts);
+    }
+
     fill();
     usedVisible();
+    showParts();
   })();
 </script>

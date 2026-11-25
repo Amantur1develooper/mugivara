@@ -13,6 +13,8 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.db import models
+from decimal import Decimal
+
 from django.utils import timezone
 
 from core.models import TimeStampedModel
@@ -425,6 +427,53 @@ class Membership(TimeStampedModel):
         if not self.end_date:
             return None
         return (self.end_date - timezone.localdate()).days
+
+
+class Installment(TimeStampedModel):
+    """Часть оплаты абонемента: сколько и к какому числу.
+
+    Абонемент часто берут в рассрочку: половину сейчас, остальное через
+    месяц. Раньше в карточке висел общий долг без сроков, и кассир не
+    могла сказать, просрочен он или человек платит как договаривались.
+    Теперь долг разложен по датам: видно, что ближайший платёж в пятницу,
+    а прошлый просрочен на неделю.
+
+    Деньги принимает всё та же кнопка «Принять долг»: платёж закрывает
+    части по очереди, с самой ранней. Отдельной кассы для рассрочки нет —
+    иначе выручка считалась бы в двух местах.
+    """
+    membership = models.ForeignKey(Membership, on_delete=models.CASCADE,
+                                   related_name="installments")
+    due_date = models.DateField("Срок оплаты")
+    amount   = models.DecimalField("Сумма", max_digits=10, decimal_places=0, default=0)
+    paid     = models.DecimalField("Оплачено", max_digits=10, decimal_places=0, default=0)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
+                                   on_delete=models.SET_NULL, related_name="+")
+
+    class Meta:
+        verbose_name = "Платёж по рассрочке"
+        verbose_name_plural = "Платежи по рассрочке"
+        ordering = ["due_date", "id"]
+        indexes = [models.Index(fields=["membership", "due_date"])]
+
+    def __str__(self):
+        return f"{self.membership_id}: {self.amount} до {self.due_date:%d.%m.%Y}"
+
+    @property
+    def left(self):
+        return max(Decimal("0"), self.amount - self.paid)
+
+    @property
+    def is_paid(self):
+        return self.left <= 0
+
+    @property
+    def is_overdue(self):
+        return not self.is_paid and self.due_date < timezone.localdate()
+
+    @property
+    def days_late(self):
+        return (timezone.localdate() - self.due_date).days if self.is_overdue else 0
 
 
 class Visit(TimeStampedModel):

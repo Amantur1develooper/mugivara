@@ -151,6 +151,15 @@
             overflow: hidden; margin-top: 5px; }
   .ms-bar i { display: block; height: 100%; background: #059669; }
   .ms-bar.low i { background: #dc2626; }
+  /* Рассрочка: даты и суммы столбиком — просроченное видно не вчитываясь */
+  .ins-list { display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
+  .ins { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px;
+         padding: 6px 9px; border-radius: 9px; background: var(--bg2, rgba(0,0,0,.03));
+         border-left: 3px solid var(--border); }
+  .ins.ok { border-left-color: #059669; opacity: .7; }
+  .ins.late { border-left-color: #dc2626; background: rgba(220,38,38,.07); }
+  .ins-d { color: var(--muted); font-weight: 600; }
+  .ins-s { font-weight: 700; }
   /* Правка абонемента: раскрывается по кнопке, чтобы не мешать чтению */
   .ms-edit { margin-top: 11px; border-top: 1px solid var(--border); padding-top: 10px; }
   .ms-edit > summary {
@@ -337,6 +346,26 @@
                     {% if ms.discount_amount %}· скидка {{ ms.discount_amount|floatformat:0 }}{% endif %}
                     {% if ms.debt_amount %}· <b style="color:#dc2626">долг {{ ms.debt_amount|floatformat:0 }}</b>{% endif %}
                   </span></div>
+              {% endif %}
+
+              {% if can_money and ms.installments.exists %}
+              <div class="ms-line" style="display:block">
+                <b style="display:inline-block">Рассрочка</b>
+                <div class="ins-list">
+                  {% for part in ms.installments.all %}
+                    <div class="ins{% if part.is_paid %} ok{% elif part.is_overdue %} late{% endif %}">
+                      <span class="ins-d">до {{ part.due_date|date:"d.m.Y" }}</span>
+                      <span class="ins-s">
+                        {% if part.is_paid %}оплачено {{ part.amount|floatformat:0 }}
+                        {% else %}{{ part.left|floatformat:0 }} сом
+                          {% if part.paid %}из {{ part.amount|floatformat:0 }}{% endif %}
+                          {% if part.is_overdue %} · просрочен на {{ part.days_late }} дн.{% endif %}
+                        {% endif %}
+                      </span>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
               {% endif %}
 
               {% if can_money and ms.is_active %}

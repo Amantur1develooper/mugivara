@@ -11,12 +11,13 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 
 from integrations import tgbot
 
 from . import tg
-from .models import Expense, Member, Membership, Payment, Visit
+from .models import Expense, Installment, Member, Membership, Payment, Visit
 
 log = logging.getLogger(__name__)
 
@@ -128,6 +129,37 @@ def sell_membership(club, member, plan, *, price=None, discount=0, paid=None,
     return ms
 
 
+@transaction.atomic
+def plan_installments(membership, parts, first_due=None, *, actor=None):
+    """Разбивает долг по абонементу на равные платежи с датами.
+
+    parts — на сколько частей. Первая дата по умолчанию через месяц:
+    абонемент обычно и берут на месяц, и платят к следующему сроку.
+    Остаток от деления кладём в первый платёж, а не в последний: клубу
+    выгоднее получить лишние рубли раньше, а человеку проще запомнить,
+    что дальше суммы одинаковые.
+    """
+    parts = max(1, int(parts or 1))
+    debt = Decimal(str(membership.debt_amount or 0))
+    membership.installments.all().delete()
+    if debt <= 0 or parts < 1:
+        return []
+
+    first = first_due or (timezone.localdate() + timedelta(days=30))
+    base = (debt / parts).quantize(Decimal("1"))
+    rows = []
+    for i in range(parts):
+        amount = base if i else debt - base * (parts - 1)
+        rows.append(Installment(
+            membership=membership,
+            # Месяц считаем в 30 днях: календарные месяцы разной длины
+            # дают «31 февраля», а клубу важнее ровный шаг.
+            due_date=first + timedelta(days=30 * i),
+            amount=amount, created_by=actor,
+        ))
+    return Installment.objects.bulk_create(rows)
+
+
 # ── Проход в зал ────────────────────────────────────────────────────────────
 
 @transaction.atomic
@@ -199,6 +231,18 @@ def pay_debt(club, membership, amount, *, method="cash", actor=None):
     membership.debt_amount -= pay
     membership.paid_amount += pay
     membership.save(update_fields=["debt_amount", "paid_amount", "updated_at"])
+
+    # Если абонемент взяли в рассрочку, деньги закрывают её части по
+    # очереди — с самой ранней. Так видно, какой платёж погашен, а какой
+    # ещё просрочен; без этого график жил бы отдельно от кассы.
+    left = pay
+    for part in membership.installments.filter(paid__lt=F("amount")).order_by("due_date", "id"):
+        if left <= 0:
+            break
+        take = min(left, part.amount - part.paid)
+        part.paid += take
+        part.save(update_fields=["paid", "updated_at"])
+        left -= take
 
     payment = Payment.objects.create(
         club=club, member=membership.member, membership=membership,

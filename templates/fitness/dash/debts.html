@@ -50,6 +50,22 @@
                 <div style="font-size:19px;font-weight:800;color:#dc2626">
                   {{ ms.debt_amount|floatformat:0 }} <small style="font-size:12px">сом</small>
                 </div>
+                {% comment %}
+                  Ближайший неоплаченный платёж рассрочки. Без него долг
+                  выглядел одинаково и у того, кто платит по графику, и у
+                  того, кто пропал месяц назад.
+                {% endcomment %}
+                {% if ms.next_part %}
+                  <div class="fc-row-sub" style="margin-top:3px;white-space:nowrap">
+                    {% if ms.next_part.is_overdue %}
+                      <span style="color:#dc2626;font-weight:700">
+                        просрочен на {{ ms.next_part.days_late }} дн.</span>
+                    {% else %}
+                      платёж {{ ms.next_part.left|floatformat:0 }} до
+                      {{ ms.next_part.due_date|date:"d.m" }}
+                    {% endif %}
+                  </div>
+                {% endif %}
               </div>
             </div>
 
