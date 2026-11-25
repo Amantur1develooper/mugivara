@@ -35,6 +35,8 @@
     <div class="fc-kpi-v">{{ visits }}</div></div>
   <div class="fc-kpi"><div class="fc-kpi-l">Продано абонементов</div>
     <div class="fc-kpi-v">{{ sold }}</div></div>
+  <div class="fc-kpi"><div class="fc-kpi-l">Новых клиентов</div>
+    <div class="fc-kpi-v">{{ new_members }}</div></div>
   <div class="fc-kpi"><div class="fc-kpi-l">Долги клиентов</div>
     <div class="fc-kpi-v">{{ debts|money }} <small>сом</small></div></div>
 </div>
@@ -50,6 +52,40 @@
     {% empty %}<div class="fc-empty">Платежей за период нет</div>{% endfor %}
   </div>
 </div>
+
+{% if by_staff %}
+<div class="fc-card">
+  <div class="fc-card-t">Кто оформляет</div>
+  <div class="fc-list">
+    {% for r in by_staff %}
+      <div class="fc-row">
+        <div class="fc-row-main">
+          <div class="fc-row-name" style="font-size:13.5px">{{ r.name }}</div>
+          <div class="fc-row-sub">
+            {% if r.sold %}абонементов {{ r.sold }}
+              · средний чек {{ r.avg|floatformat:0 }} сом{% else %}абонементов нет{% endif %}
+            {% if r.added %} · клиентов завёл {{ r.added }}{% endif %}
+            {% if r.taken %}<br>принял денег {{ r.taken|floatformat:0 }} сом{% endif %}
+          </div>
+        </div>
+        <div class="fc-row-right">
+          <div style="font-size:17px;font-weight:800">{{ r.sum|floatformat:0 }}</div>
+          <div class="fc-row-sub" style="text-align:right">сом продаж</div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  <div class="fc-sub" style="margin-top:8px;line-height:1.5">
+    «Сом продаж» — сумма сделок за период: цена абонемента за вычетом
+    скидки, независимо от того, сколько человек успел внести. «Принял
+    денег» — что реально прошло через кассу, включая погашение долгов и
+    рассрочку, в том числе по чужим продажам. «Клиентов завёл» — новые
+    карточки за период: их часто заводит один человек, а продаёт другой,
+    поэтому цифры и не сходятся между собой. Раздел виден только
+    администратору.
+  </div>
+</div>
+{% endif %}
 
 <div class="fc-card">
   <div class="fc-card-t">Загрузка тренеров</div>

@@ -155,8 +155,9 @@ def report_workbook(club, start, end, *, with_money=True, with_profit=False):
     # ── Абонементы ──
     ws = wb.create_sheet("Абонементы")
     _head(ws, ["Клиент", "Телефон", "Абонемент", "Куплен", "Начало", "Окончание",
-               "Осталось", "Цена", "Оплачено", "Долг", "Состояние", "Тренер"],
-          widths=[26, 16, 24, 13, 13, 13, 11, 11, 12, 11, 16, 18])
+               "Осталось", "Цена", "Оплачено", "Долг", "Состояние", "Тренер",
+               "Кто оформил"],
+          widths=[26, 16, 24, 13, 13, 13, 11, 11, 12, 11, 16, 18, 20])
     _rows(ws, [
         (ms.member.full_name, ms.member.phone, ms.plan.name,
          ms.purchase_date.strftime("%d.%m.%Y") if ms.purchase_date else "",
@@ -167,8 +168,11 @@ def report_workbook(club, start, end, *, with_money=True, with_profit=False):
          ("закрыт" if not ms.is_active else
           "заморожен" if ms.is_frozen else
           "не начат" if not ms.activated else "активен"),
-         ms.trainer.name if ms.trainer_id else "")
-        for ms in sold.select_related("member", "plan", "trainer").order_by("id")
+         ms.trainer.name if ms.trainer_id else "",
+         ((ms.created_by.get_full_name() or ms.created_by.username)
+          if ms.created_by_id else ""))
+        for ms in sold.select_related("member", "plan", "trainer",
+                                      "created_by").order_by("id")
     ], money_cols=(8, 9, 10))
 
     # ── Заявки ──

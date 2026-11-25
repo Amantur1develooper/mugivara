@@ -1351,6 +1351,11 @@ def reports(request, club, staff):
                 sold=Membership.objects.filter(member__club=club,
                                                created_at__date__gte=start,
                                                created_at__date__lte=end).count(),
+                # Сколько завели клиентов за период: по этой цифре видно,
+                # растёт клуб или живёт на старых.
+                new_members=Member.objects.filter(club=club,
+                                                  created_at__date__gte=start,
+                                                  created_at__date__lte=end).count(),
                 debts=Membership.objects.filter(member__club=club, debt_amount__gt=0)
                       .aggregate(s=Sum("debt_amount"))["s"] or 0)
 
@@ -1385,6 +1390,63 @@ def reports(request, club, staff):
                             sold=Count("id", filter=Q(status=Lead.Status.SOLD)))
                   .order_by("-n"))
     ]
+
+    # Кто сколько оформил. Показываем только администратору: сравнение
+    # сотрудников между собой — вещь чувствительная, кассиру видеть
+    # выработку соседа незачем.
+    if staff.role == ADMIN:
+        who = {}
+
+        def slot(user_id, name):
+            if user_id not in who:
+                who[user_id] = {"name": name, "sold": 0, "sum": Decimal("0"),
+                                "taken": Decimal("0"), "added": 0}
+            return who[user_id]
+
+        def title(user):
+            if not user:
+                return "не указан"
+            return (user.get_full_name() or "").strip() or user.username
+
+        sold_rows = (Membership.objects
+                     .filter(member__club=club,
+                             created_at__date__gte=start, created_at__date__lte=end)
+                     .select_related("created_by"))
+        for ms in sold_rows:
+            row = slot(ms.created_by_id, title(ms.created_by))
+            row["sold"] += 1
+            # Считаем по цене со скидкой: это и есть сумма сделки, а не
+            # то, сколько человек успел внести.
+            row["sum"] += max(Decimal("0"), ms.price - ms.discount_amount)
+
+        # Заведённые клиенты. Считаем отдельно от продаж: администратор
+        # на ресепшене часто заводит карточку, а продаёт потом другой.
+        for r in (Member.objects
+                  .filter(club=club, created_at__date__gte=start,
+                          created_at__date__lte=end)
+                  .values("created_by").annotate(n=Count("id"))):
+            slot(r["created_by"], "")["added"] += r["n"]
+
+        # Принятые деньги — отдельная строка: кассир может не продать ни
+        # одного абонемента, но принять долги на приличную сумму.
+        for r in (pays.values("created_by")
+                  .annotate(s=Sum("amount"))):
+            row = slot(r["created_by"], "")
+            row["taken"] += r["s"] or 0
+
+        # Имена для тех, кто попал сюда только по платежам
+        missing = [uid for uid, r in who.items() if not r["name"] and uid]
+        if missing:
+            from django.contrib.auth import get_user_model
+            for u in get_user_model().objects.filter(id__in=missing):
+                who[u.id]["name"] = title(u)
+        for uid, r in who.items():
+            if not r["name"]:
+                r["name"] = "не указан"
+            r["avg"] = (r["sum"] / r["sold"]) if r["sold"] else Decimal("0")
+
+        data["by_staff"] = sorted(who.values(),
+                                  key=lambda r: (-r["sold"], -r["added"], -r["taken"]))
 
     if can_see_profit(staff):
         exp = Expense.objects.filter(club=club, spent_on__gte=start, spent_on__lte=end)
