@@ -232,7 +232,7 @@
     <div class="hdr-name">{% t branch 'name' %}</div>
     <div class="hdr-sub" id="updTime">—</div>
   </div>
-  <button class="hdr-refresh" onclick="location.reload()" title="Обновить">🔄</button>
+  <button class="hdr-refresh" onclick="refreshTables()" title="Обновить">🔄</button>
 </div>
 
 <!-- SUMMARY -->
@@ -243,7 +243,7 @@
 </div>
 
 <!-- TABLE GRID -->
-<div class="content">
+<div class="content" id="tablesArea">
   {% if floors %}
     {% for section in floors %}
     <div class="floor-section">
@@ -583,14 +583,62 @@ function showToast(msg, type = "") {
   _tt = setTimeout(() => t.classList.remove("show"), 3000);
 }
 
-// ── Clock / auto-refresh ─────────────────────────────────────────────────────
+// ── Часы и самообновление ───────────────────────────────────────────────────────
 function tick() {
   const n = new Date();
   document.getElementById("updTime").textContent =
     "обновлено " + String(n.getHours()).padStart(2,"0") + ":" + String(n.getMinutes()).padStart(2,"0");
 }
 tick();
-setInterval(() => { tick(); location.reload(); }, 30000);
+
+// Раньше страница перезагружалась целиком каждые 30 секунд. Это мешало
+// работать: официант открывал стол, а через секунду всё сбрасывалось, —
+// и зря грузило сервер, потому что планшет в кармане обновлялся так же
+// усердно, как и открытый на стойке. Теперь обновляем только сетку
+// столов, и только когда это имеет смысл.
+let refreshing = false;
+
+function sheetIsOpen() {
+  // Окно стола прячется прозрачностью, а не display — смотреть надо
+  // именно на класс show, иначе «открыто» будет всегда.
+  const ov = document.getElementById("overlay");
+  return !!ov && ov.classList.contains("show");
+}
+
+async function refreshTables() {
+  // Вкладку свернули или телефон заблокировали — обновлять незачем.
+  if (document.hidden || refreshing || sheetIsOpen()) return;
+  refreshing = true;
+  try {
+    const res = await fetch(location.href, {
+      credentials: "same-origin",
+      headers: { "X-Requested-With": "XMLHttpRequest" },
+    });
+    if (!res.ok) return;
+    const doc = new DOMParser().parseFromString(await res.text(), "text/html");
+    const fresh = doc.getElementById("tablesArea");
+    const here = document.getElementById("tablesArea");
+    // Пока ждали ответ, официант мог открыть стол — не вырываем из рук.
+    if (fresh && here && !sheetIsOpen()) {
+      here.innerHTML = fresh.innerHTML;
+      updateSummary();
+      tick();
+    }
+  } catch (e) {
+    // Связь пропала — молчим и ждём следующего раза: страница в руках
+    // официанта остаётся рабочей, а не падает с ошибкой.
+  } finally {
+    refreshing = false;
+  }
+}
+
+// Разброс в несколько секунд, чтобы планшеты зала не стучались
+// одновременно и не создавали всплеск нагрузки.
+setInterval(refreshTables, 30000 + Math.floor(Math.random() * 7000));
+// Вернулись к странице — сразу показываем свежее, не дожидаясь срока.
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) refreshTables();
+});
 
 updateSummary();
 </script>

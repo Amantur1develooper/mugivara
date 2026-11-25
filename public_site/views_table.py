@@ -446,16 +446,29 @@ def table_menu(request, token: str):
 
     place, branch = _get_active_place_and_branch(token)
 
-    categories = BranchCategory.objects.filter(branch=branch, is_active=True).order_by("sort_order", "id")
+    # Всё меню забираем тремя запросами вместо запроса на каждый раздел и
+    # на каждое блюдо. На меню из двух сотен позиций их набегало за две
+    # сотни: страница открывалась медленно, а при нескольких гостях разом
+    # рабочие процессы сервера были заняты только этим.
+    from django.db.models import Prefetch
 
-    menu = []
-    for bc in categories:
-        rows = BranchCategoryItem.objects.select_related("branch_item__item").filter(
-            branch_category=bc,
-            branch_item__is_available=True,
-        ).order_by("sort_order", "id")
+    rows_prefetch = Prefetch(
+        "items_in_category",
+        queryset=BranchCategoryItem.objects
+            .select_related("branch_item__item")
+            .prefetch_related("branch_item__sizes")
+            .filter(branch_item__is_available=True)
+            .order_by("sort_order", "id"),
+        to_attr="prefetched_items",
+    )
+    categories = (BranchCategory.objects
+                  .filter(branch=branch, is_active=True)
+                  .select_related("category")
+                  .prefetch_related(rows_prefetch)
+                  .order_by("sort_order", "id"))
 
-        menu.append({"branch_category": bc, "items": rows})
+    menu = [{"branch_category": bc, "items": bc.prefetched_items}
+            for bc in categories]
 
     # Конструкторы — показываем только если есть хотя бы один активный
     constructors_qs = (
@@ -464,9 +477,10 @@ def table_menu(request, token: str):
         .prefetch_related("groups__ingredients")
         .order_by("sort_order", "id")
     )
+    # Ингредиенты уже загружены prefetch_related — перебираем в памяти.
     constructors = [
         cx for cx in constructors_qs
-        if any(g.ingredients.filter(is_active=True).exists() for g in cx.groups.all())
+        if any(any(i.is_active for i in g.ingredients.all()) for g in cx.groups.all())
     ]
 
     cart = _get_cart(request, token)
