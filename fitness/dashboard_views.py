@@ -2017,6 +2017,31 @@ def class_booking_status(request, club, staff, booking_id):
 @login_required(login_url=LOGIN_URL)
 @require(ADMIN, CASHIER)
 @require_POST
+def class_remove(request, club, staff, class_id):
+    """Убирает тренировку из расписания совсем.
+
+    Отмена живёт на дате и годится для праздника или болезни тренера. А
+    когда тренировку поставили по ошибке или направление закрыли, её надо
+    убрать со всех недель — раньше это можно было сделать только через
+    админку.
+
+    Запись не удаляем, а снимаем с расписания: к ней привязаны отметки о
+    приходе и занятия в долг, и удаление стёрло бы историю клиентов.
+    Поставить такую тренировку заново можно кнопкой «+» в сетке.
+    """
+    cls = get_object_or_404(GroupClass.objects.select_related("group"),
+                            id=class_id, club=club)
+    name = cls.group.title if cls.group_id else cls.name
+    cls.is_active = False
+    cls.save(update_fields=["is_active", "updated_at"])
+    messages.success(request, f"«{name}» убрана из расписания. "
+                              f"Отметки и история остались.")
+    return redirect("fitness_dash:classes", club_id=club.id)
+
+
+@login_required(login_url=LOGIN_URL)
+@require(ADMIN, CASHIER)
+@require_POST
 def class_bookings_clear(request, club, staff, class_id):
     """Убирает с занятия все отменённые заявки и неявки за день.
 

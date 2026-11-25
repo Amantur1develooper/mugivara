@@ -147,8 +147,7 @@
           <td class="wg-cell{% if d.is_today %} today{% endif %}">
             {% for it in d.by_hour|get:h %}
               <a class="wg-cls {% if it.cls.group_id %}group{% else %}open-reg{% endif %}{% if it.cancelled %} off{% endif %}"
-                 {% if not it.cancelled %}
-                   {% comment %}
+                 {% comment %}
                      Нажатие открывает панель справа: у группы — состав с
                      отметками, у открытой тренировки — список записавшихся,
                      где отказные заявки можно сразу убрать. Раньше панель
@@ -156,8 +155,8 @@
                      приходилось уходить со страницы расписания.
                    {% endcomment %}
                    data-roster
-                   data-title="{% if it.cls.group_id %}{{ it.cls.group.title }}{% else %}{{ it.cls.name }}{% endif %} · {{ d.day|date:'D, d.m' }} {{ it.cls.time_from|time:'H:i' }}"
-                 {% endif %}
+                 data-roster
+                 data-title="{% if it.cls.group_id %}{{ it.cls.group.title }}{% else %}{{ it.cls.name }}{% endif %} · {{ d.day|date:'D, d.m' }} {{ it.cls.time_from|time:'H:i' }}"
                  href="{% url 'fitness_dash:class_day' club.id it.cls.id %}?date={{ d.day|date:'Y-m-d' }}">
                 <div class="wg-t">{{ it.cls.time_from|time:"H:i" }}</div>
                 <div class="wg-n">
@@ -339,12 +338,13 @@
         const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
         // У группы страница отдаёт состав, у открытой тренировки —
         // список записавшихся. Берём то, что есть.
+        const state = doc.getElementById('dayStateBlock');
         const roster = doc.getElementById('rosterBlock');
         const bookings = doc.getElementById('bookingsBlock');
-        if (!roster && !bookings) throw new Error('нечего показать');
-        body.innerHTML = (roster ? roster.innerHTML : '')
-                       + (roster && bookings ? '<div style="height:14px"></div>' : '')
-                       + (bookings ? bookings.innerHTML : '');
+        if (!state && !roster && !bookings) throw new Error('нечего показать');
+        const parts = [state, roster, bookings].filter(Boolean)
+            .map(el => '<div class="fc-card">' + el.innerHTML + '</div>');
+        body.innerHTML = parts.join('<div style="height:12px"></div>');
       } catch (e) {
         // Не подгрузилось — ведём себя как до панели: просто открываем
         // страницу тренировки. Хуже прежнего быть не должно.
@@ -385,6 +385,9 @@
           credentials: 'same-origin',
         });
         if (!res.ok) throw new Error(res.status);
+        // Снятую тренировку в расписании показывать уже нечего — проще
+        // перечитать страницу, чем чинить сетку на лету.
+        if (btn.hasAttribute('data-del-class')) { location.reload(); return; }
         await fill();
       } catch (e) {
         form.submit();
@@ -418,14 +421,23 @@
       if (!form) return;
       ev.preventDefault();
 
-      const del = btn.hasAttribute('data-del-booking');
+      const del = btn.hasAttribute('data-del-booking') || btn.hasAttribute('data-del-class');
       if (del && dlg && dlg.showModal) {
         const count = parseInt(btn.dataset.count || '0', 10);
-        dlgText.textContent = count
-          ? 'Из списка пропадут ' + count + ' разобранных заявок — отменённые и неявки. '
-            + 'Те, кто записан и кто пришёл, останутся. Вернуть убранное не получится.'
-          : 'Заявка «' + btn.dataset.delBooking + '» пропадёт насовсем. '
-            + 'Если человек ещё может прийти, лучше оставить её отменённой.';
+        const title = dlg.querySelector('.fc-dlg-t');
+        if (btn.hasAttribute('data-del-class')) {
+          title.textContent = 'Убрать тренировку из расписания?';
+          dlgText.textContent = '«' + btn.dataset.delClass + '» пропадёт со всех недель, '
+            + 'не только с этого дня. Отметки о приходе и история останутся. '
+            + 'Поставить её заново можно кнопкой «+» в сетке.';
+        } else {
+          title.textContent = 'Убрать заявку?';
+          dlgText.textContent = count
+            ? 'Из списка пропадут ' + count + ' разобранных заявок — отменённые и неявки. '
+              + 'Те, кто записан и кто пришёл, останутся. Вернуть убранное не получится.'
+            : 'Заявка «' + btn.dataset.delBooking + '» пропадёт насовсем. '
+              + 'Если человек ещё может прийти, лучше оставить её отменённой.';
+        }
         pending = { form, btn };
         dlg.showModal();
         return;

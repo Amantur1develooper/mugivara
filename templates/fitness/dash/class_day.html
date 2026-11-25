@@ -4,7 +4,8 @@
 
 {% block fc_content %}
 {% if state and state.is_cancelled %}
-<div class="fc-card" style="border-color:rgba(220,38,38,.45);background:rgba(220,38,38,.05)">
+<div class="fc-card" id="dayStateBlock"
+     style="border-color:rgba(220,38,38,.45);background:rgba(220,38,38,.05)">
   <div style="font-weight:800;font-size:15px">⛔️ Тренировка отменена</div>
   <div class="fc-row-sub" style="margin-top:5px">
     {% if state.reason %}{{ state.reason }}<br>{% endif %}
@@ -18,6 +19,20 @@
     <input type="hidden" name="action" value="restore">
     <button class="fc-btn" type="submit">Вернуть тренировку</button>
   </form>
+  {% endif %}
+  {% if not is_trainer %}
+  <form method="post" action="{% url 'fitness_dash:class_remove' club.id cls.id %}"
+        style="margin-top:8px">
+    {% csrf_token %}
+    <button class="fc-btn ghost small" type="submit"
+            data-del-class="{% if cls.group_id %}{{ cls.group.title }}{% else %}{{ cls.name }}{% endif %}">
+      Убрать из расписания
+    </button>
+  </form>
+  <div class="fc-sub" style="margin-top:6px;line-height:1.45">
+    Отмена действует на один день. «Убрать из расписания» снимает
+    тренировку со всех недель — отметки о приходе при этом остаются.
+  </div>
   {% endif %}
 </div>
 {% endif %}
@@ -368,17 +383,24 @@
   let pending = null;
 
   document.addEventListener('click', function (e) {
-    const btn = e.target.closest('[data-del-booking]');
+    const btn = e.target.closest('[data-del-booking], [data-del-class]');
     if (!btn) return;
     e.preventDefault();
     pending = { form: btn.form, button: btn };
-    const who = btn.dataset.delBooking;
     const count = parseInt(btn.dataset.count || '0', 10);
-    text.textContent = count
-      ? 'Из списка пропадут ' + count + ' разобранных заявок — отменённые и неявки. '
-        + 'Те, кто записан и кто пришёл, останутся. Вернуть убранное не получится.'
-      : 'Заявка «' + who + '» пропадёт из списка дня насовсем. '
-        + 'Если человек ещё может прийти, лучше оставить её отменённой.';
+    if (btn.hasAttribute('data-del-class')) {
+      dlg.querySelector('.fc-dlg-t').textContent = 'Убрать тренировку из расписания?';
+      text.textContent = '«' + btn.dataset.delClass + '» пропадёт со всех недель, '
+        + 'не только с этого дня. Отметки о приходе и история останутся. '
+        + 'Поставить её заново можно кнопкой «+» в сетке расписания.';
+    } else {
+      dlg.querySelector('.fc-dlg-t').textContent = 'Убрать заявку?';
+      text.textContent = count
+        ? 'Из списка пропадут ' + count + ' разобранных заявок — отменённые и неявки. '
+          + 'Те, кто записан и кто пришёл, останутся. Вернуть убранное не получится.'
+        : 'Заявка «' + btn.dataset.delBooking + '» пропадёт из списка дня насовсем. '
+          + 'Если человек ещё может прийти, лучше оставить её отменённой.';
+    }
     dlg.showModal();
   });
 
