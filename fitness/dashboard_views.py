@@ -1761,6 +1761,11 @@ def class_day(request, club, staff, class_id):
                        state=state, q=q, found=found,
                        can_cancel=(staff.role != TRAINER
                                    or (trainer_of and cls.trainer_id == trainer_of.id)),
+                       # Сколько заявок уже разобрано и только занимает
+                       # место — по нему показываем кнопку уборки.
+                       stale=sum(1 for b in rows
+                                 if b.status in (ClassBooking.Status.CANCELLED,
+                                                 ClassBooking.Status.NO_SHOW)),
                        came=sum(1 for r in roster
                                 if r["booking"] and r["booking"].status == "came"),
                        free=cls.free_on(day),
@@ -1973,12 +1978,69 @@ def _booking_mark(request, club, b, action):
 def class_booking_status(request, club, staff, booking_id):
     b = get_object_or_404(ClassBooking.objects.select_related("group_class", "member"),
                           id=booking_id, group_class__club=club)
-    _booking_mark(request, club, b, request.POST.get("action"))
+    action = request.POST.get("action")
+
+    if action == "delete":
+        # Тренеру отметки доступны, а удаление — нет: он ведёт занятие, а
+        # за состав записей отвечает ресепшен. В разметке кнопку ему не
+        # показывают, но проверить надо и здесь — форму можно отправить
+        # и мимо страницы.
+        if staff.role == TRAINER:
+            messages.error(request, "Убирать заявки может администратор или кассир")
+            return redirect(reverse("fitness_dash:class_day",
+                                    args=[club.id, b.group_class_id])
+                            + f"?date={b.date:%Y-%m-%d}")
+        # Запись «пришёл» не удаляем: по ней уже списано посещение, и
+        # убрать её значит разойтись с историей клиента. Отменённые и
+        # неявки — другое дело, они только засоряют день.
+        if b.status == ClassBooking.Status.CAME:
+            messages.error(request, "«Пришёл» убрать нельзя — посещение уже списано. "
+                                    "Сначала верните отметку кнопкой ↩️")
+        else:
+            cls_id, date = b.group_class_id, b.date
+            who = b.who
+            b.delete()
+            messages.success(request, f"Заявка «{who}» убрана")
+            return redirect(reverse("fitness_dash:class_day", args=[club.id, cls_id])
+                            + f"?date={date:%Y-%m-%d}")
+        return redirect(reverse("fitness_dash:class_day",
+                                args=[club.id, b.group_class_id])
+                        + f"?date={b.date:%Y-%m-%d}")
+
+    _booking_mark(request, club, b, action)
     # Адрес собираем через reverse: кабинет живёт под /ru/, /ky/ и /en/, а
     # прибитый «/ru/» выкидывал кассира из его языка на каждой отметке.
     return redirect(reverse("fitness_dash:class_day",
                             args=[club.id, b.group_class_id])
                     + f"?date={b.date:%Y-%m-%d}")
+
+@login_required(login_url=LOGIN_URL)
+@require(ADMIN, CASHIER)
+@require_POST
+def class_bookings_clear(request, club, staff, class_id):
+    """Убирает с занятия все отменённые заявки и неявки за день.
+
+    Записаться на тренировку можно с сайта, и часть заявок отваливается:
+    человек передумал, не пришёл, позвонили — отказался. Они оставались в
+    списке дня навсегда, и за ними не было видно тех, кто придёт. Убираем
+    разом, но только разобранные: «записан» мог просто ждать звонка, а
+    «пришёл» — это уже списанное посещение.
+    """
+    cls = get_object_or_404(GroupClass, id=class_id, club=club)
+    day = _date(request.POST.get("date"))
+    gone = (ClassBooking.objects
+            .filter(group_class=cls, date=day,
+                    status__in=[ClassBooking.Status.CANCELLED,
+                                ClassBooking.Status.NO_SHOW]))
+    n = gone.count()
+    gone.delete()
+    if n:
+        messages.success(request, f"Убрано заявок: {n}")
+    else:
+        messages.info(request, "Убирать нечего — отменённых и неявок нет")
+    return redirect(reverse("fitness_dash:class_day", args=[club.id, cls.id])
+                    + f"?date={day:%Y-%m-%d}")
+
 
 # ── Сотрудники клуба ────────────────────────────────────────────────────────
 

@@ -176,7 +176,21 @@
 {% endif %}
 
 <div class="fc-card">
-  <div class="fc-card-t">{% if cls.group_id %}Гости и разовые{% else %}Кто записан{% endif %}</div>
+  <div class="fc-card-t" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <span>{% if cls.group_id %}Гости и разовые{% else %}Кто записан{% endif %}</span>
+    {% if stale and not is_trainer %}
+      <form method="post"
+            action="{% url 'fitness_dash:class_bookings_clear' club.id cls.id %}"
+            style="margin-left:auto">
+        {% csrf_token %}
+        <input type="hidden" name="date" value="{{ day|date:'Y-m-d' }}">
+        <button class="fc-btn small ghost" type="submit"
+                data-del-booking="все отменённые и неявки" data-count="{{ stale }}">
+          Убрать отменённые · {{ stale }}
+        </button>
+      </form>
+    {% endif %}
+  </div>
   <div class="fc-list">
     {% for b in rows %}
       <div class="fc-row">
@@ -198,9 +212,20 @@
           {% if b.status == 'booked' %}
             <button class="fc-btn small" name="action" value="came">Пришёл</button>
             <button class="fc-btn small ghost" name="action" value="no_show">Нет</button>
-            <button class="fc-btn small ghost" name="action" value="cancel">✖️</button>
+            <button class="fc-btn small ghost" name="action" value="cancel"
+                    title="Отменить заявку">✖️</button>
           {% else %}
-            <button class="fc-btn small ghost" name="action" value="back">↩️</button>
+            <button class="fc-btn small ghost" name="action" value="back"
+                    title="Вернуть в записанные">↩️</button>
+          {% endif %}
+          {% comment %}
+            Убрать совсем можно только разобранную заявку: у «пришёл» уже
+            списано посещение, и её удаление разошлось бы с историей.
+          {% endcomment %}
+          {% if b.status != 'came' and not is_trainer %}
+            <button class="fc-btn small ghost" name="action" value="delete"
+                    title="Убрать заявку из списка"
+                    data-del-booking="{{ b.who }}">🗑</button>
           {% endif %}
         </form>
       </div>
@@ -305,5 +330,76 @@
       load();
     });
   })();
+</script>
+
+{% comment %}
+  Окно подтверждения: заявку убирают насовсем, и спросить лучше до.
+  Без скрипта кнопка просто отправит форму, как обычно.
+{% endcomment %}
+<dialog class="fc-dlg" id="bkDel">
+  <div class="fc-dlg-box">
+    <div class="fc-dlg-t">Убрать заявку?</div>
+    <p class="fc-dlg-txt" id="bkDelText"></p>
+    <div class="fc-dlg-row">
+      <button class="fc-btn ghost small" type="button" data-dlg-close>Отмена</button>
+      <button class="fc-btn small danger" type="button" id="bkDelGo">Убрать</button>
+    </div>
+  </div>
+</dialog>
+
+<style>
+  .fc-dlg { border: 0; padding: 0; background: transparent; max-width: 400px; width: 92vw; }
+  .fc-dlg::backdrop { background: rgba(15, 23, 42, .5); }
+  .fc-dlg-box { background: var(--bg); color: var(--text);
+                border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+  .fc-dlg-t { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
+  .fc-dlg-txt { font-size: 13px; line-height: 1.55; color: var(--text2); margin: 0; }
+  .fc-dlg-row { display: flex; gap: 9px; justify-content: flex-end; margin-top: 18px; }
+  .fc-btn.danger { background: #dc2626; border-color: #dc2626; color: #fff; }
+  .fc-btn.danger:hover { background: #b91c1c; border-color: #b91c1c; }
+</style>
+
+<script>
+(function () {
+  const dlg = document.getElementById('bkDel');
+  if (!dlg || typeof dlg.showModal !== 'function') return;
+  const text = document.getElementById('bkDelText');
+  const go = document.getElementById('bkDelGo');
+  let pending = null;
+
+  document.addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-del-booking]');
+    if (!btn) return;
+    e.preventDefault();
+    pending = { form: btn.form, button: btn };
+    const who = btn.dataset.delBooking;
+    const count = parseInt(btn.dataset.count || '0', 10);
+    text.textContent = count
+      ? 'Из списка пропадут ' + count + ' разобранных заявок — отменённые и неявки. '
+        + 'Те, кто записан и кто пришёл, останутся. Вернуть убранное не получится.'
+      : 'Заявка «' + who + '» пропадёт из списка дня насовсем. '
+        + 'Если человек ещё может прийти, лучше оставить её отменённой.';
+    dlg.showModal();
+  });
+
+  dlg.addEventListener('click', function (e) {
+    if (e.target.hasAttribute('data-dlg-close') || e.target === dlg) dlg.close();
+  });
+  dlg.addEventListener('close', function () { pending = null; });
+
+  go.addEventListener('click', function () {
+    if (!pending) return;
+    const { form, button } = pending;
+    pending = null;
+    dlg.close();
+    if (form.requestSubmit) {
+      form.requestSubmit(button);
+    } else {
+      const h = document.createElement('input');
+      h.type = 'hidden'; h.name = button.name; h.value = button.value;
+      form.appendChild(h); form.submit();
+    }
+  });
+})();
 </script>
 {% endblock %}

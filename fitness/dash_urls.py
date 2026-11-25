@@ -50,6 +50,8 @@ urlpatterns = [
          name="class_mark_all"),
     path("<int:club_id>/class-booking/<int:booking_id>/status/", v.class_booking_status,
          name="class_booking_status"),
+    path("<int:club_id>/classes/<int:class_id>/bookings/clear/", v.class_bookings_clear,
+         name="class_bookings_clear"),
 
     path("<int:club_id>/leads/", v.leads, name="leads"),
     path("<int:club_id>/leads/new/", v.lead_save, name="lead_new"),
