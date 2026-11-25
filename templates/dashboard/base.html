@@ -5,6 +5,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>{% block title %}Кабинет{% endblock %} — Webordo</title>
+
+  {% comment %}
+    Иконка кабинета — зелёная W, у самого сайта оранжевая. Кабинет
+    держат открытым рядом с сайтом по несколько вкладок, и различать их
+    по цвету быстрее, чем вчитываться в заголовки.
+  {% endcomment %}
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon-cabinet.svg' %}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'favicon-cabinet-32.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'apple-touch-icon-cabinet.png' %}">
+  <meta name="theme-color" content="#00B896">
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
