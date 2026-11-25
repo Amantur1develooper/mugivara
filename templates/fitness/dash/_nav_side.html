@@ -45,9 +45,16 @@
   <a href="{% url 'fitness_dash:reports' club.id %}" class="{% if cur == 'reports' %}on{% endif %}">
     <span class="db-nav-icon">📈</span> Отчёт</a>
   {% endif %}
-  {% if can_profit %}
+  {% comment %}
+    Расходы ведёт и кассир: за воду, за ремонт беговой дорожки платят с
+    ресепшена, и записывать это через администратора — лишний круг.
+    Настройки клуба остаются только администратору.
+  {% endcomment %}
+  {% if can_money %}
   <a href="{% url 'fitness_dash:expenses' club.id %}" class="{% if cur == 'expenses' %}on{% endif %}">
     <span class="db-nav-icon">💸</span> Расходы</a>
+  {% endif %}
+  {% if can_profit %}
   <a href="{% url 'fitness_dash:setup' club.id %}" class="{% if cur == 'setup' %}on{% endif %}">
     <span class="db-nav-icon">⚙️</span> Настройки</a>
   {% endif %}

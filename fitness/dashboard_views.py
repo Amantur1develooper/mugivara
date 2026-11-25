@@ -20,6 +20,8 @@ from django.views.decorators.http import require_POST
 from integrations import tgbot
 
 from . import services, tg
+from core.phones import normalize as normalize_phone
+
 from .access import (ADMIN, CASHIER, TRAINER, can_see_money, can_see_profit,
                      my_clubs, my_trainer, require, staff_of)
 from .models import (SECTION_PRESETS, ClassBooking, ClassDay, ClubStaff,
@@ -48,6 +50,24 @@ def _date(raw, default=None):
         return datetime.strptime(raw, "%Y-%m-%d").date()
     except (TypeError, ValueError):
         return default or timezone.localdate()
+
+
+def _phone(request, raw, what="Телефон"):
+    """Приводит номер к виду +996700123456. Возвращает номер.
+
+    «0700 12-34-56», «996 700 123456» и «+996700123456» — один и тот же
+    человек, но записанные по-разному они ложатся в базу тремя разными
+    клиентами, а ссылка на WhatsApp из местного набора не открывается.
+    Поэтому номер нормализуем на входе везде, где его вводят.
+
+    Непохожее на номер не сохраняем и говорим об этом вслух: молча
+    потерять телефон заявки хуже, чем показать ошибку.
+    """
+    value, err = normalize_phone(raw or "")
+    if err:
+        messages.error(request, f"{what}: {err}")
+        return ""
+    return value
 
 
 def _int(raw, default=0, lo=0, hi=10000):
@@ -508,7 +528,7 @@ def member_save(request, club, staff, member_id=0):
         member = Member(club=club, created_by=request.user)
 
     member.full_name = (request.POST.get("full_name") or "").strip()[:200]
-    member.phone = (request.POST.get("phone") or "").strip()[:30]
+    member.phone = _phone(request, request.POST.get("phone"))[:30]
     member.card_id = (request.POST.get("card_id") or "").strip()[:50]
     member.notes = (request.POST.get("notes") or "").strip()
     member.gender = (request.POST.get("gender") or "")[:1]
@@ -856,7 +876,7 @@ def booking_save(request, club, staff):
     booking = TrainerBooking.objects.create(
         club=club, trainer=trainer, member=member,
         client_name=(request.POST.get("client_name") or "").strip()[:150],
-        phone=(request.POST.get("phone") or "").strip()[:30],
+        phone=_phone(request, request.POST.get("phone"))[:30],
         date=_date(request.POST.get("date")),
         time_from=t,
         duration_min=int(request.POST.get("duration_min") or 60),
@@ -1195,9 +1215,13 @@ def lead_save(request, club, staff, lead_id=0):
         lead = Lead(club=club, source=Lead.Source.PHONE)
 
     lead.name = (request.POST.get("name") or "").strip()[:150]
-    lead.phone = (request.POST.get("phone") or "").strip()[:30]
+    raw_phone = (request.POST.get("phone") or "").strip()
+    lead.phone = _phone(request, raw_phone)[:30]
     if not lead.phone:
-        messages.error(request, "Телефон обязателен — иначе перезвонить некому")
+        # Про кривой номер _phone уже сказал — второй раз не повторяем,
+        # иначе на экране две красные строки об одном и том же.
+        if not raw_phone:
+            messages.error(request, "Телефон обязателен — иначе перезвонить некому")
         return redirect("fitness_dash:leads", club_id=club.id)
 
     lead.comment = (request.POST.get("comment") or "").strip()
@@ -1300,7 +1324,7 @@ def lead_to_member(request, club, staff, lead_id):
 # ── Расходы и деньги ────────────────────────────────────────────────────────
 
 @login_required(login_url=LOGIN_URL)
-@require(ADMIN)
+@require(ADMIN, CASHIER)
 def expenses(request, club, staff):
     month = _date(request.GET.get("from"), timezone.localdate().replace(day=1))
     rows = Expense.objects.filter(club=club, spent_on__gte=month).select_related("created_by")
@@ -1314,7 +1338,7 @@ def expenses(request, club, staff):
 
 
 @login_required(login_url=LOGIN_URL)
-@require(ADMIN)
+@require(ADMIN, CASHIER)
 @require_POST
 def expense_add(request, club, staff):
     amount = _money(request.POST.get("amount"), "0")
@@ -1400,7 +1424,7 @@ def reports(request, club, staff):
         def slot(user_id, name):
             if user_id not in who:
                 who[user_id] = {"name": name, "sold": 0, "sum": Decimal("0"),
-                                "taken": Decimal("0"), "added": 0}
+                                "taken": Decimal("0"), "added": 0, "payers": 0}
             return who[user_id]
 
         def title(user):
@@ -1429,10 +1453,17 @@ def reports(request, club, staff):
 
         # Принятые деньги — отдельная строка: кассир может не продать ни
         # одного абонемента, но принять долги на приличную сумму.
+        # Считаем и сумму, и людей: «приняла оплату от 100 человек» —
+        # это про работу с залом, а сумма про деньги, и одно другое не
+        # заменяет. Человек считается один раз, сколько бы раз он ни
+        # платил: иначе рассрочка из четырёх взносов выглядела бы как
+        # четверо клиентов.
         for r in (pays.values("created_by")
-                  .annotate(s=Sum("amount"))):
+                  .annotate(s=Sum("amount"),
+                            people=Count("member", distinct=True))):
             row = slot(r["created_by"], "")
             row["taken"] += r["s"] or 0
+            row["payers"] += r["people"] or 0
 
         # Имена для тех, кто попал сюда только по платежам
         missing = [uid for uid, r in who.items() if not r["name"] and uid]
@@ -1446,7 +1477,7 @@ def reports(request, club, staff):
             r["avg"] = (r["sum"] / r["sold"]) if r["sold"] else Decimal("0")
 
         data["by_staff"] = sorted(who.values(),
-                                  key=lambda r: (-r["sold"], -r["added"], -r["taken"]))
+                                  key=lambda r: (-r["added"], -r["sold"], -r["payers"]))
 
     if can_see_profit(staff):
         exp = Expense.objects.filter(club=club, spent_on__gte=start, spent_on__lte=end)
@@ -1466,7 +1497,7 @@ def setup(request, club, staff):
         if what == "club":
             club.name = (request.POST.get("name") or club.name).strip()[:200]
             club.address = (request.POST.get("address") or "").strip()[:300]
-            club.phone = (request.POST.get("phone") or "").strip()[:50]
+            club.phone = _phone(request, request.POST.get("phone"))[:50]
             club.whatsapp = (request.POST.get("whatsapp") or "").strip()[:30]
             club.working_hours = (request.POST.get("working_hours") or "").strip()[:200]
             club.description = (request.POST.get("description") or "").strip()
@@ -1605,7 +1636,7 @@ def setup(request, club, staff):
         elif what == "trainer":
             Trainer.objects.create(
                 club=club, name=(request.POST.get("t_name") or "").strip()[:150],
-                phone=(request.POST.get("t_phone") or "").strip()[:50],
+                phone=_phone(request, request.POST.get("t_phone"), "Телефон тренера")[:50],
                 price_per_session=_money(request.POST.get("t_price"), "0"),
                 bio=(request.POST.get("t_bio") or "").strip(),
                 photo=request.FILES.get("t_photo"))
@@ -1866,7 +1897,7 @@ def class_book(request, club, staff, class_id):
     ClassBooking.objects.create(
         group_class=cls, date=day, member=member,
         client_name=(request.POST.get("client_name") or "").strip()[:150],
-        phone=(request.POST.get("phone") or "").strip()[:30],
+        phone=_phone(request, request.POST.get("phone"))[:30],
         comment=(request.POST.get("comment") or "").strip()[:300],
         created_by=request.user,
     )
@@ -2387,7 +2418,7 @@ def staff_add(request, club, staff):
         else:
             card = Trainer.objects.create(
                 club=club, user=user, name=name[:150],
-                phone=(request.POST.get("phone") or "").strip()[:50])
+                phone=_phone(request, request.POST.get("phone"), "Телефон тренера")[:50])
             messages.info(request, f"Создана карточка тренера «{card.name}»")
     return redirect("fitness_dash:setup", club_id=club.id)
 

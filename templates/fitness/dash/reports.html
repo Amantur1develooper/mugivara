@@ -54,35 +54,52 @@
 </div>
 
 {% if by_staff %}
+<style>
+  /* Цифры сотрудника плитками: их пять, и строкой через точку они
+     читаются как каша — а так видно каждую отдельно. */
+  .who-nums { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .who-n { flex: 1 1 90px; min-width: 90px; padding: 8px 10px; border-radius: 11px;
+           background: var(--bg2, rgba(0,0,0,.035)); }
+  .who-n b { display: block; font-size: 17px; font-weight: 800; line-height: 1.2; }
+  .who-n span { font-size: 11px; color: var(--muted); }
+  @media (max-width: 560px) { .who-n { flex-basis: calc(50% - 4px); } }
+</style>
 <div class="fc-card">
   <div class="fc-card-t">Кто оформляет</div>
   <div class="fc-list">
     {% for r in by_staff %}
-      <div class="fc-row">
-        <div class="fc-row-main">
-          <div class="fc-row-name" style="font-size:13.5px">{{ r.name }}</div>
-          <div class="fc-row-sub">
-            {% if r.sold %}абонементов {{ r.sold }}
-              · средний чек {{ r.avg|floatformat:0 }} сом{% else %}абонементов нет{% endif %}
-            {% if r.added %} · клиентов завёл {{ r.added }}{% endif %}
-            {% if r.taken %}<br>принял денег {{ r.taken|floatformat:0 }} сом{% endif %}
+      <div class="fc-row" style="display:block">
+        <div class="fc-row-name" style="font-size:14px">{{ r.name }}</div>
+        <div class="who-nums">
+          <div class="who-n">
+            <b>{{ r.added }}</b><span>новых клиентов</span>
           </div>
-        </div>
-        <div class="fc-row-right">
-          <div style="font-size:17px;font-weight:800">{{ r.sum|floatformat:0 }}</div>
-          <div class="fc-row-sub" style="text-align:right">сом продаж</div>
+          <div class="who-n">
+            <b>{{ r.sold }}</b><span>абонементов</span>
+          </div>
+          <div class="who-n">
+            <b>{{ r.payers }}</b><span>чел. оплатили</span>
+          </div>
+          <div class="who-n">
+            <b>{{ r.taken|money }}</b><span>сом принял</span>
+          </div>
+          <div class="who-n">
+            <b>{{ r.sum|money }}</b><span>сом продаж</span>
+          </div>
         </div>
       </div>
     {% endfor %}
   </div>
-  <div class="fc-sub" style="margin-top:8px;line-height:1.5">
-    «Сом продаж» — сумма сделок за период: цена абонемента за вычетом
-    скидки, независимо от того, сколько человек успел внести. «Принял
-    денег» — что реально прошло через кассу, включая погашение долгов и
-    рассрочку, в том числе по чужим продажам. «Клиентов завёл» — новые
-    карточки за период: их часто заводит один человек, а продаёт другой,
-    поэтому цифры и не сходятся между собой. Раздел виден только
-    администратору.
+  <div class="fc-sub" style="margin-top:10px;line-height:1.55">
+    <b>Новых клиентов</b> — заведённые карточки за период. <b>Абонементов</b>
+    — сколько оформил. Цифры не сходятся между собой намеренно: карточку
+    часто заводит администратор на ресепшене, а продаёт потом кассир.<br>
+    <b>Чел. оплатили</b> — от скольких человек принял деньги; один человек
+    считается один раз, даже если платил рассрочку четырьмя взносами.
+    <b>Сом принял</b> — что реально прошло через кассу, включая чужие долги.
+    <b>Сом продаж</b> — сумма сделок: цена за вычетом скидки, независимо от
+    того, сколько внесли.<br>
+    Раздел виден только администратору.
   </div>
 </div>
 {% endif %}
