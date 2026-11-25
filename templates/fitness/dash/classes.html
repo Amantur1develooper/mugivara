@@ -147,9 +147,16 @@
           <td class="wg-cell{% if d.is_today %} today{% endif %}">
             {% for it in d.by_hour|get:h %}
               <a class="wg-cls {% if it.cls.group_id %}group{% else %}open-reg{% endif %}{% if it.cancelled %} off{% endif %}"
-                 {% if it.cls.group_id and not it.cancelled %}
+                 {% if not it.cancelled %}
+                   {% comment %}
+                     Нажатие открывает панель справа: у группы — состав с
+                     отметками, у открытой тренировки — список записавшихся,
+                     где отказные заявки можно сразу убрать. Раньше панель
+                     была только у групп, и ради одной отменённой заявки
+                     приходилось уходить со страницы расписания.
+                   {% endcomment %}
                    data-roster
-                   data-title="{{ it.cls.group.title }} · {{ d.day|date:'D, d.m' }} {{ it.cls.time_from|time:'H:i' }}"
+                   data-title="{% if it.cls.group_id %}{{ it.cls.group.title }}{% else %}{{ it.cls.name }}{% endif %} · {{ d.day|date:'D, d.m' }} {{ it.cls.time_from|time:'H:i' }}"
                  {% endif %}
                  href="{% url 'fitness_dash:class_day' club.id it.cls.id %}?date={{ d.day|date:'Y-m-d' }}">
                 <div class="wg-t">{{ it.cls.time_from|time:"H:i" }}</div>
@@ -272,7 +279,7 @@
   <div class="rs-bg" data-roster-close></div>
   <div class="rs-panel">
     <div class="rs-head">
-      <div class="t" id="rosterTitle">Состав группы</div>
+      <div class="t" id="rosterTitle">Тренировка</div>
       <a class="fc-btn ghost small" id="rosterOpen" href="#">Открыть</a>
       <button class="rs-x" type="button" data-roster-close title="Закрыть">✕</button>
     </div>
@@ -281,6 +288,29 @@
     </div>
   </div>
 </div>
+
+<dialog class="fc-dlg" id="bkDel">
+  <div class="fc-dlg-box">
+    <div class="fc-dlg-t">Убрать заявку?</div>
+    <p class="fc-dlg-txt" id="bkDelText"></p>
+    <div class="fc-dlg-row">
+      <button class="fc-btn ghost small" type="button" data-dlg-close>Отмена</button>
+      <button class="fc-btn small danger" type="button" id="bkDelGo">Убрать</button>
+    </div>
+  </div>
+</dialog>
+
+<style>
+  .fc-dlg { border: 0; padding: 0; background: transparent; max-width: 400px; width: 92vw; }
+  .fc-dlg::backdrop { background: rgba(15, 23, 42, .5); }
+  .fc-dlg-box { background: var(--bg); color: var(--text);
+                border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+  .fc-dlg-t { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
+  .fc-dlg-txt { font-size: 13px; line-height: 1.55; color: var(--text2); margin: 0; }
+  .fc-dlg-row { display: flex; gap: 9px; justify-content: flex-end; margin-top: 18px; }
+  .fc-btn.danger { background: #dc2626; border-color: #dc2626; color: #fff; }
+  .fc-btn.danger:hover { background: #b91c1c; border-color: #b91c1c; }
+</style>
 
 <script>
   // Нажали группу в сетке — состав открывается панелью справа, отмечать
@@ -307,9 +337,14 @@
         const res = await fetch(url, { credentials: 'same-origin' });
         if (!res.ok) throw new Error(res.status);
         const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
-        const block = doc.getElementById('rosterBlock');
-        if (!block) throw new Error('нет состава');
-        body.innerHTML = block.innerHTML;
+        // У группы страница отдаёт состав, у открытой тренировки —
+        // список записавшихся. Берём то, что есть.
+        const roster = doc.getElementById('rosterBlock');
+        const bookings = doc.getElementById('bookingsBlock');
+        if (!roster && !bookings) throw new Error('нечего показать');
+        body.innerHTML = (roster ? roster.innerHTML : '')
+                       + (roster && bookings ? '<div style="height:14px"></div>' : '')
+                       + (bookings ? bookings.innerHTML : '');
       } catch (e) {
         // Не подгрузилось — ведём себя как до панели: просто открываем
         // страницу тренировки. Хуже прежнего быть не должно.
@@ -322,7 +357,7 @@
       a.addEventListener('click', ev => {
         ev.preventDefault();
         url = a.getAttribute('href');
-        title.textContent = a.dataset.title || 'Состав группы';
+        title.textContent = a.dataset.title || 'Тренировка';
         openLink.href = url;
         body.innerHTML = '<div class="fc-sub">Загружаем…</div>';
         wrap.classList.add('open');
@@ -337,13 +372,9 @@
     // Отметки внутри панели: тот же запрос, что и на странице тренировки,
     // после него состав перечитываем целиком — так он точно совпадает с
     // тем, что в базе.
-    body.addEventListener('click', async ev => {
-      const btn = ev.target.closest('button[name="action"], button[type="submit"]');
-      if (!btn) return;
-      const form = btn.closest('form');
-      if (!form) return;
-      ev.preventDefault();
-
+    // Отправка формы из панели. Вынесено отдельно, потому что удаление
+    // сначала проходит через окно подтверждения и отправляется уже после.
+    const post = async (form, btn) => {
       const data = new FormData(form);
       if (btn.name === 'action') data.append('action', btn.value);
       body.querySelectorAll('button').forEach(b => b.disabled = true);
@@ -358,6 +389,48 @@
       } catch (e) {
         form.submit();
       }
+    };
+
+    // Окно подтверждения на удаление заявок — то же, что на странице
+    // тренировки: одно касание не должно стирать заявку насовсем.
+    const dlg = document.getElementById('bkDel');
+    const dlgText = document.getElementById('bkDelText');
+    const dlgGo = document.getElementById('bkDelGo');
+    let pending = null;
+    if (dlg && dlg.showModal) {
+      dlg.addEventListener('click', e => {
+        if (e.target.hasAttribute('data-dlg-close') || e.target === dlg) dlg.close();
+      });
+      dlg.addEventListener('close', () => { pending = null; });
+      dlgGo.addEventListener('click', () => {
+        if (!pending) return;
+        const { form, btn } = pending;
+        pending = null;
+        dlg.close();
+        post(form, btn);
+      });
+    }
+
+    body.addEventListener('click', ev => {
+      const btn = ev.target.closest('button[name="action"], button[type="submit"]');
+      if (!btn) return;
+      const form = btn.closest('form');
+      if (!form) return;
+      ev.preventDefault();
+
+      const del = btn.hasAttribute('data-del-booking');
+      if (del && dlg && dlg.showModal) {
+        const count = parseInt(btn.dataset.count || '0', 10);
+        dlgText.textContent = count
+          ? 'Из списка пропадут ' + count + ' разобранных заявок — отменённые и неявки. '
+            + 'Те, кто записан и кто пришёл, останутся. Вернуть убранное не получится.'
+          : 'Заявка «' + btn.dataset.delBooking + '» пропадёт насовсем. '
+            + 'Если человек ещё может прийти, лучше оставить её отменённой.';
+        pending = { form, btn };
+        dlg.showModal();
+        return;
+      }
+      post(form, btn);
     });
   })();
 </script>
